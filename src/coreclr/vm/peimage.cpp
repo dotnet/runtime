@@ -385,47 +385,9 @@ void PEImage::GetMVID(GUID *pMvid)
 //may outlive PEImage
 PEImage::IJWFixupData::IJWFixupData(void *pBase)
     : m_lock(CrstIJWFixupData),
-    m_base(pBase), m_flags(0), m_DllThunkHeap(NULL), m_iNextFixup(0), m_iNextMethod(0)
+    m_base(pBase), m_flags(0), m_iNextFixup(0), m_iNextMethod(0)
 {
     WRAPPER_NO_CONTRACT;
-}
-
-PEImage::IJWFixupData::~IJWFixupData()
-{
-    WRAPPER_NO_CONTRACT;
-    if (m_DllThunkHeap)
-        delete m_DllThunkHeap;
-}
-
-
-// Self-initializing accessor for m_DllThunkHeap
-LoaderHeap *PEImage::IJWFixupData::GetThunkHeap()
-{
-    CONTRACT(LoaderHeap *)
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END
-
-    if (!m_DllThunkHeap)
-    {
-        LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
-            0,                                 // DWORD dwCommitBlockSize
-            ThunkHeapStubManager::g_pManager->GetRangeList(),
-            UnlockedLoaderHeap::HeapKind::Executable);
-
-        if (InterlockedCompareExchangeT((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
-        {
-            delete pNewHeap;
-        }
-    }
-
-    RETURN m_DllThunkHeap;
 }
 
 void PEImage::IJWFixupData::MarkMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod)
@@ -450,19 +412,6 @@ BOOL PEImage::IJWFixupData::IsMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod)
         return TRUE;
 
     return FALSE;
-}
-
-/*static */
-PTR_LoaderHeap PEImage::GetDllThunkHeap(void *pBase)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    return GetIJWData(pBase)->GetThunkHeap();
 }
 
 /* static */
@@ -491,29 +440,6 @@ PEImage::IJWFixupData *PEImage::GetIJWData(void *pBase)
     // Return the new data
     return (pData);
 }
-
-/* static */
-void PEImage::UnloadIJWModule(void *pBase)
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END
-
-    // Take the IJW hash lock
-    CrstHolder hashLockHolder(&s_ijwHashLock);
-
-    // Try to delete the hash entry
-    IJWFixupData *pData = (IJWFixupData *)s_ijwFixupDataHash->DeleteValue((UPTR)pBase, pBase);
-
-    // Now delete the data
-    if ((UPTR)pData != (UPTR)INVALIDENTRY)
-        delete pData;
-}
-
-
-
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -863,13 +789,15 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(IsFile());
+
     SimpleWriteLockHolder lock(m_pLayoutLock, takeLock);
 
-    if (m_hFile!=INVALID_HANDLE_VALUE)
+    if (m_hFile != INVALID_HANDLE_VALUE)
         return S_OK;
 
     ErrorModeHolder mode{};
-    m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
+    m_hFile = WszCreateFile((LPCWSTR)GetPathToLoad(),
                           GENERIC_READ
 #if TARGET_WINDOWS
                           // the file may have native code sections, make sure we are allowed to execute the file
@@ -881,7 +809,6 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
                           OPEN_EXISTING,
                           FILE_ATTRIBUTE_NORMAL,
                           NULL);
-
     if (m_hFile != INVALID_HANDLE_VALUE)
             return S_OK;
 

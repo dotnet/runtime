@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class PrecodeStubsFactory : IContractFactory<IPrecodeStubs>
+public sealed class PrecodeStubsFactory : IContractFactory<IPrecodeStubs>
 {
     IPrecodeStubs IContractFactory<IPrecodeStubs>.CreateContract(Target target, int version)
     {

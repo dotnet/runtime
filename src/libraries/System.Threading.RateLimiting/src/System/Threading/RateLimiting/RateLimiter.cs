@@ -11,6 +11,41 @@ namespace System.Threading.RateLimiting
     public abstract class RateLimiter : IAsyncDisposable, IDisposable
     {
         /// <summary>
+        /// Creates a single <see cref="RateLimiter"/> that wraps the passed in <see cref="RateLimiter"/>s.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Methods on the returned <see cref="RateLimiter"/> will iterate over the passed in <paramref name="limiters"/> in the order given.
+        /// </para>
+        /// <para>
+        /// <see cref="RateLimiter.GetStatistics()"/> will return the lowest value for <see cref="RateLimiterStatistics.CurrentAvailablePermits"/>,
+        /// the inner-most limiter's <see cref="RateLimiterStatistics.TotalSuccessfulLeases"/>,
+        /// and the aggregate values for the rest of the properties from the <paramref name="limiters"/>.
+        /// </para>
+        /// <para>
+        /// <see cref="RateLimitLease"/>s returned will aggregate metadata and for duplicates use the value of the first lease with the same metadata name.
+        /// </para>
+        /// </remarks>
+        /// <param name="limiters">The <see cref="RateLimiter"/>s that will be called in order when acquiring resources.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"><paramref name="limiters"/> is a null parameter.</exception>
+        /// <exception cref="ArgumentException"><paramref name="limiters"/> is an empty array.</exception>
+        public static RateLimiter CreateChained(params RateLimiter[] limiters)
+        {
+            if (limiters is null)
+            {
+                throw new ArgumentNullException(nameof(limiters));
+            }
+
+            if (limiters.Length == 0)
+            {
+                throw new ArgumentException("Must pass in at least 1 limiter.", nameof(limiters));
+            }
+
+            return new ChainedRateLimiter(limiters);
+        }
+
+        /// <summary>
         /// Gets a snapshot of the <see cref="RateLimiter"/> statistics if available.
         /// </summary>
         /// <returns>An instance of <see cref="RateLimiterStatistics"/> containing a snapshot of the <see cref="RateLimiter"/> statistics.</returns>

@@ -34,12 +34,21 @@
     <ShortStack Condition="'$(TargetOS)' == 'maccatalyst'">true</ShortStack>
     <ShortStack Condition="'$(TargetOS)' == 'android'">true</ShortStack>
     <ShortStack Condition="'$(TargetOS)' == 'linux-bionic'">true</ShortStack>
-    <!-- NativeAOT builds are short -->
-    <ShortStack Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">true</ShortStack>
     <!-- Mono LLVM builds are short -->
-    <ShortStack Condition="'$(MonoEnableLLVM)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true'">true</ShortStack>
-    <!-- Mono AOT cross compiler builds are short -->
-    <ShortStack Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">true</ShortStack>
+    <ShortStack Condition="'$(DotNetBuildMonoEnableLLVM)' == 'true' or '$(DotNetBuildMonoAOTEnableLLVM)' == 'true'">true</ShortStack>
+  </PropertyGroup>
+
+  <!--
+    Allow the VMR orchestrator to control whether or not to build rid-specific artifacts,
+    but provide defaults until the VMR orchestrator provides controls in all scenarios.
+  -->
+  <PropertyGroup Condition="'$(EnableDefaultRidSpecificArtifacts)' == ''">
+    <!-- Source-build always needs all artifacts to be published. -->
+    <EnableDefaultRidSpecificArtifacts Condition="'$(DotNetBuildSourceOnly)' != ''">false</EnableDefaultRidSpecificArtifacts>
+    <!-- Short-stack builds should always only publish RID-specific artifacts. -->
+    <EnableDefaultRidSpecificArtifacts Condition="'$(ShortStack)' == 'true'">true</EnableDefaultRidSpecificArtifacts>
+    <!-- If no override is specified, don't use RID-specific publishing. Instead, publish everything. -->
+    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == ''">false</EnableDefaultRidSpecificArtifacts>
   </PropertyGroup>
 
   <Target Name="GetRuntimeSourceBuildCommandConfiguration"
@@ -72,12 +81,11 @@
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS) /p:BaseOS=$(BaseOS)</InnerBuildArgs>
       <!-- Pass through special build modes controlled by properties -->
       <InnerBuildArgs Condition="'$(DotNetBuildRuntimeWasmEnableThreads)' == 'true'">$(InnerBuildArgs) /p:WasmEnableThreads=true</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' != ''">$(InnerBuildArgs) /p:DotNetBuildRuntimeNativeAOTRuntimePack=$(DotNetBuildRuntimeNativeAOTRuntimePack)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoEnableLLVM=$(DotNetBuildMonoEnableLLVM)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoAOTEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoAOTEnableLLVM=$(DotNetBuildMonoAOTEnableLLVM)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoBundleLLVMOptimizer)' != ''">$(InnerBuildArgs) /p:MonoBundleLLVMOptimizer=$(DotNetBuildMonoBundleLLVMOptimizer)</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(DotNetBuildMonoCrossAOT)' != ''">$(InnerBuildArgs) /p:DotNetBuildMonoCrossAOT=$(DotNetBuildMonoCrossAOT)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildAllRuntimePacks)' != ''">$(InnerBuildArgs) /p:DotNetBuildAllRuntimePacks=$(DotNetBuildAllRuntimePacks)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildPass)' != ''">$(InnerBuildArgs) /p:DotNetBuildPass=$(DotNetBuildPass)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overridden above -->
@@ -88,12 +96,16 @@
       <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(RestoreConfigFile)' != ''">$(InnerBuildArgs) /p:RestoreConfigFile=$(RestoreConfigFile)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ForceDryRunSigning)' != ''">$(InnerBuildArgs) /p:ForceDryRunSigning=$(ForceDryRunSigning)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DefaultArtifactVisibility)' != ''">$(InnerBuildArgs) /p:DefaultArtifactVisibility=$(DefaultArtifactVisibility)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetEsrpToolPath)' != ''">$(InnerBuildArgs) /p:DotNetEsrpToolPath=$(DotNetEsrpToolPath)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildTests)' != ''">$(InnerBuildArgs) /p:DotNetBuildTests=$(DotNetBuildTests)</InnerBuildArgs>
 
       <!-- Pass locations for assets, packages and symbols -->
       <InnerBuildArgs Condition="'$(SourceBuiltAssetsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetsDir=$(SourceBuiltAssetsDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltShippingPackagesDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltShippingPackagesDir=$(SourceBuiltShippingPackagesDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltNonShippingPackagesDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltNonShippingPackagesDir=$(SourceBuiltNonShippingPackagesDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltAssetManifestsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetManifestsDir=$(SourceBuiltAssetManifestsDir)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuiltPdbArtifactsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltPdbArtifactsDir=$(SourceBuiltPdbArtifactsDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltSymbolsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltSymbolsDir=$(SourceBuiltSymbolsDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(GitHubRepositoryName)' != ''">$(InnerBuildArgs) /p:GitHubRepositoryName=$(GitHubRepositoryName)</InnerBuildArgs>
 
@@ -108,6 +120,8 @@
 
       <!-- Needed until https://github.com/dotnet/runtime/issues/109329 is fixed. -->
       <InnerBuildArgs Condition="'$(NetCoreAppToolCurrentVersion)' != ''">$(InnerBuildArgs) /p:NetCoreAppToolCurrentVersion=$(NetCoreAppToolCurrentVersion)</InnerBuildArgs>
+
+      <InnerBuildArgs Condition="'$(EnableDefaultRidSpecificArtifacts)' != ''">$(InnerBuildArgs) /p:EnableDefaultRidSpecificArtifacts=$(EnableDefaultRidSpecificArtifacts)</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 

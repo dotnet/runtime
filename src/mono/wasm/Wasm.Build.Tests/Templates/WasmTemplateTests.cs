@@ -108,12 +108,12 @@ namespace Wasm.Build.Tests
         public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
         {
             yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
-            yield return new object?[] { "-f net10.0", "net10.0", DefaultRuntimeAssetsRelativePath };
+            yield return new object?[] { $"-f {DefaultTargetFramework}", DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
 
             if (EnvironmentVariables.WorkloadsTestPreviousVersions)
             {
-                yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
-                yield return new object?[] { "-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath };
+                yield return new object?[] { $"-f {PreviousTargetFramework}", PreviousTargetFramework, DefaultRuntimeAssetsRelativePath };
+                yield return new object?[] { $"-f {Previous2TargetFramework}", Previous2TargetFramework, DefaultRuntimeAssetsRelativePath };
             }
 
             // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")
@@ -283,6 +283,28 @@ namespace Wasm.Build.Tests
                 var fileName = Directory.EnumerateFiles(publishPath, $"*{suffix}").FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith(info.ProjectName));
                 Assert.True(copyOutputSymbolsToPublishDirectory == (fileName != null && File.Exists(fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
             }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async void LibraryModeBuild(bool useWasmSdk)
+        {
+            var config = Configuration.Release;
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode");
+            if (!useWasmSdk)
+            {
+                UpdateFile($"{info.ProjectName}.csproj", new Dictionary<string, string>() {
+                    { "Microsoft.NET.Sdk.WebAssembly", "Microsoft.NET.Sdk" }
+                });
+            }
+            BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
+            if (useWasmSdk)
+            {
+                var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 100));
+                Assert.Contains("WASM Library MyExport is called", result.TestOutput);
+            }
+            
         }
     }
 }

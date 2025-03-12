@@ -163,7 +163,7 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
     {
         // spDelta is negative in the prolog, positive in the epilog,
         // but we always tell the unwind codes the positive value.
-        ssize_t  spDeltaAbs    = abs(spDelta);
+        ssize_t  spDeltaAbs    = std::abs(spDelta);
         unsigned unwindSpDelta = (unsigned)spDeltaAbs;
         assert((ssize_t)unwindSpDelta == spDeltaAbs); // make sure that it fits in a unsigned
 
@@ -1090,29 +1090,36 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             emitAttr size       = emitActualTypeSize(tree);
             double   constValue = tree->AsDblCon()->DconValue();
 
-            // Make sure we use "fmv.w.x reg, zero" only for positive zero (0.0)
-            // and not for negative zero (-0.0)
-            if (FloatingPointUtils::isPositiveZero(constValue))
+            assert(emitter::isFloatReg(targetReg));
+            int64_t bits;
+            if (emitter::isSingleInstructionFpImm(constValue, size, &bits))
             {
-                // A faster/smaller way to generate 0.0
-                // We will just zero out the entire vector register for both float and double
-                emit->emitIns_R_R(size == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, size, targetReg, REG_R0);
+                regNumber temp = REG_ZERO;
+                if (bits != 0)
+                {
+                    temp = internalRegisters.GetSingle(tree);
+                    if (emitter::isValidSimm12(bits))
+                    {
+                        emit->emitIns_R_R_I(INS_addi, size, temp, REG_ZERO, bits);
+                    }
+                    else
+                    {
+                        int64_t upperBits = bits >> 12;
+                        assert((upperBits << 12) == bits);
+                        emit->emitIns_R_I(INS_lui, size, temp, upperBits);
+                    }
+                }
+
+                emit->emitIns_R_R(size == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, size, targetReg, temp);
+                break;
             }
-            else
-            {
-                // Get a temp integer register to compute long address.
-                // regNumber addrReg = internalRegisters.GetSingle(tree);
 
-                // We must load the FP constant from the constant pool
-                // Emit a data section constant for the float or double constant.
-                CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
+            // We must load the FP constant from the constant pool
+            // Emit a data section constant for the float or double constant.
+            CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
 
-                // Load the FP constant.
-                assert(emit->isFloatReg(targetReg));
-
-                // Compute the address of the FP constant and load the data.
-                emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd, 0);
-            }
+            // Compute the address of the FP constant and load the data.
+            emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd, 0);
         }
         break;
 
@@ -2153,8 +2160,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack =
-        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -2357,12 +2363,12 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
     GenTree*  data      = treeNode->AsOp()->gtOp2;
     GenTree*  addr      = treeNode->AsOp()->gtOp1;
-    regNumber dataReg   = data->GetRegNum();
+    regNumber dataReg   = !data->isContained() ? data->GetRegNum() : REG_ZERO;
     regNumber addrReg   = addr->GetRegNum();
     regNumber targetReg = treeNode->GetRegNum();
     if (targetReg == REG_NA)
     {
-        targetReg = REG_R0;
+        targetReg = REG_ZERO;
     }
 
     genConsumeAddress(addr);
@@ -2370,8 +2376,6 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
     emitAttr dataSize = emitActualTypeSize(data);
     bool     is4      = (dataSize == EA_4BYTE);
-
-    assert(!data->isContainedIntOrIImmed());
 
     instruction ins = INS_none;
     switch (treeNode->gtOper)
@@ -2393,7 +2397,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     }
     GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
 
-    if (targetReg != REG_R0)
+    if (targetReg != REG_ZERO)
     {
         genProduceReg(treeNode);
     }
@@ -2416,9 +2420,19 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
     regNumber target    = treeNode->GetRegNum();
     regNumber loc       = locOp->GetRegNum();
-    regNumber val       = valOp->GetRegNum();
-    regNumber comparand = comparandOp->GetRegNum();
-    regNumber storeErr  = internalRegisters.Extract(treeNode, RBM_ALLINT);
+    regNumber val       = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
+    regNumber comparand = REG_ZERO;
+    if (!comparandOp->isContained())
+    {
+        comparand = comparandOp->GetRegNum();
+        if (comparandOp->TypeIs(TYP_INT, TYP_UINT))
+        {
+            regNumber signExtendedComparand = internalRegisters.Extract(treeNode);
+            GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, signExtendedComparand, comparand);
+            comparand = signExtendedComparand;
+        }
+    }
+    regNumber storeErr = internalRegisters.GetSingle(treeNode);
 
     // Register allocator should have extended the lifetimes of all input and internal registers
     // They should all be different
@@ -2429,15 +2443,11 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     noway_assert(loc != val);
     noway_assert(loc != comparand);
     noway_assert(loc != storeErr);
-    noway_assert(val != comparand);
+    noway_assert((val != comparand) || (val == REG_ZERO));
     noway_assert(val != storeErr);
     noway_assert(comparand != storeErr);
     noway_assert(target != REG_NA);
     noway_assert(storeErr != REG_NA);
-
-    assert(locOp->isUsedFromReg());
-    assert(valOp->isUsedFromReg());
-    assert(!comparandOp->isUsedFromMemory());
 
     genConsumeAddress(locOp);
     genConsumeRegs(valOp);
@@ -3226,7 +3236,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
         if (isUnordered)
         {
-            BasicBlock* skipLabel = nullptr;
             if (tree->OperIs(GT_LT))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2, regOp1);
@@ -3234,19 +3243,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             else if (tree->OperIs(GT_LE))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2, regOp1);
-            }
-            else if (tree->OperIs(GT_EQ))
-            {
-                regNumber tempReg = internalRegisters.GetSingle(tree);
-                skipLabel         = genCreateTempLabel();
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, targetReg, regOp1);
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, tempReg, regOp2);
-                emit->emitIns_R_R_R(INS_or, EA_8BYTE, tempReg, targetReg, tempReg);
-                emit->emitIns_R_R_I(INS_andi, EA_8BYTE, tempReg, tempReg, 0x300);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, REG_R0, 1);
-                emit->emitIns_J(INS_bnez, skipLabel, tempReg);
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
-                genDefineTempLabel(skipLabel);
             }
             else if (tree->OperIs(GT_NE))
             {
@@ -3260,11 +3256,11 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp1, regOp2);
             }
-            if (skipLabel == nullptr)
+            else
             {
-                emit->emitIns_R_R_R(INS_sub, EA_8BYTE, targetReg, REG_R0, targetReg);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, targetReg, 1);
+                unreached();
             }
+            emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
         }
         else
         {
@@ -3280,21 +3276,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
             }
-            else if (tree->OperIs(GT_NE))
-            {
-                regNumber tempReg = internalRegisters.GetSingle(tree);
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, targetReg, regOp1);
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, tempReg, regOp2);
-                emit->emitIns_R_R_R(INS_or, EA_8BYTE, tempReg, targetReg, tempReg);
-                emit->emitIns_R_R_I(INS_andi, EA_8BYTE, tempReg, tempReg, 0x300);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, REG_R0, 0);
-                BasicBlock* skipLabel = genCreateTempLabel();
-                emit->emitIns_J(INS_bnez, skipLabel, tempReg);
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
-                emit->emitIns_R_R_R(INS_sub, EA_8BYTE, targetReg, REG_R0, targetReg);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, targetReg, 1);
-                genDefineTempLabel(skipLabel);
-            }
             else if (tree->OperIs(GT_GT))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2, regOp1);
@@ -3302,6 +3283,10 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             else if (tree->OperIs(GT_GE))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2, regOp1);
+            }
+            else
+            {
+                unreached();
             }
         }
     }
@@ -3582,7 +3567,24 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
                     unreached();
             }
 
-            emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
+            GenTreeIntCon* con = op2->AsIntCon();
+
+            emitAttr attr = emitActualTypeSize(op2Type);
+            // TODO-CQ: Currently we cannot do this for all handles because of
+            // https://github.com/dotnet/runtime/issues/60712
+            if (con->ImmedValNeedsReloc(compiler))
+            {
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
+            }
+
+            if (op2Type == TYP_BYREF)
+            {
+                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+            }
+
+            instGen_Set_Reg_To_Imm(attr, REG_RA, imm,
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+            regSet.verifyRegUsed(REG_RA);
             regs = (int)REG_RA << 5;
         }
         else
@@ -4666,8 +4668,6 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-    assert(GetEmitter()->emitGCDisabled());
-
     // We need two temporary registers, to load the GS cookie values and compare them. We can't use
     // any argument registers if 'pushReg' is true (meaning we have a JMP call). They should be
     // callee-trash registers, which should not contain anything interesting at this point.
@@ -4772,7 +4772,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     if (treeNode->putInIncomingArgArea())
     {
         varNumOut    = getFirstArgWithStackSlot();
-        argOffsetMax = compiler->compArgSize;
+        argOffsetMax = compiler->lvaParameterStackSize;
 #if FEATURE_FASTTAILCALL
         // This must be a fast tail call.
         assert(treeNode->gtCall->IsFastTailCall());
@@ -6069,9 +6069,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
+            for (unsigned i = 0; i < arg.AbiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                const ABIPassingSegment& seg = arg.AbiInfo.Segment(i);
                 if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
                 {
                     JITDUMP("Tail call node:\n");
@@ -6333,8 +6333,6 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 
     if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
     {
-        instruction ins;
-
         switch (desc.ExtendKind())
         {
             case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
@@ -7196,7 +7194,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     if (leftFrameSize != 0)
     {
-        genStackPointerAdjustment(-leftFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+        genStackPointerAdjustment(-leftFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ false);
     }
 }
 

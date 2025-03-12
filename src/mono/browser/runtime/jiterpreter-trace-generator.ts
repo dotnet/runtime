@@ -28,6 +28,7 @@ import {
     try_append_memmove_fast, getOpcodeTableValue,
     getMemberOffset, isZeroPageReserved, CfgBranchType,
     append_safepoint, modifyCounter, simdFallbackCounters,
+    append_profiler_event,
 } from "./jiterpreter-support";
 import {
     sizeOfDataItem, sizeOfV128, sizeOfStackval,
@@ -1415,9 +1416,15 @@ export function generateWasmBody (
             }
 
             case MintOpcode.MINT_RETHROW:
+                ip = abort;
+                break;
+
+            // call C
+            case MintOpcode.MINT_PROF_ENTER:
+            case MintOpcode.MINT_PROF_SAMPLEPOINT:
             case MintOpcode.MINT_PROF_EXIT:
             case MintOpcode.MINT_PROF_EXIT_VOID:
-                ip = abort;
+                append_profiler_event(builder, ip, opcode);
                 break;
 
             // Generating code for these is kind of complex due to the intersection of JS and int64,
