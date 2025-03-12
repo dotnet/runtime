@@ -1898,13 +1898,9 @@ AssertionIndex Compiler::optAssertionGenCast(GenTreeCast* cast)
         return NO_ASSERTION_INDEX;
     }
 
-    AssertionDsc assertion = {OAK_SUBRANGE};
-    assertion.op1.kind     = O1K_LCLVAR;
-    assertion.op1.vn       = vnStore->VNConservativeNormalValue(lclVar->gtVNPair);
-    assertion.op1.lclNum   = lclVar->GetLclNum();
-    assertion.op2.kind     = O2K_SUBRANGE;
-    assertion.op2.u2       = IntegralRange::ForCastInput(cast);
-
+    IntegralRange range     = IntegralRange::ForCastInput(cast);
+    ValueNum      vn        = vnStore->VNConservativeNormalValue(lclVar->gtVNPair);
+    AssertionDsc  assertion = AssertionDsc::CreateSubrangeAssertion(this, vn, range);
     return optFinalizeCreatingAssertion(&assertion);
 }
 

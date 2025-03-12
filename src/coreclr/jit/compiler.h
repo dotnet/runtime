@@ -7946,6 +7946,58 @@ public:
             return dsc;
         }
 
+        //------------------------------------------------------------------------
+        // CreateConstantBoundAssertion: Create an assertion for the given local
+        //    that its value is in the given range.
+        //
+        // Arguments:
+        //    comp  - the compiler object
+        //    lcl   - the local to create the assertion for
+        //    range - the asserted range
+        //
+        // Return Value:
+        //    An AssertionDsc that represents
+        //
+        static AssertionDsc CreateSubrangeAssertionForLocal(const Compiler* comp, unsigned lcl, IntegralRange range)
+        {
+            assert(comp->optLocalAssertionProp);
+            assert(lcl != BAD_VAR_NUM);
+
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = OAK_SUBRANGE;
+            dsc.op1.kind      = O1K_LCLVAR;
+            dsc.op1.lclNum    = lcl;
+            dsc.op2.kind      = O2K_SUBRANGE;
+            dsc.op2.u2        = range;
+            return dsc;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateConstantBoundAssertion: Create an assertion for the given VN
+        //    that its value is in the given range.
+        //
+        // Arguments:
+        //    comp  - the compiler object
+        //    vn    - the vn to create the assertion for
+        //    range - the asserted range
+        //
+        // Return Value:
+        //    An AssertionDsc that represents
+        //
+        static AssertionDsc CreateSubrangeAssertion(const Compiler* comp, ValueNum vn, IntegralRange range)
+        {
+            assert(!comp->optLocalAssertionProp);
+            assert(vn != ValueNumStore::NoVN);
+
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = OAK_SUBRANGE;
+            dsc.op1.kind      = O1K_LCLVAR;
+            dsc.op1.vn        = vn;
+            dsc.op2.kind      = O2K_SUBRANGE;
+            dsc.op2.u2        = range;
+            return dsc;
+        }
+
         bool CanBeReversed()
         {
             return (assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL);
