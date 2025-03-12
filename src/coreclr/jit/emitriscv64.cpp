@@ -1356,6 +1356,47 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     {
         x = lastZeroPositionFromLsb(imm) + 1;
     }
+
+    /* srli can be utilized when the input has the following pattern:
+     *
+     * 0...01...10...x
+     * <-n-><-m->
+     *
+     * It will emit instructions to load the left shifted 1...10...x0...0 then
+     * followed by a single srli.
+     *
+     * Since it adds 1 instruction, loading the new form should at least remove
+     * two instruction. Two instructions can be removed IF:
+     *  1. y - x > 31, AND
+     *  2. (b - a) < 32, OR
+     *  3. (b - a) - (y - x) > 12 (-> )
+     *
+     * 0...01...10...x
+     *     y       <-x
+     * 1...10...x0...0
+     *     b  <-a
+     * */
+
+    bool utilizeSRLI   = false;
+    int  max_ins_count = MAX_NUM_OF_LOAD_IMM_INS;
+    int  srliShiftAmount;
+    if (msb(imm) == 0 && y - x > 31)
+    {
+        srliShiftAmount  = __builtin_clzll(imm);
+        uint64_t tempImm = (uint64_t)imm << srliShiftAmount;
+        int      m       = __builtin_clzll(~tempImm);
+        int      b       = 64 - m;
+        int      a       = __builtin_ctzll(tempImm);
+        if ((b - a) < 32 || (y - x) - (b - a) >= 11)
+        {
+            imm         = tempImm;
+            y           = b;
+            x           = a;
+            utilizeSRLI = true;
+            max_ins_count -= 1;
+        }
+    }
+
     if (y < 32)
     {
         y = 31;
@@ -1453,7 +1494,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         if (chunk != 0)
         {
             numberOfInstructions += 2;
-            if (numberOfInstructions > MAX_NUM_OF_LOAD_IMM_INS)
+            if (numberOfInstructions > max_ins_count)
             {
                 break;
             }
@@ -1482,14 +1523,14 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     if (shift > 0)
     {
         numberOfInstructions += 1;
-        if (numberOfInstructions <= MAX_NUM_OF_LOAD_IMM_INS)
+        if (numberOfInstructions <= max_ins_count)
         {
             ins[numberOfInstructions - 1]    = INS_slli;
             values[numberOfInstructions - 1] = shift;
         }
     }
 
-    if (numberOfInstructions <= MAX_NUM_OF_LOAD_IMM_INS)
+    if (numberOfInstructions <= max_ins_count)
     {
         for (int i = 0; i < numberOfInstructions; i++)
         {
@@ -1513,6 +1554,10 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             {
                 assert(false && "Remainding instructions must be addi / addiw / slli");
             }
+        }
+        if (utilizeSRLI)
+        {
+            emitIns_R_R_I(INS_srli, size, reg, reg, srliShiftAmount);
         }
     }
     else if (size == EA_8BYTE || size == EA_PTRSIZE)
