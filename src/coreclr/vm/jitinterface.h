@@ -762,23 +762,23 @@ protected:
 
 // CEEJitInfo is the concrete implementation of callbacks that the EE must provide for the JIT to do its
 // work.   See code:ICorJitInfo#JitToEEInterface for more on this interface.
-class CEEJitInfo : public CEECodeGenInfo
+class CEEJitInfo final : public CEECodeGenInfo
 {
 public:
     // ICorJitInfo stuff
 
-    void allocMem (AllocMemArgs *pArgs) override final;
-    void * allocGCInfo(size_t  size) override final;
-    virtual void setEHcount (unsigned cEH) override final;
+    void allocMem (AllocMemArgs *pArgs) override;
+    void * allocGCInfo(size_t  size) override;
+    virtual void setEHcount (unsigned cEH) override;
     virtual void setEHinfo (
         unsigned      EHnumber,
         const CORINFO_EH_CLAUSE* clause
-       ) override final;
+       ) override;
 
     void WriteCodeBytes();
-    void WriteCode(EECodeGenManager * jitMgr) override final;
+    void WriteCode(EECodeGenManager * jitMgr) override;
 
-    void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override final;
+    void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override;
 
     void allocUnwindInfo (
             uint8_t * pHotCode,              /* IN */
@@ -788,14 +788,14 @@ public:
             uint32_t  unwindSize,            /* IN */
             uint8_t * pUnwindBlock,          /* IN */
             CorJitFuncKind funcKind       /* IN */
-            ) override final;
+            ) override;
 
     HRESULT allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema* pSchema, /* IN/OUT */
             uint32_t countSchemaItems, /* IN */
             uint8_t** pInstrumentationData /* OUT */
-            ) override final;
+            ) override;
 
     HRESULT getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
@@ -804,27 +804,27 @@ public:
             uint8_t**pInstrumentationData, /* OUT */
             PgoSource *pPgoSource, /* OUT */
             bool* pDynamicPgo /* OUT */
-            ) override final;
+            ) override;
 
     void recordCallSite(
             uint32_t                     instrOffset,  /* IN */
             CORINFO_SIG_INFO *        callSig,      /* IN */
             CORINFO_METHOD_HANDLE     methodHandle  /* IN */
-            ) override final;
+            ) override;
 
     void recordRelocation(
             void                    *location,
             void                    *locationRW,
             void                    *target,
             uint16_t                 fRelocType,
-            int32_t                  addlDelta) override final;
+            int32_t                  addlDelta) override;
 
-    uint16_t getRelocTypeHint(void * target) override final;
+    uint16_t getRelocTypeHint(void * target) override;
 
-    uint32_t getExpectedTargetArchitecture() override final;
+    uint32_t getExpectedTargetArchitecture() override;
 
-    void BackoutJitData(EECodeGenManager * jitMgr) override final;
-    void SetDebugInfo(PTR_BYTE pDebugInfo) override final;
+    void BackoutJitData(EECodeGenManager * jitMgr) override;
+    void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     void ResetForJitRetry()
     {
@@ -891,7 +891,7 @@ public:
         m_reserveForJumpStubs = value;
     }
 
-    virtual PatchpointInfo* GetPatchpointInfo() override final
+    virtual PatchpointInfo* GetPatchpointInfo() override
     {
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         return m_pPatchpointInfoFromJit;
@@ -985,7 +985,7 @@ public:
     }
 
     void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
-                       void **            ppIndirection) override final;  /* OUT */
+                       void **            ppIndirection) override;  /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
     // Override of CEEInfo::GetProfilingHandle.  The first time this is called for a
@@ -997,15 +997,15 @@ public:
                     bool                      *pbHookFunction,
                     void                     **pProfilerHandle,
                     bool                      *pbIndirectedHandles
-                    ) override final;
+                    ) override;
 
-    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override final;
-    InfoAccessType emptyStringLiteral(void ** ppValue) override final;
-    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override final;
-    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override final;
+    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
+    InfoAccessType emptyStringLiteral(void ** ppValue) override;
+    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
+    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
 
-    void setPatchpointInfo(PatchpointInfo* patchpointInfo) override final;
-    PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo) override;
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset) override;
 
 protected :
 
@@ -1055,7 +1055,7 @@ protected :
 };
 
 #ifdef FEATURE_INTERPRETER
-class CInterpreterJitInfo : public CEECodeGenInfo
+class CInterpreterJitInfo final : public CEECodeGenInfo
 {
 public:
     // ICorJitInfo stuff
@@ -1072,19 +1072,19 @@ public:
         } CONTRACTL_END;
     }
 
-    void allocMem(AllocMemArgs *pArgs) override final;
-    void * allocGCInfo(size_t  size) override final;
-    virtual void setEHcount (unsigned cEH) override final;
+    void allocMem(AllocMemArgs *pArgs) override;
+    void * allocGCInfo(size_t  size) override;
+    virtual void setEHcount (unsigned cEH) override;
     virtual void setEHinfo (
         unsigned      EHnumber,
         const CORINFO_EH_CLAUSE* clause
-       ) override final;
+       ) override;
 
     void WriteCodeBytes();
-    void WriteCode(EECodeGenManager * jitMgr) override final;
+    void WriteCode(EECodeGenManager * jitMgr) override;
 
-    void BackoutJitData(EECodeGenManager * jitMgr) override final;
-    void SetDebugInfo(PTR_BYTE pDebugInfo) override final;
+    void BackoutJitData(EECodeGenManager * jitMgr) override;
+    void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     void ResetForJitRetry()
     {
