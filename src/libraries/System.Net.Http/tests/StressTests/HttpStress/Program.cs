@@ -192,9 +192,15 @@ namespace HttpStress
             {
                 TaskScheduler.UnobservedTaskException += (_, e) =>
                 {
+                    Exception ex = e.Exception;
+                    if (ex is QuicException || ex is AggregateException a && a.InnerExceptions.Any(i => i is QuicException))
+                    {
+                        return;
+                    }
+
                     lock (s_unobservedExceptions)
                     {
-                        string text = e.Exception.ToString();
+                        string text = ex.ToString();
                         Console.WriteLine($"Unobserved exception: {e.Exception}");
                         s_unobservedExceptions[text] = s_unobservedExceptions.GetValueOrDefault(text) + 1;
                     }
