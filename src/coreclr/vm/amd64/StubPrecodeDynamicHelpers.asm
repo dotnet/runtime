@@ -99,15 +99,15 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull, _T
         ; First indirection
         mov    rax, QWORD PTR [FirstArg_Reg+OFFSETOF__MethodTable__m_pPerInstInfo]
         ; Standard Indirection
-        mov    SecongArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SecondIndir)]
+        mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SecondIndir)]
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         ; SizeCheck
-        mov    SecongArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SizeOffset)]
+        mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SizeOffset)]
         mov    ThirdArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SlotOffset)]
         cmp    qword ptr[rax + SecondArg_Reg], ThirdArg_Reg
         jle    DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull_HelperCall
         ; Standard Indirection
-        mov    SecongArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
+        mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         ; Null test
         test   rax, rax
@@ -123,10 +123,10 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class_TestForNull, _TEXT
         ; First indirection
         mov    rax, QWORD PTR [FirstArg_Reg+OFFSETOF__MethodTable__m_pPerInstInfo]
         ; Standard Indirection
-        mov    SecongArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SecondIndir)]
+        mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SecondIndir)]
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         ; Standard Indirection
-        mov    SecongArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
+        mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         ; Null test
         test   rax, rax
@@ -142,10 +142,10 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class, _TEXT
         ; First indirection
         mov    rax, QWORD PTR [FirstArg_Reg+OFFSETOF__MethodTable__m_pPerInstInfo]
         ; Standard Indirection
-        mov    SecongArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SecondIndir)]
+        mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SecondIndir)]
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         ; Standard Indirection
-        mov    SecongArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
+        mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         ret
 LEAF_END DynamicHelper_GenericDictionaryLookup_Class, _TEXT
@@ -154,12 +154,12 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull, _
         ; First indirection
         mov    rax, QWORD PTR [FirstArg_Reg+OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo]
         ; SizeCheck
-        mov    SecongArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SizeOffset)]
+        mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SizeOffset)]
         mov    ThirdArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SlotOffset)]
         cmp    qword ptr[rax + SecondArg_Reg], ThirdArg_Reg
         jle    DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_HelperCall
         ; Standard Indirection
-        mov    SecongArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
+        mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         ; Null test
         test   rax, rax
@@ -175,7 +175,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method_TestForNull, _TEXT
         ; First indirection
         mov    rax, QWORD PTR [FirstArg_Reg+OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo]
         ; Standard Indirection
-        mov    SecongArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
+        mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         ; Null test
         test   rax, rax
@@ -191,7 +191,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method, _TEXT
         ; First indirection
         mov    rax, QWORD PTR [FirstArg_Reg+OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo]
         ; Standard Indirection
-        mov    SecongArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
+        mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         ret
 LEAF_END DynamicHelper_GenericDictionaryLookup_Method, _TEXT
