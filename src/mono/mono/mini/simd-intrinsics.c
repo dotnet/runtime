@@ -1906,20 +1906,20 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 {
 	const char *cmethod_name = cmethod->name;
 
-	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<", 38) == 0) {
-		if (strncmp (cmethod_name + 38, "System.Runtime.Intrinsics.Vector", 32) == 0) {
+	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.", 45) == 0) {
+		if (strncmp (cmethod_name + 45, "Runtime.Intrinsics.Vector", 25) == 0) {
 		// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
 		// but, they all prefix the qualified name of the interface first, so we'll check for that and
 		// skip the prefix before trying to resolve the method.
 
 			if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
-			cmethod_name += 79;
+				cmethod_name += 79;
 			} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
 				(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
 				(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
 				cmethod_name += 80;
 			}
-		} else if (strncmp(cmethod_name + 38, "System.Numerics.Vector<T>,T>.", 29) == 0) {
+		} else if (strncmp(cmethod_name + 45, "Numerics.Vector<T>,T>.", 22) == 0) {
 			cmethod_name += 67;
 		}
 	}
@@ -3373,8 +3373,8 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	const char *cmethod_name = cmethod->name;
 	bool explicitly_implemented = false;
 
-	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<", 38) == 0) {
-		if (strncmp(cmethod_name + 38, "System.Runtime.Intrinsics.Vector", 32) == 0) {
+	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.", 45) == 0) {
+		if (strncmp(cmethod_name + 45, "Runtime.Intrinsics.Vector", 25) == 0) {
 			// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
 			// but, they all prefix the qualified name of the interface first, so we'll check for that and
 			// skip the prefix before trying to resolve the method.
@@ -3388,7 +3388,7 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 				cmethod_name += 80;
 				explicitly_implemented = true;
 			}
-		} else if (strncmp(cmethod_name + 38, "System.Numerics.Vector<T>,T>.", 29) == 0) {
+		} else if (strncmp(cmethod_name + 45, "Numerics.Vector<T>,T>.", 22) == 0) {
 			cmethod_name += 67;
 			explicitly_implemented = true;
 		}
