@@ -698,6 +698,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/unixasmhelpers.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
+            ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_I386)
         set(VM_SOURCES_WKS_ARCH_ASM
