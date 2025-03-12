@@ -4443,13 +4443,7 @@ namespace Internal.JitInterface
                         {
                             partialMethodName = partialMethodName.Slice(25);
 
-                            if (partialMethodName.StartsWith("128<T>,T>.") ||
-                                partialMethodName.StartsWith("256<T>,T>.") ||
-                                partialMethodName.StartsWith("512<T>,T>."))
-                            {
-                                methodName = partialMethodName.Slice(8);
-                            }
-                            else if (partialMethodName.StartsWith("64<T>,T>."))
+                            if (partialMethodName.StartsWith("64<T>,T>."))
                             {
                                 methodName = partialMethodName.Slice(9);
                             }
