@@ -7832,6 +7832,7 @@ public:
         //
         static AssertionDsc CreateSubtypeAssertion(const Compiler* comp, ValueNum objVN, ValueNum typeVN)
         {
+            assert(!comp->optLocalAssertionProp);
             assert(objVN != ValueNumStore::NoVN);
             assert(comp->vnStore->IsVNTypeHandle(typeVN));
             assert(varTypeIsGC(comp->vnStore->TypeOfVN(objVN)));
@@ -7861,6 +7862,7 @@ public:
         //
         static AssertionDsc CreateExactTypeAssertion(const Compiler* comp, ValueNum objVN, ValueNum typeVN)
         {
+            assert(!comp->optLocalAssertionProp);
             assert(objVN != ValueNumStore::NoVN);
             assert(comp->vnStore->IsVNTypeHandle(typeVN));
             assert(varTypeIsGC(comp->vnStore->TypeOfVN(objVN)));
@@ -7876,8 +7878,73 @@ public:
             return assertion;
         }
 
-        // TODO-AssertProp: Introduce factory methods for other assertion types
+        //------------------------------------------------------------------------
+        // CreateInBoundsAssertion: Create an assertion that the given index is
+        //    between 0 and the given lenVN, or in other words: "(uint)i < (uint)length)"
+        //
+        // Arguments:
+        //    comp   - the compiler object
+        //    idxVN  - the value number of the index
+        //    lenVN  - the value number of the length
+        //
+        // Return Value:
+        //    An AssertionDsc that represents the assertion that the index is in bounds
+        //
+        static AssertionDsc CreateInBoundsAssertion(const Compiler* comp, ValueNum idxVN, ValueNum lenVN)
+        {
+            assert(!comp->optLocalAssertionProp);
+            assert(idxVN != ValueNumStore::NoVN);
+            assert(lenVN != ValueNumStore::NoVN);
 
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = OAK_NO_THROW;
+            dsc.op1.kind      = O1K_ARR_BND;
+            dsc.op1.bnd.vnIdx = idxVN;
+            dsc.op1.bnd.vnLen = lenVN;
+            dsc.op2.vn        = ValueNumStore::NoVN;
+            return dsc;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateConstantBoundAssertion: Create an assertion that the given relop
+        //    represents "i relop CNS" and evaluates to true.
+        //
+        // Arguments:
+        //    comp    - the compiler object
+        //    relopVN - the value number of the relop
+        //
+        // Return Value:
+        //    An AssertionDsc that represents "i relop CNS" that evaluates to true.
+        //
+        static AssertionDsc CreateConstantBoundAssertion(const Compiler* comp, ValueNum relopVN)
+        {
+            assert(!comp->optLocalAssertionProp);
+            assert(relopVN != ValueNumStore::NoVN);
+
+            bool isUnsignedRelop;
+            bool isRelop = comp->vnStore->IsVNRelop(relopVN, &isUnsignedRelop);
+            assert(isRelop);
+
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = OAK_NOT_EQUAL; // means relop evaluates to true (relop != 0)
+            dsc.op1.kind       = isUnsignedRelop ? O1K_CONSTANT_LOOP_BND_UN : O1K_CONSTANT_LOOP_BND;
+            dsc.op1.vn         = relopVN;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
+            dsc.op2.u1.iconVal = 0;
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+            return dsc;
+        }
+
+        bool CanBeReversed()
+        {
+            return (assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL);
+        }
+        void Reverse()
+        {
+            assert(CanBeReversed());
+            assertionKind = (assertionKind == OAK_EQUAL) ? OAK_NOT_EQUAL : OAK_EQUAL;
+        }
         bool IsCheckedBoundArithBound()
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_OPER_BND);

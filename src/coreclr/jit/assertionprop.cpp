@@ -1127,13 +1127,16 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
     AssertionDsc assertion = {OAK_INVALID};
     assert(assertion.assertionKind == OAK_INVALID);
 
-    if (op1->OperIs(GT_BOUNDS_CHECK) && (assertionKind == OAK_NO_THROW))
+    if (!optLocalAssertionProp && op1->OperIs(GT_BOUNDS_CHECK) && (assertionKind == OAK_NO_THROW))
     {
         GenTreeBoundsChk* arrBndsChk = op1->AsBoundsChk();
-        assertion.assertionKind      = assertionKind;
-        assertion.op1.kind           = O1K_ARR_BND;
-        assertion.op1.bnd.vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
-        assertion.op1.bnd.vnLen      = optConservativeNormalVN(arrBndsChk->GetArrayLength());
+        ValueNum          vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
+        ValueNum          vnLen      = optConservativeNormalVN(arrBndsChk->GetArrayLength());
+        if ((vnIdx == ValueNumStore::NoVN) && (vnLen == ValueNumStore::NoVN))
+        {
+            return NO_ASSERTION_INDEX;
+        }
+        assertion = AssertionDsc::CreateInBoundsAssertion(this, vnIdx, vnLen);
     }
     //
     // Are we trying to make a non-null assertion?
@@ -1825,8 +1828,8 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
         (candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND) ||
         (candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND_UN))
     {
-        AssertionDsc dsc  = candidateAssertion;
-        dsc.assertionKind = dsc.assertionKind == OAK_EQUAL ? OAK_NOT_EQUAL : OAK_EQUAL;
+        AssertionDsc dsc = candidateAssertion;
+        dsc.Reverse();
         optAddAssertion(&dsc);
         return;
     }
@@ -1991,6 +1994,9 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < bnd != 0"
     else if (vnStore->IsVNCompareCheckedBound(relopVN))
     {
+        // TODO-AssertProp: remove this assertion, it is the same as the one above
+        // with just k being 0.
+        //
         AssertionDsc dsc;
         dsc.assertionKind  = OAK_NOT_EQUAL;
         dsc.op1.kind       = O1K_BOUND_LOOP_BND;
@@ -2011,57 +2017,26 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         assert((unsignedCompareBnd.cmpOper == VNF_LT_UN) || (unsignedCompareBnd.cmpOper == VNF_GE_UN));
         assert(vnStore->IsVNCheckedBound(unsignedCompareBnd.vnBound));
 
-        AssertionDsc dsc;
-        dsc.assertionKind = OAK_NO_THROW;
-        dsc.op1.kind      = O1K_ARR_BND;
-        dsc.op1.vn        = relopVN;
-        dsc.op1.bnd.vnIdx = unsignedCompareBnd.vnIdx;
-        dsc.op1.bnd.vnLen = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
-        dsc.op2.kind      = O2K_INVALID;
-        dsc.op2.vn        = ValueNumStore::NoVN;
-
-        if ((dsc.op1.bnd.vnIdx == ValueNumStore::NoVN) || (dsc.op1.bnd.vnLen == ValueNumStore::NoVN))
+        ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
+        if (lenVN != ValueNumStore::NoVN)
         {
-            // Don't make an assertion if one of the operands has no VN
-            return NO_ASSERTION_INDEX;
+            AssertionDsc   dsc   = AssertionDsc::CreateInBoundsAssertion(this, unsignedCompareBnd.vnIdx, lenVN);
+            AssertionIndex index = optAddAssertion(&dsc);
+            if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
+            {
+                // By default JTRUE generated assertions hold on the "jump" edge. We have i >= bnd but we're really
+                // after i < bnd so we need to change the assertion edge to "next".
+                return AssertionInfo::ForNextEdge(index);
+            }
+            return index;
         }
-
-        AssertionIndex index = optAddAssertion(&dsc);
-        if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
-        {
-            // By default JTRUE generated assertions hold on the "jump" edge. We have i >= bnd but we're really
-            // after i < bnd so we need to change the assertion edge to "next".
-            return AssertionInfo::ForNextEdge(index);
-        }
-        return index;
     }
     // Cases where op1 holds the lhs of the condition op2 holds rhs.
-    // Loop condition like "i < 100"
-    // Assertion: "i < 100 != 0"
-    else if (vnStore->IsVNConstantBound(relopVN))
+    // Loop condition like "i < 100" or "(uint)i < 100"
+    // Assertion: "i < 100 != 0" or "(uint)i < 100 != 0"
+    else if (vnStore->IsVNConstantBound(relopVN) || vnStore->IsVNConstantBoundUnsigned(relopVN))
     {
-        AssertionDsc dsc;
-        dsc.assertionKind  = OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_CONSTANT_LOOP_BND;
-        dsc.op1.vn         = relopVN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
-        AssertionIndex index = optAddAssertion(&dsc);
-        optCreateComplementaryAssertion(index, nullptr, nullptr);
-        return index;
-    }
-    else if (vnStore->IsVNConstantBoundUnsigned(relopVN))
-    {
-        AssertionDsc dsc;
-        dsc.assertionKind  = OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_CONSTANT_LOOP_BND_UN;
-        dsc.op1.vn         = relopVN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
+        AssertionDsc   dsc   = AssertionDsc::CreateConstantBoundAssertion(this, relopVN);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
