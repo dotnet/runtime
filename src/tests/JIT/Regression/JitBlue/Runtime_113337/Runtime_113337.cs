@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;
@@ -14,10 +15,16 @@ public class Runtime_113337
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void issue1()
     {
-        var vr9 = Vector64.Create<float>(0);
-        if ((2147483647 == (-(int)AdvSimd.Extract(vr9, 1))))
+        try
         {
-            s_7 = s_7;
+            var vr9 = Vector64.Create<float>(0);
+            if ((2147483647 == (-(int)AdvSimd.Extract(vr9, 1))))
+            {
+                s_7 = s_7;
+            }
+        }
+        catch (PlatformNotSupportedException e)
+        {
         }
     }
 
