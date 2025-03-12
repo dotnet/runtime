@@ -19978,12 +19978,17 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 #endif
 #elif defined(TARGET_ARM64)
-    if (OperIs(GT_AND, GT_AND_NOT, GT_NEG))
+    if (OperIs(GT_AND, GT_AND_NOT))
     {
         return true;
     }
 
     // We do not support setting zero flag for madd/msub.
+    if (OperIs(GT_NEG) && (!gtGetOp1()->OperIs(GT_MUL) || !gtGetOp1()->isContained()))
+    {
+        return true;
+    }
+
     if (OperIs(GT_ADD, GT_SUB) && (!gtGetOp2()->OperIs(GT_MUL) || !gtGetOp2()->isContained()))
     {
         return true;
