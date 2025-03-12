@@ -1345,6 +1345,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     bool          utilizeSRLI      = false;
     int           maxInsCount      = maxTotalInsCount;
     int           srliShiftAmount;
+    uint64_t      originalImm = imm;
     if ((((uint64_t)imm >> 63) & 0b1) == 0 && y - x > 31)
     {
         srliShiftAmount  = __builtin_clzll(imm);
@@ -1527,7 +1528,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     }
     else if (size == EA_8BYTE || size == EA_PTRSIZE)
     {
-        auto constAddr = emitDataConst(&imm, sizeof(long), sizeof(long), TYP_LONG);
+        auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
         emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr), 0);
     }
     else
