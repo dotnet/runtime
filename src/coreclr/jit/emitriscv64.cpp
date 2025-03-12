@@ -1265,53 +1265,13 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     appendToCurIG(id);
 }
 
-#define MAX_NUM_OF_LOAD_IMM_INS 5
+static inline constexpr unsigned WordMask(uint8_t bits);
+
 /*****************************************************************************
  *
  *  Emits load of 64-bit constant to register.
  *
  */
-
-int msb(uint64_t val)
-{
-    return (val >> 63) & 0b1;
-}
-
-int lsb(uint64_t val)
-{
-    return val & 0b1;
-}
-
-int lastZeroPositionFromMsb(uint64_t val)
-{
-    return 63 - __builtin_clzll(val) + 1;
-}
-
-int lastZeroPositionFromLsb(uint64_t val)
-{
-    return __builtin_ctzll(val) - 1;
-}
-
-int lastOnePositionFromMsb(uint64_t val)
-{
-    return lastZeroPositionFromMsb(~val);
-}
-
-int lastOnePositionFromLsb(uint64_t val)
-{
-    return lastZeroPositionFromLsb(~val);
-}
-
-uint64_t mask(int val)
-{
-    return ~(~((uint64_t)1 << val) + 1);
-}
-
-int32_t SignExtendUImm20(uint32_t val)
-{
-    return ((val >> 19) & 0b1) ? val + 0xFFF00000 : val;
-}
-
 void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 {
     assert(!EA_IS_RELOC(size));
@@ -1340,21 +1300,25 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     int x;
     int y;
-    if (msb(imm) == 1)
+    if (((uint64_t)imm >> 63) & 0b1)
     {
-        y = lastOnePositionFromMsb(imm);
+        // last one position from MSB
+        y = 63 - __builtin_clzll(~imm) + 1;
     }
     else
     {
-        y = lastZeroPositionFromMsb(imm);
+        // last zero position from MSB
+        y = 63 - __builtin_clzll(imm) + 1;
     }
-    if (lsb(imm) == 1)
+    if (imm & 0b1)
     {
-        x = lastOnePositionFromLsb(imm) + 1;
+        // first zero position from LSB
+        x = __builtin_ctzll(~imm);
     }
     else
     {
-        x = lastZeroPositionFromLsb(imm) + 1;
+        // first one position from LSB
+        x = __builtin_ctzll(imm);
     }
 
     /* srli can be utilized when the input has the following pattern:
@@ -1377,10 +1341,11 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
      *     b  <-a
      * */
 
-    bool utilizeSRLI   = false;
-    int  max_ins_count = MAX_NUM_OF_LOAD_IMM_INS;
-    int  srliShiftAmount;
-    if (msb(imm) == 0 && y - x > 31)
+    constexpr int maxTotalInsCount = 5;
+    bool          utilizeSRLI      = false;
+    int           maxInsCount      = maxTotalInsCount;
+    int           srliShiftAmount;
+    if ((((uint64_t)imm >> 63) & 0b1) == 0 && y - x > 31)
     {
         srliShiftAmount  = __builtin_clzll(imm);
         uint64_t tempImm = (uint64_t)imm << srliShiftAmount;
@@ -1393,7 +1358,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             y           = b;
             x           = a;
             utilizeSRLI = true;
-            max_ins_count -= 1;
+            maxInsCount -= 1;
         }
     }
 
@@ -1411,9 +1376,9 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         x = y - 31;
     }
 
-    uint32_t high32         = ((int64_t)imm >> x) & mask(32);
-    uint32_t offset1        = imm & mask(x);
-    uint32_t offset2        = ~(offset1 - 1) & mask(x);
+    uint32_t high32         = ((int64_t)imm >> x) & WordMask(32);
+    uint32_t offset1        = imm & WordMask(x);
+    uint32_t offset2        = ~(offset1 - 1) & WordMask(x);
     uint32_t offset         = offset1;
     bool     isSubtractMode = false;
 
@@ -1423,12 +1388,12 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
          * Since adding 1 to it will change the sign bit. Instead, shift x and y
          * to the left by one. */
         int      newX       = x + 1;
-        uint32_t newOffset1 = imm & mask(newX);
-        uint32_t newOffset2 = ~(newOffset1 - 1) & mask(newX);
+        uint32_t newOffset1 = imm & WordMask(newX);
+        uint32_t newOffset2 = ~(newOffset1 - 1) & WordMask(newX);
         if (newOffset2 < offset1)
         {
             x              = newX;
-            high32         = ((int64_t)imm >> (x)) & mask(32);
+            high32         = ((int64_t)imm >> (x)) & WordMask(32);
             offset2        = newOffset2;
             isSubtractMode = true;
         }
@@ -1441,27 +1406,27 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     if (isSubtractMode)
     {
         offset = offset2;
-        high32 = (high32 + 1) & mask(32);
+        high32 = (high32 + 1) & WordMask(32);
     }
 
-    assert(MAX_NUM_OF_LOAD_IMM_INS >= 2);
+    assert(maxTotalInsCount >= 2);
     int         numberOfInstructions = 0;
-    instruction ins[MAX_NUM_OF_LOAD_IMM_INS];
-    int32_t     values[MAX_NUM_OF_LOAD_IMM_INS];
+    instruction ins[maxTotalInsCount];
+    int32_t     values[maxTotalInsCount];
 
     // Load high32
-    uint32_t upper    = (high32 >> 12) & mask(20);
-    uint32_t lower    = high32 & mask(12);
+    uint32_t upper    = (high32 >> 12) & WordMask(20);
+    uint32_t lower    = high32 & WordMask(12);
     int      lowerMsb = (lower >> 11) & 0b1;
     if (lowerMsb == 1)
     {
         upper += 1;
-        upper &= mask(20);
+        upper &= WordMask(20);
     }
     if (upper != 0)
     {
         ins[numberOfInstructions]    = INS_lui;
-        values[numberOfInstructions] = SignExtendUImm20(upper);
+        values[numberOfInstructions] = ((upper >> 19) & 0b1) ? upper + 0xFFF00000 : upper;
         numberOfInstructions += 1;
     }
     if (lower != 0)
@@ -1474,14 +1439,14 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     // Load offset in 11-bits chunks
     int chunkLsbPos = x < 11 ? 0 : x - 11;
     int shift       = x < 11 ? x : 11;
-    int chunkMask   = x < 11 ? mask(x) : mask(11);
+    int chunkMask   = x < 11 ? WordMask(x) : WordMask(11);
     while (true)
     {
         uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
 
         /* We could move our 11 bit chunk window to the right for as many as the
          * leading zeros.*/
-        int leadingZerosOn11BitsChunk = 11 - lastZeroPositionFromMsb(chunk);
+        int leadingZerosOn11BitsChunk = 11 - (64 - __builtin_clzll(chunk));
         if (leadingZerosOn11BitsChunk > 0)
         {
             int maxAdditionalShift =
@@ -1494,7 +1459,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         if (chunk != 0)
         {
             numberOfInstructions += 2;
-            if (numberOfInstructions > max_ins_count)
+            if (numberOfInstructions > maxInsCount)
             {
                 break;
             }
@@ -1517,20 +1482,20 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             break;
         }
         shift += chunkLsbPos < 11 ? chunkLsbPos : 11;
-        chunkMask = chunkLsbPos < 11 ? chunkMask >> (11 - chunkLsbPos) : mask(11);
+        chunkMask = chunkLsbPos < 11 ? chunkMask >> (11 - chunkLsbPos) : WordMask(11);
         chunkLsbPos -= chunkLsbPos < 11 ? chunkLsbPos : 11;
     }
     if (shift > 0)
     {
         numberOfInstructions += 1;
-        if (numberOfInstructions <= max_ins_count)
+        if (numberOfInstructions <= maxInsCount)
         {
             ins[numberOfInstructions - 1]    = INS_slli;
             values[numberOfInstructions - 1] = shift;
         }
     }
 
-    if (numberOfInstructions <= max_ins_count)
+    if (numberOfInstructions <= maxInsCount)
     {
         for (int i = 0; i < numberOfInstructions; i++)
         {
