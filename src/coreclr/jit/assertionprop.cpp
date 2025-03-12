@@ -1127,7 +1127,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
     AssertionDsc assertion = {OAK_INVALID};
     assert(assertion.assertionKind == OAK_INVALID);
 
-    if (!optLocalAssertionProp && op1->OperIs(GT_BOUNDS_CHECK) && (assertionKind == OAK_NO_THROW))
+    if (op1->OperIs(GT_BOUNDS_CHECK) && (assertionKind == OAK_NO_THROW))
     {
         GenTreeBoundsChk* arrBndsChk = op1->AsBoundsChk();
         ValueNum          vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
