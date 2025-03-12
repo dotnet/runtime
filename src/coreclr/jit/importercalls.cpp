@@ -10638,8 +10638,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                         if (isVectorT || (strcmp(className, "Vector") == 0))
                         {
-                            if (strncmp(methodName,
-                                        "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector",
+                            if (strncmp(methodName, "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector",
                                         60) == 0)
                             {
                                 // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where
