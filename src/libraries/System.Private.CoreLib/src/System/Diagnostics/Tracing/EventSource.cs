@@ -1672,7 +1672,7 @@ namespace System.Diagnostics.Tracing
                 // Register the provider with ETW
                 Func<EventSource?> eventSourceFactory = () => this;
                 OverrideEventProvider? etwProvider = EventSourceInitHelper.TryGetPreregisteredEtwProvider(eventSourceGuid);
-                if(etwProvider == null)
+                if (etwProvider == null)
                 {
                     etwProvider = new OverrideEventProvider(eventSourceFactory, EventProviderType.ETW);
                     etwProvider.Register(eventSourceGuid, eventSourceName);
@@ -3879,7 +3879,7 @@ namespace System.Diagnostics.Tracing
 #endif
         internal static void InitializeDefaultEventSources()
         {
-            if(!EventSource.IsSupported)
+            if (!EventSource.IsSupported)
             {
                 return;
             }
@@ -5261,7 +5261,7 @@ namespace System.Diagnostics.Tracing
         internal readonly EventListener m_Listener;   // The dispatcher this entry is for
         internal bool[]? m_EventEnabled;              // For every event in a the eventSource, is it enabled?
 
-        // Only guaranteed to exist after a InsureInit()
+        // Only guaranteed to exist after a EnsureInit()
         internal EventDispatcher? m_Next;              // These form a linked list in code:EventSource.m_Dispatchers
         // Of all listeners for that eventSource.
     }

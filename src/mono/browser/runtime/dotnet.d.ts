@@ -256,7 +256,7 @@ interface ResourceGroups {
     corePdb?: ResourceList;
     pdb?: ResourceList;
     jsModuleWorker?: ResourceList;
-    jsModuleGlobalization?: ResourceList;
+    jsModuleDiagnostics?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -292,7 +292,10 @@ type ResourceList = {
  * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
  * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
-type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
+type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | Promise<BootModule> | null | undefined;
+type BootModule = {
+    config: MonoConfig;
+};
 interface LoadingResource {
     name: string;
     url: string;
@@ -361,6 +364,10 @@ type SingleAssetBehaviors =
  */
  | "js-module-threads"
 /**
+ * The javascript module for diagnostic server and client.
+ */
+ | "js-module-diagnostics"
+/**
  * The javascript module for runtime.
  */
  | "js-module-runtime"
@@ -375,7 +382,7 @@ type SingleAssetBehaviors =
 /**
  * The debugging symbols
  */
- | "symbols"
+ | "symbols";
 type AssetBehaviors = SingleAssetBehaviors | 
 /**
  * Load asset as a managed resource assembly.
