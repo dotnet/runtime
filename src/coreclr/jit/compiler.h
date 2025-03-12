@@ -7754,7 +7754,6 @@ public:
         struct SsaVar
         {
             unsigned lclNum; // assigned to or property of this local var number
-            unsigned ssaNum;
         };
         struct ArrBnd
         {
@@ -7818,6 +7817,66 @@ public:
                 u1.fieldSeq        = fieldSeq;
             }
         } op2;
+
+        //------------------------------------------------------------------------
+        // CreateSubtypeAssertion: Create an assertion that the object is of a subtype
+        //    of the provided type handle.
+        //
+        // Arguments:
+        //    comp   - the compiler object
+        //    objVN  - the value number of the object (must be a GC type)
+        //    typeVN - the value number of the type handle (must be a type handle VN)
+        //
+        // Return Value:
+        //    An AssertionDsc that represents the assertion that the object is of a subtype
+        //
+        static AssertionDsc CreateSubtypeAssertion(const Compiler* comp, ValueNum objVN, ValueNum typeVN)
+        {
+            assert(objVN != ValueNumStore::NoVN);
+            assert(comp->vnStore->IsVNTypeHandle(typeVN));
+            assert(varTypeIsGC(comp->vnStore->TypeOfVN(objVN)));
+
+            AssertionDsc assertion   = {};
+            assertion.op1.kind       = O1K_SUBTYPE;
+            assertion.op1.vn         = objVN;
+            assertion.op2.kind       = O2K_CONST_INT;
+            assertion.op2.u1.iconVal = comp->vnStore->CoercedConstantValue<ssize_t>(typeVN);
+            assertion.op2.vn         = typeVN;
+            assertion.op2.SetIconFlag(GTF_ICON_CLASS_HDL);
+            assertion.assertionKind = OAK_EQUAL;
+            return assertion;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateSubtypeAssertion: Create an assertion that the object is exactly
+        //    of the provided type handle.
+        //
+        // Arguments:
+        //    comp   - the compiler object
+        //    objVN  - the value number of the object (must be a GC type)
+        //    typeVN - the value number of the type handle (must be a type handle VN)
+        //
+        // Return Value:
+        //    An AssertionDsc that represents the assertion that the object is of a subtype
+        //
+        static AssertionDsc CreateExactTypeAssertion(const Compiler* comp, ValueNum objVN, ValueNum typeVN)
+        {
+            assert(objVN != ValueNumStore::NoVN);
+            assert(comp->vnStore->IsVNTypeHandle(typeVN));
+            assert(varTypeIsGC(comp->vnStore->TypeOfVN(objVN)));
+
+            AssertionDsc assertion   = {};
+            assertion.op1.kind       = O1K_EXACT_TYPE;
+            assertion.op1.vn         = objVN;
+            assertion.op2.kind       = O2K_CONST_INT;
+            assertion.op2.u1.iconVal = comp->vnStore->CoercedConstantValue<ssize_t>(typeVN);
+            assertion.op2.vn         = typeVN;
+            assertion.op2.SetIconFlag(GTF_ICON_CLASS_HDL);
+            assertion.assertionKind = OAK_EQUAL;
+            return assertion;
+        }
+
+        // TODO-AssertProp: Introduce factory methods for other assertion types
 
         bool IsCheckedBoundArithBound()
         {
@@ -7943,8 +8002,8 @@ public:
                     return true;
 
                 case O2K_LCLVAR_COPY:
-                    return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
-                           (!vnBased || (op2.lcl.ssaNum == that->op2.lcl.ssaNum));
+                    assert(!vnBased);
+                    return op2.lcl.lclNum == that->op2.lcl.lclNum;
 
                 case O2K_SUBRANGE:
                     return op2.u2.Equals(that->op2.u2);
