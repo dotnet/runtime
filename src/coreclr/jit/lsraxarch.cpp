@@ -1105,19 +1105,17 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         }
 #endif
     }
-#if defined(TARGET_64BIT)
-    else if (tree->OperIsShift() && !tree->isContained() &&
+    else if (!tree->isContained() && (tree->OperIsShift() || source->isContained()) &&
              compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
     {
-        // shlx (as opposed to mov+shl) instructions handles all register forms, but it does not handle contained form
-        // for memory operand. Likewise for sarx and shrx.
+        // We don'thave any specific register requirements here, so skip the logic that
+        // reserves RCX or preferences the source reg.
         // ToDo-APX : Remove when extended EVEX support is available
         srcCount += BuildOperandUses(source, BuildApxIncompatibleGPRMask(source, srcCandidates));
         srcCount += BuildOperandUses(shiftBy, BuildApxIncompatibleGPRMask(shiftBy, dstCandidates));
         BuildDef(tree, BuildApxIncompatibleGPRMask(tree, dstCandidates, true));
         return srcCount;
     }
-#endif
     else
     {
         // This ends up being BMI
@@ -1141,9 +1139,9 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #ifdef TARGET_X86
     // The first operand of a GT_LSH_HI and GT_RSH_LO oper is a GT_LONG so that
     // we can have a three operand form.
-    if (tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO)
+    if (tree->OperIs(GT_LSH_HI) || tree->OperIs(GT_RSH_LO))
     {
-        assert((source->OperGet() == GT_LONG) && source->isContained());
+        assert(source->OperIs(GT_LONG) && source->isContained());
 
         GenTree* sourceLo = source->gtGetOp1();
         GenTree* sourceHi = source->gtGetOp2();
@@ -1153,7 +1151,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 
         if (!tree->isContained())
         {
-            if (tree->OperGet() == GT_LSH_HI)
+            if (tree->OperIs(GT_LSH_HI))
             {
                 setDelayFree(sourceLoUse);
             }
@@ -1174,6 +1172,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     {
         srcCount += BuildOperandUses(source, srcCandidates);
     }
+
     if (!tree->isContained())
     {
         if (!shiftBy->isContained())
