@@ -7901,7 +7901,6 @@ public:
             dsc.op1.kind      = O1K_ARR_BND;
             dsc.op1.bnd.vnIdx = idxVN;
             dsc.op1.bnd.vnLen = lenVN;
-            dsc.op2.vn        = ValueNumStore::NoVN;
             return dsc;
         }
 
