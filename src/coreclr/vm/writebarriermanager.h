@@ -55,21 +55,19 @@ public:
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     size_t GetCurrentWriteBarrierSize();
 
-protected:
+private:
     size_t GetSpecificWriteBarrierSize(WriteBarrierType writeBarrier);
-    PBYTE  CalculatePatchLocation(LPVOID base, LPVOID label, int offset);
     PCODE  GetCurrentWriteBarrierCode();
     int    ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, bool isRuntimeSuspended);
     bool   NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, bool bUseBitwiseWriteBarrier, WriteBarrierType* pNewWriteBarrierType);
 
 
 #if defined(WRITE_BARRIER_VARS_INLINE)
-private:
+    PBYTE  CalculatePatchLocation(LPVOID base, LPVOID label, int offset);
     void Validate();
     void UpdatePatchLocations(WriteBarrierType newWriteBarrier);
 #endif // WRITE_BARRIER_VARS_INLINE
 
-private:
 
     WriteBarrierType    m_currentWriteBarrier;
 

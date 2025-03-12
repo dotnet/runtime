@@ -14,6 +14,9 @@
 #include "excep.h"
 #include "threadsuspend.h"
 #include "writebarriermanager.h"
+#if !defined(WRITE_BARRIER_VARS_INLINE)
+#include "patchedcodeconstants.h"
+#endif
 
 extern uint8_t* g_ephemeral_low;
 extern uint8_t* g_ephemeral_high;
@@ -143,6 +146,8 @@ EXTERN_C void JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_CardBundleTab
 
 #else // WRITE_BARRIER_VARS_INLINE
 
+EXTERN_C void JIT_WriteBarrier_Table();
+EXTERN_C void JIT_WriteBarrier_Table_End();
 EXTERN_C void JIT_WriteBarrier_Patch_Label_WriteWatchTable();
 EXTERN_C void JIT_WriteBarrier_Patch_Label_RegionToGeneration();
 EXTERN_C void JIT_WriteBarrier_Patch_Label_RegionShr();
@@ -163,11 +168,6 @@ EXTERN_C void JIT_WriteBarrier_Patch_Label_GCShadowEnd();
 #endif // WRITE_BARRIER_VARS_INLINE
 
 WriteBarrierManager g_WriteBarrierManager;
-
-// Use this somewhat hokey macro to concatenate the function start with the patch
-// label. This allows the code below to look relatively nice, but relies on the
-// naming convention which we have established for these helpers.
-#define CALC_PATCH_LOCATION(func,label,offset)      CalculatePatchLocation((PVOID)func, (PVOID)func##_##label, offset)
 
 WriteBarrierManager::WriteBarrierManager() :
     m_currentWriteBarrier(WRITE_BARRIER_UNINITIALIZED)
@@ -248,7 +248,11 @@ size_t WriteBarrierManager::GetSpecificWriteBarrierSize(WriteBarrierType writeBa
             return MARKED_FUNCTION_SIZE(JIT_WriteBarrier_WriteWatch_Bit_Region64);
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         case WRITE_BARRIER_BUFFER:
+#if defined(WRITE_BARRIER_VARS_INLINE)
             return MARKED_FUNCTION_SIZE(JIT_WriteBarrier);
+#else
+            return (size_t)((LPBYTE)GetEEFuncEntryPoint(JIT_WriteBarrier_Table_End) - (LPBYTE)GetEEFuncEntryPoint(JIT_WriteBarrier));
+#endif
         default:
             UNREACHABLE_MSG("unexpected m_currentWriteBarrier!");
     };
@@ -258,21 +262,6 @@ size_t WriteBarrierManager::GetSpecificWriteBarrierSize(WriteBarrierType writeBa
 size_t WriteBarrierManager::GetCurrentWriteBarrierSize()
 {
     return GetSpecificWriteBarrierSize(m_currentWriteBarrier);
-}
-
-
-PBYTE WriteBarrierManager::CalculatePatchLocation(LPVOID base, LPVOID label, int inlineOffset)
-{
-    // the label should always come after or at the entrypoint for this funtion
-    _ASSERTE_ALL_BUILDS((LPBYTE)label >= (LPBYTE)base);
-
-    BYTE* patchBase = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
-
-    PBYTE patchLocation = (patchBase + ((LPBYTE)GetEEFuncEntryPoint(label) - (LPBYTE)GetEEFuncEntryPoint(base)));
-#if defined(WRITE_BARRIER_VARS_INLINE)
-    patchLocation += inlineOffset;
-#endif
-    return patchLocation;
 }
 
 
@@ -317,7 +306,6 @@ void WriteBarrierManager::Initialize()
     }
     CONTRACTL_END;
 
-
     // Ensure that the generic JIT_WriteBarrier function buffer is large enough to hold any of the more specific
     // write barrier implementations.
     size_t cbWriteBarrierBuffer = GetSpecificWriteBarrierSize(WRITE_BARRIER_BUFFER);
@@ -342,23 +330,28 @@ void WriteBarrierManager::Initialize()
 
 #if !defined(WRITE_BARRIER_VARS_INLINE)
 
-    m_pWriteWatchTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_WriteWatchTable, 0);
-    m_pRegionToGenTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_RegionToGeneration, 0);
-    m_pRegionShrDest = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_RegionShr, 0);
-    m_pLowerBoundImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_Lower, 0);
-    m_pUpperBoundImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_Upper, 0);
-    m_pCardTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_CardTable, 0);
+    #define CALC_TABLE_LOCATION(var, offset) \
+        assert(JIT_WriteBarrier_Offset_##offset == (PBYTE)JIT_WriteBarrier_Patch_Label_##offset - (PBYTE)JIT_WriteBarrier); \
+        var = (PBYTE)((long)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier) + (long)JIT_WriteBarrier_Offset_##offset);
 
+    CALC_TABLE_LOCATION(m_pWriteWatchTableImmediate, WriteWatchTable);
+    CALC_TABLE_LOCATION(m_pRegionToGenTableImmediate, RegionToGeneration);
+    CALC_TABLE_LOCATION(m_pRegionShrDest, RegionShr);
+    CALC_TABLE_LOCATION(m_pLowerBoundImmediate, Lower);
+    CALC_TABLE_LOCATION(m_pUpperBoundImmediate, Upper);
+    CALC_TABLE_LOCATION(m_pCardTableImmediate, CardTable);
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    m_pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_CardBundleTable, 0);
+    CALC_TABLE_LOCATION(m_pCardBundleTableImmediate, CardBundleTable);
 #endif
 
-#if defined(TARGET_ARM64) && defined(WRITE_BARRIER_CHECK)
-    m_pGCShadow = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_GCShadow, 0);
-    m_pGCShadowEnd = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_GCShadowEnd, 0);
-    m_lowestAddress = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_LowestAddress, 0);
-    m_highestAddress = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_HighestAddress, 0);
-#endif // TARGET_ARM64 && WRITE_BARRIER_CHECK
+#if defined(TARGET_ARM64)
+    CALC_TABLE_LOCATION(m_lowestAddress, LowestAddress);
+    CALC_TABLE_LOCATION(m_highestAddress, HighestAddress);
+#if defined(WRITE_BARRIER_CHECK)
+    CALC_TABLE_LOCATION(m_pGCShadow, GCShadow);
+    CALC_TABLE_LOCATION(m_pGCShadowEnd, GCShadowEnd);
+#endif // WRITE_BARRIER_CHECK
+#endif // TARGET_AMD64
 
 #endif // !WRITE_BARRIER_VARS_INLINE
 
@@ -687,6 +680,21 @@ int WriteBarrierManager::SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 
 
 #if defined(WRITE_BARRIER_VARS_INLINE)
+
+
+// Use this somewhat hokey macro to concatenate the function start with the patch
+// label. This allows the code below to look relatively nice, but relies on the
+// naming convention which we have established for these helpers.
+#define CALC_PATCH_LOCATION(func,label,offset)      CalculatePatchLocation((PVOID)func, (PVOID)func##_##label, offset)
+
+PBYTE WriteBarrierManager::CalculatePatchLocation(LPVOID base, LPVOID label, int inlineOffset)
+{
+    // the label should always come after or at the entrypoint for this funtion
+    _ASSERTE_ALL_BUILDS((LPBYTE)label >= (LPBYTE)base);
+
+    BYTE* patchBase = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
+    return (patchBase + ((LPBYTE)GetEEFuncEntryPoint(label) - (LPBYTE)GetEEFuncEntryPoint(base))) + inlineOffset;
+}
 
 // Deactivate alignment validation for code coverage builds
 // because the instrumentation tool will not preserve alignment
