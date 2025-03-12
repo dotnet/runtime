@@ -274,39 +274,6 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    internal sealed class NativeLayoutFieldLdTokenVertexNode : NativeLayoutSavedVertexNode
-    {
-        private readonly FieldDesc _field;
-        private readonly NativeLayoutTypeSignatureVertexNode _containingTypeSig;
-
-        public NativeLayoutFieldLdTokenVertexNode(NodeFactory factory, FieldDesc field)
-        {
-            _field = field;
-            _containingTypeSig = factory.NativeLayout.TypeSignatureVertex(field.OwningType);
-        }
-
-        protected override string GetName(NodeFactory factory) => "NativeLayoutFieldLdTokenVertexNode_" + factory.NameMangler.GetMangledFieldName(_field);
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
-        {
-            return new DependencyListEntry[]
-            {
-                new DependencyListEntry(_containingTypeSig, "NativeLayoutFieldLdTokenVertexNode containing type signature"),
-            };
-        }
-
-        public override Vertex WriteVertex(NodeFactory factory)
-        {
-            Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
-
-            Vertex containingType = _containingTypeSig.WriteVertex(factory);
-
-            Vertex unplacedVertex = GetNativeWriter(factory).GetFieldSignature(containingType, _field.Name);
-
-            return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.LdTokenInfoSection.Place(unplacedVertex));
-        }
-    }
-
     internal sealed class NativeLayoutMethodSignatureVertexNode : NativeLayoutVertexNode
     {
         private Internal.TypeSystem.MethodSignature _signature;
@@ -1739,7 +1706,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             var result = new DependencyList
             {
-                { factory.NativeLayout.FieldLdTokenVertex(_field), "Field Signature" }
+                { factory.NativeLayout.TypeSignatureVertex(_field.OwningType), "Owning type of field" }
             };
 
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_field.OwningType))
@@ -1756,8 +1723,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
-            Vertex ldToken = factory.NativeLayout.FieldLdTokenVertex(_field).WriteVertex(factory);
-            return GetNativeWriter(factory).GetRelativeOffsetSignature(ldToken);
+            Vertex owningType = factory.NativeLayout.TypeSignatureVertex(_field.OwningType).WriteVertex(factory);
+            Vertex fieldMetadataHandle = writer.GetUnsignedConstant(
+                (uint)factory.MetadataManager.GetMetadataHandleForField(factory, _field.GetTypicalFieldDefinition()));
+
+            return writer.GetTuple(owningType, fieldMetadataHandle);
         }
     }
 

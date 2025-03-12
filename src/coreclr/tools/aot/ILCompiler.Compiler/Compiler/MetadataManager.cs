@@ -48,6 +48,7 @@ namespace ILCompiler
         private byte[] _metadataBlob;
         private List<MetadataMapping<MetadataType>> _typeMappings;
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
+        private Dictionary<FieldDesc, int> _fieldHandleMap;
         private List<MetadataMapping<MethodDesc>> _methodMappings;
         private List<StackTraceMapping> _stackTraceMappings;
         protected readonly string _metadataLogFile;
@@ -692,6 +693,10 @@ namespace ILCompiler
                 return;
 
             ComputeMetadata(factory, out _metadataBlob, out _typeMappings, out _methodMappings, out _fieldMappings, out _stackTraceMappings);
+
+            _fieldHandleMap = new Dictionary<FieldDesc, int>();
+            foreach (var fieldMapEntry in _fieldMappings)
+                _fieldHandleMap[fieldMapEntry.Entity.GetTypicalFieldDefinition()] = fieldMapEntry.MetadataHandle;
         }
 
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -953,6 +958,12 @@ namespace ILCompiler
         {
             EnsureMetadataGenerated(factory);
             return _fieldMappings;
+        }
+
+        public int GetMetadataHandleForField(NodeFactory factory, FieldDesc field)
+        {
+            EnsureMetadataGenerated(factory);
+            return _fieldHandleMap[field];
         }
 
         public IEnumerable<StackTraceMapping> GetStackTraceMapping(NodeFactory factory)

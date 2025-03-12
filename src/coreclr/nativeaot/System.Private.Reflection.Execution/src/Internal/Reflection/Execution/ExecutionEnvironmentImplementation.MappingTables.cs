@@ -875,32 +875,7 @@ namespace Internal.Reflection.Execution
         //
         public sealed override unsafe bool TryGetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
         {
-            fieldHandle = default(FieldHandle);
-
-            string fieldName;
-            if (!TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out fieldName))
-                return false;
-
-            RuntimeTypeHandle metadataLookupTypeHandle = GetTypeDefinition(declaringTypeHandle);
-
-            QTypeDefinition qTypeDefinition = GetMetadataForNamedType(metadataLookupTypeHandle);
-
-            // TODO! Handle ecma style types
-            MetadataReader reader = qTypeDefinition.NativeFormatReader;
-            TypeDefinitionHandle typeDefinitionHandle = qTypeDefinition.NativeFormatHandle;
-
-            TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
-            foreach (FieldHandle fh in typeDefinition.Fields)
-            {
-                Field field = fh.GetField(reader);
-                if (field.Name.StringEquals(fieldName, reader))
-                {
-                    fieldHandle = fh;
-                    return true;
-                }
-            }
-
-            return false;
+            return TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out fieldHandle);
         }
 
         //

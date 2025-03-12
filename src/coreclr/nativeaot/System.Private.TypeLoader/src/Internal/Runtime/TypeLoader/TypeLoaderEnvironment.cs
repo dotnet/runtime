@@ -73,14 +73,14 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.ResolveGenericVirtualMethodTarget(targetTypeHandle, declMethod);
         }
 
-        public override bool GetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName)
+        public override bool GetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out FieldHandle handle)
         {
-            return TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out fieldName);
+            return TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out handle);
         }
 
-        public override RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string fieldName)
+        public override RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, FieldHandle handle)
         {
-            return TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(declaringTypeHandle, fieldName);
+            return TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(declaringTypeHandle, handle);
         }
 
         public override IntPtr ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(IntPtr unboxingFunctionPointer, RuntimeTypeHandle declaringType)
@@ -208,23 +208,6 @@ namespace Internal.Runtime.TypeLoader
             // Returned type has to have a valid type handle value
             Debug.Assert(!type.RuntimeTypeHandle.IsNull());
             return !type.RuntimeTypeHandle.IsNull();
-        }
-
-        //
-        // Parse a native layout signature pointed to by "signature" in the executable image, optionally using
-        // "typeArgs" and "methodArgs" for generic type parameter substitution.  The first field in "signature"
-        // must be an encoded type but any data beyond that is user-defined and returned in "remainingSignature"
-        //
-        internal bool GetTypeFromSignatureAndContext(RuntimeSignature signature, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out RuntimeSignature remainingSignature)
-        {
-            NativeReader reader = GetNativeLayoutInfoReader(signature);
-            NativeParser parser = new NativeParser(reader, signature.NativeLayoutOffset);
-
-            bool result = GetTypeFromSignatureAndContext(ref parser, new TypeManagerHandle(signature.ModuleHandle), typeArgs, methodArgs, out createdType);
-
-            remainingSignature = RuntimeSignature.CreateFromNativeLayoutSignature(signature, parser.Offset);
-
-            return result;
         }
 
         internal bool GetTypeFromSignatureAndContext(ref NativeParser parser, TypeManagerHandle moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType)

@@ -62,11 +62,6 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutMethodLdTokenVertexNode(_factory, method);
                 });
 
-                _fieldLdTokenSignatures = new NodeCache<FieldDesc, NativeLayoutFieldLdTokenVertexNode>(field =>
-                {
-                    return new NativeLayoutFieldLdTokenVertexNode(_factory, field);
-                });
-
                 _nativeLayoutSignatureNodes = new NodeCache<NativeLayoutSignatureKey, NativeLayoutSignatureNode>(key =>
                 {
                     return new NativeLayoutSignatureNode(key.SignatureVertex, key.Identity, key.IdentityPrefix);
@@ -359,12 +354,6 @@ namespace ILCompiler.DependencyAnalysis
             internal NativeLayoutMethodLdTokenVertexNode MethodLdTokenVertex(MethodDesc method)
             {
                 return _methodLdTokenSignatures.GetOrAdd(method);
-            }
-
-            private NodeCache<FieldDesc, NativeLayoutFieldLdTokenVertexNode> _fieldLdTokenSignatures;
-            internal NativeLayoutFieldLdTokenVertexNode FieldLdTokenVertex(FieldDesc field)
-            {
-                return _fieldLdTokenSignatures.GetOrAdd(field);
             }
 
             private struct NativeLayoutSignatureKey : IEquatable<NativeLayoutSignatureKey>

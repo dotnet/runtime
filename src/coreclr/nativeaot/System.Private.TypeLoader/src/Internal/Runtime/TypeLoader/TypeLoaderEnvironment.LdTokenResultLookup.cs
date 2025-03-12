@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
+using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -23,10 +24,10 @@ namespace Internal.Runtime.TypeLoader
     public sealed partial class TypeLoaderEnvironment
     {
         [StructLayout(LayoutKind.Sequential)]
-        private struct DynamicFieldHandleInfo
+        private struct FieldHandleInfo
         {
-            public IntPtr DeclaringType;
-            public IntPtr FieldName;
+            public RuntimeTypeHandle DeclaringType;
+            public FieldHandle Handle;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -87,14 +88,12 @@ namespace Internal.Runtime.TypeLoader
         private struct RuntimeFieldHandleKey : IEquatable<RuntimeFieldHandleKey>
         {
             private RuntimeTypeHandle _declaringType;
-            private string _fieldName;
-            private int _hashcode;
+            private FieldHandle _handle;
 
-            public RuntimeFieldHandleKey(RuntimeTypeHandle declaringType, string fieldName)
+            public RuntimeFieldHandleKey(RuntimeTypeHandle declaringType, FieldHandle fieldHandle)
             {
                 _declaringType = declaringType;
-                _fieldName = fieldName;
-                _hashcode = declaringType.GetHashCode() ^ fieldName.GetHashCode();
+                _handle = fieldHandle;
             }
 
             public override bool Equals(object obj)
@@ -108,10 +107,10 @@ namespace Internal.Runtime.TypeLoader
 
             public bool Equals(RuntimeFieldHandleKey other)
             {
-                return other._declaringType.Equals(_declaringType) && other._fieldName == _fieldName;
+                return other._declaringType.Equals(_declaringType) && other._handle.Equals(_handle);
             }
 
-            public override int GetHashCode() { return _hashcode; }
+            public override int GetHashCode() => _declaringType.GetHashCode() ^ _handle.GetHashCode();
         }
 
         private struct RuntimeMethodHandleKey : IEquatable<RuntimeMethodHandleKey>
@@ -180,30 +179,23 @@ namespace Internal.Runtime.TypeLoader
 
 
         #region Field Ldtoken Functions
-        public RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string fieldName)
+        public unsafe RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, int handle)
         {
-            IntPtr nameAsIntPtr = GetNativeFormatStringForString(fieldName);
-            return GetRuntimeFieldHandleForComponents(declaringTypeHandle, nameAsIntPtr);
+            return GetRuntimeFieldHandleForComponents(declaringTypeHandle, handle.AsHandle().ToFieldHandle(null));
         }
 
-        public unsafe RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, IntPtr fieldName)
+        public unsafe RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, FieldHandle handle)
         {
-            string fieldNameStr = GetStringFromMemoryInNativeFormat(fieldName);
-
-            RuntimeFieldHandleKey key = new RuntimeFieldHandleKey(declaringTypeHandle, fieldNameStr);
-            RuntimeFieldHandle runtimeFieldHandle = default(RuntimeFieldHandle);
+            RuntimeFieldHandleKey key = new RuntimeFieldHandleKey(declaringTypeHandle, handle);
 
             lock (_runtimeFieldHandles)
             {
-                if (!_runtimeFieldHandles.TryGetValue(key, out runtimeFieldHandle))
+                if (!_runtimeFieldHandles.TryGetValue(key, out RuntimeFieldHandle runtimeFieldHandle))
                 {
-                    DynamicFieldHandleInfo* fieldData = (DynamicFieldHandleInfo*)MemoryHelpers.AllocateMemory(sizeof(DynamicFieldHandleInfo));
-                    fieldData->DeclaringType = *(IntPtr*)&declaringTypeHandle;
-                    fieldData->FieldName = fieldName;
-
-                    // Special flag (lowest bit set) in the handle value to indicate it was dynamically allocated
-                    IntPtr runtimeFieldHandleValue = (IntPtr)fieldData + 1;
-                    runtimeFieldHandle = *(RuntimeFieldHandle*)&runtimeFieldHandleValue;
+                    FieldHandleInfo* fieldData = (FieldHandleInfo*)MemoryHelpers.AllocateMemory(sizeof(FieldHandleInfo));
+                    fieldData->DeclaringType = declaringTypeHandle;
+                    fieldData->Handle = handle;
+                    runtimeFieldHandle = RuntimeFieldHandle.FromIntPtr((nint)fieldData);
 
                     _runtimeFieldHandles.Add(key, runtimeFieldHandle);
                 }
@@ -212,60 +204,11 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public bool TryGetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName)
+        public unsafe bool TryGetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
         {
-            return runtimeFieldHandle.IsDynamic() ?
-                TryGetDynamicRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out fieldName) :
-                TryGetStaticRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out fieldName);
-        }
-
-        private unsafe bool TryGetDynamicRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName)
-        {
-            IntPtr runtimeFieldHandleValue = *(IntPtr*)&runtimeFieldHandle;
-
-            // Special flag in the handle value to indicate it was dynamically allocated
-            Debug.Assert((runtimeFieldHandleValue & 0x1) == 0x1);
-
-            DynamicFieldHandleInfo* fieldData = (DynamicFieldHandleInfo*)(runtimeFieldHandleValue - 1);
-            declaringTypeHandle = *(RuntimeTypeHandle*)&(fieldData->DeclaringType);
-
-            // FieldName points to the field name in NativeLayout format, so we parse it using a NativeParser
-            IntPtr fieldNamePtr = fieldData->FieldName;
-            fieldName = GetStringFromMemoryInNativeFormat(fieldNamePtr);
-
-            return true;
-        }
-
-        private unsafe bool TryGetStaticRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName)
-        {
-            fieldName = null;
-            declaringTypeHandle = default(RuntimeTypeHandle);
-
-            // Make sure it's not a dynamically allocated RuntimeFieldHandle before we attempt to use it to parse native layout data
-            Debug.Assert(((*(IntPtr*)&runtimeFieldHandle).ToInt64() & 0x1) == 0);
-
-            RuntimeFieldHandleInfo* fieldData = *(RuntimeFieldHandleInfo**)&runtimeFieldHandle;
-            RuntimeSignature signature;
-
-            // The native layout info signature is a pair.
-            // The first is a pointer that points to the TypeManager indirection cell.
-            // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
-            IntPtr* nativeLayoutInfoSignatureData = (IntPtr*)fieldData->NativeLayoutInfoSignature;
-
-            signature = RuntimeSignature.CreateFromNativeLayoutSignature(
-                new TypeManagerHandle(*(IntPtr*)nativeLayoutInfoSignatureData[0]),
-                (uint)nativeLayoutInfoSignatureData[1].ToInt32());
-
-            RuntimeSignature remainingSignature;
-            if (!GetTypeFromSignatureAndContext(signature, null, null, out declaringTypeHandle, out remainingSignature))
-                return false;
-
-            // GetTypeFromSignatureAndContext parses the type from the signature and returns a pointer to the next
-            // part of the native layout signature to read which we get the field name from
-            var reader = GetNativeLayoutInfoReader(remainingSignature);
-            var parser = new NativeParser(reader, remainingSignature.NativeLayoutOffset);
-            fieldName = parser.GetString();
-
+            FieldHandleInfo* fieldData = (FieldHandleInfo*)runtimeFieldHandle.Value;
+            declaringTypeHandle = fieldData->DeclaringType;
+            fieldHandle = fieldData->Handle;
             return true;
         }
         #endregion

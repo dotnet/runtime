@@ -253,7 +253,7 @@ namespace Internal.Runtime.TypeLoader
         private class FieldLdTokenCell : GenericDictionaryCell
         {
             internal TypeDesc ContainingType;
-            internal IntPtr FieldName;
+            internal int FieldHandle;
 
             internal override unsafe void Prepare(TypeBuilder builder)
             {
@@ -267,7 +267,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 RuntimeFieldHandle handle = TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(
                     builder.GetRuntimeTypeHandle(ContainingType),
-                    FieldName);
+                    FieldHandle);
 
                 return *(IntPtr*)&handle;
             }
@@ -467,13 +467,11 @@ namespace Internal.Runtime.TypeLoader
 
                 case FixupSignatureKind.FieldLdToken:
                     {
-                        NativeParser ldtokenSigParser = parser.GetParserFromRelativeOffset();
+                        var type = nativeLayoutInfoLoadContext.GetType(ref parser);
+                        int handle = (int)parser.GetUnsigned();
+                        TypeLoaderLogger.WriteLine("LdToken on: " + type.ToString() + "." + handle.LowLevelToString());
 
-                        var type = nativeLayoutInfoLoadContext.GetType(ref ldtokenSigParser);
-                        IntPtr fieldNameSig = ldtokenSigParser.Reader.OffsetToAddress(ldtokenSigParser.Offset);
-                        TypeLoaderLogger.WriteLine("LdToken on: " + type.ToString() + "." + ldtokenSigParser.GetString());
-
-                        cell = new FieldLdTokenCell() { FieldName = fieldNameSig, ContainingType = type };
+                        cell = new FieldLdTokenCell() { FieldHandle = handle, ContainingType = type };
                     }
                     break;
 
