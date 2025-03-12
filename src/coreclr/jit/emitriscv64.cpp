@@ -1277,10 +1277,16 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
 
-    // Handle corner case: the following algorithm will not generate any instruction if imm == 0
+    // Handle corner case: all zeros & all ones
     if (imm == 0)
     {
         emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
+        return;
+    }
+    else if (imm == -1)
+    {
+        emitIns_R_R_I(INS_addi, size, reg, REG_R0, -1);
+        return;
     }
 
     // The following algorithm works based on the following equation:
@@ -1320,6 +1326,9 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         // first one position from LSB
         x = __builtin_ctzll(imm);
     }
+    assert(y >= x);
+    assert(0 <= y && y <= 63);
+    assert(0 <= x && x <= 63);
 
     /* srli can be utilized when the input has the following pattern:
      *
