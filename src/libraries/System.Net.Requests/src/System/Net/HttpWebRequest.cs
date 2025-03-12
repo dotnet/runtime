@@ -1099,7 +1099,20 @@ namespace System.Net
                 TaskCompletionSource<Stream> getStreamTcs = new();
                 TaskCompletionSource completeTcs = new();
                 _sendRequestTask = SendRequest(async: true, new RequestStreamContent(getStreamTcs, completeTcs));
-                _requestStream = new RequestStream(await getStreamTcs.Task.ConfigureAwait(false), completeTcs);
+                Task<Stream> getStreamTask = getStreamTcs.Task;
+                try
+                {
+                    Task result = await Task.WhenAny((Task)getStreamTask, (Task)_sendRequestTask).WaitAsync(TimeSpan.FromMilliseconds(Timeout)).ConfigureAwait(false);
+                    if (result == _sendRequestTask && !_sendRequestTask.IsCompletedSuccessfully)
+                    {
+                        await _sendRequestTask.ConfigureAwait(false); // Propagate the exception
+                    }
+                    _requestStream = new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw new WebException(SR.net_timeout, WebExceptionStatus.Timeout);
+                }
             }
             else
             {
