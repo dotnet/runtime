@@ -1009,6 +1009,114 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Theory]
+        [InlineData(0x00)]
+        [InlineData(0x14)]
+        public void ZipArchive_InvalidExtraFieldData(byte validVersionToExtract)
+        {
+            byte[] invalidExtraFieldData = s_invalidExtraFieldData.AsSpan().ToArray();
+
+            // Update the sample data's "version needed to extract" field in the local header and the central directory header.
+            // Test this with a valid value (20) to prove that updating a ZipArchive with trailing extra field data won't touch
+            // existing entries. Test it with an invalid value to force ZipArchive to write the corrected header (preserving the
+            // trailing data.)
+            invalidExtraFieldData[4] = validVersionToExtract;
+            invalidExtraFieldData[60] = validVersionToExtract;
+
+            using (MemoryStream updatedStream = new MemoryStream())
+            {
+                int originalLocalVersionToExtract = invalidExtraFieldData[4];
+                int originalCentralDirectoryVersionToExtract = invalidExtraFieldData[60];
+
+                // Write the example data to the stream. We expect to be able to read it (and the entry contents) successfully.
+                updatedStream.Write(invalidExtraFieldData);
+                updatedStream.Seek(0, SeekOrigin.Begin);
+
+                using (ZipArchive originalArchive = new ZipArchive(updatedStream, ZipArchiveMode.Read, leaveOpen: true))
+                {
+                    Assert.Equal(1, originalArchive.Entries.Count);
+
+                    ZipArchiveEntry firstEntry = originalArchive.Entries[0];
+
+                    Assert.Equal("first.bin", firstEntry.Name);
+                    Assert.Equal(10, firstEntry.Length);
+
+                    using (Stream entryStream = firstEntry.Open())
+                    {
+                        byte[] uncompressedBytes = new byte[firstEntry.Length];
+                        int bytesRead = entryStream.Read(uncompressedBytes);
+
+                        Assert.Equal(10, bytesRead);
+
+                        Assert.Equal(new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 }, uncompressedBytes);
+                    }
+                }
+
+                updatedStream.Seek(0, SeekOrigin.Begin);
+
+                // Create a new entry, forcing the central directory headers to be rewritten. The local file header
+                // for first.bin would normally be skipped (because it hasn't changed) but it needs to be rewritten
+                // because the central directory headers will be rewritten with a valid value and the local file header
+                // needs to match.
+                using (ZipArchive updatedArchive = new ZipArchive(updatedStream, ZipArchiveMode.Update, leaveOpen: true))
+                {
+                    ZipArchiveEntry newEntry = updatedArchive.CreateEntry("second.bin", CompressionLevel.NoCompression);
+
+                    // Add data to the new entry
+                    using (Stream entryStream = newEntry.Open())
+                    {
+                        entryStream.Write(new byte[] { 0x00, 0x01, 0x02, 0x03 });
+                    }
+                }
+
+                byte[] updatedContents = updatedStream.ToArray();
+                // Verify that the local file header and the central directory headers have both been rewritten, and both have
+                // the correct value.
+                int updatedLocalVersionToExtract = updatedContents[4];
+                int updatedCentralDirectoryVersionToExtract = updatedContents[104];
+
+                Assert.Equal(20, updatedCentralDirectoryVersionToExtract);
+                Assert.Equal(20, updatedLocalVersionToExtract);
+
+                updatedStream.Seek(0, SeekOrigin.Begin);
+                // Following an update of the ZipArchive, reopen it in read-only mode. Make sure that both entries are correct.
+
+                using (ZipArchive updatedArchive = new ZipArchive(updatedStream, ZipArchiveMode.Read, true))
+                {
+                    Assert.Equal(2, updatedArchive.Entries.Count);
+
+                    ZipArchiveEntry firstEntry = updatedArchive.Entries[0];
+                    ZipArchiveEntry secondEntry = updatedArchive.Entries[1];
+
+                    Assert.Equal("first.bin", firstEntry.Name);
+                    Assert.Equal(10, firstEntry.Length);
+
+                    Assert.Equal("second.bin", secondEntry.Name);
+                    Assert.Equal(4, secondEntry.Length);
+
+                    using (Stream entryStream = firstEntry.Open())
+                    {
+                        byte[] uncompressedBytes = new byte[firstEntry.Length];
+                        int bytesRead = entryStream.Read(uncompressedBytes);
+
+                        Assert.Equal(10, bytesRead);
+
+                        Assert.Equal(new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 }, uncompressedBytes);
+                    }
+
+                    using (Stream entryStream = secondEntry.Open())
+                    {
+                        byte[] uncompressedBytes = new byte[secondEntry.Length];
+                        int bytesRead = entryStream.Read(uncompressedBytes);
+
+                        Assert.Equal(4, bytesRead);
+
+                        Assert.Equal(new byte[] { 0x00, 0x01, 0x02, 0x03 }, uncompressedBytes);
+                    }
+                }
+            }
+        }
+
         private static readonly byte[] s_inconsistentVersionToExtract =
         {
             // ===== Local file header signature 0x04034b50
@@ -1086,6 +1194,91 @@ namespace System.IO.Compression.Tests
             0x37, 0x00, 0x00, 0x00,
             // offset of start of CD wrt start disk
             0x33, 0x00, 0x00, 0x00,
+            // comment length
+            0x00, 0x00
+        };
+
+        private static readonly byte[] s_invalidExtraFieldData =
+        {
+            // ===== Local file header signature 0x04034b50
+            0x50, 0x4b, 0x03, 0x04,
+            // version to extract 0xff.0 - will be substituted for the correct value in the test
+            0xFF, 0x00,
+            // general purpose flags
+            0x02, 0x00,   // 0000_0002 'for maximum-compression deflating'
+            // Deflate
+            0x08, 0x00,
+            // Last mod file time
+            0x3b, 0x33,
+            // Last mod date
+            0x3f, 0x5a,
+            // CRC32
+            0x46, 0xd7, 0x6c, 0x45,
+            // compressed size
+            0x0c, 0x00, 0x00, 0x00,
+            // uncompressed size
+            0x0a, 0x00, 0x00, 0x00,
+            // file name length
+            0x09, 0x00,
+            // extra field length
+            0x03, 0x00,
+            // filename
+            0x66, 0x69, 0x72, 0x73, 0x74, 0x2e, 0x62, 0x69, 0x6e,
+            // extra field data
+            0x00, 0x00, 0x00,
+            // -------------
+            // Data!
+            0x63, 0x60, 0x64, 0x62, 0x66, 0x61, 0x65, 0x63, 0xe7, 0xe0, 0x04, 0x00,
+            // -------- Central directory signature 0x02014b50
+            0x50, 0x4b, 0x01, 0x02,
+            // version made by 2.0
+            0x14, 0x00,
+            // version to extract 0xff.0 - will be substituted for the correct value in the test
+            0x00, 0x00,
+            // general purpose flags
+            0x02, 0x00,
+            // Deflate
+            0x08, 0x00,
+            // Last mod file time
+            0x3b, 0x33,
+            // Last mod date
+            0x3f, 0x5a,
+            // CRC32
+            0x46, 0xd7, 0x6c, 0x45,
+            // compressed size
+            0x0c, 0x00, 0x00, 0x00,
+            // uncompressed size
+            0x0a, 0x00, 0x00, 0x00,
+            // file name length
+            0x09, 0x00,
+            // extra field length
+            0x03, 0x00,
+            // file comment length
+            0x00, 0x00,
+            // disk number start
+            0x00, 0x00,
+            // internal file attributes
+            0x00, 0x00,
+            // external file attributes
+            0x00, 0x00, 0x00, 0x00,
+            // relative offset of local header
+            0x00, 0x00, 0x00, 0x00,
+            // file name
+            0x66, 0x69, 0x72, 0x73, 0x74, 0x2e, 0x62, 0x69, 0x6e,
+            // extra field data
+            0x00, 0x00, 0x00,
+            // == 'end of CD' signature 0x06054b50
+            0x50, 0x4b, 0x05, 0x06,
+            // disk number, disk number with CD
+            0x00, 0x00,
+            0x00, 0x00,
+            // total number of entries in CD on this disk, and overall
+            0x01, 0x00,
+            0x01, 0x00,
+            // size of CD
+            0x3a, 0x00, 0x00, 0x00,
+            // offset of start of CD wrt start disk
+            0x36, 0x00, 0x00, 0x00,
             // comment length
             0x00, 0x00
         };
