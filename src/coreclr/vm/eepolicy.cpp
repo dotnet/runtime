@@ -48,7 +48,7 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
             {
                 _ASSERTE(!"Bad Exit value");
                 FAULT_NOT_FATAL();      // if we OOM we can simply give up
-                minipal_log_print_stderr("Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
+                minipal_log_print_stdout("Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
                 DebugBreak();
             }
         }
@@ -235,8 +235,7 @@ class CallStackLogger
         TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
         str.Append(W("\n"));
 
-        MAKE_MULTIBYTE_FROMWIDE_BESTFIT(strUTF8, str.GetUnicode(), CP_UTF8);
-        minipal_log_write_stderr(strUTF8);
+        PrintToStdErrW(str.GetUnicode());
     }
 
 public:
@@ -266,15 +265,14 @@ public:
             SmallStackSString repeatStr;
             repeatStr.AppendPrintf("Repeated %d times:\n", m_largestCommonStartRepeat);
 
-            MAKE_MULTIBYTE_FROMWIDE_BESTFIT(repeatStrUTF8, repeatStr.GetUnicode(), CP_UTF8);
-            minipal_log_write_stderr(repeatStrUTF8);
+            PrintToStdErrW(repeatStr.GetUnicode());
 
-            minipal_log_write_stderr("--------------------------------\n");
+            PrintToStdErrA("--------------------------------\n");
             for (int i = 0; i < m_largestCommonStartLength; i++)
             {
                 PrintFrame(i, pWordAt);
             }
-            minipal_log_write_stderr("--------------------------------\n");
+            PrintToStdErrA("--------------------------------\n");
         }
 
         for (int i = m_largestCommonStartLength * m_largestCommonStartRepeat; i < m_frames.Count(); i++)
@@ -360,7 +358,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
     {
         if (previousThreadID == currentThreadID)
         {
-            minipal_log_write_stderr("Fatal error while logging another fatal error.\n");
+            PrintToStdErrA("Fatal error while logging another fatal error.\n");
         }
         else
         {
@@ -405,8 +403,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
 
         message.Append(W("\n"));
 
-        MAKE_MULTIBYTE_FROMWIDE_BESTFIT(messageUTF8, message.GetUnicode(), CP_UTF8);
-        minipal_log_write_stderr(messageUTF8);
+        PrintToStdErrW(message.GetUnicode());
 
         Thread* pThread = GetThreadNULLOk();
         if (pThread && errorSource == NULL)
@@ -414,8 +411,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
             LogCallstackForLogWorker(pThread, pExceptionInfo);
 
             if (argExceptionString != NULL) {
-                MAKE_MULTIBYTE_FROMWIDE_BESTFIT(argExceptionStringUTF8, argExceptionString, CP_UTF8);
-                minipal_log_write_stderr(argExceptionStringUTF8);
+                PrintToStdErrW(argExceptionString);
             }
         }
     }
@@ -607,7 +603,7 @@ void DisplayStackOverflowException()
 {
     LIMITED_METHOD_CONTRACT;
 
-    minipal_log_write_stderr("Stack overflow.\n");
+    PrintToStdErrA("Stack overflow.\n");
 }
 
 DWORD LogStackOverflowStackTraceThread(void* arg)

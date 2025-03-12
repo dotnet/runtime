@@ -4550,7 +4550,7 @@ lDone: ;
         char buffer[200];
         sprintf_s(buffer, 200, "\nInternal error: Uncaught exception was thrown from IP = %p in UnhandledExceptionFilter_Worker on thread 0x%08x\n",
                 param.ExceptionEIP, ((GetThreadNULLOk() == NULL) ? 0 : GetThread()->GetThreadId()));
-        minipal_log_write_stderr(buffer);
+        PrintToStdErrA(buffer);
         _ASSERTE(!"Unexpected exception in UnhandledExceptionFilter_Worker");
 #endif
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE)
@@ -4796,8 +4796,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
         }
         message.Append(W("\n"));
 
-        MAKE_MULTIBYTE_FROMWIDE_BESTFIT(messageUTF8, message.GetUnicode(), CP_UTF8);
-        minipal_log_write_stderr(messageUTF8);
+        PrintToStdErrW(message.GetUnicode());
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
         // Send the log to Windows Event Log
@@ -4979,11 +4978,11 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 
                     if (IsOutOfMemory)
                     {
-                        minipal_log_write_stderr("Out of memory.\n");
+                        PrintToStdErrA("Out of memory.\n");
                     }
                     else
                     {
-                        minipal_log_write_stderr("Stack overflow.\n");
+                        PrintToStdErrA("Stack overflow.\n");
                     }
                 }
                 else if (SentEvent || IsAsyncThreadException(&throwable))
@@ -5010,15 +5009,14 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                 UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
                 wcscat_s(buf, buf_size, W("\n"));
 
-                MAKE_MULTIBYTE_FROMWIDE_BESTFIT(bufUTF8, buf, CP_UTF8);
-                minipal_log_write_stderr(bufUTF8);
+                PrintToStdErrW(buf);
             }
             EX_END_CATCH(SwallowAllExceptions);
         }
         EX_CATCH
         {   // If we got here, we can't even print the localized error message.  Print non-localized.
             LOG((LF_EH, LL_INFO10, "Exception occurred while logging processing uncaught exception\n"));
-            minipal_log_write_stderr("\n   Error: Can't print exception string because Exception.ToString() failed.\n");
+            PrintToStdErrA("\n   Error: Can't print exception string because Exception.ToString() failed.\n");
         }
         EX_END_CATCH(SwallowAllExceptions);
     }
