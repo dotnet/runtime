@@ -2101,7 +2101,7 @@ namespace System.Net.Tests
             request.Method = "POST";
             request.AllowWriteStreamBuffering = false;
             WebException webException = await Assert.ThrowsAnyAsync<WebException>(() => request.GetRequestStreamAsync());
-            Assert.Equal(WebExceptionStatus.NameResolutionFailure, webException.Status);
+            Assert.Equal(PlatformDetection.IsLinux ? WebExceptionStatus.UnknownError : WebExceptionStatus.NameResolutionFailure, webException.Status);
         }
 
         [Fact]
