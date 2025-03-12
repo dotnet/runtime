@@ -422,6 +422,9 @@ enum PrecodeType {
     PRECODE_THISPTR_RETBUF  = ThisPtrRetBufPrecode::Type,
 #endif // HAS_THISPTR_RETBUF_PRECODE
     PRECODE_UMENTRY_THUNK   = PRECODE_UMENTRY_THUNK_VALUE, // Set the value here and not in UMEntryThunk to avoid circular dependency
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    PRECODE_DYNAMIC_HELPERS = 0xa,
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 };
 
 inline TADDR StubPrecode::GetMethodDesc()
