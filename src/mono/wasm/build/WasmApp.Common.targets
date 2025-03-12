@@ -92,6 +92,7 @@
       - @(WasmFilesToIncludeInFileSystem) - Files to include in the vfs
       - @(WasmNativeAsset)        - Native files to be added to `NativeAssets` in the bundle.
 
+      - @(WasmEnvironmentVariable)        - add environment variables `_framework/blazor.boot.json`
       - @(WasmExtraConfig)        - json elements to add to `_framework/blazor.boot.json`
                                     Eg. <WasmExtraConfig Include="xxx" Value="true" />
 

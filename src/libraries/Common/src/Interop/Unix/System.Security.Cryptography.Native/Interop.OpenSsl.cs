@@ -35,35 +35,54 @@ internal static partial class Interop
 
         internal readonly struct SslContextCacheKey : IEquatable<SslContextCacheKey>
         {
+            private const int ThumbprintSize = 64; // SHA512 size
+
             public readonly bool IsClient;
-            public readonly byte[]? CertificateThumbprint;
+            public readonly ReadOnlyMemory<byte> CertificateThumbprints;
             public readonly SslProtocols SslProtocols;
 
-            public SslContextCacheKey(bool isClient, SslProtocols sslProtocols, byte[]? certificateThumbprint)
+            public SslContextCacheKey(bool isClient, SslProtocols sslProtocols, SslStreamCertificateContext? certContext)
             {
                 IsClient = isClient;
                 SslProtocols = sslProtocols;
-                CertificateThumbprint = certificateThumbprint;
+
+                CertificateThumbprints = ReadOnlyMemory<byte>.Empty;
+
+                if (certContext != null)
+                {
+                    int certCount = 1 + certContext.IntermediateCertificates.Count;
+                    byte[] certificateThumbprints = new byte[certCount * ThumbprintSize];
+
+                    bool success = certContext.TargetCertificate.TryGetCertHash(HashAlgorithmName.SHA512, certificateThumbprints.AsSpan(0, ThumbprintSize), out _);
+                    Debug.Assert(success);
+
+                    certCount = 1;
+                    foreach (X509Certificate2 intermediate in certContext.IntermediateCertificates)
+                    {
+                        success = intermediate.TryGetCertHash(HashAlgorithmName.SHA512, certificateThumbprints.AsSpan(certCount * ThumbprintSize, ThumbprintSize), out _);
+                        Debug.Assert(success);
+                        certCount++;
+                    }
+
+                    CertificateThumbprints = certificateThumbprints;
+                }
             }
 
             public override bool Equals(object? obj) => obj is SslContextCacheKey key && Equals(key);
 
             public bool Equals(SslContextCacheKey other) =>
+
                 IsClient == other.IsClient &&
-                SslProtocols == other.SslProtocols &&
-                (CertificateThumbprint == null && other.CertificateThumbprint == null ||
-                 CertificateThumbprint != null && other.CertificateThumbprint != null && CertificateThumbprint.AsSpan().SequenceEqual(other.CertificateThumbprint));
+                CertificateThumbprints.Span.SequenceEqual(other.CertificateThumbprints.Span) &&
+                SslProtocols == other.SslProtocols;
 
             public override int GetHashCode()
             {
                 HashCode hash = default;
 
                 hash.Add(IsClient);
+                hash.AddBytes(CertificateThumbprints.Span);
                 hash.Add(SslProtocols);
-                if (CertificateThumbprint != null)
-                {
-                    hash.AddBytes(CertificateThumbprint);
-                }
 
                 return hash.ToHashCode();
             }
@@ -172,7 +191,7 @@ internal static partial class Interop
             var key = new SslContextCacheKey(
                 sslAuthenticationOptions.IsClient,
                 sslAuthenticationOptions.IsClient ? protocols : serverProtocolCacheKey,
-                sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash(HashAlgorithmName.SHA512));
+                sslAuthenticationOptions.CertificateContext);
             return s_sslContexts.GetOrCreate(key, static (args) =>
             {
                 var (sslAuthOptions, protocols, allowCached) = args;

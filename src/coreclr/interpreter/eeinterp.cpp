@@ -71,9 +71,10 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     compHnd->setMethodAttribs(methodInfo->ftn, CORINFO_FLG_INTERPRETER);
 
     uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
+    uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
     // TODO: get rid of the need to allocate fake unwind info.
-    compHnd->reserveUnwindInfo(false /* isFunclet */, false /* isColdCode */ , 8 /* unwindSize */);
+    compHnd->reserveUnwindInfo(false /* isFunclet */, false /* isColdCode */ , sizeof(unwindInfo) /* unwindSize */);
     AllocMemArgs args;
     args.hotCodeSize = sizeOfCode;
     args.coldCodeSize = 0;
@@ -87,7 +88,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
 
     // TODO: get rid of the need to allocate fake unwind info
-    compHnd->allocUnwindInfo((uint8_t*)args.hotCodeBlock, (uint8_t*)args.coldCodeBlock, 0, 1, 0, nullptr, CORJIT_FUNC_ROOT);
+    compHnd->allocUnwindInfo((uint8_t*)args.hotCodeBlock, (uint8_t*)args.coldCodeBlock, 0, 1, sizeof(unwindInfo), unwindInfo, CORJIT_FUNC_ROOT);
 
     *entryAddress = (uint8_t*)args.hotCodeBlock;
     *nativeSizeOfCode = sizeOfCode;

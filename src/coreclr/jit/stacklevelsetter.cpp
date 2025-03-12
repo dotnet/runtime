@@ -217,6 +217,20 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         }
         break;
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        case GT_HWINTRINSIC:
+        {
+
+            NamedIntrinsic intrinsicId = node->AsHWIntrinsic()->GetHWIntrinsicId();
+            if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
+            {
+                SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
+                SetThrowHelperBlock(SCK_OVERFLOW, block);
+            }
+        }
+        break;
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+
         case GT_INDEX_ADDR:
         case GT_ARR_ELEM:
             SetThrowHelperBlock(SCK_RNGCHK_FAIL, block);

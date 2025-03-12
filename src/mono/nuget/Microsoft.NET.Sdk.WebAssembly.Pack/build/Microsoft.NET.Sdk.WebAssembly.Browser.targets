@@ -242,6 +242,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
       EnableThreads="$(_WasmEnableThreads)"
+      WasmPerfTracing="$(WasmPerfTracing)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       FingerprintDotnetJs="$(_WasmFingerprintDotnetJs)"
@@ -324,6 +325,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
     <PropertyGroup>
       <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(_WasmBootConfigFileName)</_WasmBuildBootJsonPath>
+      <_WasmBuildApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmBuildApplicationEnvironmentName>
+      <_WasmBuildApplicationEnvironmentName Condition="'$(_WasmBuildApplicationEnvironmentName)' == ''">Development</_WasmBuildApplicationEnvironmentName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -358,6 +361,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
+      ApplicationEnvironment="$(_WasmBuildApplicationEnvironmentName)"
       Resources="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild)"
       Endpoints="@(_WasmResolvedEndpoints)"
       DebugBuild="true"
@@ -374,6 +378,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       Extensions="@(WasmBootConfigExtension)"
+      EnvVariables="@(WasmEnvironmentVariable)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
@@ -479,6 +484,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(CopyOutputSymbolsToPublishDirectory)"
       ExistingAssets="@(_WasmPublishPrefilteredAssets)"
       EnableThreads="$(_WasmEnableThreads)"
+      WasmPerfTracing="$(WasmPerfTracing)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
@@ -615,6 +621,9 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="GeneratePublishWasmBootJson" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">
+    <PropertyGroup>
+      <_WasmPublishApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmPublishApplicationEnvironmentName>
+    </PropertyGroup>
     <ItemGroup>
       <_WasmPublishAsset
         Include="@(StaticWebAsset)"
@@ -647,6 +656,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
+      ApplicationEnvironment="$(_WasmPublishApplicationEnvironmentName)"
       Resources="@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish)"
       Endpoints="@(_WasmResolvedEndpointsForPublish)"
       DebugBuild="false"
@@ -662,6 +672,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
+      EnvVariables="@(WasmEnvironmentVariable)"
       Extensions="@(WasmBootConfigExtension)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"

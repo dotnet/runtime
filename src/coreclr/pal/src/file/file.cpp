@@ -323,6 +323,15 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         }
         lpFilename = lpExistingPath;
     }
+    else if (pchSeparator == lpExistingPath)
+    {
+        // This is a path in the root i.e. '/tmp'
+        // This scenario will probably only come up in WASM where it is normal to
+        //  have a cwd of '/' and store files in the root of the virtual filesystem
+        lpBuffer.Clear();
+        lpBuffer.Append(lpExistingPath, strlen(lpExistingPath));
+        return NO_ERROR;
+    }
     else
     {
         bool fSetFilename = true;

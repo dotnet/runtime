@@ -57,6 +57,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     // </summary>
     public ITaskItem[]? ExtraConfig { get; set; }
 
+    /// <summary>
+    /// Environment variables to set in the boot.json file.
+    /// </summary>
+    public ITaskItem[]? EnvVariables { get; set; }
+
     protected override bool ValidateArguments()
     {
         if (!base.ValidateArguments())
@@ -169,7 +174,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (!IncludeThreadsWorker && name == "dotnet.native.worker.mjs")
                 continue;
 
-            if (name == "dotnet.runtime.js.map" || name == "dotnet.js.map")
+            if (name == "dotnet.runtime.js.map" || name == "dotnet.js.map" || name == "dotnet.diagnostics.js.map")
             {
                 Log.LogMessage(MessageImportance.Low, $"Skipping {item.ItemSpec} from boot config");
                 continue;
@@ -388,7 +393,12 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
             if (string.Equals(name, nameof(BootJsonData.environmentVariables), StringComparison.OrdinalIgnoreCase))
             {
-                bootConfig.environmentVariables = valueObject;
+                bootConfig.environmentVariables ??= new();
+                var envs = (JsonElement)valueObject!;
+                foreach (var env in envs.EnumerateObject())
+                {
+                    bootConfig.environmentVariables[env.Name] = env.Value.GetString();
+                }
             }
             else if (string.Equals(name, nameof(BootJsonData.diagnosticTracing), StringComparison.OrdinalIgnoreCase))
             {
@@ -401,6 +411,13 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             {
                 extraConfiguration[name] = valueObject;
             }
+        }
+
+        foreach (ITaskItem env in EnvVariables ?? Enumerable.Empty<ITaskItem>())
+        {
+            bootConfig.environmentVariables ??= new();
+            string name = env.ItemSpec;
+            bootConfig.environmentVariables[name] = env.GetMetadata("Value");
         }
 
         if (extraConfiguration.Count > 0)

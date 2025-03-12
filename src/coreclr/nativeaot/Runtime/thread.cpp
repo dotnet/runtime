@@ -1096,7 +1096,10 @@ bool Thread::IsDetached()
 void Thread::SetDetached()
 {
     ASSERT(!IsStateSet(TSF_Detached));
+    ASSERT(IsStateSet(TSF_Attached));
+
     SetState(TSF_Detached);
+    ClearState(TSF_Attached);
 }
 
 bool Thread::IsActivationPending()
