@@ -28,7 +28,6 @@ namespace System.ComponentModel.DataAnnotations
         : IServiceProvider
     {
         internal const string InstanceTypeNotStaticallyDiscovered = "The Type of instance cannot be statically discovered and the Type's properties can be trimmed.";
-        internal const string TrimSafeConstructorJustification = "This constructor is safe to trim because it does not use reflection to resolve the Type of the instance to support setting the DisplayName.";
 
         #region Member Fields
 
@@ -120,13 +119,20 @@ namespace System.ComponentModel.DataAnnotations
         ///     This constructor is trim-safe because it does not use reflection to resolve
         ///     the Type of the <paramref name="instance" /> to support setting the DisplayName.
         /// </remarks>
-        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = TrimSafeConstructorJustification)]
         public ValidationContext(object instance, string displayName, IServiceProvider? serviceProvider, IDictionary<object, object?>? items)
-            : this(instance, serviceProvider, items)
         {
             ArgumentException.ThrowIfNullOrEmpty(displayName);
+            ArgumentNullException.ThrowIfNull(instance);
 
-            _displayName = displayName;
+            if (serviceProvider != null)
+            {
+                IServiceProvider localServiceProvider = serviceProvider;
+                InitializeServiceProvider(localServiceProvider.GetService);
+            }
+
+            _items = items != null ? new Dictionary<object, object?>(items) : new Dictionary<object, object?>();
+            ObjectInstance = instance;
+            DisplayName = displayName;
         }
 
         #endregion
