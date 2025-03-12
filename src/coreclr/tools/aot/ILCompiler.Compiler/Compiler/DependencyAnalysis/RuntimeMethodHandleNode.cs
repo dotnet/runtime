@@ -77,10 +77,17 @@ namespace ILCompiler.DependencyAnalysis
 
             objData.EmitPointerReloc(factory.MaximallyConstructableType(_targetMethod.OwningType));
             objData.EmitInt(handle);
-            objData.EmitInt(_targetMethod.Instantiation.Length);
-            foreach (TypeDesc instParam in _targetMethod.Instantiation)
-                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(instParam));
 
+            if (_targetMethod != _targetMethod.GetMethodDefinition())
+            {
+                objData.EmitInt(_targetMethod.Instantiation.Length);
+                foreach (TypeDesc instParam in _targetMethod.Instantiation)
+                    objData.EmitPointerReloc(factory.NecessaryTypeSymbol(instParam));
+            }
+            else
+            {
+                objData.EmitInt(0);
+            }
 
             return objData.ToObjectData();
         }
