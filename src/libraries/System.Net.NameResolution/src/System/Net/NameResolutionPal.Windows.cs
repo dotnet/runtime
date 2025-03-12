@@ -199,7 +199,7 @@ namespace System.Net
         {
             GetAddrInfoExState state = GetAddrInfoExState.FromHandleAndFree(context->QueryStateHandle);
 
-            object? result = null;
+            object result;
             try
             {
                 CancellationToken cancellationToken = state.UnregisterAndGetCancellationToken();
