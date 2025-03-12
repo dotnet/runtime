@@ -3153,6 +3153,10 @@ namespace Mono.Linker.Steps
 				ProcessInteropMethod (method, methodOrigin);
 			}
 
+			if (method.IsIntrinsic ()) {
+				ProcessIntrinsicMethod (method);
+			}
+
 			if (!method.HasBody || method.Body.CodeSize == 0) {
 				ProcessUnsafeAccessorMethod (method);
 			}
@@ -3345,6 +3349,29 @@ namespace Mono.Linker.Steps
 				MarkMethod (ov.Base, new DependencyInfo (DependencyKind.BaseMethod, method), origin);
 				MarkBaseMethods (ov.Base, origin);
 			}
+		}
+
+		void ProcessIntrinsicMethod (MethodDefinition method)
+		{
+			TypeDefinition? returnTypeDefinition = Context.TryResolve (method.ReturnType);
+
+			if (returnTypeDefinition != null) {
+				MarkRequirementsForInstantiatedTypes (returnTypeDefinition);
+			}
+
+#pragma warning disable RS0030 // MethodReference.Parameters is banned. It's easiest to leave this code as is for now
+			foreach (ParameterDefinition pd in method.Parameters) {
+				TypeReference paramTypeReference = pd.ParameterType;
+				if (paramTypeReference is TypeSpecification paramTypeSpecification) {
+					paramTypeReference = paramTypeSpecification.ElementType;
+				}
+
+				TypeDefinition? paramTypeDefinition = Context.TryResolve (paramTypeReference);
+				if (paramTypeDefinition != null && pd.ParameterType.IsByReference) {
+					MarkRequirementsForInstantiatedTypes (paramTypeDefinition);
+				}
+			}
+#pragma warning restore RS0030
 		}
 
 		void ProcessInteropMethod (MethodDefinition method, MessageOrigin origin)
