@@ -173,6 +173,10 @@ endif(CLR_CMAKE_HOST_WIN32)
 #----------------------------------
 include(clrdefinitions.cmake)
 
+if(FEATURE_STANDALONE_GC)
+  add_definitions(-DFEATURE_STANDALONE_GC)
+endif(FEATURE_STANDALONE_GC)
+
 add_subdirectory(gc)
 
 if (CLR_CMAKE_HOST_UNIX)

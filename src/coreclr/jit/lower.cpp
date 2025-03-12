@@ -437,14 +437,20 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_OR:
         case GT_XOR:
         {
-            if (comp->opts.OptimizationEnabled() && node->OperIs(GT_AND))
+            if (comp->opts.OptimizationEnabled())
             {
                 GenTree* nextNode = nullptr;
-                if (TryLowerAndNegativeOne(node->AsOp(), &nextNode))
+                if (node->OperIs(GT_AND) && TryLowerAndNegativeOne(node->AsOp(), &nextNode))
                 {
                     return nextNode;
                 }
                 assert(nextNode == nullptr);
+
+                nextNode = node->gtNext;
+                if (node->OperIs(GT_AND, GT_OR, GT_XOR) && TryFoldBinop(node->AsOp()))
+                {
+                    return nextNode;
+                }
             }
 
             return LowerBinaryArithmetic(node->AsOp());
@@ -538,13 +544,16 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_CAST:
         {
-            if (!TryRemoveCast(node->AsCast()))
+            GenTree* nextNode = node->gtNext;
+            if (TryRemoveCast(node->AsCast()))
             {
-                GenTree* nextNode = LowerCast(node);
-                if (nextNode != nullptr)
-                {
-                    return nextNode;
-                }
+                return nextNode;
+            }
+
+            nextNode = LowerCast(node);
+            if (nextNode != nullptr)
+            {
+                return nextNode;
             }
         }
         break;
@@ -567,8 +576,16 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_ROL:
         case GT_ROR:
+        {
+            GenTree* next = node->gtNext;
+            if (comp->opts.OptimizationEnabled() && TryFoldBinop(node->AsOp()))
+            {
+                return next;
+            }
+
             LowerRotate(node);
             break;
+        }
 
 #ifndef TARGET_64BIT
         case GT_LSH_HI:
@@ -580,12 +597,20 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
+        {
+            GenTree* next = node->gtNext;
+            if (comp->opts.OptimizationEnabled() && TryFoldBinop(node->AsOp()))
+            {
+                return next;
+            }
+
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             LowerShift(node->AsOp());
 #else
             ContainCheckShiftRotate(node->AsOp());
 #endif
             break;
+        }
 
         case GT_STORE_BLK:
             if (node->AsBlk()->Data()->IsCall())
@@ -7753,6 +7778,64 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
 }
 
 //------------------------------------------------------------------------
+// TryFoldBinop: Try removing a binop node by constant folding.
+//
+// Parameters:
+//   node - the node
+//
+// Returns:
+//   True if the node was removed
+//
+bool Lowering::TryFoldBinop(GenTreeOp* node)
+{
+    if (node->gtSetFlags())
+    {
+        return false;
+    }
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    if (op1->IsIntegralConst() && op2->IsIntegralConst())
+    {
+        GenTree* folded = comp->gtFoldExprConst(node);
+        assert(folded == node);
+        if (!folded->OperIsConst())
+        {
+            return false;
+        }
+
+        BlockRange().Remove(op1);
+        BlockRange().Remove(op2);
+        return true;
+    }
+
+    if (node->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR, GT_OR, GT_XOR) &&
+        (op1->IsIntegralConst(0) || op2->IsIntegralConst(0)))
+    {
+        GenTree* zeroOp  = op1->IsIntegralConst(0) ? op1 : op2;
+        GenTree* otherOp = zeroOp == op1 ? op2 : op1;
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            use.ReplaceWith(otherOp);
+        }
+        else
+        {
+            otherOp->SetUnusedValue();
+        }
+
+        BlockRange().Remove(node);
+        BlockRange().Remove(zeroOp);
+
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // LowerShift: Lower shift nodes
 //
 // Arguments:
@@ -7761,7 +7844,7 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
 // Notes:
 //    Remove unnecessary shift count masking, xarch shift instructions
 //    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
-
+//
 void Lowering::LowerShift(GenTreeOp* shift)
 {
     assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
@@ -8295,7 +8378,7 @@ unsigned Lowering::TryReuseLocalForParameterAccess(const LIR::Use& use, const Lo
 
     LclVarDsc* destLclDsc = comp->lvaGetDesc(useNode->AsLclVarCommon());
 
-    if (destLclDsc->lvIsParamRegTarget)
+    if (destLclDsc->lvIsParam || destLclDsc->lvIsParamRegTarget)
     {
         return BAD_VAR_NUM;
     }

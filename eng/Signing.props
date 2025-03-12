@@ -112,6 +112,7 @@
               Kind="Blob"
               ChecksumPath="%(FullPath).sha512"
               IsVSSetup="true"
+              IsShipping="true"
               SubBlobFolder="workloads/" />
   </ItemGroup>
 
