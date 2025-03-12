@@ -48,18 +48,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Playwright" Version="1.47.0" />
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <Compile Include="$(BrowserProjectRoot)debugger\DebuggerTestSuite\BrowserLocator.cs" />
 
     <None Include="$(BrowserProjectRoot)\test-main.js" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <!-- Suppress System.Text.Json/8.0.4 advisory as desktop msbuild doesn't yet provide binding redirects for the non-vulnerable version (8.0.5). -->
-  <ItemGroup>
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-8g4q-xg66-9fp4" />
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">

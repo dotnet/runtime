@@ -22,12 +22,7 @@ namespace System.Diagnostics.CodeAnalysis
                     AttributeTargets.Event |
                     AttributeTargets.Interface |
                     AttributeTargets.Delegate, Inherited = false)]
-#if SYSTEM_PRIVATE_CORELIB
-    public
-#else
-    internal
-#endif
-        sealed class ExperimentalAttribute : Attribute
+    public sealed class ExperimentalAttribute : Attribute
     {
         /// <summary>
         ///  Initializes a new instance of the <see cref="ExperimentalAttribute"/> class, specifying the ID that the compiler will use

@@ -24,14 +24,6 @@ struct DacHostVtPtrs
 #undef VPTR_CLASS
 };
 
-
-const WCHAR *g_dacVtStrings[] =
-{
-#define VPTR_CLASS(name) W(#name),
-#include <vptr_list.h>
-#undef VPTR_CLASS
-};
-
 DacHostVtPtrs g_dacHostVtPtrs;
 
 HRESULT
@@ -1132,25 +1124,6 @@ DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx)
         return addr;
     }
 #endif // !_PREFIX_
-}
-
-PWSTR    DacGetVtNameW(TADDR targetVtable)
-{
-    PWSTR pszRet = NULL;
-
-    TADDR *targ = &DacGlobalValues()->EEJitManager__vtAddr;
-    TADDR *targStart = targ;
-    for (ULONG i = 0; i < sizeof(g_dacHostVtPtrs) / sizeof(PVOID); i++)
-    {
-        if (targetVtable == (*targ))
-        {
-            pszRet = (PWSTR) *(g_dacVtStrings + (targ - targStart));
-            break;
-        }
-
-        targ++;
-    }
-    return pszRet;
 }
 
 TADDR

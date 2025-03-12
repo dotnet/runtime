@@ -318,7 +318,6 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     context.S7 = unwoundstate->captureCalleeSavedRegisters[7] = baseState->captureCalleeSavedRegisters[7];
     context.S8 = unwoundstate->captureCalleeSavedRegisters[8] = baseState->captureCalleeSavedRegisters[8];
     context.Fp = unwoundstate->captureCalleeSavedRegisters[9] = baseState->captureCalleeSavedRegisters[9];
-    context.Tp = unwoundstate->captureCalleeSavedRegisters[10] = baseState->captureCalleeSavedRegisters[10];
     context.Ra = 0; // Filled by the unwinder
 
     context.Sp = baseState->captureSp;
@@ -339,7 +338,6 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     nonVolContextPtrs.S7 = &unwoundstate->captureCalleeSavedRegisters[7];
     nonVolContextPtrs.S8 = &unwoundstate->captureCalleeSavedRegisters[8];
     nonVolContextPtrs.Fp = &unwoundstate->captureCalleeSavedRegisters[9];
-    nonVolContextPtrs.Tp = &unwoundstate->captureCalleeSavedRegisters[10];
     nonVolContextPtrs.Ra = 0; // Filled by the unwinder
 
 #endif // DACCESS_COMPILE
@@ -399,7 +397,6 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     unwoundstate->captureCalleeSavedRegisters[7] = context.S7;
     unwoundstate->captureCalleeSavedRegisters[8] = context.S8;
     unwoundstate->captureCalleeSavedRegisters[9] = context.Fp;
-    unwoundstate->captureCalleeSavedRegisters[10] = context.Tp;
 #endif
 
 #ifdef DACCESS_COMPILE
@@ -414,7 +411,6 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     unwoundstate->captureCalleeSavedRegisters[7] = context.S7;
     unwoundstate->captureCalleeSavedRegisters[8] = context.S8;
     unwoundstate->captureCalleeSavedRegisters[9] = context.Fp;
-    unwoundstate->captureCalleeSavedRegisters[10] = context.Tp;
 #else // !DACCESS_COMPILE
     // For non-DAC builds, update the register state from context pointers
     unwoundstate->ptrCalleeSavedRegisters[0] = nonVolContextPtrs.S0;
@@ -427,7 +423,6 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     unwoundstate->ptrCalleeSavedRegisters[7] = nonVolContextPtrs.S7;
     unwoundstate->ptrCalleeSavedRegisters[8] = nonVolContextPtrs.S8;
     unwoundstate->ptrCalleeSavedRegisters[9] = nonVolContextPtrs.Fp;
-    unwoundstate->ptrCalleeSavedRegisters[10] = nonVolContextPtrs.Tp;
 #endif // DACCESS_COMPILE
 
     unwoundstate->_pc = context.Pc;
@@ -436,7 +431,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     unwoundstate->_isValid = TRUE;
 }
 
-void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL
     {
@@ -486,7 +481,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         pRD->pCurrentContext->S7 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[7]);
         pRD->pCurrentContext->S8 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[8]);
         pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[9]);
-        pRD->pCurrentContext->Tp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[10]);
         pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 
         pRD->pCurrentContextPointers->S0 = pUnwoundState->ptrCalleeSavedRegisters[0];
@@ -499,7 +493,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         pRD->pCurrentContextPointers->S7 = pUnwoundState->ptrCalleeSavedRegisters[7];
         pRD->pCurrentContextPointers->S8 = pUnwoundState->ptrCalleeSavedRegisters[8];
         pRD->pCurrentContextPointers->Fp = pUnwoundState->ptrCalleeSavedRegisters[9];
-        pRD->pCurrentContextPointers->Tp = pUnwoundState->ptrCalleeSavedRegisters[10];
         pRD->pCurrentContextPointers->Ra = NULL;
         return;
     }
@@ -524,7 +517,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->S7 = m_MachState.ptrCalleeSavedRegisters[7] ? *m_MachState.ptrCalleeSavedRegisters[7] : m_MachState.captureCalleeSavedRegisters[7];
     pRD->pCurrentContext->S8 = m_MachState.ptrCalleeSavedRegisters[8] ? *m_MachState.ptrCalleeSavedRegisters[8] : m_MachState.captureCalleeSavedRegisters[8];
     pRD->pCurrentContext->Fp = m_MachState.ptrCalleeSavedRegisters[9] ? *m_MachState.ptrCalleeSavedRegisters[9] : m_MachState.captureCalleeSavedRegisters[9];
-    pRD->pCurrentContext->Tp = m_MachState.ptrCalleeSavedRegisters[10] ? *m_MachState.ptrCalleeSavedRegisters[10] : m_MachState.captureCalleeSavedRegisters[10];
     pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 #else // TARGET_UNIX
     pRD->pCurrentContext->S0 = *m_MachState.ptrCalleeSavedRegisters[0];
@@ -537,7 +529,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->S7 = *m_MachState.ptrCalleeSavedRegisters[7];
     pRD->pCurrentContext->S8 = *m_MachState.ptrCalleeSavedRegisters[8];
     pRD->pCurrentContext->Fp = *m_MachState.ptrCalleeSavedRegisters[9];
-    pRD->pCurrentContext->Tp = *m_MachState.ptrCalleeSavedRegisters[10];
     pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 #endif
 
@@ -552,7 +543,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContextPointers->S7 = m_MachState.ptrCalleeSavedRegisters[7];
     pRD->pCurrentContextPointers->S8 = m_MachState.ptrCalleeSavedRegisters[8];
     pRD->pCurrentContextPointers->Fp = m_MachState.ptrCalleeSavedRegisters[9];
-    pRD->pCurrentContextPointers->Tp = m_MachState.ptrCalleeSavedRegisters[10];
     pRD->pCurrentContextPointers->Ra = NULL; // Unwind again to get Caller's PC
 #endif
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
@@ -595,7 +585,6 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pRD->pCurrentContext->S6 = pCalleeSaved->s6;
     pRD->pCurrentContext->S7 = pCalleeSaved->s7;
     pRD->pCurrentContext->S8 = pCalleeSaved->s8;
-    pRD->pCurrentContext->Tp = pCalleeSaved->tp;
     pRD->pCurrentContext->Fp  = pCalleeSaved->fp;
     pRD->pCurrentContext->Ra  = pCalleeSaved->ra;
 
@@ -609,12 +598,11 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pContextPointers->S6 = (PDWORD64)&pCalleeSaved->s6;
     pContextPointers->S7 = (PDWORD64)&pCalleeSaved->s7;
     pContextPointers->S8 = (PDWORD64)&pCalleeSaved->s8;
-    pContextPointers->Tp = (PDWORD64)&pCalleeSaved->tp;
     pContextPointers->Fp = (PDWORD64)&pCalleeSaved->fp;
     pContextPointers->Ra  = (PDWORD64)&pCalleeSaved->ra;
 }
 
-void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
 #ifndef DACCESS_COMPILE
     if (updateFloats)
@@ -642,10 +630,10 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     // Finally, syncup the regdisplay with the context
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -667,7 +655,6 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
     pRD->pCurrentContextPointers->S7 = (PDWORD64)&m_ctx.S7;
     pRD->pCurrentContextPointers->S8 = (PDWORD64)&m_ctx.S8;
     pRD->pCurrentContextPointers->Fp = (PDWORD64)&m_ctx.Fp;
-    pRD->pCurrentContextPointers->Tp = (PDWORD64)&m_ctx.Tp;
     pRD->pCurrentContextPointers->Ra = (PDWORD64)&m_ctx.Ra;
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
@@ -675,10 +662,10 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -721,7 +708,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
     pRD->pCurrentContextPointers->S6 = NULL;
     pRD->pCurrentContextPointers->S7 = NULL;
     pRD->pCurrentContextPointers->S8 = NULL;
-    pRD->pCurrentContextPointers->Tp = NULL;
 
     pRD->ControlPC = m_pCallerReturnAddress;
     pRD->SP = (DWORD64) dac_cast<TADDR>(m_pCallSiteSP);
@@ -735,19 +721,19 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
     // Update the frame pointer in the current context.
     pRD->pCurrentContextPointers->Fp = &m_pCalleeSavedFP;
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
 
 #ifdef FEATURE_HIJACK
-TADDR ResumableFrame::GetReturnAddressPtr(void)
+TADDR ResumableFrame::GetReturnAddressPtr_Impl(void)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return dac_cast<TADDR>(m_Regs) + offsetof(T_CONTEXT, Pc);
 }
 
-void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -772,7 +758,6 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     pRD->pCurrentContextPointers->S6 = &m_Regs->S6;
     pRD->pCurrentContextPointers->S7 = &m_Regs->S7;
     pRD->pCurrentContextPointers->S8 = &m_Regs->S8;
-    pRD->pCurrentContextPointers->Tp = &m_Regs->Tp;
     pRD->pCurrentContextPointers->Fp = &m_Regs->Fp;
     pRD->pCurrentContextPointers->Ra = &m_Regs->Ra;
 
@@ -799,12 +784,12 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
 
-void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -833,7 +818,6 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     pRD->pCurrentContext->S6 = m_Args->S6;
     pRD->pCurrentContext->S7 = m_Args->S7;
     pRD->pCurrentContext->S8 = m_Args->S8;
-    pRD->pCurrentContext->Tp = m_Args->Tp;
     pRD->pCurrentContext->Fp = m_Args->Fp;
     pRD->pCurrentContext->Ra = m_Args->Ra;
 
@@ -846,12 +830,11 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     pRD->pCurrentContextPointers->S6 = &m_Args->S6;
     pRD->pCurrentContextPointers->S7 = &m_Args->S7;
     pRD->pCurrentContextPointers->S8 = &m_Args->S8;
-    pRD->pCurrentContextPointers->Tp = &m_Args->Tp;
     pRD->pCurrentContextPointers->Fp = &m_Args->Fp;
     pRD->pCurrentContextPointers->Ra = NULL;
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 #endif // FEATURE_HIJACK
 
@@ -1010,63 +993,6 @@ AdjustContextForVirtualStub(
     return TRUE;
 }
 #endif // !DACCESS_COMPILE
-
-UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
-{
-    _ASSERTE(offsetof(UMEntryThunkCode, m_code) == 0);
-    UMEntryThunkCode * pCode = (UMEntryThunkCode*)pCallback;
-
-    // We may be called with an unmanaged external code pointer instead. So if it doesn't look like one of our
-    // stubs (see UMEntryThunkCode::Encode below) then we'll return NULL. Luckily in these scenarios our
-    // caller will perform a hash lookup on successful return to verify our result in case random unmanaged
-    // code happens to look like ours.
-    if ((pCode->m_code[0] == 0x18000095) && //pcaddi  $r21,4
-        (pCode->m_code[1] == 0x28c022ae) && //ld.d  $t2,$r21,8
-        (pCode->m_code[2] == 0x28c002b5) && //ld.d  $r21,$r21,0
-        (pCode->m_code[3] == 0x4c0002a0))   //jirl  $r0,$r21,0
-    {
-        return (UMEntryThunk*)pCode->m_pvSecretParam;
-    }
-
-    return NULL;
-}
-
-void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
-{
-    // pcaddi  $r21,4
-    // ld.d  $t2,$r21,8
-    // ld.d  $r21,$r21,0
-    // jirl  $r0,$r21,0
-    // m_pTargetCode data
-    // m_pvSecretParam data
-
-    m_code[0] = 0x18000095; //pcaddi  $r21,4
-    m_code[1] = 0x28c022ae; //ld.d  $t2,$r21,8
-    m_code[2] = 0x28c002b5; //ld.d  $r21,$r21,0
-    m_code[3] = 0x4c0002a0; //jirl  $r0,$r21,0
-
-    m_pTargetCode = (TADDR)pTargetCode;
-    m_pvSecretParam = (TADDR)pvSecretParam;
-    FlushInstructionCache(GetCurrentProcess(),&pEntryThunkCodeRX->m_code,sizeof(m_code));
-}
-
-#ifndef DACCESS_COMPILE
-
-void UMEntryThunkCode::Poison()
-{
-    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
-    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
-
-    pThisRW->m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
-
-    // ld.d $a0,$r21,8
-    pThisRW->m_code[1] = 0x28c022a4;
-
-    ClrFlushInstructionCache(&m_code,sizeof(m_code));
-}
-
-#endif // DACCESS_COMPILE
-
 
 #if !defined(DACCESS_COMPILE)
 VOID ResetCurrentContext()

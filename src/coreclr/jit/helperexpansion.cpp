@@ -1605,7 +1605,7 @@ PhaseStatus Compiler::fgVNBasedIntrinsicExpansion()
 //
 bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0)
+    if (!call->IsSpecialIntrinsic())
     {
         return false;
     }
@@ -2729,6 +2729,14 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         }
     }
 
+    if (fallbackBb->KindIs(BBJ_THROW) && (fallbackBb->bbWeight != BB_ZERO_WEIGHT))
+    {
+        // This flow is disappearing.
+        JITDUMP("fgLateCastExpansionForCall: fallback " FMT_BB " throws and has flow into it. Data %s inconsistent.\n",
+                fallbackBb->bbNum, fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
+    }
+
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
     if (fgCanCompactBlock(firstBb))
     {
@@ -2814,6 +2822,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     const CorInfoHelpFunc helper         = eeGetHelperNum(call->gtCallMethHnd);
     int                   lengthArgIndex = -1;
+    int                   typeArgIndex   = -1;
 
     switch (helper)
     {
@@ -2822,10 +2831,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         case CORINFO_HELP_NEWARR_1_OBJ:
         case CORINFO_HELP_NEWARR_1_ALIGN8:
             lengthArgIndex = 1;
-            break;
-
-        case CORINFO_HELP_READYTORUN_NEWARR_1:
-            lengthArgIndex = 0;
+            typeArgIndex   = 0;
             break;
 
         default:
@@ -2863,9 +2869,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Initialize the array method table pointer.
     //
-    CORINFO_CLASS_HANDLE arrayHnd = (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;
-
-    GenTree* const   mt      = gtNewIconEmbClsHndNode(arrayHnd);
+    GenTree* const   mt      = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
     GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
     Statement* const mtStmt  = fgNewStmtFromTree(mtStore);
 
