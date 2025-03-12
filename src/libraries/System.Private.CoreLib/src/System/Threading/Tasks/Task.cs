@@ -247,6 +247,10 @@ namespace System.Threading.Tasks
             // A task's parent, or null if parent-less. Only set during Task construction.
             internal Task? m_parent;
 
+            //**************************************************TIF
+            internal HashSet<int> m_notifiedChildTasks = new HashSet<int>();
+            //**************************************************TIF
+
             /// <summary>
             /// Sets the internal completion event.
             /// </summary>
@@ -2135,16 +2139,71 @@ namespace System.Threading.Tasks
             FinishContinuations();
         }
 
+        //**************************************TIF
+        [ThreadStatic] private static int s_notificationDepth;
+        //**************************************TIF
+
         internal void NotifyParentIfPotentiallyAttachedTask()
         {
-            Task? parent = m_contingentProperties?.m_parent;
-            if (parent != null
-                 && ((parent.CreationOptions & TaskCreationOptions.DenyChildAttach) == 0)
-                 && (((TaskCreationOptions)(m_stateFlags & (int)TaskStateFlags.OptionsMask)) & TaskCreationOptions.AttachedToParent) != 0)
+            //**************************************TIF
+            if (Interlocked.Increment(ref s_notificationDepth) > 500)
             {
-                parent.ProcessChildCompletion(this);
+                if (TplEventSource.Log.IsEnabled()) TplEventSource.Log.Write("TaskNotifyParentIfChildComplete: Notification recursion detected and limited at depth " + s_notificationDepth);
+                Interlocked.Decrement(ref s_notificationDepth);
+                return;
+            }
+            //**************************************TIF
+
+            try
+            {
+                Task? parent = m_contingentProperties?.m_parent;
+                if (parent != null
+                     && ((parent.CreationOptions & TaskCreationOptions.DenyChildAttach) == 0)
+                     && (((TaskCreationOptions)(m_stateFlags & (int)TaskStateFlags.OptionsMask)) & TaskCreationOptions.AttachedToParent) != 0)
+                {
+
+                    //**************************************TIF
+                    //parent.ProcessChildCompletion(this);
+                    if (!parent.HasBeenNotified(this))
+                    {
+                        parent.ProcessChildCompletion(this);
+                        parent.RemoveNotifiedChild(this);
+                    }
+                    //**************************************TIF
+                }
+            }
+            finally
+            {
+                Interlocked.Decrement(ref s_notificationDepth);
             }
         }
+
+        //**************************************TIF
+        internal bool HasBeenNotified(Task childTask)
+        {
+            ContingentProperties? cp = Volatile.Read(ref m_contingentProperties);
+            if (cp != null)
+            {
+                lock (cp.m_notifiedChildTasks)
+                {
+                    return !cp.m_notifiedChildTasks.Add(childTask.Id);
+                }
+            }
+            return false;
+        }
+
+        internal void RemoveNotifiedChild(Task childTask)
+        {
+            ContingentProperties? cp = Volatile.Read(ref m_contingentProperties);
+            if (cp != null)
+            {
+                lock (cp.m_notifiedChildTasks)
+                {
+                    cp.m_notifiedChildTasks.Remove(childTask.Id);
+                }
+            }
+        }
+        //**************************************TIF
 
         /// <summary>
         /// This is called by children of this task when they are completed.
