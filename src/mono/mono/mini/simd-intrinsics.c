@@ -2439,7 +2439,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 			const char *klass_name = m_class_get_name (klass);
 
-			if (!strcmp (klass_name, "Vector4")) {
+			if (strcmp (m_class_get_name_space (klass), "System.Runtime.Intrinsics") != 0) {
 				klass_name = "Vector128`1";
 			}
 			arg_class = create_class_instance ("System.Runtime.Intrinsics", klass_name, m_class_get_byval_arg (cast_class));
