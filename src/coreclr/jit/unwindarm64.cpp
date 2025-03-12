@@ -658,11 +658,8 @@ void Compiler::unwindPacSignLR()
     }
 #endif // FEATURE_CFI_SUPPORT
 
-    if (compGeneratingProlog)
-    {
-        // pac_sign_lr: 11111100: sign the return address in lr with pacibsp
-        funCurrentFunc()->uwi.AddCode(0xFC);
-    }
+    // pac_sign_lr: 11111100: sign the return address in lr with pacibsp
+    funCurrentFunc()->uwi.AddCode(0xFC);
 }
 
 void Compiler::unwindReturn(regNumber reg)
