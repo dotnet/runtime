@@ -233,6 +233,8 @@ namespace System.Net
                 state.Dispose();
             }
 
+            // GetAddrInfoExState is a SafeHandle and Dispose() will only release its' GetAddrInfoExContext pointer;
+            // the rest of the object's state is still valid and the instance will be used as an IThreadPoolWorkItem.
             state.SetResult(result);
         }
 
