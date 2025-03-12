@@ -3709,7 +3709,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
         AssertionIndex index        = optAssertionCount;
         AssertionDsc*  curAssertion = optGetAssertion(index);
         optAssertionCount--;
-        unsigned lclNum = curAssertion->op1.lclNum;
+        unsigned lclNum = curAssertion->GetOp1LclNum();
         assert(lclNum < lvaCount);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
@@ -3720,9 +3720,9 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
             (curAssertion->op2.kind == O2K_LCLVAR_COPY))
         {
             //
-            //  op2.lclNum no longer depends upon this assertion
+            //  GetOp2LclNum() no longer depends upon this assertion
             //
-            lclNum = curAssertion->op2.lclNum;
+            lclNum = curAssertion->GetOp2LclNum();
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
     }
@@ -3730,7 +3730,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
     {
         AssertionIndex index        = ++optAssertionCount;
         AssertionDsc*  curAssertion = optGetAssertion(index);
-        unsigned       lclNum       = curAssertion->op1.lclNum;
+        unsigned       lclNum       = curAssertion->GetOp1LclNum();
         BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
         //
@@ -3740,9 +3740,9 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
             (curAssertion->op2.kind == O2K_LCLVAR_COPY))
         {
             //
-            //  op2.lclNum now depends upon this assertion
+            //  GetOp2LclNum() now depends upon this assertion
             //
-            lclNum = curAssertion->op2.lclNum;
+            lclNum = curAssertion->GetOp2LclNum();
             BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
     }
@@ -3774,7 +3774,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
     //
     if (index == optAssertionCount)
     {
-        unsigned lclNum = curAssertion->op1.lclNum;
+        unsigned lclNum = curAssertion->GetOp1LclNum();
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
         //
@@ -3784,9 +3784,9 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
             (curAssertion->op2.kind == O2K_LCLVAR_COPY))
         {
             //
-            //  op2.lclNum no longer depends upon this assertion
+            //  GetOp2LclNum() no longer depends upon this assertion
             //
-            lclNum = curAssertion->op2.lclNum;
+            lclNum = curAssertion->GetOp2LclNum();
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
 

@@ -784,7 +784,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         }
         else
         {
-            printf("V%02u", curAssertion->op1.lclNum);
+            printf("V%02u", curAssertion->GetOp1LclNum());
         }
     }
     else if (curAssertion->op1.kind == O1K_EXACT_TYPE)
@@ -877,7 +877,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         {
             case O2K_LCLVAR_COPY:
                 assert(optLocalAssertionProp);
-                printf("V%02u", curAssertion->op2.lclNum);
+                printf("V%02u", curAssertion->GetOp2LclNum());
                 break;
 
             case O2K_CONST_INT:
@@ -925,7 +925,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 else
                 {
                     var_types op1Type = !optLocalAssertionProp ? vnStore->TypeOfVN(curAssertion->op1.vn)
-                                                               : lvaGetRealType(curAssertion->op1.lclNum);
+                                                               : lvaGetRealType(curAssertion->GetOp1LclNum());
                     if (op1Type == TYP_REF)
                     {
                         if (curAssertion->op2.u1.iconVal == 0)
@@ -1630,7 +1630,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     {
         assert(newAssertion->op1.kind == O1K_LCLVAR);
 
-        unsigned        lclNum = newAssertion->op1.lclNum;
+        unsigned        lclNum = newAssertion->GetOp1LclNum();
         BitVecOps::Iter iter(apTraits, GetAssertionDep(lclNum));
         unsigned        bvIndex = 0;
         while (iter.NextElem(&bvIndex))
@@ -1692,11 +1692,11 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         assert(newAssertion->op1.kind == O1K_LCLVAR);
 
         // Mark the variables this index depends on
-        unsigned lclNum = newAssertion->op1.lclNum;
+        unsigned lclNum = newAssertion->GetOp1LclNum();
         BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), optAssertionCount - 1);
         if (newAssertion->op2.kind == O2K_LCLVAR_COPY)
         {
-            lclNum = newAssertion->op2.lclNum;
+            lclNum = newAssertion->GetOp2LclNum();
             BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), optAssertionCount - 1);
         }
     }
@@ -2426,7 +2426,7 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
         {
             // For local assertion prop use comparison on locals, and use comparison on vns for global prop.
             bool isEqual = optLocalAssertionProp
-                               ? (curAssertion->op1.lclNum == tree->AsLclVarCommon()->GetLclNum())
+                               ? (curAssertion->GetOp1LclNum() == tree->AsLclVarCommon()->GetLclNum())
                                : (curAssertion->op1.vn == vnStore->VNConservativeNormalValue(tree->gtVNPair));
             if (!isEqual)
             {
@@ -3491,25 +3491,25 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
     const AssertionDsc::AssertionDscOp1& op1 = curAssertion->op1;
     const AssertionDsc::AssertionDscOp2& op2 = curAssertion->op2;
 
-    noway_assert(op1.lclNum != op2.lclNum);
+    noway_assert(curAssertion->GetOp1LclNum() != curAssertion->GetOp2LclNum());
 
     const unsigned lclNum = tree->GetLclNum();
 
     // Make sure one of the lclNum of the assertion matches with that of the tree.
-    if (op1.lclNum != lclNum && op2.lclNum != lclNum)
+    if (curAssertion->GetOp1LclNum() != lclNum && curAssertion->GetOp2LclNum() != lclNum)
     {
         return nullptr;
     }
 
     // Extract the matching lclNum and ssaNum, as well as the field sequence.
     unsigned copyLclNum;
-    if (op1.lclNum == lclNum)
+    if (curAssertion->GetOp1LclNum() == lclNum)
     {
-        copyLclNum = op2.lclNum;
+        copyLclNum = curAssertion->GetOp2LclNum();
     }
     else
     {
-        copyLclNum = op1.lclNum;
+        copyLclNum = curAssertion->GetOp1LclNum();
     }
 
     LclVarDsc* const copyVarDsc = lvaGetDesc(copyLclNum);
@@ -3522,7 +3522,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
     }
 
     // Make sure we can perform this copy prop.
-    if (optCopyProp_LclVarScore(lclVarDsc, copyVarDsc, curAssertion->op1.lclNum == lclNum) <= 0)
+    if (optCopyProp_LclVarScore(lclVarDsc, copyVarDsc, curAssertion->GetOp1LclNum() == lclNum) <= 0)
     {
         return nullptr;
     }
@@ -3652,9 +3652,9 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
             continue;
         }
 
-        if (optLocalAssertionProp && (curAssertion->op1.lclNum != lclNum))
+        if (optLocalAssertionProp && (curAssertion->GetOp1LclNum() != lclNum))
         {
-            // In local prop we rely on op1.lclNum
+            // In local prop we rely on GetOp1LclNum()
             continue;
         }
 
@@ -4168,7 +4168,7 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
             continue;
         }
 
-        if ((curAssertion->op1.kind == op1Kind) && (curAssertion->op1.lclNum == lclNum) &&
+        if ((curAssertion->op1.kind == op1Kind) && (curAssertion->GetOp1LclNum() == lclNum) &&
             (curAssertion->op2.kind == op2Kind))
         {
             bool constantIsEqual  = (curAssertion->op2.u1.iconVal == cnsVal);
@@ -5025,7 +5025,7 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
             if ((curAssertion->assertionKind == OAK_NOT_EQUAL) && // kind
                 (curAssertion->op1.kind == O1K_LCLVAR) &&         // op1
                 (curAssertion->op2.kind == O2K_CONST_INT) &&      // op2
-                (curAssertion->op1.lclNum == lclNum) && (curAssertion->op2.u1.iconVal == 0))
+                (curAssertion->GetOp1LclNum() == lclNum) && (curAssertion->op2.u1.iconVal == 0))
             {
                 return true;
             }

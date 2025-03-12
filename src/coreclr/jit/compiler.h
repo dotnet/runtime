@@ -7814,6 +7814,21 @@ public:
             }
         } op2;
 
+        unsigned GetOp1LclNum() const
+        {
+            assert(op1.kind == O1K_LCLVAR);
+            assert(JitTls::GetCompiler()->optLocalAssertionProp);
+            return op1.lclNum;
+        }
+
+        unsigned GetOp2LclNum() const
+        {
+            assert(op1.kind == O1K_LCLVAR);
+            assert(op2.kind == O2K_LCLVAR_COPY);
+            assert(JitTls::GetCompiler()->optLocalAssertionProp);
+            return op2.lclNum;
+        }
+
         //------------------------------------------------------------------------
         // CreateSubtypeAssertion: Create an assertion that the object is of a subtype
         //    of the provided type handle.
@@ -8036,7 +8051,8 @@ public:
             }
             else
             {
-                return ((vnBased && (op1.vn == that->op1.vn)) || (!vnBased && (op1.lclNum == that->op1.lclNum)));
+                return ((vnBased && (op1.vn == that->op1.vn)) ||
+                        (!vnBased && (GetOp1LclNum() == that->GetOp1LclNum())));
             }
         }
 
@@ -8064,7 +8080,7 @@ public:
 
                 case O2K_LCLVAR_COPY:
                     assert(!vnBased);
-                    return op2.lclNum == that->op2.lclNum;
+                    return GetOp2LclNum() == that->GetOp2LclNum();
 
                 case O2K_SUBRANGE:
                     return op2.u2.Equals(that->op2.u2);

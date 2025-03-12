@@ -11718,14 +11718,14 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
             if (BitVecOps::IsMember(apTraits, killed, index - 1))
             {
                 AssertionDsc* curAssertion = optGetAssertion(index);
-                noway_assert((curAssertion->op1.lclNum == lclNum) ||
-                             ((curAssertion->op2.kind == O2K_LCLVAR_COPY) && (curAssertion->op2.lclNum == lclNum)));
+                noway_assert((curAssertion->GetOp1LclNum() == lclNum) ||
+                             ((curAssertion->op2.kind == O2K_LCLVAR_COPY) && (curAssertion->GetOp2LclNum() == lclNum)));
                 if (verbose)
                 {
                     printf("\nThe store ");
                     printTreeID(tree);
                     assert(optLocalAssertionProp);
-                    printf(" using V%02u removes: ", curAssertion->op1.lclNum);
+                    printf(" using V%02u removes: ", curAssertion->GetOp1LclNum());
                     optPrintAssertion(curAssertion, index);
                 }
             }
@@ -11842,7 +11842,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
             (assertion->op2.kind == O2K_CONST_INT))
         {
             assert(optLocalAssertionProp);
-            LclVarDsc* const lclDsc = lvaGetDesc(assertion->op1.lclNum);
+            LclVarDsc* const lclDsc = lvaGetDesc(assertion->GetOp1LclNum());
 
             if (varTypeIsIntegral(lclDsc->TypeGet()))
             {
@@ -11851,7 +11851,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
                 {
                     AssertionDsc extraAssertion = {OAK_SUBRANGE};
                     extraAssertion.op1.kind     = O1K_LCLVAR;
-                    extraAssertion.op1.lclNum   = assertion->op1.lclNum;
+                    extraAssertion.op1.lclNum   = assertion->GetOp1LclNum();
                     extraAssertion.op2.kind     = O2K_SUBRANGE;
                     extraAssertion.op2.u2       = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
 
