@@ -2363,8 +2363,8 @@ void CodeGen::genReportEH()
     {
         for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
         {
-            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndexIL(XTnum); // find the true enclosing try index,
-                                                                                 // ignoring 'mutual protect' trys
+            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndex(XTnum); // find the true enclosing try index,
+                                                                               // ignoring 'mutual protect' trys
                  enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
                  enclosingTryIndex = compiler->ehGetEnclosingTryIndex(enclosingTryIndex))
             {
@@ -2670,8 +2670,8 @@ void CodeGen::genReportEH()
 
             EHblkDsc* fletTab = compiler->ehGetDsc(XTnum2);
 
-            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndexIL(XTnum2); // find the true enclosing try index,
-                                                                                  // ignoring 'mutual protect' trys
+            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndex(XTnum2); // find the true enclosing try index,
+                                                                                // ignoring 'mutual protect' trys
                  enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
                  enclosingTryIndex = compiler->ehGetEnclosingTryIndex(enclosingTryIndex))
             {
@@ -3191,6 +3191,42 @@ public:
             printf("\n");
         }
     }
+
+    // -----------------------------------------------------------------------------
+    // Validate: Validate that the graph looks reasonable
+    //
+    void Validate()
+    {
+        for (int i = 0; i < m_nodes.Height(); i++)
+        {
+            RegNode* regNode = m_nodes.Bottom(i);
+            for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
+            {
+                unsigned destStart = incoming->destOffset;
+                unsigned destEnd   = destStart + genTypeSize(incoming->type);
+
+                for (RegNodeEdge* otherIncoming = incoming->nextIncoming; otherIncoming != nullptr;
+                     otherIncoming              = otherIncoming->nextIncoming)
+                {
+                    unsigned otherDestStart = otherIncoming->destOffset;
+                    unsigned otherDestEnd   = otherDestStart + genTypeSize(otherIncoming->type);
+                    if (otherDestEnd <= destStart)
+                    {
+                        continue;
+                    }
+
+                    if (otherDestStart >= destEnd)
+                    {
+                        continue;
+                    }
+
+                    // This means we have multiple registers being assigned to
+                    // the same register. That should not happen.
+                    assert(!"Detected conflicting incoming edges when homing parameter registers");
+                }
+            }
+        }
+    }
 #endif
 };
 
@@ -3475,6 +3511,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     }
 
     DBEXEC(VERBOSE, graph.Dump());
+
+    INDEBUG(graph.Validate());
 
     regMaskTP busyRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
     while (true)
@@ -7749,7 +7787,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
     if (actualOp1->OperIs(GT_CALL))
     {
         assert(regCount <= MAX_RET_REG_COUNT);
-        noway_assert(varDsc->lvIsMultiRegRet);
+        noway_assert(varDsc->lvIsMultiRegDest);
     }
 
 #ifdef FEATURE_SIMD

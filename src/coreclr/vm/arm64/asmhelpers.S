@@ -445,6 +445,7 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 //   x12       contains our contract (DispatchToken)
 //   x16,x17   will be trashed
 //
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 
 #define BACKPATCH_FLAG      1
 #define PROMOTE_CHAIN_FLAG  2
@@ -509,7 +510,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  x9
 
 NESTED_END ResolveWorkerAsmStub, _TEXT
-
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler

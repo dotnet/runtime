@@ -799,14 +799,24 @@ unsigned Compiler::ehGetMostNestedRegionIndex(BasicBlock* block, bool* inTryRegi
     return mostNestedRegion;
 }
 
-/*****************************************************************************
- * Returns the try index of the enclosing try, skipping all EH regions with the
- * same try region (that is, all 'mutual protect' regions). If there is no such
- * enclosing try, returns EHblkDsc::NO_ENCLOSING_INDEX.
- */
+//-------------------------------------------------------------
+// ehTrueEnclosingTryIndexIL: find the outermost enclosing try
+//   region that is not a mutual-protect try
+//
+// Arguments:
+//   regionIndex - index of interest
+//
+// Returns:
+//   Index of enclosng non-mutual protect try region, or EHblkDsc::NO_ENCLOSING_INDEX.
+//
+// Notes:
+//   Only safe to use during importation, before we have normalize the
+//   EH in the flow graph. Post importation use, the non-IL version.
+//
 unsigned Compiler::ehTrueEnclosingTryIndexIL(unsigned regionIndex)
 {
     assert(regionIndex != EHblkDsc::NO_ENCLOSING_INDEX);
+    assert(!fgImportDone);
 
     EHblkDsc* ehDscRoot = ehGetDsc(regionIndex);
     EHblkDsc* HBtab     = ehDscRoot;
@@ -822,6 +832,49 @@ unsigned Compiler::ehTrueEnclosingTryIndexIL(unsigned regionIndex)
 
         HBtab = ehGetDsc(regionIndex);
         if (!EHblkDsc::ebdIsSameILTry(ehDscRoot, HBtab))
+        {
+            // Found an enclosing 'try' that has a different 'try' region (is not mutually-protect with the
+            // original region). Return it.
+            break;
+        }
+    }
+
+    return regionIndex;
+}
+
+//-------------------------------------------------------------
+// ehTrueEnclosingTryIndex: find the closest enclosing try
+//   region that is not a mutual-protect try
+//
+// Arguments:
+//   regionIndex - index of interest
+//
+// Returns:
+//   Index of enclosng non-mutual protect try region, or EHblkDsc::NO_ENCLOSING_INDEX.
+//
+// Notes:
+//   Only safe to use after importation, once we have normalized the
+//   EH in the flow graph. For importation,  use the IL version.
+//
+unsigned Compiler::ehTrueEnclosingTryIndex(unsigned regionIndex)
+{
+    assert(regionIndex != EHblkDsc::NO_ENCLOSING_INDEX);
+    assert(fgImportDone);
+
+    EHblkDsc* ehDscRoot = ehGetDsc(regionIndex);
+    EHblkDsc* HBtab     = ehDscRoot;
+
+    for (;;)
+    {
+        regionIndex = HBtab->ebdEnclosingTryIndex;
+        if (regionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            // No enclosing 'try'; we're done
+            break;
+        }
+
+        HBtab = ehGetDsc(regionIndex);
+        if (!EHblkDsc::ebdIsSameTry(ehDscRoot, HBtab))
         {
             // Found an enclosing 'try' that has a different 'try' region (is not mutually-protect with the
             // original region). Return it.
@@ -3614,8 +3667,8 @@ void Compiler::fgVerifyHandlerTab()
         // on the block.
         for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
         {
-            unsigned enclosingTryIndex = ehTrueEnclosingTryIndexIL(XTnum); // find the true enclosing try index,
-                                                                           // ignoring 'mutual protect' trys
+            unsigned enclosingTryIndex = ehTrueEnclosingTryIndex(XTnum); // find the true enclosing try index,
+                                                                         // ignoring 'mutual protect' trys
             if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
             {
                 // The handler funclet for 'XTnum' has a try index of 'enclosingTryIndex' (at least, the parts of the
@@ -4332,124 +4385,6 @@ bool Compiler::fgAnyIntraHandlerPreds(BasicBlock* block)
 
     return false;
 }
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-/*****************************************************************************
- *
- *  Function called to relocate any and all EH regions.
- *  Only entire consecutive EH regions will be moved and they will be kept together.
- *  Except for the first block, the range can not have any blocks that jump into or out of the region.
- */
-
-bool Compiler::fgRelocateEHRegions()
-{
-    bool result = false; // Our return value
-
-    assert(!UsesFunclets());
-
-#ifdef DEBUG
-    if (verbose)
-        printf("*************** In fgRelocateEHRegions()\n");
-#endif
-
-    unsigned  XTnum;
-    EHblkDsc* HBtab;
-
-    for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
-    {
-        // Nested EH regions cannot be moved.
-        // Also we don't want to relocate an EH region that has a filter
-        if ((HBtab->ebdHandlerNestingLevel == 0) && !HBtab->HasFilter())
-        {
-            bool movedTry = false;
-#if DEBUG
-            bool movedHnd = false;
-#endif // DEBUG
-
-            // Only try to move the outermost try region
-            if (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-            {
-                // Move the entire try region if it can be moved
-                if (HBtab->ebdTryBeg->isRunRarely())
-                {
-                    BasicBlock* bTryLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_TRY);
-                    if (bTryLastBB != NULL)
-                    {
-                        result   = true;
-                        movedTry = true;
-                    }
-                }
-#if DEBUG
-                if (verbose && movedTry)
-                {
-                    printf("\nAfter relocating an EH try region");
-                    fgDispBasicBlocks();
-                    fgDispHandlerTab();
-
-                    // Make sure that the predecessor lists are accurate
-                    if (expensiveDebugCheckLevel >= 2)
-                    {
-                        fgDebugCheckBBlist();
-                    }
-                }
-#endif // DEBUG
-            }
-
-            // Currently it is not good to move the rarely run handler regions to the end of the method
-            // because fgDetermineFirstColdBlock() must put the start of any handler region in the hot
-            // section.
-
-#if 0
-            // Now try to move the entire handler region if it can be moved.
-            // Don't try to move a finally handler unless we already moved the try region.
-            if (HBtab->ebdHndBeg->isRunRarely() &&
-                !HBtab->ebdHndBeg->hasTryIndex() &&
-                (movedTry || !HBtab->HasFinallyHandler()))
-            {
-                BasicBlock* bHndLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
-                if (bHndLastBB != NULL)
-                {
-                    result   = true;
-                    movedHnd = true;
-                }
-            }
-#endif // 0
-
-#if DEBUG
-            if (verbose && movedHnd)
-            {
-                printf("\nAfter relocating an EH handler region");
-                fgDispBasicBlocks();
-                fgDispHandlerTab();
-
-                // Make sure that the predecessor lists are accurate
-                if (expensiveDebugCheckLevel >= 2)
-                {
-                    fgDebugCheckBBlist();
-                }
-            }
-#endif // DEBUG
-        }
-    }
-
-#if DEBUG
-    fgVerifyHandlerTab();
-
-    if (verbose && result)
-    {
-        printf("\nAfter fgRelocateEHRegions()");
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
-        // Make sure that the predecessor lists are accurate
-        fgDebugCheckBBlist();
-    }
-#endif // DEBUG
-
-    return result;
-}
-
-#endif // FEATURE_EH_WINDOWS_X86
 
 //------------------------------------------------------------------------
 // fgExtendEHRegionBefore: Modify the EH table to account for a new block.
