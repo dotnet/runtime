@@ -4430,7 +4430,7 @@ namespace Internal.JitInterface
                     {
                         ReadOnlySpan<char> partialMethodName = methodName.Slice(45);
 
-                        if (partialMethodName.StartWith("Numerics.Vector"))
+                        if (partialMethodName.StartsWith("Numerics.Vector"))
                         {
                             partialMethodName = partialMethodName.Slice(15);
 
@@ -4439,7 +4439,7 @@ namespace Internal.JitInterface
                                 methodName = partialMethodName.Slice(7);
                             }
                         }
-                        if (partialMethodName.StartWith("Runtime.Intrinsics.Vector"))
+                        if (partialMethodName.StartsWith("Runtime.Intrinsics.Vector"))
                         {
                             partialMethodName = partialMethodName.Slice(25);
 
