@@ -7,8 +7,9 @@
 #include <sstring.h>
 #include "bundle.h"
 
-struct ProbeExtensionResult
+class ProbeExtensionResult
 {
+public:
     enum class Type
     {
         Invalid,
