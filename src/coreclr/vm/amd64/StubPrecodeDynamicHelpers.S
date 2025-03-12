@@ -8,12 +8,12 @@
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS 
 
 #define SecretArg_Reg r10
-#define FirstArg_Reg rcx
-#define SecondArg_Reg rdx
-#define SecondArg_DwordReg edx
-#define ThirdArg_Reg r8
-#define ThirdArg_DwordReg r8d
-#define FourthArg_Reg r9
+#define FirstArg_Reg rdi
+#define SecondArg_Reg rsi
+#define SecondArg_DwordReg esi
+#define ThirdArg_Reg rdx
+#define ThirdArg_DwordReg edx
+#define FourthArg_Reg rcx
 
 #define DATA_SLOT(field) r10 + OFFSETOF__DynamicHelperStubArgs__ ## field
 #define GENERIC_DICT_DATA_SLOT(field) r10 + OFFSETOF__GenericDictionaryDynamicHelperStubData__ ## field
@@ -203,7 +203,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class_0_1, _TEXT
         // Standard Indirection
         mov    rax, QWORD PTR [rax]
         // Standard Indirection
-        mov    rax, QWORD PTR [rax + 8h]
+        mov    rax, QWORD PTR [rax + 0x8]
         ret
 LEAF_END DynamicHelper_GenericDictionaryLookup_Class_0_1, _TEXT
 
@@ -214,7 +214,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class_0_2, _TEXT
         // Standard Indirection
         mov    rax, QWORD PTR [rax]
         // Standard Indirection
-        mov    rax, QWORD PTR [rax + 10h]
+        mov    rax, QWORD PTR [rax + 0x10]
         ret
 LEAF_END DynamicHelper_GenericDictionaryLookup_Class_0_2, _TEXT
 
@@ -225,7 +225,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class_0_3, _TEXT
         // Standard Indirection
         mov    rax, QWORD PTR [rax]
         // Standard Indirection
-        mov    rax, QWORD PTR [rax + 18h]
+        mov    rax, QWORD PTR [rax + 0x18]
         ret
 LEAF_END DynamicHelper_GenericDictionaryLookup_Class_0_3, _TEXT
 
@@ -242,7 +242,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method_1, _TEXT
         // First indirection
         mov    rax, QWORD PTR [FirstArg_Reg+OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo]
         // Standard Indirection
-        mov    rax, QWORD PTR [rax + 08h]
+        mov    rax, QWORD PTR [rax + 0x8]
         ret
 LEAF_END DynamicHelper_GenericDictionaryLookup_Method_1, _TEXT
 
@@ -251,7 +251,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method_2, _TEXT
         // First indirection
         mov    rax, QWORD PTR [FirstArg_Reg+OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo]
         // Standard Indirection
-        mov    rax, QWORD PTR [rax + 10h]
+        mov    rax, QWORD PTR [rax + 0x10]
         ret
 LEAF_END DynamicHelper_GenericDictionaryLookup_Method_2, _TEXT
 
@@ -260,7 +260,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method_3, _TEXT
         // First indirection
         mov    rax, QWORD PTR [FirstArg_Reg+OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo]
         // Standard Indirection
-        mov    rax, QWORD PTR [rax + 18h]
+        mov    rax, QWORD PTR [rax + 0x18]
         ret
 LEAF_END DynamicHelper_GenericDictionaryLookup_Method_3, _TEXT
 

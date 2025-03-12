@@ -18,8 +18,11 @@
 #include "nativeimage.h"
 
 #ifndef DACCESS_COMPILE
-extern "C" PCODE g_pMethodWithSlotAndModule = (PCODE)NULL;
-extern "C" PCODE g_pClassWithSlotAndModule = (PCODE)NULL;
+extern "C" PCODE g_pMethodWithSlotAndModule;
+extern "C" PCODE g_pClassWithSlotAndModule;
+
+PCODE g_pMethodWithSlotAndModule = (PCODE)NULL;
+PCODE g_pClassWithSlotAndModule = (PCODE)NULL;
 
 PCODE DynamicHelpers::GetDictionaryLookupHelper(CorInfoHelpFunc jitHelper)
 {

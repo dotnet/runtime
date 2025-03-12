@@ -165,7 +165,7 @@ LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Class_TestForNull_HelperCall):
                 ldr    SecondArg_DwordReg, GENERIC_DICT_DATA_SLOT(LastIndir)
                 ldr    FirstArg_Reg, [SecondArg_Reg, FirstArg_Reg]
                 // Null test
-                cbz    FirstArg_Reg, DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_HelperCall
+                cbz    FirstArg_Reg, LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_HelperCall)
                 ret    lr
 LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_HelperCall):
                 mov    FirstArg_Reg, x4
@@ -184,7 +184,7 @@ LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_H
                 ldr    SecondArg_DwordReg, GENERIC_DICT_DATA_SLOT(LastIndir)
                 ldr    FirstArg_Reg, [SecondArg_Reg, FirstArg_Reg]
                 // Null test
-                cbz    LOCAL_LABEL(FirstArg_Reg, DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall)
+                cbz    FirstArg_Reg, LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall)
                 ret    lr
 LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall)
                 mov    FirstArg_Reg, x4
