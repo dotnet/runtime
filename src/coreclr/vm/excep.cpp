@@ -3053,14 +3053,17 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     // This is a workaround to fix the generation of stack traces from exception objects so that
     // they point to the line that actually generated the exception instead of the line
     // following.
-    if (pCf->IsIPadjusted())
+    if (pCf != NULL)
     {
-        stackTraceElem.flags |= STEF_IP_ADJUSTED;
-    }
-    else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
-    {
-        stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
-        stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        if (pCf->IsIPadjusted())
+        {
+            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        }
+        else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
+        {
+            stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        }
     }
 
 #ifndef TARGET_UNIX // Watson is supported on Windows only
@@ -6022,6 +6025,12 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
         return FALSE;
     }
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
+        return TRUE;
+#endif
+
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
@@ -6036,6 +6045,9 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
     else {
         return FALSE;
     }
+#else // FEATURE_VIRTUAL_STUB_DISPATCH
+    return FALSE;
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
 
 // Check if the passed in instruction pointer is in one of the

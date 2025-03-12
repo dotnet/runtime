@@ -258,7 +258,7 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
-            collectionType: run_tiered
+            collectionType: run_pgo
             collectionName: benchmarks
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -278,7 +278,7 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
-            collectionType: run_pgo
+            collectionType: run_pgo_optrepeat
             collectionName: benchmarks
 
       #

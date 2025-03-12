@@ -1155,7 +1155,7 @@ _TheUMEntryPrestub@0 proc public
     push        ecx
     push        edx
 
-    push    eax     ; UMEntryThunk*
+    push    eax     ; UMEntryThunkData*
     call    _TheUMEntryPrestubWorker@4
 
     ; pop argument registers
