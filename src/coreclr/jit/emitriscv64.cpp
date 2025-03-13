@@ -1277,15 +1277,9 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
 
-    // Handle corner case: all zeros & all ones
-    if (imm == 0)
+    if (isValidSimm12(imm))
     {
-        emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
-        return;
-    }
-    else if (imm == -1)
-    {
-        emitIns_R_R_I(INS_addi, size, reg, REG_R0, -1);
+        emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
         return;
     }
 
