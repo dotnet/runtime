@@ -4738,7 +4738,45 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 //
 void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
-    NYI_RISCV64("genIntrinsic-----unimplemented/unused on RISCV64 yet----");
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTree* op2 = treeNode->gtGetOp2IfPresent();
+
+    var_types type = op1->TypeGet();
+    assert(varTypeIsFloating(type));
+    assert(treeNode->TypeIs(type));
+    emitAttr size = emitActualTypeSize(type);
+    bool     is4  = (size == 4);
+
+    genConsumeOperands(treeNode->AsOp());
+    regNumber dest = treeNode->GetRegNum();
+    regNumber src1 = op1->GetRegNum();
+    regNumber src2 = REG_ZERO;
+
+    instruction instr = INS_invalid;
+    switch (treeNode->gtIntrinsicName)
+    {
+        case NI_System_Math_Abs:
+            instr = is4 ? INS_fsgnjx_s : INS_fsgnjx_d;
+            src2  = src1;
+            break;
+        case NI_System_Math_Sqrt:
+            instr = is4 ? INS_fsqrt_s : INS_fsqrt_d;
+            break;
+        default:
+            NO_WAY("Unknown intrinsic");
+    }
+
+    emitter& e = *GetEmitter();
+    if (src2 == REG_ZERO)
+    {
+        e.emitIns_R_R(instr, size, dest, src1);
+    }
+    else
+    {
+        e.emitIns_R_R_R(instr, size, dest, src1, src2);
+    }
+
+    genProduceReg(treeNode);
 }
 
 //---------------------------------------------------------------------
