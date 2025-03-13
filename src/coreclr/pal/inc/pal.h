@@ -704,15 +704,6 @@ GetFullPathNameW(
 #define GetFullPathName GetFullPathNameA
 #endif
 
-PALIMPORT
-UINT
-PALAPI
-GetTempFileNameW(
-         IN LPCWSTR lpPathName,
-         IN LPCWSTR lpPrefixString,
-         IN UINT uUnique,
-         OUT LPWSTR lpTempFileName);
-
 #ifdef UNICODE
 #define GetTempFileName GetTempFileNameW
 #else

@@ -100,7 +100,6 @@ nativeStringResourceTable_mscorrc
 #GetSystemInfo
 #GetSystemTime
 #GetSystemTimeAsFileTime
-#GetTempFileNameW
 #GetTempPathA
 #GetTempPathW
 #InitializeCriticalSection

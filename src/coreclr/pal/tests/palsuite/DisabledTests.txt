@@ -23,13 +23,6 @@ about 65000 files and then deletes them. The test that takes longer
 than 60 seconds will be flagged as an error and so in such a case
 the test will have to be run manually.
 
-file_io/gettempfilenamew/test2 :
-=======================================
-This test takes longer than 60 seconds to run. The test creates
-about 65000 files and then deletes them. The test that takes longer
-than 60 seconds will be flagged as an error and so in such a case
-the test will have to be run manually.
-
 locale_info/getcpinfo/test2:
 =======================================
 This test will be useful in future versions for testing various

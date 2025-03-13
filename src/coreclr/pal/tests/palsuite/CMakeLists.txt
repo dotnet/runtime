@@ -285,9 +285,6 @@ add_executable_clr(paltests
   file_io/GetTempFileNameA/test1/GetTempFileNameA.cpp
   file_io/GetTempFileNameA/test2/GetTempFileNameA.cpp
   file_io/GetTempFileNameA/test3/gettempfilenamea.cpp
-  file_io/GetTempFileNameW/test1/GetTempFileNameW.cpp
-  file_io/GetTempFileNameW/test2/GetTempFileNameW.cpp
-  file_io/GetTempFileNameW/test3/gettempfilenamew.cpp
   file_io/gettemppatha/test1/gettemppatha.cpp
   file_io/GetTempPathW/test1/GetTempPathW.cpp
   file_io/ReadFile/test1/ReadFile.cpp
