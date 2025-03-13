@@ -102,4 +102,4 @@ OSSL_STORE_CTX* OSSL_STORE_open_ex(
 
 X509* SSL_get1_peer_certificate(const SSL* ssl);
 
-int EC_METHOD_get_field_type(const EC_METHOD *meth);
+int EC_GROUP_get_field_type(const EC_GROUP *group);
