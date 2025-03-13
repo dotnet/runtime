@@ -206,7 +206,7 @@ steps:
       condition: succeededOrFailed()
       displayName: 'Publish build log'
       inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/build.log
+        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/build.log
         artifactName:  iOSNativeAOTArm64NoStripSymbolsBuildLog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
