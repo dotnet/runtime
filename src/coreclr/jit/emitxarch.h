@@ -297,6 +297,11 @@ bool HasKMaskRegisterDest(instruction ins) const
         case INS_vgatherqps:
         case INS_vgatherdpd:
         case INS_vgatherqpd:
+        // KMOV can be promoted to EVEX with APX.
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
         {
             return true;
         }
