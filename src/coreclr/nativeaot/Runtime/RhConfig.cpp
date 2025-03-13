@@ -142,7 +142,7 @@ bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool d
 bool RhConfig::ReadConfigValue(_In_z_ const char* envName, _In_z_ const char* configName, uint64_t* pValue, bool decimal)
 {
     uint64_t uiValue;
-    if (g_pRhConfig->ReadConfigValue(envName, &uiValue))
+    if (g_pRhConfig->ReadConfigValue(envName, &uiValue, decimal))
     {
         *pValue = uiValue;
         return true;
@@ -150,7 +150,7 @@ bool RhConfig::ReadConfigValue(_In_z_ const char* envName, _In_z_ const char* co
 
     if (configName)
     {
-        if (g_pRhConfig->ReadKnobUInt64Value(configName, &uiValue))
+        if (g_pRhConfig->ReadKnobUInt64Value(configName, &uiValue, decimal))
         {
             *pValue = uiValue;
             return true;
