@@ -10,12 +10,12 @@ public static class SequentialOffsets
     [Fact]
     public static void FieldsWithOffsets()
     {
-        Assert.Throws<TypeLoadException>(NoInlineMethod);
-    }
+        Assert.Throws<TypeLoadException>(LoadType);
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void NoInlineMethod()
-    {
-        _ = typeof(SeqLayoutTypeWithFieldsWithOffsets);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void LoadType()
+        {
+            _ = typeof(SeqLayoutTypeWithFieldsWithOffsets);
+        }
     }
 }
