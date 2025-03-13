@@ -14811,11 +14811,3 @@ ULONG EECodeInfo::GetFrameOffsetFromUnwindInfo()
     return frameOffset;
 }
 #endif // defined(TARGET_AMD64)
-
-#ifdef TARGET_WASM
-ULONG EECodeInfo::GetFixedStackSize()
-{
-    _ASSERT(false && "GetFixedStackSize() not implemented for WebAssembly");
-    return 0;
-}
-#endif
