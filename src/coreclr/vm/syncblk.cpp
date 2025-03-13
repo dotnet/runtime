@@ -1571,17 +1571,19 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
         return AwareLock::EnterHelperResult_Contention;
     }
 
-    // Initialize g_currentProcessCpuCount and g_currentProcessIsCpuQuotaLimited if they haven't been initialized yet
-    if (g_currentProcessCpuCount == 0)
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Threading_ReduceSpinWaitingWhenCpuQuotaIsLimited))
     {
-        GetCurrentProcessCpuCount();
-    }
+        // Initialize g_currentProcessCpuCount and g_currentProcessIsCpuQuotaLimited if they haven't been initialized yet
+        if (g_currentProcessCpuCount == 0)
+        {
+            GetCurrentProcessCpuCount();
+        }
 
-    _ASSERTE(g_currentProcessCpuCount > 0);
-    if (g_currentProcessIsCpuQuotaLimited)
-    {
-        g_SpinConstants.dwMonitorSpinCount = 0;
-        return AwareLock::EnterHelperResult_Contention;
+        _ASSERTE(g_currentProcessCpuCount > 0);
+        if (g_currentProcessIsCpuQuotaLimited)
+        {
+            return AwareLock::EnterHelperResult_Contention;
+        }
     }
 
     YieldProcessorNormalizationInfo normalizationInfo;
@@ -2659,33 +2661,49 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
             unregisterWaiterHolder.SuppressRelease();
 
-            // Spin a bit while trying to acquire the lock. This has a few benefits:
-            // - Spinning helps to reduce waiter starvation. Since other non-waiter threads can take the lock while there are
-            //   waiters (see LockState::InterlockedTryLock()), once a waiter wakes it will be able to better compete
-            //   with other spinners for the lock.
-            // - If there is another thread that is repeatedly acquiring and releasing the lock, spinning before waiting again
-            //   helps to prevent a waiter from repeatedly context-switching in and out
-            // - Further in the same situation above, waking up and waiting shortly thereafter deprioritizes this waiter because
-            //   events release waiters in FIFO order. Spinning a bit helps a waiter to retain its priority at least for one
-            //   spin duration before it gets deprioritized behind all other waiters.
             if (g_SystemInfo.dwNumberOfProcessors > 1)
             {
-                bool acquiredLock = false;
-                YieldProcessorNormalizationInfo normalizationInfo;
-                const DWORD spinCount = g_SpinConstants.dwMonitorSpinCount;
-                for (DWORD spinIteration = 0; spinIteration < spinCount; ++spinIteration)
+                bool shouldSpin = true;
+                if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Threading_ReduceSpinWaitingWhenCpuQuotaIsLimited))
                 {
-                    if (m_lockState.InterlockedTry_LockAndUnregisterWaiterAndObserveWakeSignal(this))
+                    // Initialize g_currentProcessCpuCount and g_currentProcessIsCpuQuotaLimited if they haven't been initialized yet
+                    if (g_currentProcessCpuCount == 0)
                     {
-                        acquiredLock = true;
+                        GetCurrentProcessCpuCount();
+                    }
+                    
+                    _ASSERTE(g_currentProcessCpuCount > 0);
+                    shouldSpin = !g_currentProcessIsCpuQuotaLimited;
+                }
+
+                if (shouldSpin)
+                {
+                    // Spin a bit while trying to acquire the lock. This has a few benefits:
+                    // - Spinning helps to reduce waiter starvation. Since other non-waiter threads can take the lock while there are
+                    //   waiters (see LockState::InterlockedTryLock()), once a waiter wakes it will be able to better compete
+                    //   with other spinners for the lock.
+                    // - If there is another thread that is repeatedly acquiring and releasing the lock, spinning before waiting again
+                    //   helps to prevent a waiter from repeatedly context-switching in and out
+                    // - Further in the same situation above, waking up and waiting shortly thereafter deprioritizes this waiter because
+                    //   events release waiters in FIFO order. Spinning a bit helps a waiter to retain its priority at least for one
+                    //   spin duration before it gets deprioritized behind all other waiters.
+                    bool acquiredLock = false;
+                    YieldProcessorNormalizationInfo normalizationInfo;
+                    const DWORD spinCount = g_SpinConstants.dwMonitorSpinCount;
+                    for (DWORD spinIteration = 0; spinIteration < spinCount; ++spinIteration)
+                    {
+                        if (m_lockState.InterlockedTry_LockAndUnregisterWaiterAndObserveWakeSignal(this))
+                        {
+                            acquiredLock = true;
+                            break;
+                        }
+
+                        SpinWait(normalizationInfo, spinIteration);
+                    }
+                    if (acquiredLock)
+                    {
                         break;
                     }
-
-                    SpinWait(normalizationInfo, spinIteration);
-                }
-                if (acquiredLock)
-                {
-                    break;
                 }
             }
 
