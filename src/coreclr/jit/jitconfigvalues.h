@@ -374,6 +374,7 @@ RELEASE_CONFIG_INTEGER(JitNoInline, "JitNoInline", 0)
 
 #if defined(DEBUG)
 CONFIG_INTEGER(JitStressRex2Encoding, "JitStressRex2Encoding", 0) // Enable rex2 encoding for compatible instructions.
+CONFIG_INTEGER(JitBypassApxCheck,     "JitBypassApxCheck",     0) // Enable apx for testing
 CONFIG_INTEGER(JitStressPromotedEvexEncoding, "JitStressPromotedEvexEncoding", 0) // Enable promoted EVEX encoding for
                                                                                   // compatible instructions.
 #endif
