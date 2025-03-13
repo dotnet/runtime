@@ -18,13 +18,13 @@ steps:
         displayName: 'Publish binlog'
         inputs:
           pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
-          artifactName:  AndroidMonoArm64BuildLog
+          artifactName:  AndroidMonoArm64binlog
       - task: PublishBuildArtifacts@1
         condition: succeededOrFailed()
         displayName: 'Publish build log'
         inputs:
           pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/build.log
-          artifactName:  AndroidMonoArm64BuildLog
+          artifactName:  AndroidMonoArm64buildlog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
@@ -49,13 +49,13 @@ steps:
         displayName: 'Publish binlog'
         inputs:
           pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
-          artifactName:  AndroidCoreCLRArm64BuildLog
+          artifactName:  AndroidCoreCLRArm64binlog
       - task: PublishBuildArtifacts@1
         condition: succeededOrFailed()
         displayName: 'Publish build log'
         inputs:
           pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/build.log
-          artifactName:  AndroidCoreCLRArm64BuildLog
+          artifactName:  AndroidCoreCLRArm64buildlog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
@@ -82,13 +82,13 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-        artifactName:  iOSMonoArm64NoLLVMNoStripSymbolsBuildLog
+        artifactName:  iOSMonoArm64NoLLVMNoStripSymbolsbinlog
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish build log'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/build.log
-        artifactName:  iOSMonoArm64NoLLVMNoStripSymbolsBuildLog
+        artifactName:  iOSMonoArm64NoLLVMNoStripSymbolsbuildlog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -112,13 +112,13 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-        artifactName:  iOSMonoArm64NoLLVMStripSymbolsBuildLog
+        artifactName:  iOSMonoArm64NoLLVMStripSymbolsbinlog
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish build log'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/build.log
-        artifactName:  iOSMonoArm64NoLLVMStripSymbolsBuildLog
+        artifactName:  iOSMonoArm64NoLLVMStripSymbolsbuildlog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -142,13 +142,13 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-        artifactName:  iOSMonoArm64LLVMNoStripSymbolsBuildLog
+        artifactName:  iOSMonoArm64LLVMNoStripSymbolsbinlog
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish build log'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/build.log
-        artifactName:  iOSMonoArm64LLVMNoStripSymbolsBuildLog
+        artifactName:  iOSMonoArm64LLVMNoStripSymbolsbuildlog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -172,13 +172,13 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-        artifactName: iOSMonoArm64LLVMStripSymbolsBuildLog
+        artifactName: iOSMonoArm64LLVMStripSymbolsbinlog
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish build log'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/build.log
-        artifactName:  iOSMonoArm64LLVMStripSymbolsBuildLog
+        artifactName:  iOSMonoArm64LLVMStripSymbolsbuildlog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -201,13 +201,13 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/msbuild.binlog
-        artifactName: iOSNativeAOTArm64NoStripSymbolsBuildLog
+        artifactName: iOSNativeAOTArm64NoStripSymbolsbinlog
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish build log'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/build.log
-        artifactName:  iOSNativeAOTArm64NoStripSymbolsBuildLog
+        artifactName:  iOSNativeAOTArm64NoStripSymbolsbuildlog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -231,13 +231,13 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/msbuild.binlog
-        artifactName: iOSNativeAOTArm64StripSymbolsBuildLog
+        artifactName: iOSNativeAOTArm64StripSymbolsbinlog
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish build log'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/build.log
-        artifactName:  iOSNativeAOTArm64StripSymbolsBuildLog
+        artifactName:  iOSNativeAOTArm64StripSymbolsbuildlog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
