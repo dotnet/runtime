@@ -4936,13 +4936,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
-        // Optimize block order
+        // Conditional to switch conversion, and switch peeling
         //
-        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
 
-        // Conditional to Switch conversion
+        // Run flow optimizations before reordering blocks
         //
-        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
+        DoPhase(this, PHASE_OPTIMIZE_PRE_LAYOUT, &Compiler::optOptimizePreLayout);
 
         // Run profile repair
         //
@@ -5023,30 +5023,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         if (JitConfig.JitDoReversePostOrderLayout())
         {
-            auto lateLayoutPhase = [this] {
-                // Skip preliminary reordering passes to create more work for 3-opt layout
-                if (compStressCompile(STRESS_THREE_OPT_LAYOUT, 10))
-                {
-                    m_dfsTree = fgComputeDfs</* useProfile */ true>();
-                }
-                else
-                {
-                    fgDoReversePostOrderLayout();
-                    fgMoveColdBlocks();
-                }
-
-                fgSearchImprovedLayout();
-                fgInvalidateDfsTree();
-
-                if (compHndBBtabCount != 0)
-                {
-                    fgRebuildEHRegions();
-                }
-
-                return PhaseStatus::MODIFIED_EVERYTHING;
-            };
-
-            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, lateLayoutPhase);
+            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::fgSearchImprovedLayout);
         }
         else
         {

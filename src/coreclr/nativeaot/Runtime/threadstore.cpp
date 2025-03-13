@@ -110,9 +110,16 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     // we want to avoid at construction time because the loader lock is held then.
     Thread * pAttachingThread = RawGetCurrentThread();
 
-    // The thread was already initialized, so it is already attached
+    if (pAttachingThread->IsDetached())
+    {
+        ASSERT_UNCONDITIONALLY("Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+        RhFailFast();
+    }
+
+    // The thread was already initialized, so it is already attached.
     if (pAttachingThread->IsInitialized())
     {
+        ASSERT((pAttachingThread->m_ThreadStateFlags & Thread::TSF_Attached) != 0);
         return;
     }
 
@@ -156,12 +163,8 @@ void ThreadStore::DetachCurrentThread()
         return;
     }
 
-    // Unregister from OS notifications
-    // This can return false if a thread did not register for OS notification.
-    if (!PalDetachThread(pDetachingThread))
-    {
-        return;
-    }
+    // detach callback should not call us twice
+    ASSERT(!pDetachingThread->IsDetached());
 
     // Run pre-mortem callbacks while we still can run managed code and not holding locks.
     // NOTE: background GC threads are attached/suspendable threads, but should not run ordinary
