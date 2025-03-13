@@ -276,8 +276,7 @@ static int write_file(int fd, const char* msg, size_t bytes_to_write)
 
 int minipal_log_write(minipal_log_flags flags, const char* msg)
 {
-    if (msg == NULL || msg[0] == '\0')
-        return 0;
+    assert(msg != NULL && msg[0] != '\0');
 
     size_t bytes_to_write = strlen(msg);
     size_t bytes_written = 0;
