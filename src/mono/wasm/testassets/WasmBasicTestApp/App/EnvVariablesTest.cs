@@ -5,19 +5,17 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
 
-public partial class ProfilerTest
+public partial class EnvVariablesTest
 {
     [JSExport]
-    [MethodImpl(MethodImplOptions.NoInlining)]
-     public static void TakeHeapshot() { }
-
-    [JSExport]
-    public static int TestMeaning()
+    public static int DumpVariables()
     {
-        for(int i=0; i<100; i++){
-            var r = new int[1000];
+        // enumerate all environment variables
+        foreach (string key in Environment.GetEnvironmentVariables().Keys)
+        {
+            Console.WriteLine($"{key}={Environment.GetEnvironmentVariable(key)}");
         }
- 
+
         return 42;
     }
 }
