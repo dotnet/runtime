@@ -37,9 +37,9 @@ endif()
 add_library(minipal STATIC)
 target_link_libraries(minipal PRIVATE minipal_objects)
 
-if(CLR_CMAKE_TARGET_ANDROID)
+if(CLR_CMAKE_HOST_ANDROID)
   target_link_libraries(minipal PRIVATE log)
-endif(CLR_CMAKE_TARGET_ANDROID)
+endif(CLR_CMAKE_HOST_ANDROID)
 
 add_library(minipal_sanitizer_support OBJECT
     sansupport.c)
