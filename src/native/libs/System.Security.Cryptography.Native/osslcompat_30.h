@@ -24,6 +24,18 @@
 #define OSSL_MAC_PARAM_XOF    "xof"
 #define OSSL_MAC_PARAM_SIZE   "size"
 
+#define OSSL_PKEY_PARAM_GROUP_NAME   "group"
+#define OSSL_PKEY_PARAM_PRIV_KEY     "priv"
+#define OSSL_PKEY_PARAM_EC_PUB_X     "qx"
+#define OSSL_PKEY_PARAM_EC_PUB_Y     "qy"
+#define OSSL_PKEY_PARAM_EC_P         "p"
+#define OSSL_PKEY_PARAM_EC_A         "a"
+#define OSSL_PKEY_PARAM_EC_B         "b"
+#define OSSL_PKEY_PARAM_EC_GENERATOR "generator"
+#define OSSL_PKEY_PARAM_EC_ORDER     "order"
+#define OSSL_PKEY_PARAM_EC_COFACTOR  "cofactor"
+#define OSSL_PKEY_PARAM_EC_SEED      "seed"
+
 #define OSSL_STORE_INFO_PKEY 4
 #define OSSL_STORE_INFO_PUBKEY 3
 
