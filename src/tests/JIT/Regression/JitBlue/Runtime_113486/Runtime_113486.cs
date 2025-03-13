@@ -13,7 +13,7 @@
 using System;
 using Xunit;
 
-public class Runtime_113334
+public class Runtime_113486
 {
     static IRuntime s_rt;
     static S0[,, ] s_14;
