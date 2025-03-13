@@ -287,6 +287,27 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ResolveKeyedServicesAnyKeyOrdering()
+        {
+            var serviceCollection = new ServiceCollection();
+            var service1 = new Service();
+            var service2 = new Service();
+            var service3 = new Service();
+
+            serviceCollection.AddKeyedSingleton<IService>("A-service", service1);
+            serviceCollection.AddKeyedSingleton<IService>("B-service", service2);
+            serviceCollection.AddKeyedSingleton<IService>("A-service", service3);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            // The order should be in registration order, and not grouped by key for example.
+            // Although this isn't necessarily a requirement, it is the current behavior.
+            Assert.Equal(
+                new[] { service1, service2, service3 },
+                provider.GetKeyedServices<IService>(KeyedService.AnyKey));
+        }
+
+        [Fact]
         public void ResolveKeyedGenericServices()
         {
             var service1 = new FakeService();
