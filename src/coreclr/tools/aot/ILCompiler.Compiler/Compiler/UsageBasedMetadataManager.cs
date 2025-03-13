@@ -245,8 +245,17 @@ namespace ILCompiler
 
         public override void GetNativeLayoutMetadataDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            dependencies ??= new DependencyList();
-            dependencies.Add(factory.LimitedMethodMetadata(method.GetTypicalMethodDefinition()), "Method referenced from native layout");
+            if (CanGenerateMetadata(method))
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.LimitedMethodMetadata(method.GetTypicalMethodDefinition()), "Method referenced from native layout");
+            }
+            else
+            {
+                // We can end up here with reflection disabled or multifile compilation.
+                // If we ever productize either, we'll need to do something different.
+                // Scenarios that currently need this won't work in these modes.
+            }
         }
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)

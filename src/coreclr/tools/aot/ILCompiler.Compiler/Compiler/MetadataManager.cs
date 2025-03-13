@@ -842,7 +842,8 @@ namespace ILCompiler
             foreach (var field in GetFieldsWithRuntimeMapping())
             {
                 Field record = transformed.GetTransformedFieldDefinition(field.GetTypicalFieldDefinition());
-                Debug.Assert(record != null);
+                if (record == null)
+                    continue;
 
                 fieldMetadataMappings[field.GetTypicalFieldDefinition()] = writer.GetRecordHandle(record);
 
@@ -961,6 +962,14 @@ namespace ILCompiler
 
         public int GetMetadataHandleForMethod(NodeFactory factory, MethodDesc method)
         {
+            if (!CanGenerateMetadata(method))
+            {
+                // We can end up here with reflection disabled or multifile compilation.
+                // If we ever productize either, we'll need to do something different.
+                // Scenarios that currently need this won't work in these modes.
+                return 0;
+            }
+
             EnsureMetadataGenerated(factory);
             return _methodHandleMap[method];
         }
@@ -973,6 +982,14 @@ namespace ILCompiler
 
         public int GetMetadataHandleForField(NodeFactory factory, FieldDesc field)
         {
+            if (!CanGenerateMetadata(field))
+            {
+                // We can end up here with reflection disabled or multifile compilation.
+                // If we ever productize either, we'll need to do something different.
+                // Scenarios that currently need this won't work in these modes.
+                return 0;
+            }
+
             EnsureMetadataGenerated(factory);
             return _fieldHandleMap[field];
         }
