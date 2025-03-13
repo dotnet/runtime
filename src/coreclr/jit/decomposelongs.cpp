@@ -162,12 +162,18 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             if (tree->OperIs(GT_CNS_LNG) ||
                 (tree->OperIs(GT_IND, GT_LCL_FLD) && m_lowering->IsSafeToContainMem(user, tree)))
             {
+                NamedIntrinsic intrinsicId = user->AsHWIntrinsic()->GetHWIntrinsicId();
+                assert(HWIntrinsicInfo::IsVectorCreate(intrinsicId) ||
+                       HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) ||
+                       HWIntrinsicInfo::IsVectorCreateScalarUnsafe(intrinsicId));
+
                 return tree->gtNext;
             }
         }
         else if (user->OperIs(GT_STOREIND) && tree->OperIsHWIntrinsic() && m_compiler->opts.OptimizationEnabled())
         {
-            if (m_lowering->IsSafeToContainMem(user, tree))
+            NamedIntrinsic intrinsicId = tree->AsHWIntrinsic()->GetHWIntrinsicId();
+            if (HWIntrinsicInfo::IsVectorToScalar(intrinsicId) && m_lowering->IsSafeToContainMem(user, tree))
             {
                 return tree->gtNext;
             }
