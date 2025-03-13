@@ -100,18 +100,7 @@ pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print
     }
 
     if (print_errors)
-    {
-        if (error_message.empty())
-        {
-            // Default resolution error message
-            print_resolution_error(dotnet_root, _X(""));
-        }
-        else
-        {
-            // Custom error message specified in the global.json
-            trace::error(error_message.c_str());
-        }
-    }
+        print_resolution_error(dotnet_root, _X(""));
 
     return {};
 }
@@ -153,6 +142,13 @@ std::vector<pal::string_t> sdk_resolver::get_search_paths(const pal::string_t& d
 
 void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, const pal::char_t *main_error_prefix) const
 {
+    if (!error_message.empty())
+    {
+        // Custom error message specified in the global.json
+        trace::error(_X("%s%s"), main_error_prefix, error_message.c_str());
+        return;
+    }
+
     bool sdk_exists = false;
     const pal::char_t *no_sdk_message = _X("No .NET SDKs were found.");
     if (!requested_version.is_empty())
