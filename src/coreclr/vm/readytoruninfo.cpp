@@ -2167,7 +2167,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
 
     // It's available only via the run-time helper function
-    PCODE helper = NULL;
+    PCODE helper = (PCODE)NULL;
     if (pLookup->indirections == CORINFO_USEHELPER)
     {
         GenericHandleArgs * pArgs = (GenericHandleArgs *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(GenericHandleArgs))));
@@ -2290,7 +2290,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             GenericDictionaryDynamicHelperStubData *pDictLookupData = (GenericDictionaryDynamicHelperStubData *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(GenericDictionaryDynamicHelperStubData))));
             *pDictLookupData = dictLookupData;
 
-            _ASSERTE(helper != NULL);
+            _ASSERTE(helper != (PCODE)NULL);
             result =  CreateDynamicHelperPrecode(pAllocator, &amTracker, helper, (TADDR)pDictLookupData);
         }
         else

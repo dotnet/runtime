@@ -103,7 +103,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull, _T
 LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull_HelperCall):
         mov    SecondArg_Reg, QWORD PTR [GENERIC_DICT_DATA_SLOT(HandleArgs)]
         PREPARE_EXTERNAL_VAR g_pClassWithSlotAndModule, rax
-        jmp    rax
+        jmp    [rax]
 LEAF_END DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull, _TEXT
 
 LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class_TestForNull, _TEXT
@@ -122,7 +122,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class_TestForNull, _TEXT
 LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Class_TestForNull_HelperCall):
         mov    SecondArg_Reg, QWORD PTR [GENERIC_DICT_DATA_SLOT(HandleArgs)]
         PREPARE_EXTERNAL_VAR g_pClassWithSlotAndModule, rax
-        jmp    rax
+        jmp    [rax]
 LEAF_END DynamicHelper_GenericDictionaryLookup_Class_TestForNull, _TEXT
 
 LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class, _TEXT
@@ -155,7 +155,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull, _
 LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_HelperCall):
         mov    SecondArg_Reg, QWORD PTR [GENERIC_DICT_DATA_SLOT(HandleArgs)]
         PREPARE_EXTERNAL_VAR g_pMethodWithSlotAndModule, rax
-        jmp    rax
+        jmp    [rax]
 LEAF_END DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull, _TEXT
 
 LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method_TestForNull, _TEXT
@@ -171,7 +171,7 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method_TestForNull, _TEXT
 LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall):
         mov    SecondArg_Reg, QWORD PTR [GENERIC_DICT_DATA_SLOT(HandleArgs)]
         PREPARE_EXTERNAL_VAR g_pMethodWithSlotAndModule, rax
-        jmp    rax
+        jmp    [rax]
 LEAF_END DynamicHelper_GenericDictionaryLookup_Method_TestForNull, _TEXT
 
 LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method, _TEXT
