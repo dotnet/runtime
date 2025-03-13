@@ -58,16 +58,6 @@
     <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
 
     <FileExtensionSignInfo Include=".msi" CertificateName="MicrosoftDotNet500" />
-
-    <!--
-      Removal is temporarily needed as we integrate support for these extensions into SignTool.
-      Should be cleaned up after https://github.com/dotnet/arcade/issues/14432,
-      https://github.com/dotnet/arcade/issues/14433, and
-      https://github.com/dotnet/arcade/issues/14435 are completed.
-     -->
-    <FileExtensionSignInfo Remove=".deb;.rpm;.pkg" />
-    <FileExtensionSignInfo Include=".pkg" CertificateName="8003" />
-    <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
   </ItemGroup>
 
   <!--
