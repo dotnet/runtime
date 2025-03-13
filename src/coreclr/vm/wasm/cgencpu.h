@@ -186,4 +186,11 @@ inline PCODE decodeBackToBackJump(PCODE pBuffer)
     return 0;
 }
 
+FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue, int64_t iComparand)
+{
+    int64_t result = __sync_val_compare_and_swap(pDst, iComparand, iValue);
+    __sync_synchronize();
+    return result;
+}
+
 #endif // __cgenwasm_h__
