@@ -1305,13 +1305,11 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                 {
                     if (!optLocalAssertionProp)
                     {
-                        // O2K_LCLVAR_COPY is not useful for global assertion prop
+                        // O2K_LCLVAR_COPY is local assertion prop only
                         goto DONE_ASSERTION;
                     }
 
-                    //
                     // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL assertion
-                    //
                     if ((assertionKind != OAK_EQUAL) && (assertionKind != OAK_NOT_EQUAL))
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
@@ -1360,12 +1358,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
 
-                    assertion.op2.kind   = O2K_LCLVAR_COPY;
-                    assertion.op2.vn     = optConservativeNormalVN(op2);
-                    assertion.op2.lclNum = lclNum2;
-
-                    // Ok everything has been set and the assertion looks good
-                    assertion.assertionKind = assertionKind;
+                    bool equals = assertionKind == OAK_EQUAL;
+                    assertion = AssertionDsc::CreateCopyLocalAssertion(this, lclNum, lclNum2, equals);
 
                     goto DONE_ASSERTION;
                 }

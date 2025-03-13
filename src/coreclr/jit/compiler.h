@@ -7942,12 +7942,11 @@ public:
             dsc.op2.kind       = O2K_CONST_INT;
             dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
             dsc.op2.u1.iconVal = 0;
-            dsc.op2.SetIconFlag(GTF_EMPTY);
             return dsc;
         }
 
         //------------------------------------------------------------------------
-        // CreateConstantBoundAssertion: Create an assertion for the given local
+        // CreateSubrangeAssertionForLocal: Create an assertion for the given local
         //    that its value is in the given range.
         //
         // Arguments:
@@ -7956,7 +7955,7 @@ public:
         //    range - the asserted range
         //
         // Return Value:
-        //    An AssertionDsc that represents
+        //    An AssertionDsc representing "lcl's value is in range".
         //
         static AssertionDsc CreateSubrangeAssertionForLocal(const Compiler* comp, unsigned lcl, IntegralRange range)
         {
@@ -7973,7 +7972,7 @@ public:
         }
 
         //------------------------------------------------------------------------
-        // CreateConstantBoundAssertion: Create an assertion for the given VN
+        // CreateSubrangeAssertion: Create an assertion for the given VN
         //    that its value is in the given range.
         //
         // Arguments:
@@ -7982,7 +7981,7 @@ public:
         //    range - the asserted range
         //
         // Return Value:
-        //    An AssertionDsc that represents
+        //    An AssertionDsc representing "VN's value is in range".
         //
         static AssertionDsc CreateSubrangeAssertion(const Compiler* comp, ValueNum vn, IntegralRange range)
         {
@@ -7995,6 +7994,34 @@ public:
             dsc.op1.vn        = vn;
             dsc.op2.kind      = O2K_SUBRANGE;
             dsc.op2.u2        = range;
+            return dsc;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateCopyLocalAssertion: Create an assertion for the given VN
+        //    that its value is in the given range.
+        //
+        // Arguments:
+        //    comp  - the compiler object
+        //    lcl1 - the first local to create the assertion for
+        //    lcl2 - the second local to create the assertion for
+        //    equals - true if the assertion is for equality, false if it is for inequality
+        //
+        // Return Value:
+        //    An AssertionDsc that represents "X == Y" or "X != Y" for two locals.
+        //
+        static AssertionDsc CreateCopyLocalAssertion(const Compiler* comp, unsigned lcl1, unsigned lcl2, bool equals)
+        {
+            assert(comp->optLocalAssertionProp);
+            assert(lcl1 != BAD_VAR_NUM);
+            assert(lcl2 != BAD_VAR_NUM);
+
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
+            dsc.op1.kind      = O1K_LCLVAR;
+            dsc.op1.lclNum    = lcl1;
+            dsc.op2.kind      = O2K_LCLVAR_COPY;
+            dsc.op2.lclNum    = lcl2;
             return dsc;
         }
 
@@ -8091,21 +8118,32 @@ public:
             {
                 return false;
             }
-            else if (op1.kind == O1K_ARR_BND)
+
+            switch (op1.kind)
             {
-                assert(vnBased);
-                return (op1.bnd.vnIdx == that->op1.bnd.vnIdx) && (op1.bnd.vnLen == that->op1.bnd.vnLen);
+                case O1K_LCLVAR:
+                    return vnBased ? (op1.vn == that->op1.vn) : (GetOp1LclNum() == that->GetOp1LclNum());
+
+                case O1K_ARR_BND:
+                    assert(vnBased);
+                    return (op1.bnd.vnIdx == that->op1.bnd.vnIdx) && (op1.bnd.vnLen == that->op1.bnd.vnLen);
+
+                case O1K_VN:
+                case O1K_BOUND_OPER_BND:
+                case O1K_BOUND_LOOP_BND:
+                case O1K_CONSTANT_LOOP_BND:
+                case O1K_CONSTANT_LOOP_BND_UN:
+                case O1K_EXACT_TYPE:
+                case O1K_SUBTYPE:
+                    assert(vnBased);
+                    return op1.vn == that->op1.vn;
+
+                default:
+                    assert(!"Unexpected value for op1.kind in AssertionDsc.");
+                    break;
             }
-            else if (op1.kind == O1K_VN)
-            {
-                assert(vnBased);
-                return (op1.vn == that->op1.vn);
-            }
-            else
-            {
-                return ((vnBased && (op1.vn == that->op1.vn)) ||
-                        (!vnBased && (GetOp1LclNum() == that->GetOp1LclNum())));
-            }
+
+            return false;
         }
 
         bool HasSameOp2(AssertionDsc* that, bool vnBased)
