@@ -441,6 +441,9 @@ inline TADDR StubPrecode::GetMethodDesc()
 #ifdef FEATURE_INTERPRETER
         case PRECODE_INTERPRETER:
 #endif // FEATURE_INTERPRETER
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+        case PRECODE_DYNAMIC_HELPERS:
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
             return 0;
     }
 

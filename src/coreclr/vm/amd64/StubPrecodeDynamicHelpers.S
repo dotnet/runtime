@@ -18,9 +18,6 @@
 #define DATA_SLOT(field) r10 + OFFSETOF__DynamicHelperStubArgs__ ## field
 #define GENERIC_DICT_DATA_SLOT(field) r10 + OFFSETOF__GenericDictionaryDynamicHelperStubData__ ## field
 
-extern g_pClassWithSlotAndModule:QWORD
-extern g_pMethodWithSlotAndModule:QWORD
-
 LEAF_ENTRY DynamicHelper_CallHelper_1Arg, _TEXT
         mov    FirstArg_Reg, QWORD PTR [DATA_SLOT(Constant1)]
         jmp    QWORD PTR [DATA_SLOT(Helper)]
@@ -95,15 +92,15 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull, _T
         mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SizeOffset)]
         mov    ThirdArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SlotOffset)]
         cmp    qword ptr[rax + SecondArg_Reg], ThirdArg_Reg
-        jle    DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull_HelperCall
+        jle    LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull_HelperCall)
         // Standard Indirection
         mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         // Null test
         test   rax, rax
-        je     DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull_HelperCall
+        je     LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull_HelperCall)
         ret
-DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull_HelperCall:
+LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull_HelperCall):
         mov    SecondArg_Reg, QWORD PTR [GENERIC_DICT_DATA_SLOT(HandleArgs)]
         PREPARE_EXTERNAL_VAR g_pClassWithSlotAndModule, rax
         jmp    rax
@@ -120,9 +117,9 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Class_TestForNull, _TEXT
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         // Null test
         test   rax, rax
-        je     DynamicHelper_GenericDictionaryLookup_Class_TestForNull_HelperCall
+        je     LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Class_TestForNull_HelperCall)
         ret
-DynamicHelper_GenericDictionaryLookup_Class_TestForNull_HelperCall:
+LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Class_TestForNull_HelperCall):
         mov    SecondArg_Reg, QWORD PTR [GENERIC_DICT_DATA_SLOT(HandleArgs)]
         PREPARE_EXTERNAL_VAR g_pClassWithSlotAndModule, rax
         jmp    rax
@@ -147,15 +144,15 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull, _
         mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SizeOffset)]
         mov    ThirdArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(SlotOffset)]
         cmp    qword ptr[rax + SecondArg_Reg], ThirdArg_Reg
-        jle    DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_HelperCall
+        jle    LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_HelperCall)
         // Standard Indirection
         mov    SecondArg_DwordReg, DWORD PTR [GENERIC_DICT_DATA_SLOT(LastIndir)]
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         // Null test
         test   rax, rax
-        je     DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_HelperCall
+        je     LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_HelperCall)
         ret
-DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_HelperCall:
+LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_HelperCall):
         mov    SecondArg_Reg, QWORD PTR [GENERIC_DICT_DATA_SLOT(HandleArgs)]
         PREPARE_EXTERNAL_VAR g_pMethodWithSlotAndModule, rax
         jmp    rax
@@ -169,9 +166,9 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method_TestForNull, _TEXT
         mov    rax, QWORD PTR [SecondArg_Reg+rax]
         // Null test
         test   rax, rax
-        je     DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall
+        je     LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall)
         ret
-DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall:
+LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall):
         mov    SecondArg_Reg, QWORD PTR [GENERIC_DICT_DATA_SLOT(HandleArgs)]
         PREPARE_EXTERNAL_VAR g_pMethodWithSlotAndModule, rax
         jmp    rax

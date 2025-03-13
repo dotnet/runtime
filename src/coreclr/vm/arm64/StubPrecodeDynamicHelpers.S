@@ -186,7 +186,7 @@ LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull_H
                 // Null test
                 cbz    FirstArg_Reg, LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall)
                 ret    lr
-LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall)
+LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall):
                 mov    FirstArg_Reg, x4
                 ldr    SecondArg_Reg, GENERIC_DICT_DATA_SLOT(HandleArgs)
                 PREPARE_EXTERNAL_VAR g_pMethodWithSlotAndModule, x3
