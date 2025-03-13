@@ -7997,7 +7997,7 @@ public:
         }
 
         //------------------------------------------------------------------------
-        // CreateCopyLocalAssertion: Create an assertion for the given VN
+        // CreateLocalCopyAssertion: Create an assertion for the given VN
         //    that its value is in the given range.
         //
         // Arguments:
@@ -8009,7 +8009,7 @@ public:
         // Return Value:
         //    An AssertionDsc that represents "X == Y" or "X != Y" for two locals.
         //
-        static AssertionDsc CreateCopyLocalAssertion(const Compiler* comp, unsigned lcl1, unsigned lcl2, bool equals)
+        static AssertionDsc CreateLocalCopyAssertion(const Compiler* comp, unsigned lcl1, unsigned lcl2, bool equals)
         {
             assert(comp->optLocalAssertionProp);
             assert(lcl1 != BAD_VAR_NUM);

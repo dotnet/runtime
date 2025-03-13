@@ -1351,7 +1351,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     }
 
                     bool equals = assertionKind == OAK_EQUAL;
-                    assertion   = AssertionDsc::CreateCopyLocalAssertion(this, lclNum, lclNum2, equals);
+                    assertion   = AssertionDsc::CreateLocalCopyAssertion(this, lclNum, lclNum2, equals);
 
                     goto DONE_ASSERTION;
                 }
