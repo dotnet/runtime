@@ -7784,7 +7784,6 @@ public:
             {
                 unsigned      lclNum;
                 IntVal        u1;
-                int64_t       lconVal;
                 double        dconVal;
                 IntegralRange u2;
             };
