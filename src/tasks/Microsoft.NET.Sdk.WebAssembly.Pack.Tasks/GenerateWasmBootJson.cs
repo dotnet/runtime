@@ -56,6 +56,8 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] ConfigurationFiles { get; set; }
 
+    public ITaskItem[] EnvVariables { get; set; }
+
     public ITaskItem[] Extensions { get; set; }
 
     public string StartupMemoryCache { get; set; }
@@ -408,6 +410,16 @@ public class GenerateWasmBootJson : Task
             }
         }
 
+
+        if (EnvVariables != null && EnvVariables.Length > 0)
+        {
+            result.environmentVariables = new Dictionary<string, string>();
+            foreach (var env in EnvVariables)
+            {
+                string name = env.ItemSpec;
+                result.environmentVariables[name] = env.GetMetadata("Value");
+            }
+        }
         if (Extensions != null && Extensions.Length > 0)
         {
             result.extensions = new Dictionary<string, Dictionary<string, object>>();

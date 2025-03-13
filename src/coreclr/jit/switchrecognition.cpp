@@ -25,25 +25,39 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
 {
     bool modified = false;
 
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+    {
+        if (block->isRunRarely())
+        {
+            continue;
+        }
+
 // Limit to XARCH, ARM is already doing a great job with such comparisons using
 // a series of ccmp instruction (see ifConvert phase).
 #ifdef TARGET_XARCH
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
-    {
         // block->KindIs(BBJ_COND) check is for better throughput.
-        if (block->KindIs(BBJ_COND) && !block->isRunRarely() && optSwitchDetectAndConvert(block))
+        if (block->KindIs(BBJ_COND) && optSwitchDetectAndConvert(block))
         {
             JITDUMP("Converted block " FMT_BB " to switch\n", block->bbNum)
             modified = true;
+
+            // Converted switches won't have dominant cases, so we can skip the switch peeling check.
+            assert(!block->GetSwitchTargets()->bbsHasDominantCase);
         }
-    }
+        else
 #endif
 
-    // When we have profile data, we can identify a switch's dominant case.
-    // Try peeling the dominant case by checking for it up front.
-    if (fgIsUsingProfileWeights())
-    {
-        modified |= fgOptimizeSwitchJumps();
+            if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->bbsHasDominantCase)
+        {
+            fgPeelSwitch(block);
+            modified = true;
+
+            // Switch peeling will convert this block into a check for the dominant case,
+            // and insert the updated switch block after, which doesn't have a dominant case.
+            // Skip over the switch block in the loop iteration.
+            assert(block->Next()->KindIs(BBJ_SWITCH));
+            block = block->Next();
+        }
     }
 
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;

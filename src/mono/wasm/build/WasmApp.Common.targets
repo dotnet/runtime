@@ -92,6 +92,7 @@
       - @(WasmFilesToIncludeInFileSystem) - Files to include in the vfs
       - @(WasmNativeAsset)        - Native files to be added to `NativeAssets` in the bundle.
 
+      - @(WasmEnvironmentVariable)        - adds environment variables to `_framework/dotnet.boot.js`
       - @(WasmExtraConfig)        - json elements to add to `_framework/dotnet.boot.js`
                                     Eg. <WasmExtraConfig Include="xxx" Value="true" />
 
