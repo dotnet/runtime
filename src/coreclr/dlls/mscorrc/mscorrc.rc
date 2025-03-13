@@ -394,8 +394,8 @@ BEGIN
     IDS_INVALID_REDIM                       "Illegal attempt to replace or redimension a fixed or locked SafeArray."
 
     IDS_INVALID_PINVOKE_CALLCONV            "Unsupported unmanaged calling convention."
-    IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was not given an explicit offset."
-    IDS_CLASSLOAD_SEQSTRUCT_EXPLICIT_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' in sequential type was given an explicit offset."
+    IDS_CLASSLOAD_EXPSTRUCT_EXPLICIT_OFFSET "Could not load type '%1' from assembly '%2' because field '%3' was not given an explicit offset."
+    IDS_CLASSLOAD_STRUCT_EXPLICIT_OFFSET    "Could not load type '%1' from assembly '%2' because field '%3' in a non-explicit type was given an explicit offset."
 
     IDS_EE_INVALIDLCIDPARAM                 "The value of the LCID conversion attribute must not exceed the number of parameters."
 

@@ -55,10 +55,7 @@ namespace
                 pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport,
                     cl,
                     szFieldName,
-                    IDS_CLASSLOAD_SEQSTRUCT_EXPLICIT_OFFSET);
-
-                // ulOffset is the sequence
-                pfwalk->m_sequence = ulOffset;
+                    IDS_CLASSLOAD_STRUCT_EXPLICIT_OFFSET);
             }
             else
             {
@@ -111,7 +108,7 @@ namespace
                         pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport,
                             cl,
                             szFieldName,
-                            IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET);
+                            IDS_CLASSLOAD_EXPSTRUCT_EXPLICIT_OFFSET);
                     }
                     else if ((INT)pFieldInfoArray[i].m_placement.m_offset < 0)
                     {
