@@ -11852,7 +11852,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
                     unsigned      lcl   = assertion->GetOp1LclNum();
                     IntegralRange range = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
 
-                    AssertionDsc   extraAssertion = AssertionDsc::CreateSubrangeAssertionForLocal(this, lcl, range);
+                    AssertionDsc   extraAssertion = AssertionDsc::CreateSubrangeAssertion(this, lcl, range);
                     AssertionIndex extraIndex     = optFinalizeCreatingAssertion(&extraAssertion);
                     if (extraIndex != NO_ASSERTION_INDEX)
                     {

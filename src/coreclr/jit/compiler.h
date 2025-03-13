@@ -7945,7 +7945,7 @@ public:
         }
 
         //------------------------------------------------------------------------
-        // CreateSubrangeAssertionForLocal: Create an assertion for the given local
+        // CreateSubrangeAssertion: Create an assertion for the given local
         //    that its value is in the given range.
         //
         // Arguments:
@@ -7956,7 +7956,7 @@ public:
         // Return Value:
         //    An AssertionDsc representing "lcl's value is in range".
         //
-        static AssertionDsc CreateSubrangeAssertionForLocal(const Compiler* comp, unsigned lcl, IntegralRange range)
+        static AssertionDsc CreateSubrangeAssertion(const Compiler* comp, unsigned lcl, IntegralRange range)
         {
             assert(comp->optLocalAssertionProp);
             assert(lcl != BAD_VAR_NUM);
@@ -7965,32 +7965,6 @@ public:
             dsc.assertionKind = OAK_SUBRANGE;
             dsc.op1.kind      = O1K_LCLVAR;
             dsc.op1.lclNum    = lcl;
-            dsc.op2.kind      = O2K_SUBRANGE;
-            dsc.op2.u2        = range;
-            return dsc;
-        }
-
-        //------------------------------------------------------------------------
-        // CreateSubrangeAssertion: Create an assertion for the given VN
-        //    that its value is in the given range.
-        //
-        // Arguments:
-        //    comp  - the compiler object
-        //    vn    - the vn to create the assertion for
-        //    range - the asserted range
-        //
-        // Return Value:
-        //    An AssertionDsc representing "VN's value is in range".
-        //
-        static AssertionDsc CreateSubrangeAssertion(const Compiler* comp, ValueNum vn, IntegralRange range)
-        {
-            assert(!comp->optLocalAssertionProp);
-            assert(vn != ValueNumStore::NoVN);
-
-            AssertionDsc dsc  = {};
-            dsc.assertionKind = OAK_SUBRANGE;
-            dsc.op1.kind      = O1K_LCLVAR;
-            dsc.op1.vn        = vn;
             dsc.op2.kind      = O2K_SUBRANGE;
             dsc.op2.u2        = range;
             return dsc;
@@ -8268,7 +8242,6 @@ public:
 
     // Assertion Gen functions.
     void           optAssertionGen(GenTree* tree);
-    AssertionIndex optAssertionGenCast(GenTreeCast* cast);
     AssertionInfo  optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo  optAssertionGenJtrue(GenTree* tree);
     AssertionIndex optCreateJtrueAssertions(GenTree* op1, GenTree* op2, optAssertionKind assertionKind);

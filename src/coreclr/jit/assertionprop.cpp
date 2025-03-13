@@ -1361,7 +1361,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
             }
 
             // Try and see if we can make a subrange assertion.
-            if (((assertionKind == OAK_SUBRANGE) || (assertionKind == OAK_EQUAL)) && varTypeIsIntegral(op2))
+            if (optLocalAssertionProp && ((assertionKind == OAK_SUBRANGE) || (assertionKind == OAK_EQUAL)) &&
+                varTypeIsIntegral(op2))
             {
                 IntegralRange nodeRange = IntegralRange::ForNode(op2, this);
                 IntegralRange typeRange = IntegralRange::ForType(genActualType(op2));
@@ -1733,6 +1734,11 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
     }
     switch (assertion->op2.kind)
     {
+        case O2K_SUBRANGE:
+        case O2K_LCLVAR_COPY:
+            assert(optLocalAssertionProp);
+            break;
+
         case O2K_ZEROOBJ:
         {
             // We only make these assertion for stores (not control flow).
@@ -1832,54 +1838,6 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
         AssertionIndex index = optCreateAssertion(op1, op2, OAK_EQUAL);
         optMapComplementary(index, assertionIndex);
     }
-}
-
-// optAssertionGenCast: Create a tentative subrange assertion for a cast.
-//
-// This function will try to create an assertion that the cast's operand
-// is within the "input" range for the cast, so that this assertion can
-// later be proven via implication and the cast removed. Such assertions
-// are only generated during global propagation, and only for LCL_VARs.
-//
-// Arguments:
-//    cast - the cast node for which to create the assertion
-//
-// Return Value:
-//    Index of the generated assertion, or NO_ASSERTION_INDEX if it was not
-//    legal, profitable, or possible to create one.
-//
-AssertionIndex Compiler::optAssertionGenCast(GenTreeCast* cast)
-{
-    if (optLocalAssertionProp || !varTypeIsIntegral(cast) || !varTypeIsIntegral(cast->CastOp()))
-    {
-        return NO_ASSERTION_INDEX;
-    }
-
-    // This condition exists to preserve previous behavior.
-    if (!cast->CastOp()->OperIs(GT_LCL_VAR))
-    {
-        return NO_ASSERTION_INDEX;
-    }
-
-    GenTreeLclVar* lclVar = cast->CastOp()->AsLclVar();
-    LclVarDsc*     varDsc = lvaGetDesc(lclVar);
-
-    // It is not useful to make assertions about address-exposed variables, they will never be proven.
-    if (varDsc->IsAddressExposed())
-    {
-        return NO_ASSERTION_INDEX;
-    }
-
-    // A representation-changing cast cannot be simplified if it is not checked.
-    if (!cast->gtOverflow() && (genActualType(cast) != genActualType(lclVar)))
-    {
-        return NO_ASSERTION_INDEX;
-    }
-
-    IntegralRange range     = IntegralRange::ForCastInput(cast);
-    ValueNum      vn        = vnStore->VNConservativeNormalValue(lclVar->gtVNPair);
-    AssertionDsc  assertion = AssertionDsc::CreateSubrangeAssertion(this, vn, range);
-    return optFinalizeCreatingAssertion(&assertion);
 }
 
 //------------------------------------------------------------------------
@@ -2218,9 +2176,6 @@ void Compiler::optAssertionGen(GenTree* tree)
     optAssertionPropCurrentTree = tree;
 #endif
 
-    // For most of the assertions that we create below
-    // the assertion is true after the tree is processed
-    bool          assertionProven = true;
     AssertionInfo assertionInfo;
     switch (tree->OperGet())
     {
@@ -2287,14 +2242,6 @@ void Compiler::optAssertionGen(GenTree* tree)
         }
         break;
 
-        case GT_CAST:
-            // This represets an assertion that we would like to prove to be true.
-            // If we can prove this assertion true then we can eliminate this cast.
-            // We only create this assertion for global assertion propagation.
-            assertionInfo   = optAssertionGenCast(tree->AsCast());
-            assertionProven = false;
-            break;
-
         case GT_JTRUE:
             assertionInfo = optAssertionGenJtrue(tree);
             break;
@@ -2304,7 +2251,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             break;
     }
 
-    if (assertionInfo.HasAssertion() && assertionProven)
+    if (assertionInfo.HasAssertion())
     {
         tree->SetAssertionInfo(assertionInfo);
     }
