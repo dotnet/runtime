@@ -679,20 +679,25 @@ static gboolean
 emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
 {
 	const char *cmethod_name = cmethod->name;
+	bool explicitly_implemented = false;
 
-	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
+	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector<T>,T>.", 67) == 0) {
 		// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
 		// but, they all prefix the qualified name of the interface first, so we'll check for that and
 		// skip the prefix before trying to resolve the method.
 
-		if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
-			cmethod_name += 77;
-		}
+		cmethod_name += 67;
+		explicitly_implemented = true;
 	}
 
 	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod_name);
-	if (id == -1)
-		return FALSE;
+	if (id == -1) {
+		if (explicitly_implemented) {
+			return emit_sri_vector128 (td, cmethod, csignature);
+		} else {
+			return FALSE;
+		}
+	}
 
 	gint16 simd_opcode = -1;
 	gint16 simd_intrins = -1;
