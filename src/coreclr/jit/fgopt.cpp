@@ -2529,7 +2529,6 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         return false;
     }
 
-    // We might be able to compact blocks that always jump to the next block.
     if (bJump->JumpsToNext())
     {
         return false;
@@ -2558,6 +2557,9 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     {
         return false;
     }
+
+    // We should have already compacted 'bDest' into 'bJump', if it is possible.
+    assert(!fgCanCompactBlock(bJump));
 
     BasicBlock* const trueTarget  = bDest->GetTrueTarget();
     BasicBlock* const falseTarget = bDest->GetFalseTarget();
@@ -2815,6 +2817,14 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         printf("\n");
     }
 #endif // DEBUG
+
+    // Removing flow from 'bJump' into 'bDest' may have made it possible to compact the latter.
+    BasicBlock* const uniquePred = bDest->GetUniquePred(this);
+    if ((uniquePred != nullptr) && fgCanCompactBlock(uniquePred))
+    {
+        JITDUMP(FMT_BB " can now be compacted into its remaining predecessor.\n", bDest->bbNum);
+        fgCompactBlock(uniquePred);
+    }
 
     return true;
 }
