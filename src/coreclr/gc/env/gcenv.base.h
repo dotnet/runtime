@@ -144,8 +144,9 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
   #define MemoryBarrier() { __dmb(_ARM64_BARRIER_SY); }
 
  #elif defined(HOST_BROWSER)
-  __forceinline void YieldProcessor() { }
- #elif defined(HOST_AMD64)
+  #define YieldProcessor()
+  #define MemoryBarrier __sync_synchronize
+#elif defined(HOST_AMD64)
 
   extern "C" void
   _mm_pause (
