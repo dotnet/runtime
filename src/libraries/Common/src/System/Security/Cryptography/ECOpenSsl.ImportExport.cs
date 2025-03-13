@@ -216,7 +216,7 @@ namespace System.Security.Cryptography
         /// </summary>
         private static ECParameters ExportECParametersFromEvpPKeyUsingParams(SafeEvpPKeyHandle pkey, bool includePrivateParameters)
         {
-            string? curveName = Interop.Crypto.EvpPKeyGetEcGroupName(pkey);
+            string? curveName = Interop.Crypto.EvpPKeyGetCurveName(pkey);
             if (curveName == null)
             {
                 return ExportExplicitCurveParametersFromEvpPKeyUsingParams(pkey, includePrivateParameters);

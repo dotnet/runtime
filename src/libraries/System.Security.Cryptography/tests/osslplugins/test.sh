@@ -60,14 +60,15 @@ set -e
 cd "$nativelibs_path"
 $dotnet build ./build-native.proj
 
-# Some of our tests depend on System.Net.Security but
-# changes to the System.Net.Security projects do not trigger a rebuild when building a test project
-# therefore it's more reliable to trigger incremental build manually
-cd "$libsrc_path/System.Net.Security/src"
-$dotnet build
-
 cd "$ssc_src_path"
 $dotnet build
 
 cd "$ssc_tests_path"
 $dotnet test --filter "FullyQualifiedName~System.Security.Cryptography.Tests.OpenSslNamedKeysTests."
+
+# TLS tests are in System.Net.Security
+cd "$libsrc_path/System.Net.Security/src"
+$dotnet build
+
+cd "$libsrc_path/System.Net.Security/tests/FunctionalTests"
+$dotnet test --filter "FullyQualifiedName~System.Net.Security.Tests.SslStreamOpenSslNamedKeys."

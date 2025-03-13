@@ -3,7 +3,6 @@
 
 #include "pal_ecc_import_export.h"
 #include "pal_utilities.h"
-#include "pal_evp_pkey.h"
 
 static ECCurveType MethodToCurveType(const EC_METHOD* method)
 {
@@ -52,7 +51,7 @@ static ECCurveType EcKeyGetCurveType(
 
 static int EcPointGetAffineCoordinates(const EC_GROUP *group, ECCurveType curveType, const EC_POINT *p, BIGNUM *x, BIGNUM *y)
 {
-    #if HAVE_OPENSSL_EC2M
+#if HAVE_OPENSSL_EC2M
     if (API_EXISTS(EC_POINT_get_affine_coordinates_GF2m) && (curveType == Characteristic2))
     {
         if (!EC_POINT_get_affine_coordinates_GF2m(group, p, x, y, NULL))
@@ -421,6 +420,118 @@ error:
     return ret;
 }
 
+int32_t CryptoNative_EvpPKeyGetEcGroupNid(const EVP_PKEY *pkey, int32_t* nidName)
+{
+    if (!nidName)
+        return 0;
+
+    *nidName = NID_undef;
+
+    if (!pkey || EVP_PKEY_get_base_id(pkey) != EVP_PKEY_EC)
+        return 0;
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_get_utf8_string_param))
+    {
+        return 0;
+    }
+#endif
+
+#ifdef NEED_OPENSSL_3_0
+    // Retrieve the textual name of the EC group (e.g., "prime256v1")
+    // In all known cases this should be exactly 10 characters + 1 null byte but leaving some room in case it changes in the future
+    // versions of OpenSSL. This length also matches with what OpenSSL uses in their demo code:
+    // https://github.com/openssl/openssl/blob/ac80e1e15dcd13c61392a706170c427250c7bb69/demos/pkey/EVP_PKEY_EC_keygen.c#L88
+    char curveName[80] = {0};
+
+    if (!EVP_PKEY_get_utf8_string_param(pkey, OSSL_PKEY_PARAM_GROUP_NAME, curveName, sizeof(curveName), NULL))
+        return 0;
+
+    *nidName = OBJ_txt2nid(curveName);
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
+    const EVP_PKEY* pkey,
+    int32_t includePrivate,
+    BIGNUM** qx, int32_t* cbQx,
+    BIGNUM** qy, int32_t* cbQy,
+    BIGNUM** d, int32_t* cbD)
+{
+    assert(qx != NULL);
+    assert(cbQx != NULL);
+    assert(qy != NULL);
+    assert(cbQy != NULL);
+    assert(d != NULL);
+    assert(cbD != NULL);
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_get_bn_param))
+    {
+        *cbQx = *cbQy = 0;
+        *qx = *qy = 0;
+        if (d) *d = NULL;
+        if (cbD) *cbD = 0;
+        return 0;
+    }
+#endif
+
+    int rc = 0;
+    BIGNUM *xBn = NULL;
+    BIGNUM *yBn = NULL;
+    BIGNUM *dBn = NULL;
+
+#ifdef NEED_OPENSSL_3_0
+    // Ensure we have an EC key
+    if (EVP_PKEY_get_base_id(pkey) != EVP_PKEY_EC)
+        goto error;
+
+    ERR_clear_error();
+
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_X, &xBn))
+        goto error;
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_Y, &yBn))
+        goto error;
+
+    *qx = xBn;
+    *cbQx = BN_num_bytes(xBn);
+    *qy = yBn;
+    *cbQy = BN_num_bytes(yBn);
+
+    if (includePrivate)
+    {
+        if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_PRIV_KEY, &dBn))
+            goto error;
+
+        *d = dBn;
+        *cbD = BN_num_bytes(dBn);
+    }
+    else
+    {
+        *d = NULL;
+        *cbD = 0;
+    }
+
+    // success
+    return 1;
+
+error:
+#else
+    (void)pkey;
+    (void)includePrivate;
+#endif
+    *cbQx = *cbQy = 0;
+    *qx = *qy = 0;
+    if (d) *d = NULL;
+    if (cbD) *cbD = 0;
+    if (xBn) BN_free(xBn);
+    if (yBn) BN_free(yBn);
+    return rc;
+}
+
 EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     ECCurveType curveType,
     uint8_t* qx, int32_t qxLength,
@@ -613,8 +724,6 @@ static ECCurveType NIDToCurveType(int fieldType)
     return Unspecified;
 }
 
-// This is unfortunate place to put definition of this function but ECCurveType is defined in pal_ecc_import_export.h
-// and placing include in the pal_evp_pkey.h breaks the opensslshim build as it redefines the enum (enums define global names).
 int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     const EVP_PKEY* pkey,
     int32_t includePrivate,
@@ -629,7 +738,7 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     BIGNUM** gy, int32_t* cbGy,
     BIGNUM** order, int32_t* cbOrder,
     BIGNUM** cofactor, int32_t* cbCofactor,
-    unsigned char** seed, int32_t* cbSeed)
+    BIGNUM** seed, int32_t* cbSeed)
 {
     assert(p != NULL);
     assert(cbP != NULL);
@@ -685,8 +794,8 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     if (!xBn || !yBn)
         goto error;
 
-    int curveTypeNID = EvpPKeyGetCurveType(pkey);
-    if (!curveTypeNID)
+    int curveTypeNID;
+    if (!CryptoNative_EvpPKeyGetEcGroupNid(pkey, &curveTypeNID) || !curveTypeNID)
         goto error;
 
     // Extract p, a, b
@@ -753,8 +862,13 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
         size_t actualSeedSize;
         if (EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_EC_SEED, seedBuffer, sufficientSeedBufferSize, &actualSeedSize))
         {
-            *seed = seedBuffer;
             *cbSeed = SizeTToInt32(actualSeedSize);
+            *seed = BN_bin2bn(seedBuffer, *cbSeed, NULL);
+
+            if (!*seed)
+            {
+                *cbSeed = 0;
+            }
         }
         else
         {
@@ -779,7 +893,7 @@ error:
     // Clear out variables from CryptoNative_EvpPKeyGetEcKeyParameters
     if (*qx) BN_free((BIGNUM*)*qx);
     if (*qy) BN_free(*qy);
-    if (d && *d) BN_free(*d);
+    if (d && *d) BN_clear_free(*d);
 
     *cbQx = *cbQy = 0;
     *qx = *qy = NULL;
@@ -789,8 +903,7 @@ error:
     // Clear our out variables
     *curveType = Unspecified;
     *cbP = *cbA = *cbB = *cbGx = *cbGy = *cbOrder = *cbCofactor = *cbSeed = 0;
-    *p = *a = *b = *gx = *gy = *order = *cofactor;
-    *seed = NULL;
+    *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
 
     if (xBn) BN_free(xBn);
     if (yBn) BN_free(yBn);
@@ -799,13 +912,13 @@ error:
     if (bBn) BN_free(bBn);
     if (orderBn) BN_free(orderBn);
     if (cofactorBn) BN_free(cofactorBn);
-    if (seedBuffer) OPENSSL_free(seedBuffer);
 
 exit:
     // Clear out temporary variables
     if (group) EC_GROUP_free(group);
     if (generatorBuffer) OPENSSL_free(generatorBuffer);
     if (G) EC_POINT_free(G);
+    if (seedBuffer) OPENSSL_free(seedBuffer);
 
     return rc;
 #else
@@ -819,15 +932,4 @@ exit:
     *cbP = *cbA = *cbB = *cbGx = *cbGy = *cbOrder = *cbCofactor = *cbSeed = 0;
     *seed = NULL;
 #endif
-}
-
-void CryptoNative_BufferFree(char* ptr)
-{
-    if (!ptr)
-    {
-        assert(false);
-        return;
-    }
-
-    free(ptr);
 }

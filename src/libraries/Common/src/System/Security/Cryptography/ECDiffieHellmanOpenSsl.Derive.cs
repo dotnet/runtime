@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
                 if (ecKey == null || ecKey.IsInvalid)
                 {
                     // This may happen when EVP_PKEY was created by provider and getting EC_KEY is not possible.
-                    thisIsNamed = Interop.Crypto.EvpPKeyGetEcGroupName(_key.Value) != null;
+                    thisIsNamed = Interop.Crypto.EvpPKeyHasCurveName(_key.Value);
                 }
                 else
                 {
