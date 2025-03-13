@@ -59,6 +59,7 @@ jobs:
     - template: /eng/common/templates-official/steps/generate-sbom.yml
       parameters:
         BuildDropPath: $(Build.SourcesDirectory)\artifacts
+        Verbosity: Debug
 
     - task: CopyFiles@2
       displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
