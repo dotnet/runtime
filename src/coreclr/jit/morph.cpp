@@ -2532,13 +2532,10 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                     GenTree* indirAddrDup = gtCloneExpr(indirAddr);
                     GenTree* offsetNode   = gtNewIconNode(offset, TYP_I_IMPL);
                     addr                  = gtNewOperNode(GT_ADD, indirAddr->TypeGet(), indirAddrDup, offsetNode);
-
-                    offsetNode->SetMorphed(this);
-                    addr->SetMorphed(this);
                 }
 
                 GenTree* indir = gtNewIndir(type, addr);
-                indir->SetMorphed(this);
+                indir->SetMorphed(this, /* doChildren */ true);
                 return indir;
             }
         };
