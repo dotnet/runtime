@@ -238,7 +238,7 @@ TypeInfoBase* GetLocalTypeInfo(MethodDesc *methodDescPtr,
 
         if (FAILED(methodDescPtr->GetMDImport()->GetSigFromToken(method.GetLocalVarSigTok(), &cbSigLen, &pComSig)))
         {
-            printf("\nInvalid record");
+            minipal_log_print_info("\nInvalid record");
             return nullptr;
         }
 
