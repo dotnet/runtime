@@ -3,6 +3,7 @@
 
 #include "log.h"
 #include <string.h>
+#include <assert.h>
 
 #ifndef MINIPAL_LOG_RUNTIME_TAG
 #define MINIPAL_LOG_RUNTIME_TAG "DOTNET"
@@ -118,8 +119,7 @@ static size_t log_write_line(minipal_log_flags flags, const char* msg, size_t ms
 
 int minipal_log_write(minipal_log_flags flags, const char* msg)
 {
-    if (msg == NULL || msg[0] == '\0')
-        return 0;
+    assert(msg != NULL && msg[0] != '\0');
 
     size_t msg_len = strlen(msg);
     const char* msg_end = msg + msg_len;
@@ -156,6 +156,7 @@ void minipal_log_sync(minipal_log_flags flags)
 {
 }
 #else
+#include <errno.h>
 #include <stdio.h>
 
 #define MINIPAL_LOG_MAX_PAYLOAD 32767
@@ -197,103 +198,67 @@ void minipal_log_flush(minipal_log_flags flags)
         fflush(file);
 }
 
-#if defined(HOST_WINDOWS)
+#ifdef HOST_WINDOWS
 #include <Windows.h>
-
-static HANDLE get_std_handle(minipal_log_flags flags)
+#include <io.h>
+static int sync_file(minipal_log_flags flags)
 {
     switch(flags)
     {
     case minipal_log_flags_fatal:
     case minipal_log_flags_error:
-        return GetStdHandle(STD_ERROR_HANDLE);
+        FlushFileBuffers(GetStdHandle(STD_ERROR_HANDLE));
+        break;
     case minipal_log_flags_warning:
     case minipal_log_flags_info:
     case minipal_log_flags_debug:
     case minipal_log_flags_verbose:
     default:
-        return GetStdHandle(STD_OUTPUT_HANDLE);
+        FlushFileBuffers(GetStdHandle(STD_OUTPUT_HANDLE));
+        break;
     }
+
+    return 0;
 }
-
-static size_t write_file(HANDLE handle, const char* msg, size_t bytes_to_write)
-{
-    if (handle == INVALID_HANDLE_VALUE)
-        return 0;
-
-    if (msg == NULL || msg[0] == '\0')
-        return 0;
-
-    DWORD bytes_written = 0;
-    if (!WriteFile(handle, msg, (DWORD)bytes_to_write, &bytes_written, NULL))
-        bytes_written = 0;
-
-    return bytes_written;
-}
-
-static void sync_file(HANDLE handle)
-{
-    if (handle == INVALID_HANDLE_VALUE)
-        return;
-
-    FlushFileBuffers(handle);
-}
-#endif
-
-#if !defined(HOST_WINDOWS)
-#include <errno.h>
-#include <unistd.h>
+#define fileno _fileno
+#define write _write
+#elif defined(__APPLE__)
 #include <fcntl.h>
-
-#define HANDLE int
-
-static HANDLE get_std_handle(minipal_log_flags flags)
+static int sync_file(minipal_log_flags flags)
 {
-    return fileno(get_std_file(flags));
-}
-
-static int write_file(HANDLE handle, const char* msg, size_t bytes_to_write)
-{
-    if (handle == -1)
+    if (fcntl(fileno(get_std_file(flags))), F_FULLFSYNC) != -1)
         return 0;
 
-    if (msg == NULL || msg[0] == '\0')
+    return errno;
+}
+#elif defined(HAVE_FSYNC)
+#include <unistd.h>
+static int sync_file(minipal_log_flags flags)
+{
+    if (fsync(fileno(get_std_file(flags))) == 0)
         return 0;
 
-    return write(handle, msg, bytes_to_write);
+    return errno;
 }
-
-static void sync_file(HANDLE handle)
+#else
+#include <unistd.h>
+static int sync_file(minipal_log_flags flags)
 {
-    if (handle == -1)
-        return;
-
-    bool retry = false;
-#if HAVE_FSYNC || defined(__APPLE__)
-    do
-    {
-#if defined(__APPLE__)
-        if (fcntl(handle, F_FULLFSYNC) != -1)
-            break;
-#else
-        if (fsync(handle) == 0)
-            break;
-#endif
-        switch (errno)
-        {
-        case EINTR:
-            retry = true;
-            break;
-        default:
-            retry = false;
-            break;
-        }
-    } while (retry);
-#else
     sync();
-#endif
+    return 0;
 }
 #endif
+
+static int write_file(int fd, const char* msg, size_t bytes_to_write)
+{
+    if (fd == -1)
+        return 0;
+
+    assert(msg != NULL && msg[0] != '\0');
+    assert(bytes_to_write < INT_MAX);
+
+    return write(fd, msg, (int)bytes_to_write);
+}
 
 int minipal_log_write(minipal_log_flags flags, const char* msg)
 {
@@ -303,11 +268,11 @@ int minipal_log_write(minipal_log_flags flags, const char* msg)
     size_t bytes_to_write = strlen(msg);
     size_t bytes_written = 0;
 
-    HANDLE handle = get_std_handle(flags);
+    int fd = fileno(get_std_file(flags));
     while (bytes_to_write > 0)
     {
         size_t chunk_to_write = bytes_to_write < MINIPAL_LOG_MAX_PAYLOAD ? bytes_to_write : MINIPAL_LOG_MAX_PAYLOAD;
-        size_t chunk_written = write_file(handle, msg, chunk_to_write);
+        size_t chunk_written = write_file(fd, msg, chunk_to_write);
 
         if (chunk_written == 0)
             break;
@@ -322,6 +287,18 @@ int minipal_log_write(minipal_log_flags flags, const char* msg)
 
 void minipal_log_sync(minipal_log_flags flags)
 {
-    sync_file(get_std_handle(flags));
+    bool retry = false;
+    do
+    {
+        switch (sync_file(flags))
+        {
+        case EINTR:
+            retry = true;
+            break;
+        default:
+            retry = false;
+            break;
+        }
+    } while (retry);
 }
 #endif
