@@ -25,14 +25,14 @@ JIT_WriteBarrier(Object **dst, Object *ref)
             if *ww_table_dst != 0:
                 *ww_table_dst =  0xff
 
-    // Return if the reference is not in ephemeral generations.
+    // Return if the reference is not in ephemeral generations
     if ref < g_ephemeral_low || ref >= g_ephemeral_high:
         return
 
     // Region Checks
     if g_region_to_generation_table != 0:
 
-        // Calculate region locations
+        // Calculate region generations
         char reg_loc_dst = *((dst >> g_region_shr) + g_region_to_generation_table)
         char reg_loc_ref = *((ref >> g_region_shr) + g_region_to_generation_table)
 
@@ -40,8 +40,8 @@ JIT_WriteBarrier(Object **dst, Object *ref)
         if reg_loc_dst == 0:
             return
 
-        // Check this is going from old to young
-        if reg_loc_dst >= reg_loc_ref:
+        // Return if the new reference is not from old to young
+        if reg_loc_ref >= reg_loc_dst:
             return
 
         // Bitwise write barriers only

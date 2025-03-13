@@ -235,7 +235,7 @@ LOCAL_LABEL(WriteWatchForGCHeapEnd\@):
 
 
 .macro WRITE_BARRIER_REGION_CHECK_STUB start, exit
-    // Calculate region locations
+    // Calculate region generations
     ldr  x17, JIT_WriteBarrier_Offset_RegionToGeneration + FIXUP_LABEL(\start)
     ldr  w12, JIT_WriteBarrier_Offset_RegionShr + FIXUP_LABEL(\start)
     lsr  x15, x15, x12
@@ -247,7 +247,7 @@ LOCAL_LABEL(WriteWatchForGCHeapEnd\@):
     ldrb w12, [x12]
     cbz  w12, LOCAL_LABEL(\exit)
 
-    // Check this is going from old to young
+    // Return if the new reference is not from old to young
     ldrb w15, [x15]
     cmp  w15, w12
     bhs  LOCAL_LABEL(\exit)

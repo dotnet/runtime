@@ -243,7 +243,7 @@ endm
 
 
 WRITE_BARRIER_REGION_CHECK_STUB macro start exit
-; Calculate region locations
+; Calculate region generations
     ldr  x17, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_RegionToGeneration)
     ldr  w12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_RegionShr)
     lsr  x15, x15, x12
@@ -255,7 +255,7 @@ WRITE_BARRIER_REGION_CHECK_STUB macro start exit
     ldrb w12, [x12]
     cbz  w12, exit
 
-; Check this is going from old to young
+; Return if the new reference is not from old to young
     ldrb w15, [x15]
     cmp  w15, w12
     bhs  exit
