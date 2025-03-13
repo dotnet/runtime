@@ -332,7 +332,7 @@ void WriteBarrierManager::Initialize()
 
     #define CALC_TABLE_LOCATION(var, offset) \
         assert(JIT_WriteBarrier_Offset_##offset == (PBYTE)JIT_WriteBarrier_Patch_Label_##offset - (PBYTE)JIT_WriteBarrier); \
-        var = (PBYTE)((BYTE*)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier) + (PBYTE)JIT_WriteBarrier_Offset_##offset);
+        var = ((PBYTE)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier) + JIT_WriteBarrier_Offset_##offset);
 
     CALC_TABLE_LOCATION(m_pWriteWatchTableImmediate, WriteWatchTable);
     CALC_TABLE_LOCATION(m_pRegionToGenTableImmediate, RegionToGeneration);
