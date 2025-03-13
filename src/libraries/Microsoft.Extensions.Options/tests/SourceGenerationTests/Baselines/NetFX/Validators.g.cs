@@ -682,7 +682,7 @@ namespace Nested
 }
 namespace Nested
 {
-    partial record struct Container7
+    partial record struct Container7 
     {
         partial record struct FifthValidator
         {
@@ -721,9 +721,9 @@ namespace Nested
 }
 namespace Nested
 {
-    partial class Container2
+    partial class Container2 
     {
-        partial class Container3
+        partial class Container3 
         {
             partial struct FirstValidator
             {
@@ -775,7 +775,7 @@ namespace Nested
 }
 namespace Nested
 {
-    partial struct Container6
+    partial struct Container6 
     {
         partial struct FourthValidator
         {
@@ -814,9 +814,9 @@ namespace Nested
 }
 namespace Nested
 {
-    partial class Container2
+    partial class Container2 
     {
-        partial class Container3
+        partial class Container3 
         {
             partial struct SecondValidator
             {
@@ -856,9 +856,9 @@ namespace Nested
 }
 namespace Nested
 {
-    partial record class Container4
+    partial record class Container4 
     {
-        partial record class Container5
+        partial record class Container5 
         {
             partial struct ThirdValidator
             {
