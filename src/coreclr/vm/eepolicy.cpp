@@ -48,7 +48,7 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
             {
                 _ASSERTE(!"Bad Exit value");
                 FAULT_NOT_FATAL();      // if we OOM we can simply give up
-                minipal_log_print_stdout("Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
+                minipal_log_print_info("Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
                 DebugBreak();
             }
         }
