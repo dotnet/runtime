@@ -399,7 +399,7 @@ namespace System.Net.WebSockets
 
                 if (sendTask != null)  // this is optimization for single-threaded build, see resolvedPromise() in web-socket.ts. Null means synchronously resolved.
                 {
-                    await CancellationHelper(sendTask, cancellationToken, previousState, pinBuffer).ConfigureAwait(false);
+                    await CancellationHelper(sendTask, cancellationToken, previousState).ConfigureAwait(false);
                 }
             }
             catch (JSException ex)
@@ -442,7 +442,7 @@ namespace System.Net.WebSockets
 
                 if (receiveTask != null)  // this is optimization for single-threaded build, see resolvedPromise() in web-socket.ts. Null means synchronously resolved.
                 {
-                    await CancellationHelper(receiveTask, cancellationToken, previousState, pinBuffer).ConfigureAwait(false);
+                    await CancellationHelper(receiveTask, cancellationToken, previousState).ConfigureAwait(false);
                 }
 
                 return ConvertResponse();
