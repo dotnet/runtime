@@ -27,7 +27,7 @@ namespace System.ComponentModel.DataAnnotations
         // Also we use this ability in Validator.CreateValidationContext()??
         : IServiceProvider
     {
-        internal const string InstanceTypeNotStaticallyDiscovered = "The Type of instance cannot be statically discovered and the Type's properties can be trimmed.";
+        internal const string InstanceTypeNotStaticallyDiscovered = "Constructing a ValidationContext without a display name is not trim-safe because it uses reflection to discover the type of the instance being validated in order to resolve the DisplayNameAttribute when a display name is not provided.";
 
         #region Member Fields
 
@@ -215,7 +215,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Looks up the display name using the DisplayAttribute attached to the respective type or property.
         /// </summary>
         /// <returns>A display-friendly name of the member represented by the <see cref="MemberName" />.</returns>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctors are marked with RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Constructors that trigger this codepath are marked with RequiresUnreferencedCode. Constructor that takes the display name as an argument is trim-safe.")]
         private string? GetDisplayName()
         {
             string? displayName = null;
