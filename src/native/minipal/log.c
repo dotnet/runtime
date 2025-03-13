@@ -88,6 +88,10 @@ void minipal_log_flush(minipal_log_flags flags)
 {
 }
 
+void minipal_log_flush_all()
+{
+}
+
 static size_t log_write_line(minipal_log_flags flags, const char* msg, size_t msg_len)
 {
     char buffer[MINIPAL_LOG_MAX_PAYLOAD];
@@ -155,6 +159,10 @@ int minipal_log_write(minipal_log_flags flags, const char* msg)
 void minipal_log_sync(minipal_log_flags flags)
 {
 }
+
+void minipal_log_sync_all()
+{
+}
 #else
 #include <errno.h>
 #include <stdio.h>
@@ -196,6 +204,12 @@ void minipal_log_flush(minipal_log_flags flags)
     FILE* file = get_std_file(flags);
     if (file != NULL)
         fflush(file);
+}
+
+void minipal_log_flush_all()
+{
+    minipal_log_flush(minipal_log_flags_error);
+    minipal_log_flush(minipal_log_flags_info);
 }
 
 #ifdef HOST_WINDOWS
@@ -300,5 +314,11 @@ void minipal_log_sync(minipal_log_flags flags)
             break;
         }
     } while (retry);
+}
+
+void minipal_log_sync_all()
+{
+    minipal_log_sync(minipal_log_flags_error);
+    minipal_log_sync(minipal_log_flags_info);
 }
 #endif

@@ -130,7 +130,7 @@ void PrintToStdErrA(const char *pszString)
     }
     CONTRACTL_END
 
-    minipal_log_write_stderr(pszString);
+    minipal_log_write_error(pszString);
 }
 
 void PrintToStdErrW(const WCHAR *pwzString)

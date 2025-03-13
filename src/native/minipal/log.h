@@ -23,60 +23,39 @@ typedef enum
     minipal_log_flags_verbose = 1 << 6
 } minipal_log_flags;
 
-#define minipal_log_flags_stderr minipal_log_flags_error
-#define minipal_log_flags_stdout minipal_log_flags_info
-
 #define minipal_log_print_fatal(...) minipal_log_print(minipal_log_flags_fatal, __VA_ARGS__)
 #define minipal_log_print_error(...) minipal_log_print(minipal_log_flags_error, __VA_ARGS__)
-#define minipal_log_print_warning(...) minipal_log_print(minipal_log_flags_warning, __VA_ARGS__)
 #define minipal_log_print_info(...) minipal_log_print(minipal_log_flags_info, __VA_ARGS__)
-#define minipal_log_print_debug(...) minipal_log_print(minipal_log_flags_debug, __VA_ARGS__)
 #define minipal_log_print_verbose(...) minipal_log_print(minipal_log_flags_verbose, __VA_ARGS__)
-#define minipal_log_print_stderr(...) minipal_log_print(minipal_log_flags_stderr, __VA_ARGS__)
-#define minipal_log_print_stdout(...) minipal_log_print(minipal_log_flags_stdout, __VA_ARGS__)
 int minipal_log_print(minipal_log_flags flags, const char* fmt, ... );
 
 #define minipal_log_vprint_fatal(...) minipal_log_vprint(minipal_log_flags_fatal, __VA_ARGS__)
 #define minipal_log_vprint_error(...) minipal_log_vprint(minipal_log_flags_error, __VA_ARGS__)
-#define minipal_log_vprint_warning(...) minipal_log_vprint(minipal_log_flags_warning, __VA_ARGS__)
 #define minipal_log_vprint_info(...) minipal_log_vprint(minipal_log_flags_info, __VA_ARGS__)
-#define minipal_log_vprint_debug(...) minipal_log_vprint(minipal_log_flags_debug, __VA_ARGS__)
 #define minipal_log_vprint_verbose(...) minipal_log_vprint(minipal_log_flags_verbose, __VA_ARGS__)
-#define minipal_log_vprint_stderr(...) minipal_log_print(minipal_log_flags_stderr, __VA_ARGS__)
-#define minipal_log_vprint_stdout(...) minipal_log_print(minipal_log_flags_stdout, __VA_ARGS__)
 int minipal_log_vprint(minipal_log_flags flags, const char* fmt,va_list args);
 
 #define minipal_log_flush_fatal() minipal_log_flush(minipal_log_flags_fatal)
 #define minipal_log_flush_error() minipal_log_flush(minipal_log_flags_error)
-#define minipal_log_flush_warning() minipal_log_flush(minipal_log_flags_warning)
 #define minipal_log_flush_info() minipal_log_flush(minipal_log_flags_info)
-#define minipal_log_flush_debug() minipal_log_flush(minipal_log_flags_debug)
 #define minipal_log_flush_verbose() minipal_log_flush(minipal_log_flags_verbose)
-#define minipal_log_flush_stderr() minipal_log_flush(minipal_log_flags_stderr)
-#define minipal_log_flush_stdout() minipal_log_flush(minipal_log_flags_stdout)
 void minipal_log_flush(minipal_log_flags flags);
+void minipal_log_flush_all();
 
 // None crt, async safe log write.
 #define minipal_log_write_fatal(msg) minipal_log_write(minipal_log_flags_fatal, msg)
 #define minipal_log_write_error(msg) minipal_log_write(minipal_log_flags_error, msg)
-#define minipal_log_write_warning(msg) minipal_log_write(minipal_log_flags_warning, msg)
 #define minipal_log_write_info(msg) minipal_log_write(minipal_log_flags_info, msg)
-#define minipal_log_write_debug(msg) minipal_log_write(minipal_log_flags_debug, msg)
 #define minipal_log_write_verbose(msg) minipal_log_write(minipal_log_flags_verbose, msg)
-#define minipal_log_write_stderr(msg) minipal_log_write(minipal_log_flags_stderr, msg)
-#define minipal_log_write_stdout(msg) minipal_log_write(minipal_log_flags_stdout, msg)
 int minipal_log_write(minipal_log_flags flags, const char* msg);
 
 // None crt, async safe log sync.
 #define minipal_log_sync_fatal() minipal_log_sync(minipal_log_flags_fatal)
 #define minipal_log_sync_error() minipal_log_sync(minipal_log_flags_error)
-#define minipal_log_sync_warning() minipal_log_sync(minipal_log_flags_warning)
 #define minipal_log_sync_info() minipal_log_sync(minipal_log_flags_info)
-#define minipal_log_sync_debug() minipal_log_sync(minipal_log_flags_debug)
 #define minipal_log_sync_verbose() minipal_log_sync(minipal_log_flags_verbose)
-#define minipal_log_sync_stderr() minipal_log_sync(minipal_log_flags_stderr)
-#define minipal_log_sync_stdout() minipal_log_sync(minipal_log_flags_stdout)
 void minipal_log_sync(minipal_log_flags flags);
+void minipal_log_sync_all();
 
 #ifdef __cplusplus
 }
