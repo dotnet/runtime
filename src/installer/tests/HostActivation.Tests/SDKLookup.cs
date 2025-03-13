@@ -525,6 +525,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Fail()
                 .And.NotFindCompatibleSdk(globalJsonPath, sdk.Version)
                 .And.FindAnySdk(true);
+
+            // Verify we have the expected SDK versions
+            RunTest("--list-sdks")
+                .Should().Pass()
+                .And.HaveStdOutContaining($"9999.0.0 [{custom.Location}")
+                .And.HaveStdOutContaining($"9999.0.4 [{ExecutableDotNet.BinPath}");
         }
 
         [Fact]
@@ -549,6 +555,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             RunTest()
                 .Should().Pass()
                 .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.2", custom2.Location));
+
+            // Verify we have the expected SDK versions
+            RunTest("--list-sdks")
+                .Should().Pass()
+                .And.HaveStdOutContaining($"9999.0.0 [{custom1.Location}")
+                .And.HaveStdOutContaining($"9999.0.2 [{custom2.Location}")
+                .And.HaveStdOutContaining($"9999.0.1 [{ExecutableDotNet.BinPath}");
         }
 
         public static IEnumerable<object[]> InvalidGlobalJsonData
