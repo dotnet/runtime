@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             _output = output;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void TypesTest()
         {
             var types = new List<Type>()
