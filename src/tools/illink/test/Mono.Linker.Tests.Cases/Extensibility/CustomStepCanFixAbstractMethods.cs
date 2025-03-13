@@ -29,7 +29,6 @@ namespace Mono.Linker.Tests.Cases.Extensibility
 			// to be created through reflection instead of a direct call to the constructor, otherwise we build the
 			// TypeMapInfo cache too early for the custom step.
 
-			// var type = typeof (InterfaceImplementation);
 			var type = typeof (InterfaceImplementationInOtherAssembly);
 			InterfaceType instance = (InterfaceType) System.Activator.CreateInstance (type);
 			InterfaceType.UseInstance (instance);
@@ -46,7 +45,7 @@ namespace Mono.Linker.Tests.Cases.Extensibility
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (InterfaceType))]
-		// [CreatedMember ("AbstractMethod()")] // https://github.com/dotnet/runtime/issues/104266
+		[CreatedMember ("AbstractMethod()")]
 		class InterfaceImplementationAccessedViaReflection : InterfaceType
 		{
 		}
@@ -61,7 +60,7 @@ namespace Mono.Linker.Tests.Cases.Extensibility
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (InterfaceType))]
-		// [CreatedMember ("AbstractMethod()")] // https://github.com/dotnet/runtime/issues/104266
+		[CreatedMember ("AbstractMethod()")]
 		class InterfaceImplementation : InterfaceType
 		{
 		}
