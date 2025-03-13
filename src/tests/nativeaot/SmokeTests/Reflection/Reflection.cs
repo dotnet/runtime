@@ -93,6 +93,7 @@ internal static class ReflectionTest
         TestBaseOnlyUsedFromCode.Run();
         TestEntryPoint.Run();
         TestGenericAttributesOnEnum.Run();
+        TestLdtokenWithSignaturesDifferingInModifiers.Run();
 
         return 100;
     }
@@ -2777,6 +2778,26 @@ internal static class ReflectionTest
         public static void Run()
         {
             if (GetVal().ToString() != "3")
+                throw new Exception();
+        }
+    }
+
+    unsafe class TestLdtokenWithSignaturesDifferingInModifiers
+    {
+        delegate string StdcallDelegate(delegate* unmanaged[Stdcall]<void>[] p);
+        delegate string CdeclDelegate(delegate* unmanaged[Cdecl]<void>[] p);
+
+        static string Method(delegate* unmanaged[Stdcall]<void>[] p) => "Stdcall";
+        static string Method(delegate* unmanaged[Cdecl]<void>[] p) => "Cdecl";
+
+        public static void Run()
+        {
+            Expression<StdcallDelegate> stdcall = x => Method(x);
+            if (stdcall.Compile()(null) != "Stdcall")
+                throw new Exception();
+
+            Expression<CdeclDelegate> cdecl = x => Method(x);
+            if (cdecl.Compile()(null) != "Cdecl")
                 throw new Exception();
         }
     }
