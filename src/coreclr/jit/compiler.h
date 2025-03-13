@@ -506,19 +506,6 @@ enum class AddressExposedReason
 class LclVarDsc
 {
 public:
-    // The constructor. Most things can just be zero'ed.
-    //
-    // Initialize the ArgRegs to REG_STK.
-    LclVarDsc()
-        : _lvArgReg(REG_STK)
-#if FEATURE_MULTIREG_ARGS
-        , _lvOtherArgReg(REG_STK)
-#endif // FEATURE_MULTIREG_ARGS
-        , lvClassHnd(NO_CLASS_HANDLE)
-        , lvPerSsaData()
-    {
-    }
-
     // note this only packs because var_types is a typedef of unsigned char
     var_types lvType : 5; // TYP_INT/LONG/FLOAT/DOUBLE/REF
 
@@ -778,13 +765,6 @@ private:
     regNumberSmall _lvOtherReg; // Used for "upper half" of long var.
 #endif                          // !defined(TARGET_64BIT)
 
-    regNumberSmall _lvArgReg; // The (first) register in which this argument is passed.
-
-#if FEATURE_MULTIREG_ARGS
-    regNumberSmall _lvOtherArgReg; // Used for the second part of the struct passed in a register.
-                                   // Note this is defined but not used by ARM32
-#endif                             // FEATURE_MULTIREG_ARGS
-
     regNumberSmall _lvArgInitReg; // the register into which the argument is moved at entry
 
 public:
@@ -997,7 +977,7 @@ public:
     unsigned lvSlotNum; // original slot # (if remapped)
 
     // class handle for the local or null if not known or not a class
-    CORINFO_CLASS_HANDLE lvClassHnd;
+    CORINFO_CLASS_HANDLE lvClassHnd = NO_CLASS_HANDLE;
 
 private:
     ClassLayout* m_layout; // layout info for structs
