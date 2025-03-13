@@ -1289,20 +1289,22 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         return;
     }
 
-    // The following algorithm works based on the following equation:
-    // `imm = high32 + offset1` OR `imm = high32 - offset2`
-    //
-    // high32 will be loaded with `lui + addiw`, while offset
-    // will be loaded with `slli + addi` in 11-bits chunks
-    //
-    // First, determine at which position to partition imm into high32 and offset,
-    // so that it yields the least instruction.
-    // Where high32 = imm[y:x] and imm[63:y] are all zeroes or all ones.
-    //
-    // From the above equation, the value of offset1 & offset2 are:
-    // -> offset1 = imm[x-1:0]
-    // -> offset2 = ~(imm[x-1:0] - 1)
-    // The smaller offset should yield the least instruction. (is this correct?)
+    /* The following algorithm works based on the following equation:
+     * `imm = high32 + offset1` OR `imm = high32 - offset2`
+     *
+     * high32 will be loaded with `lui + addiw`, while offset
+     * will be loaded with `slli + addi` in 11-bits chunks
+     *
+     * First, determine at which position to partition imm into high32 and offset,
+     * so that it yields the least instruction.
+     * Where high32 = imm[y:x] and imm[63:y] are all zeroes or all ones.
+     *
+     * From the above equation, the value of offset1 & offset2 are:
+     * -> offset1 = imm[x-1:0]
+     * -> offset2 = ~(imm[x-1:0] - 1)
+     * The smaller offset should yield the least instruction. (is this correct?) */
+
+    // STEP 1: Determine x & y
 
     int x;
     int y;
@@ -1326,28 +1328,30 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         // first one position from LSB
         x = __builtin_ctzll(imm);
     }
-    assert(y >= x);
-    assert(0 <= y && y <= 63);
-    assert(0 <= x && x <= 63);
 
-    /* srli can be utilized when the input has the following pattern:
+    // STEP 2: Determine whether to utilize SRLI or not.
+
+    /* SRLI can be utilized when the input has the following pattern:
      *
      * 0...01...10...x
      * <-n-><-m->
      *
-     * It will emit instructions to load the left shifted 1...10...x0...0 then
-     * followed by a single srli.
+     * It will emit instructions to load the left shifted immidiate then
+     * followed by a single SRLI instruction.
      *
      * Since it adds 1 instruction, loading the new form should at least remove
      * two instruction. Two instructions can be removed IF:
      *  1. y - x > 31, AND
      *  2. (b - a) < 32, OR
-     *  3. (b - a) - (y - x) > 12 (-> )
+     *  3. (b - a) - (y - x) >= 11
      *
-     * 0...01...10...x
-     *     y       <-x
-     * 1...10...x0...0
-     *     b  <-a
+     * Visualization aid:
+     * - Original immidiate
+     *   0...01...10...x
+     *       y       <-x
+     * - Left shifted immidiate
+     *   1...10...x0...0
+     *       b  <-a
      * */
 
     constexpr int maxTotalInsCount = 5;
@@ -1372,6 +1376,10 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         }
     }
 
+    assert(y >= x);
+    assert(1 <= y && y <= 63);
+    assert(1 <= x && x <= 63);
+
     if (y < 32)
     {
         y = 31;
@@ -1386,7 +1394,18 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         x = y - 31;
     }
 
-    uint32_t high32         = ((int64_t)imm >> x) & WordMask(32);
+    uint32_t high32 = ((int64_t)imm >> x) & WordMask(32);
+
+    // STEP 3: Determine whether to use high32 + offset1 or high32 - offset2
+
+    /* TODO: Instead of using subtract / add mode, assume that we're always adding
+     * 12-bit chunks. However, if we encounter such 12-bit chunk with MSB == 1,
+     * add 1 to the previous chunk, and add the 12-bit chunk as is, which
+     * essentially does a subtraction. It will generate the least instruction to
+     * load offset.
+     * See the following discussion:
+     * https://github.com/dotnet/runtime/pull/113250#discussion_r1987576070 */
+
     uint32_t offset1        = imm & WordMask(x);
     uint32_t offset2        = ~(offset1 - 1) & WordMask(x);
     uint32_t offset         = offset1;
@@ -1424,7 +1443,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     instruction ins[maxTotalInsCount];
     int32_t     values[maxTotalInsCount];
 
-    // Load high32
+    // STEP 4: Generate instructions to load high32
+
     uint32_t upper    = (high32 >> 12) & WordMask(20);
     uint32_t lower    = high32 & WordMask(12);
     int      lowerMsb = (lower >> 11) & 0b1;
@@ -1446,7 +1466,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         numberOfInstructions += 1;
     }
 
-    // Load offset in 11-bits chunks
+    // STEP 5: Generate instructions to load offset in 11-bits chunks
+
     int chunkLsbPos = x < 11 ? 0 : x - 11;
     int shift       = x < 11 ? x : 11;
     int chunkMask   = x < 11 ? WordMask(x) : WordMask(11);
@@ -1504,6 +1525,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             values[numberOfInstructions - 1] = shift;
         }
     }
+
+    // STEP 6: Determine whether to use emitDataConst or emit generated instructions
 
     if (numberOfInstructions <= maxInsCount)
     {
