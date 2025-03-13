@@ -64,6 +64,10 @@ static int EcPointGetAffineCoordinates(const EC_GROUP *group, ECCurveType curveT
             return 0;
     }
 
+#if !HAVE_OPENSSL_EC2M
+    (void)curveType;
+#endif
+
     return 1;
 }
 
@@ -930,6 +934,7 @@ exit:
     if (cbD) *cbD = 0;
     *curveType = Unspecified;
     *cbP = *cbA = *cbB = *cbGx = *cbGy = *cbOrder = *cbCofactor = *cbSeed = 0;
-    *seed = NULL;
+    *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
+    return 0;
 #endif
 }
