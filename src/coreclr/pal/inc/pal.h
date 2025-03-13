@@ -527,14 +527,6 @@ SearchPathW(
 
 #define SearchPath  SearchPathW
 
-PALIMPORT
-BOOL
-PALAPI
-CopyFileW(
-      IN LPCWSTR lpExistingFileName,
-      IN LPCWSTR lpNewFileName,
-      IN BOOL bFailIfExists);
-
 #ifdef UNICODE
 #define CopyFile CopyFileW
 #else

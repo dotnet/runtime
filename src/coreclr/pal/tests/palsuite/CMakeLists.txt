@@ -261,9 +261,6 @@ add_executable_clr(paltests
   file_io/CopyFileA/test2/test2.cpp
   file_io/CopyFileA/test3/test3.cpp
   file_io/CopyFileA/test4/test4.cpp
-  file_io/CopyFileW/test1/CopyFileW.cpp
-  file_io/CopyFileW/test2/test2.cpp
-  file_io/CopyFileW/test3/test3.cpp
   file_io/CreateFileA/test1/CreateFileA.cpp
   file_io/CreateFileW/test1/CreateFileW.cpp
   file_io/errorpathnotfound/test1/test1.cpp

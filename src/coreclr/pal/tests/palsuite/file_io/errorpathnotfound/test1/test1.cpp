@@ -17,7 +17,7 @@
 
 **            Functions covered by this test are: 
 
-**            CopyFileA, CopyFileW, CreateFileA,CreateFileW,
+**            CopyFileA, CreateFileA,CreateFileW,
 
 **            DeleteFileA and DeleteFileW.
 
@@ -81,87 +81,6 @@ PALTEST(file_io_errorpathnotfound_test1_paltest_errorpathnotfound_test1, "file_i
         return FAIL;
 
     }
-
-
-
-    /*...................Test CopyFileW.............................*/
-
-
-
-    /* test with an invalid path */
-
-    bRc = CopyFileW(wBadFilePath,wDest,TRUE);
-
-    if(!bRc)
-
-    {
-
-        if(GetLastError()!= ERROR_PATH_NOT_FOUND)
-
-        {
-
-            Trace("CopyFileW: calling GetLastError() after copying a file"
-
-                " with wrong path returned [%u] while it should return [%u]\n"
-
-                ,GetLastError(), ERROR_PATH_NOT_FOUND);
-
-            testPass = FALSE;
-
-        }
-
-    }
-
-    else
-
-    {
-
-        testPass = FALSE; 
-
-    }
-
-
-
-    /* test with invalid file name */
-
-    bRc = CopyFileW(wBadFileName,wDest,TRUE);
-
-    if(!bRc)
-
-    { 
-
-        if(GetLastError()!= ERROR_FILE_NOT_FOUND)
-
-        {
-
-            Trace("CopyFileW: calling GetLastError() after copying a file"
-
-                " with wrong name returned [%u] while it should return [%u]\n"
-
-                ,GetLastError(), ERROR_FILE_NOT_FOUND);
-
-            testPass = FALSE;
-
-        }
-
-
-
-    }
-
-    else
-
-    {
-
-        Trace("CopyFileW: managed to copy a file with wrong name\n");     
-
-        testPass = FALSE;
-
-    }
-
-
-
-  
-
 
 
     /*..................CopyFileA...................................*/
