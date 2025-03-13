@@ -755,8 +755,8 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
     {
         printf("Copy     ");
     }
-    else if ((curAssertion->op2.kind == O2K_CONST_INT) || (curAssertion->op2.kind == O2K_CONST_LONG) ||
-             (curAssertion->op2.kind == O2K_CONST_DOUBLE) || (curAssertion->op2.kind == O2K_ZEROOBJ))
+    else if ((curAssertion->op2.kind == O2K_CONST_INT) || (curAssertion->op2.kind == O2K_CONST_DOUBLE) ||
+             (curAssertion->op2.kind == O2K_ZEROOBJ))
     {
         printf("Constant ");
     }
@@ -949,10 +949,6 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                         }
                     }
                 }
-                break;
-
-            case O2K_CONST_LONG:
-                printf("0x%016llx", curAssertion->op2.lconVal);
                 break;
 
             case O2K_CONST_DOUBLE:
@@ -1234,10 +1230,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     }
                     goto CNS_COMMON;
 
-                case GT_CNS_LNG:
-                    op2Kind = O2K_CONST_LONG;
-                    goto CNS_COMMON;
-
                 case GT_CNS_DBL:
                     op2Kind = O2K_CONST_DOUBLE;
                     goto CNS_COMMON;
@@ -1359,7 +1351,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     }
 
                     bool equals = assertionKind == OAK_EQUAL;
-                    assertion = AssertionDsc::CreateCopyLocalAssertion(this, lclNum, lclNum2, equals);
+                    assertion   = AssertionDsc::CreateCopyLocalAssertion(this, lclNum, lclNum2, equals);
 
                     goto DONE_ASSERTION;
                 }
@@ -1741,14 +1733,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
     }
     switch (assertion->op2.kind)
     {
-        case O2K_CONST_LONG:
-        {
-            // All handles should be represented by O2K_CONST_INT,
-            // so no handle bits should be set here.
-            assert(!assertion->op2.HasIconFlag());
-        }
-        break;
-
         case O2K_ZEROOBJ:
         {
             // We only make these assertion for stores (not control flow).
@@ -1821,8 +1805,8 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
         if ((candidateAssertion.op1.kind == O1K_LCLVAR) || (candidateAssertion.op1.kind == O1K_VN))
         {
             // "LCLVAR != CNS" is not a useful assertion (unless CNS is 0/1)
-            if (((candidateAssertion.op2.kind == O2K_CONST_INT) || (candidateAssertion.op2.kind == O2K_CONST_LONG)) &&
-                (candidateAssertion.op2.u1.iconVal != 0) && (candidateAssertion.op2.u1.iconVal != 1))
+            if ((candidateAssertion.op2.kind == O2K_CONST_INT) && (candidateAssertion.op2.u1.iconVal != 0) &&
+                (candidateAssertion.op2.u1.iconVal != 1))
             {
                 return;
             }
@@ -3248,17 +3232,6 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                 return nullptr;
             }
             newTree->BashToConst(curAssertion->op2.dconVal, tree->TypeGet());
-            break;
-
-        case O2K_CONST_LONG:
-            if (newTree->TypeIs(TYP_LONG))
-            {
-                newTree->BashToConst(curAssertion->op2.lconVal);
-            }
-            else
-            {
-                newTree->BashToConst(static_cast<int32_t>(curAssertion->op2.lconVal));
-            }
             break;
 
         case O2K_CONST_INT:
