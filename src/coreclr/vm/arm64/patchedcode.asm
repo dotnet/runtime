@@ -4,6 +4,7 @@
 #include "ksarm64.h"
 #include "asmconstants.h"
 #include "asmmacros.h"
+#include "patchedcodeconstants.h"
 
     ;;like TEXTAREA, but with 64 byte alignment so that we can align the patchable pool below to 64 without warning
     AREA    |.text|,ALIGN=6,CODE,READONLY
@@ -159,9 +160,6 @@ NotInHeap
 ;
 ;
 
-#define WRITE_BARRIER_CONSTANT_OFFSET(start, constlabel) (constlabel - C_FUNC(JIT_WriteBarrier) + start)
-
-
 WRITE_BARRIER_ENTRY_STUB macro start
 start
     stlr  x15, [x14]
@@ -173,17 +171,17 @@ WRITE_BARRIER_SHADOW_UPDATE_STUB macro start
 ; Update GC Shadow Heap
 
 ; Do not perform the work if g_GCShadow is 0
-    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_GCShadow)
+    ldr  x12, JIT_WriteBarrier_Offset_GCShadow + start
     cbz  x12, ShadowUpdateEnd
 
 ; Compute address of shadow heap location:
 ;   pShadow = g_GCShadow + (x14 - g_lowest_address)
-    ldr  x17, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_LowestAddress)
+    ldr  x17, JIT_WriteBarrier_Offset_LowestAddress + start
     sub  x17, x14, x17
     add  x12, x17, x12
 
 ; if (pShadow >= g_GCShadowEnd) goto end
-    ldr  x17, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_GCShadowEnd)
+    ldr  x17, JIT_WriteBarrier_Offset_GCShadowEnd + start
     cmp  x12, x17
     bhs  ShadowUpdateEnd
 
@@ -212,7 +210,7 @@ endm
 WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB macro start exit
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 ; Update the write watch table if necessary
-    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_WriteWatchTable)
+    ldr  x12, JIT_WriteBarrier_Offset_WriteWatchTable + start
 ; SoftwareWriteWatch::AddressToTableByteIndexShift
     add  x12, x12, x14, lsr #0xc
     ldrb w17, [x12]
@@ -226,7 +224,7 @@ endm
 
 WRITE_BARRIER_CHECK_EPHEMERAL_LOW_STUB macro start exit
 ; Branch to Exit if the reference is not in the ephemeral generations.
-    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_Lower)
+    ldr  x12, JIT_WriteBarrier_Offset_Lower + start
     cmp  x15, x12
     blo  exit
 endm
@@ -234,8 +232,8 @@ endm
 
 WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB macro start exit
 ; Branch to Exit if the reference is not in the ephemeral generations.
-    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_Lower)
-    ldr  x17, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_Upper)
+    ldr  x12, JIT_WriteBarrier_Offset_Lower + start
+    ldr  x17, JIT_WriteBarrier_Offset_Upper + start
     cmp  x15, x12
     ccmp x15, x17, #0x2, hs
     bhs  exit
@@ -244,14 +242,14 @@ endm
 
 WRITE_BARRIER_REGION_CHECK_STUB macro start exit
 ; Calculate region generations
-    ldr  x17, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_RegionToGeneration)
-    ldr  w12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_RegionShr)
+    ldr  x17, JIT_WriteBarrier_Offset_RegionToGeneration + start
+    ldr  w12, JIT_WriteBarrier_Offset_RegionShr + start
     lsr  x15, x15, x12
     add  x15, x15, x17 ; x15 = (RHS >> wbs_region_shr) + wbs_region_to_generation_table
     lsr  x12, x14, x12
     add  x12, x12, x17 ; x12 = (LHS >> wbs_region_shr) + wbs_region_to_generation_table
 
-; Check whether the region we're storing into is gen 0 - nothing to do in this case
+; Check whether the region we are storing into is gen 0 - nothing to do in this case
     ldrb w12, [x12]
     cbz  w12, exit
 
@@ -268,7 +266,7 @@ WRITE_BARRIER_CHECK_BIT_REGIONS_CARD_TABLE_STUB macro start exit
     and w17, w17, 7
     movz w15, 1
     lsl w17, w15, w17  ; w17 = 1 << (LHS >> 8 && 7)
-    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_CardTable)
+    ldr  x12, JIT_WriteBarrier_Offset_CardTable + start
     add  x15, x12, x14, lsr #11
     ldrb w12, [x15]  ; w12 = [(LHS >> 11) + g_card_table]
     tst  w12, w17
@@ -283,7 +281,7 @@ endm
 
 WRITE_BARRIER_CHECK_CARD_TABLE_STUB macro start exit
 ; Check if we need to update the card table
-    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_CardTable)
+    ldr  x12, JIT_WriteBarrier_Offset_CardTable + start
     add  x15, x12, x14, lsr #11
 ; w12 = [(RHS >> 11) + g_card_table]
     ldrb w12, [x15]
@@ -299,7 +297,7 @@ endm
 WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB macro start exit
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 ; Check if we need to update the card bundle table
-    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_CardBundleTable)
+    ldr  x12, JIT_WriteBarrier_Offset_CardBundleTable + start
     add  x15, x12, x14, lsr #21
     ldrb w12, [x15]
     cmp  x12, 0xFF

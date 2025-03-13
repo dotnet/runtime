@@ -243,7 +243,7 @@ LOCAL_LABEL(WriteWatchForGCHeapEnd\@):
     lsr  x12, x14, x12
     add  x12, x12, x17 // x12 = (LHS >> wbs_region_shr) + wbs_region_to_generation_table
 
-    // Check whether the region we're storing into is gen 0 - nothing to do in this case
+    // Check whether the region we are storing into is gen 0 - nothing to do in this case
     ldrb w12, [x12]
     cbz  w12, LOCAL_LABEL(\exit)
 
