@@ -779,7 +779,7 @@ void EEStartupHelper()
             Disassembler::StaticInitialize();
             if (!Disassembler::IsAvailable())
             {
-                fprintf(stderr, "External disassembler is not available.\n");
+                minipal_log_print_error("External disassembler is not available.\n");
                 IfFailGo(E_FAIL);
             }
         }
