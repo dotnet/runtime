@@ -4771,7 +4771,7 @@ bool Compiler::lvaIsPreSpilled(unsigned lclNum, regMaskTP preSpillMask)
 //
 void Compiler::lvaUpdateArgWithInitialReg(LclVarDsc* varDsc)
 {
-    noway_assert(varDsc->lvIsParam);
+    assert(varDsc->lvIsParam || varDsc->lvIsParamRegTarget);
 
     if (varDsc->lvIsRegCandidate())
     {
@@ -4794,18 +4794,26 @@ void Compiler::lvaUpdateArgsWithInitialReg()
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-        if (varDsc->lvPromoted)
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
         {
-            for (unsigned fieldVarNum = varDsc->lvFieldLclStart;
-                 fieldVarNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++fieldVarNum)
+            if (!segment.IsPassedInRegister())
             {
-                LclVarDsc* fieldVarDsc = lvaGetDesc(fieldVarNum);
-                lvaUpdateArgWithInitialReg(fieldVarDsc);
+                continue;
             }
-        }
-        else
-        {
-            lvaUpdateArgWithInitialReg(varDsc);
+
+            const ParameterRegisterLocalMapping* mapping =
+                FindParameterRegisterLocalMappingByRegister(segment.GetRegister());
+
+            if (mapping != nullptr)
+            {
+                lvaUpdateArgWithInitialReg(lvaGetDesc(mapping->LclNum));
+            }
+            else
+            {
+                lvaUpdateArgWithInitialReg(varDsc);
+            }
         }
     }
 }
