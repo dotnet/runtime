@@ -14,60 +14,81 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         protected abstract IServiceProvider CreateServiceProvider(IServiceCollection collection);
 
         [Fact]
-        public void QueryWithIEnumerable()
+        public void CombinationalRegistration()
         {
-            Service service = new();
-            Service keyedService = new();
-            Service anykeyService = new();
-            Service nullkeyService = new();
+            Service service1 = new();
+            Service service2 = new();
+            Service keyedService1 = new();
+            Service keyedService2 = new();
+            Service anykeyService1 = new();
+            Service anykeyService2 = new();
+            Service nullkeyService1 = new();
+            Service nullkeyService2 = new();
 
             ServiceCollection serviceCollection = new();
-            serviceCollection.AddSingleton<IService>(service);
-            serviceCollection.AddSingleton<IService>(service);
-            serviceCollection.AddKeyedSingleton<IService>("keyedService", keyedService);
-            serviceCollection.AddKeyedSingleton<IService>("keyedService", keyedService);
-            serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, anykeyService);
-            serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, anykeyService);
-            serviceCollection.AddKeyedSingleton<IService>(null, nullkeyService);
-            serviceCollection.AddKeyedSingleton<IService>(null, nullkeyService);
+            serviceCollection.AddSingleton<IService>(service1);
+            serviceCollection.AddSingleton<IService>(service2);
+            serviceCollection.AddKeyedSingleton<IService>(null, nullkeyService1);
+            serviceCollection.AddKeyedSingleton<IService>(null, nullkeyService2);
+            serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, anykeyService1);
+            serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, anykeyService2);
+            serviceCollection.AddKeyedSingleton<IService>("keyedService", keyedService1);
+            serviceCollection.AddKeyedSingleton<IService>("keyedService", keyedService2);
 
             IServiceProvider provider = CreateServiceProvider(serviceCollection);
 
             /*
-             * Table for what results are included in GetServices()\GetKeyedServices():
+             * Table for what results are included:
              *
-             * Query                     | Keyed? | Unkeyed? | AnyKey? | nullkey?
+             * Query                     | Keyed? | Unkeyed? | AnyKey? | null key?
              * -------------------------------------------------------------------
              * GetServices(Type)         | no     | yes      | no      | yes
+             * GetService(Type)          | no     | yes      | no      | yes
+             *
              * GetKeyedServices(null)    | no     | yes      | no      | yes
+             * GetKeyedService(null)     | no     | yes      | no      | yes
+             *
              * GetKeyedServices(AnyKey)  | yes    | no       | no      | no
+             * GetKeyedService(AnyKey)   | throw  | throw    | throw   | throw
+             *
              * GetKeyedServices(key)     | yes    | no       | no      | no
+             * GetKeyedService(key)      | yes    | no       | yes     | no
              *
              * Summary:
              * - A null key is the same as unkeyed. This allows the KeyServices APIs to support both keyed and unkeyed.
              * - AnyKey is a special case of Keyed.
-             * - It is not possible to query for AnyKey registrations using IEnumerable; a singleton query resolves.
+             * - AnyKey registrations are not returned with GetKeyedServices(AnyKey) and GetKeyedService(AnyKey) always throws.
+             * - For IEnumerable, the ordering of the results are in registration order.
+             * - For a singleton resolve, the last match wins.
              */
 
-            // Query with unkeyed (which is really keyed by Type).
+            // Unkeyed (which is really keyed by Type).
             Assert.Equal(
-                new[] { service, service, nullkeyService, nullkeyService },
+                new[] { service1, service2, nullkeyService1, nullkeyService2 },
                 provider.GetServices<IService>());
 
-            // Query with null key.
+            Assert.Equal(nullkeyService2, provider.GetService<IService>());
+
+            // Null key.
             Assert.Equal(
-                new[] { service, service, nullkeyService, nullkeyService },
+                new[] { service1, service2, nullkeyService1, nullkeyService2 },
                 provider.GetKeyedServices<IService>(null));
 
-            // Query with AnyKey.
+            Assert.Equal(nullkeyService2, provider.GetKeyedService<IService>(null));
+
+            // AnyKey.
             Assert.Equal(
-                new[] { keyedService, keyedService },
+                new[] { keyedService1, keyedService2 },
                 provider.GetKeyedServices<IService>(KeyedService.AnyKey));
 
-            // Query with standard keyed.
+            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedService<IService>(KeyedService.AnyKey));
+
+            // Keyed.
             Assert.Equal(
-                new[] { keyedService, keyedService },
+                new[] { keyedService1, keyedService2 },
                 provider.GetKeyedServices<IService>("keyedService"));
+
+            Assert.Equal(keyedService2, provider.GetKeyedService<IService>("keyedService"));
         }
 
         [Fact]
