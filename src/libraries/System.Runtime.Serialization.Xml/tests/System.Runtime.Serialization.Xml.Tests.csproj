@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <_DataSetXmlSerializationSupport Condition="'$(EnableAggressiveTrimming)' == 'true'">true</_DataSetXmlSerializationSupport>
   </PropertyGroup>
 
   <ItemGroup>
