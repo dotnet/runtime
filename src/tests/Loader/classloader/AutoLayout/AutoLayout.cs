@@ -10,6 +10,12 @@ public static class AutoLayout
     [Fact]
     public static void FieldsWithOffsets()
     {
-        Assert.Throws<TypeLoadException>([MethodImpl(MethodImplOptions.NoInlining)] () => typeof(AutoLayoutTypeWithFieldsWithOffsets));
+        Assert.Throws<TypeLoadException>(NoInlineMethod);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type NoInlineMethod()
+    {
+        return typeof(AutoLayoutTypeWithFieldsWithOffsets);
     }
 }
