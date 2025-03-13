@@ -107,6 +107,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
 
     if (copyJit)
     {
+#ifdef TARGET_WINDOWS
         // Get a temp file location
         dwRetVal = ::GetTempPathA(MAX_PATH, lpTempPathBuffer);
         if (dwRetVal == 0)
@@ -137,7 +138,6 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         }
         ::strcpy_s(PathToTempJit, MAX_PATH, szTempFileName);
 
-#ifdef TARGET_WINDOWS
         // Copy Temp File
         bRetVal = ::CopyFileA(PathToOriginalJit, PathToTempJit, FALSE);
         if (bRetVal == FALSE)

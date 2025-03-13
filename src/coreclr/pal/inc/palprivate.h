@@ -70,15 +70,6 @@ GetFullPathNameA(
          OUT LPSTR *lpFilePart);
 
 PALIMPORT
-UINT
-PALAPI
-GetTempFileNameA(
-         IN LPCSTR lpPathName,
-         IN LPCSTR lpPrefixString,
-         IN UINT uUnique,
-         OUT LPSTR lpTempFileName);
-
-PALIMPORT
 DWORD
 PALAPI
 GetTempPathA(

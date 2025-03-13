@@ -704,12 +704,6 @@ GetFullPathNameW(
 #define GetFullPathName GetFullPathNameA
 #endif
 
-#ifdef UNICODE
-#define GetTempFileName GetTempFileNameW
-#else
-#define GetTempFileName GetTempFileNameA
-#endif
-
 PALIMPORT
 DWORD
 PALAPI
