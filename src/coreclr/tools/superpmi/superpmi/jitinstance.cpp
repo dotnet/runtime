@@ -137,6 +137,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         }
         ::strcpy_s(PathToTempJit, MAX_PATH, szTempFileName);
 
+#ifdef TARGET_WINDOWS
         // Copy Temp File
         bRetVal = ::CopyFileA(PathToOriginalJit, PathToTempJit, FALSE);
         if (bRetVal == FALSE)
@@ -144,6 +145,9 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
             LogError("CopyFile failed (0x%08x)", ::GetLastError());
             return E_FAIL;
         }
+#else // TARGET_WINDOWS
+        assert(!copyJit);
+#endif // TARGET_WINDOWS
     }
     else
         PathToTempJit = PathToOriginalJit;

@@ -257,10 +257,6 @@ add_executable_clr(paltests
   filemapping_memmgt/VirtualProtect/test6/VirtualProtect.cpp
   filemapping_memmgt/VirtualProtect/test7/VirtualProtect.cpp
   filemapping_memmgt/VirtualQuery/test1/VirtualQuery.cpp
-  file_io/CopyFileA/test1/CopyFileA.cpp
-  file_io/CopyFileA/test2/test2.cpp
-  file_io/CopyFileA/test3/test3.cpp
-  file_io/CopyFileA/test4/test4.cpp
   file_io/CreateFileA/test1/CreateFileA.cpp
   file_io/CreateFileW/test1/CreateFileW.cpp
   file_io/errorpathnotfound/test1/test1.cpp

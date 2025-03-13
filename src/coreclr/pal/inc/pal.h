@@ -527,12 +527,6 @@ SearchPathW(
 
 #define SearchPath  SearchPathW
 
-#ifdef UNICODE
-#define CopyFile CopyFileW
-#else
-#define CopyFile CopyFileA
-#endif
-
 PALIMPORT
 DWORD
 PALAPI

@@ -23,15 +23,6 @@ CreateFileA(
 PALIMPORT
 BOOL
 PALAPI
-CopyFileA(
-      IN LPCSTR lpExistingFileName,
-      IN LPCSTR lpNewFileName,
-      IN BOOL bFailIfExists);
-
-
-PALIMPORT
-BOOL
-PALAPI
 DeleteFileA(
         IN LPCSTR lpFileName);
 
