@@ -59,7 +59,7 @@ namespace System.Diagnostics
 
             s_activeSources.Add(this);
 
-            lock(s_allListeners)
+            lock (s_allListeners)
             {
                 if (s_allListeners.Count > 0)
                 {
