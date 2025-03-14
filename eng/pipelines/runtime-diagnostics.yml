@@ -9,8 +9,6 @@ resources:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
-  - name: diagJobTemplate
-    value: /eng/common/templates/job/job.yml
 
 schedules:
 - cron: "30 2 * * *"
@@ -37,21 +35,24 @@ extends:
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
-      - template: /eng/pipelines/build.yml@diagnostics
+            postBuildSteps:
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                includeRootFolder: false
+                archiveType: $(archiveType)
+                archiveExtension: $(archiveExtension)
+                tarCompression: $(tarCompression)
+                artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+                displayName: Build Assets            
+      - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: ${{ variables.diagJobTemplate }}
-          name: Windows
-          osGroup: Windows_NT
-          buildConfigs:
-          - configuration: Debug
-            architecture: x64
-          - configuration: Release
-            architecture: x64
-            artifactUploadPath: bin
-          - configuration: Release
-            architecture: x86
-            artifactUploadPath: bin/Windows_NT.x86.Release
-          - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-            - configuration: Release
-              architecture: arm64
-              artifactUploadPath: bin/Windows_NT.arm64.Release
+          jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
+          buildConfig: release
+          runtimeFlavor: mono
+          platforms:
+          - windows_x64
+          jobParameters:
+            name: Windows
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 360
