@@ -23,22 +23,6 @@ namespace Internal.Runtime.TypeLoader
 {
     public sealed partial class TypeLoaderEnvironment
     {
-        [StructLayout(LayoutKind.Sequential)]
-        private struct FieldHandleInfo
-        {
-            public RuntimeTypeHandle DeclaringType;
-            public FieldHandle Handle;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct MethodHandleInfo
-        {
-            public RuntimeTypeHandle DeclaringType;
-            public MethodHandle Handle;
-            public int NumGenericArgs;
-            public RuntimeTypeHandle FirstArgument;
-        }
-
         #region Ldtoken Hashtables
         private struct RuntimeFieldHandleKey : IEquatable<RuntimeFieldHandleKey>
         {

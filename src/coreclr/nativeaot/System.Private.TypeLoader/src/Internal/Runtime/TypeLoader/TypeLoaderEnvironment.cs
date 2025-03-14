@@ -48,11 +48,6 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.GenericLookupFromContextAndSignature(context, signature, out auxResult);
         }
 
-        public override bool GetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodHandle handle, out RuntimeTypeHandle[] genericMethodArgs)
-        {
-            return TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out declaringTypeHandle, out handle, out genericMethodArgs);
-        }
-
         public override RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, MethodHandle handle, RuntimeTypeHandle[] genericMethodArgs)
         {
             return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeHandle, handle, genericMethodArgs);
@@ -66,11 +61,6 @@ namespace Internal.Runtime.TypeLoader
         public override IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeMethodHandle declMethod)
         {
             return TypeLoaderEnvironment.Instance.ResolveGenericVirtualMethodTarget(targetTypeHandle, declMethod);
-        }
-
-        public override bool GetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out FieldHandle handle)
-        {
-            return TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out handle);
         }
 
         public override RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, FieldHandle handle)

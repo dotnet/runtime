@@ -3,11 +3,8 @@
 
 using System;
 using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.InteropServices;
 
 using Internal.Metadata.NativeFormat;
-using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
 {
@@ -38,17 +35,23 @@ namespace Internal.Runtime.CompilerServices
             if (other == null)
                 return false;
 
-            if (GetName() != other.GetName())
-                return false;
-
             // Comparing handles is enough if there's only one metadata blob
+            // (Same assumption in GetHashCode below!)
             Debug.Assert(Reader == other.Reader);
-            return Reader.GetMethod(Handle).Signature.Equals(other.Reader.GetMethod(other.Handle).Signature);
+
+            Method thisMethod = Reader.GetMethod(Handle);
+            Method otherMethod = other.Reader.GetMethod(other.Handle);
+
+            return thisMethod.Signature.Equals(otherMethod.Signature)
+                && thisMethod.Name.Equals(otherMethod.Name);
         }
 
         public override int GetHashCode()
         {
-            return Handle.GetHashCode();
+            Method method = Reader.GetMethod(Handle);
+
+            // Assumes we only have one metadata blob
+            return method.Signature.GetHashCode() ^ method.Name.GetHashCode();
         }
     }
 }
