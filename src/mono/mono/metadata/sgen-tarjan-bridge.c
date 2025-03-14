@@ -368,7 +368,7 @@ static const char*
 safe_name_bridge (GCObject *obj)
 {
 	GCVTable vt = SGEN_LOAD_VTABLE (obj);
-	return vt->klass->name;
+	return m_class_get_name (vt->klass);
 }
 
 static ScanData*
@@ -762,7 +762,7 @@ create_scc (ScanData *data)
 #if DUMP_GRAPH
 	printf ("|SCC %p rooted in %s (%p) has bridge %d\n", color_data, safe_name_bridge (data->obj), data->obj, found_bridge);
 	printf ("\tloop stack: ");
-	for (int i = 0; i < dyn_array_ptr_size (&loop_stack); ++i) {
+	for (i = 0; i < dyn_array_ptr_size (&loop_stack); ++i) {
 		ScanData *other = dyn_array_ptr_get (&loop_stack, i);
 		printf ("(%d/%d)", other->index, other->low_index);
 	}
@@ -807,7 +807,7 @@ create_scc (ScanData *data)
 
 #if DUMP_GRAPH
 	printf ("\tpoints-to-colors: ");
-	for (int i = 0; i < dyn_array_ptr_size (&color_data->other_colors); i++)
+	for (i = 0; i < dyn_array_ptr_size (&color_data->other_colors); i++)
 		printf ("%p ", dyn_array_ptr_get (&color_data->other_colors, i));
 	printf ("\n");
 #endif
@@ -995,7 +995,7 @@ processing_stw_step (void)
 #if defined (DUMP_GRAPH)
 	printf ("----summary----\n");
 	printf ("bridges:\n");
-	for (int i = 0; i < bridge_count; ++i) {
+	for (i = 0; i < bridge_count; ++i) {
 		ScanData *sd = find_data (dyn_array_ptr_get (&registered_bridges, i));
 		printf ("\t%s (%p) index %d color %p\n", safe_name_bridge (sd->obj), sd->obj, sd->index, sd->color);
 	}
