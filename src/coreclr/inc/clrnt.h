@@ -522,6 +522,7 @@ RtlVirtualUnwind (
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
 
+FORCEINLINE
 ULONG
 RtlpGetFunctionEndAddress (
     _In_ PT_RUNTIME_FUNCTION FunctionEntry,

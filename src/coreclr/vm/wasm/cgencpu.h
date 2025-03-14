@@ -32,7 +32,7 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unu
     return 0;
 }
 
-TADDR GetSP(const T_CONTEXT * context)
+inline TADDR GetSP(const T_CONTEXT * context)
 {
     _ASSERTE("The function is not implemented on wasm, it lacks registers");
     return 0;
@@ -42,7 +42,7 @@ struct HijackArgs
 {
 };
 
-LPVOID STDCALL GetCurrentSP()
+inline LPVOID STDCALL GetCurrentSP()
 {
     _ASSERTE("The function is not implemented on wasm, it lacks registers");
     return nullptr;
