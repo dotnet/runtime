@@ -686,7 +686,7 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Pins and gets a <see cref="MemoryHandle"/> to the backing memory.
         /// </summary>
-        /// <returns><see cref="MemoryHandle"/></returns>
+        /// <returns>A <see cref="MemoryHandle"/> which has pinned the backing memory.</returns>
         public MemoryHandle GetPinnedHandle()
         {
             GCHandle handle = GCHandle.Alloc(_values, GCHandleType.Pinned);
