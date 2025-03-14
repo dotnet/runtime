@@ -26,7 +26,7 @@
 #include <sanitizer/asan_interface.h>
 #endif
 
-#if !defined(__USING_SJLJ_EXCEPTIONS__) && !defined(__USING_WASM_EXCEPTIONS__)
+#if !defined(__USING_SJLJ_EXCEPTIONS__) && !defined(__wasm__)
 #include "AddressSpace.hpp"
 #include "UnwindCursor.hpp"
 
@@ -111,14 +111,14 @@ _LIBUNWIND_WEAK_ALIAS(__unw_get_reg, unw_get_reg)
 
 /// Set value of specified register at cursor position in stack frame.
 _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
-                                    unw_word_t value, unw_word_t *pos) {
+                                    unw_word_t value) {
   _LIBUNWIND_TRACE_API("__unw_set_reg(cursor=%p, regNum=%d, value=0x%" PRIxPTR
                        ")",
                        static_cast<void *>(cursor), regNum, value);
   typedef LocalAddressSpace::pint_t pint_t;
   AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
   if (co->validReg(regNum)) {
-    co->setReg(regNum, (pint_t)value, (pint_t)pos);
+    co->setReg(regNum, (pint_t)value);
     // special case altering IP to re-find info (being called by personality
     // function)
     if (regNum == UNW_REG_IP) {
@@ -133,7 +133,7 @@ _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
       // this should actually be - info.gp. LLVM doesn't currently support
       // any such platforms and Clang doesn't export a macro for them.
       if (info.gp)
-        co->setReg(UNW_REG_SP, co->getReg(UNW_REG_SP) + info.gp, 0);
+        co->setReg(UNW_REG_SP, co->getReg(UNW_REG_SP) + info.gp);
     }
     return UNW_ESUCCESS;
   }
@@ -174,21 +174,6 @@ _LIBUNWIND_HIDDEN int __unw_set_fpreg(unw_cursor_t *cursor, unw_regnum_t regNum,
   return UNW_EBADREG;
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_set_fpreg, unw_set_fpreg)
-
-/// Get location of specified register at cursor position in stack frame.
-_LIBUNWIND_HIDDEN int __unw_get_save_loc(unw_cursor_t *cursor, int regNum,
-                                       unw_save_loc_t* location)
-{
-  AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
-  if (co->validReg(regNum)) {
-    // We only support memory locations, not register locations
-    location->u.addr = co->getRegLocation(regNum);
-    location->type = (location->u.addr == 0) ? UNW_SLT_NONE : UNW_SLT_MEMORY;
-    return UNW_ESUCCESS;
-  }
-  return UNW_EBADREG;
-}
-_LIBUNWIND_WEAK_ALIAS(__unw_get_save_loc, unw_get_save_loc)
 
 /// Move cursor to next frame.
 _LIBUNWIND_HIDDEN int __unw_step(unw_cursor_t *cursor) {
@@ -362,8 +347,7 @@ void __unw_remove_dynamic_eh_frame_section(unw_word_t eh_frame_start) {
 }
 
 #endif // defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
-#endif // !defined(__USING_SJLJ_EXCEPTIONS__) &&
-       // !defined(__USING_WASM_EXCEPTIONS__)
+#endif // !defined(__USING_SJLJ_EXCEPTIONS__) && !defined(__wasm__)
 
 #ifdef __APPLE__
 
