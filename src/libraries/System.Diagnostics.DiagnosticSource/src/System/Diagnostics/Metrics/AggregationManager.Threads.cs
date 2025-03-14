@@ -28,7 +28,9 @@ namespace System.Diagnostics.Metrics
             _collectThread = new Thread(() => CollectWorker(_cts.Token));
             _collectThread.IsBackground = true;
             _collectThread.Name = "MetricsEventSource CollectWorker";
+#pragma warning disable CA1416 // 'Thread.Start' is unsupported on: 'browser', there the actual implementation is in AggregationManager.Wasm.cs
             _collectThread.Start();
+#pragma warning restore CA1416
 
             _listener.Start();
             _initialInstrumentEnumerationComplete();
