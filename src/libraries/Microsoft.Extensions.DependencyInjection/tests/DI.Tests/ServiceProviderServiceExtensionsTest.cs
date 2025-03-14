@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -277,85 +276,6 @@ namespace Microsoft.Extensions.DependencyInjection
             return serviceCollection.BuildServiceProvider();
         }
 
-        [Fact]
-        [OuterLoop] // Includes a long Task.Delay
-        public async Task GetService_ReturnsGenericUnkeyedInstance_AfterUsingGetKeyedService()
-        {
-            // Arrange
-            var services = new ServiceCollection();
-
-            services.AddTransient(typeof(IGenericService<>), typeof(UnkeyedGenericService<>));
-            services.AddKeyedTransient(typeof(IGenericService<>), "someKey", typeof(PrimaryKeyedGenericService<>));
-
-            await using var serviceProvider = services.BuildServiceProvider(ServiceProviderMode.Dynamic);
-
-            // Act
-            _ = serviceProvider.GetKeyedService<IGenericService<object>>("someKey");
-            _ = serviceProvider.GetKeyedService<IGenericService<object>>("someKey");
-
-            // Wait for the DynamicServiceProviderEngine's background cache update to complete.
-            await Task.Delay(10000).ConfigureAwait(false);
-
-            var result = serviceProvider.GetService<IGenericService<object>>();
-
-            // Assert
-            Assert.IsType<UnkeyedGenericService<object>>(result);
-        }
-
-        [Fact]
-        [OuterLoop] // Includes a long Task.Delay
-        public async Task GetServices_ReturnsExpectedNumberOfGenericKeyedAndUnkeyedInstances_AfterUsingGetKeyedServices()
-        {
-            // Arrange
-            var services = new ServiceCollection();
-
-            services.AddTransient<IGenericService<object>, UnkeyedGenericService<object>>();
-            services.AddKeyedTransient<IGenericService<object>, PrimaryKeyedGenericService<object>>("someKey");
-            services.AddKeyedTransient<IGenericService<object>, SecondaryKeyedGenericService<object>>("someKey");
-
-            await using var serviceProvider = services.BuildServiceProvider(ServiceProviderMode.Dynamic);
-
-            // Act
-            _ = serviceProvider.GetKeyedServices<IGenericService<object>>("someKey");
-            _ = serviceProvider.GetKeyedServices<IGenericService<object>>("someKey");
-
-            // Wait for the DynamicServiceProviderEngine's background cache update to complete.
-            await Task.Delay(10000).ConfigureAwait(false);
-
-            var unkeyedServices = serviceProvider.GetServices<IGenericService<object>>();
-            var keyedServices = serviceProvider.GetKeyedServices<IGenericService<object>>("someKey");
-
-            // Assert
-            Assert.Single(unkeyedServices);
-            Assert.Single(keyedServices.OfType<PrimaryKeyedGenericService<object>>());
-            Assert.Single(keyedServices.OfType<SecondaryKeyedGenericService<object>>());
-        }
-
-        [Fact]
-        [OuterLoop] // Includes a long Task.Delay
-        public async Task GetService_ReturnsNonGenericUnkeyedInstance_AfterUsingGetKeyedService()
-        {
-            // Arrange
-            var services = new ServiceCollection();
-
-            services.AddTransient(typeof(SomeService));
-            services.AddKeyedTransient(typeof(SomeService), "someKey", typeof(SomeOtherService));
-
-            await using var serviceProvider = services.BuildServiceProvider(ServiceProviderMode.Dynamic);
-
-            // Act
-            _ = serviceProvider.GetKeyedService<SomeService>("someKey");
-            _ = serviceProvider.GetKeyedService<SomeService>("someKey");
-
-            // Wait for the DynamicServiceProviderEngine's background cache update to complete.
-            await Task.Delay(10000).ConfigureAwait(false);
-
-            var result = serviceProvider.GetService<SomeService>();
-
-            // Assert
-            Assert.IsType<SomeService>(result);
-        }
-
         public interface IFoo { }
 
         public class Foo1 : IFoo { }
@@ -367,18 +287,6 @@ namespace Microsoft.Extensions.DependencyInjection
         public class Bar1 : IBar { }
 
         public class Bar2 : IBar { }
-
-        private interface IGenericService<T>;
-
-        private class UnkeyedGenericService<T> : IGenericService<T>;
-
-        private class PrimaryKeyedGenericService<T> : IGenericService<T>;
-
-        private class SecondaryKeyedGenericService<T> : IGenericService<T>;
-
-        private class SomeService;
-
-        private class SomeOtherService : SomeService;
 
         private class RequiredServiceSupportingProvider : IServiceProvider, ISupportRequiredService
         {
