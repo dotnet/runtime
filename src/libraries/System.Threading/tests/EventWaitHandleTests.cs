@@ -260,7 +260,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Windows Nano Server apparently uses the same namespace for the Local\ and Global\ prefixes
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Windows Nano Server and Server Core apparently use the same namespace for the Local\ and Global\ prefixes
         [MemberData(nameof(MutexTests.NameNamespaceTests_MemberData), MemberType = typeof(MutexTests))]
         [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
         public void NameNamespaceTest(
