@@ -368,7 +368,7 @@ static const char*
 safe_name_bridge (GCObject *obj)
 {
 	GCVTable vt = SGEN_LOAD_VTABLE (obj);
-	return vt->klass->name;
+	return m_class_get_name (vt->klass);
 }
 
 static ScanData*
