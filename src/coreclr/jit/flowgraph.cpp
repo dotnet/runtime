@@ -1365,13 +1365,13 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
  *      {
  *          unsigned byte acquired = 0;
  *          try {
- *              JIT_MonEnterWorker(<lock object>, &acquired);
+ *              Monitor.Enter(<lock object>, &acquired);
  *
  *              *** all the preexisting user code goes here ***
  *
- *              JIT_MonExitWorker(<lock object>, &acquired);
+ *              Monitor.ExitIfTaken(<lock object>, &acquired);
  *          } fault {
- *              JIT_MonExitWorker(<lock object>, &acquired);
+ *              Monitor.ExitIfTaken(<lock object>, &acquired);
  *         }
  *      L_return:
  *         ret
