@@ -449,6 +449,7 @@ namespace System.Net.Security
             if (protocolFlags != 0)
             {
                 // If we were asked to do specific protocol we need to fill TLS_PARAMETERS.
+                tlsParameters = default;
                 tlsParameters.grbitDisabledProtocols = (uint)protocolFlags ^ uint.MaxValue;
 
                 credential.cTlsParameters = 1;
