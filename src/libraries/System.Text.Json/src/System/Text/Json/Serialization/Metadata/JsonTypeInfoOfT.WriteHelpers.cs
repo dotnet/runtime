@@ -230,8 +230,9 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 catch
                 {
-                    // Reset the writer in exception cases as we don't want the writer.Dispose() call in the finally block to flush any pending bytes.
+                    // Reset the writer in exception cases as we don't want the writer.Dispose() call to flush any pending bytes.
                     writer.Reset();
+                    writer.Dispose();
                     // On exception, walk the WriteStack for any orphaned disposables and try to dispose them.
                     await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
                     throw;

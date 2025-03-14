@@ -354,7 +354,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Regression test for https://github.com/dotnet/aspnetcore/issues/36977
             using var stream = new MemoryStream();
-            await Assert.ThrowsAsync<NotImplementedException>(async () => await StreamingSerializer.SerializeWrapper(stream, GetFailingAsyncEnumerable()));
+            await Assert.ThrowsAsync<NotImplementedException>(async () => await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDto<int> { Data = GetFailingAsyncEnumerable() }));
             Assert.Equal(0, stream.Length);
 
             static async IAsyncEnumerable<int> GetFailingAsyncEnumerable()
