@@ -464,7 +464,6 @@ LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
 //      Bitwise updates for region checks
 //
 LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Byte_Region64, _TEXT
-LOCAL_LABEL(JIT_WriteBarrier_WriteWatch_Byte_Region64Start):
     WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_Byte_Region64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_Byte_Region64
     WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB Start_WriteWatch_Byte_Region64, Exit_WriteWatch_Byte_Region64
@@ -483,7 +482,6 @@ LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Byte_Region64, _TEXT
 //      Does not call check card table stub
 //
 LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Bit_Region64, _TEXT
-LOCAL_LABEL(JIT_WriteBarrier_WriteWatch_Bit_Region64Start):
     WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_Bit_Region64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_Bit_Region64
     WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB Start_WriteWatch_Bit_Region64, Exit_WriteWatch_Bit_Region64
