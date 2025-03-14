@@ -89,7 +89,7 @@ void minipal_log_flush(minipal_log_flags flags)
 {
 }
 
-void minipal_log_flush_all()
+void minipal_log_flush_all(void)
 {
 }
 
@@ -161,7 +161,7 @@ void minipal_log_sync(minipal_log_flags flags)
 {
 }
 
-void minipal_log_sync_all()
+void minipal_log_sync_all(void)
 {
 }
 #else
@@ -207,7 +207,7 @@ void minipal_log_flush(minipal_log_flags flags)
         fflush(file);
 }
 
-void minipal_log_flush_all()
+void minipal_log_flush_all(void)
 {
     minipal_log_flush(minipal_log_flags_error);
     minipal_log_flush(minipal_log_flags_info);
@@ -317,7 +317,7 @@ void minipal_log_sync(minipal_log_flags flags)
     } while (retry);
 }
 
-void minipal_log_sync_all()
+void minipal_log_sync_all(void)
 {
     minipal_log_sync(minipal_log_flags_error);
     minipal_log_sync(minipal_log_flags_info);
