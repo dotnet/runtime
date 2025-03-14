@@ -292,6 +292,7 @@ namespace
         const BYTE packingSize
     )
     {
+        _ASSERTE(packingSize != 0);
         UINT32 cbCurOffset = parentSize;
 
         // Start with the size inherited from the parent (if any).
@@ -919,7 +920,12 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     }
     else
     {
-        lastFieldEnd = CalculateOffsetsForSequentialLayout(pInfoArray, cInstanceFields, cbAdjustedParentLayoutNativeSize, pMT->GetLayoutInfo()->GetPackingSize());
+        BYTE packingSize = pMT->GetLayoutInfo()->GetPackingSize();
+        if (packingSize == 0)
+        {
+            packingSize = DEFAULT_PACKING_SIZE;
+        }
+        lastFieldEnd = CalculateOffsetsForSequentialLayout(pInfoArray, cInstanceFields, cbAdjustedParentLayoutNativeSize, packingSize);
     }
 
     EEClassLayoutInfo* pEEClassLayoutInfo = pMT->GetLayoutInfo();
