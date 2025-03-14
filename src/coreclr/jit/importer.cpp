@@ -1060,7 +1060,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 
     if (store->OperIs(GT_STORE_LCL_VAR) && src->IsMultiRegNode())
     {
-        lvaGetDesc(store->AsLclVar())->lvIsMultiRegRet = true;
+        lvaGetDesc(store->AsLclVar())->SetIsMultiRegDest();
     }
 
     return store;
@@ -11004,8 +11004,7 @@ GenTree* Compiler::impStoreMultiRegValueToVar(GenTree*                    op,
 
     LclVarDsc* varDsc = lvaGetDesc(tmpNum);
 
-    // Set "lvIsMultiRegRet" to block promotion under "!lvaEnregMultiRegVars".
-    varDsc->lvIsMultiRegRet = true;
+    varDsc->SetIsMultiRegDest();
 
     GenTreeLclVar* ret = gtNewLclvNode(tmpNum, varDsc->lvType);
 

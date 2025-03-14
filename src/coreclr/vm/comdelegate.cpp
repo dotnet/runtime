@@ -950,6 +950,8 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     return pShuffleThunk->GetEntryPoint();
 }
 
+extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
+
 static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
 {
     CONTRACTL
@@ -967,12 +969,16 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
         COMPlusThrow(kNotSupportedException);
     }
 
-    // need to grab a virtual dispatch stub
-    // method can be on a canonical MethodTable, we need to allocate the stub on the loader allocator associated with the exact type instantiation.
-    VirtualCallStubManager *pVirtualStubManager = scopeType.GetMethodTable()->GetLoaderAllocator()->GetVirtualCallStubManager();
-    PCODE pTargetCall = pVirtualStubManager->GetCallStub(scopeType, method);
-    _ASSERTE(pTargetCall);
-    return pTargetCall;
+    INTERFACE_DISPATCH_CACHED_OR_VSD(
+        return (PCODE)CID_VirtualOpenDelegateDispatch;
+        ,
+        // need to grab a virtual dispatch stub
+        // method can be on a canonical MethodTable, we need to allocate the stub on the loader allocator associated with the exact type instantiation.
+        VirtualCallStubManager *pVirtualStubManager = scopeType.GetMethodTable()->GetLoaderAllocator()->GetVirtualCallStubManager();
+        PCODE pTargetCall = pVirtualStubManager->GetCallStub(scopeType, method);
+        _ASSERTE(pTargetCall);
+        return pTargetCall;
+        );
 }
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
@@ -1781,6 +1787,19 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     END_QCALL;
 }
 
+MethodDesc *COMDelegate::GetMethodDescForOpenVirtualDelegate(OBJECTREF orDelegate)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    return (MethodDesc*)((DELEGATEREF)orDelegate)->GetInvocationCount();
+}
+
 MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
 {
     CONTRACTL
@@ -1834,7 +1853,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         }
 
         if (fOpenVirtualDelegate)
-            pMethodHandle = (MethodDesc*)thisDel->GetInvocationCount();
+            pMethodHandle = GetMethodDescForOpenVirtualDelegate(thisDel);
         else
             pMethodHandle = FindDelegateInvokeMethod(thisDel->GetMethodTable());
     }
@@ -2971,15 +2990,10 @@ BOOL COMDelegate::IsDelegate(MethodTable *pMT)
 
 // Helper to construct an UnhandledExceptionEventArgs.  This may fail for out-of-memory or
 // other reasons.  Currently, we fall back on passing a NULL eventargs to the event sink.
-// Another possibility is to have two shared immutable instances (one for isTerminating and
-// another for !isTerminating).  These must be immutable because we perform no synchronization
-// around delivery of unhandled exceptions.  They occur in a free-threaded manner on various
-// threads.
-//
-// It doesn't add much value to communicate the isTerminating flag under these unusual
-// conditions.
+// Another possibility is to have two shared immutable instances. These must be immutable
+// because we perform no synchronization around delivery of unhandled exceptions.
+// They occur in a free-threaded manner on various threads.
 static void TryConstructUnhandledExceptionArgs(OBJECTREF *pThrowable,
-                                               BOOL       isTerminating,
                                                OBJECTREF *pOutEventArgs)
 {
     CONTRACTL
@@ -3005,7 +3019,7 @@ static void TryConstructUnhandledExceptionArgs(OBJECTREF *pThrowable,
         {
             ObjToArgSlot(*pOutEventArgs),
             ObjToArgSlot(*pThrowable),
-            BoolToArgSlot(isTerminating)
+            BoolToArgSlot(TRUE /* isTerminating */)
         };
 
         ctor.Call(args);
@@ -3053,8 +3067,7 @@ static void InvokeUnhandledSwallowing(OBJECTREF *pDelegate,
 // we simply swallow any failures and proceed to the next event sink.
 void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
                                           OBJECTREF *pDomain,
-                                          OBJECTREF *pThrowable,
-                                          BOOL       isTerminating)
+                                          OBJECTREF *pThrowable)
 {
     CONTRACTL
     {
@@ -3082,9 +3095,9 @@ void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
 
         GCPROTECT_BEGIN(gc);
 
-        // Try to construct an UnhandledExceptionEventArgs out of pThrowable & isTerminating.
+        // Try to construct an UnhandledExceptionEventArgs out of pThrowable.
         // If unsuccessful, the best we can do is pass NULL.
-        TryConstructUnhandledExceptionArgs(pThrowable, isTerminating, &gc.EventArgs);
+        TryConstructUnhandledExceptionArgs(pThrowable, &gc.EventArgs);
 
         gc.Array = (PTRARRAYREF) ((DELEGATEREF)(*pDelegate))->GetInvocationList();
         if (gc.Array == NULL || !gc.Array->GetMethodTable()->IsArray())
