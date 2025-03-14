@@ -4330,7 +4330,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = false;
                 const bool isNumber    = false;
 
-                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
+                                             isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4340,7 +4341,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = false;
                 const bool isNumber    = false;
 
-                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
+                                             isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4350,7 +4352,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = true;
                 const bool isNumber    = false;
 
-                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
+                                             isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4360,7 +4363,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = true;
                 const bool isNumber    = false;
 
-                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
+                                             isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4370,7 +4374,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = true;
                 const bool isNumber    = true;
 
-                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
+                                             isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4380,7 +4385,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = true;
                 const bool isNumber    = true;
 
-                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
+                                             isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4390,7 +4396,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = false;
                 const bool isNumber    = true;
 
-                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
+                                             isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4400,7 +4407,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = false;
                 const bool isNumber    = true;
 
-                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
+                                             isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -7877,6 +7885,8 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 
         case NI_System_Math_Abs:
         case NI_System_Math_Sqrt:
+        case NI_System_Math_MinNumber:
+        case NI_System_Math_MaxNumber:
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
             return true;
@@ -9654,10 +9664,11 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 //   isNumber      - true if the intrinsic propagates the number; false for NaN
 //
 GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
-                                      CORINFO_SIG_INFO*     sig,
+                                      CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                       CorInfoType           callJitType,
                                       NamedIntrinsic        intrinsicName,
                                       bool                  tailCall,
+                                      bool*                 isSpecial,
                                       bool                  isMax,
                                       bool                  isMagnitude,
                                       bool                  isNumber)
@@ -10152,10 +10163,12 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     }
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
+#ifdef TARGET_RISCV64
+    return impMathIntrinsic(method, sig R2RARG(entryPoint), callType, intrinsicName, tailCall, isSpecial);
+#else
     // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
-    // return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall, isSpecial);
-
     return nullptr;
+#endif
 }
 
 //------------------------------------------------------------------------

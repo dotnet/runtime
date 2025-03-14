@@ -4641,10 +4641,12 @@ protected:
                               bool                  tailCall,
                               bool*                 isSpecial);
     GenTree* impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
-                                CORINFO_SIG_INFO*     sig,
+                                CORINFO_SIG_INFO*     sig
+                                R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                 CorInfoType           callJitType,
                                 NamedIntrinsic        intrinsicName,
                                 bool                  tailCall,
+                                bool*                 isSpecial,
                                 bool                  isMax,
                                 bool                  isMagnitude,
                                 bool                  isNumber);
