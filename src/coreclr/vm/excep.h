@@ -224,7 +224,6 @@ LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv);
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
                                            BOOL useLastThrownObject = FALSE,
-                                           BOOL isTerminating = FALSE,
                                            BOOL isThreadBaseFilter = FALSE,
                                            BOOL sendAppDomainEvents = TRUE,
                                            BOOL sendWindowsEventLog = FALSE);
