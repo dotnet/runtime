@@ -333,7 +333,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmBuildApplicationEnvironmentName>
       <_WasmBuildApplicationEnvironmentName Condition="'$(_WasmBuildApplicationEnvironmentName)' == ''">Development</_WasmBuildApplicationEnvironmentName>
       <_WasmBuildEnableHotReloadEnvironmentVariables>$(WasmEnableHotReloadEnvironmentVariables)</_WasmBuildEnableHotReloadEnvironmentVariables>
-      <_WasmBuildEnableHotReloadEnvironmentVariables Condition="'$(_WasmBuildEnableHotReloadEnvironmentVariables)' == ''">true</_WasmBuildEnableHotReloadEnvironmentVariables>
+      <_WasmBuildEnableHotReloadEnvironmentVariables Condition="'$(_WasmBuildEnableHotReloadEnvironmentVariables)' == '' and '$(Configuration)' == 'Debug'">true</_WasmBuildEnableHotReloadEnvironmentVariables>
     </PropertyGroup>
 
     <ItemGroup>
