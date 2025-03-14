@@ -5,9 +5,6 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
-.assembly extern TestLibrary {}
-.assembly extern Microsoft.DotNet.XUnitExtensions { auto }
-.assembly extern System.Runtime { auto }
 
 .assembly 'mcc_i07' {}
 
@@ -65,13 +62,9 @@
 
     .method public static int32 Main()
     {
-      // [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.Is32BitProcess))]
-      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) =
-      {
-          type ([TestLibrary]TestLibrary.PlatformDetection)
-          string[1] ('Is32BitProcess')
-      }
-
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  64
       .locals init	(
