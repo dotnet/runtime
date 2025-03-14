@@ -64,4 +64,4 @@ setup_dirs
 check_prereqs
 
 # Build the installer native components.
-build_native "$__TargetOS" "$__TargetArch" "$__scriptpath" "$__IntermediatesDir" "install" "$__CMakeArgs" "vendored libraries"
+build_native "$__TargetOS" "$__TargetArch" "$__scriptpath/$__project" "$__IntermediatesDir" "install" "$__CMakeArgs" "vendored libraries"
