@@ -2269,23 +2269,11 @@ namespace System.Diagnostics.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/53095", TestPlatforms.Android)]
         public void LongProcessNamesAreSupported()
         {
-            string sleepPath;
-            if (OperatingSystem.IsLinux())
-            {
-                // On some distros sleep is implemented using a script/symlink, which causes this test to fail.
-                // Instead of using sleep directly, we wrap it with a script.
-                sleepPath = GetTestFilePath();
-                File.WriteAllText(sleepPath, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
-                File.SetUnixFileMode(sleepPath, ExecutablePermissions);
-            }
-            else
-            {
-                sleepPath = GetProgramPath("sleep");
-                if (sleepPath == null)
-                {
-                    return;
-                }
-            }
+            // On some distros sleep is implemented using a script/symlink.
+            // Instead of using sleep binary directly, we wrap it with a script.
+            string sleepPath = GetTestFilePath();
+            File.WriteAllText(sleepPath, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
+            File.SetUnixFileMode(sleepPath, ExecutablePermissions);
 
             const string LongProcessName = "123456789012345678901234567890";
             string sleepCommandPathFileName = Path.Combine(TestDirectory, LongProcessName);
