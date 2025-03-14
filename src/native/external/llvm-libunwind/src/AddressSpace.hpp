@@ -22,6 +22,7 @@
 #include "dwarf2.h"
 #include "EHHeaderParser.hpp"
 #include "Registers.hpp"
+#include "libunwind_ext.h"
 
 #ifndef _LIBUNWIND_USE_DLADDR
   #if !(defined(_LIBUNWIND_IS_BAREMETAL) || defined(_WIN32) || defined(_AIX))
@@ -47,10 +48,19 @@ struct EHABIIndexEntry {
 
 #if defined(_AIX)
 namespace libunwind {
+
 char *getFuncNameFromTBTable(uintptr_t pc, uint16_t &NameLen,
                              unw_word_t *offset);
 }
 #endif
+
+namespace libunwind {
+
+struct LocalAddressSpaceDefaultArgType {
+  typedef uintptr_t link_hardened_reg_arg_t;
+};
+
+}
 
 #ifdef __APPLE__
 
@@ -202,6 +212,10 @@ public:
 
   pint_t getEncodedP(pint_t &addr, pint_t end, uint8_t encoding,
                      pint_t datarelBase = 0, pint_t *resultAddr = nullptr);
+  bool findFunctionName(pint_t addr, char *buf, size_t bufLen,
+                        unw_word_t *offset);
+  bool findUnwindSections(pint_t targetAddr, UnwindInfoSections &info);
+  bool findOtherFDE(pint_t targetAddr, pint_t &fde);
   template <typename R>
   bool findFunctionName(typename R::link_hardened_reg_arg_t addr, char *buf,
                         size_t bufLen, unw_word_t *offset);
@@ -619,11 +633,7 @@ inline bool LocalAddressSpace::findUnwindSections(
   // `_dl_find_object`. Use _LIBUNWIND_SUPPORT_DWARF_INDEX, because libunwind
   // support for _dl_find_object on other unwind formats is not implemented,
   // yet.
-#if defined(DLFO_STRUCT_HAS_EH_DBASE) & defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
-  // We expect `_dl_find_object` to return PT_GNU_EH_FRAME.
-#if DLFO_EH_SEGMENT_TYPE != PT_GNU_EH_FRAME
-#error _dl_find_object retrieves an unexpected section type
-#endif
+#if defined(DLFO_STRUCT_HAS_EH_DBASE) && defined(_LIBUNWIND_SUPPORT_DWARF_INDEX) && DLFO_EH_SEGMENT_TYPE == PT_GNU_EH_FRAME
   // We look-up `dl_find_object` dynamically at runtime to ensure backwards
   // compatibility with earlier version of glibc not yet providing it. On older
   // systems, we gracefully fallback to `dl_iterate_phdr`. Cache the pointer
@@ -672,6 +682,21 @@ inline bool LocalAddressSpace::findUnwindSections(
 #endif
 
   return false;
+}
+
+inline bool LocalAddressSpace::findUnwindSections(
+    pint_t targetAddr, UnwindInfoSections &info) {
+  return findUnwindSections<LocalAddressSpaceDefaultArgType>(targetAddr, info);
+}
+
+inline bool LocalAddressSpace::findFunctionName(
+    pint_t addr, char *buf, size_t bufLen, unw_word_t *offset) {
+  return findFunctionName<LocalAddressSpaceDefaultArgType>(addr, buf, bufLen,
+                                                            offset);
+}
+
+inline bool LocalAddressSpace::findOtherFDE(pint_t targetAddr, pint_t &fde) {
+  return findOtherFDE<LocalAddressSpaceDefaultArgType>(targetAddr, fde);
 }
 
 template <typename R>

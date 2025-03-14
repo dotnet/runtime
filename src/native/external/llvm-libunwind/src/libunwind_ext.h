@@ -29,7 +29,7 @@ extern int __unw_step(unw_cursor_t *);
 extern int __unw_step_stage2(unw_cursor_t *);
 extern int __unw_get_reg(unw_cursor_t *, unw_regnum_t, unw_word_t *);
 extern int __unw_get_fpreg(unw_cursor_t *, unw_regnum_t, unw_fpreg_t *);
-extern int __unw_set_reg(unw_cursor_t *, unw_regnum_t, unw_word_t);
+extern int __unw_set_reg(unw_cursor_t *, unw_regnum_t, unw_word_t, unw_word_t *);
 extern int __unw_set_fpreg(unw_cursor_t *, unw_regnum_t, unw_fpreg_t);
 _LIBUNWIND_TRACE_NO_INLINE
   extern int __unw_resume_with_frames_walked(unw_cursor_t *, unsigned);
@@ -48,6 +48,7 @@ extern int __unw_is_fpreg(unw_cursor_t *, unw_regnum_t);
 extern int __unw_is_signal_frame(unw_cursor_t *);
 extern int __unw_get_proc_name(unw_cursor_t *, char *, size_t, unw_word_t *);
 extern const char *__unw_strerror(int);
+extern int __unw_get_save_loc(unw_cursor_t *, int, unw_save_loc_t *);
 
 #if defined(_AIX)
 extern uintptr_t __unw_get_data_rel_base(unw_cursor_t *);

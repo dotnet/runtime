@@ -99,9 +99,15 @@
   __asm__(SYMBOL_NAME(aliasname) " = " SYMBOL_NAME(name));                     \
   _LIBUNWIND_ALIAS_VISIBILITY(SYMBOL_NAME(aliasname))
 #elif defined(__ELF__) || defined(_AIX) || defined(__wasm__)
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ >= 9)
+#define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \
+  extern "C" _LIBUNWIND_EXPORT __typeof(name) aliasname                        \
+      __attribute__((weak, alias(#name), copy(name)));
+#else
 #define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \
   extern "C" _LIBUNWIND_EXPORT __typeof(name) aliasname                        \
       __attribute__((weak, alias(#name)));
+#endif
 #elif defined(_WIN32)
 #if defined(__MINGW32__)
 #define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \

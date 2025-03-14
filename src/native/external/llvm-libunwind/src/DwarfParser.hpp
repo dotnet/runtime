@@ -161,7 +161,7 @@ public:
   };
 
   template <typename R>
-  static bool findFDE(A &addressSpace, typename R::link_hardened_reg_arg_t pc,
+  static bool findFDE(A &addressSpace, pint_t pc,
                       pint_t ehSectionStart, size_t sectionLength,
                       pint_t fdeHint, FDE_Info *fdeInfo, CIE_Info *cieInfo);
   static const char *decodeFDE(A &addressSpace, pint_t fdeStart,
@@ -170,7 +170,7 @@ public:
   template <typename R>
   static bool parseFDEInstructions(A &addressSpace, const FDE_Info &fdeInfo,
                                    const CIE_Info &cieInfo,
-                                   typename R::link_hardened_reg_arg_t upToPC,
+                                   pint_t upToPC,
                                    int arch, PrologInfo *results);
 
   static const char *parseCIE(A &addressSpace, pint_t cie, CIE_Info *cieInfo);
@@ -244,7 +244,7 @@ const char *CFI_Parser<A>::decodeFDE(A &addressSpace, pint_t fdeStart,
 template <typename A>
 template <typename R>
 bool CFI_Parser<A>::findFDE(A &addressSpace,
-                            typename R::link_hardened_reg_arg_t pc,
+                            pint_t pc,
                             pint_t ehSectionStart, size_t sectionLength,
                             pint_t fdeHint, FDE_Info *fdeInfo,
                             CIE_Info *cieInfo) {
@@ -460,7 +460,7 @@ template <typename A>
 template <typename R>
 bool CFI_Parser<A>::parseFDEInstructions(
     A &addressSpace, const FDE_Info &fdeInfo, const CIE_Info &cieInfo,
-    typename R::link_hardened_reg_arg_t upToPC, int arch, PrologInfo *results) {
+  pint_t upToPC, int arch, PrologInfo *results) {
   // Alloca is used for the allocation of the rememberStack entries. It removes
   // the dependency on new/malloc but the below for loop can not be refactored
   // into functions. Entry could be saved during the processing of a CIE and
@@ -494,7 +494,7 @@ bool CFI_Parser<A>::parseFDEInstructions(
                            static_cast<uint64_t>(instructionsEnd));
 
     // see DWARF Spec, section 6.4.2 for details on unwind opcodes
-    while ((p < instructionsEnd) && (codeOffset < pcoffset)) {
+    while ((p < instructionsEnd) && (codeOffset <= pcoffset)) {
       uint64_t reg;
       uint64_t reg2;
       int64_t offset;
