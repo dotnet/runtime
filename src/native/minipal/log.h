@@ -40,7 +40,7 @@ int minipal_log_vprint(minipal_log_flags flags, const char* fmt,va_list args);
 #define minipal_log_flush_info() minipal_log_flush(minipal_log_flags_info)
 #define minipal_log_flush_verbose() minipal_log_flush(minipal_log_flags_verbose)
 void minipal_log_flush(minipal_log_flags flags);
-void minipal_log_flush_all();
+void minipal_log_flush_all(void);
 
 // None crt, async safe log write.
 #define minipal_log_write_fatal(msg) minipal_log_write(minipal_log_flags_fatal, msg)
@@ -55,7 +55,7 @@ int minipal_log_write(minipal_log_flags flags, const char* msg);
 #define minipal_log_sync_info() minipal_log_sync(minipal_log_flags_info)
 #define minipal_log_sync_verbose() minipal_log_sync(minipal_log_flags_verbose)
 void minipal_log_sync(minipal_log_flags flags);
-void minipal_log_sync_all();
+void minipal_log_sync_all(void);
 
 #ifdef __cplusplus
 }
