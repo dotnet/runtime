@@ -8,8 +8,6 @@ jobs:
 - job: PrepareSignedArtifacts
   displayName: Prepare Signed Artifacts
   dependsOn: ${{ parameters.dependsOn }}
-  # Disable SBOM at job template level
-  enableSbom: false
   pool:
     name: $(DncEngInternalBuildPool)
     demands: ImageOverride -equals 1es-windows-2022
