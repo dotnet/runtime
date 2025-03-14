@@ -468,13 +468,40 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             sdk.Paths = [ custom.Location ];
             globalJsonPath = GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
 
-            // Paths: custom
+            // Paths: custom (absolute)
             // Custom: 9999.0.4
             // Exe: 9999.0.4
             // Expected: 9999.0.4 from custom dir
             RunTest()
                 .Should().Pass()
                 .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.4", custom.Location));
+
+            string relativePath = Path.GetRelativePath(SharedState.CurrentWorkingDir, custom.Location);
+            sdk.Paths = [ relativePath ];
+            GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            // Paths: custom (relative, outside current directory)
+            // Custom: 9999.0.4
+            // Exe: 9999.0.4
+            // Expected: 9999.0.4 from custom dir
+            RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.4", Path.Combine(SharedState.CurrentWorkingDir, relativePath)));
+
+            string underCurrent = SharedState.CurrentWorkingDirArtifact.GetUniqueSubdirectory("sdkPath");
+            AddSdkToCustomPath(underCurrent, "9999.0.4");
+
+            relativePath = Path.GetRelativePath(SharedState.CurrentWorkingDir, underCurrent);
+            sdk.Paths = [relativePath];
+            GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            // Paths: custom (relative, under current directory)
+            // Custom: 9999.0.4
+            // Exe: 9999.0.4
+            // Expected: 9999.0.4 from custom dir
+            RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.4", Path.Combine(SharedState.CurrentWorkingDir, relativePath)));
         }
 
         [Fact]
@@ -1168,6 +1195,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             public TestArtifact BaseArtifact { get; }
 
+            public TestArtifact CurrentWorkingDirArtifact { get; }
             public string CurrentWorkingDir { get; }
 
             public SharedTestState()
@@ -1182,10 +1210,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .AddMockSDK("10000.0.0", "9999.0.0")
                     .Build();
                 CurrentWorkingDir = currentWorkingSdk.BinPath;
+                CurrentWorkingDirArtifact = new TestArtifact(CurrentWorkingDir);
             }
 
             public void Dispose()
             {
+                CurrentWorkingDirArtifact.Dispose();
                 BaseArtifact.Dispose();
             }
         }
