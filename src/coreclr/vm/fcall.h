@@ -1231,7 +1231,14 @@ public:
     {                                                           \
         while (NULL ==                                          \
             __FCThrow(__me, reKind, 0, 0, 0, 0)) {};            \
-        return 0;                                               \
+        return 0;                                                 \
+    }
+
+#define FCThrowRetVoid(reKind)                                         \
+    {                                                           \
+        while (NULL ==                                          \
+            __FCThrow(__me, reKind, 0, 0, 0, 0)) {};            \
+        return;                                                 \
     }
 
 // The managed calling convention expects returned small types (e.g. bool) to be
