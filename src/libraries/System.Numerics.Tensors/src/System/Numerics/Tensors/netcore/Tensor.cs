@@ -21,8 +21,7 @@ namespace System.Numerics.Tensors
     /// Represents a tensor.
     /// </summary>
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-    public sealed class Tensor<T>
-        : ITensor<Tensor<T>, T>
+    public sealed class Tensor<T> : ITensor, ITensor<Tensor<T>, T>
     {
         /// <summary>A byref or a native ptr.</summary>
         internal readonly T[] _values;
@@ -176,7 +175,7 @@ namespace System.Numerics.Tensors
         /// Gets the length of each dimension in this <see cref="Tensor{T}"/>.
         /// </summary>
         /// <value><see cref="ReadOnlySpan{T}"/> with the lengths of each dimension.</value>
-        ReadOnlySpan<nint> IReadOnlyTensor<Tensor<T>, T>.Lengths => _lengths;
+        ReadOnlySpan<nint> IReadOnlyTensor.Lengths => _lengths;
 
 
         /// <summary>
@@ -189,9 +188,16 @@ namespace System.Numerics.Tensors
         /// Gets the strides of each dimension in this <see cref="Tensor{T}"/>.
         /// </summary>
         /// <value><see cref="ReadOnlySpan{T}"/> with the strides of each dimension.</value>
-        ReadOnlySpan<nint> IReadOnlyTensor<Tensor<T>, T>.Strides => _strides;
+        ReadOnlySpan<nint> IReadOnlyTensor.Strides => _strides;
 
-        bool ITensor<Tensor<T>, T>.IsReadOnly => false;
+        bool ITensor.IsReadOnly => false;
+
+        object IReadOnlyTensor.this[params scoped ReadOnlySpan<NIndex> indexes] => this[indexes]!;
+
+        object IReadOnlyTensor.this[params scoped ReadOnlySpan<nint> indexes] => this[indexes]!;
+
+        object ITensor.this[params scoped ReadOnlySpan<NIndex> indexes] { get => this[indexes]!; set => this[indexes] = (T)value; }
+        object ITensor.this[params scoped ReadOnlySpan<nint> indexes] { get => this[indexes]!; set => this[indexes] = (T)value; }
 
         /// <summary>
         /// Returns a reference to specified element of the Tensor.
@@ -525,6 +531,11 @@ namespace System.Numerics.Tensors
         public void Fill(T value) => AsTensorSpan().Fill(value);
 
         /// <summary>
+        /// Fills the contents of this span with the given value.
+        /// </summary>
+        public void Fill(object value) => Fill(value is T t ? t : throw new ArgumentException($"Cannot convert {value} to {typeof(T)}"));
+
+        /// <summary>
         /// Copies the contents of this tensor into destination span. If the source
         /// and destinations overlap, this method behaves as if the original values in
         /// a temporary location before the destination is overwritten.
@@ -670,6 +681,19 @@ namespace System.Numerics.Tensors
             ((ReadOnlyTensorSpan<T>)AsTensorSpan()).ToString(sb, maximumLengths);
             sb.AppendLine("}");
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Pins and gets a <see cref="MemoryHandle"/> to the backing memory.
+        /// </summary>
+        /// <returns>A <see cref="MemoryHandle"/> which has pinned the backing memory.</returns>
+        public MemoryHandle GetPinnedHandle()
+        {
+            GCHandle handle = GCHandle.Alloc(_values, GCHandleType.Pinned);
+            unsafe
+            {
+                return new MemoryHandle(Unsafe.AsPointer(ref GetPinnableReference()), handle);
+            }
         }
     }
 }

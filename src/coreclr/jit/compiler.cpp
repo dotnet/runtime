@@ -5219,6 +5219,21 @@ void Compiler::FinalizeEH()
         lvaSetVarAddrExposed(lvaShadowSPslotsVar DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
     }
 
+    // Build up a mapping from EH IDs to EHblkDsc*
+    //
+    assert(m_EHIDtoEHblkDsc == nullptr);
+
+    if (compHndBBtabCount > 0)
+    {
+        m_EHIDtoEHblkDsc = new (getAllocator()) EHIDtoEHblkDscMap(getAllocator());
+
+        for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+        {
+            EHblkDsc* const HBtab = &compHndBBtab[XTnum];
+            m_EHIDtoEHblkDsc->Set(HBtab->ebdID, HBtab);
+        }
+    }
+
 #endif // FEATURE_EH_WINDOWS_X86
 
     // We should not make any more alterations to the EH table structure.

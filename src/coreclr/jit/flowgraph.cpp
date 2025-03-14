@@ -1463,6 +1463,7 @@ void Compiler::fgAddSyncMethodEnterExit()
 
         // Initialize the new entry
 
+        newEntry->ebdID          = impInlineRoot()->compEHID++;
         newEntry->ebdHandlerType = EH_HANDLER_FAULT;
 
         newEntry->ebdTryBeg  = tryBegBB;
