@@ -28,7 +28,6 @@ namespace System.Net.Http
         public const int DefaultHttpPort = 80;
         public const int DefaultHttpsPort = 443;
 
-        private static readonly bool s_isWindows7Or2008R2 = GetIsWindows7Or2008R2();
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
@@ -276,20 +275,6 @@ namespace System.Net.Http
 
             // Set TargetHost for SNI
             sslOptions.TargetHost = sslHostName;
-
-            // Windows 7 and Windows 2008 R2 support TLS 1.1 and 1.2, but for legacy reasons by default those protocols
-            // are not enabled when a developer elects to use the system default.  However, in .NET Core 2.0 and earlier,
-            // HttpClientHandler would enable them, due to being a wrapper for WinHTTP, which enabled them.  Both for
-            // compatibility and because we prefer those higher protocols whenever possible, SocketsHttpHandler also
-            // pretends they're part of the default when running on Win7/2008R2.
-            if (s_isWindows7Or2008R2 && sslOptions.EnabledSslProtocols == SslProtocols.None)
-            {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Info(poolManager, $"Win7OrWin2K8R2 platform, Changing default TLS protocols to {SecurityProtocol.DefaultSecurityProtocols}");
-                }
-                sslOptions.EnabledSslProtocols = SecurityProtocol.DefaultSecurityProtocols;
-            }
 
             return sslOptions;
         }
