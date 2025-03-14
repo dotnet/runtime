@@ -3356,11 +3356,19 @@ public:
     GenTree* gtNewSimdRoundNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
+    GenTree* gtNewSimdShuffleVariableNode(var_types   type,
+                                          GenTree*    op1,
+                                          GenTree*    op2,
+                                          CorInfoType simdBaseJitType,
+                                          unsigned    simdSize,
+                                          bool        isShuffleNative);
+
     GenTree* gtNewSimdShuffleNode(var_types   type,
                                   GenTree*    op1,
                                   GenTree*    op2,
                                   CorInfoType simdBaseJitType,
-                                  unsigned    simdSize);
+                                  unsigned    simdSize,
+                                  bool        isShuffleNative);
 
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -4685,7 +4693,11 @@ protected:
                                         bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
-    bool IsValidForShuffle(GenTreeVecCon* vecCon, unsigned simdSize, var_types simdBaseType) const;
+    bool IsValidForShuffle(GenTree* indices,
+                           unsigned simdSize,
+                           var_types simdBaseType,
+                           bool* canBecomeValid,
+                           bool isShuffleNative) const;
 
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
                             CORINFO_CLASS_HANDLE  clsHnd,
