@@ -332,6 +332,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(_WasmBootConfigFileName)</_WasmBuildBootJsonPath>
       <_WasmBuildApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmBuildApplicationEnvironmentName>
       <_WasmBuildApplicationEnvironmentName Condition="'$(_WasmBuildApplicationEnvironmentName)' == ''">Development</_WasmBuildApplicationEnvironmentName>
+      <_WasmBuildEnableHotReloadEnvironmentVariables>$(WasmEnableHotReloadEnvironmentVariables)</_WasmBuildEnableHotReloadEnvironmentVariables>
+      <_WasmBuildEnableHotReloadEnvironmentVariables Condition="'$(_WasmBuildEnableHotReloadEnvironmentVariables)' == ''">true</_WasmBuildEnableHotReloadEnvironmentVariables>
     </PropertyGroup>
 
     <ItemGroup>
@@ -340,6 +342,8 @@ Copyright (c) .NET Foundation. All rights reserved.
         Condition="'%(StaticWebAsset.AssetTraitName)' == 'JSModule' and '%(StaticWebAsset.AssetTraitValue)' == 'JSLibraryModule' and '%(AssetKind)' != 'Publish'" />
 
       <_WasmBuildEnvironmentVariable Include="@(WasmEnvironmentVariable)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(_WasmBuildEnableHotReloadEnvironmentVariables)' == 'true'">
       <_WasmBuildEnvironmentVariable Include="DOTNET_MODIFIABLE_ASSEMBLIES" Value="debug" />
       <_WasmBuildEnvironmentVariable Include="__ASPNETCORE_BROWSER_TOOLS" Value="true" />
     </ItemGroup>
