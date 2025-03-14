@@ -7,7 +7,6 @@
     <TestDisableParallelization>true</TestDisableParallelization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <WasmPerfTracing>true</WasmPerfTracing>
     <MetricsSupport>true</MetricsSupport>
     <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
