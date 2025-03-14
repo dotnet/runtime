@@ -27,6 +27,8 @@ namespace Microsoft.DotNet.TestUtils
             public string ErrorMessage { get; set; }
         }
 
+        public const string HostSdkPath = "$host$";
+
         public static string CreateEmpty(string directory)
             => Write(directory, "{}");
 

@@ -453,7 +453,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Fail()
                 .And.FindAnySdk(false);
 
-            sdk.Paths = [ "$host$" ];
+            sdk.Paths = [ GlobalJson.HostSdkPath ];
             globalJsonPath = GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
 
             // Paths: $host$
@@ -483,7 +483,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             using TestArtifact custom = TestArtifact.Create("sdkPath");
             AddSdkToCustomPath(custom.Location, "9999.0.0");
 
-            GlobalJson.Sdk sdk = new() { Paths = [ custom.Location, "$host$" ] };
+            GlobalJson.Sdk sdk = new() { Paths = [ custom.Location, GlobalJson.HostSdkPath ] };
             GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
 
             // Add SDK versions
@@ -542,7 +542,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             AddSdkToCustomPath(custom2.Location, "9999.0.2");
             AddAvailableSdkVersions("9999.0.1");
 
-            GlobalJson.Sdk sdk = new() { Version = "9999.0.1", Paths = [ custom1.Location, custom2.Location, "$host$" ] };
+            GlobalJson.Sdk sdk = new() { Version = "9999.0.1", Paths = [ custom1.Location, custom2.Location, GlobalJson.HostSdkPath ] };
             GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
 
             // Specified SDK
@@ -562,6 +562,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining($"9999.0.0 [{custom1.Location}")
                 .And.HaveStdOutContaining($"9999.0.2 [{custom2.Location}")
                 .And.HaveStdOutContaining($"9999.0.1 [{ExecutableDotNet.BinPath}");
+        }
+
+        [Fact]
+        public void GlobalJson_ErrorMessage()
+        {
+            GlobalJson.Sdk sdk = new() { ErrorMessage = "Custom SDK resolution error" };
+            GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            RunTest()
+                .Should().Fail()
+                .And.HaveStdErrContaining(sdk.ErrorMessage);
         }
 
         public static IEnumerable<object[]> InvalidGlobalJsonData
