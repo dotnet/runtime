@@ -370,15 +370,6 @@ safe_name_bridge (GCObject *obj)
 	GCVTable vt = SGEN_LOAD_VTABLE (obj);
 	return m_class_get_name (vt->klass);
 }
-
-static ScanData*
-find_or_create_data (GCObject *obj)
-{
-	ScanData *entry = find_data (obj);
-	if (!entry)
-		entry = create_data (obj);
-	return entry;
-}
 #endif
 
 //----------
@@ -934,8 +925,11 @@ dump_color_table (const char *why, gboolean do_index)
 				printf (" bridges: ");
 				for (j = 0; j < dyn_array_ptr_size (&cd->bridges); ++j) {
 					GCObject *obj = dyn_array_ptr_get (&cd->bridges, j);
-					ScanData *data = find_or_create_data (obj);
-					printf ("%d ", data->index);
+					ScanData *data = find_data (obj);
+					if (!data)
+						printf ("%p ", obj);
+					else
+						printf ("%p(%d) ", obj, data->index);
 				}
 			}
 			printf ("\n");
