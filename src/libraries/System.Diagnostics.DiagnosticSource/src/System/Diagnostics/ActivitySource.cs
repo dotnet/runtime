@@ -59,20 +59,23 @@ namespace System.Diagnostics
 
             s_activeSources.Add(this);
 
-            if (s_allListeners.Count > 0)
+            lock(s_allListeners)
             {
-                s_allListeners.EnumWithAction((listener, source) =>
+                if (s_allListeners.Count > 0)
                 {
-                    Func<ActivitySource, bool>? shouldListenTo = listener.ShouldListenTo;
-                    if (shouldListenTo != null)
+                    s_allListeners.EnumWithAction((listener, source) =>
                     {
-                        var activitySource = (ActivitySource)source;
-                        if (shouldListenTo(activitySource))
+                        Func<ActivitySource, bool>? shouldListenTo = listener.ShouldListenTo;
+                        if (shouldListenTo != null)
                         {
-                            activitySource.AddListener(listener);
+                            var activitySource = (ActivitySource)source;
+                            if (shouldListenTo(activitySource))
+                            {
+                                activitySource.AddListener(listener);
+                            }
                         }
-                    }
-                }, this);
+                    }, this);
+                }
             }
 
             GC.KeepAlive(DiagnosticSourceEventSource.Log);
