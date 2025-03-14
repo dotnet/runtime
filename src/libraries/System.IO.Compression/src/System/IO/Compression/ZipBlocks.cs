@@ -21,14 +21,7 @@ namespace System.IO.Compression
         public ushort Tag => _tag;
         // returns size of data, not of the entire block
         public ushort Size => _size;
-        public byte[] Data
-        {
-            get
-            {
-                _data ??= [];
-                return _data;
-            }
-        }
+        public byte[] Data => _data ??= [];
 
         public void WriteBlock(Stream stream)
         {
