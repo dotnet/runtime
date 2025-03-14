@@ -7924,27 +7924,27 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
 
     EEClassLayoutInfo::NestedFieldFlags nestedFieldFlags =
         EEClassLayoutInfo::GetNestedFieldFlags(
+            GetModule(),
             GetHalfBakedClass()->GetFieldDescList(),
             bmtEnumFields->dwNumDeclaredFields,
             bmtLayout->nlFlags,
             pByValueClassCache);
 
-    bool hasGCFields = GetParentMethodTable()->ContainsGCPointers()
+    bool hasGCFields = pParentMT && pParentMT->ContainsGCPointers()
         || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::GCPointer) == EEClassLayoutInfo::NestedFieldFlags::GCPointer);
 
-    bool isBlittable = hasNonTrivialParent
-        && GetParentMethodTable()->IsBlittable()
+    bool isBlittable = (!hasNonTrivialParent || pParentMT->IsBlittable())
         && ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::NonBlittable) != EEClassLayoutInfo::NestedFieldFlags::NonBlittable);
 
-    bool isAutoLayoutOrHasAutoLayoutField = GetParentMethodTable()->IsAutoLayoutOrHasAutoLayoutField()
+    bool isAutoLayoutOrHasAutoLayoutField = (!hasNonTrivialParent || pParentMT->IsAutoLayoutOrHasAutoLayoutField())
         || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::AutoLayout) == EEClassLayoutInfo::NestedFieldFlags::AutoLayout);
 
-    bool hasInt128Field = GetParentMethodTable()->IsInt128OrHasInt128Fields()
+    bool hasInt128Field = pParentMT && pParentMT->IsInt128OrHasInt128Fields()
         || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Int128) == EEClassLayoutInfo::NestedFieldFlags::Int128);
 
     bool isAlign8 = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align8) == EEClassLayoutInfo::NestedFieldFlags::Align8)
 #ifdef FEATURE_64BIT_ALIGNMENT
-        || GetParentMethodTable()->RequiresAlign8()
+        || pParentMT && pParentMT->RequiresAlign8()
 #endif // FEATURE_64BIT_ALIGNMENT
         ;
 

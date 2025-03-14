@@ -177,9 +177,9 @@ namespace
                 continue;
 
             // We should only be placing unplaced fields at this point.
-            _ASSERTE(pField->GetOffsetUnsafe() == FIELD_OFFSET_UNPLACED
-                || pField->GetOffsetUnsafe() == FIELD_OFFSET_UNPLACED_GC_PTR
-                || pField->GetOffsetUnsafe() == FIELD_OFFSET_VALUE_CLASS);
+            _ASSERTE(pField->GetOffset() == FIELD_OFFSET_UNPLACED
+                || pField->GetOffset() == FIELD_OFFSET_UNPLACED_GC_PTR
+                || pField->GetOffset() == FIELD_OFFSET_VALUE_CLASS);
 
             _ASSERTE(iInstanceFieldInfo < cInstanceFields);
             pField->SetOffset(pInfoArray[iInstanceFieldInfo++].m_placement.m_offset);
@@ -304,12 +304,10 @@ namespace
             BYTE alignmentRequirement = min((BYTE)placementInfo.m_alignment, packingSize);
 
             // Insert enough padding to align the current data member.
-            if (!ClrSafeInt<uint32_t>::addition(cbCurOffset, alignmentRequirement - (cbCurOffset % alignmentRequirement), cbCurOffset))
+            if (!ClrSafeInt<uint32_t>::addition(cbCurOffset, (alignmentRequirement - (cbCurOffset % alignmentRequirement)) % alignmentRequirement, cbCurOffset))
                 COMPlusThrowOM();
 
-            // if we overflow we will catch it below
             placementInfo.m_offset = cbCurOffset;
-            cbCurOffset += placementInfo.m_size;
 
             if (!ClrSafeInt<uint32_t>::addition(cbCurOffset, placementInfo.m_size, cbCurOffset))
             {
@@ -352,7 +350,7 @@ namespace
         // to make array allocations of this structure simple to keep aligned.
         if (calcTotalSize % alignmentRequirement != 0)
         {
-            if (!ClrSafeInt<ULONG>::addition(calcTotalSize, alignmentRequirement - (calcTotalSize % alignmentRequirement), calcTotalSize))
+            if (!ClrSafeInt<ULONG>::addition(calcTotalSize, (alignmentRequirement - (calcTotalSize % alignmentRequirement)) % alignmentRequirement, calcTotalSize))
                 COMPlusThrowOM();
         }
 
@@ -421,7 +419,7 @@ namespace
 #endif
 }
 
-auto EEClassLayoutInfo::GetNestedFieldFlags(FieldDesc *pFields, ULONG cFields, CorNativeLinkType nlType, MethodTable** pByValueClassCache) -> NestedFieldFlags
+auto EEClassLayoutInfo::GetNestedFieldFlags(Module* pModule, FieldDesc *pFields, ULONG cFields, CorNativeLinkType nlType, MethodTable** pByValueClassCache) -> NestedFieldFlags
 {
     STANDARD_VM_CONTRACT;
 
@@ -470,7 +468,7 @@ auto EEClassLayoutInfo::GetNestedFieldFlags(FieldDesc *pFields, ULONG cFields, C
         }
 #endif
 
-        if (!IsFieldBlittable(pField->GetModule(), pField->GetMemberDef(), corElemType, typeHandleMaybe, nativeTypeFlags))
+        if (!IsFieldBlittable(pModule, pField->GetMemberDef(), corElemType, typeHandleMaybe, nativeTypeFlags))
         {
             flags |= NestedFieldFlags::NonBlittable;
         }

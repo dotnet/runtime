@@ -529,7 +529,7 @@ class EEClassLayoutInfo
             Int128 = 0x10,
         };
 
-        static NestedFieldFlags GetNestedFieldFlags(FieldDesc *pFD, ULONG cFields, CorNativeLinkType nlType, MethodTable** pByValueClassCache);
+        static NestedFieldFlags GetNestedFieldFlags(Module* pModule, FieldDesc *pFD, ULONG cFields, CorNativeLinkType nlType, MethodTable** pByValueClassCache);
 };
 
 //
