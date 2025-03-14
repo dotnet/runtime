@@ -103,7 +103,7 @@ extends:
   template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(eq(variables['Build.Reason'], 'Schedule'), parameters.runPrivateJobs)) }}:
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(eq(variables['Build.Reason'], 'IndividualCI'), parameters.runPrivateJobs)) }}:
       - stage: RegisterBuild
         displayName: 'Register Build'
         jobs:
@@ -189,7 +189,7 @@ extends:
           ${{ if parameters.mauiFramework }}:
             mauiFramework: ${{ parameters.mauiFramework }}
             
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(eq(variables['Build.Reason'], 'Schedule'), parameters.runPrivateJobs)) }}:
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(eq(variables['Build.Reason'], 'IndividualCI'), parameters.runPrivateJobs)) }}:
       - stage: UploadArtifacts
         displayName: 'Upload Artifacts'
         condition: always()
