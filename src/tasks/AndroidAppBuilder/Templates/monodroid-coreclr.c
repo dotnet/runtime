@@ -46,6 +46,10 @@ static void* g_mapped_files[MAX_MAPPED_COUNT];
 static size_t g_mapped_file_sizes[MAX_MAPPED_COUNT];
 static unsigned int g_mapped_files_count = 0;
 
+static struct host_runtime_contract g_host_contract = {
+    .size = sizeof(struct host_runtime_contract)
+};
+
 #define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
 
@@ -200,13 +204,7 @@ mono_droid_runtime_init (const char* executable)
 
     chdir (g_bundle_path);
 
-    struct host_runtime_contract host_contract = {
-        sizeof(struct host_runtime_contract),
-        NULL,    // context
-        NULL,    // get_runtime_property
-        NULL,    // bundle_proble
-        NULL,    // pinvoke_override
-        &external_assembly_probe };
+    g_host_contract.external_assembly_probe = &external_assembly_probe;
 
     const char* appctx_keys[PROPERTY_COUNT];
     appctx_keys[0] = "RUNTIME_IDENTIFIER";
@@ -218,7 +216,7 @@ mono_droid_runtime_init (const char* executable)
     appctx_values[1] = g_bundle_path;
 
     char contract_str[19]; // 0x + 16 hex digits + '\0'
-    snprintf(contract_str, 19, "0x%zx", (size_t)(&host_contract));
+    snprintf(contract_str, 19, "0x%zx", (size_t)(&g_host_contract));
     appctx_values[2] = contract_str;
 
     LOG_INFO ("Calling coreclr_initialize");

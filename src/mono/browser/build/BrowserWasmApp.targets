@@ -5,6 +5,7 @@
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
     <!-- we are not triggering WasmPerfTracing in Debug automatically, because it would trigger re-link, making dev-loop slow -->
     <WasmPerfTracing Condition="'$(WasmPerfTracing)' == ''">false</WasmPerfTracing>
+    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == '' and '$(WasmPerfTracing)' == 'true'">true</FeaturePerfTracing>
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
@@ -134,6 +135,7 @@
     <ItemGroup>
       <WasmExtraFilesToDeploy Include="$(WasmMainHTMLPath)" Condition="'$(WasmMainHTMLPath)' != ''" />
       <WasmExtraFilesToDeploy Include="$(WasmMainJSPath)" Condition="'$(WasmMainJSPath)' != ''" />
+      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
     </ItemGroup>
 
     <RemoveDir Directories="$(WasmAppDir)" />
@@ -151,6 +153,7 @@
       RemoteSources="@(WasmRemoteSources)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       ExtraConfig="@(WasmExtraConfig)"
+      EnvVariables="@(WasmEnvironmentVariable)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
       IsPublish="$(_WasmIsPublishing)"
