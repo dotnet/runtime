@@ -61,7 +61,7 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
 
     if (st1 != nullptr)
         st1->Start();
-    HRESULT hr = jit->StartUp(nameOfJit, false, breakOnAssert, firstContext);
+    HRESULT hr = jit->StartUp(nameOfJit, breakOnAssert, firstContext);
     if (st1 != nullptr)
         st1->Stop();
     if (hr != S_OK)
@@ -75,7 +75,7 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     return jit;
 }
 
-HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBreakorAV, MethodContext* firstContext)
+HRESULT JitInstance::StartUp(char* PathToJit, bool breakOnDebugBreakorAV, MethodContext* firstContext)
 {
     // startup jit
     DWORD dwRetVal = 0;
@@ -85,8 +85,6 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
     SetBreakOnDebugBreakOrAV(breakOnDebugBreakorAV);
 
     char pFullPathName[MAX_PATH];
-    char lpTempPathBuffer[MAX_PATH];
-    char szTempFileName[MAX_PATH];
 
     // find the full jit path
     dwRetVal = ::GetFullPathNameA(PathToJit, MAX_PATH, pFullPathName, nullptr);
@@ -105,62 +103,15 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
     }
     ::strcpy_s(PathToOriginalJit, MAX_PATH, pFullPathName);
 
-    if (copyJit)
-    {
-#ifdef TARGET_WINDOWS
-        // Get a temp file location
-        dwRetVal = ::GetTempPathA(MAX_PATH, lpTempPathBuffer);
-        if (dwRetVal == 0)
-        {
-            LogError("GetTempPath failed (0x%08x)", ::GetLastError());
-            return E_FAIL;
-        }
-        if (dwRetVal > MAX_PATH)
-        {
-            LogError("GetTempPath returned a path that was larger than MAX_PATH");
-            return E_FAIL;
-        }
-        // Get a temp filename
-        uRetVal = ::GetTempFileNameA(lpTempPathBuffer, "Jit", 0, szTempFileName);
-        if (uRetVal == 0)
-        {
-            LogError("GetTempFileName failed (0x%08x)", ::GetLastError());
-            return E_FAIL;
-        }
-        dwRetVal = (DWORD)::strlen(szTempFileName);
-
-        // Store the full path to the temp jit
-        PathToTempJit = (char*)malloc(MAX_PATH);
-        if (PathToTempJit == nullptr)
-        {
-            LogError("2nd HeapAlloc failed 0x%08x)", ::GetLastError());
-            return E_FAIL;
-        }
-        ::strcpy_s(PathToTempJit, MAX_PATH, szTempFileName);
-
-        // Copy Temp File
-        bRetVal = ::CopyFileA(PathToOriginalJit, PathToTempJit, FALSE);
-        if (bRetVal == FALSE)
-        {
-            LogError("CopyFile failed (0x%08x)", ::GetLastError());
-            return E_FAIL;
-        }
-#else // TARGET_WINDOWS
-        assert(!copyJit);
-#endif // TARGET_WINDOWS
-    }
-    else
-        PathToTempJit = PathToOriginalJit;
-
 #ifndef TARGET_UNIX // No file version APIs in the PAL
     // Do a quick version check
     DWORD dwHandle = 0;
-    DWORD fviSize  = GetFileVersionInfoSizeA(PathToTempJit, &dwHandle);
+    DWORD fviSize  = GetFileVersionInfoSizeA(PathToOriginalJit, &dwHandle);
 
     if ((fviSize != 0) && (dwHandle == 0))
     {
         unsigned char* fviData = new unsigned char[fviSize];
-        if (GetFileVersionInfoA(PathToTempJit, dwHandle, fviSize, fviData))
+        if (GetFileVersionInfoA(PathToOriginalJit, dwHandle, fviSize, fviData))
         {
             UINT              size    = 0;
             VS_FIXEDFILEINFO* verInfo = nullptr;
@@ -169,7 +120,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
                 if (size)
                 {
                     if (verInfo->dwSignature == 0xfeef04bd)
-                        LogDebug("'%s' is version %u.%u.%u.%u", PathToTempJit, (verInfo->dwFileVersionMS) >> 16,
+                        LogDebug("'%s' is version %u.%u.%u.%u", PathToOriginalJit, (verInfo->dwFileVersionMS) >> 16,
                                  (verInfo->dwFileVersionMS) & 0xFFFF, (verInfo->dwFileVersionLS) >> 16,
                                  (verInfo->dwFileVersionLS) & 0xFFFF);
                 }
@@ -180,7 +131,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
 #endif // !TARGET_UNIX
 
     // Load Library
-    hLib = ::LoadLibraryExA(PathToTempJit, NULL, 0);
+    hLib = ::LoadLibraryExA(PathToOriginalJit, NULL, 0);
     if (hLib == 0)
     {
         LogError("LoadLibrary failed (0x%08x)", ::GetLastError());
@@ -249,7 +200,7 @@ bool JitInstance::reLoad(MethodContext* firstContext)
     FreeLibrary(hLib);
 
     // Load Library
-    hLib = ::LoadLibraryExA(PathToTempJit, NULL, 0);
+    hLib = ::LoadLibraryExA(PathToOriginalJit, NULL, 0);
     if (hLib == 0)
     {
         LogError("LoadLibrary failed (0x%08x)", ::GetLastError());
