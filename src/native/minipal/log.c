@@ -3,6 +3,7 @@
 
 #include "log.h"
 #include <string.h>
+#include <limits.h>
 #include <assert.h>
 
 #ifndef MINIPAL_LOG_RUNTIME_TAG
@@ -238,9 +239,10 @@ static int sync_file(minipal_log_flags flags)
 #define write _write
 #elif defined(__APPLE__)
 #include <fcntl.h>
+#include <unistd.h>
 static int sync_file(minipal_log_flags flags)
 {
-    if (fcntl(fileno(get_std_file(flags))), F_FULLFSYNC) != -1)
+    if (fcntl(fileno(get_std_file(flags)), F_FULLFSYNC) != -1)
         return 0;
 
     return errno;
