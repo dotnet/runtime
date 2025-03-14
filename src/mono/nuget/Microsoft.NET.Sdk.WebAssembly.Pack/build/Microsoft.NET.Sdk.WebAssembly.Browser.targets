@@ -393,10 +393,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(_WasmBootConfigFileName)</_WasmBuildBootJsonPath>
-    </PropertyGroup>
-
     <ItemGroup>
       <_BuildWasmBootJson
         Include="$(_WasmBuildBootJsonPath)"
