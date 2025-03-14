@@ -14,11 +14,6 @@ namespace BasicEventSourceTests
 {
     public class ActivityTracking : IDisposable
     {
-        public ActivityTracking()
-        {
-            EventSource.SetCurrentThreadActivityId(Guid.Empty);
-        }
-
         public void Dispose()
         {
             EventSource.SetCurrentThreadActivityId(Guid.Empty);
@@ -40,6 +35,7 @@ namespace BasicEventSourceTests
             using ActivityEventSource es = new ActivityEventSource();
 
             Assert.True(es.IsEnabled());
+            EventSource.SetCurrentThreadActivityId(Guid.Empty);
 
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
             es.ExampleStart();
@@ -53,6 +49,7 @@ namespace BasicEventSourceTests
         {
             using ActivityEventListener l = new ActivityEventListener();
             using ActivityEventSource es = new ActivityEventSource();
+            EventSource.SetCurrentThreadActivityId(Guid.Empty);
 
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
             es.ExampleStart();
@@ -68,6 +65,7 @@ namespace BasicEventSourceTests
         {
             using ActivityEventListener l = new ActivityEventListener();
             using ActivityEventSource es = new ActivityEventSource();
+            EventSource.SetCurrentThreadActivityId(Guid.Empty);
 
             // Run tasks on many threads. If an activity id leaks it is likely
             // that the thread will be sheduled to run one of our other tasks
@@ -101,6 +99,7 @@ namespace BasicEventSourceTests
         {
             using ActivityEventListener l = new ActivityEventListener();
             using ActivityEventSource es = new ActivityEventSource();
+            EventSource.SetCurrentThreadActivityId(Guid.Empty);
             try
             {
                 Guid g = Guid.NewGuid();
@@ -126,6 +125,7 @@ namespace BasicEventSourceTests
         {
             using ActivityEventListener l = new ActivityEventListener();
             using ActivityEventSource es = new ActivityEventSource();
+            EventSource.SetCurrentThreadActivityId(Guid.Empty);
             try
             {
                 es.ExampleStart();
