@@ -17,6 +17,7 @@ namespace System.Net.Http.Metrics
 
         public MetricsHandler(HttpMessageHandler innerHandler, IMeterFactory? meterFactory, out Meter meter)
         {
+            Debug.Assert(IsGloballyEnabled());
             _innerHandler = innerHandler;
 
             meter = meterFactory?.Create("System.Net.Http") ?? SharedMeter.Instance;
@@ -32,6 +33,8 @@ namespace System.Net.Http.Metrics
                 description: "Duration of HTTP client requests.",
                 advice: DiagnosticsHelper.ShortHistogramAdvice);
         }
+
+        internal static bool IsGloballyEnabled() => GlobalHttpSettings.MetricsHandler.EnableMetrics;
 
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
