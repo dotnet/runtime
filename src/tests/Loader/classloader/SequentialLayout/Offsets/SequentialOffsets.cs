@@ -15,7 +15,7 @@ public static class SequentialOffsets
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void LoadType()
         {
-            _ = typeof(SeqLayoutTypeWithFieldsWithOffsets);
+            _ = Activator.CreateInstance<SeqLayoutTypeWithFieldsWithOffsets>();
         }
     }
 }

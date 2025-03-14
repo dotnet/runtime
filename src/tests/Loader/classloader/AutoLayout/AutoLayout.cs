@@ -15,7 +15,7 @@ public static class AutoLayout
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void LoadType()
         {
-            _ = typeof(AutoLayoutTypeWithFieldsWithOffsets);
+            _ = Activator.CreateInstance<AutoLayoutTypeWithFieldsWithOffsets>();
         }
     }
 }
