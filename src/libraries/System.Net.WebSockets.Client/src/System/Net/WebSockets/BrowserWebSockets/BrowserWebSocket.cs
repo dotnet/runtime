@@ -550,13 +550,12 @@ namespace System.Net.WebSockets
             }
         }
 
-        private async Task CancellationHelper(Task promise, CancellationToken cancellationToken, WebSocketState previousState, IDisposable? disposable = null)
+        private async Task CancellationHelper(Task promise, CancellationToken cancellationToken, WebSocketState previousState)
         {
             try
             {
                 if (promise.IsCompletedSuccessfully)
                 {
-                    disposable?.Dispose();
                     return;
                 }
                 if (promise.IsCompleted)
@@ -601,10 +600,6 @@ namespace System.Net.WebSockets
                     }
                     throw new WebSocketException(WebSocketError.NativeError, ex);
                 }
-            }
-            finally
-            {
-                disposable?.Dispose();
             }
         }
 
