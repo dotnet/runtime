@@ -220,7 +220,7 @@ namespace System.Numerics.Tensors
         /// <param name="length">The length of the TensorSpan we are iterating over.</param>
         public static void AdjustIndexes(int curIndex, nint addend, Span<nint> curIndexes, scoped ReadOnlySpan<nint> length)
         {
-            if (addend <= 0 || curIndex < 0)
+            if (addend <= 0 || curIndex < 0 || length[curIndex] <= 0)
                 return;
             curIndexes[curIndex] += addend;
 
