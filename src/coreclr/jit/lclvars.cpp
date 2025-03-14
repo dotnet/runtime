@@ -4790,30 +4790,13 @@ void Compiler::lvaUpdateArgsWithInitialReg()
         return;
     }
 
-    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
-
-        for (const ABIPassingSegment& segment : abiInfo.Segments())
+        if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
         {
-            if (!segment.IsPassedInRegister())
-            {
-                continue;
-            }
-
-            const ParameterRegisterLocalMapping* mapping =
-                FindParameterRegisterLocalMappingByRegister(segment.GetRegister());
-
-            if (mapping != nullptr)
-            {
-                lvaUpdateArgWithInitialReg(lvaGetDesc(mapping->LclNum));
-            }
-            else
-            {
-                lvaUpdateArgWithInitialReg(varDsc);
-            }
+            lvaUpdateArgWithInitialReg(varDsc);
         }
     }
 }
