@@ -239,23 +239,23 @@ namespace System.Numerics.Tensors.Tests
                 T[] data = new T[length];
 
                 FillTensor<T>(data);
-                Tensor<T> x = Tensor.Create<T>(data, tensorLength, []);
+                Tensor<T> tensor = Tensor.Create<T>(data, tensorLength, []);
                 T expectedOutput = tensorPrimitivesOperation((ReadOnlySpan<T>)data);
-                T results = tensorOperation(x);
+                T results = tensorOperation(tensor);
 
                 Assert.Equal(expectedOutput, results);
 
                 // Now test if the source is sliced to be non contiguous that it still gives expected result.
                 NRange[] sliceLengths = Helpers.TensorSliceShapes[index].Select(i => new NRange(0, i)).ToArray();
                 nint sliceFlattenedLength = CalculateTotalLength(Helpers.TensorSliceShapes[index]);
-                x = x.Slice(sliceLengths);
+                tensor = tensor.Slice(sliceLengths);
                 T[] sliceData = new T[sliceFlattenedLength];
-                x.FlattenTo(sliceData);
+                tensor.FlattenTo(sliceData);
 
-                IEnumerator<T> enumerator = x.GetEnumerator();
+                IEnumerator<T> enumerator = tensor.GetEnumerator();
                 bool cont = enumerator.MoveNext();
                 int i = 0;
-                Assert.True(x.SequenceEqual(sliceData));
+                Assert.True(tensor.SequenceEqual(sliceData));
                 while (cont)
                 {
                     Assert.Equal(sliceData[i++], enumerator.Current);
@@ -263,7 +263,7 @@ namespace System.Numerics.Tensors.Tests
                 }
 
                 expectedOutput = tensorPrimitivesOperation((ReadOnlySpan<T>)sliceData);
-                results = tensorOperation(x);
+                results = tensorOperation(tensor);
 
                 Assert.Equal(expectedOutput, results);
             });

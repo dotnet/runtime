@@ -465,8 +465,28 @@ namespace System.Numerics.Tensors
             if (start.Length != Lengths.Length)
                 throw new ArgumentOutOfRangeException(nameof(start), "Number of dimensions to slice does not equal the number of dimensions in the span");
 
-            scoped Span<nint> lengths = new nint[Rank];
-            scoped Span<nint> offsets = new nint[Rank];
+            scoped Span<nint> lengths;
+            scoped Span<nint> offsets;
+            nint[]? lengthsArray;
+            nint[]? offsetsArray;
+            if (Rank > TensorShape.MaxInlineRank)
+            {
+                lengthsArray = ArrayPool<nint>.Shared.Rent(Rank);
+                lengths = lengthsArray.AsSpan(0, Rank);
+
+                offsetsArray = ArrayPool<nint>.Shared.Rent(Rank);
+                offsets = offsetsArray.AsSpan(0, Rank);
+            }
+            else
+            {
+                lengths = stackalloc nint[Rank];
+                offsets = stackalloc nint[Rank];
+
+                lengthsArray = null;
+                offsetsArray = null;
+            }
+            lengths.Clear();
+            offsets.Clear();
 
             for (int i = 0; i < start.Length; i++)
             {
@@ -489,7 +509,14 @@ namespace System.Numerics.Tensors
             if ((memoryOffset >= _values.Length || memoryOffset < 0) && flattenedLength != 0)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
-            return new Tensor<T>(_values, lengths, Strides, _isPinned, memoryOffset);
+            Tensor<T> toReturn = new Tensor<T>(_values, lengths, Strides, _isPinned, memoryOffset);
+
+            if (offsetsArray != null)
+                ArrayPool<nint>.Shared.Return(offsetsArray);
+            if (lengthsArray != null)
+                ArrayPool<nint>.Shared.Return(lengthsArray);
+
+            return toReturn;
         }
 
         /// <summary>
