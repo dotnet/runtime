@@ -3607,7 +3607,6 @@ void emitter::emitDispInsName(
             unsigned rd           = (code >> 7) & 0x1f;
             unsigned rs1          = (code >> 15) & 0x1f;
             int      imm12        = static_cast<int>(code) >> 20;
-            bool     isHex        = false;
             bool     hasImmediate = true;
             int      printLength  = 0;
 
@@ -3651,7 +3650,6 @@ void emitter::emitDispInsName(
                     break;
                 case 0x4: // XORI
                     printLength = printf("xori");
-                    isHex       = true;
                     break;
                 case 0x5: // SRLI & SRAI
                 {
@@ -3670,13 +3668,9 @@ void emitter::emitDispInsName(
                 break;
                 case 0x6: // ORI
                     printLength = printf("ori");
-                    imm12 &= 0xfff;
-                    isHex = true;
                     break;
                 case 0x7: // ANDI
                     printLength = printf("andi");
-                    imm12 &= 0xfff;
-                    isHex = true;
                     break;
                 default:
                     return emitDispIllegalInstruction(code);
@@ -3687,7 +3681,7 @@ void emitter::emitDispInsName(
             printf("%*s %s, %s", paddingLength, "", RegNames[rd], RegNames[rs1]);
             if (hasImmediate)
             {
-                printf(isHex ? ", 0x%x" : ", %d", imm12);
+                printf(", %d", imm12);
             }
             printf("\n");
 
