@@ -11,9 +11,8 @@ using System.Threading.Tasks;
 
 namespace System.Diagnostics.Metrics
 {
-    [UnsupportedOSPlatform("browser")]
     [SecuritySafeCritical]
-    internal sealed class AggregationManager
+    internal sealed partial class AggregationManager
     {
         public const double MinCollectionTimeSecs = 0.1;
         private static readonly QuantileAggregation s_defaultHistogramConfig = new QuantileAggregation(new double[] { 0.50, 0.95, 0.99 });
@@ -28,7 +27,6 @@ namespace System.Diagnostics.Metrics
         private Dictionary<Instrument, bool> _instruments = new();
         private readonly ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private readonly CancellationTokenSource _cts = new();
-        private Thread? _collectThread;
         private readonly MeterListener _listener;
         private int _currentTimeSeries;
         private int _currentHistograms;
@@ -154,25 +152,6 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        public void Start()
-        {
-            // if already started or already stopped we can't be started again
-            Debug.Assert(_collectThread == null && !_cts.IsCancellationRequested);
-            Debug.Assert(CollectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
-
-            // This explicitly uses a Thread and not a Task so that metrics still work
-            // even when an app is experiencing thread-pool starvation. Although we
-            // can't make in-proc metrics robust to everything, this is a common enough
-            // problem in .NET apps that it feels worthwhile to take the precaution.
-            _collectThread = new Thread(() => CollectWorker(_cts.Token));
-            _collectThread.IsBackground = true;
-            _collectThread.Name = "MetricsEventSource CollectWorker";
-            _collectThread.Start();
-
-            _listener.Start();
-            _initialInstrumentEnumerationComplete();
-        }
-
         public void Update()
         {
             // Creating (and destroying) a MeterListener to leverage the existing
@@ -186,76 +165,32 @@ namespace System.Diagnostics.Metrics
 
             _initialInstrumentEnumerationComplete();
         }
-
-        private void CollectWorker(CancellationToken cancelToken)
+        private static DateTime CalculateDelayTime(DateTime now, DateTime startTime, DateTime intervalStartTime, double collectionIntervalSecs)
         {
-            try
+            // intervals end at startTime + X*collectionIntervalSecs. Under normal
+            // circumstance X increases by 1 each interval, but if the time it
+            // takes to do collection is very large then we might need to skip
+            // ahead multiple intervals to catch back up.
+            //
+            double secsSinceStart = (now - startTime).TotalSeconds;
+            double alignUpSecsSinceStart = Math.Ceiling(secsSinceStart / collectionIntervalSecs) *
+                collectionIntervalSecs;
+            DateTime nextIntervalStartTime = startTime.AddSeconds(alignUpSecsSinceStart);
+
+            // The delay timer precision isn't exact. We might have a situation
+            // where in the previous loop iterations intervalStartTime=20.00,
+            // nextIntervalStartTime=21.00, the timer was supposed to delay for 1s but
+            // it exited early so we looped around and DateTime.Now=20.99.
+            // Aligning up from DateTime.Now would give us 21.00 again so we also need to skip
+            // forward one time interval
+            DateTime minNextInterval = intervalStartTime.AddSeconds(collectionIntervalSecs);
+            if (nextIntervalStartTime <= minNextInterval)
             {
-                double collectionIntervalSecs = -1;
-                lock (this)
-                {
-                    collectionIntervalSecs = CollectionPeriod.TotalSeconds;
-                }
-                Debug.Assert(collectionIntervalSecs >= MinCollectionTimeSecs);
-
-                DateTime startTime = DateTime.UtcNow;
-                DateTime intervalStartTime = startTime;
-                while (!cancelToken.IsCancellationRequested)
-                {
-                    // intervals end at startTime + X*collectionIntervalSecs. Under normal
-                    // circumstance X increases by 1 each interval, but if the time it
-                    // takes to do collection is very large then we might need to skip
-                    // ahead multiple intervals to catch back up.
-                    //
-                    DateTime now = DateTime.UtcNow;
-                    double secsSinceStart = (now - startTime).TotalSeconds;
-                    double alignUpSecsSinceStart = Math.Ceiling(secsSinceStart / collectionIntervalSecs) *
-                        collectionIntervalSecs;
-                    DateTime nextIntervalStartTime = startTime.AddSeconds(alignUpSecsSinceStart);
-
-                    // The delay timer precision isn't exact. We might have a situation
-                    // where in the previous loop iterations intervalStartTime=20.00,
-                    // nextIntervalStartTime=21.00, the timer was supposed to delay for 1s but
-                    // it exited early so we looped around and DateTime.Now=20.99.
-                    // Aligning up from DateTime.Now would give us 21.00 again so we also need to skip
-                    // forward one time interval
-                    DateTime minNextInterval = intervalStartTime.AddSeconds(collectionIntervalSecs);
-                    if (nextIntervalStartTime <= minNextInterval)
-                    {
-                        nextIntervalStartTime = minNextInterval;
-                    }
-
-                    // pause until the interval is complete
-                    TimeSpan delayTime = nextIntervalStartTime - now;
-                    if (cancelToken.WaitHandle.WaitOne(delayTime))
-                    {
-                        // don't do collection if timer may not have run to completion
-                        break;
-                    }
-
-                    // collect statistics for the completed interval
-                    _beginCollection(intervalStartTime, nextIntervalStartTime);
-                    Collect();
-                    _endCollection(intervalStartTime, nextIntervalStartTime);
-                    intervalStartTime = nextIntervalStartTime;
-                }
+                nextIntervalStartTime = minNextInterval;
             }
-            catch (Exception e)
-            {
-                _collectionError(e);
-            }
+            return nextIntervalStartTime;
         }
 
-        public void Dispose()
-        {
-            _cts.Cancel();
-            if (_collectThread != null)
-            {
-                _collectThread.Join();
-                _collectThread = null;
-            }
-            _listener.Dispose();
-        }
 
         private void RemoveInstrumentState(Instrument instrument)
         {

@@ -28,6 +28,9 @@
     <!-- This WASM test is slow on NodeJS. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
     <XunitShowProgress Condition="'$(FeatureWasmManagedThreads)' == 'true'">true</XunitShowProgress>
+    <WasmPerfTracing>true</WasmPerfTracing>
+    <EventSourceSupport>true</EventSourceSupport>
+    <MetricsSupport>true</MetricsSupport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
@@ -47,6 +50,9 @@
     <NodeNpmModule Include="ws" />
     <NodeNpmModule Include="node-fetch" />
     <NodeNpmModule Include="node-abort-controller" />
+
+    <RuntimeHostConfigurationOption Include="System.Net.Http.EnableActivityPropagation" Value="true" Trim="true" />
+    <RuntimeHostConfigurationOption Include="System.Net.Http.EnableMetrics" Value="true" Trim="true" />
 
   </ItemGroup>
 

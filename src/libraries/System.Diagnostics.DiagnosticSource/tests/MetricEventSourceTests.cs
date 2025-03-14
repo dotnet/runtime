@@ -75,7 +75,7 @@ namespace System.Diagnostics.Metrics.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_DifferentCounters()
         {
@@ -123,7 +123,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_ReuseCounter()
         {
@@ -174,7 +174,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_CollectAfterDisableListener()
         {
@@ -228,7 +228,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_ThreeCounters()
         {
@@ -288,7 +288,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events3, IntervalSecs, 2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void SingleListener_Wildcard()
         {
@@ -331,7 +331,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void SingleListener_Prefix()
         {
@@ -368,7 +368,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_OverlappingListeners()
         {
@@ -413,7 +413,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_UnsharedSessionRejectsUnsharedListener()
         {
@@ -467,7 +467,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_UnsharedSessionRejectsSharedListener()
         {
@@ -524,7 +524,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_SharedSessionRejectsUnsharedListener()
         {
@@ -580,7 +580,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_SharedSessionRejectsListenerWithDifferentArgs()
         {
@@ -619,7 +619,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         [ActiveIssue("This test appears to interfere with the others due to the session not being shut down.")]
         public void MultipleListeners_SharedSessionWithoutClientIdRejectsSharedListenerWithDifferentArgsAfterListenerDisposed()
@@ -658,7 +658,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_SharedSessionRejectsListenerWithDifferentInterval()
         {
@@ -717,7 +717,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_DisposeMeterBeforeSecondListener()
         {
@@ -783,7 +783,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc, g);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_DisposeMetersDuringAndAfterSecondListener()
         {
@@ -854,7 +854,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertEndInstrumentReportingEventsPresent(events2, c, oc, og, udc, oudc, g);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_PublishingInstruments()
         {
@@ -895,9 +895,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertInitialEnumerationCompleteEventPresent(events2);
         }
 
-        public static bool IsNotBrowserAndRemoteExecuteSupported => PlatformDetection.IsNotBrowser && RemoteExecutor.IsSupported;
-
-        [ConditionalFact(typeof(MetricEventSourceTests), nameof(IsNotBrowserAndRemoteExecuteSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithEmptyMetadata()
         {
@@ -960,7 +958,7 @@ namespace System.Diagnostics.Metrics.Tests
             public void WriteLine(string format, params object[] args) { }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithMetadata()
         {
@@ -1005,7 +1003,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesForLateMeter()
         {
@@ -1071,7 +1069,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesForLateInstruments()
         {
@@ -1127,7 +1125,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithTags()
         {
@@ -1214,7 +1212,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/79749", TargetFrameworkMonikers.NetFramework)]
         public void EventSourceFiltersInstruments()
@@ -1283,7 +1281,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesMissingDataPoints()
         {
@@ -1375,7 +1373,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 5);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesEndEventsOnMeterDispose()
         {
@@ -1435,7 +1433,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc, g);
         }
 
-        [ConditionalFact(typeof(MetricEventSourceTests), nameof(IsNotBrowserAndRemoteExecuteSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesInstruments()
         {
@@ -1477,7 +1475,7 @@ namespace System.Diagnostics.Metrics.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesAllDataTypes()
         {
@@ -1543,7 +1541,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourceEnforcesTimeSeriesLimit()
         {
@@ -1579,7 +1577,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourceEnforcesHistogramLimit()
         {
@@ -1616,7 +1614,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourceHandlesObservableCallbackException()
         {
@@ -1643,7 +1641,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourceWorksWithSequentialListeners()
         {
@@ -1718,7 +1716,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourceEnforcesHistogramLimitAndNotMaxTimeSeries()
         {
@@ -1786,7 +1784,7 @@ namespace System.Diagnostics.Metrics.Tests
             yield return new object[] { meter.CreateCounter<int>("C8", "u1", "d1", new TagList { { "k2", "v2" } } ), meter.CreateCounter<int>("C9", "u1", "d1", new TagList { { "k2", "v2" } } ), false };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Theory]
         [OuterLoop("Slow and has lots of console spew")]
         [MemberData(nameof(DifferentMetersAndInstrumentsData))]
         public void TestDifferentMetersAndInstruments(Counter<int> counter1, Counter<int> counter2, bool isSameCounters)

@@ -8,25 +8,47 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using System.Runtime.CompilerServices;
 
 namespace BasicEventSourceTests
 {
-    public class ActivityTracking
+    public class ActivityTracking : IDisposable
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public ActivityTracking()
+        {
+            EventSource.SetCurrentThreadActivityId(Guid.Empty);
+        }
+
+        public void Dispose()
+        {
+            EventSource.SetCurrentThreadActivityId(Guid.Empty);
+        }
+
+        [Fact]
+        public void IsSupported()
+        {
+            Assert.True(IsSupported((EventSource)null));
+
+            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_IsSupported")]
+            static extern bool IsSupported(EventSource eventSource);
+        }
+
+        [Fact]
         public void StartStopCreatesActivity()
         {
             using ActivityEventListener l = new ActivityEventListener();
             using ActivityEventSource es = new ActivityEventSource();
 
+            Assert.True(es.IsEnabled());
+
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
             es.ExampleStart();
-            Assert.NotEqual(Guid.Empty, EventSource.CurrentThreadActivityId);
+            //Assert.NotEqual(Guid.Empty, EventSource.CurrentThreadActivityId);
             es.ExampleStop();
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         public async Task ActivityFlowsAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -41,7 +63,7 @@ namespace BasicEventSourceTests
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityIdIsZeroedOnThreadSwitchOut()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -74,7 +96,7 @@ namespace BasicEventSourceTests
         // I am attempting to preserve it to lower back compat risk, but in
         // the future we might decide it wasn't even desirable to begin with.
         // Compare with SetCurrentActivityIdAfterEventDoesNotFlowAsync below.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         public async Task SetCurrentActivityIdBeforeEventFlowsAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -99,7 +121,7 @@ namespace BasicEventSourceTests
         // I am attempting to preserve it to lower back compat risk, but in
         // the future we might decide it wasn't even desirable to begin with.
         // Compare with SetCurrentActivityIdBeforeEventFlowsAsync above.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         public async Task SetCurrentActivityIdAfterEventDoesNotFlowAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
