@@ -1,5 +1,6 @@
 parameters:
 - name: runPrivateJobs
+  displayName: Upload artifacts to blob storage
   type: boolean
   default: false
 - name: mauiFramework
