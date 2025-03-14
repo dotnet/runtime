@@ -335,6 +335,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmJsModuleCandidatesForBuild
         Include="@(StaticWebAsset)"
         Condition="'%(StaticWebAsset.AssetTraitName)' == 'JSModule' and '%(StaticWebAsset.AssetTraitValue)' == 'JSLibraryModule' and '%(AssetKind)' != 'Publish'" />
+
+      <_WasmBuildEnvironmentVariable Include="@(WasmEnvironmentVariable)" />
+      <_WasmBuildEnvironmentVariable Include="DOTNET_MODIFIABLE_ASSEMBLIES" Value="debug" />
+      <_WasmBuildEnvironmentVariable Include="__ASPNETCORE_BROWSER_TOOLS" Value="true" />
     </ItemGroup>
 
     <FilterStaticWebAssetEndpoints Condition="'@(_WasmJsModuleCandidatesForBuild)' != ''"
@@ -380,7 +384,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       Extensions="@(WasmBootConfigExtension)"
-      EnvVariables="@(WasmEnvironmentVariable)"
+      EnvVariables="@(_WasmBuildEnvironmentVariable)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
