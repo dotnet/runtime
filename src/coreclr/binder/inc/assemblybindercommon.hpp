@@ -16,7 +16,7 @@
 
 #include "bindertypes.hpp"
 #include "bindresult.hpp"
-#include "bundle.h"
+#include <assemblyprobeextension.h>
 
 class AssemblyBinder;
 class DefaultAssemblyBinder;
@@ -28,7 +28,7 @@ namespace BINDER_SPACE
     class AssemblyBinderCommon
     {
     public:
-        static HRESULT BindAssembly(/* in */  AssemblyBinder      *pBinder, 
+        static HRESULT BindAssembly(/* in */  AssemblyBinder      *pBinder,
                                     /* in */  AssemblyName        *pAssemblyName,
                                     /* in */  bool                 excludeAppPaths,
                                     /* out */ Assembly           **ppAssembly);
@@ -44,7 +44,7 @@ namespace BINDER_SPACE
         static HRESULT GetAssembly(/* in */  SString     &assemblyPath,
                                    /* in */  BOOL         fIsInTPA,
                                    /* out */ Assembly   **ppAssembly,
-                                   /* in */  BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
+                                   /* in */  ProbeExtensionResult probeExtensionResult = ProbeExtensionResult::Invalid());
 
 #if !defined(DACCESS_COMPILE)
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,

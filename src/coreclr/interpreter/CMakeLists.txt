@@ -28,7 +28,13 @@ else()
     add_custom_target(interpreter_exports DEPENDS ${EXPORTS_FILE})
 endif()
 
-add_library_clr(clrinterpreter SHARED ${INTERPRETER_SOURCES})
+if(CLR_CMAKE_TARGET_BROWSER)
+  set(LIBRARY_TYPE STATIC)
+else()
+  set(LIBRARY_TYPE SHARED)
+endif()
+
+add_library_clr(clrinterpreter ${LIBRARY_TYPE} ${INTERPRETER_SOURCES})
 
 add_dependencies(clrinterpreter interpreter_exports)
 
