@@ -31,7 +31,9 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pPrecodeHeap = NULL;
     m_pExecutableHeap = NULL;
 #ifdef FEATURE_READYTORUN
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
     m_pDynamicHelpersHeap = NULL;
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
     m_pFuncPtrStubs = NULL;
     m_hLoaderAllocatorObjectHandle = (OBJECTHANDLE)NULL;
@@ -1240,6 +1242,8 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 
 
 #ifdef FEATURE_READYTORUN
+
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 PTR_CodeFragmentHeap LoaderAllocator::GetDynamicHelpersHeap()
 {
     CONTRACTL {
@@ -1255,6 +1259,7 @@ PTR_CodeFragmentHeap LoaderAllocator::GetDynamicHelpersHeap()
     }
     return m_pDynamicHelpersHeap;
 }
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
 
 FuncPtrStubs * LoaderAllocator::GetFuncPtrStubs()
@@ -1408,11 +1413,13 @@ void LoaderAllocator::Terminate()
     }
 
 #ifdef FEATURE_READYTORUN
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
     if (m_pDynamicHelpersHeap != NULL)
     {
         delete m_pDynamicHelpersHeap;
         m_pDynamicHelpersHeap = NULL;
     }
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
 
     if (m_pFuncPtrStubs != NULL)
@@ -1479,10 +1486,12 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_pExecutableHeap->EnumMemoryRegions(flags);
     }
 #ifdef FEATURE_READYTORUN
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
     if (m_pDynamicHelpersHeap.IsValid())
     {
         m_pDynamicHelpersHeap->EnumMemoryRegions(flags);
     }
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
     if (m_pFixupPrecodeHeap.IsValid())
     {

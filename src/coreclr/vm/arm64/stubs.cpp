@@ -1468,6 +1468,7 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 //
 // Allocation of dynamic helpers
 //
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
@@ -1939,6 +1940,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         END_DYNAMIC_HELPER_EMIT();
     }
 }
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif // FEATURE_READYTORUN
 
 

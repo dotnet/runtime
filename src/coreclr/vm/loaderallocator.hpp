@@ -312,7 +312,9 @@ protected:
     PTR_CodeFragmentHeap m_pPrecodeHeap;
     PTR_LoaderHeap      m_pExecutableHeap;
 #ifdef FEATURE_READYTORUN
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
     PTR_CodeFragmentHeap m_pDynamicHelpersHeap;
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
     PTR_LoaderHeap      m_pFixupPrecodeHeap;
     PTR_LoaderHeap      m_pNewStubPrecodeHeap;
