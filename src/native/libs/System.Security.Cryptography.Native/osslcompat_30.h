@@ -24,6 +24,18 @@
 #define OSSL_MAC_PARAM_XOF    "xof"
 #define OSSL_MAC_PARAM_SIZE   "size"
 
+#define OSSL_PKEY_PARAM_GROUP_NAME   "group"
+#define OSSL_PKEY_PARAM_PRIV_KEY     "priv"
+#define OSSL_PKEY_PARAM_EC_PUB_X     "qx"
+#define OSSL_PKEY_PARAM_EC_PUB_Y     "qy"
+#define OSSL_PKEY_PARAM_EC_P         "p"
+#define OSSL_PKEY_PARAM_EC_A         "a"
+#define OSSL_PKEY_PARAM_EC_B         "b"
+#define OSSL_PKEY_PARAM_EC_GENERATOR "generator"
+#define OSSL_PKEY_PARAM_EC_ORDER     "order"
+#define OSSL_PKEY_PARAM_EC_COFACTOR  "cofactor"
+#define OSSL_PKEY_PARAM_EC_SEED      "seed"
+
 #define OSSL_STORE_INFO_PKEY 4
 #define OSSL_STORE_INFO_PUBKEY 3
 
@@ -73,6 +85,9 @@ int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX* ctx, int saltlen);
 int EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int EVP_PKEY_get_base_id(const EVP_PKEY* pkey);
 int EVP_PKEY_get_bits(const EVP_PKEY* pkey);
+int EVP_PKEY_get_bn_param(const EVP_PKEY *pkey, const char *key_name, BIGNUM **bn);
+int EVP_PKEY_get_utf8_string_param(const EVP_PKEY *pkey, const char *key_name, char *str, size_t max_buf_sz, size_t *out_len);
+int EVP_PKEY_get_octet_string_param(const EVP_PKEY *pkey, const char *key_name, unsigned char *buf, size_t max_buf_sz, size_t *out_len);
 EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_pkey(
     OSSL_LIB_CTX *libctx, EVP_PKEY *pkey, const char *propquery);
 
@@ -98,3 +113,5 @@ OSSL_STORE_CTX* OSSL_STORE_open_ex(
     const char*, OSSL_LIB_CTX*, const char*, const UI_METHOD*, void*, const OSSL_PARAM*, OSSL_STORE_post_process_info_fn post_process, void*);
 
 X509* SSL_get1_peer_certificate(const SSL* ssl);
+
+int EC_GROUP_get_field_type(const EC_GROUP *group);
