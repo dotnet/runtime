@@ -139,6 +139,7 @@ namespace System.Reflection.Emit
             // Maybe we are lucky that they are equal in the first place
             if (t1 == t2)
                 return true;
+
             RuntimeTypeBuilder? tb1 = null;
             RuntimeTypeBuilder? tb2 = null;
             Type? runtimeType1;
@@ -171,7 +172,7 @@ namespace System.Reflection.Emit
             if (tb1 != null && tb2 != null && ReferenceEquals(tb1, tb2))
                 return true;
 
-            // if the runtimetype view is eqaul than it is equal
+            // if the runtimetype view is equal than it is equal
             if (runtimeType1 != null && runtimeType2 != null && runtimeType1 == runtimeType2)
                 return true;
 
@@ -945,6 +946,10 @@ namespace System.Reflection.Emit
 
             while (p != null)
             {
+                // We can't use IsTypeEqual(p, this) because it would be recursive at least for Enums.
+                if (ReferenceEquals(p, this))
+                    throw new ArgumentException(SR.Argument_RecursiveTypeHierarchy, nameof(c));
+
                 if (IsTypeEqual(p, c))
                     return true;
 

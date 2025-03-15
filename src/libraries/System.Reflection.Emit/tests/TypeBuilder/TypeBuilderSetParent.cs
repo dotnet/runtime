@@ -134,5 +134,29 @@ namespace System.Reflection.Emit.Tests
 
             Assert.Throws<BadImageFormatException>(() => type.CreateTypeInfo());
         }
+
+        [Fact]
+        public static void RecursiveTypeBuilder_Self()
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            ModuleBuilder module = assembly.DefineDynamicModule("TestModule");
+
+            TypeBuilder type = module.DefineType("TestType", TypeAttributes.Class | TypeAttributes.Public);
+            type.SetParent(type);
+            Assert.Throws<ArgumentException>(() => type.CreateType());
+        }
+
+        [Fact]
+        public static void RecursiveTypeBuilder_Base()
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            ModuleBuilder module = assembly.DefineDynamicModule("TestModule");
+
+            TypeBuilder typeBase = module.DefineType("BaseType", TypeAttributes.Class | TypeAttributes.Public);
+            TypeBuilder typeDerived = module.DefineType("DerivedType", TypeAttributes.Class | TypeAttributes.Public);
+            typeBase.SetParent(typeDerived);
+            typeDerived.SetParent(typeBase);
+            Assert.Throws<ArgumentException>(() => typeBase.CreateType());
+        }
     }
 }

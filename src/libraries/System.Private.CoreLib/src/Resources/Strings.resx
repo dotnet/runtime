@@ -1540,6 +1540,9 @@
   <data name="Argument_RecursiveFallbackBytes" xml:space="preserve">
     <value>Recursive fallback not allowed for bytes {0}.</value>
   </data>
+  <data name="Argument_RecursiveTypeHierarchy" xml:space="preserve">
+    <value>The type hierarchy must not be recursive.</value>
+  </data>  
   <data name="Argument_RedefinedLabel" xml:space="preserve">
     <value>Label defined multiple times.</value>
   </data>
