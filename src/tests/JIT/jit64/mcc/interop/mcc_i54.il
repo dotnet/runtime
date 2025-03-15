@@ -5,6 +5,7 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
+.assembly extern TestLibrary {}
 
 .assembly 'mcc_i54' {}
 
@@ -21,6 +22,21 @@
     }
 
     .method public static int32 Main()
+    {
+      .entrypoint
+      .maxstack  1
+
+      call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsWindows()
+      brtrue.s   DoTest
+      ldc.i4     100
+      ret
+
+    DoTest:
+      call       int32 MCCTest.MyClass::Test()
+      ret
+    }
+
+    .method public static int32 Test()
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -119,7 +135,7 @@
 
       ldloc.s    rc
       ret
-    } // end of method MyClass::Main
+    } // end of method MyClass::Test
 
   } // end of class MyClass
 
