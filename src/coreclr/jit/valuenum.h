@@ -1209,7 +1209,7 @@ public:
     bool IsVNTypeHandle(ValueNum vn);
 
     // Returns true iff the VN represents a relop
-    bool IsVNRelop(ValueNum vn);
+    bool IsVNRelop(ValueNum vn, bool* isUnsigned = nullptr);
 
     enum class VN_RELATION_KIND
     {

@@ -7744,7 +7744,6 @@ public:
         O2K_INVALID,
         O2K_LCLVAR_COPY,
         O2K_CONST_INT,
-        O2K_CONST_LONG,
         O2K_CONST_DOUBLE,
         O2K_ZEROOBJ,
         O2K_SUBRANGE,
@@ -7754,11 +7753,6 @@ public:
     struct AssertionDsc
     {
         optAssertionKind assertionKind;
-        struct SsaVar
-        {
-            unsigned lclNum; // assigned to or property of this local var number
-            unsigned ssaNum;
-        };
         struct ArrBnd
         {
             ValueNum vnIdx;
@@ -7770,8 +7764,8 @@ public:
             ValueNum   vn;
             union
             {
-                SsaVar lcl;
-                ArrBnd bnd;
+                unsigned lclNum;
+                ArrBnd   bnd;
             };
         } op1;
         struct AssertionDscOp2
@@ -7791,9 +7785,8 @@ public:
             };
             union
             {
-                SsaVar        lcl;
+                unsigned      lclNum;
                 IntVal        u1;
-                int64_t       lconVal;
                 double        dconVal;
                 IntegralRange u2;
             };
@@ -7822,6 +7815,200 @@ public:
             }
         } op2;
 
+        unsigned GetOp1LclNum() const
+        {
+            assert(op1.kind == O1K_LCLVAR);
+            assert(JitTls::GetCompiler()->optLocalAssertionProp);
+            return op1.lclNum;
+        }
+
+        unsigned GetOp2LclNum() const
+        {
+            assert(op1.kind == O1K_LCLVAR);
+            assert(op2.kind == O2K_LCLVAR_COPY);
+            assert(JitTls::GetCompiler()->optLocalAssertionProp);
+            return op2.lclNum;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateSubtypeAssertion: Create an assertion that the object is of a subtype
+        //    of the provided type handle.
+        //
+        // Arguments:
+        //    comp   - the compiler object
+        //    objVN  - the value number of the object (must be a GC type)
+        //    typeVN - the value number of the type handle (must be a type handle VN)
+        //
+        // Return Value:
+        //    An AssertionDsc that represents the assertion that the object is of a subtype
+        //
+        static AssertionDsc CreateSubtypeAssertion(const Compiler* comp, ValueNum objVN, ValueNum typeVN)
+        {
+            assert(!comp->optLocalAssertionProp);
+            assert(objVN != ValueNumStore::NoVN);
+            assert(comp->vnStore->IsVNTypeHandle(typeVN));
+            assert(varTypeIsGC(comp->vnStore->TypeOfVN(objVN)));
+
+            AssertionDsc assertion   = {};
+            assertion.op1.kind       = O1K_SUBTYPE;
+            assertion.op1.vn         = objVN;
+            assertion.op2.kind       = O2K_CONST_INT;
+            assertion.op2.u1.iconVal = comp->vnStore->CoercedConstantValue<ssize_t>(typeVN);
+            assertion.op2.vn         = typeVN;
+            assertion.op2.SetIconFlag(GTF_ICON_CLASS_HDL);
+            assertion.assertionKind = OAK_EQUAL;
+            return assertion;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateSubtypeAssertion: Create an assertion that the object is exactly
+        //    of the provided type handle.
+        //
+        // Arguments:
+        //    comp   - the compiler object
+        //    objVN  - the value number of the object (must be a GC type)
+        //    typeVN - the value number of the type handle (must be a type handle VN)
+        //
+        // Return Value:
+        //    An AssertionDsc that represents the assertion that the object is of a subtype
+        //
+        static AssertionDsc CreateExactTypeAssertion(const Compiler* comp, ValueNum objVN, ValueNum typeVN)
+        {
+            assert(!comp->optLocalAssertionProp);
+            assert(objVN != ValueNumStore::NoVN);
+            assert(comp->vnStore->IsVNTypeHandle(typeVN));
+            assert(varTypeIsGC(comp->vnStore->TypeOfVN(objVN)));
+
+            AssertionDsc assertion   = {};
+            assertion.op1.kind       = O1K_EXACT_TYPE;
+            assertion.op1.vn         = objVN;
+            assertion.op2.kind       = O2K_CONST_INT;
+            assertion.op2.u1.iconVal = comp->vnStore->CoercedConstantValue<ssize_t>(typeVN);
+            assertion.op2.vn         = typeVN;
+            assertion.op2.SetIconFlag(GTF_ICON_CLASS_HDL);
+            assertion.assertionKind = OAK_EQUAL;
+            return assertion;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateInBoundsAssertion: Create an assertion that the given index is
+        //    between 0 and the given lenVN, or in other words: "(uint)i < (uint)length)"
+        //
+        // Arguments:
+        //    comp   - the compiler object
+        //    idxVN  - the value number of the index
+        //    lenVN  - the value number of the length
+        //
+        // Return Value:
+        //    An AssertionDsc that represents the assertion that the index is in bounds
+        //
+        static AssertionDsc CreateInBoundsAssertion(const Compiler* comp, ValueNum idxVN, ValueNum lenVN)
+        {
+            assert(!comp->optLocalAssertionProp);
+            assert(idxVN != ValueNumStore::NoVN);
+            assert(lenVN != ValueNumStore::NoVN);
+
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = OAK_NO_THROW;
+            dsc.op1.kind      = O1K_ARR_BND;
+            dsc.op1.bnd.vnIdx = idxVN;
+            dsc.op1.bnd.vnLen = lenVN;
+            return dsc;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateConstantBoundAssertion: Create an assertion that the given relop
+        //    represents "i relop CNS" and evaluates to true.
+        //
+        // Arguments:
+        //    comp    - the compiler object
+        //    relopVN - the value number of the relop
+        //
+        // Return Value:
+        //    An AssertionDsc that represents "i relop CNS" that evaluates to true.
+        //
+        static AssertionDsc CreateConstantBoundAssertion(const Compiler* comp, ValueNum relopVN)
+        {
+            assert(!comp->optLocalAssertionProp);
+            assert(relopVN != ValueNumStore::NoVN);
+
+            bool isUnsignedRelop;
+            bool isRelop = comp->vnStore->IsVNRelop(relopVN, &isUnsignedRelop);
+            assert(isRelop);
+
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = OAK_NOT_EQUAL; // means relop evaluates to true (relop != 0)
+            dsc.op1.kind       = isUnsignedRelop ? O1K_CONSTANT_LOOP_BND_UN : O1K_CONSTANT_LOOP_BND;
+            dsc.op1.vn         = relopVN;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
+            dsc.op2.u1.iconVal = 0;
+            return dsc;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateSubrangeAssertion: Create an assertion for the given local
+        //    that its value is in the given range.
+        //
+        // Arguments:
+        //    comp  - the compiler object
+        //    lcl   - the local to create the assertion for
+        //    range - the asserted range
+        //
+        // Return Value:
+        //    An AssertionDsc representing "lcl's value is in range".
+        //
+        static AssertionDsc CreateSubrangeAssertion(const Compiler* comp, unsigned lcl, IntegralRange range)
+        {
+            assert(comp->optLocalAssertionProp);
+            assert(lcl != BAD_VAR_NUM);
+
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = OAK_SUBRANGE;
+            dsc.op1.kind      = O1K_LCLVAR;
+            dsc.op1.lclNum    = lcl;
+            dsc.op2.kind      = O2K_SUBRANGE;
+            dsc.op2.u2        = range;
+            return dsc;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateLocalCopyAssertion: Create an assertion for the given VN
+        //    that its value is in the given range.
+        //
+        // Arguments:
+        //    comp  - the compiler object
+        //    lcl1 - the first local to create the assertion for
+        //    lcl2 - the second local to create the assertion for
+        //    equals - true if the assertion is for equality, false if it is for inequality
+        //
+        // Return Value:
+        //    An AssertionDsc that represents "X == Y" or "X != Y" for two locals.
+        //
+        static AssertionDsc CreateLocalCopyAssertion(const Compiler* comp, unsigned lcl1, unsigned lcl2, bool equals)
+        {
+            assert(comp->optLocalAssertionProp);
+            assert(lcl1 != BAD_VAR_NUM);
+            assert(lcl2 != BAD_VAR_NUM);
+
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
+            dsc.op1.kind      = O1K_LCLVAR;
+            dsc.op1.lclNum    = lcl1;
+            dsc.op2.kind      = O2K_LCLVAR_COPY;
+            dsc.op2.lclNum    = lcl2;
+            return dsc;
+        }
+
+        bool CanBeReversed()
+        {
+            return (assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL);
+        }
+        void Reverse()
+        {
+            assert(CanBeReversed());
+            assertionKind = (assertionKind == OAK_EQUAL) ? OAK_NOT_EQUAL : OAK_EQUAL;
+        }
         bool IsCheckedBoundArithBound()
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_OPER_BND);
@@ -7906,21 +8093,32 @@ public:
             {
                 return false;
             }
-            else if (op1.kind == O1K_ARR_BND)
+
+            switch (op1.kind)
             {
-                assert(vnBased);
-                return (op1.bnd.vnIdx == that->op1.bnd.vnIdx) && (op1.bnd.vnLen == that->op1.bnd.vnLen);
+                case O1K_LCLVAR:
+                    return vnBased ? (op1.vn == that->op1.vn) : (GetOp1LclNum() == that->GetOp1LclNum());
+
+                case O1K_ARR_BND:
+                    assert(vnBased);
+                    return (op1.bnd.vnIdx == that->op1.bnd.vnIdx) && (op1.bnd.vnLen == that->op1.bnd.vnLen);
+
+                case O1K_VN:
+                case O1K_BOUND_OPER_BND:
+                case O1K_BOUND_LOOP_BND:
+                case O1K_CONSTANT_LOOP_BND:
+                case O1K_CONSTANT_LOOP_BND_UN:
+                case O1K_EXACT_TYPE:
+                case O1K_SUBTYPE:
+                    assert(vnBased);
+                    return op1.vn == that->op1.vn;
+
+                default:
+                    assert(!"Unexpected value for op1.kind in AssertionDsc.");
+                    break;
             }
-            else if (op1.kind == O1K_VN)
-            {
-                assert(vnBased);
-                return (op1.vn == that->op1.vn);
-            }
-            else
-            {
-                return ((vnBased && (op1.vn == that->op1.vn)) ||
-                        (!vnBased && (op1.lcl.lclNum == that->op1.lcl.lclNum)));
-            }
+
+            return false;
         }
 
         bool HasSameOp2(AssertionDsc* that, bool vnBased)
@@ -7935,9 +8133,6 @@ public:
                 case O2K_CONST_INT:
                     return ((op2.u1.iconVal == that->op2.u1.iconVal) && (op2.GetIconFlag() == that->op2.GetIconFlag()));
 
-                case O2K_CONST_LONG:
-                    return (op2.lconVal == that->op2.lconVal);
-
                 case O2K_CONST_DOUBLE:
                     // exact match because of positive and negative zero.
                     return (memcmp(&op2.dconVal, &that->op2.dconVal, sizeof(double)) == 0);
@@ -7946,8 +8141,8 @@ public:
                     return true;
 
                 case O2K_LCLVAR_COPY:
-                    return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
-                           (!vnBased || (op2.lcl.ssaNum == that->op2.lcl.ssaNum));
+                    assert(!vnBased);
+                    return GetOp2LclNum() == that->GetOp2LclNum();
 
                 case O2K_SUBRANGE:
                     return op2.u2.Equals(that->op2.u2);
@@ -8049,7 +8244,6 @@ public:
 
     // Assertion Gen functions.
     void           optAssertionGen(GenTree* tree);
-    AssertionIndex optAssertionGenCast(GenTreeCast* cast);
     AssertionInfo  optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo  optAssertionGenJtrue(GenTree* tree);
     AssertionIndex optCreateJtrueAssertions(GenTree* op1, GenTree* op2, optAssertionKind assertionKind);

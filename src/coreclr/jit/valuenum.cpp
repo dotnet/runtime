@@ -6878,7 +6878,7 @@ const char* ValueNumStore::VNRelationString(VN_RELATION_KIND vrk)
 }
 #endif
 
-bool ValueNumStore::IsVNRelop(ValueNum vn)
+bool ValueNumStore::IsVNRelop(ValueNum vn, bool* isUnsigned)
 {
     VNFuncApp funcAttr;
     if (!GetVNFunc(vn, &funcAttr))
@@ -6901,16 +6901,25 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
             case VNF_LE_UN:
             case VNF_GE_UN:
             case VNF_GT_UN:
+                if (isUnsigned != nullptr)
+                {
+                    *isUnsigned = true;
+                }
                 return true;
             default:
                 return false;
         }
     }
-    else
+
+    if (GenTree::OperIsCompare((genTreeOps)func))
     {
-        const genTreeOps op = (genTreeOps)func;
-        return GenTree::OperIsCompare(op);
+        if (isUnsigned != nullptr)
+        {
+            *isUnsigned = false;
+        }
+        return true;
     }
+    return false;
 }
 
 bool ValueNumStore::IsVNConstantBound(ValueNum vn)

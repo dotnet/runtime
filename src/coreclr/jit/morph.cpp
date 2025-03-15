@@ -11718,13 +11718,14 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
             if (BitVecOps::IsMember(apTraits, killed, index - 1))
             {
                 AssertionDsc* curAssertion = optGetAssertion(index);
-                noway_assert((curAssertion->op1.lcl.lclNum == lclNum) ||
-                             ((curAssertion->op2.kind == O2K_LCLVAR_COPY) && (curAssertion->op2.lcl.lclNum == lclNum)));
+                noway_assert((curAssertion->GetOp1LclNum() == lclNum) ||
+                             ((curAssertion->op2.kind == O2K_LCLVAR_COPY) && (curAssertion->GetOp2LclNum() == lclNum)));
                 if (verbose)
                 {
                     printf("\nThe store ");
                     printTreeID(tree);
-                    printf(" using V%02u removes: ", curAssertion->op1.lcl.lclNum);
+                    assert(optLocalAssertionProp);
+                    printf(" using V%02u removes: ", curAssertion->GetOp1LclNum());
                     optPrintAssertion(curAssertion, index);
                 }
             }
@@ -11840,20 +11841,19 @@ void Compiler::fgAssertionGen(GenTree* tree)
         if ((assertion->assertionKind == OAK_EQUAL) && (assertion->op1.kind == O1K_LCLVAR) &&
             (assertion->op2.kind == O2K_CONST_INT))
         {
-            LclVarDsc* const lclDsc = lvaGetDesc(assertion->op1.lcl.lclNum);
+            assert(optLocalAssertionProp);
+            LclVarDsc* const lclDsc = lvaGetDesc(assertion->GetOp1LclNum());
 
             if (varTypeIsIntegral(lclDsc->TypeGet()))
             {
                 ssize_t iconVal = assertion->op2.u1.iconVal;
                 if ((iconVal == 0) || (iconVal == 1))
                 {
-                    AssertionDsc extraAssertion   = {OAK_SUBRANGE};
-                    extraAssertion.op1.kind       = O1K_LCLVAR;
-                    extraAssertion.op1.lcl.lclNum = assertion->op1.lcl.lclNum;
-                    extraAssertion.op2.kind       = O2K_SUBRANGE;
-                    extraAssertion.op2.u2 = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
+                    unsigned      lcl   = assertion->GetOp1LclNum();
+                    IntegralRange range = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
 
-                    AssertionIndex extraIndex = optFinalizeCreatingAssertion(&extraAssertion);
+                    AssertionDsc   extraAssertion = AssertionDsc::CreateSubrangeAssertion(this, lcl, range);
+                    AssertionIndex extraIndex     = optFinalizeCreatingAssertion(&extraAssertion);
                     if (extraIndex != NO_ASSERTION_INDEX)
                     {
                         unsigned const bvIndex = extraIndex - 1;
