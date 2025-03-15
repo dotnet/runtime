@@ -733,26 +733,6 @@ void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
 
 #ifndef DACCESS_COMPILE
 
-void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    int n = 0;
-
-    m_rgCode[n++] = 0x4684; // mov r12, r0
-    m_rgCode[n++] = 0x4608; // mov r0, r1
-    m_rgCode[n++] = 0xea4f; // mov r1, r12
-    m_rgCode[n++] = 0x010c;
-    m_rgCode[n++] = 0xf8df; // ldr pc, [pc, #0]
-    m_rgCode[n++] = 0xf000;
-
-    _ASSERTE(n == ARRAY_SIZE(m_rgCode));
-
-    m_pTarget = GetPreStubEntryPoint();
-    m_pMethodDesc = (TADDR)pMD;
-}
-
-
 /*
 Rough pseudo-code of interface dispatching:
 

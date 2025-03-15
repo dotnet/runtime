@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly struct PrecodeStubs_1 : IPrecodeStubs
+internal readonly struct PrecodeStubs_2 : IPrecodeStubs
 {
     private readonly Target _target;
     private readonly CodePointerFlags _codePointerFlags;
@@ -42,8 +42,8 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
             TargetPointer stubPrecodeDataAddress = InstrPointer + precodeMachineDescriptor.StubCodePageSize;
-            Data.StubPrecodeData_1 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_1>(stubPrecodeDataAddress);
-            return stubPrecodeData.MethodDesc;
+            Data.StubPrecodeData_2 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
+            return stubPrecodeData.SecretParam;
         }
     }
 
@@ -70,7 +70,10 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
 
         internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
-            throw new NotImplementedException(); // TODO(cdac)
+            TargetPointer stubPrecodeDataAddress = InstrPointer + precodeMachineDescriptor.StubCodePageSize;
+            Data.StubPrecodeData_2 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
+            Data.ThisPtrRetBufPrecodeData thisPtrRetBufPrecodeData = target.ProcessedData.GetOrAdd<Data.ThisPtrRetBufPrecodeData>(stubPrecodeData.SecretParam);
+            return thisPtrRetBufPrecodeData.MethodDesc;
         }
     }
 
@@ -94,10 +97,10 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         }
     }
 
-    private Data.StubPrecodeData_1 GetStubPrecodeData(TargetPointer stubInstrPointer)
+    private Data.StubPrecodeData_2 GetStubPrecodeData(TargetPointer stubInstrPointer)
     {
         TargetPointer stubPrecodeDataAddress = stubInstrPointer + MachineDescriptor.StubCodePageSize;
-        return _target.ProcessedData.GetOrAdd<Data.StubPrecodeData_1>(stubPrecodeDataAddress);
+        return _target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
     }
 
     private KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrAddress)
@@ -112,7 +115,7 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         if (approxPrecodeType == MachineDescriptor.StubPrecodeType)
         {
             // get the actual type from the StubPrecodeData
-            Data.StubPrecodeData_1 stubPrecodeData = GetStubPrecodeData(instrAddress);
+            Data.StubPrecodeData_2 stubPrecodeData = GetStubPrecodeData(instrAddress);
             exactPrecodeType = stubPrecodeData.Type;
         }
         else
@@ -178,7 +181,7 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         }
         throw new InvalidOperationException($"Invalid precode type 0x{instrPointer:x16}");
     }
-    public PrecodeStubs_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor, CodePointerFlags codePointerFlags)
+    public PrecodeStubs_2(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor, CodePointerFlags codePointerFlags)
     {
         _target = target;
         MachineDescriptor = precodeMachineDescriptor;
