@@ -244,11 +244,16 @@ GTNODE(JCC              , GenTreeCC          ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(SETCC            , GenTreeCC          ,0,0,GTK_LEAF|DBK_NOTHIR)
 // Variant of SELECT that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECTCC         , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
-#ifdef TARGET_ARM64
-// The arm64 ccmp instruction. If the specified condition is true, compares two
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+// The arm64 and x86 ccmp instruction. If the specified condition is true, compares two
 // operands and sets the condition flags according to the result. Otherwise
 // sets the condition flags to the specified immediate value.
 GTNODE(CCMP             , GenTreeCCMP        ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+#endif
+
+
+#ifdef TARGET_ARM64
 // Maps to arm64 csinc/cinc instruction. Computes result = condition ? op1 : op2 + 1.
 // If op2 is null, computes result = condition ? op1 + 1 : op1.
 GTNODE(SELECT_INC       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
