@@ -166,7 +166,7 @@ Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../
 - `dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
 - `dotnet.native.js` - is posix emulation layer provided by the [Emscripten](https://github.com/emscripten-core/emscripten) project
 - `dotnet.runtime.js` - is integration of the dotnet with the browser
-- `blazor.boot.json` - contains list of all other assets and their integrity hash and also various configuration flags.
+- `dotnet.boot.js` - contains list of all other assets and their integrity hash and also various configuration flags.
 - `dotnet.native.wasm` - is the compiled binary of the dotnet (Mono) runtime.
 - `System.Private.CoreLib.*` - is NET assembly with the core implementation of dotnet runtime and class library
 - `*.wasm` - are .NET assemblies stored in `WebCIL` format (for better compatibility with firewalls and virus scanners).
@@ -202,7 +202,7 @@ Adding too many files into prefetch could be counterproductive.
 Please benchmark your startup performance on real target devices and with realistic network conditions.
 
 ```html
-<link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="use-credentials">
+<link rel="preload" href="./_framework/dotnet.boot.js" as="fetch" crossorigin="use-credentials">
 <link rel="prefetch" href="./_framework/dotnet.native.js" as="fetch" crossorigin="anonymous">
 <link rel="prefetch" href="./_framework/dotnet.runtime.js" as="fetch" crossorigin="anonymous">
 ```
