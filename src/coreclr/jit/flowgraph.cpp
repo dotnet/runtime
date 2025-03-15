@@ -869,7 +869,16 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return !addr->IsBoxedValue();
 
         case GT_LCL_VAR:
-            return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
+        {
+            unsigned lclNum = addr->AsLclVar()->GetLclNum();
+            if (info.compRetBuffArg == lclNum)
+            {
+                // RetBuf is known to be always a valid pointer to a stack location
+                assert(lclNum != BAD_VAR_NUM);
+                return false;
+            }
+            return !lvaIsImplicitByRefLocal(lclNum);
+        }
 
         case GT_COMMA:
             return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
