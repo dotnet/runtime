@@ -15,10 +15,6 @@
 
 #ifndef DACCESS_COMPILE
 
-#if defined(TARGET_ANDROID)
-#include <android/log.h>
-#endif // defined(TARGET_ANDROID)
-
 thread_local size_t t_ThreadType;
 
 void ClrFlsSetThreadType(TlsThreadTypeFlag flag)
@@ -124,8 +120,7 @@ LPVOID CQuickHeap::Alloc(UINT sz)
 // Output functions that avoid the crt's.
 //----------------------------------------------------------------------------
 
-static
-void NPrintToHandleA(HANDLE Handle, const char *pszString, size_t BytesToWrite)
+void PrintToStdErrA(const char *pszString)
 {
     CONTRACTL
     {
@@ -135,58 +130,7 @@ void NPrintToHandleA(HANDLE Handle, const char *pszString, size_t BytesToWrite)
     }
     CONTRACTL_END
 
-    if (Handle == INVALID_HANDLE_VALUE || Handle == NULL)
-        return;
-
-    BOOL success;
-    DWORD   dwBytesWritten;
-    const size_t maxWriteFileSize = 32767; // This is somewhat arbitrary limit, but 2**16-1 doesn't work
-
-    while (BytesToWrite > 0) {
-        DWORD dwChunkToWrite = (DWORD) min(BytesToWrite, maxWriteFileSize);
-
-        // Try to write to handle.  If this is not a CUI app, then this is probably
-        // not going to work unless the dev took special pains to set their own console
-        // handle during CreateProcess.  So try it, but don't yell if it doesn't work in
-        // that case.  Also, if we redirect stdout to a pipe then the pipe breaks (ie, we
-        // write to something like the UNIX head command), don't complain.
-        success = WriteFile(Handle, pszString, dwChunkToWrite, &dwBytesWritten, NULL);
-        if (!success)
-        {
-#if defined(_DEBUG)
-            // This can happen if stdout is a closed pipe.  This might not help
-            // much, but we'll have half a chance of seeing this.
-            OutputDebugStringA("CLR: Writing out an unhandled exception to stdout failed!\n");
-            OutputDebugStringA(pszString);
-#endif //_DEBUG
-
-            break;
-        }
-        else {
-            _ASSERTE(dwBytesWritten == dwChunkToWrite);
-        }
-        pszString = pszString + dwChunkToWrite;
-        BytesToWrite -= dwChunkToWrite;
-    }
-
-}
-
-void PrintToStdErrA(const char *pszString) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-#if defined(TARGET_ANDROID)
-    __android_log_write(ANDROID_LOG_FATAL, MAIN_CLR_MODULE_NAME_A, pszString);
-#else
-    HANDLE Handle = GetStdHandle(STD_ERROR_HANDLE);
-    size_t len = strlen(pszString);
-    NPrintToHandleA(Handle, pszString, len);
-#endif // defined(TARGET_ANDROID)
+    minipal_log_write_error(pszString);
 }
 
 void PrintToStdErrW(const WCHAR *pwzString)

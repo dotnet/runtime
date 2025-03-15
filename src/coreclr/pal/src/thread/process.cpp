@@ -2452,6 +2452,16 @@ Parameters:
 
 (no return value)
 --*/
+#ifdef HOST_ANDROID
+#include <minipal/log.h>
+VOID
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+{
+    // TODO: Dump all managed threads callstacks into logcat and/or file?
+    // TODO: Dump stress log into logcat and/or file when enabled?
+    minipal_log_write_fatal("Aborting process.\n");
+}
+#else
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
 {
@@ -2520,6 +2530,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
         free(signalAddressArg);
     }
 }
+#endif
 
 /*++
 Function:

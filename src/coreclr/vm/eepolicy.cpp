@@ -48,7 +48,7 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
             {
                 _ASSERTE(!"Bad Exit value");
                 FAULT_NOT_FATAL();      // if we OOM we can simply give up
-                fprintf(stderr, "Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
+                minipal_log_print_error("Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
                 DebugBreak();
             }
         }
@@ -233,8 +233,9 @@ class CallStackLogger
 
         MethodDesc* pMD = m_frames[index];
         TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
+        str.Append(W("\n"));
+
         PrintToStdErrW(str.GetUnicode());
-        PrintToStdErrA("\n");
     }
 
 public:
@@ -265,6 +266,7 @@ public:
             repeatStr.AppendPrintf("Repeated %d times:\n", m_largestCommonStartRepeat);
 
             PrintToStdErrW(repeatStr.GetUnicode());
+
             PrintToStdErrA("--------------------------------\n");
             for (int i = 0; i < m_largestCommonStartLength; i++)
             {
@@ -371,34 +373,37 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
 
     EX_TRY
     {
+        SString message;
         if (exitCode == (UINT)COR_E_FAILFAST)
         {
-            PrintToStdErrA("Process terminated. ");
+            message.Append(W("Process terminated. "));
         }
         else
         {
-            PrintToStdErrA("Fatal error. ");
+            message.Append(W("Fatal error. "));
         }
 
         if (errorSource != NULL)
         {
-            PrintToStdErrW(errorSource);
-            PrintToStdErrA("\n");
+            message.Append(errorSource);
+            message.Append(W("\n"));
         }
 
         if (pszMessage != NULL)
         {
-            PrintToStdErrW(pszMessage);
+            message.Append(pszMessage);
         }
         else
         {
             // If no message was passed in, generate it from the exitCode
             SString exitCodeMessage;
             GetHRMsg(exitCode, exitCodeMessage);
-            PrintToStdErrW((LPCWSTR)exitCodeMessage);
+            message.Append(exitCodeMessage);
         }
 
-        PrintToStdErrA("\n");
+        message.Append(W("\n"));
+
+        PrintToStdErrW(message.GetUnicode());
 
         Thread* pThread = GetThreadNULLOk();
         if (pThread && errorSource == NULL)
