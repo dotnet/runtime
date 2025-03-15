@@ -1712,10 +1712,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
 
     switch (assertion->op1.kind)
     {
-        case O1K_LCLVAR:
-            assert(optLocalAssertionProp ||
-                   lvaGetDesc(assertion->op1.lcl.lclNum)->lvPerSsaData.IsValidSsaNum(assertion->op1.lcl.ssaNum));
-            break;
         case O1K_ARR_BND:
             // It would be good to check that bnd.vnIdx and bnd.vnLen are valid value numbers.
             assert(!optLocalAssertionProp);
