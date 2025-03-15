@@ -12333,7 +12333,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
 #if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
-            printf(" endNstLvl=%d", tree->AsVal()->gtVal1);
+            printf(" ehID=%d", tree->AsVal()->gtVal1);
             break;
 #endif // FEATURE_EH_WINDOWS_X86
 
