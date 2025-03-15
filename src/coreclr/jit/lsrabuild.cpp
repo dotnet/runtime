@@ -245,7 +245,7 @@ RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* t
 // leaving the registerAssignment as-is on the def, so that if we find that we need to spill anyway
 // we can use the fixed-reg on the def.
 //
-void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition)
+void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition, bool update)
 {
     assert(!interval->isLocalVar);
 
@@ -280,6 +280,10 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
 #endif
 
             LsraLocation nextRegLoc = getNextFixedRef(defReg, defRefPosition->getRegisterType());
+            if (update)
+            {
+                nextRegLoc = getNextFixedRefLazyUpdate(defReg, defRefPosition->getRegisterType());
+            }
             if (nextRegLoc > useRefPosition->getRefEndLocation())
             {
                 // This is case #1.  Use the defRegAssignment
