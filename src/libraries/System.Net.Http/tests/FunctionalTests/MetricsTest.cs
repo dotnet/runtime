@@ -1046,10 +1046,12 @@ namespace System.Net.Http.Functional.Tests
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
                 using HttpResponseMessage response = await SendAsync(client, request);
 
+
                 Assert.Equal(1, requestDurationRecorder.MeasurementCount);
-                Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
+                if (SocketsHttpHandler.IsSupported) Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
                 client.Dispose(); // terminate the connection
-                Assert.Equal(1, connectionDurationRecorder.MeasurementCount);
+
+                if (SocketsHttpHandler.IsSupported) Assert.Equal(1, connectionDurationRecorder.MeasurementCount);
             }, async server =>
             {
                 await server.AcceptConnectionSendResponseAndCloseAsync();
@@ -1057,7 +1059,6 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/93754", TestPlatforms.Browser)]
     public class HttpMetricsTest_Http11_Async : HttpMetricsTest_Http11
     {
         public HttpMetricsTest_Http11_Async(ITestOutputHelper output) : base(output)

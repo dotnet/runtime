@@ -244,8 +244,8 @@ export type RuntimeHelpers = {
     dumpThreads: () => void,
     mono_wasm_print_thread_dump: () => void,
     utf8ToString: (ptr: CharPtr) => string,
-    mono_background_exec: () =>void;
-    mono_wasm_ds_exec: () =>void;
+    mono_background_exec: () => void;
+    mono_wasm_ds_exec: () => void;
 }
 
 export type DiagnosticHelpers = {

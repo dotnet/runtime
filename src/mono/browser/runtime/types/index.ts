@@ -593,6 +593,26 @@ export type APIType = {
      * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
      */
     localHeapViewF64: () => Float64Array;
+    /**
+     * creates diagnostic trace file.
+     */
+    collectCpuSamples: (durationMs:number, skipDownload?:boolean) => Promise<Uint8Array[]>;
+    /**
+     * creates diagnostic trace file.
+     * It could be opened in PerfView as is.
+     * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
+     */
+    collectPerfCounters: (durationMs:number, providers?:string[], intervalSec?:number, skipDownload?:boolean) => Promise<Uint8Array[]>;
+    /**
+     * creates diagnostic trace file.
+     * It could be opened in PerfView as is.
+     * It could be converted for Visual Studio using `dotnet-gcdump convert`.
+     */
+    collectGcDump: (skipDownload?:boolean) => Promise<Uint8Array[]>;
+    /**
+     * changes DOTNET_DiagnosticPorts and makes a new connection.
+     */
+    connectDSRouter (url: string): void
 }
 
 export type RuntimeAPI = {
