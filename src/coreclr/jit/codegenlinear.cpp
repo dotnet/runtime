@@ -2484,8 +2484,8 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         }
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
-        // the upper 32bits be sign-extended to 64 bits.
+        // For LoongArch64's ISA which is a RISC ISA which is different from any other existing ones,
+        // even the instructions of 32bits operation need the upper 32bits be sign-extended to 64 bits.
         m_extendKind = SIGN_EXTEND_INT;
 #else
         m_extendKind = COPY;
