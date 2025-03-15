@@ -84,6 +84,10 @@ DEFINE_DACVAR(PTR_EEJitManager, ExecutionManager__m_pEEJitManager, ExecutionMana
 #ifdef FEATURE_READYTORUN
 DEFINE_DACVAR(PTR_ReadyToRunJitManager, ExecutionManager__m_pReadyToRunJitManager, ExecutionManager::m_pReadyToRunJitManager)
 #endif
+#ifdef FEATURE_INTERPRETER
+DEFINE_DACVAR(PTR_InterpreterJitManager, ExecutionManager__m_pInterpreterJitManager, ExecutionManager::m_pInterpreterJitManager)
+DEFINE_DACVAR(PTR_InterpreterCodeManager, ExecutionManager__m_pInterpreterCodeMan, ExecutionManager::m_pInterpreterCodeMan)
+#endif
 
 DEFINE_DACVAR_NO_DUMP(VMHELPDEF *, dac__hlpFuncTable, ::hlpFuncTable)
 DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)

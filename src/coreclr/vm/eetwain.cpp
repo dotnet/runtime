@@ -872,86 +872,6 @@ bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 }
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
-#if defined(TARGET_AMD64) && defined(_DEBUG)
-
-struct FindEndOfLastInterruptibleRegionState
-{
-    unsigned curOffset;
-    unsigned endOffset;
-    unsigned lastRangeOffset;
-};
-
-bool FindEndOfLastInterruptibleRegionCB (
-        UINT32 startOffset,
-        UINT32 stopOffset,
-        LPVOID hCallback)
-{
-    FindEndOfLastInterruptibleRegionState *pState = (FindEndOfLastInterruptibleRegionState*)hCallback;
-
-    //
-    // If the current range doesn't overlap the given range, keep searching.
-    //
-    if (   startOffset >= pState->endOffset
-        || stopOffset < pState->curOffset)
-    {
-        return false;
-    }
-
-    //
-    // If the range overlaps the end, then the last point is the end.
-    //
-    if (   stopOffset > pState->endOffset
-        /*&& startOffset < pState->endOffset*/)
-    {
-        // The ranges should be sorted in increasing order.
-        CONSISTENCY_CHECK(startOffset >= pState->lastRangeOffset);
-
-        pState->lastRangeOffset = pState->endOffset;
-        return true;
-    }
-
-    //
-    // See if the end of this range is the closet to the end that we've found
-    // so far.
-    //
-    if (stopOffset > pState->lastRangeOffset)
-        pState->lastRangeOffset = stopOffset;
-
-    return false;
-}
-
-/*
-    Locates the end of the last interruptible region in the given code range.
-    Returns 0 if the entire range is uninterruptible.  Returns the end point
-    if the entire range is interruptible.
-*/
-unsigned EECodeManager::FindEndOfLastInterruptibleRegion(unsigned curOffset,
-                                                         unsigned endOffset,
-                                                         GCInfoToken gcInfoToken)
-{
-#ifndef DACCESS_COMPILE
-    GcInfoDecoder gcInfoDecoder(
-            gcInfoToken,
-            DECODE_FOR_RANGES_CALLBACK
-            );
-
-    FindEndOfLastInterruptibleRegionState state;
-    state.curOffset = curOffset;
-    state.endOffset = endOffset;
-    state.lastRangeOffset = 0;
-
-    gcInfoDecoder.EnumerateInterruptibleRanges(&FindEndOfLastInterruptibleRegionCB, &state);
-
-    return state.lastRangeOffset;
-#else
-    DacNotImpl();
-    return 0;
-#endif // #ifndef DACCESS_COMPILE
-}
-
-#endif // TARGET_AMD64 && _DEBUG
-
-
 #else // !USE_GC_INFO_DECODER
 
 /*****************************************************************************
@@ -2142,43 +2062,6 @@ const BYTE* EECodeManager::GetFinallyReturnAddr(PREGDISPLAY pReg)
     return *(const BYTE**)(size_t)(GetRegdisplaySP(pReg));
 }
 
-BOOL EECodeManager::IsInFilter(GCInfoToken gcInfoToken,
-                               unsigned offset,
-                               PCONTEXT pCtx,
-                               DWORD curNestLevel)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    /* Extract the necessary information from the info block header */
-
-    hdrInfo     info;
-
-    DecodeGCHdrInfo(gcInfoToken,
-                    offset,
-                    &info);
-
-    /* make sure that we have an ebp stack frame */
-
-    _ASSERTE(info.ebpFrame);
-    _ASSERTE(info.handlers); // <TODO> This will always be set. Remove it</TODO>
-
-    TADDR       baseSP;
-    DWORD       nestingLevel;
-
-    FrameType   frameType = GetHandlerFrameInfo(&info, pCtx->Ebp,
-                                                pCtx->Esp, (DWORD) IGNORE_VAL,
-                                                &baseSP, &nestingLevel);
-    _ASSERTE(frameType != FR_INVALID);
-
-//    _ASSERTE(nestingLevel == curNestLevel);
-
-    return frameType == FR_FILTER;
-}
-
-
 BOOL EECodeManager::LeaveFinally(GCInfoToken gcInfoToken,
                                 unsigned offset,
                                 PCONTEXT pCtx)
@@ -2394,3 +2277,60 @@ ULONG32 EECodeManager::GetStackParameterSize(EECodeInfo * pCodeInfo)
 #endif // TARGET_X86
 }
 
+#ifdef FEATURE_INTERPRETER
+
+bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
+                                              EECodeInfo     *pCodeInfo,
+                                              unsigned        flags,
+                                              CodeManState   *pState)
+{
+    // Interpreter-TODO: Implement this
+    return false;
+}
+
+bool InterpreterCodeManager::IsGcSafe(EECodeInfo *pCodeInfo,
+                                      DWORD       dwRelOffset)
+{
+    // Interpreter-TODO: Implement this
+    return true;
+}
+
+bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
+                                        EECodeInfo     *pCodeInfo,
+                                        unsigned        flags,
+                                        GCEnumCallback  pCallback,
+                                        LPVOID          hCallBack,
+                                        DWORD           relOffsetOverride)
+{
+    // Interpreter-TODO: Implement this
+    return false;
+}
+
+OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
+                                              EECodeInfo *    pCodeInfo)
+{
+    // Interpreter-TODO: Implement this
+    return NULL;
+}
+
+PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
+                                                 EECodeInfo *    pCodeInfo)
+{
+    // Interpreter-TODO: Implement this
+    return NULL;
+}
+
+GenericParamContextType InterpreterCodeManager::GetParamContextType(PREGDISPLAY     pContext,
+                                            EECodeInfo *    pCodeInfo)
+{
+    // Interpreter-TODO: Implement this
+    return GENERIC_PARAM_CONTEXT_NONE;
+}
+
+size_t InterpreterCodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
+{
+    // Interpreter-TODO: Implement this
+    return 0;
+}
+
+#endif // FEATURE_INTERPRETER

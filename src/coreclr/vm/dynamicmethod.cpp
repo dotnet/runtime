@@ -323,7 +323,7 @@ void DynamicMethodTable::LinkMethod(DynamicMethodDesc *pMethod)
 //
 // CodeHeap implementation
 //
-HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager *pJitManager)
+HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenManager *pJitManager)
 {
     CONTRACT (HeapList*)
     {
@@ -335,7 +335,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager 
     }
     CONTRACT_END;
 
-    NewHolder<HostCodeHeap> pCodeHeap(new HostCodeHeap(pJitManager));
+    NewHolder<HostCodeHeap> pCodeHeap(new HostCodeHeap(pJitManager, !pInfo->IsInterpreted()));
 
     HeapList *pHp = pCodeHeap->InitializeHeapList(pInfo);
     if (pHp == NULL)
@@ -353,7 +353,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager 
     RETURN pHp;
 }
 
-HostCodeHeap::HostCodeHeap(EEJitManager *pJitManager)
+HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
 {
     CONTRACTL
     {
@@ -369,6 +369,7 @@ HostCodeHeap::HostCodeHeap(EEJitManager *pJitManager)
     m_TotalBytesAvailable = 0;
     m_ApproximateLargestBlock = 0;
     m_AllocationCount = 0;
+    m_isExecutable = isExecutable;
     m_pHeapList = NULL;
     m_pJitManager = (PTR_EEJitManager)pJitManager;
     m_pFreeList = NULL;
@@ -439,19 +440,29 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     TrackAllocation *pTracker = NULL;
 
+#ifdef FEATURE_INTERPRETER
+    if (pInfo->IsInterpreted())
+    {
+        pHp->CLRPersonalityRoutine = NULL;
+    }
+    else
+#endif // FEATURE_INTERPRETER
+    {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-    pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
-    if (pTracker == NULL)
-    {
-        // This should only ever happen with fault injection
-        _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
-        delete pHp;
-        ThrowOutOfMemory();
-    }
+        pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
+        if (pTracker == NULL)
+        {
+            // This should only ever happen with fault injection
+            _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
+            delete pHp;
+            ThrowOutOfMemory();
+        }
 
-    pHp->CLRPersonalityRoutine = (BYTE *)(pTracker + 1);
+        pHp->CLRPersonalityRoutine = (BYTE *)(pTracker + 1);
+
 #endif
+    }
 
     pHp->hpNext = NULL;
     pHp->pHeap = (PTR_CodeHeap)this;
@@ -471,8 +482,11 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     pHp->reserveForJumpStubs = 0;
 
 #ifdef HOST_64BIT
-    ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
-    emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
+    if (pHp->CLRPersonalityRoutine != NULL)
+    {
+        ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
+        emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
+    }
 #endif
 
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(pHp->maxCodeHeapSize));
@@ -676,7 +690,11 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_INTERPRETER
+    _ASSERTE(header == sizeof(CodeHeader) || header == sizeof(InterpreterCodeHeader));
+#else
     _ASSERTE(header == sizeof(CodeHeader));
+#endif
     _ASSERTE(alignment <= HOST_CODEHEAP_SIZE_ALIGN);
 
     // The code allocator has to guarantee that there is only one entrypoint per nibble map entry.
@@ -685,6 +703,7 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
     // Assert the later fact here.
     _ASSERTE(HOST_CODEHEAP_SIZE_ALIGN >= BYTES_PER_BUCKET);
 
+    size_t codeHeaderSize = header;
     header += sizeof(TrackAllocation*);
 
     TrackAllocation* pTracker = AllocMemory_NoThrow(header, size, alignment, reserveForJumpStubs);
@@ -694,7 +713,7 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
     BYTE * pCode = ALIGN_UP((BYTE*)(pTracker + 1) + header, alignment);
 
     // Pointer to the TrackAllocation record is stored just before the code header
-    CodeHeader * pHdr = (CodeHeader *)pCode - 1;
+    void * pHdr = pCode - codeHeaderSize;
     ExecutableWriterHolder<TrackAllocation *> trackerWriterHolder((TrackAllocation **)(pHdr) - 1, sizeof(TrackAllocation *));
     *trackerWriterHolder.GetRW() = pTracker;
 
@@ -757,7 +776,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
 
         if (m_pLastAvailableCommittedAddr + sizeToCommit <= m_pBaseAddr + m_TotalBytesAvailable)
         {
-            if (NULL == ExecutableAllocator::Instance()->Commit(m_pLastAvailableCommittedAddr, sizeToCommit, true /* isExecutable */))
+            if (NULL == ExecutableAllocator::Instance()->Commit(m_pLastAvailableCommittedAddr, sizeToCommit, m_isExecutable))
             {
                 LOG((LF_BCL, LL_ERROR, "CodeHeap [0x%p] - VirtualAlloc failed\n", this));
                 return NULL;
