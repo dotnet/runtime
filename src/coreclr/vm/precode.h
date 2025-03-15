@@ -50,6 +50,11 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       0
 
+#elif defined(TARGET_WASM)
+
+#define SIZEOF_PRECODE_BASE         0
+#define OFFSETOF_PRECODE_TYPE       0
+
 #endif // TARGET_AMD64
 
 #ifndef DACCESS_COMPILE
@@ -71,6 +76,9 @@ struct InvalidPrecode
     static const int Type = 0xff;
 #elif defined(TARGET_RISCV64)
     static const int Type = 0xff;
+#elif defined(TARGET_WASM)
+    // unreachable instruction
+    static const int Type = 0;
 #endif
 };
 
@@ -118,6 +126,9 @@ struct StubPrecode
 #elif defined(TARGET_RISCV64)
     static const int Type = 0x17;
     static const SIZE_T CodeSize = 24;
+#elif defined(TARGET_WASM)
+    static const int Type = 0;
+    static const SIZE_T CodeSize = 0;
 #endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
@@ -311,6 +322,10 @@ struct FixupPrecode
     static const int Type = 0x97;
     static const SIZE_T CodeSize = 32;
     static const int FixupCodeOffset = 10;
+#elif defined(TARGET_WASM)
+    static const int Type = 2;
+    static const SIZE_T CodeSize = 0;
+    static const int FixupCodeOffset = 0;
 #endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
