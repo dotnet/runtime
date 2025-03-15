@@ -600,7 +600,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    Unsafe.As<byte, bool>(ref destPtr) = true;
+                    Unsafe.WriteUnaligned(ref destPtr, true);
                     ref byte dst = ref Unsafe.Add(ref destPtr, typeMT->NullableValueAddrOffset);
                     uint valueSize = typeMT->NullableValueSize;
                     ref byte src = ref RuntimeHelpers.GetRawData(obj);
@@ -620,7 +620,7 @@ namespace System.Runtime.CompilerServices
             ref byte nullableData = ref src.GetRawData();
 
             // If 'hasValue' is false, return null.
-            if (!Unsafe.As<byte, bool>(ref nullableData))
+            if (!Unsafe.ReadUnaligned<bool>(ref nullableData))
                 return null;
 
             // Allocate a new instance of the T in Nullable<T>.
