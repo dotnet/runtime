@@ -145,6 +145,78 @@ namespace System.Formats.Tar.Tests
         public void Verify_Checksum_SymbolicLink_LongLink_LongPath(TarEntryFormat format) =>
             Verify_Checksum_Internal(format, TarEntryType.SymbolicLink, longPath: true, longLink: true);
 
+        [Fact]
+        public void Verify_Size_RegularFile_Empty()
+        {
+            using MemoryStream archiveStream = new();
+            string entryName = "entry.txt";
+            using (TarWriter archive = new(archiveStream, TarEntryFormat.V7, leaveOpen: true))
+            {
+                V7TarEntry e = new(TarEntryType.V7RegularFile, entryName)
+                {
+                    DataStream = new MemoryStream(0)
+                };
+                archive.WriteEntry(e);
+            }
+
+            int sizeLocation = 100 + // Name
+                               8 +   // Mode
+                               8 +   // Uid
+                               8;    // Gid
+            int sizeLength = 12;
+
+            archiveStream.Position = 0;
+            byte[] actual = archiveStream.GetBuffer()[sizeLocation..(sizeLocation + sizeLength)];
+
+            byte[] expected = [0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0];
+            AssertExtensions.SequenceEqual(expected, actual);
+
+            archiveStream.Position = 0;
+            using TarReader reader = new(archiveStream);
+
+            TarEntry? actualEntry = reader.GetNextEntry();
+            Assert.NotNull(actualEntry);
+            Assert.Equal(0, actualEntry.Length);
+            Assert.Null(actualEntry.DataStream); // No stream created when size field's value is 0
+        }
+
+        [Fact]
+        public void Verify_Compatibility_RegularFile_EmptyFile_NoSizeStored()
+        {
+            // Filling archiveStream contents without depending on the Tar implementation.
+            // The contents of the archiveStream are equivalent to creating the archive using TarWriter with this code:
+
+            // // using MemoryStream archiveStream = new();
+            // // string entryName = "entry.txt";
+            // // using (TarWriter archive = new(archiveStream, TarEntryFormat.V7, leaveOpen: true))
+            // // {
+            // //     V7TarEntry e = new(TarEntryType.V7RegularFile, entryName)
+            // //     {
+            // //         DataStream = new MemoryStream(0)
+            // //     };
+            // //     archive.WriteEntry(e);
+            // // }
+            using MemoryStream archiveStream = new(Convert.FromBase64String("ZW50cnkudHh0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAwMDA2NDQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADE0NzMwMzQ0MjQwADA1MTM2AAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
+
+            int sizeLocation = 100 + // Name
+                               8 +   // Mode
+                               8 +   // Uid
+                               8;    // Gid
+
+            // Fill the size field with 12 zeros as we used to before the bug fix
+            byte[] replacement = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            archiveStream.Seek(sizeLocation, SeekOrigin.Begin);
+            archiveStream.Write(replacement);
+
+            archiveStream.Position = 0;
+            using TarReader reader = new(archiveStream);
+
+            TarEntry? actualEntry = reader.GetNextEntry(); // Should succeed to read the entry with a malformed size field value
+            Assert.NotNull(actualEntry);
+            Assert.Equal(0, actualEntry.Length); // Should succeed to detect the size field's value as zero
+            Assert.Null(actualEntry.DataStream); // No stream created when size field's value is 0
+        }
+
         private void Verify_Checksum_Internal(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink)
         {
             using MemoryStream archive = new MemoryStream();
@@ -350,21 +422,6 @@ namespace System.Formats.Tar.Tests
             // Pax BlockDevice: 655 + 1004 + 686 = 2345
             // Gnu BlockDevice: 623 + 1004 + 686 + 1142 = 3455
             return checksum;
-        }
-
-        [Fact]
-        void Verify_Size_RegularFile_Empty()
-        {
-            using MemoryStream emptyData = new(0);
-            using MemoryStream output = new();
-            using TarWriter archive = new(output, TarEntryFormat.Pax);
-            PaxTarEntry te = new(TarEntryType.RegularFile, "zero_size")
-            { DataStream = emptyData };
-            archive.WriteEntry(te);
-            var sizeBuffer = output.GetBuffer()[1148..(1148 + 12)];
-            // we expect ocal zeros
-            byte[] expected = [0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0];
-            Assert.True(sizeBuffer.SequenceEqual(expected));
         }
     }
 }
