@@ -81,7 +81,6 @@ trigger:
   paths:
     include:
     - '*'
-    - src/libraries/System.Private.CoreLib/*
     exclude:
     - '**.md'
     - .devcontainer/*
