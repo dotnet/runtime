@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -14,8 +15,30 @@ namespace BasicEventSourceTests
 {
     public class ActivityTracking : IDisposable
     {
+        public ActivityTracking()
+        {
+            // make sure ActivityTracker is enabled
+            // On CoreCLR, it's enabled via
+            //    FireAssemblyLoadStart -> ActivityTracker::Start -> AssemblyLoadContext.StartAssemblyLoad -> ActivityTracker.Instance.Enable()
+            // on Mono it could be enabled via
+            //    System.Threading.Tasks.TplEventSource followed by EventSource.SetCurrentThreadActivityId
+            // but it's too complex to do it in a portable way, so we just call it explicitly
+            ActivityTracker_Instance_Enable();
+        }
+
+        // ActivityTracker.Instance.Enable(); via reflection
+        private static bool ActivityTracker_Instance_Enable()
+        {
+            var type = typeof(EventSource).Assembly.GetType("System.Diagnostics.Tracing.ActivityTracker");
+            var prop = type.GetProperty("Instance", BindingFlags.Static | BindingFlags.Public);
+            var m = type.GetMethod("Enable");
+            var instance = prop.GetValue(null);
+            m.Invoke(instance, null);
+        }
+
         public void Dispose()
         {
+            // reset ActivityTracker state between tests
             EventSource.SetCurrentThreadActivityId(Guid.Empty);
         }
 
