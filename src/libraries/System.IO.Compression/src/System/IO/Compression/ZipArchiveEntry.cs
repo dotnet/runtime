@@ -491,7 +491,7 @@ namespace System.IO.Compression
             Debug.Assert(_fileComment.Length <= ushort.MaxValue);
 
             // decide if we need the Zip64 extra field:
-            Zip64ExtraField zip64ExtraField = default;
+            Zip64ExtraField zip64ExtraField = new();
             uint compressedSizeTruncated, uncompressedSizeTruncated, offsetOfLocalHeaderTruncated;
 
             bool zip64Needed = false;
@@ -908,7 +908,7 @@ namespace System.IO.Compression
             Debug.Assert(_storedEntryNameBytes.Length <= ushort.MaxValue);
 
             // decide if we need the Zip64 extra field:
-            Zip64ExtraField zip64ExtraField = default;
+            Zip64ExtraField zip64ExtraField = new();
             bool zip64Used = false;
             uint compressedSizeTruncated, uncompressedSizeTruncated;
 
