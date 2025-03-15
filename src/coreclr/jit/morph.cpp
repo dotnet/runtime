@@ -7864,6 +7864,8 @@ DONE_MORPHING_CHILDREN:
             {
                 tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp());
                 oper = tree->OperGet();
+                op1  = tree->gtGetOp1();
+                op2  = tree->gtGetOp2();
 
                 assert(op1 == tree->AsOp()->gtGetOp1());
                 assert(op2 == tree->AsOp()->gtGetOp2());
@@ -9160,6 +9162,18 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
             {
                 oper = (oper == GT_LE) ? GT_GE : GT_LT;
                 cmp->gtFlags &= ~GTF_UNSIGNED;
+            }
+            // LE_UN/GT_UN(expr, int.MaxValue) => EQ/NE(RSZ(expr, 32), 0).
+            else if ((op1->TypeIs(TYP_LONG) && (op2Value == UINT_MAX)))
+            {
+                oper = (oper == GT_GT) ? GT_NE : GT_EQ;
+                GenTree* icon32 = gtNewIconNode(32, TYP_INT);
+                icon32->SetMorphed(this);  
+
+                GenTreeOp* shiftNode = gtNewOperNode(GT_RSZ, TYP_LONG, op1, icon32);
+                shiftNode->SetMorphed(this); 
+                
+                cmp->gtOp1 = shiftNode;            
             }
         }
     }
