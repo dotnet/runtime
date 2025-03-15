@@ -16,7 +16,8 @@ namespace System.Xml.XmlDiff
         IgnoreChildOrder = 0x80,
         InfosetComparison = 0xB,     //sets IgnoreEmptyElement, IgnoreWhitespace and IgnoreAttributeOrder
         CDataAsText = 0x100,
-        NormalizeNewline = 0x200 // ignores newlines in text nodes only
+        NormalizeNewline = 0x200,   // ignores newlines in text nodes only
+        NormalizeSpaces = 0x400     // converts all forms of spaces to a normal space
     }
 
     public class XmlDiffAdvancedOptions
