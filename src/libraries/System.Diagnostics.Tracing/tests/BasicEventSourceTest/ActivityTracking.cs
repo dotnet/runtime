@@ -27,7 +27,7 @@ namespace BasicEventSourceTests
         }
 
         // ActivityTracker.Instance.Enable(); via reflection
-        private static bool ActivityTracker_Instance_Enable()
+        private static void ActivityTracker_Instance_Enable()
         {
             var type = typeof(EventSource).Assembly.GetType("System.Diagnostics.Tracing.ActivityTracker");
             var prop = type.GetProperty("Instance", BindingFlags.Static | BindingFlags.Public);
