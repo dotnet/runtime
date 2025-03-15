@@ -4328,7 +4328,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         ClassLoader::ValidateMethodsWithCovariantReturnTypes(this);
     }
 
-    if ((level == CLASS_LOADED) && 
+    if ((level == CLASS_LOADED) &&
         CORDisableJITOptimizations(this->GetModule()->GetDebuggerInfoBits()) &&
         !HasInstantiation() &&
         !GetModule()->GetAssembly()->IsLoading()) // Do not do this during the vtable fixup stage of C++/CLI assembly loading. See https://github.com/dotnet/runtime/issues/110365
@@ -8554,7 +8554,7 @@ int MethodTable::GetFieldAlignmentRequirement()
 {
     if (HasLayout())
     {
-        return GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+        return GetLayoutInfo()->GetAlignmentRequirement();
     }
     else if (GetClass()->HasCustomFieldAlignment())
     {
@@ -8578,7 +8578,7 @@ UINT32 MethodTable::GetNativeSize()
     CONTRACTL_END;
     if (IsBlittable())
     {
-        return GetClass()->GetLayoutInfo()->GetManagedSize();
+        return GetNumInstanceFieldBytes();
     }
     return GetNativeLayoutInfo()->GetSize();
 }
