@@ -2526,7 +2526,6 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         return false;
     }
 
-    // We might be able to compact blocks that always jump to the next block.
     if (bJump->JumpsToNext())
     {
         return false;
@@ -2537,7 +2536,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         return false;
     }
 
-    BasicBlock* bDest = bJump->GetTarget();
+    BasicBlock* const bDest = bJump->GetTarget();
 
     if (!bDest->KindIs(BBJ_COND))
     {
@@ -2556,12 +2555,11 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         return false;
     }
 
-    // do not jump into another try region
-    BasicBlock* bDestNormalTarget = bDest->GetFalseTarget();
-    if (bDestNormalTarget->hasTryIndex() && !BasicBlock::sameTryRegion(bJump, bDestNormalTarget))
-    {
-        return false;
-    }
+    // We should have already compacted 'bDest' into 'bJump', if it is possible.
+    assert(!fgCanCompactBlock(bJump));
+
+    BasicBlock* const trueTarget  = bDest->GetTrueTarget();
+    BasicBlock* const falseTarget = bDest->GetFalseTarget();
 
     // This function is only called in the frontend.
     assert(!bJump->IsLIR());
@@ -2587,10 +2585,10 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     bool     haveProfileWeights = false;
     weight_t weightJump         = bJump->bbWeight;
     weight_t weightDest         = bDest->bbWeight;
-    weight_t weightNext         = bJump->Next()->bbWeight;
+    weight_t weightNext         = trueTarget->bbWeight;
     bool     rareJump           = bJump->isRunRarely();
     bool     rareDest           = bDest->isRunRarely();
-    bool     rareNext           = bJump->Next()->isRunRarely();
+    bool     rareNext           = trueTarget->isRunRarely();
 
     // If we have profile data then we calculate the number of time
     // the loop will iterate into loopIterations
@@ -2601,7 +2599,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         //
         if (bJump->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
             bDest->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
-            bJump->Next()->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
+            trueTarget->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
         {
             haveProfileWeights = true;
 
@@ -2715,7 +2713,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     noway_assert(condTree->gtOper == GT_JTRUE);
 
     // Set condTree to the operand to the GT_JTRUE.
-    condTree = condTree->AsOp()->gtOp1;
+    condTree = condTree->gtGetOp1();
 
     // This condTree has to be a RelOp comparison.
     if (condTree->OperIsCompare() == false)
@@ -2767,12 +2765,11 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // because the comparison in 'bJump' is flipped.
     // Similarly, we will derive the true edge's likelihood from 'destFalseEdge'.
     //
-    BasicBlock* const bDestFalseTarget = bJump->Next();
-    FlowEdge* const   falseEdge        = fgAddRefPred(bDestFalseTarget, bJump, destTrueEdge);
+    FlowEdge* const falseEdge = fgAddRefPred(trueTarget, bJump, destTrueEdge);
 
     // bJump now jumps to bDest's normal jump target
     //
-    fgRedirectTargetEdge(bJump, bDestNormalTarget);
+    fgRedirectTargetEdge(bJump, falseTarget);
     bJump->GetTargetEdge()->setLikelihood(destFalseEdge->getLikelihood());
 
     bJump->SetCond(bJump->GetTargetEdge(), falseEdge);
@@ -2787,10 +2784,10 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
         // Propagate bJump's weight into its new successors
         //
-        bDestNormalTarget->setBBProfileWeight(bDestNormalTarget->computeIncomingWeight());
-        bDestFalseTarget->setBBProfileWeight(bDestFalseTarget->computeIncomingWeight());
+        trueTarget->setBBProfileWeight(trueTarget->computeIncomingWeight());
+        falseTarget->setBBProfileWeight(falseTarget->computeIncomingWeight());
 
-        if ((bDestNormalTarget->NumSucc() > 0) || (bDestFalseTarget->NumSucc() > 0))
+        if ((trueTarget->NumSucc() > 0) || (falseTarget->NumSucc() > 0))
         {
             JITDUMP("fgOptimizeBranch: New flow out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
                     bJump->bbNum, fgPgoConsistent ? "is now" : "was already");
@@ -2814,6 +2811,14 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         printf("\n");
     }
 #endif // DEBUG
+
+    // Removing flow from 'bJump' into 'bDest' may have made it possible to compact the latter.
+    BasicBlock* const uniquePred = bDest->GetUniquePred(this);
+    if ((uniquePred != nullptr) && fgCanCompactBlock(uniquePred))
+    {
+        JITDUMP(FMT_BB " can now be compacted into its remaining predecessor.\n", bDest->bbNum);
+        fgCompactBlock(uniquePred);
+    }
 
     return true;
 }
