@@ -169,7 +169,6 @@ namespace System.Text.Json.Serialization.Metadata
                         try
                         {
                             isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
-                            writer.Flush();
 
                             if (state.SuppressFlush)
                             {
@@ -179,6 +178,7 @@ namespace System.Text.Json.Serialization.Metadata
                             }
                             else
                             {
+                                writer.Flush();
                                 FlushResult result = await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
                                 if (result.IsCanceled || result.IsCompleted)
                                 {
@@ -230,6 +230,9 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 catch
                 {
+                    // Reset the writer in exception cases as we don't want the writer.Dispose() call to flush any pending bytes.
+                    writer.Reset();
+                    writer.Dispose();
                     // On exception, walk the WriteStack for any orphaned disposables and try to dispose them.
                     await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
                     throw;
