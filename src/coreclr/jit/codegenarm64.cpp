@@ -5147,6 +5147,23 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     }
 }
 
+//------------------------------------------------------------------------
+// genCompareImmAndJump: Generates code for a compare-and-branch between a register and
+//                       immediate value.
+//
+// The implementation tries to use cb(n)z/tbz wherever possible. Otherwise it will
+// fall back to a default cmp/b.cc sequence.
+//
+// Arguments:
+//    cond - The condition code to test (EQ/NE).
+//    reg  - The register to compare.
+//    compareImm - The immediate value to compare against.
+//    emitAttr - The size of the comparison.
+//    target - The branch target for when the check passes.
+//
+// Return Value:
+//    None
+//
 void CodeGen::genCompareImmAndJump(
     GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target)
 {
@@ -5159,12 +5176,11 @@ void CodeGen::genCompareImmAndJump(
         instruction ins = (cond == GenCondition::EQ) ? INS_cbz : INS_cbnz;
         GetEmitter()->emitIns_J_R(ins, size, target, reg);
     }
-    else if (isPow2(compareImm))
+    else if (isPow2((size_t)compareImm) && (cond == GenCondition::NE))
     {
-        // We can use tbz/tbnz
-        instruction ins = (cond == GenCondition::EQ) ? INS_tbz : INS_tbnz;
-        int         imm = genLog2((size_t)compareImm);
-        GetEmitter()->emitIns_J_R_I(ins, size, target, reg, imm);
+        // We can use tbz. (x != 2^n) <==> bit #n is not set in x
+        int imm = genLog2((size_t)compareImm);
+        GetEmitter()->emitIns_J_R_I(INS_tbz, size, target, reg, imm);
     }
     else
     {
