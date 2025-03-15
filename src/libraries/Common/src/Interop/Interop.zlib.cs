@@ -26,6 +26,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateInit2_")]
         internal static unsafe partial ZLibNative.ErrorCode InflateInit2_(ZLibNative.ZStream* stream, int windowBits);
 
+        [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateReset2_")]
+        internal static unsafe partial ZLibNative.ErrorCode InflateReset2_(ZLibNative.ZStream* stream, int windowBits);
+
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Inflate")]
         internal static unsafe partial ZLibNative.ErrorCode Inflate(ZLibNative.ZStream* stream, ZLibNative.FlushCode flush);
 
