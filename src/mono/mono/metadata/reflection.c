@@ -1967,6 +1967,41 @@ mono_identifier_unescape_info (MonoTypeNameParse *info)
 		g_list_foreach(info->nested, &unescape_each_nested_name, NULL);
 }
 
+/*
+ * Split a full type name into namespace and name parts.
+ * \p full_name will be mangled, so, make a copy before passing it to this function.
+ * The values written to \p name_space and \p name will by valid until the memory
+ * pointed to by \p full_name is valid.
+ * \param full_name the full type name
+ * \param name_space will be set to the namespace part of the type name
+ * \param name will be set to the name part of the type name
+ * \return 0 on failure, non-zero on success
+ */
+void
+mono_reflection_split_type_name (char *full_name, char** name_space, char** name)
+{
+	g_assert (full_name);
+	g_assert (name_space);
+	g_assert (name);
+
+	// Matches algorithm from ns::FindSep in src\coreclr\utilcode\namespaceutil.cpp
+	// This could result in the type name beginning with a '.' character.
+	char* ns_start = strrchr (full_name, '.');
+
+	if (ns_start > full_name && ns_start[-1] == '.') {
+		ns_start--;
+	}
+
+	if (ns_start) {
+		*name_space = full_name;
+		*ns_start = 0;
+		*name = ns_start + 1;
+	} else {
+		*name_space = (char *) "";
+		*name = full_name;
+	}
+}
+
 /**
  * mono_reflection_parse_type:
  */
@@ -2413,7 +2448,7 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 
 	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
-	result = mono_reflection_type_from_name_checked (name, alc, image, error);
+	result = mono_reflection_type_from_name_checked (name, alc, image, FALSE, FALSE, error);
 
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
@@ -2425,13 +2460,15 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
  * \param name type name.
  * \param alc the AssemblyLoadContext to check/load into
  * \param image a metadata context (can be NULL).
+ * \param ignorecase compare type names case-insensitively
+ * \param use_toplevel_assembly if true, follow the semantics of Assembly.GetAssembly
  * \param error set on error.
  * Retrieves a MonoType from its \p name. If the name is not fully qualified,
  * it defaults to get the type from \p image or, if \p image is NULL or loading
  * from it fails, uses corlib.  On failure returns NULL and sets \p error.
  */
 MonoType*
-mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, MonoError *error)
+mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, gboolean use_toplevel_assembly, MonoError *error)
 {
 	MonoType *type = NULL;
 	MonoTypeNameParse info;
@@ -2447,7 +2484,11 @@ mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc
 		mono_error_cleanup (parse_error);
 		goto leave;
 	}
-	type = _mono_reflection_get_type_from_info (alc, &info, image, FALSE, TRUE, error);
+	if (info.assembly.name && use_toplevel_assembly) {
+		mono_error_set_argument_format (error, "name", "Unexpected assembly-qualified type \"%s\" was provided", name);
+		goto leave;
+	}
+	type = _mono_reflection_get_type_from_info (alc, &info, image, ignorecase, TRUE, error);
 leave:
 	g_free (tmp);
 	mono_reflection_free_type_info (&info);

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -172,7 +172,6 @@
       <Compile Include="$(BclSourcesRoot)\System\RuntimeTypeHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\String.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Type.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\TypeIdentifier.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypedReference.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
@@ -289,7 +288,6 @@
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeStringMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeGPtrArrayHandle.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />
   </ItemGroup>
 
   <!-- Enable unsupported browser warnings -->

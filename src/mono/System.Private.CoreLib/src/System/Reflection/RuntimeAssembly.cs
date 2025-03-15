@@ -229,7 +229,8 @@ namespace System.Reflection
                 Module? resourceModule = null;
                 RuntimeAssembly? assembly = this;
                 byte* data = (byte*)GetManifestResourceInternal(new QCallAssembly(ref assembly), name, out length, ObjectHandleOnStack.Create(ref resourceModule));
-                if (data == null) {
+                if (data == null)
+                {
                     assembly = AssemblyLoadContext.OnResourceResolve(assembly!, name);
                     if (assembly != null)
                         data = (byte*)GetManifestResourceInternal(new QCallAssembly(ref assembly), name, out length, ObjectHandleOnStack.Create(ref resourceModule));
@@ -263,11 +264,47 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
-        public override Type GetType(string name, bool throwOnError, bool ignoreCase)
+        public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            return InternalGetType(null, name, throwOnError, ignoreCase);
+            return TypeNameResolver.GetType(name, throwOnError, ignoreCase, this);
+        }
+
+        /// <summary>
+        /// Gets the type with the specified simple and unescaped name.
+        /// </summary>
+        /// <param name="unescapedName">The outermost type's name.</param>
+        /// <param name="nestedTypeNames">The names of the type's nested types.</param>
+        /// <param name="ignoreCase">Whether to make a case-insensitive search.</param>
+        /// <remarks>
+        /// Modifiers and generic instantiations are not supported.
+        /// </remarks>
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
+        internal Type? GetTypeCore(string unescapedName, ReadOnlySpan<string> nestedTypeNames, bool ignoreCase)
+        {
+            // This method might be called on a RuntimeAssemblyBuilder instance that is unsafely casted to RuntimeAssembly.
+            // Check if this is the case and redirect to the appropriate method.
+            // TODO: Can the compiler optimize away this check? Should we move it to a separate method marked with NoInlining?
+            if ((object)this is Emit.RuntimeAssemblyBuilder rab)
+            {
+                return rab.GetTypeCore(unescapedName, nestedTypeNames, ignoreCase);
+            }
+
+            var this_assembly = this;
+            RuntimeType? type = null;
+            GetTypeInternal(new QCallAssembly(ref this_assembly), unescapedName, ignoreCase, ObjectHandleOnStack.Create(ref type));
+
+            BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public;
+            if (ignoreCase)
+                bindingFlags |= BindingFlags.IgnoreCase;
+            for (int i = 0; i < nestedTypeNames.Length; i++)
+            {
+                if (type is null)
+                    break;
+                type = type.GetNestedType(nestedTypeNames[i], bindingFlags, ignoreAmbiguousMatch: true);
+            }
+            return type;
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
@@ -399,7 +436,7 @@ namespace System.Reflection
             try
             {
                 StackCrawlMark unused = default;
-                res = Load(an, ref unused, AssemblyLoadContext.GetLoadContext(assembly));
+                res = Load(an, GetExecutingAssembly(ref unused), AssemblyLoadContext.GetLoadContext(assembly));
             }
             catch
             {
@@ -457,10 +494,7 @@ namespace System.Reflection
 
         internal static RuntimeAssembly InternalLoad(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
         {
-            var assembly = (RuntimeAssembly)InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
-            if (assembly == null)
-                throw new FileNotFoundException(null, assemblyRef.Name);
-            return assembly;
+            return (RuntimeAssembly)Load(assemblyRef, GetExecutingAssembly(ref stackMark), assemblyLoadContext);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -488,6 +522,9 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr InternalGetReferencedAssemblies(Assembly assembly);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void GetTypeInternal(QCallAssembly assembly, string unescapedName, bool ignoreCase, ObjectHandleOnStack type);
 
         internal string? GetSimpleName()
         {

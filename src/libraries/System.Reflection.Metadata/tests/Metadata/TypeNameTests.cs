@@ -88,12 +88,9 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.True(TypeName.TryParse(input.AsSpan(), out _));
 
-            if (PlatformDetection.IsNotMonoRuntime) // https://github.com/dotnet/runtime/issues/45033
-            {
 #if NET
-                Assert.Throws<TypeLoadException>(() => Type.GetType(input));
+            Assert.Throws<TypeLoadException>(() => Type.GetType(input));
 #endif
-            }
         }
 
         [Theory]
