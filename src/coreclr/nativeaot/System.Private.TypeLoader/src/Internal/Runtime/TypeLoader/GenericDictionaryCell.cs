@@ -253,7 +253,7 @@ namespace Internal.Runtime.TypeLoader
         private class FieldLdTokenCell : GenericDictionaryCell
         {
             internal TypeDesc ContainingType;
-            internal IntPtr FieldName;
+            internal int FieldHandle;
 
             internal override unsafe void Prepare(TypeBuilder builder)
             {
@@ -267,7 +267,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 RuntimeFieldHandle handle = TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(
                     builder.GetRuntimeTypeHandle(ContainingType),
-                    FieldName);
+                    FieldHandle);
 
                 return *(IntPtr*)&handle;
             }
@@ -276,8 +276,6 @@ namespace Internal.Runtime.TypeLoader
         private class MethodLdTokenCell : GenericDictionaryCell
         {
             internal MethodDesc Method;
-            internal IntPtr MethodName;
-            internal RuntimeSignature MethodSignature;
 
             internal override unsafe void Prepare(TypeBuilder builder)
             {
@@ -301,8 +299,7 @@ namespace Internal.Runtime.TypeLoader
 
                 RuntimeMethodHandle handle = TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
                     builder.GetRuntimeTypeHandle(Method.OwningType),
-                    MethodName,
-                    MethodSignature,
+                    Method.NameAndSignature.Handle,
                     genericArgHandles);
 
                 return *(IntPtr*)&handle;
@@ -467,30 +464,22 @@ namespace Internal.Runtime.TypeLoader
 
                 case FixupSignatureKind.FieldLdToken:
                     {
-                        NativeParser ldtokenSigParser = parser.GetParserFromRelativeOffset();
+                        var type = nativeLayoutInfoLoadContext.GetType(ref parser);
+                        int handle = (int)parser.GetUnsigned();
+                        TypeLoaderLogger.WriteLine("LdToken on: " + type.ToString() + "." + handle.LowLevelToString());
 
-                        var type = nativeLayoutInfoLoadContext.GetType(ref ldtokenSigParser);
-                        IntPtr fieldNameSig = ldtokenSigParser.Reader.OffsetToAddress(ldtokenSigParser.Offset);
-                        TypeLoaderLogger.WriteLine("LdToken on: " + type.ToString() + "." + ldtokenSigParser.GetString());
-
-                        cell = new FieldLdTokenCell() { FieldName = fieldNameSig, ContainingType = type };
+                        cell = new FieldLdTokenCell() { FieldHandle = handle, ContainingType = type };
                     }
                     break;
 
                 case FixupSignatureKind.MethodLdToken:
                     {
-                        NativeParser ldtokenSigParser = parser.GetParserFromRelativeOffset();
-
-                        RuntimeSignature methodNameSig;
-                        RuntimeSignature methodSig;
-                        var method = nativeLayoutInfoLoadContext.GetMethod(ref ldtokenSigParser, out methodNameSig, out methodSig);
-                        TypeLoaderLogger.WriteLine("LdToken on: " + method.OwningType.ToString() + "::" + method.NameAndSignature.Name);
+                        var method = nativeLayoutInfoLoadContext.GetMethod(ref parser);
+                        TypeLoaderLogger.WriteLine("LdToken on: " + method.OwningType.ToString() + "::" + method.NameAndSignature.GetName());
 
                         cell = new MethodLdTokenCell
                         {
                             Method = method,
-                            MethodName = methodNameSig.NativeLayoutSignature(),
-                            MethodSignature = methodSig
                         };
                     }
                     break;
@@ -515,7 +504,7 @@ namespace Internal.Runtime.TypeLoader
 
                 case FixupSignatureKind.Method:
                     {
-                        var method = nativeLayoutInfoLoadContext.GetMethod(ref parser, out _, out _);
+                        var method = nativeLayoutInfoLoadContext.GetMethod(ref parser);
                         TypeLoaderLogger.WriteLine("Method: " + method.ToString());
 
                         cell = new MethodCell
@@ -544,9 +533,7 @@ namespace Internal.Runtime.TypeLoader
                 case FixupSignatureKind.GenericStaticConstrainedMethod:
                     {
                         TypeDesc constraintType = nativeLayoutInfoLoadContext.GetType(ref parser);
-
-                        NativeParser ldtokenSigParser = parser.GetParserFromRelativeOffset();
-                        MethodDesc constrainedMethod = nativeLayoutInfoLoadContext.GetMethod(ref ldtokenSigParser);
+                        MethodDesc constrainedMethod = nativeLayoutInfoLoadContext.GetMethod(ref parser);
 
                         TypeLoaderLogger.WriteLine("GenericStaticConstrainedMethod: " + constraintType.ToString() + " Method " + constrainedMethod.ToString());
 

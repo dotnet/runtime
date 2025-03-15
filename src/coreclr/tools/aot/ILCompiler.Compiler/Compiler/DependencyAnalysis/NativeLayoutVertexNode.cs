@@ -90,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    internal abstract class NativeLayoutMethodEntryVertexNode : NativeLayoutSavedVertexNode
+    internal class NativeLayoutMethodEntryVertexNode : NativeLayoutSavedVertexNode
     {
         [Flags]
         public enum MethodEntryFlags
@@ -102,18 +102,18 @@ namespace ILCompiler.DependencyAnalysis
         protected readonly MethodDesc _method;
         private MethodEntryFlags _flags;
         private NativeLayoutTypeSignatureVertexNode _containingTypeSig;
-        private NativeLayoutMethodSignatureVertexNode _methodSig;
         private NativeLayoutTypeSignatureVertexNode[] _instantiationArgsSig;
 
         public MethodDesc Method => _method;
 
         public virtual bool IsUnboxingStub => _method.OwningType.IsValueType && !_method.Signature.IsStatic;
 
+        protected override string GetName(NodeFactory factory) => "MethodEntryVertex_" + factory.NameMangler.GetMangledMethodName(_method);
+
         public NativeLayoutMethodEntryVertexNode(NodeFactory factory, MethodDesc method, MethodEntryFlags flags)
         {
             _method = method;
             _flags = flags;
-            _methodSig = factory.NativeLayout.MethodSignatureVertex(method.GetTypicalMethodDefinition().Signature);
 
             if ((_flags & MethodEntryFlags.CreateInstantiatedSignature) == 0)
             {
@@ -131,7 +131,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
 
-            dependencies.Add(new DependencyListEntry(_methodSig, "NativeLayoutMethodEntryVertexNode method signature"));
             if ((_flags & MethodEntryFlags.CreateInstantiatedSignature) != 0)
             {
                 dependencies.Add(new DependencyListEntry(context.NecessaryTypeSymbol(_method.OwningType), "NativeLayoutMethodEntryVertexNode containing type"));
@@ -154,6 +153,8 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(methodEntryPointNode, "NativeLayoutMethodEntryVertexNode entrypoint"));
             }
 
+            context.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, context, _method.GetTypicalMethodDefinition());
+
             return dependencies;
         }
 
@@ -162,8 +163,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
 
             Vertex containingType = GetContainingTypeVertex(factory);
-            Vertex methodSig = _methodSig.WriteVertex(factory);
-            Vertex methodNameAndSig = GetNativeWriter(factory).GetMethodNameAndSigSignature(_method.Name, methodSig);
 
             Vertex[] args = null;
             MethodFlags flags = 0;
@@ -204,7 +203,8 @@ namespace ILCompiler.DependencyAnalysis
                     flags |= MethodFlags.FunctionPointerIsUSG;
             }
 
-            return GetNativeWriter(factory).GetMethodSignature((uint)flags, fptrReferenceId, containingType, methodNameAndSig, args);
+            int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, _method.GetTypicalMethodDefinition());
+            return GetNativeWriter(factory).GetMethodSignature((uint)flags, fptrReferenceId, containingType, token, args);
         }
 
         private Vertex GetContainingTypeVertex(NodeFactory factory)
@@ -225,85 +225,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, IsUnboxingStub);
             return methodEntryPointNode;
-        }
-    }
-
-    internal sealed class NativeLayoutMethodLdTokenVertexNode : NativeLayoutMethodEntryVertexNode
-    {
-        protected override string GetName(NodeFactory factory) => "NativeLayoutMethodLdTokenVertexNode_" + factory.NameMangler.GetMangledMethodName(_method);
-
-        public NativeLayoutMethodLdTokenVertexNode(NodeFactory factory, MethodDesc method)
-            : base(factory, method, method.IsRuntimeDeterminedExactMethod || method.IsGenericMethodDefinition ? 0 : MethodEntryFlags.CreateInstantiatedSignature)
-        {
-        }
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
-        {
-            if (_method.IsVirtual && _method.HasInstantiation && !_method.IsGenericMethodDefinition)
-            {
-                return GetGenericVirtualMethodDependencies(context);
-            }
-            else
-            {
-                return base.GetStaticDependencies(context);
-            }
-        }
-
-        private DependencyList GetGenericVirtualMethodDependencies(NodeFactory factory)
-        {
-            var dependencies = (DependencyList)base.GetStaticDependencies(factory);
-
-            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
-            dependencies.Add(factory.GVMDependencies(canonMethod), "Potential generic virtual method call");
-
-            foreach (TypeDesc instArg in canonMethod.Instantiation)
-            {
-                dependencies.Add(factory.MaximallyConstructableType(instArg), "Type we need to look up for GVM dispatch");
-            }
-
-            return dependencies;
-        }
-
-        public override Vertex WriteVertex(NodeFactory factory)
-        {
-            Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
-
-            Vertex methodEntryVertex = base.WriteVertex(factory);
-            return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.LdTokenInfoSection.Place(methodEntryVertex));
-        }
-    }
-
-    internal sealed class NativeLayoutFieldLdTokenVertexNode : NativeLayoutSavedVertexNode
-    {
-        private readonly FieldDesc _field;
-        private readonly NativeLayoutTypeSignatureVertexNode _containingTypeSig;
-
-        public NativeLayoutFieldLdTokenVertexNode(NodeFactory factory, FieldDesc field)
-        {
-            _field = field;
-            _containingTypeSig = factory.NativeLayout.TypeSignatureVertex(field.OwningType);
-        }
-
-        protected override string GetName(NodeFactory factory) => "NativeLayoutFieldLdTokenVertexNode_" + factory.NameMangler.GetMangledFieldName(_field);
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
-        {
-            return new DependencyListEntry[]
-            {
-                new DependencyListEntry(_containingTypeSig, "NativeLayoutFieldLdTokenVertexNode containing type signature"),
-            };
-        }
-
-        public override Vertex WriteVertex(NodeFactory factory)
-        {
-            Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
-
-            Vertex containingType = _containingTypeSig.WriteVertex(factory);
-
-            Vertex unplacedVertex = GetNativeWriter(factory).GetFieldSignature(containingType, _field.Name);
-
-            return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.LdTokenInfoSection.Place(unplacedVertex));
         }
     }
 
@@ -357,31 +278,6 @@ namespace ILCompiler.DependencyAnalysis
 
             Vertex signature = GetNativeWriter(factory).GetMethodSigSignature((uint)methodCallingConvention, (uint)_signature.GenericParameterCount, returnType, parameters);
             return factory.MetadataManager.NativeLayoutInfo.SignaturesSection.Place(signature);
-        }
-    }
-
-    internal sealed class NativeLayoutMethodNameAndSignatureVertexNode : NativeLayoutVertexNode
-    {
-        private MethodDesc _method;
-        private NativeLayoutMethodSignatureVertexNode _methodSig;
-
-        protected override string GetName(NodeFactory factory) => "NativeLayoutMethodNameAndSignatureVertexNode" + factory.NameMangler.GetMangledMethodName(_method);
-
-        public NativeLayoutMethodNameAndSignatureVertexNode(NodeFactory factory, MethodDesc method)
-        {
-            _method = method;
-            _methodSig = factory.NativeLayout.MethodSignatureVertex(method.Signature);
-        }
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
-        {
-            return new DependencyListEntry[] { new DependencyListEntry(_methodSig, "NativeLayoutMethodNameAndSignatureVertexNode signature vertex") };
-        }
-        public override Vertex WriteVertex(NodeFactory factory)
-        {
-            Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
-
-            Vertex methodSig = _methodSig.WriteVertex(factory);
-            return GetNativeWriter(factory).GetMethodNameAndSigSignature(_method.Name, methodSig);
         }
     }
 
@@ -1666,29 +1562,11 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class NativeLayoutMethodDictionaryGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
         private MethodDesc _method;
-        private WrappedMethodDictionaryVertexNode _wrappedNode;
-
-        private sealed class WrappedMethodDictionaryVertexNode : NativeLayoutMethodEntryVertexNode
-        {
-            public WrappedMethodDictionaryVertexNode(NodeFactory factory, MethodDesc method) :
-                base(factory, method, default(MethodEntryFlags))
-            {
-            }
-
-            protected override IMethodNode GetMethodEntrypointNode(NodeFactory factory)
-            {
-                throw new NotSupportedException();
-            }
-
-            protected sealed override string GetName(NodeFactory factory) => "WrappedMethodEntryVertexNodeForDictionarySlot_" + factory.NameMangler.GetMangledMethodName(_method);
-        }
-
 
         public NativeLayoutMethodDictionaryGenericDictionarySlotNode(NodeFactory factory, MethodDesc method)
         {
             Debug.Assert(method.HasInstantiation);
             _method = method;
-            _wrappedNode = new WrappedMethodDictionaryVertexNode(factory, method);
         }
 
         protected sealed override string GetName(NodeFactory factory) => "NativeLayoutMethodDictionaryGenericDictionarySlotNode_" + factory.NameMangler.GetMangledMethodName(_method);
@@ -1710,14 +1588,14 @@ namespace ILCompiler.DependencyAnalysis
 
             GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
-            dependencies.Add(_wrappedNode, "wrappednode");
+            dependencies.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
 
             return dependencies;
         }
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
-            return _wrappedNode.WriteVertex(factory);
+            return factory.NativeLayout.MethodEntry(_method).WriteVertex(factory);
         }
     }
 
@@ -1739,7 +1617,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             var result = new DependencyList
             {
-                { factory.NativeLayout.FieldLdTokenVertex(_field), "Field Signature" }
+                { factory.NativeLayout.TypeSignatureVertex(_field.OwningType), "Owning type of field" }
             };
 
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_field.OwningType))
@@ -1756,8 +1634,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
-            Vertex ldToken = factory.NativeLayout.FieldLdTokenVertex(_field).WriteVertex(factory);
-            return GetNativeWriter(factory).GetRelativeOffsetSignature(ldToken);
+            Vertex owningType = factory.NativeLayout.TypeSignatureVertex(_field.OwningType).WriteVertex(factory);
+            Vertex fieldMetadataHandle = writer.GetUnsignedConstant(
+                (uint)factory.MetadataManager.GetMetadataHandleForField(factory, _field.GetTypicalFieldDefinition()));
+
+            return writer.GetTuple(owningType, fieldMetadataHandle);
         }
     }
 
@@ -1765,7 +1646,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _method;
 
-        public NativeLayoutMethodLdTokenGenericDictionarySlotNode(MethodDesc method)
+        public NativeLayoutMethodLdTokenGenericDictionarySlotNode(NodeFactory factory, MethodDesc method)
         {
             _method = method;
         }
@@ -1776,10 +1657,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            var result = new DependencyList
-            {
-                { factory.NativeLayout.MethodLdTokenVertex(_method), "Method Signature" }
-            };
+            var result = new DependencyList();
 
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
@@ -1794,13 +1672,14 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.MetadataManager.GetDependenciesDueToLdToken(ref result, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
+            result.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
+
             return result;
         }
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
-            Vertex ldToken = factory.NativeLayout.MethodLdTokenVertex(_method).WriteVertex(factory);
-            return GetNativeWriter(factory).GetRelativeOffsetSignature(ldToken);
+            return factory.NativeLayout.MethodEntry(_method).WriteVertex(factory);
         }
     }
 
@@ -1843,7 +1722,7 @@ namespace ILCompiler.DependencyAnalysis
             DependencyNodeCore<NodeFactory> constrainedMethodDescriptorNode;
             if (_constrainedMethod.HasInstantiation)
             {
-                constrainedMethodDescriptorNode = factory.NativeLayout.MethodLdTokenVertex(_constrainedMethod);
+                constrainedMethodDescriptorNode = factory.NativeLayout.MethodEntry(_constrainedMethod);
             }
             else
             {
@@ -1867,6 +1746,12 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_constraintType))
                 yield return new DependencyListEntry(dependency, "template construction dependency constraintType");
+
+            if (_constrainedMethod.IsVirtual && _constrainedMethod.HasInstantiation)
+            {
+                MethodDesc canonMethod = _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                yield return new DependencyListEntry(factory.GVMDependencies(canonMethod), "Generic virtual method call");
+            }
         }
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
@@ -1875,9 +1760,8 @@ namespace ILCompiler.DependencyAnalysis
             if (_constrainedMethod.HasInstantiation)
             {
                 Debug.Assert(SignatureKind is FixupSignatureKind.GenericStaticConstrainedMethod);
-                Vertex constrainedMethodVertex = factory.NativeLayout.MethodLdTokenVertex(_constrainedMethod).WriteVertex(factory);
-                Vertex relativeOffsetVertex = GetNativeWriter(factory).GetRelativeOffsetSignature(constrainedMethodVertex);
-                return writer.GetTuple(constraintType, relativeOffsetVertex);
+                Vertex constrainedMethodVertex = factory.NativeLayout.MethodEntry(_constrainedMethod).WriteVertex(factory);
+                return writer.GetTuple(constraintType, constrainedMethodVertex);
             }
             else
             {
