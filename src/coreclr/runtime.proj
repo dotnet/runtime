@@ -11,6 +11,10 @@
     <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_CMakeArgs Include="-DCMAKE_PREFIX_PATH=$(VendoredLibraryRootPath.TrimEnd('\\'))" />
+  </ItemGroup>
+
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
   <Target Name="BuildRuntime"
@@ -82,8 +86,8 @@
 
     <ItemGroup Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(HostCrossOS)' == '' and '$(ANDROID_NDK_ROOT)' != ''">
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DANDROID_STL=c++_static&quot;"/>
-      
-      <!-- 
+
+      <!--
         Only apply this setting on non-windows builds. Our windows build has a hard
         time with a value that has spaces in it.
       -->
