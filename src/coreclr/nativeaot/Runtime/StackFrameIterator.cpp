@@ -1790,7 +1790,8 @@ UnwindOutOfCurrentManagedFrame:
         // if the thread is safe to walk, it better not have a hijack in place.
         ASSERT(!m_pThread->IsHijacked());
 
-        SetControlPC(dac_cast<PTR_VOID>(PCODEToPINSTR(m_RegDisplay.GetIP())));
+        //TODO-PAC: Strip pac while populating IP in m_RegDisplay
+        SetControlPC(dac_cast<PTR_VOID>(PCODEToPINSTR(m_RegDisplay.GetIP() & (TADDR)0x0000FFFFFFFFFFFF)));
 
         PTR_VOID collapsingTargetFrame = NULL;
 
@@ -2121,6 +2122,8 @@ void StackFrameIterator::CalculateCurrentMethodState()
         return;
     }
 
+    //TODO-PAC: Strip the address at the source
+    m_ControlPC = (PTR_VOID)((long)m_ControlPC & 0x0000FFFFFFFFFFFF);
     // Assume that the caller is likely to be in the same module
     if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo))
     {
