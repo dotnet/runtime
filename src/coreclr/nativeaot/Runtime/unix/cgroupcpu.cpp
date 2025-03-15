@@ -63,7 +63,7 @@ public:
         free(s_cpu_cgroup_path);
     }
 
-    static bool GetCpuLimit(uint32_t *val)
+    static bool GetCpuLimit(double *val)
     {
         if (s_cgroup_version == 0)
             return false;
@@ -345,7 +345,7 @@ private:
         return cgroup_path;
     }
 
-    static bool GetCGroup1CpuLimit(uint32_t *val)
+    static bool GetCGroup1CpuLimit(double *val)
     {
         long long quota;
         long long period;
@@ -358,12 +358,10 @@ private:
         if (period <= 0)
             return false;
 
-        ComputeCpuLimit(period, quota, val);
-
-        return true;
+        return ComputeCpuLimit(period, quota, val);
     }
 
-    static bool GetCGroup2CpuLimit(uint32_t *val)
+    static bool GetCGroup2CpuLimit(double *val)
     {
         char *filename = nullptr;
         FILE *file = nullptr;
@@ -422,8 +420,7 @@ private:
         if (period_string == endptr || errno != 0)
             goto done;
 
-        ComputeCpuLimit(period, quota, val);
-        result = true;
+        result = ComputeCpuLimit(period, quota, val);
 
     done:
         if (file)
@@ -434,18 +431,17 @@ private:
         return result;
     }
 
-    static void ComputeCpuLimit(long long period, long long quota, uint32_t *val)
+    static bool ComputeCpuLimit(long long period, long long quota, double *val)
     {
-        // Cannot have less than 1 CPU
-        if (quota <= period)
+        if (quota <= 0 || period <= 0)
         {
-            *val = 1;
-            return;
+            // A CPU limit is not in effect, see https://www.kernel.org/doc/html/v5.9/scheduler/sched-bwc.html
+            return false;
         }
 
-        // Calculate cpu count based on quota and round it up
-        double cpu_count = (double) quota / period  + 0.999999999;
-        *val = (cpu_count < UINT32_MAX) ? (uint32_t)cpu_count : UINT32_MAX;
+        // Calculate cpu count based on quota
+        double cpu_count = (double) quota / period;
+        return true;
     }
 
     static long long ReadCpuCGroupValue(const char* subsystemFilename){
@@ -503,7 +499,7 @@ void InitializeCpuCGroup()
     CGroup::Initialize();
 }
 
-bool GetCpuLimit(uint32_t* val)
+bool GetCpuLimit(double* val)
 {
     if (val == nullptr)
         return false;

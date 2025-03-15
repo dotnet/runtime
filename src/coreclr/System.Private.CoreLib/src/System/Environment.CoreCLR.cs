@@ -106,6 +106,9 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
         private static partial int GetProcessorCount();
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool GetIsCpuQuotaLimited();
+
         // Used by VM
         internal static string? GetResourceStringLocal(string key) => SR.GetResourceString(key);
 

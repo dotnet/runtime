@@ -21,6 +21,8 @@ namespace System
             set;
         }
 
+        private static bool GetIsCpuQuotaLimited() => false;
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetProcessorCount();
 

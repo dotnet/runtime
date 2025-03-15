@@ -37,6 +37,10 @@ namespace System
 
         public static int ProcessorCount { get; } = GetProcessorCount();
 
+        // This must be initialized after ProcessorCount, as the initialization of ProcessorCount also initializes the backing
+        // info for whether CPU quota is limited
+        internal static bool IsCpuQuotaLimited { get; } = GetIsCpuQuotaLimited();
+
         /// <summary>
         /// Gets whether the current machine has only a single processor.
         /// </summary>

@@ -103,6 +103,14 @@ extern "C" INT32 QCALLTYPE Environment_GetProcessorCount()
     return processorCount;
 }
 
+FCIMPL0(FC_BOOL_RET, SystemNative::GetIsCpuQuotaLimited)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(GetCurrentProcessIsCpuQuotaLimited());
+}
+FCIMPLEND
+
 struct FindFailFastCallerStruct {
     StackCrawlMark* pStackMark;
     UINT_PTR        retAddress;

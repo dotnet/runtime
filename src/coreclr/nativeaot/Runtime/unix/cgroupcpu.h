@@ -5,6 +5,6 @@
 #define __CGROUPCPU_H__
 
 void InitializeCpuCGroup();
-bool GetCpuLimit(uint32_t* val);
+bool GetCpuLimit(double* val);
 
 #endif // __CGROUPCPU_H__
