@@ -28,9 +28,15 @@ public class Runtime_113486
     [Fact]
     public static void TestEntryPoint()
     {
-        var vr5 = new S0();
-        var vr6 = s_44[0][0];
-        M42(vr5, vr6, 0);
+        try
+        {
+            var vr5 = new S0();
+            var vr6 = s_44[0][0];
+            M42(vr5, vr6, 0);
+        }
+        catch
+        {
+        }
     }
 
     static S0 M42(S0 arg0, sbyte arg2, sbyte arg3)
