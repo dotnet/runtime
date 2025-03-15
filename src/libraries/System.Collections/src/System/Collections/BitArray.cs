@@ -608,7 +608,15 @@ namespace System.Collections
             }
 
             int toIndex = 0;
-            int ints = GetInt32ArrayLengthFromBitLength(m_length);
+
+            // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
+            // buggy code concurrently mutating these instances in a way that could cause memory corruption,
+            // we snapshot the arrays from both and then operate only on those snapshots, while also validating
+            // that the count we iterate to is within the bounds of both arrays.  We don't care about such code
+            // corrupting the BitArray data in a way that produces incorrect answers, since BitArray is not meant
+            // to be thread-safe; we only care about avoiding buffer overruns.
+            Span<int> thisSpan = m_array.AsSpan(0, GetInt32ArrayLengthFromBitLength(m_length));
+
             if (count < m_length)
             {
                 // We can not use Math.DivRem without taking a dependency on System.Runtime.Extensions
@@ -627,30 +635,68 @@ namespace System.Collections
                         // However, the compiler protects us from undefined behaviour by constraining the
                         // right operand to between 0 and width - 1 (inclusive), i.e. right_operand = (right_operand % width).
                         uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
-                        m_array[ints - 1] &= (int)mask;
+                        thisSpan[^1] &= (int)mask;
                     }
-                    Array.Copy(m_array, fromIndex, m_array, 0, ints - fromIndex);
-                    toIndex = ints - fromIndex;
+                    toIndex = thisSpan.Length - fromIndex;
+                    thisSpan.Slice(fromIndex).CopyTo(thisSpan.Slice(0, toIndex));
                 }
                 else
                 {
-                    int lastIndex = ints - 1;
+                    int carryCount = (BitsPerInt32 - shiftCount);
                     unchecked
                     {
-                        while (fromIndex < lastIndex)
+                        ref int value = ref MemoryMarshal.GetReference(thisSpan);
+
+                        while (Vector512.IsHardwareAccelerated && thisSpan.Length - fromIndex >= Vector512<uint>.Count + 1)
                         {
-                            uint right = (uint)m_array[fromIndex] >> shiftCount;
-                            int left = m_array[++fromIndex] << (BitsPerInt32 - shiftCount);
-                            m_array[toIndex++] = left | (int)right;
+                            Vector512<int> current = Vector512.LoadUnsafe(ref value, (nuint)fromIndex) >>> shiftCount;
+                            Vector512<int> carries = Vector512.LoadUnsafe(ref value, (nuint)(fromIndex + 1)) << carryCount;
+
+                            Vector512<int> newValue = current | carries;
+
+                            Vector512.StoreUnsafe(newValue, ref value, (nuint)toIndex);
+                            fromIndex += Vector512<int>.Count;
+                            toIndex += Vector512<int>.Count;
+                        }
+
+                        while (Vector256.IsHardwareAccelerated && thisSpan.Length - fromIndex >= Vector256<uint>.Count + 1)
+                        {
+                            Vector256<int> current = Vector256.LoadUnsafe(ref value, (nuint)fromIndex) >>> shiftCount;
+                            Vector256<int> carries = Vector256.LoadUnsafe(ref value, (nuint)(fromIndex + 1)) << carryCount;
+
+                            Vector256<int> newValue = current | carries;
+
+                            Vector256.StoreUnsafe(newValue, ref value, (nuint)toIndex);
+                            fromIndex += Vector256<int>.Count;
+                            toIndex += Vector256<int>.Count;
+                        }
+
+                        while (Vector128.IsHardwareAccelerated && thisSpan.Length - fromIndex >= Vector128<uint>.Count + 1)
+                        {
+                            Vector128<int> current = Vector128.LoadUnsafe(ref value, (nuint)fromIndex) >>> shiftCount;
+                            Vector128<int> carries = Vector128.LoadUnsafe(ref value, (nuint)(fromIndex + 1)) << carryCount;
+
+                            Vector128<int> newValue = current | carries;
+
+                            Vector128.StoreUnsafe(newValue, ref value, (nuint)toIndex);
+                            fromIndex += Vector128<int>.Count;
+                            toIndex += Vector128<int>.Count;
+                        }
+
+                        while (fromIndex + 1 < thisSpan.Length)
+                        {
+                            int right = thisSpan[fromIndex] >>> shiftCount;
+                            int left = thisSpan[++fromIndex] << carryCount;
+                            thisSpan[toIndex++] = left | right;
                         }
                         uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
-                        mask &= (uint)m_array[fromIndex];
-                        m_array[toIndex++] = (int)(mask >> shiftCount);
+                        mask &= (uint)thisSpan[fromIndex];
+                        thisSpan[toIndex++] = (int)(mask >> shiftCount);
                     }
                 }
             }
 
-            m_array.AsSpan(toIndex, ints - toIndex).Clear();
+            thisSpan.Slice(toIndex).Clear();
             _version++;
             return this;
         }
@@ -671,40 +717,83 @@ namespace System.Collections
                 return this;
             }
 
+            // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
+            // buggy code concurrently mutating these instances in a way that could cause memory corruption,
+            // we snapshot the arrays from both and then operate only on those snapshots, while also validating
+            // that the count we iterate to is within the bounds of both arrays.  We don't care about such code
+            // corrupting the BitArray data in a way that produces incorrect answers, since BitArray is not meant
+            // to be thread-safe; we only care about avoiding buffer overruns.
+            Span<int> thisSpan = m_array.AsSpan(0, GetInt32ArrayLengthFromBitLength(m_length));
+
             int lengthToClear;
             if (count < m_length)
             {
-                int lastIndex = (m_length - 1) >> BitShiftPerInt32;  // Divide by 32.
-
                 // We can not use Math.DivRem without taking a dependency on System.Runtime.Extensions
                 lengthToClear = Div32Rem(count, out int shiftCount);
 
                 if (shiftCount == 0)
                 {
-                    Array.Copy(m_array, 0, m_array, lengthToClear, lastIndex + 1 - lengthToClear);
+                    thisSpan.Slice(0, thisSpan.Length - lengthToClear).CopyTo(thisSpan.Slice(lengthToClear));
                 }
                 else
                 {
-                    int fromindex = lastIndex - lengthToClear;
+                    int fromIndex = thisSpan.Length - lengthToClear;
+                    int toIndex = thisSpan.Length;
+                    int carryCount = (BitsPerInt32 - shiftCount);
+
+                    Debug.Assert(fromIndex > 0);
+
                     unchecked
                     {
-                        while (fromindex > 0)
+                        ref int value = ref MemoryMarshal.GetReference(thisSpan);
+
+                        while (Vector512.IsHardwareAccelerated && fromIndex >= Vector512<uint>.Count + 1)
                         {
-                            int left = m_array[fromindex] << shiftCount;
-                            uint right = (uint)m_array[--fromindex] >> (BitsPerInt32 - shiftCount);
-                            m_array[lastIndex] = left | (int)right;
-                            lastIndex--;
+                            Vector512<int> current = Vector512.LoadUnsafe(ref value, (nuint)(fromIndex -= Vector512<uint>.Count)) << shiftCount;
+                            Vector512<int> carries = Vector512.LoadUnsafe(ref value, (nuint)(fromIndex - 1)) >>> carryCount;
+
+                            Vector512<int> newValue = current | carries;
+
+                            Vector512.StoreUnsafe(newValue, ref value, (nuint)(toIndex -= Vector512<uint>.Count));
                         }
-                        m_array[lastIndex] = m_array[fromindex] << shiftCount;
+
+                        while (Vector256.IsHardwareAccelerated && fromIndex >= Vector256<uint>.Count + 1)
+                        {
+                            Vector256<int> current = Vector256.LoadUnsafe(ref value, (nuint)(fromIndex -= Vector256<uint>.Count)) << shiftCount;
+                            Vector256<int> carries = Vector256.LoadUnsafe(ref value, (nuint)(fromIndex - 1)) >>> carryCount;
+
+                            Vector256<int> newValue = current | carries;
+
+                            Vector256.StoreUnsafe(newValue, ref value, (nuint)(toIndex -= Vector256<uint>.Count));
+                        }
+
+                        while (Vector128.IsHardwareAccelerated && fromIndex >= Vector128<uint>.Count + 1)
+                        {
+                            Vector128<int> current = Vector128.LoadUnsafe(ref value, (nuint)(fromIndex -= Vector128<uint>.Count)) << shiftCount;
+                            Vector128<int> carries = Vector128.LoadUnsafe(ref value, (nuint)(fromIndex - 1)) >>> carryCount;
+
+                            Vector128<int> newValue = current | carries;
+
+                            Vector128.StoreUnsafe(newValue, ref value, (nuint)(toIndex -= Vector128<uint>.Count));
+                        }
+
+                        --fromIndex;
+                        while (fromIndex > 0)
+                        {
+                            int left = thisSpan[fromIndex] << shiftCount;
+                            int right = thisSpan[--fromIndex] >>> carryCount;
+                            thisSpan[--toIndex] = left | right;
+                        }
+                        thisSpan[--toIndex] = thisSpan[fromIndex] << shiftCount;
                     }
                 }
             }
             else
             {
-                lengthToClear = GetInt32ArrayLengthFromBitLength(m_length); // Clear all
+                lengthToClear = thisSpan.Length; // Clear all
             }
 
-            m_array.AsSpan(0, lengthToClear).Clear();
+            thisSpan.Slice(0, lengthToClear).Clear();
             _version++;
             return this;
         }
