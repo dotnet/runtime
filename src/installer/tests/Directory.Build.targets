@@ -60,6 +60,11 @@
       File="$(OutDir)TestContextVariables.txt"
       Overwrite="true"
       Lines="@(TestContextVariable)" />
+
+    <WriteLinesToFile
+      File="$(OutDir)global.json"
+      Lines="{}"
+      WriteOnlyWhenDifferent="true" />
   </Target>
 
   <Target Name="DetermineTestOutputDirectory">
