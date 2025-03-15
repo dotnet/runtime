@@ -406,8 +406,21 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 
             if (childNode->gtGetOp1()->OperIs(GT_CAST))
             {
-                // Grab the cast as well, we can contain this with cmn.
-                GenTreeCast* cast = childNode->gtGetOp1()->AsCast();
+                // Grab the cast as well, we can contain this with cmn (extended-register).
+                GenTreeCast* cast   = childNode->gtGetOp1()->AsCast();
+                GenTree*     castOp = cast->CastOp();
+
+                // Cannot contain the cast from floating point.
+                if (!varTypeIsIntegral(castOp))
+                {
+                    return false;
+                }
+
+                // Cannot contain the cast if it may contain or is already containing a memory operation.
+                if (IsContainableMemoryOp(castOp) || castOp->isContained())
+                {
+                    return false;
+                }
 
                 assert(!cast->gtOverflow());
                 assert(varTypeIsIntegral(cast) && varTypeIsIntegral(cast->CastToType()));
