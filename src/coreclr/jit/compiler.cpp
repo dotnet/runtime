@@ -4645,7 +4645,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
-        DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneLoops);
+        // DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneLoops);
 
         // Unroll loops
         //
