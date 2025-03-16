@@ -241,7 +241,7 @@ bool EHblkDsc::ebdIsSameTry(BasicBlock* ebdTryBeg, BasicBlock* ebdTryLast)
 
 void EHblkDsc::DispEntry(unsigned XTnum)
 {
-    printf(" %2u  ::", XTnum);
+    printf(" %2u     %2u  ::", ebdID, XTnum);
 
 #if defined(FEATURE_EH_WINDOWS_X86)
     if (ebdHandlerNestingLevel == 0)
@@ -1256,6 +1256,30 @@ EHblkDsc* Compiler::ehInitTryBlockRange(BasicBlock* blk, BasicBlock** tryBeg, Ba
         }
     }
     return tryTab;
+}
+
+//------------------------------------------------------------------------
+// ehFindEHblkDscById: find an eh table entry by its ID
+//
+// Argument:
+//     ID to use in search
+//
+// Returns:
+//     Pointer to the entry, or nullptr
+//
+EHblkDsc* Compiler::ehFindEHblkDscById(unsigned short id)
+{
+    EHblkDsc* result = nullptr;
+    for (EHblkDsc* const xtab : EHClauses(this))
+    {
+        if (xtab->ebdID == id)
+        {
+            result = xtab;
+            break;
+        }
+    }
+
+    return result;
 }
 
 /*****************************************************************************
@@ -3230,6 +3254,9 @@ void Compiler::fgVerifyHandlerTab()
     // block (case 3)?
     bool multipleLastBlockNormalizationDone = false; // Currently disabled
 
+    BitVecTraits traits(impInlineRoot()->compEHID, this);
+    BitVec       ids(BitVecOps::MakeEmpty(&traits));
+
     assert(compHndBBtabCount <= compHndBBtabAllocCount);
 
     unsigned  XTnum;
@@ -3237,6 +3264,11 @@ void Compiler::fgVerifyHandlerTab()
 
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
+        // EH IDs should be unique and in range
+        //
+        assert(HBtab->ebdID < impInlineRoot()->compEHID);
+        assert(BitVecOps::TryAddElemD(&traits, ids, HBtab->ebdID));
+
         assert(HBtab->ebdTryBeg != nullptr);
         assert(HBtab->ebdTryLast != nullptr);
         assert(HBtab->ebdHndBeg != nullptr);
@@ -3763,7 +3795,7 @@ void Compiler::fgDispHandlerTab()
         return;
     }
 
-    printf("\nindex  ");
+    printf("\n  id,  index  ");
 #if defined(FEATURE_EH_WINDOWS_X86)
     if (!UsesFunclets())
     {

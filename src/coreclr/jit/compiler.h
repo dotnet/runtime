@@ -2722,8 +2722,12 @@ public:
     // etc.
     unsigned ehMaxHndNestingCount = 0;
 
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, EHblkDsc*> EHIDtoEHblkDscMap;
+    EHIDtoEHblkDscMap* m_EHIDtoEHblkDsc = nullptr;
+
 #endif // FEATURE_EH_WINDOWS_X86
 
+    EHblkDsc* ehFindEHblkDscById(unsigned short ehID);
     bool ehTableFinalized = false;
     void FinalizeEH();
 
@@ -6188,7 +6192,6 @@ public:
     PhaseStatus fgComputeBlockWeights();
     bool fgComputeMissingBlockWeights();
 
-    bool fgReorderBlocks(bool useProfile);
     PhaseStatus fgSearchImprovedLayout();
 
     template <bool hasEH>
@@ -10977,9 +10980,10 @@ public:
     size_t compInfoBlkSize;
     BYTE*  compInfoBlkAddr;
 
-    EHblkDsc* compHndBBtab           = nullptr; // array of EH data
-    unsigned  compHndBBtabCount      = 0;       // element count of used elements in EH data array
-    unsigned  compHndBBtabAllocCount = 0;       // element count of allocated elements in EH data array
+    EHblkDsc*      compHndBBtab           = nullptr; // array of EH data
+    unsigned       compHndBBtabCount      = 0;       // element count of used elements in EH data array
+    unsigned       compHndBBtabAllocCount = 0;       // element count of allocated elements in EH data array
+    unsigned short compEHID               = 0;       // unique ID for EH data array entries
 
 #if defined(FEATURE_EH_WINDOWS_X86)
 
