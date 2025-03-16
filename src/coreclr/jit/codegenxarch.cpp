@@ -2200,13 +2200,22 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
+        {
+            // Find the eh table entry via the eh ID
+            //
+            unsigned const ehID = (unsigned)treeNode->AsVal()->gtVal1;
+            assert(ehID < compiler->compEHID);
+            assert(compiler->m_EHIDtoEHblkDsc != nullptr);
+
+            EHblkDsc* HBtab = nullptr;
+            bool      found = compiler->m_EHIDtoEHblkDsc->Lookup(ehID, &HBtab);
+            assert(found);
+            assert(HBtab != nullptr);
 
             // Have to clear the ShadowSP of the nesting level which encloses the finally. Generates:
             //     mov dword ptr [ebp-0xC], 0  // for some slot of the ShadowSP local var
-
-            size_t finallyNesting;
-            finallyNesting = treeNode->AsVal()->gtVal1;
-            noway_assert(treeNode->AsVal()->gtVal1 < compiler->compHndBBtabCount);
+            //
+            const size_t finallyNesting = HBtab->ebdHandlerNestingLevel;
             noway_assert(finallyNesting < compiler->compHndBBtabCount);
 
             // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
@@ -2220,6 +2229,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, (unsigned)curNestingSlotOffs,
                                       0);
             break;
+        }
 #endif // FEATURE_EH_WINDOWS_X86
 
         case GT_PINVOKE_PROLOG:

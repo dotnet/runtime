@@ -23,7 +23,7 @@ if(CLR_CMAKE_HOST_UNIX)
   endif(CLR_CMAKE_TARGET_APPLE)
 
   if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
-    # Allow 16 byte compare-exchange
+    # Allow 16 byte compare-exchange (cmpxchg16b)
     add_compile_options(-mcx16)
   endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
 endif (CLR_CMAKE_HOST_UNIX)

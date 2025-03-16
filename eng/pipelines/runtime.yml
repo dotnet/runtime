@@ -117,6 +117,21 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+          - browser_wasm
+          jobParameters:
+            nameSuffix: AllSubsets_CoreCLR
+            buildArgs: -s mono.emsdk+clr.paltests -rc Release -c Release -lc $(_BuildConfig)
+            timeoutInMinutes: 120
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
       #
       # Build CoreCLR and Libraries with Libraries tests
       # For running libraries tests and installer tests

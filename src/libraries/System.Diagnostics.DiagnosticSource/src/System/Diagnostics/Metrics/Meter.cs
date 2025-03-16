@@ -39,7 +39,7 @@ namespace System.Diagnostics.Metrics
 
             Debug.Assert(options.Name is not null);
 
-            Initialize(options.Name, options.Version, options.Tags, options.Scope);
+            Initialize(options.Name, options.Version, options.Tags, options.Scope, options.TelemetrySchemaUrl);
 
             Debug.Assert(Name is not null);
         }
@@ -71,11 +71,11 @@ namespace System.Diagnostics.Metrics
         /// </remarks>
         public Meter(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope = null)
         {
-            Initialize(name, version, tags, scope);
+            Initialize(name, version, tags, scope, telemetrySchemaUrl: null);
             Debug.Assert(Name is not null);
         }
 
-        private void Initialize(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope = null)
+        private void Initialize(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope = null, string? telemetrySchemaUrl = null)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Version = version;
@@ -86,6 +86,7 @@ namespace System.Diagnostics.Metrics
                 Tags = tagList.AsReadOnly();
             }
             Scope = scope;
+            TelemetrySchemaUrl = telemetrySchemaUrl;
 
             if (!IsSupported)
             {
@@ -120,6 +121,12 @@ namespace System.Diagnostics.Metrics
         /// Returns the Meter scope object.
         /// </summary>
         public object? Scope { get; private set; }
+
+        /// <summary>
+        /// The optional schema URL specifies a location of a <see href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/schemas/file_format_v1.1.0.md">Schema File</see> that
+        /// can be retrieved using HTTP or HTTPS protocol.
+        /// </summary>
+        public string? TelemetrySchemaUrl { get; private set; }
 
         /// <summary>
         /// Create a metrics Counter object.
