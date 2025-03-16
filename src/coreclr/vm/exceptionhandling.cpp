@@ -8509,7 +8509,7 @@ extern "C" BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
 #endif
     }
 
-    return result;
+    return result ? TRUE : FALSE;
 }
 
 static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrameIterator)
