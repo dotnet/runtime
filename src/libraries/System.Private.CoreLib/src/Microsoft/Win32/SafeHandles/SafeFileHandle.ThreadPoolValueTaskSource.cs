@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Strategies;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
@@ -104,11 +103,11 @@ namespace Microsoft.Win32.SafeHandles
                                 break;
                             case Operation.ReadScatter:
                                 Debug.Assert(_buffers != null);
-                                result = RandomAccess.ReadScatterAtOffset(_fileHandle, Unsafe.As<IReadOnlyList<Memory<byte>>>(_buffers), _fileOffset);
+                                result = RandomAccess.ReadScatterAtOffset(_fileHandle, (IReadOnlyList<Memory<byte>>)_buffers, _fileOffset);
                                 break;
                             case Operation.WriteGather:
                                 Debug.Assert(_buffers != null);
-                                RandomAccess.WriteGatherAtOffset(_fileHandle, Unsafe.As<IReadOnlyList<ReadOnlyMemory<byte>>>(_buffers), _fileOffset);
+                                RandomAccess.WriteGatherAtOffset(_fileHandle, (IReadOnlyList<ReadOnlyMemory<byte>>)_buffers, _fileOffset);
                                 break;
                         }
                     }
