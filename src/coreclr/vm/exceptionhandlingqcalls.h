@@ -19,8 +19,8 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
 extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo *pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum);
 extern "C" BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause);
-extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault, bool* pIsExceptionIntercepted);
-extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, unsigned int* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* pIsExceptionIntercepted);
+extern "C" BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, BOOL instructionFault, /* .NET bool */ uint8_t* pIsExceptionIntercepted);
+extern "C" BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, unsigned int* uExCollideClauseIdx, /* .NET bool */ uint8_t* fUnwoundReversePInvoke, /* .NET bool */ uint8_t* pIsExceptionIntercepted);
 #endif // DACCESS_COMPILE
 
 #endif // FEATURE_EH_FUNCLETS

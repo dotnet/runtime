@@ -5909,7 +5909,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     }
 
     pDispatcherContext->ControlPc = (UINT_PTR) GetIP(pDispatcherContext->ContextRecord);
-    
+
 #if defined(TARGET_ARM64)
     // Since this routine is used to fixup contexts for async exceptions,
     // clear the CONTEXT_UNWOUND_TO_CALL flag since, semantically, frames
@@ -8379,7 +8379,7 @@ static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExIn
     pExInfo->m_pMDToReportFunctionLeave = pMD;
 }
 
-extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault, bool* pfIsExceptionIntercepted)
+extern "C" BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, BOOL instructionFault, uint8_t* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
 
@@ -8494,7 +8494,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
         pThis->SetAdjustedControlPC(controlPC);
         pThis->UpdateIsRuntimeWrappedExceptions();
 
-        *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pExInfo);
+        *pfIsExceptionIntercepted = (uint8_t)CheckExceptionInterception(pThis, pExInfo);
     }
     else
     {
@@ -8531,7 +8531,7 @@ static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrame
 
 bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
-extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* pfIsExceptionIntercepted)
+extern "C" BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, uint8_t* fUnwoundReversePInvoke, uint8_t* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
 
@@ -8606,7 +8606,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
 
         if (fUnwoundReversePInvoke)
         {
-            *fUnwoundReversePInvoke = invalidRevPInvoke;
+            *fUnwoundReversePInvoke = (uint8_t)invalidRevPInvoke;
         }
 
         if (invalidRevPInvoke)
@@ -8653,7 +8653,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
     {
         if (fUnwoundReversePInvoke)
         {
-            *fUnwoundReversePInvoke = false;
+            *fUnwoundReversePInvoke = (uint8_t)FALSE;
         }
     }
 
@@ -8760,12 +8760,12 @@ Exit:;
         pThis->SetAdjustedControlPC(controlPC);
         pThis->UpdateIsRuntimeWrappedExceptions();
 
-        *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pTopExInfo);
+        *pfIsExceptionIntercepted = (uint8_t)CheckExceptionInterception(pThis, pTopExInfo);
 
-        return true;
+        return TRUE;
     }
 
-    return false;
+    return FALSE;
 }
 
 namespace AsmOffsetsAsserts
