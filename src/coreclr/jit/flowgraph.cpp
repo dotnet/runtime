@@ -6140,14 +6140,30 @@ bool FlowGraphNaturalLoop::CanDuplicateWithEH(INDEBUG(const char** reason))
             // Check if this is an "outermost" try within the loop.
             // If so, we have more checking to do later on.
             //
-            const bool headerInTry         = header->hasTryIndex();
-            unsigned   blockIndex          = block->getTryIndex();
-            unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndex(blockIndex);
+            bool const     headerIsInTry     = header->hasTryIndex();
+            unsigned const blockTryIndex     = block->getTryIndex();
+            unsigned const enclosingTryIndex = comp->ehTrueEnclosingTryIndex(blockTryIndex);
 
-            if ((headerInTry && (outermostBlockIndex == header->getTryIndex())) ||
-                (!headerInTry && (outermostBlockIndex == EHblkDsc::NO_ENCLOSING_INDEX)))
+            if ((headerIsInTry && (enclosingTryIndex == header->getTryIndex())) ||
+                (!headerIsInTry && (enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)))
             {
-                tryRegionsToClone.Push(block);
+                // When we clone a try we also clone its handler.
+                //
+                // This try may be enclosed in a handler whose try begin is in the loop.
+                // If so we'll clone this try when we clone (the handler of) that try.
+                //
+                bool isInHandlerOfInLoopTry = false;
+                if (block->hasHndIndex())
+                {
+                    unsigned const    enclosingHndIndex = block->getHndIndex();
+                    BasicBlock* const associatedTryBeg  = comp->ehGetDsc(enclosingHndIndex)->ebdTryBeg;
+                    isInHandlerOfInLoopTry              = this->ContainsBlock(associatedTryBeg);
+                }
+
+                if (!isInHandlerOfInLoopTry)
+                {
+                    tryRegionsToClone.Push(block);
+                }
             }
         }
 

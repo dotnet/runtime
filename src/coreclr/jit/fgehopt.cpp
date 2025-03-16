@@ -2680,8 +2680,8 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 if (bbIsTryBeg(block))
                 {
                     assert(added);
-                    JITDUMP("==> found try entry for EH#%02u nested in handler at " FMT_BB "\n", block->bbNum,
-                            block->getTryIndex());
+                    JITDUMP("==> found try entry for EH#%02u nested in handler at " FMT_BB "\n", block->getTryIndex(),
+                            block->bbNum);
                     regionsToProcess.Push(block->getTryIndex());
                 }
             }
@@ -2759,6 +2759,12 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     {
         JITDUMP("Cloned EH clauses will go before enclosing try region EH#%02u\n", enclosingTryIndex);
         assert(insertBeforeIndex == enclosingTryIndex);
+    }
+
+    if (insertBeforeIndex != compHndBBtabCount)
+    {
+        JITDUMP("Existing EH region(s) EH#%02u...EH#%02u will become EH#%02u...EH#%02u\n", insertBeforeIndex,
+                compHndBBtabCount - 1, insertBeforeIndex + regionCount, compHndBBtabCount + regionCount - 1);
     }
 
     // Once we call fgTryAddEHTableEntries with deferCloning = false,
@@ -2860,7 +2866,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         //
         if (ebd->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            if (XTnum < clonedOutermostRegionIndex)
+            if (ebd->ebdEnclosingTryIndex < clonedOutermostRegionIndex)
             {
                 ebd->ebdEnclosingTryIndex += (unsigned short)indexShift;
             }
@@ -2873,7 +2879,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
 
         if (ebd->ebdEnclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            if (XTnum < clonedOutermostRegionIndex)
+            if (ebd->ebdEnclosingHndIndex < clonedOutermostRegionIndex)
             {
                 ebd->ebdEnclosingHndIndex += (unsigned short)indexShift;
             }
