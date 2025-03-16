@@ -6192,7 +6192,6 @@ public:
     PhaseStatus fgComputeBlockWeights();
     bool fgComputeMissingBlockWeights();
 
-    bool fgReorderBlocks(bool useProfile);
     PhaseStatus fgSearchImprovedLayout();
 
     template <bool hasEH>
@@ -6674,7 +6673,7 @@ public:
     GenTree* fgMorphCopyBlock(GenTree* tree);
 private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
-    void fgTryReplaceStructLocalWithFields(GenTree** use);
+    bool fgTryReplaceStructLocalWithFields(GenTree** use);
     GenTree* fgMorphFinalizeIndir(GenTreeIndir* indir);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnStore(GenTree* store);
