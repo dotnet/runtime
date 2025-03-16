@@ -590,6 +590,8 @@ PhaseStatus Compiler::fgImport()
         INDEBUG(fgPgoDeferredInconsistency = false);
     }
 
+    fgImportDone = true;
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -863,6 +865,9 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         case GT_ARR_ADDR:
             return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
 
+        case GT_BOX:
+            return !addr->IsBoxedValue();
+
         case GT_LCL_VAR:
             return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
 
@@ -926,6 +931,42 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
     }
 
     return true; // default result: addr could be null.
+}
+
+//------------------------------------------------------------------------------
+// fgAddrCouldBeHeap: Check whether the address tree may represent a heap address.
+//
+// Arguments:
+//    addr - Address to check
+//
+// Return Value:
+//    True if address could be a heap address; false otherwise (i.e. stack, native memory, etc.)
+//
+bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
+{
+    GenTree* op = addr;
+    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
+    {
+        op = op->AsFieldAddr()->GetFldObj();
+    }
+
+    target_ssize_t offset;
+    gtPeelOffsets(&op, &offset);
+
+    // Ignore the offset for locals
+
+    if (op->OperIs(GT_LCL_ADDR))
+    {
+        return false;
+    }
+
+    if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
+    {
+        // RetBuf is known to be on the stack
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -1422,6 +1463,7 @@ void Compiler::fgAddSyncMethodEnterExit()
 
         // Initialize the new entry
 
+        newEntry->ebdID          = impInlineRoot()->compEHID++;
         newEntry->ebdHandlerType = EH_HANDLER_FAULT;
 
         newEntry->ebdTryBeg  = tryBegBB;
@@ -1922,13 +1964,12 @@ public:
     //    True if any returns were impacted.
     //
     // Notes:
-    //    The goal is to set things up favorably for a reasonable layout without
-    //    putting too much burden on fgReorderBlocks; in particular, since that
-    //    method doesn't (currently) shuffle non-profile, non-rare code to create
-    //    fall-through and reduce gotos, this method places each const return
-    //    block immediately after its last predecessor, so that the flow from
-    //    there to it can become fallthrough without requiring any motion to be
-    //    performed by fgReorderBlocks.
+    //    Prematurely optimizing the block layout is unnecessary.
+    //    However, 'ReturnCountHardLimit' is small enough such that
+    //    any throughput savings from skipping this pass are negated
+    //    by the need to emit branches to these blocks in MinOpts.
+    //    If we decide to increase the number of epilogues allowed,
+    //    we should consider removing this pass.
     //
     bool PlaceReturns()
     {
@@ -3983,7 +4024,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
     BasicBlock::s_nMaxTrees = 0;
 #endif
 
-    if (compCanEncodePtrArgCntMax() && fgHasCycleWithoutGCSafePoint())
+    if (fgHasCycleWithoutGCSafePoint())
     {
         JITDUMP("Marking method as fully interruptible\n");
         SetInterruptible(true);
@@ -6101,7 +6142,7 @@ bool FlowGraphNaturalLoop::CanDuplicateWithEH(INDEBUG(const char** reason))
             //
             const bool headerInTry         = header->hasTryIndex();
             unsigned   blockIndex          = block->getTryIndex();
-            unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndexIL(blockIndex);
+            unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndex(blockIndex);
 
             if ((headerInTry && (outermostBlockIndex == header->getTryIndex())) ||
                 (!headerInTry && (outermostBlockIndex == EHblkDsc::NO_ENCLOSING_INDEX)))

@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
   <PropertyGroup>
       <IncludeXHarnessCli>true</IncludeXHarnessCli>
-      <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.21566.2</MicrosoftDotNetXHarnessCLIVersion>
-      <XharnessPath>%HELIX_CORRELATION_PAYLOAD%\microsoft.dotnet.xharness.cli\$(MicrosoftDotNetXHarnessCLIVersion)\tools\net6.0\any\Microsoft.DotNet.XHarness.CLI.dll</XharnessPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>python3</Python>
@@ -35,24 +33,30 @@
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="SOD - Android Benchmarks.Droid APK Size">
+    <HelixWorkItem Include="Device Startup - Android HelloWorld">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>cd $(ScenarioDirectory)helloandroid;copy %HELIX_WORKITEM_ROOT%\HelloAndroid.apk .;$(Python) pre.py --apk-name HelloAndroid.apk</PreCommands>
+      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroid.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+    <!-- <HelixWorkItem Include="SOD - Android Benchmarks.Droid APK Size" Condition="'$(RuntimeType)' == 'Mono'"> # Disabled due to not working and needing consistent normal android results. https://github.com/dotnet/performance/issues/4729
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-        <PreCommands>cd $(ScenarioDirectory)bdnandroid;copy %HELIX_WORKITEM_ROOT%\MonoBenchmarksDroid.apk .;$(Python) pre.py --apk-name MonoBenchmarksDroid.apk</PreCommands>
-        <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
+        <PreCommands>cd $(ScenarioDirectory)bdnandroid;copy %HELIX_WORKITEM_ROOT%\MonoBenchmarksDroid.apk .;$(Python) pre.py -1-apk-name MonoBenchmarksDroid.apk</PreCommands>
+        <Command>$(Python) test.py sod -1-scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="SOD - Android Benchmarks.Droid Extracted Size">
+    <HelixWorkItem Include="SOD - Android Benchmarks.Droid Extracted Size" Condition="'$(RuntimeType)' == 'Mono'">
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-        <PreCommands>cd $(ScenarioDirectory)bdnandroid;copy %HELIX_WORKITEM_ROOT%\MonoBenchmarksDroid.apk .;$(Python) pre.py --unzip --apk-name MonoBenchmarksDroid.apk</PreCommands>
-        <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
+        <PreCommands>cd $(ScenarioDirectory)bdnandroid;copy %HELIX_WORKITEM_ROOT%\MonoBenchmarksDroid.apk .;$(Python) pre.py -1-unzip -1-apk-name MonoBenchmarksDroid.apk</PreCommands>
+        <Command>$(Python) test.py sod -1-scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="Mobile Benchmark - Android Benchmarks.Droid Benchmark Run">
+    <HelixWorkItem Include="Mobile Benchmark - Android Benchmarks.Droid Benchmark Run" Condition="'$(RuntimeType)' == 'Mono'">
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-        <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)bdnandroid;copy %HELIX_WORKITEM_ROOT%\MonoBenchmarksDroid.apk .;$(Python) pre.py --restart-device --apk-name MonoBenchmarksDroid.apk</PreCommands>
-        <Command>$(Python) test.py androidinstrumentation --package-path .\pub\MonoBenchmarksDroid.apk --package-name com.microsoft.maui.benchmarks --instrumentation-name com.microsoft.maui.MainInstrumentation --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
+        <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)bdnandroid;copy %HELIX_WORKITEM_ROOT%\MonoBenchmarksDroid.apk .;$(Python) pre.py -1-restart-device -1-apk-name MonoBenchmarksDroid.apk</PreCommands>
+        <Command>$(Python) test.py androidinstrumentation -1-package-path .\pub\MonoBenchmarksDroid.apk -1-package-name com.microsoft.maui.benchmarks -1-instrumentation-name com.microsoft.maui.MainInstrumentation -1-scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
         <PostCommands>$(Python) post.py</PostCommands>
         <Timeout>00:30:00</Timeout>
-    </HelixWorkItem>
+    </HelixWorkItem> -->
   </ItemGroup>
 </Project>

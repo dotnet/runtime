@@ -3933,7 +3933,7 @@ void CSE_Heuristic::Initialize()
 
         if (onStack)
         {
-            frameSize += m_pCompiler->lvaLclSize(lclNum);
+            frameSize += m_pCompiler->lvaLclStackHomeSize(lclNum);
         }
         else
         {

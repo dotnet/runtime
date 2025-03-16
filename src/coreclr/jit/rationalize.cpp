@@ -157,7 +157,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         tmpNum = comp->lvaGrabTemp(true DEBUGARG("return buffer for hwintrinsic"));
         comp->lvaSetStruct(tmpNum, sig->retTypeClass, false);
 
-        GenTree*   destAddr = comp->gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
+        GenTree*   destAddr = comp->gtNewLclVarAddrNode(tmpNum, TYP_I_IMPL);
         NewCallArg newArg   = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
 
         call->gtArgs.InsertAfterThisOrFirst(comp, newArg);

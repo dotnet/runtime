@@ -665,15 +665,12 @@ namespace System
         public static TInteger ConvertToIntegerNative<TInteger>(double value)
             where TInteger : IBinaryInteger<TInteger>
         {
-#if !MONO
             if (typeof(TInteger).IsPrimitive)
             {
                 // We need this to be recursive so indirect calls (delegates
                 // for example) produce the same result as direct invocation
                 return ConvertToIntegerNative<TInteger>(value);
             }
-#endif
-
             return TInteger.CreateSaturating(value);
         }
 
