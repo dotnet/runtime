@@ -111,8 +111,6 @@ struct ArgumentRegisters {
 
 #define STACKWALK_CONTROLPC_ADJUST_OFFSET 0
 
-#define THUMB_CODE      1
-
 class StubLinkerCPU : public StubLinker
 {
 public:
