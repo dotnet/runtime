@@ -22,7 +22,7 @@ namespace BasicEventSourceTests
             //    FireAssemblyLoadStart -> ActivityTracker::Start -> AssemblyLoadContext.StartAssemblyLoad -> ActivityTracker.Instance.Enable()
             // on Mono it could be enabled via
             //    System.Threading.Tasks.TplEventSource followed by EventSource.SetCurrentThreadActivityId
-            // but it's too complex to do it in a portable way, so we just call it explicitly
+            // but it's too complex for the unit test, so we just call it explicitly
             ActivityTracker_Instance_Enable();
         }
 
@@ -58,11 +58,10 @@ namespace BasicEventSourceTests
             using ActivityEventSource es = new ActivityEventSource();
 
             Assert.True(es.IsEnabled());
-            EventSource.SetCurrentThreadActivityId(Guid.Empty);
 
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
             es.ExampleStart();
-            //Assert.NotEqual(Guid.Empty, EventSource.CurrentThreadActivityId);
+            Assert.NotEqual(Guid.Empty, EventSource.CurrentThreadActivityId);
             es.ExampleStop();
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
         }
@@ -72,7 +71,6 @@ namespace BasicEventSourceTests
         {
             using ActivityEventListener l = new ActivityEventListener();
             using ActivityEventSource es = new ActivityEventSource();
-            EventSource.SetCurrentThreadActivityId(Guid.Empty);
 
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
             es.ExampleStart();
@@ -88,7 +86,6 @@ namespace BasicEventSourceTests
         {
             using ActivityEventListener l = new ActivityEventListener();
             using ActivityEventSource es = new ActivityEventSource();
-            EventSource.SetCurrentThreadActivityId(Guid.Empty);
 
             // Run tasks on many threads. If an activity id leaks it is likely
             // that the thread will be sheduled to run one of our other tasks
@@ -122,7 +119,6 @@ namespace BasicEventSourceTests
         {
             using ActivityEventListener l = new ActivityEventListener();
             using ActivityEventSource es = new ActivityEventSource();
-            EventSource.SetCurrentThreadActivityId(Guid.Empty);
             try
             {
                 Guid g = Guid.NewGuid();
@@ -148,7 +144,6 @@ namespace BasicEventSourceTests
         {
             using ActivityEventListener l = new ActivityEventListener();
             using ActivityEventSource es = new ActivityEventSource();
-            EventSource.SetCurrentThreadActivityId(Guid.Empty);
             try
             {
                 es.ExampleStart();
