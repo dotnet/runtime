@@ -182,7 +182,7 @@ namespace
                 || pField->GetOffset() == FIELD_OFFSET_VALUE_CLASS);
 
             _ASSERTE(iInstanceFieldInfo < cInstanceFields);
-            pField->SetOffset(pInfoArray[iInstanceFieldInfo++].m_placement.m_offset);
+            IfFailThrow(pField->SetOffset(pInfoArray[iInstanceFieldInfo++].m_placement.m_offset));
         }
     }
 
