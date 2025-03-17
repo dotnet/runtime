@@ -487,7 +487,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Expected: 9999.0.4 from custom dir
             RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.4", Path.Combine(SharedState.CurrentWorkingDir, relativePath)));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.4", custom.Location));
 
             string underCurrent = SharedState.CurrentWorkingDirArtifact.GetUniqueSubdirectory("sdkPath");
             AddSdkToCustomPath(underCurrent, "9999.0.4");

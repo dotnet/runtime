@@ -79,6 +79,11 @@ pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print
     for (auto&& dir : locations)
     {
         append_path(&dir, _X("sdk"));
+        if (!pal::fullpath(&dir, true))
+        {
+            trace::verbose(_X("SDK path [%s] does not exist"), dir.c_str());
+            continue;
+        }
 
         // Search paths are in priority order. We take the first match and do not
         // look in any remaining locations.
