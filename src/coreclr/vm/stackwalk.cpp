@@ -440,6 +440,10 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                                         T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers /*= NULL*/,
                                         EECodeInfo * pCodeInfo /*= NULL*/)
 {
+#ifdef TARGET_WASM
+    _ASSERTE("VirtualUnwindCallFrame is not supported on WebAssembly");
+    return 0;
+#else
     CONTRACTL
     {
         NOTHROW;
@@ -542,6 +546,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 #endif // !DACCESS_COMPILE
 
     return uControlPc;
+#endif // TARGET_WASM
 }
 
 #ifndef DACCESS_COMPILE
