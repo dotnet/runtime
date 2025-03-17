@@ -207,7 +207,7 @@ namespace System.Net.Security
                     return certEx;
                 }
 
-                byte[] certHash = certEx!.GetCertHash(HashAlgorithmName.SHA512);
+                byte[] certHash = certEx.GetCertHash(HashAlgorithmName.SHA512);
 
                 if (!object.ReferenceEquals(certificate, certEx))
                 {
