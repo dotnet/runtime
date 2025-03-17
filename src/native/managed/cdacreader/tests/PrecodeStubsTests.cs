@@ -157,6 +157,15 @@ public class PrecodeStubsTests
         }};
     }
 
+    public static IEnumerable<object[]> PrecodeTestDescriptorDataWithContractVersion()
+    {
+        foreach (var data in PrecodeTestDescriptorData())
+        {
+            yield return new object[]{data[0], 1}; // Test v1 of the contract
+            yield return new object[]{data[0], 2}; // Test v2 of the contract
+        }
+    }
+
     internal struct AllocationRange
     {
         public ulong PrecodeDescriptorStart;
@@ -360,37 +369,16 @@ public class PrecodeStubsTests
     }
 
     [Theory]
-    [MemberData(nameof(PrecodeTestDescriptorData))]
-    public void TestPrecodeStubPrecodeExpectedMethodDesc_1(PrecodeTestDescriptor test)
+    [MemberData(nameof(PrecodeTestDescriptorDataWithContractVersion))]
+    public void TestPrecodeStubPrecodeExpectedMethodDesc(PrecodeTestDescriptor test, int contractVersion)
     {
-        var builder = new PrecodeBuilder(test.Arch, /* Test version 1 of the contract */1);
+        var builder = new PrecodeBuilder(test.Arch, contractVersion);
         builder.AddPlatformMetadata(test);
 
         TargetPointer expectedMethodDesc = new TargetPointer(0xeeee_eee0u); // arbitrary
         TargetCodePointer stub1 = builder.AddStubPrecodeEntry("Stub 1", test, expectedMethodDesc);
-
-        var target = CreateTarget(builder);
-        Assert.NotNull(target);
-
-        var precodeContract = target.Contracts.PrecodeStubs;
-
-        Assert.NotNull(precodeContract);
-
-        var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(stub1);
-        Assert.Equal(expectedMethodDesc, actualMethodDesc);
-    }
-
-    [Theory]
-    [MemberData(nameof(PrecodeTestDescriptorData))]
-    public void TestPrecodeStubPrecodeExpectedMethodDesc_2(PrecodeTestDescriptor test)
-    {
-        var builder = new PrecodeBuilder(test.Arch, /* Test version 2 of the contract */ 2);
-        builder.AddPlatformMetadata(test);
-
-        TargetPointer expectedMethodDesc = new TargetPointer(0xeeee_eee0u); // arbitrary
         TargetPointer expectedMethodDesc2 = new TargetPointer(0xfafa_eee0u); // arbitrary
-        TargetCodePointer stub1 = builder.AddStubPrecodeEntry("Stub 1", test, expectedMethodDesc);
-        TargetCodePointer stub2 = builder.AddThisPtrRetBufPrecodeEntry("Stub 2", test, expectedMethodDesc2);
+        TargetCodePointer stub2 = contractVersion >= 2 ? builder.AddThisPtrRetBufPrecodeEntry("Stub 2", test, expectedMethodDesc2) : new TargetCodePointer(expectedMethodDesc2.Value);
 
         var target = CreateTarget(builder);
         Assert.NotNull(target);
@@ -402,7 +390,11 @@ public class PrecodeStubsTests
         var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(stub1);
         Assert.Equal(expectedMethodDesc, actualMethodDesc);
 
-        var actualMethodDesc2 = precodeContract.GetMethodDescFromStubAddress(stub2);
-        Assert.Equal(expectedMethodDesc2, actualMethodDesc2);
+        if (contractVersion >= 2)
+        {
+            // Implementation of this type of precode is only handled correctly in contract version 2 and higher
+            var actualMethodDesc2 = precodeContract.GetMethodDescFromStubAddress(stub2);
+            Assert.Equal(expectedMethodDesc2, actualMethodDesc2);
+        }
     }
 }
