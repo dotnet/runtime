@@ -69,6 +69,9 @@ namespace System.Numerics.Tensors
             _lengths = lengths.IsEmpty ? [values.Length] : lengths.ToArray();
             _memoryOffset = memoryOffset;
 
+            if (_memoryOffset < 0 || _memoryOffset >= values.Length)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
             _flattenedLength = TensorSpanHelpers.CalculateTotalLength(_lengths);
             _strides = strides.IsEmpty ? TensorSpanHelpers.CalculateStrides(_lengths, _flattenedLength) : strides.ToArray();
             TensorSpanHelpers.ValidateStrides(_strides, _lengths);
@@ -77,12 +80,12 @@ namespace System.Numerics.Tensors
             if (Environment.Is64BitProcess)
             {
                 // See comment in Span<T>.Slice for how this works.
-                if ((ulong)(uint)maxElements >= (ulong)(uint)values.Length && values.Length != 0)
+                if ((ulong)(uint)maxElements >= (ulong)(uint)(values.Length - memoryOffset) && values.Length != 0)
                     ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
             }
             else
             {
-                if (((uint)maxElements >= (uint)(values.Length)) && values.Length != 0)
+                if (((uint)maxElements >= (uint)(values.Length - memoryOffset)) && values.Length != 0)
                     ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
             }
 

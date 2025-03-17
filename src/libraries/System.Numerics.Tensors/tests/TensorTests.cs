@@ -1168,6 +1168,12 @@ namespace System.Numerics.Tensors.Tests
             t1 = t0.Slice(new NRange(new NIndex(0), new NIndex(2)), new NRange(new NIndex(2), new NIndex(3)));
             sum = Tensor.Sum<float>(t1);
             Assert.Equal(9, sum);
+
+            Assert.Throws<IndexOutOfRangeException>(()=> new Tensor<float>(new float[] { 1, 2, 3, 4, 5, 6 }, [2, 3], -1));
+            Assert.Throws<IndexOutOfRangeException>(()=> new Tensor<float>(new float[] { 1, 2, 3, 4, 5, 6 }, [2, 3], 100));
+            Assert.Throws<IndexOutOfRangeException>(()=> new Tensor<float>(new float[] { 1, 2, 3, 4, 5, 6 }, [2, 3], int.MinValue));
+            Assert.Throws<IndexOutOfRangeException>(()=> new Tensor<float>(new float[] { 1, 2, 3, 4, 5, 6 }, [2, 3], int.MaxValue));
+            Assert.Throws<ArgumentException>(()=> new Tensor<float>(new float[] { 1, 2, 3, 4, 5, 6 }, [2, 3], 2));
         }
 
         public static float StdDev(float[] values)
