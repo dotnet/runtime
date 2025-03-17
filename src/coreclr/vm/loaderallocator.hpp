@@ -627,11 +627,13 @@ public:
         return m_pNewStubPrecodeHeap;
     }
 
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     PTR_LoaderHeap GetDynamicHelpersStubHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pDynamicHelpersStubHeap;
     }
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
 
     // The executable heap is intended to only be used by the global loader allocator.
     // It refers to executable memory that is not associated with a rangelist.
