@@ -90,7 +90,7 @@ namespace System.Net.Http
         private int _maxResponseDrainSize = HttpHandlerDefaults.DefaultMaxResponseDrainSize;
         private IDictionary<string, object>? _properties; // Only create dictionary when required.
         private volatile bool _operationStarted;
-        private volatile bool _disposed;
+        private volatile int _disposed;
         private SafeWinHttpHandle? _sessionHandle;
         private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
 
@@ -539,13 +539,11 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            if (!_disposed)
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
             {
-                _disposed = true;
-
                 if (disposing && _sessionHandle != null)
                 {
-                    SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
+                    _sessionHandle.Dispose();
                 }
             }
 
@@ -941,7 +939,14 @@ namespace System.Net.Http
                 // will have the side-effect of WinHTTP cancelling any pending I/O and accelerating its callbacks
                 // on the handle and thus releasing the awaiting tasks in the loop below. This helps to provide
                 // a more timely, cooperative, cancellation pattern.
-                using (state.CancellationToken.Register(s => ((WinHttpRequestState)s!).RequestHandle!.Dispose(), state))
+                using (state.CancellationToken.Register(static s =>
+                {
+                    var state = (WinHttpRequestState)s!;
+                    lock (state.Lock)
+                    {
+                        state.RequestHandle?.Dispose();
+                    }
+                }, state))
                 {
                     do
                     {
@@ -1026,7 +1031,7 @@ namespace System.Net.Http
             }
             finally
             {
-                SafeWinHttpHandle.DisposeAndClearHandle(ref connectHandle);
+                connectHandle?.Dispose();
 
                 try
                 {
@@ -1171,40 +1176,43 @@ namespace System.Net.Http
         {
             const SslProtocols Tls13 = (SslProtocols)12288; // enum is missing in .NET Standard
             uint optionData = 0;
-            SslProtocols sslProtocols =
-                (_sslProtocols == SslProtocols.None) ? SecurityProtocol.DefaultSecurityProtocols : _sslProtocols;
+
+            if (_sslProtocols == SslProtocols.None)
+            {
+                return;
+            }
 
 #pragma warning disable 0618 // SSL2/SSL3 are deprecated
-            if ((sslProtocols & SslProtocols.Ssl2) != 0)
+            if ((_sslProtocols & SslProtocols.Ssl2) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL2;
             }
 
-            if ((sslProtocols & SslProtocols.Ssl3) != 0)
+            if ((_sslProtocols & SslProtocols.Ssl3) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL3;
             }
 #pragma warning restore 0618
 
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
-            if ((sslProtocols & SslProtocols.Tls) != 0)
+            if ((_sslProtocols & SslProtocols.Tls) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1;
             }
 
-            if ((sslProtocols & SslProtocols.Tls11) != 0)
+            if ((_sslProtocols & SslProtocols.Tls11) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1;
             }
 #pragma warning restore SYSLIB0039
 
-            if ((sslProtocols & SslProtocols.Tls12) != 0)
+            if ((_sslProtocols & SslProtocols.Tls12) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
             }
 
             // Set this only if supported by WinHttp version.
-            if (s_supportsTls13.Value && (sslProtocols & Tls13) != 0)
+            if (s_supportsTls13.Value && (_sslProtocols & Tls13) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
             }
@@ -1613,7 +1621,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
+            if (_disposed == 1)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }

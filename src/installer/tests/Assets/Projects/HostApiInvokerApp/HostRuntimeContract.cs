@@ -18,6 +18,7 @@ namespace HostApiInvokerApp
             public delegate* unmanaged[Stdcall]<byte*, byte*, nint, void*, nint> get_runtime_property;
             public delegate* unmanaged[Stdcall]<byte*, nint, nint, nint, byte> bundle_probe;
             public IntPtr pinvoke_override;
+            public delegate* unmanaged[Stdcall]<byte*, void**, nint, byte> external_assembly_probe;
         }
 #pragma warning restore CS0649
 

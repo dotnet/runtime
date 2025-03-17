@@ -1976,7 +1976,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE((regNum == 1) || (regNum >= 5 && regNum <= 31));
 
 #ifdef FEATURE_NATIVEAOT
-    PTR_uintptr_t* ppReg = &pRD->pRA;
+    PTR_uintptr_t* ppReg = &pRD->pR0;
 
     return (OBJECTREF*)*(ppReg + regNum);
 #else

@@ -679,7 +679,7 @@ void MorphCopyBlockHelper::TrySpecialCases()
     {
         assert(m_store->OperIs(GT_STORE_LCL_VAR));
 
-        m_dstVarDsc->lvIsMultiRegRet = true;
+        m_dstVarDsc->SetIsMultiRegDest();
 
         JITDUMP("Not morphing a multireg node return\n");
         m_transformationDecision = BlockTransformation::SkipMultiRegSrc;
@@ -1358,8 +1358,17 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 }
                 else
                 {
-                    GenTree* fldAddr = grabAddr(srcFieldOffset);
-                    dstFldStore      = m_comp->gtNewStoreIndNode(srcType, fldAddr, srcFld);
+                    GenTree*     fldAddr    = grabAddr(srcFieldOffset);
+                    GenTreeFlags indirFlags = GTF_EMPTY;
+                    if (m_store->OperIs(GT_STORE_BLK, GT_STOREIND))
+                    {
+                        indirFlags = m_store->gtFlags & (GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP);
+                        if (m_store->OperIs(GT_STORE_BLK) && m_store->AsBlk()->GetLayout()->IsStackOnly(m_comp))
+                        {
+                            indirFlags |= GTF_IND_TGT_NOT_HEAP;
+                        }
+                    }
+                    dstFldStore = m_comp->gtNewStoreIndNode(srcType, fldAddr, srcFld, indirFlags);
                 }
             }
         }

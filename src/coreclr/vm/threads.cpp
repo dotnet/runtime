@@ -305,7 +305,7 @@ bool Thread::DetectHandleILStubsForDebugger()
         while (pFrame != FRAME_TOP)
         {
             // Check for HMF's.  See the comment at the beginning of this function.
-            if (pFrame->GetVTablePtr() == HelperMethodFrame::GetMethodFrameVPtr())
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::HelperMethodFrame)
             {
                 break;
             }
@@ -353,13 +353,23 @@ void SetThread(Thread* t)
 {
     LIMITED_METHOD_CONTRACT
 
+    Thread* origThread = gCurrentThreadInfo.m_pThread;
     gCurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
+        _ASSERTE(origThread == NULL);
         InitializeCurrentThreadsStaticData(t);
         EnsureTlsDestructionMonitor();
         t->InitRuntimeThreadLocals();
     }
+#ifdef TARGET_WINDOWS
+    else if (origThread != NULL)
+    {
+        // Unregister from OS notifications
+        // This can return false if a thread did not register for OS notification.
+        OsDetachThread(origThread);
+    }
+#endif
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
     gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
@@ -865,7 +875,7 @@ void DestroyThread(Thread *th)
 // Public function: DetachThread()
 // Marks the thread as needing to be destroyed, but doesn't destroy it yet.
 //-------------------------------------------------------------------------
-HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
+HRESULT Thread::DetachThread(BOOL inTerminationCallback)
 {
     // !!! Can not use contract here.
     // !!! Contract depends on Thread object for GC_TRIGGERS.
@@ -890,9 +900,9 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
         pErrorInfo->Release();
     }
 
-    // Revoke our IInitializeSpy registration only if we are not in DLL_THREAD_DETACH
+    // Revoke our IInitializeSpy registration only if we are not in a thread termination callback
     // (COM will do it or may have already done it automatically in that case).
-    if (!fDLLThreadDetach)
+    if (!inTerminationCallback)
     {
         RevokeApartmentSpy();
     }
@@ -3022,52 +3032,6 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
     return(param.dwRet);
 }
 
-DWORD Thread::DoAppropriateWait(AppropriateWaitFunc func, void *args,
-                                DWORD millis, WaitMode mode,
-                                PendingSync *syncState)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    INDEBUG(BOOL alertable = (mode & WaitMode_Alertable) != 0;);
-    _ASSERTE(alertable || syncState == 0);
-
-    struct Param
-    {
-        Thread *pThis;
-        AppropriateWaitFunc func;
-        void *args;
-        DWORD millis;
-        WaitMode mode;
-        DWORD dwRet;
-    } param;
-    param.pThis = this;
-    param.func = func;
-    param.args = args;
-    param.millis = millis;
-    param.mode = mode;
-    param.dwRet = (DWORD) -1;
-
-    EE_TRY_FOR_FINALLY(Param *, pParam, &param) {
-        pParam->dwRet = pParam->pThis->DoAppropriateWaitWorker(pParam->func, pParam->args, pParam->millis, pParam->mode);
-    }
-    EE_FINALLY {
-        if (syncState) {
-            if (!GOT_EXCEPTION() && WAIT_OBJECT_0 == param.dwRet) {
-                // This thread has been removed from syncblk waiting list by the signalling thread
-                syncState->Restore(FALSE);
-            }
-            else
-                syncState->Restore(TRUE);
-        }
-
-        _ASSERTE (WAIT_IO_COMPLETION != param.dwRet);
-    }
-    EE_END_FINALLY;
-
-    return(param.dwRet);
-}
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 //--------------------------------------------------------------------
@@ -3489,101 +3453,6 @@ WaitCompleted:
     return ret;
 }
 
-
-DWORD Thread::DoAppropriateWaitWorker(AppropriateWaitFunc func, void *args,
-                                      DWORD millis, WaitMode mode)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    BOOL alertable = (mode & WaitMode_Alertable)!=0;
-
-    // Before going to pre-emptive mode the thread needs to be flagged as waiting for
-    // the debugger. This used to be accomplished by the TS_Interruptible flag but that
-    // doesn't work reliably, see DevDiv Bugs 699245. Some methods call in here already in
-    // COOP mode so we set the bit before the transition. For the calls that are already
-    // in pre-emptive mode those are still buggy. This is only a partial fix.
-    BOOL isCoop = PreemptiveGCDisabled();
-    ThreadStateNCStackHolder tsNC(isCoop && alertable, TSNC_DebuggerSleepWaitJoin);
-    GCX_PREEMP();
-
-    // <TODO>
-    // @TODO cwb: we don't know whether a thread has a message pump or
-    // how to pump its messages, currently.
-    // @TODO cwb: WinCE isn't going to support Thread.Interrupt() correctly until
-    // we get alertable waits on that platform.</TODO>
-    DWORD ret;
-    if(alertable)
-    {
-        DoAppropriateWaitWorkerAlertableHelper(mode);
-    }
-
-    DWORD option;
-    if (alertable)
-    {
-        option = WAIT_ALERTABLE;
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        ApartmentState as = GetFinalApartment();
-        if ((AS_InMTA != as) && !AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
-        {
-            option |= WAIT_MSGPUMP;
-        }
-#endif  // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    }
-    else
-    {
-        option = 0;
-    }
-
-    ThreadStateHolder tsh(alertable, TS_Interruptible | TS_Interrupted);
-
-    ULONGLONG dwStart = 0;
-    ULONGLONG dwEnd;
-
-retry:
-    if (millis != INFINITE)
-    {
-        dwStart = CLRGetTickCount64();
-    }
-    ret = func(args, millis, option);
-
-    if (ret == WAIT_IO_COMPLETION)
-    {
-        _ASSERTE (alertable);
-
-        if ((m_State & TS_Interrupted))
-        {
-            HandleThreadInterrupt();
-        }
-        if (millis != INFINITE)
-        {
-            dwEnd = CLRGetTickCount64();
-            if (dwEnd >= dwStart + millis)
-            {
-                ret = WAIT_TIMEOUT;
-                goto WaitCompleted;
-            }
-            else
-            {
-                millis -= (DWORD)(dwEnd - dwStart);
-            }
-        }
-        goto retry;
-    }
-
-WaitCompleted:
-    _ASSERTE(ret == WAIT_OBJECT_0 ||
-             ret == WAIT_ABANDONED ||
-             ret == WAIT_TIMEOUT ||
-             ret == WAIT_FAILED);
-
-    _ASSERTE((ret != WAIT_TIMEOUT) || (millis != INFINITE));
-
-    return ret;
-}
 
 //--------------------------------------------------------------------
 // Only one style of wait for DoSignalAndWait since we don't support this on STA Threads
@@ -7206,7 +7075,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
     // CatchHandlerFound (CHF) notification.
-    FrameWithCookie<DebuggerU2MCatchHandlerFrame> catchFrame;
+    DebuggerU2MCatchHandlerFrame catchFrame(false /* catchesAllExceptions */);
 
     TryParam param(pCallState);
     param.pFrame = &catchFrame;

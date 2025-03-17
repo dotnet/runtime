@@ -7,6 +7,7 @@
 #include "pal_safecrt.h"
 #include "pal_x509.h"
 #include "pal_ssl.h"
+#include "memory_debug.h"
 #include "openssl.h"
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
@@ -262,6 +263,7 @@ parameters to the algorithm used by the certificate public key
 Return values:
 0: Invalid X509 pointer
 1: Data was copied
+2: No data exists.
 Any negative value: The input buffer size was reported as insufficient. A buffer of size ABS(return) is required.
 */
 int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, int32_t cBuf)
@@ -291,9 +293,9 @@ int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, i
 
     if (!parameter)
     {
-        // If pBuf is NULL we're asking for the length, so return 0 (which is negative-zero)
-        // If pBuf is non-NULL we're asking to fill the data, in which case we return 1.
-        return pBuf != NULL;
+        // Callers should not attempt to get the value if it was originally reported there is missing data.
+        assert(pBuf == NULL);
+        return 2;
     }
 
     int len = i2d_ASN1_TYPE(parameter, NULL);
@@ -1508,7 +1510,12 @@ static int32_t EnsureOpenSslInitializedCore(void)
     // Otherwise call the 1.1 one.
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     InitializeOpenSSLShim();
+#endif
+    // This needs to be done before any allocation is done e.g. EnsureOpenSsl* is called.
+    // And it also needs to be after the pointers are loaded for DISTRO_AGNOSTIC_SSL
+    InitializeMemoryDebug();
 
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (API_EXISTS(SSL_state))
     {
         ret = EnsureOpenSsl10Initialized();

@@ -20,7 +20,7 @@ add_executable(
 %Defines%
 
 if(NOT %UseNativeAOTRuntime%)
-    include_directories("%MonoInclude%")
+    include_directories(%MonoInclude%)
 endif()
 
 set_target_properties(%ProjectName% PROPERTIES

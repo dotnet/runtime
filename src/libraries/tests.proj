@@ -40,6 +40,11 @@
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'osx' and '$(TargetArchitecture)' == 'arm64'">
+    <!-- https://github.com/dotnet/dnceng/issues/3008 - osx Helix queue doesn't have OpenSSL -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl\tests\System.Security.Cryptography.OpenSsl.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- Samples which are too complex for CI -->
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-ts\Wasm.Console.Node.TS.Sample.csproj" />
@@ -256,6 +261,14 @@
 
     <!-- https://github.com/dotnet/runtime/issues/50493 -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT\Android.Device_Emulator.Aot.Test.csproj" />
+
+    <!-- https://github.com/dotnet/runtime/issues/111699 -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\LibraryMode_AOT_LLVM\Android.Device_Emulator.LibraryMode_Aot_Llvm.Test.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm' and '$(RunDisabledAndroidTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/111699 -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\LibraryMode_AOT_LLVM\Android.Device_Emulator.LibraryMode_Aot_Llvm.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(RunDisablediOSTests)' != 'true'">
@@ -715,7 +728,7 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'android'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'Mono'">
     <ProjectReference Include="$(MonoProjectRoot)sample\Android\AndroidSampleApp.csproj"
                       BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\**\*.Test.csproj"
@@ -749,6 +762,11 @@
       Include="$(RepoRoot)src\tests\Common\XUnitLogChecker\XUnitLogChecker.csproj"
       Targets="Publish"
       AdditionalProperties="%(AdditionalProperties);_IsPublishing=true;Configuration=Release;PublishDir=$(XUnitLogCheckerLibrariesOutDir);ROOTFS_DIR=$(ROOTFS_DIR);RuntimeIdentifier=$(OutputRID)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Test.csproj"
+      BuildInParallel="false" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
