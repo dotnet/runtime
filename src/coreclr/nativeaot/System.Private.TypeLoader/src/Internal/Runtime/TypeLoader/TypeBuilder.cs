@@ -348,7 +348,7 @@ namespace Internal.Runtime.TypeLoader
                         break;
 
                     default:
-                        Debug.Fail("Unexpected BagElementKind for generic method with name " + method.NameAndSignature.Name + "! Only BagElementKind.DictionaryLayout should appear.");
+                        Debug.Fail("Unexpected BagElementKind for generic method with name " + method.NameAndSignature.GetName() + "! Only BagElementKind.DictionaryLayout should appear.");
                         throw new BadImageFormatException();
                 }
             }
