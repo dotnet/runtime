@@ -7921,7 +7921,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         // Throw exception from the caller context
 
 #ifdef HOST_WINDOWS
-        if (!IsComPlusException(&lastExceptionRecord) && MapWin32FaultToCOMPlusException(&lastExceptionRecord) == kSEHException)
+        if ((pLongJmpBuf == NULL) && !IsComPlusException(&lastExceptionRecord) && MapWin32FaultToCOMPlusException(&lastExceptionRecord) == kSEHException)
         {
             // Propagate an external exception to the caller context. This is done in a special way, since the native stack
             // frames below the caller context may contain e.g. C++ exception object that the external exception references.
