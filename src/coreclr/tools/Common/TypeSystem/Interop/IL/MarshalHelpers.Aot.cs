@@ -19,7 +19,7 @@ namespace Internal.TypeSystem.Interop
 
             typeDesc = typeDesc.UnderlyingType;
 
-            if (typeDesc.IsPrimitive && typeDesc.Category is not TypeFlags.Boolean or TypeFlags.Char)
+            if (typeDesc.IsPrimitive && (typeDesc.Category != TypeFlags.Boolean && typeDesc.Category != TypeFlags.Char))
             {
                 return false;
             }
