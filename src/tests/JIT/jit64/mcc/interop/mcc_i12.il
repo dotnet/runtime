@@ -63,8 +63,10 @@
     .method public static int32 Main()
     {
       .entrypoint
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .maxstack  1
-
       call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsWindows()
       brtrue.s   DoTest
       ldc.i4     100
@@ -77,10 +79,6 @@
 
     .method public static int32 Test()
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-          01 00 00 00
-      )
-      .entrypoint
       .maxstack  64
       .locals init	(
         [0] class MCCTest.MyClass me,
