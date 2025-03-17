@@ -1148,7 +1148,7 @@ public:
     {
         return DPtrType(m_addr - val * sizeof(type));
     }
-#if defined(HOST_64BIT)
+#ifdef HOST_64BIT
     DPtrType operator-(unsigned int val)
     {
         return DPtrType(m_addr - val * sizeof(type));
