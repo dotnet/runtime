@@ -193,6 +193,10 @@ void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, cons
     else
     {
         trace::error(_X("%s%s"), main_error_prefix, no_sdk_message);
+        if (has_custom_paths && paths.empty())
+        {
+            trace::error(_X("%sEmpty search paths specified in global.json file: %s"), main_error_prefix, global_file.c_str());
+        }
     }
 
     if (!sdk_exists)
@@ -432,8 +436,15 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
         has_custom_paths = true;
         const auto& paths_array = paths_value->value.GetArray();
         paths.reserve(paths_array.Size());
-        for (const auto& path : paths_array)
+        for (uint32_t i = 0; i < paths_array.Size(); ++i)
         {
+            const auto& path = paths_array[i];
+            if (!path.IsString())
+            {
+                trace::warning(_X("Ignoring non-string 'sdk/paths[%d]' value in [%s]"), global_file_path.c_str());
+                continue;
+            }
+
             paths.push_back(path.GetString());
         }
     }
@@ -578,7 +589,7 @@ bool sdk_resolver::resolve_sdk_path_and_version(const pal::string_t& dir, pal::s
         }
     }
 
-    // No match - we did not find and exact match and roll forward is disabled
+    // No match - we did not find an exact match and roll forward is disabled
     if (roll_forward == sdk_roll_forward_policy::disable)
         return false;
 

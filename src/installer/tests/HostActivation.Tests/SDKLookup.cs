@@ -451,7 +451,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Expected: no SDKs found
             RunTest()
                 .Should().Fail()
-                .And.FindAnySdk(false);
+                .And.FindAnySdk(false)
+                .And.HaveStdErrContaining($"Empty search paths specified in global.json file: {globalJsonPath}");
 
             sdk.Paths = [ GlobalJson.HostSdkPath ];
             globalJsonPath = GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
