@@ -126,7 +126,7 @@ static MonoFtnPtrEHCallback ftnptr_eh_callback;
  */
 int mono_llvmonly_do_unwind_flag;
 
-static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data, gboolean crash_context);
+static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data);
 static void mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx);
 static void mono_runtime_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data);
 static gboolean mono_current_thread_has_handle_block_guard (void);
@@ -1224,7 +1224,7 @@ mono_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnw
 		start_ctx = &extra_ctx;
 	}
 
-	mono_walk_stack_full (func, start_ctx, thread->jit_data, mono_get_lmf (), unwind_options, user_data, FALSE);
+	mono_walk_stack_full (func, start_ctx, thread->jit_data, mono_get_lmf (), unwind_options, user_data);
 }
 
 /**
@@ -1258,7 +1258,7 @@ mono_walk_stack_with_state (MonoJitStackWalk func, MonoThreadUnwindState *state,
 		&state->ctx,
 		(MonoJitTlsData *)state->unwind_data [MONO_UNWIND_DATA_JIT_TLS],
 		(MonoLMF *)state->unwind_data [MONO_UNWIND_DATA_LMF],
-		unwind_options, user_data, FALSE);
+		unwind_options, user_data);
 }
 
 void
@@ -1278,14 +1278,13 @@ mono_walk_stack (MonoJitStackWalk func, MonoUnwindOptions options, void *user_da
  * \param thread the thread whose stack to walk, can be NULL to use the current thread
  * \param lmf the LMF of \p thread, can be NULL to use the LMF of the current thread
  * \param user_data data passed to the callback
- * \param crash_context tells us that we're in a context where it's not safe to lock or allocate
  * This function walks the stack of a thread, starting from the state
  * represented by \p start_ctx. For each frame the callback
  * function is called with the relevant info. The walk ends when no more
  * managed stack frames are found or when the callback returns a TRUE value.
  */
 static void
-mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data, gboolean crash_context)
+mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data)
 {
 	gint il_offset;
 	MonoContext ctx, new_ctx;
@@ -1372,7 +1371,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 			MonoDebugSourceLocation *source = NULL;
 
 			// Don't do this when we can be in a signal handler
-			if (!crash_context)
+			if (!async)
 				source = mono_debug_lookup_source_location (jinfo_get_method (frame.ji), frame.native_offset, NULL);
 			if (source) {
 				il_offset = source->il_offset;
@@ -1380,7 +1379,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 				MonoSeqPointInfo *seq_points = NULL;
 
 				// It's more reliable to look into the global cache if possible
-				if (crash_context)
+				if (async)
 					seq_points = (MonoSeqPointInfo *) frame.ji->seq_points;
 				else
 					seq_points = mono_get_seq_points (jinfo_get_method (frame.ji));
@@ -2976,7 +2975,17 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 		g_async_safe_printf ("\tManaged Stacktrace:\n");
 		g_async_safe_printf ("=================================================================\n");
 
-		mono_walk_stack_full (print_stack_frame_signal_safe, mctx, jit_tls, mono_get_lmf (), MONO_UNWIND_LOOKUP_IL_OFFSET, NULL, TRUE);
+		gboolean restore_async_context = FALSE;
+		if (!mono_thread_info_is_async_context ()) {
+			mono_thread_info_set_is_async_context (TRUE);
+			restore_async_context = TRUE;
+		}
+
+		mono_walk_stack_full (print_stack_frame_signal_safe, mctx, jit_tls, mono_get_lmf (), MONO_UNWIND_LOOKUP_IL_OFFSET, NULL);
+
+		if (restore_async_context)
+			mono_thread_info_set_is_async_context (FALSE);
+
 		g_async_safe_printf ("=================================================================\n");
 	}
 
@@ -3146,15 +3155,22 @@ mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS];
 
 	/* Guard against a null MonoJitTlsData. This can happens if the thread receives the
-         * interrupt signal before the JIT has time to initialize its TLS data for the given thread.
+	 * interrupt signal before the JIT has time to initialize its TLS data for the given thread.
 	 */
 	if (!jit_tls || jit_tls->handler_block)
 		return FALSE;
 
 	/* Do an async safe stack walk */
-	mono_thread_info_set_is_async_context (TRUE);
-	mono_walk_stack_with_state (find_last_handler_block, ctx, MONO_UNWIND_NONE, &data);
-	mono_thread_info_set_is_async_context (FALSE);
+	gboolean restore_async_context = FALSE;
+	if (!mono_thread_info_is_async_context ()) {
+		mono_thread_info_set_is_async_context (TRUE);
+		restore_async_context = TRUE;
+	}
+
+	mono_walk_stack_with_state (find_last_handler_block, ctx, MONO_UNWIND_SIGNAL_SAFE, &data);
+
+	if (restore_async_context)
+		mono_thread_info_set_is_async_context (FALSE);
 
 	if (!data.ji)
 		return FALSE;
