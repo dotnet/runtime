@@ -19,9 +19,9 @@ namespace Internal.TypeSystem.Interop
 
             typeDesc = typeDesc.UnderlyingType;
 
-            if (typeDesc.IsPrimitive && (typeDesc.Category != TypeFlags.Boolean && typeDesc.Category != TypeFlags.Char))
+            if (typeDesc.IsPrimitive)
             {
-                return false;
+                return !(typeDesc.Category is TypeFlags.Boolean or TypeFlags.Char);
             }
 
             MetadataType type = typeDesc as MetadataType;
