@@ -305,6 +305,11 @@ protected:
     BYTE                m_FixupPrecodeHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_NewStubPrecodeHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_StaticsHeapInstance[sizeof(LoaderHeap)];
+#ifdef FEATURE_READYTORUN
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    BYTE                m_DynamicHelpersHeapInstance[sizeof(LoaderHeap)];
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+#endif // FEATURE_READYTORUN
     PTR_LoaderHeap      m_pLowFrequencyHeap;
     PTR_LoaderHeap      m_pHighFrequencyHeap;
     PTR_LoaderHeap      m_pStaticsHeap;
@@ -312,10 +317,12 @@ protected:
     PTR_CodeFragmentHeap m_pPrecodeHeap;
     PTR_LoaderHeap      m_pExecutableHeap;
 #ifdef FEATURE_READYTORUN
-#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    PTR_LoaderHeap      m_pDynamicHelpersStubHeap; // R2R Stubs for dynamic helpers. Seperate from m_pStubHeap to avoid allowing these stubs to take up cache space once the process is fully hot.
+#else
     PTR_CodeFragmentHeap m_pDynamicHelpersHeap;
 #endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
-#endif
+#endif // FEATURE_READYTORUN
     PTR_LoaderHeap      m_pFixupPrecodeHeap;
     PTR_LoaderHeap      m_pNewStubPrecodeHeap;
     //****************************************************************************************
@@ -346,6 +353,9 @@ protected:
     // IL stub cache with fabricated MethodTable parented by a random module in this LoaderAllocator.
     ILStubCache         m_ILStubCache;
 
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+    CodeRangeMapRangeList m_dynamicHelpersRangeList;
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     CodeRangeMapRangeList m_stubPrecodeRangeList;
     CodeRangeMapRangeList m_fixupPrecodeRangeList;
 
@@ -615,6 +625,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pNewStubPrecodeHeap;
+    }
+
+    PTR_LoaderHeap GetDynamicHelpersStubHeap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pDynamicHelpersStubHeap;
     }
 
     // The executable heap is intended to only be used by the global loader allocator.
