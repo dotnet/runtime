@@ -574,10 +574,6 @@ enum class BasicBlockVisit
 // The bbPreds list is initially created by Compiler::fgLinkBasicBlocks()
 // and is incrementally kept up to date.
 //
-// The edge weight are computed by Compiler::fgComputeEdgeWeights()
-// the edge weights are used to straighten conditional branches
-// by Compiler::fgReorderBlocks()
-//
 struct FlowEdge
 {
 private:
@@ -1766,14 +1762,14 @@ public:
 
     bool endsWithJmpMethod(Compiler* comp) const;
 
-    bool endsWithTailCall(Compiler* comp,
-                          bool      fastTailCallsOnly,
-                          bool      tailCallsConvertibleToLoopOnly,
-                          GenTree** tailCall) const;
+    bool endsWithTailCall(Compiler*     comp,
+                          bool          fastTailCallsOnly,
+                          bool          tailCallsConvertibleToLoopOnly,
+                          GenTreeCall** tailCall) const;
 
     bool endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly = false) const;
 
-    bool endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall) const;
+    bool endsWithTailCallConvertibleToLoop(Compiler* comp, GenTreeCall** tailCall) const;
 
     // Returns the first statement in the statement list of "this" that is
     // not an SSA definition (a lcl = phi(...) store).

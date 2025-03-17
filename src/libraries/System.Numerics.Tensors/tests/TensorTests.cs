@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -1582,12 +1583,12 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, slice[1, 0]);
             Assert.Equal(0, slice[1, 1]);
 
-            // Since Tensor.Slice does a copy the original tensor shouldn't be modified
-            Assert.Equal(1, tensor[0, 0]);
-            Assert.Equal(2, tensor[0, 1]);
+            // Since Tensor.Slice does do a copy the original tensor should be modified but only in the slice we took.
+            Assert.Equal(0, tensor[0, 0]);
+            Assert.Equal(0, tensor[0, 1]);
             Assert.Equal(3, tensor[0, 2]);
-            Assert.Equal(4, tensor[1, 0]);
-            Assert.Equal(5, tensor[1, 1]);
+            Assert.Equal(0, tensor[1, 0]);
+            Assert.Equal(0, tensor[1, 1]);
             Assert.Equal(6, tensor[1, 2]);
             Assert.Equal(7, tensor[2, 0]);
             Assert.Equal(8, tensor[2, 1]);
@@ -1609,8 +1610,8 @@ namespace System.Numerics.Tensors.Tests
             slice.Clear();
             Assert.Equal(0, slice[0]);
 
-            // Since Tensor.Slice does a copy the original tensor shouldn't be modified
-            Assert.Equal(1, tensor[0]);
+            // Since Tensor.Slice does do a copy the original tensor should be modified but only in the slice we took.
+            Assert.Equal(0, tensor[0]);
             Assert.Equal(2, tensor[1]);
             Assert.Equal(3, tensor[2]);
             Assert.Equal(4, tensor[3]);
@@ -2643,6 +2644,74 @@ namespace System.Numerics.Tensors.Tests
             filter = Tensor.Create<bool>(new bool[] { true, true, true}, [3]);
             Tensor.FilteredUpdate(tensor1.AsTensorSpan(), filter, replace);
             Assert.Equal(new int[] { -1, -1, -1 }, tensor1.ToArray());
+        }
+
+        [Fact]
+        public void TensorObjectFillTests()
+        {
+            ITensor tensor = (ITensor)new Tensor<int>(new int[4], new nint[] { 2, 2 });
+            tensor.Fill(5);
+
+            Assert.Equal(5, tensor[0, 0]);
+            Assert.Equal(5, tensor[0, 1]);
+            Assert.Equal(5, tensor[1, 0]);
+            Assert.Equal(5, tensor[1, 1]);
+
+            Assert.Throws<ArgumentException>(() => tensor.Fill("invalid"));
+            Assert.Throws<ArgumentException>(() => tensor.Fill(null));
+
+            tensor.Fill((object)5);
+            Assert.Equal(5, tensor[0, 0]);
+            Assert.Equal(5, tensor[0, 1]);
+            Assert.Equal(5, tensor[1, 0]);
+            Assert.Equal(5, tensor[1, 1]);
+        }
+
+        [Fact]
+        public void TensorObjectIndexerTests()
+        {
+            ITensor tensor = new Tensor<int>(new int[] { 1, 2, 3, 4 }, new nint[] { 2, 2 });
+
+            Assert.Equal(1, tensor[new nint[] { 0, 0 }]);
+            Assert.Equal(2, tensor[new nint[] { 0, 1 }]);
+            Assert.Equal(3, tensor[new nint[] { 1, 0 }]);
+            Assert.Equal(4, tensor[new nint[] { 1, 1 }]);
+
+            tensor[new nint[] { 0, 0 }] = 10;
+            tensor[new nint[] { 0, 1 }] = 20;
+            tensor[new nint[] { 1, 0 }] = 30;
+            tensor[new nint[] { 1, 1 }] = 40;
+
+            Assert.Equal(10, tensor[new nint[] { 0, 0 }]);
+            Assert.Equal(20, tensor[new nint[] { 0, 1 }]);
+            Assert.Equal(30, tensor[new nint[] { 1, 0 }]);
+            Assert.Equal(40, tensor[new nint[] { 1, 1 }]);
+
+            Assert.Throws<IndexOutOfRangeException>(() => tensor[new nint[] { 2, 0 }]);
+            Assert.Throws<IndexOutOfRangeException>(() => tensor[new nint[] { 0, 2 }]);
+            Assert.Throws<IndexOutOfRangeException>(() => tensor[new nint[] { -1, 0 }]);
+            Assert.Throws<IndexOutOfRangeException>(() => tensor[new nint[] { -1, -1 }]);
+
+            Assert.Throws<IndexOutOfRangeException>(() => tensor[new nint[] { 2, 0 }] = 10);
+            Assert.Throws<IndexOutOfRangeException>(() => tensor[new nint[] { 0, 2 }] = 20);
+            Assert.Throws<IndexOutOfRangeException>(() => tensor[new nint[] { -1, 0 }] = 20);
+            Assert.Throws<IndexOutOfRangeException>(() => tensor[new nint[] { -1, -1 }] = 20);
+        }
+
+        [Fact]
+        public void TensorGetPinnedHandleTests()
+        {
+            Tensor<int> tensor = new Tensor<int>(new int[] { 1, 2, 3, 4 }, new nint[] { 2, 2 });
+
+            using MemoryHandle handle = tensor.GetPinnedHandle();
+            unsafe
+            {
+                int* ptr = (int*)handle.Pointer;
+                Assert.Equal(1, ptr[0]);
+                Assert.Equal(2, ptr[1]);
+                Assert.Equal(3, ptr[2]);
+                Assert.Equal(4, ptr[3]);
+            }
         }
     }
 }

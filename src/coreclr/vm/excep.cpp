@@ -128,8 +128,7 @@ BOOL ShouldOurUEFDisplayUI(PEXCEPTION_POINTERS pExceptionInfo)
 BOOL NotifyAppDomainsOfUnhandledException(
     PEXCEPTION_POINTERS pExceptionPointers,
     OBJECTREF   *pThrowableIn,
-    BOOL        useLastThrownObject,
-    BOOL        isTerminating);
+    BOOL        useLastThrownObject);
 
 VOID SetManagedUnhandledExceptionBit(
     BOOL        useLastThrownObject);
@@ -3053,14 +3052,17 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     // This is a workaround to fix the generation of stack traces from exception objects so that
     // they point to the line that actually generated the exception instead of the line
     // following.
-    if (pCf->IsIPadjusted())
+    if (pCf != NULL)
     {
-        stackTraceElem.flags |= STEF_IP_ADJUSTED;
-    }
-    else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
-    {
-        stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
-        stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        if (pCf->IsIPadjusted())
+        {
+            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        }
+        else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
+        {
+            stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        }
     }
 
 #ifndef TARGET_UNIX // Watson is supported on Windows only
@@ -4459,19 +4461,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
 
         if (pParam->pThread != NULL)
         {
-
-            // In CoreCLR, we can be asked to not let an exception go unhandled on managed threads.
-            // If the exception reaches the top of the thread's stack, we simply deliver AppDomain's UnhandledException event and
-            // return back to the filter, instead of letting the process terminate because of unhandled exception.
-
-            // This code must only be exercised when running as a normal filter; returning
-            // EXCEPTION_EXECUTE_HANDLER is not valid if this code is being invoked from
-            // the UEF.
-            // Fortunately, we should never get into this case, since the thread flag about
-            // ignoring unhandled exceptions cannot be set on the default domain.
-
-            BOOL fIsProcessTerminating = !(AppDomain::GetCurrentDomain()->IgnoreUnhandledExceptions());
-
 #ifndef TARGET_UNIX
             // Setup the watson bucketing details for UE processing.
             // do this before notifying appdomains of the UE so if an AD attempts to
@@ -4480,14 +4469,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
 #endif // !TARGET_UNIX
 
             // Send notifications to the AppDomains.
-            NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject, fIsProcessTerminating /*isTerminating*/);
-
-            // If the process is not terminating, then return back to the filter and ask it to execute
-            if (!fIsProcessTerminating)
-            {
-                pParam->retval = EXCEPTION_EXECUTE_HANDLER;
-                goto lDone;
-            }
+            NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject);
         }
         else
         {
@@ -4557,7 +4539,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
 
         // Call our default catch handler to do the managed unhandled exception work.
         DefaultCatchHandler(pParam->pExceptionInfo, NULL, useLastThrownObject,
-            TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/, TRUE /* sendWindowsEventLog */);
+            FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/, TRUE /* sendWindowsEventLog */);
 
 lDone: ;
     }
@@ -4859,7 +4841,6 @@ void STDMETHODCALLTYPE
 DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                     OBJECTREF *pThrowableIn,
                     BOOL useLastThrownObject,
-                    BOOL isTerminating,
                     BOOL isThreadBaseFilter,
                     BOOL sendAppDomainEvents,
                     BOOL sendWindowsEventLog)
@@ -4973,7 +4954,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
     // Send up the unhandled exception appdomain event.
     if (sendAppDomainEvents)
     {
-        SentEvent = NotifyAppDomainsOfUnhandledException(pExceptionPointers, &throwable, useLastThrownObject, isTerminating);
+        SentEvent = NotifyAppDomainsOfUnhandledException(pExceptionPointers, &throwable, useLastThrownObject);
     }
 
     const int buf_size = 128;
@@ -5070,8 +5051,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 BOOL NotifyAppDomainsOfUnhandledException(
     PEXCEPTION_POINTERS pExceptionPointers,
     OBJECTREF   *pThrowableIn,
-    BOOL        useLastThrownObject,
-    BOOL        isTerminating)
+    BOOL        useLastThrownObject)
 {
     CONTRACTL
     {
@@ -5168,7 +5148,7 @@ BOOL NotifyAppDomainsOfUnhandledException(
 
         // This guy will never throw, but it will need a spot to store
         // any nested exceptions it might find.
-        SentEvent = AppDomain::OnUnhandledException(&throwable, isTerminating);
+        SentEvent = AppDomain::OnUnhandledException(&throwable);
 
         UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
@@ -6022,6 +6002,12 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
         return FALSE;
     }
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
+        return TRUE;
+#endif
+
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
@@ -6036,6 +6022,9 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
     else {
         return FALSE;
     }
+#else // FEATURE_VIRTUAL_STUB_DISPATCH
+    return FALSE;
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
 
 // Check if the passed in instruction pointer is in one of the
