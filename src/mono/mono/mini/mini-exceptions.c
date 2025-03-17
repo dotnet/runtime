@@ -1241,8 +1241,9 @@ void
 mono_walk_stack_with_state (MonoJitStackWalk func, MonoThreadUnwindState *state, MonoUnwindOptions unwind_options, void *user_data)
 {
 	MonoThreadUnwindState extra_state;
+
 	if (!state) {
-		g_assert (!mono_thread_info_is_async_context ());
+		g_assert (!(unwind_options & MONO_UNWIND_SIGNAL_ASYNC_SAFE) && !mono_thread_info_is_async_context ());
 		if (!mono_thread_state_init_from_current (&extra_state))
 			return;
 		state = &extra_state;
@@ -1270,21 +1271,47 @@ mono_walk_stack (MonoJitStackWalk func, MonoUnwindOptions options, void *user_da
 	mono_walk_stack_with_state (func, &state, options, user_data);
 }
 
-/**
- * mono_walk_stack_full:
- * \param func callback to call for each stack frame
- * \param unwind_options what extra information the unwinder should gather
- * \param start_ctx starting state of the stack walk, can be NULL.
- * \param thread the thread whose stack to walk, can be NULL to use the current thread
- * \param lmf the LMF of \p thread, can be NULL to use the LMF of the current thread
- * \param user_data data passed to the callback
- * This function walks the stack of a thread, starting from the state
- * represented by \p start_ctx. For each frame the callback
- * function is called with the relevant info. The walk ends when no more
- * managed stack frames are found or when the callback returns a TRUE value.
- */
+#ifndef TARGET_WASM
 static void
-mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data)
+walk_stack_full_llvm_only(MonoJitStackWalk func, MonoContext* start_ctx, MonoJitTlsData* jit_tls, MonoLMF* lmf, MonoUnwindOptions unwind_options, gpointer user_data)
+{
+	GSList *l, *ips;
+	StackFrameInfo frame;
+
+	memset (&frame, 0, sizeof (StackFrameInfo));
+
+	// TODO: Fix async support.
+	if (mono_thread_info_is_async_context ())
+		return;
+
+	ips = get_unwind_backtrace ();
+	for (l = ips; l; l = l->next) {
+		guint8 *ip = (guint8*)l->data;
+		memset (&frame, 0, sizeof (StackFrameInfo));
+		frame.ji = mini_jit_info_table_find (ip);
+		if (!frame.ji || frame.ji->is_trampoline)
+			continue;
+		frame.type = FRAME_TYPE_MANAGED;
+		frame.method = jinfo_get_method (frame.ji);
+		// FIXME: Cannot lookup the actual method
+		frame.actual_method = frame.method;
+		if (frame.type == FRAME_TYPE_MANAGED) {
+			if (!frame.method->wrapper_type || frame.method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+				frame.managed = TRUE;
+		}
+		frame.native_offset = GPTRDIFF_TO_INT (ip - (guint8*)frame.ji->code_start);
+		frame.il_offset = -1;
+
+		if (func (&frame, NULL, user_data))
+			break;
+	}
+	g_slist_free (ips);
+	return;
+}
+#endif
+
+static void
+walk_stack_full(MonoJitStackWalk func, MonoContext* start_ctx, MonoJitTlsData* jit_tls, MonoLMF* lmf, MonoUnwindOptions unwind_options, gpointer user_data)
 {
 	gint il_offset;
 	MonoContext ctx, new_ctx;
@@ -1297,39 +1324,6 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 	Unwinder unwinder;
 
 	memset (&frame, 0, sizeof (StackFrameInfo));
-
-#ifndef TARGET_WASM
-	if (mono_llvm_only) {
-		GSList *l, *ips;
-
-		if (async)
-			return;
-
-		ips = get_unwind_backtrace ();
-		for (l = ips; l; l = l->next) {
-			guint8 *ip = (guint8*)l->data;
-			memset (&frame, 0, sizeof (StackFrameInfo));
-			frame.ji = mini_jit_info_table_find (ip);
-			if (!frame.ji || frame.ji->is_trampoline)
-				continue;
-			frame.type = FRAME_TYPE_MANAGED;
-			frame.method = jinfo_get_method (frame.ji);
-			// FIXME: Cannot lookup the actual method
-			frame.actual_method = frame.method;
-			if (frame.type == FRAME_TYPE_MANAGED) {
-				if (!frame.method->wrapper_type || frame.method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
-					frame.managed = TRUE;
-			}
-			frame.native_offset = GPTRDIFF_TO_INT (ip - (guint8*)frame.ji->code_start);
-			frame.il_offset = -1;
-
-			if (func (&frame, NULL, user_data))
-				break;
-		}
-		g_slist_free (ips);
-		return;
-	}
-#endif
 
 	if (!start_ctx) {
 		g_warning ("start_ctx required for stack walk");
@@ -1419,6 +1413,41 @@ next:
 
 		ctx = new_ctx;
 	}
+}
+
+/**
+ * mono_walk_stack_full:
+ * \param func callback to call for each stack frame
+ * \param unwind_options what extra information the unwinder should gather
+ * \param start_ctx starting state of the stack walk, can be NULL.
+ * \param thread the thread whose stack to walk, can be NULL to use the current thread
+ * \param lmf the LMF of \p thread, can be NULL to use the LMF of the current thread
+ * \param user_data data passed to the callback
+ * This function walks the stack of a thread, starting from the state
+ * represented by \p start_ctx. For each frame the callback
+ * function is called with the relevant info. The walk ends when no more
+ * managed stack frames are found or when the callback returns a TRUE value.
+ */
+static void
+mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data)
+{
+	gboolean restore_async_context = FALSE;
+	if ((unwind_options & MONO_UNWIND_SIGNAL_ASYNC_SAFE) && !mono_thread_info_is_async_context ()) {
+		mono_thread_info_set_is_async_context (TRUE);
+		restore_async_context = TRUE;
+	}
+
+#ifndef TARGET_WASM
+	if (mono_llvm_only)
+		walk_stack_full_llvm_only (func, start_ctx, jit_tls, lmf, unwind_options, user_data);
+	else
+		walk_stack_full (func, start_ctx, jit_tls, lmf, unwind_options, user_data);
+#else
+	walk_stack_full (func, start_ctx, jit_tls, lmf, unwind_options, user_data);
+#endif
+
+	if (restore_async_context)
+		mono_thread_info_set_is_async_context (FALSE);
 }
 
 MonoBoolean
@@ -2975,16 +3004,7 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 		g_async_safe_printf ("\tManaged Stacktrace:\n");
 		g_async_safe_printf ("=================================================================\n");
 
-		gboolean restore_async_context = FALSE;
-		if (!mono_thread_info_is_async_context ()) {
-			mono_thread_info_set_is_async_context (TRUE);
-			restore_async_context = TRUE;
-		}
-
-		mono_walk_stack_full (print_stack_frame_signal_safe, mctx, jit_tls, mono_get_lmf (), MONO_UNWIND_LOOKUP_IL_OFFSET, NULL);
-
-		if (restore_async_context)
-			mono_thread_info_set_is_async_context (FALSE);
+		mono_walk_stack_full (print_stack_frame_signal_safe, mctx, jit_tls, mono_get_lmf (), MONO_UNWIND_LOOKUP_IL_OFFSET | MONO_UNWIND_SIGNAL_ASYNC_SAFE, NULL);
 
 		g_async_safe_printf ("=================================================================\n");
 	}
@@ -3161,16 +3181,7 @@ mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 		return FALSE;
 
 	/* Do an async safe stack walk */
-	gboolean restore_async_context = FALSE;
-	if (!mono_thread_info_is_async_context ()) {
-		mono_thread_info_set_is_async_context (TRUE);
-		restore_async_context = TRUE;
-	}
-
-	mono_walk_stack_with_state (find_last_handler_block, ctx, MONO_UNWIND_SIGNAL_SAFE, &data);
-
-	if (restore_async_context)
-		mono_thread_info_set_is_async_context (FALSE);
+	mono_walk_stack_with_state (find_last_handler_block, ctx, MONO_UNWIND_SIGNAL_ASYNC_SAFE, &data);
 
 	if (!data.ji)
 		return FALSE;
