@@ -223,10 +223,10 @@ namespace ILCompiler
                 if (_depthCutoff < 0)
                     return;
 
-                // Not clear if generic recursion through fields is a thing
-                if (referent is FieldDesc)
+                // Fields don't introduce more genericness than their owning type, so treat as their owning type
+                if (referent is FieldDesc referentField)
                 {
-                    return;
+                    referent = referentField.OwningType;
                 }
 
                 var ownerType = owner as TypeDesc;

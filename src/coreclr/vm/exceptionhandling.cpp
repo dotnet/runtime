@@ -6232,7 +6232,7 @@ UnhandledExceptionHandlerUnix(
     // Unhandled exception happened, so dump the managed stack trace and terminate the process
 
     DefaultCatchHandler(NULL /*pExceptionInfo*/, NULL /*Throwable*/, TRUE /*useLastThrownObject*/,
-        TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
+        FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
 
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     return _URC_FATAL_PHASE1_ERROR;
@@ -8565,6 +8565,8 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
         DecodeGCHdrInfo(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), 0, &gcHdrInfo);
         invalidRevPInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
+        bool isFilterFunclet = false;
+        bool isPropagatingToExternalNativeCode = false;
 
         if (invalidRevPInvoke)
         {
@@ -8580,6 +8582,10 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                 pTopExInfo->m_propagateExceptionCallback = callback;
                 pTopExInfo->m_propagateExceptionContext = callbackCxt;
             }
+            else
+            {
+                isPropagatingToExternalNativeCode = true;
+            }
 #endif // HOST_UNIX
         }
         else
@@ -8591,6 +8597,10 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             else if (pThis->m_crawl.IsFilterFunclet())
             {
                 invalidRevPInvoke = true;
+            }
+            else
+            {
+                isPropagatingToExternalNativeCode = true;
             }
         }
 
@@ -8612,7 +8622,12 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
             // If not, the exception is unhandled.
             if ((pFrame == FRAME_TOP) ||
-                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions()))
+                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions())
+#ifdef HOST_UNIX
+                // Don't allow propagating exceptions from managed to non-runtime native code
+                || isPropagatingToExternalNativeCode
+#endif
+               )
             {
                 if (pTopExInfo->m_passNumber == 1)
                 {

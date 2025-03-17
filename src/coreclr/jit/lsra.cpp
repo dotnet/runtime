@@ -1818,9 +1818,9 @@ void LinearScan::identifyCandidates()
             if (varDsc->lvIsStructField)
             {
                 LclVarDsc* parentVarDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
-                if (parentVarDsc->lvIsMultiRegRet && !parentVarDsc->lvDoNotEnregister)
+                if (parentVarDsc->lvIsMultiRegDest && !parentVarDsc->lvDoNotEnregister)
                 {
-                    JITDUMP("Setting multi-reg struct V%02u as not enregisterable:", varDsc->lvParentLcl);
+                    JITDUMP("Setting multi-reg-dest struct V%02u as not enregisterable:", varDsc->lvParentLcl);
                     compiler->lvaSetVarDoNotEnregister(varDsc->lvParentLcl DEBUGARG(DoNotEnregisterReason::BlockOp));
                     for (unsigned int i = 0; i < parentVarDsc->lvFieldCnt; i++)
                     {

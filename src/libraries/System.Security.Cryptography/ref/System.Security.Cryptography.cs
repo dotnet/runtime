@@ -2743,6 +2743,8 @@ namespace System.Security.Cryptography
         public int GetCiphertextLengthCbc(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.PKCS7) { throw null; }
         public int GetCiphertextLengthCfb(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.None, int feedbackSizeInBits = 8) { throw null; }
         public int GetCiphertextLengthEcb(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode) { throw null; }
+        public void SetKey(System.ReadOnlySpan<byte> key) { }
+        protected virtual void SetKeyCore(System.ReadOnlySpan<byte> key) { }
         public bool TryDecryptCbc(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, out int bytesWritten, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.PKCS7) { throw null; }
         protected virtual bool TryDecryptCbcCore(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, System.Security.Cryptography.PaddingMode paddingMode, out int bytesWritten) { throw null; }
         public bool TryDecryptCfb(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, out int bytesWritten, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.None, int feedbackSizeInBits = 8) { throw null; }
@@ -2940,9 +2942,9 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed partial class PublicKey
     {
         public PublicKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
-        public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
+        public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData? parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
         public System.Security.Cryptography.AsnEncodedData EncodedKeyValue { get { throw null; } }
-        public System.Security.Cryptography.AsnEncodedData EncodedParameters { get { throw null; } }
+        public System.Security.Cryptography.AsnEncodedData? EncodedParameters { get { throw null; } }
         [System.ObsoleteAttribute("PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey.", DiagnosticId="SYSLIB0027", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.Cryptography.AsymmetricAlgorithm Key { get { throw null; } }
         public System.Security.Cryptography.Oid Oid { get { throw null; } }
@@ -3163,8 +3165,8 @@ namespace System.Security.Cryptography.X509Certificates
         [System.ObsoleteAttribute("X509Certificate.GetIssuerName has been deprecated. Use the Issuer property instead.")]
         public virtual string GetIssuerName() { throw null; }
         public virtual string GetKeyAlgorithm() { throw null; }
-        public virtual byte[] GetKeyAlgorithmParameters() { throw null; }
-        public virtual string GetKeyAlgorithmParametersString() { throw null; }
+        public virtual byte[]? GetKeyAlgorithmParameters() { throw null; }
+        public virtual string? GetKeyAlgorithmParametersString() { throw null; }
         [System.ObsoleteAttribute("X509Certificate.GetName has been deprecated. Use the Subject property instead.")]
         public virtual string GetName() { throw null; }
         public virtual byte[] GetPublicKey() { throw null; }
