@@ -16,7 +16,7 @@ enum StackType {
     StackTypeR8,
     StackTypeO,
     StackTypeVT,
-    StackTypeMP,
+    StackTypeByRef,
     StackTypeF,
 #ifdef TARGET_64BIT
     StackTypeI = StackTypeI8
@@ -46,6 +46,16 @@ enum InterpType {
     InterpTypeI = InterpTypeI4
 #endif
 };
+
+#ifdef DEBUG
+#define INTERP_DUMP(...)            \
+    {                               \
+        if (m_verbose)              \
+            printf(__VA_ARGS__);    \
+    }
+#else
+#define INTERP_DUMP(...)
+#endif
 
 struct InterpInst;
 struct InterpBasicBlock;
@@ -115,6 +125,7 @@ struct InterpInst
 };
 
 #define CALL_ARGS_SVAR  -2
+#define CALL_ARGS_TERMINATOR -1
 
 struct StackInfo;
 
@@ -140,6 +151,24 @@ struct InterpBasicBlock
     InterpBasicBlock **ppOutBBs;
 
     InterpBBState emitState;
+
+    InterpBasicBlock(int32_t index) : InterpBasicBlock(index, 0) { }
+
+    InterpBasicBlock(int32_t index, int32_t ilOffset)
+    {
+        this->index = index;
+        this->ilOffset = ilOffset;
+        nativeOffset = -1;
+        stackHeight = -1;
+
+        pFirstIns = pLastIns = NULL;
+        pNextBB = NULL;
+
+        inCount = 0;
+        outCount = 0;
+
+        emitState = BBStateNotEmitted;
+    }
 };
 
 struct InterpVar
@@ -163,6 +192,23 @@ struct InterpVar
     unsigned int global : 1; // Dedicated stack offset throughout method execution
     unsigned int ILGlobal : 1; // Args and IL locals
     unsigned int alive : 1; // Used internally by the var offset allocator
+
+    InterpVar(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size)
+    {
+        this->interpType = interpType;
+        this->clsHnd = clsHnd;
+        this->size = size;
+        offset = -1;
+        liveStart = -1;
+        bbIndex = -1;
+        indirects = 0;
+
+        callArgs = false;
+        noCallArgs = false;
+        global = false;
+        ILGlobal = false;
+        alive = false;
+    }
 };
 
 struct StackInfo
@@ -177,7 +223,7 @@ struct StackInfo
     // the stack a new var is created.
     int var;
 
-    void Init(StackType type)
+    StackInfo(StackType type)
     {
         this->type = type;
         clsHnd = NULL;
@@ -200,6 +246,14 @@ struct Reloc
     // Base offset that the relative offset to be embedded in IR applies to
     int32_t offset;
     InterpBasicBlock *pTargetBB;
+
+    Reloc(RelocType type, int32_t offset, InterpBasicBlock *pTargetBB, int skip)
+    {
+        this->type = type;
+        this->offset = offset;
+        this->pTargetBB = pTargetBB;
+        this->skip = skip;
+    }
 };
 
 typedef class ICorJitInfo* COMP_HANDLE;
@@ -220,6 +274,10 @@ private:
     int32_t m_ILCodeSize;
     int32_t m_currentILOffset;
 
+    // This represents a mapping from indexes to pointer sized data. During compilation, an
+    // instruction can request an index for some data (like a MethodDesc pointer), that it
+    // will then embed in the instruction stream. The data item table will be referenced
+    // from the interpreter code header during execution.
     // FIXME during compilation this should be a hashtable for fast lookup of duplicates
     TArray<void*> m_dataItems;
     int32_t GetDataItemIndex(void* data);
@@ -228,6 +286,8 @@ private:
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
 
     void* AllocMethodData(size_t numBytes);
+    // FIXME Mempool allocation currently leaks. We need to add an allocator and then
+    // free all memory when method is finished compilling.
     void* AllocMemPool(size_t numBytes);
     void* AllocMemPool0(size_t numBytes);
     void* AllocTemporary(size_t numBytes);
@@ -258,7 +318,7 @@ private:
     int m_BBCount = 0;
     InterpBasicBlock**  m_ppOffsetToBB;
 
-    InterpBasicBlock*   AllocBB();
+    InterpBasicBlock*   AllocBB(int32_t ilOffset);
     InterpBasicBlock*   GetBB(int32_t ilOffset);
     void                LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to);
     void                UnlinkBBs(InterpBasicBlock *from, InterpBasicBlock *to);
@@ -284,7 +344,7 @@ private:
     void    AllocVarOffsetCB(int *pVar, void *pData);
     int32_t AllocVarOffset(int var, int32_t *pPos);
 
-    int32_t GetInterpTypeSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign);
+    int32_t GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign);
     void    CreateILVars();
 
     // Stack
@@ -326,7 +386,7 @@ private:
 
     // Passes
     int32_t* m_pMethodCode;
-    int32_t m_methodCodeSize; // in int32_t
+    int32_t m_methodCodeSize; // code size measured in int32_t slots, instead of bytes
 
     void AllocOffsets();
     int32_t ComputeCodeSize();

@@ -18,6 +18,8 @@ int32_t InterpCompiler::AllocVarOffset(int var, int32_t *pPos)
     return m_pVars[var].offset;
 }
 
+// Global vars are variables that are referenced from multiple basic blocks. We reserve
+// a dedicated slot for each such variable.
 int32_t InterpCompiler::AllocGlobalVarOffset(int var)
 {
     return AllocVarOffset(var, &m_totalVarsStackSize);
@@ -54,8 +56,7 @@ void InterpCompiler::InitializeGlobalVar(int32_t var, int bbIndex)
     {
         AllocGlobalVarOffset(var);
         m_pVars[var].global = true;
-        if (m_verbose)
-            printf("alloc global var %d to offset %d\n", var, m_pVars[var].offset);
+        INTERP_DUMP("alloc global var %d to offset %d\n", var, m_pVars[var].offset);
     }
 }
 
@@ -84,8 +85,7 @@ void InterpCompiler::InitializeGlobalVars()
                 {
                     AllocGlobalVarOffset(var);
                     m_pVars[var].global = true;
-                    if (m_verbose)
-                        printf("alloc global var %d to offset %d\n", var, m_pVars[var].offset);
+                    INTERP_DUMP("alloc global var %d to offset %d\n", var, m_pVars[var].offset);
                 }
             }
             ForEachInsVar(pIns, (void*)(size_t)pBB->index, &InterpCompiler::InitializeGlobalVarCB);
@@ -94,7 +94,11 @@ void InterpCompiler::InitializeGlobalVars()
     m_totalVarsStackSize = ALIGN_UP_TO(m_totalVarsStackSize, INTERP_STACK_ALIGNMENT);
 }
 
-// For each call instruction, this method computes its base offset. The base offset is computed as
+// In the final codegen, each call instruction will receive a single offset as an argument. At this
+// offset all the call arguments will be located. This offset will point into the param area. Vars
+// allocated here have special constraints compared to normal local/global vars.
+//
+// For each call instruction, this method computes its args offset. The call offset is computed as
 // the max offset of all call offsets on which the call depends. Stack ensures that all call offsets
 // on which the call depends are calculated before the call in question, by deferring calls from the
 // last to the first one.
@@ -167,7 +171,7 @@ void InterpCompiler::EndActiveCall(InterpInst *call)
             if (callArgs && (*callArgs != -1))
             {
                 int32_t var = *callArgs;
-                while (var != -1)
+                while (var != CALL_ARGS_TERMINATOR)
                 {
                     AllocVarOffset(var, &baseOffset);
                     callArgs++;
@@ -219,8 +223,7 @@ void InterpCompiler::AllocOffsets()
 
     InitializeGlobalVars();
 
-    if (m_verbose)
-        printf("\nAllocating var offsets\n");
+    INTERP_DUMP("\nAllocating var offsets\n");
 
     int finalVarsStackSize = m_totalVarsStackSize;
 
@@ -230,8 +233,7 @@ void InterpCompiler::AllocOffsets()
         InterpInst *pIns;
         int insIndex = 0;
 
-        if (m_verbose)
-            printf("BB%d\n", pBB->index);
+        INTERP_DUMP("BB%d\n", pBB->index);
 
         // All data structs should be left empty after a bblock iteration
         assert(m_pActiveVars->GetSize() == 0);
@@ -300,11 +302,13 @@ void InterpCompiler::AllocOffsets()
             if (opcode == INTOP_NOP)
                 continue;
 
+#ifdef DEBUG
             if (m_verbose)
             {
                 printf("\tins_index %d\t", insIndex);
                 PrintIns(pIns);
             }
+#endif
 
             // Expire source vars. We first mark them as not alive and then compact the array
             for (int i = 0; i < g_interpOpSVars[opcode]; i++)
@@ -344,8 +348,7 @@ void InterpCompiler::AllocOffsets()
                 else if (!m_pVars[var].global && m_pVars[var].offset == -1)
                 {
                     AllocVarOffset(var, &currentOffset);
-                    if (m_verbose)
-                        printf("alloc var %d to offset %d\n", var, m_pVars[var].offset);
+                    INTERP_DUMP("alloc var %d to offset %d\n", var, m_pVars[var].offset);
 
                     if (currentOffset > finalVarsStackSize)
                         finalVarsStackSize = currentOffset;
@@ -364,6 +367,7 @@ void InterpCompiler::AllocOffsets()
                 }
             }
 
+#ifdef DEBUG
             if (m_verbose)
             {
                 printf("active vars:");
@@ -375,6 +379,7 @@ void InterpCompiler::AllocOffsets()
                 }
                 printf("\n");
             }
+#endif
             insIndex++;
         }
     }

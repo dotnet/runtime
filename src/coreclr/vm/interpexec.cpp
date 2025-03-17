@@ -717,13 +717,12 @@ MAIN_LOOP:
 
                 // Allocate child frame.
                 {
-                    InterpMethodContextFrame *pChildFrame = pFrame->pNextFree;
+                    InterpMethodContextFrame *pChildFrame = pFrame->pNext;
                     if (!pChildFrame)
                     {
                         pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
-                        pChildFrame->pNextFree = NULL;
-                        // Not free currently, but will be when allocation attempted.
-                        pFrame->pNextFree = pChildFrame;
+                        pChildFrame->pNext = NULL;
+                        pFrame->pNext = pChildFrame;
                     }
                     pChildFrame->ReInit(pFrame, targetIp, stack + returnOffset, stack + callArgsOffset);
                     pFrame = pChildFrame;

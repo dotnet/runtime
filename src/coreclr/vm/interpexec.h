@@ -28,7 +28,7 @@ struct InterpMethodContextFrame
     int8_t *pStack;
     int8_t *pRetVal;
     const int32_t *ip; // This ip is updated only when execution can leave the frame
-    InterpMethodContextFrame *pNextFree;
+    InterpMethodContextFrame *pNext;
 
     void ReInit(InterpMethodContextFrame *pParent, const int32_t *startIp, int8_t *pRetVal, int8_t *pStack)
     {

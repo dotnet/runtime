@@ -54,35 +54,30 @@ static inline bool InterpOpIsCondBranch(int32_t opcode)
     return opcode >= INTOP_BRFALSE_I4 && opcode <= INTOP_BLT_UN_R8;
 }
 
-// Helpers identical to ones used by JIT
-// FIXME how to consume GET_UNALIGNED_VAL defines from pal as jit ???
-//
-//#include "pal_mstypes.h"
-//#include "pal_endian.h"
-
+// Helpers for reading data from uint8_t code stream
 inline uint16_t getU2LittleEndian(const uint8_t* ptr)
 {
-    return *(uint16_t*)ptr;
+    return *ptr | *(ptr + 1) << 8;
 }
 
 inline uint32_t getU4LittleEndian(const uint8_t* ptr)
 {
-    return *(uint32_t*)ptr;
+    return *ptr | *(ptr + 1) << 8 | *(ptr + 2) << 16 | *(ptr + 3) << 24;
 }
 
 inline int16_t getI2LittleEndian(const uint8_t* ptr)
 {
-    return *(int16_t*)ptr;
+    return (int16_t)getU2LittleEndian(ptr);
 }
 
 inline int32_t getI4LittleEndian(const uint8_t* ptr)
 {
-    return *(int32_t*)ptr;
+    return (int32_t)getU4LittleEndian(ptr);
 }
 
 inline int64_t getI8LittleEndian(const uint8_t* ptr)
 {
-    return *(int64_t*)ptr;
+    return (int64_t)getI4LittleEndian(ptr) | ((int64_t)getI4LittleEndian(ptr + 4)) << 32;
 }
 
 inline float getR4LittleEndian(const uint8_t* ptr)

@@ -14,7 +14,7 @@ static const StackType g_stackTypeFromInterpType[] =
     StackTypeR8, // R8
     StackTypeO,  // O
     StackTypeVT, // VT
-    StackTypeMP, // ByRef
+    StackTypeByRef, // ByRef
 };
 
 static const InterpType g_interpTypeFromStackType[] =
@@ -208,7 +208,7 @@ void InterpCompiler::ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCo
             {
                 if (ins->info.pCallInfo && ins->info.pCallInfo->pCallArgs) {
                     int *callArgs = ins->info.pCallInfo->pCallArgs;
-                    while (*callArgs != -1)
+                    while (*callArgs != CALL_ARGS_TERMINATOR)
                     {
                         (this->*callback) (callArgs, pData);
                         callArgs++;
@@ -232,14 +232,12 @@ void InterpCompiler::ForEachInsVar(InterpInst *ins, void *pData, void (InterpCom
 }
 
 
-InterpBasicBlock* InterpCompiler::AllocBB()
+InterpBasicBlock* InterpCompiler::AllocBB(int32_t ilOffset)
 {
     InterpBasicBlock *bb = (InterpBasicBlock*)AllocMemPool(sizeof(InterpBasicBlock));
-    memset(bb, 0, sizeof(InterpBasicBlock));
-    bb->ilOffset = -1;
-    bb->nativeOffset = -1;
-    bb->stackHeight = -1;
-    bb->index = m_BBCount++;
+
+    new (bb) InterpBasicBlock (m_BBCount, ilOffset);
+    m_BBCount++;
     return bb;
 }
 
@@ -249,9 +247,8 @@ InterpBasicBlock* InterpCompiler::GetBB(int32_t ilOffset)
 
     if (!bb)
     {
-        bb = AllocBB ();
+        bb = AllocBB(ilOffset);
 
-        bb->ilOffset = ilOffset;
         m_ppOffsetToBB[ilOffset] = bb;
     }
 
@@ -361,6 +358,7 @@ void InterpCompiler::UnlinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
     to->inCount--;
 }
 
+// These are moves between vars, operating only on the interpreter stack
 int32_t InterpCompiler::InterpGetMovForType(InterpType interpType, bool signExtend)
 {
     switch (interpType)
@@ -465,14 +463,8 @@ int32_t InterpCompiler::CreateVarExplicit(InterpType interpType, CORINFO_CLASS_H
         m_pVars = (InterpVar*) ReallocTemporary(m_pVars, m_varsCapacity * sizeof(InterpVar));
     }
     InterpVar *var = &m_pVars[m_varsSize];
-    memset(var, 0, sizeof(InterpVar));
 
-    var->interpType = interpType;
-    var->clsHnd = clsHnd;
-    var->size = size;
-    var->offset = -1;
-    var->liveStart = -1;
-    var->bbIndex = -1;
+    new (var) InterpVar(interpType, clsHnd, size);
 
     m_varsSize++;
     return m_varsSize - 1;
@@ -512,7 +504,7 @@ void InterpCompiler::EnsureStack(int additional)
     do {                                    \
         m_hasInvalidCode = true;            \
         return;                             \
-    } while (0);
+    } while (0)
 
 bool InterpCompiler::CheckStackHelper(int n)
 {
@@ -583,9 +575,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         for (int32_t i = 0; i < numLabels; i++)
         {
             Reloc *reloc = (Reloc*)AllocMemPool(sizeof(Reloc));
-            reloc->type = RelocSwitch;
-            reloc->offset = (int32_t)(ip - m_pMethodCode);
-            reloc->pTargetBB = ins->info.ppTargetBBTable [i];
+            new (reloc) Reloc(RelocSwitch, (int32_t)(ip - m_pMethodCode), ins->info.ppTargetBBTable[i], 0);
             relocs->Add(reloc);
             *ip++ = (int32_t)0xdeadbeef;
         }
@@ -609,16 +599,17 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         {
             // We don't know yet the IR offset of the target, add a reloc instead
             Reloc *reloc = (Reloc*)AllocMemPool(sizeof(Reloc));
-            reloc->type = RelocLongBranch;
-            reloc->skip = g_interpOpSVars[opcode];
-            reloc->offset = brBaseOffset;
-            reloc->pTargetBB = ins->info.pTargetBB;
+            new (reloc) Reloc(RelocLongBranch, brBaseOffset, ins->info.pTargetBB, g_interpOpSVars[opcode]);
             relocs->Add(reloc);
             *ip++ = (int32_t)0xdeadbeef;
         }
     }
     else
     {
+        // Default code emit for an instruction. The opcode was already emitted above.
+        // We emit the offset for the instruction destination, then for every single source
+        // variable we emit another offset. Finally, we will emit any additional data needed
+        // by the instruction.
         if (g_interpOpDVars[opcode])
             *ip++ = m_pVars[ins->dVar].offset;
 
@@ -722,27 +713,32 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 
 InterpMethod* InterpCompiler::CompileMethod()
 {
+#ifdef DEBUG
     if (m_verbose)
     {
         printf("Interpreter compile method ");
         PrintMethodName(m_methodHnd);
         printf("\n");
     }
+#endif
 
     CreateILVars();
 
     GenerateCode(m_methodInfo);
 
+#ifdef DEBUG
     if (m_verbose)
     {
         printf("\nUnoptimized IR:\n");
         PrintCode();
     }
+#endif
 
     AllocOffsets();
 
     EmitCode();
 
+#ifdef DEBUG
     if (m_verbose)
     {
         printf("\nCompiled method: ");
@@ -751,6 +747,7 @@ InterpMethod* InterpCompiler::CompileMethod()
         PrintCompiledCode();
         printf("\n");
     }
+#endif
 
     return CreateInterpMethod();
 }
@@ -765,7 +762,7 @@ void InterpCompiler::EmitConv(StackInfo *sp, InterpInst *prevIns, StackType type
         newInst = AddIns(convOp);
 
     newInst->SetSVar(sp->var);
-    sp->Init(type);
+    new (sp) StackInfo(type);
     int32_t var = CreateVarExplicit(g_interpTypeFromStackType[type], NULL, INTERP_STACK_SLOT_SIZE);
     sp->var = var;
     newInst->SetDVar(var);
@@ -817,7 +814,7 @@ static InterpType GetInterpType(CorInfoType corInfoType)
     return InterpTypeVoid;
 }
 
-int32_t InterpCompiler::GetInterpTypeSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign)
+int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign)
 {
     int32_t size, align;
     if (interpType == InterpTypeVT)
@@ -856,8 +853,7 @@ void InterpCompiler::CreateILVars()
 
     offset = 0;
 
-    if (m_verbose)
-        printf("\nCreate IL Vars:\n");
+    INTERP_DUMP("\nCreate IL Vars:\n");
 
     CORINFO_ARG_LIST_HANDLE sigArg = m_methodInfo->args.args;
     for (int i = 0; i < numArgs; i++) {
@@ -878,18 +874,16 @@ void InterpCompiler::CreateILVars()
             interpType = GetInterpType(argCorType);
             sigArg = m_compHnd->getArgNext(sigArg);
         }
+        size = GetInterpTypeStackSize(argClass, interpType, &align);
 
-        m_pVars[i].interpType = interpType;
-        m_pVars[i].clsHnd = argClass;
+        new (&m_pVars[i]) InterpVar(interpType, argClass, size);
+
         m_pVars[i].global = true;
         m_pVars[i].ILGlobal = true;
-
-        size = GetInterpTypeSize(argClass, interpType, &align);
         m_pVars[i].size = size;
         offset = ALIGN_UP_TO(offset, align);
         m_pVars[i].offset = offset;
-        if (m_verbose)
-            printf("alloc arg var %d to offset %d\n", i, offset);
+        INTERP_DUMP("alloc arg var %d to offset %d\n", i, offset);
         offset += size;
     }
 
@@ -904,18 +898,15 @@ void InterpCompiler::CreateILVars()
 
         CorInfoType argCorType = strip(m_compHnd->getArgType(&m_methodInfo->locals, sigArg, &argClass));
         interpType = GetInterpType(argCorType);
+        size = GetInterpTypeStackSize(argClass, interpType, &align);
 
-        m_pVars[index].interpType = interpType;
-        m_pVars[index].clsHnd = argClass;
+        new (&m_pVars[index]) InterpVar(interpType, argClass, size);
+
         m_pVars[index].global = true;
         m_pVars[index].ILGlobal = true;
-
-        size = GetInterpTypeSize(argClass, interpType, &align);
-        m_pVars[index].size = size;
         offset = ALIGN_UP_TO(offset, align);
         m_pVars[index].offset = offset;
-        if (m_verbose)
-            printf("alloc local var %d to offset %d\n", index, offset);
+        INTERP_DUMP("alloc local var %d to offset %d\n", index, offset);
         offset += size;
         sigArg = m_compHnd->getArgNext(sigArg);
     }
@@ -1060,7 +1051,7 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
 void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
     CHECK_STACK_RET_VOID(1);
-    StackType argType = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeMP) ? StackTypeI : m_pStackPointer[-1].type;
+    StackType argType = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].type;
     // offset the opcode to obtain the type specific I4/I8/R4/R8 variant.
     InterpOpcode opcodeArgType = (InterpOpcode)(opcode + argType - StackTypeI4);
     m_pStackPointer--;
@@ -1078,8 +1069,8 @@ void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int
 void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
     CHECK_STACK_RET_VOID(2);
-    StackType argType1 = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeMP) ? StackTypeI : m_pStackPointer[-1].type;
-    StackType argType2 = (m_pStackPointer[-2].type == StackTypeO || m_pStackPointer[-2].type == StackTypeMP) ? StackTypeI : m_pStackPointer[-2].type;
+    StackType argType1 = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].type;
+    StackType argType2 = (m_pStackPointer[-2].type == StackTypeO || m_pStackPointer[-2].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-2].type;
 
     // Since branch opcodes only compare args of the same type, handle implicit conversions before
     // emitting the conditional branch
@@ -1172,11 +1163,11 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 
     StackType typeRes;
 
-    if (opBase == INTOP_ADD_I4 && (type1 == StackTypeMP || type2 == StackTypeMP))
+    if (opBase == INTOP_ADD_I4 && (type1 == StackTypeByRef || type2 == StackTypeByRef))
     {
         if (type1 == type2)
             INVALID_CODE_RET_VOID;
-        if (type1 == StackTypeMP)
+        if (type1 == StackTypeByRef)
         {
             if (type2 == StackTypeI4)
             {
@@ -1184,11 +1175,11 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
                 EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
                 type2 = StackTypeI8;
 #endif
-                typeRes = StackTypeMP;
+                typeRes = StackTypeByRef;
             }
             else if (type2 == StackTypeI)
             {
-                typeRes = StackTypeMP;
+                typeRes = StackTypeByRef;
             }
             else
             {
@@ -1197,18 +1188,18 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
         }
         else
         {
-            // type2 == StackTypeMP
+            // type2 == StackTypeByRef
             if (type1 == StackTypeI4)
             {
 #ifdef TARGET_64BIT
                 EmitConv(m_pStackPointer - 2, NULL, StackTypeI8, INTOP_CONV_I8_I4);
                 type1 = StackTypeI8;
 #endif
-                typeRes = StackTypeMP;
+                typeRes = StackTypeByRef;
             }
             else if (type1 == StackTypeI)
             {
-                typeRes = StackTypeMP;
+                typeRes = StackTypeByRef;
             }
             else
             {
@@ -1216,7 +1207,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
             }
         }
     }
-    else if (opBase == INTOP_SUB_I4 && type1 == StackTypeMP)
+    else if (opBase == INTOP_SUB_I4 && type1 == StackTypeByRef)
     {
         if (type2 == StackTypeI4)
         {
@@ -1224,13 +1215,13 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
             EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
             type2 = StackTypeI8;
 #endif
-            typeRes = StackTypeMP;
+            typeRes = StackTypeByRef;
         }
         else if (type2 == StackTypeI)
         {
-            typeRes = StackTypeMP;
+            typeRes = StackTypeByRef;
         }
-        else if (type2 == StackTypeMP)
+        else if (type2 == StackTypeByRef)
         {
             typeRes = StackTypeI;
         }
@@ -1271,7 +1262,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 
     // The argument opcode is for the base _I4 instruction. Depending on the type of the result
     // we compute the specific variant, _I4/_I8/_R4 or R8.
-    int32_t typeOffset = ((typeRes == StackTypeMP) ? StackTypeI : typeRes) - StackTypeI4;
+    int32_t typeOffset = ((typeRes == StackTypeByRef) ? StackTypeI : typeRes) - StackTypeI4;
     int32_t finalOpcode = opBase + typeOffset;
 
     m_pStackPointer -= 2;
@@ -1287,7 +1278,7 @@ void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
     StackType stackType = m_pStackPointer[-1].type;
     int32_t finalOpcode = opBase + (stackType - StackTypeI4);
 
-    if (stackType == StackTypeMP || stackType == StackTypeO)
+    if (stackType == StackTypeByRef || stackType == StackTypeO)
         INVALID_CODE_RET_VOID;
     if (opBase == INTOP_NOT_I4 && (stackType != StackTypeI4 && stackType != StackTypeI8))
         INVALID_CODE_RET_VOID;
@@ -1321,7 +1312,7 @@ void InterpCompiler::EmitShiftOp(int32_t opBase)
 void InterpCompiler::EmitCompareOp(int32_t opBase)
 {
     CHECK_STACK_RET_VOID(2);
-    if (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeMP)
+    if (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef)
     {
         AddIns(opBase + StackTypeI - StackTypeI4);
     }
@@ -1464,8 +1455,7 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     m_stackCapacity = methodInfo->maxStack + 1;
     m_pStackBase = m_pStackPointer = (StackInfo*)AllocTemporary(sizeof(StackInfo) * m_stackCapacity);
 
-    m_pEntryBB = AllocBB();
-    m_pEntryBB->ilOffset = 0;
+    m_pEntryBB = AllocBB(0);
     m_pEntryBB->emitState = BBStateEmitting;
     m_pEntryBB->stackHeight = 0;
     m_pCBB = m_pEntryBB;
@@ -1494,8 +1484,7 @@ retry_emit:
         InterpBasicBlock *pNewBB = m_ppOffsetToBB[insOffset];
         if (pNewBB != NULL && m_pCBB != pNewBB)
         {
-            if (m_verbose)
-                printf("BB%d (IL_%04x):\n", pNewBB->index, pNewBB->ilOffset);
+            INTERP_DUMP("BB%d (IL_%04x):\n", pNewBB->index, pNewBB->ilOffset);
             // If we were emitting into previous bblock, we are finished now
             if (m_pCBB->emitState == BBStateEmitting)
                 m_pCBB->emitState = BBStateEmitted;
@@ -1562,8 +1551,7 @@ retry_emit:
                 }
                 else
                 {
-                    if (m_verbose)
-                        printf("BB%d without initialized stack\n", pNewBB->index);
+                    INTERP_DUMP("BB%d without initialized stack\n", pNewBB->index);
                     assert(pNewBB->emitState == BBStateNotEmitted);
                     needsRetryEmit = true;
                     // linking to its next bblock, if its the case, will only happen
@@ -1588,6 +1576,7 @@ retry_emit:
 
         m_ppOffsetToBB[insOffset] = m_pCBB;
 
+#ifdef DEBUG
         if (m_verbose)
         {
             const uint8_t *ip = m_ip;
@@ -1601,6 +1590,7 @@ retry_emit:
                 PrintClassName(m_pStackPointer[-1].clsHnd);
             printf("\n");
         }
+#endif
 
         uint8_t opcode = *m_ip;
         switch (opcode)
@@ -1823,7 +1813,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_MOV_8);
 #endif
                     break;
-                case StackTypeMP:
+                case StackTypeByRef:
                 case StackTypeO:
                     EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_MOV_8);
                     break;
@@ -1856,7 +1846,7 @@ retry_emit:
 #endif
                     break;
                 case StackTypeO:
-                case StackTypeMP:
+                case StackTypeByRef:
                     EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_MOV_8);
                     break;
                 case StackTypeI8:
@@ -1884,7 +1874,7 @@ retry_emit:
                 case StackTypeI8:
                     EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_8);
                     break;
-                case StackTypeMP:
+                case StackTypeByRef:
                     EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
@@ -1907,7 +1897,7 @@ retry_emit:
                 case StackTypeI8:
                     EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_8);
                     break;
-                case StackTypeMP:
+                case StackTypeByRef:
                     EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
@@ -1931,7 +1921,7 @@ retry_emit:
                 }
                 case StackTypeI8:
                     break;
-                case StackTypeMP:
+                case StackTypeByRef:
 #ifdef TARGET_64BIT
                     EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
 #else
@@ -1998,7 +1988,7 @@ retry_emit:
                 case StackTypeR8:
                     EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_U8_R8);
                     break;
-                case StackTypeMP:
+                case StackTypeByRef:
 #ifdef TARGET_64BIT
                     EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
 #else
@@ -2313,8 +2303,7 @@ retry_emit:
 
         linkBBlocks = false;
         needsRetryEmit = false;
-        if (m_verbose)
-            printf("retry emit\n");
+        INTERP_DUMP("retry emit\n");
         goto retry_emit;
     }
 
@@ -2400,7 +2389,7 @@ void InterpCompiler::PrintIns(InterpInst *ins)
                 if (ins->info.pCallInfo && ins->info.pCallInfo->pCallArgs)
                 {
                     int *callArgs = ins->info.pCallInfo->pCallArgs;
-                    while (*callArgs != -1)
+                    while (*callArgs != CALL_ARGS_TERMINATOR)
                     {
                         printf(" %d", *callArgs);
                         callArgs++;
