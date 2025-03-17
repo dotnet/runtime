@@ -218,7 +218,7 @@ namespace System.Numerics.Tensors
         internal static Tensor<T> LazyBroadcast<T>(Tensor<T> input, ReadOnlySpan<nint> lengths)
         {
             if (input.Lengths.SequenceEqual(lengths))
-                return new Tensor<T>(input._values, lengths, input._memoryOffset, false);
+                return new Tensor<T>(input._values, lengths, input._memoryOffset, isPinned: false);
 
             if (!TensorHelpers.IsBroadcastableTo(input.Lengths, lengths))
                 ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
@@ -2926,7 +2926,7 @@ namespace System.Numerics.Tensors
         {
             nint newSize = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = tensor.IsPinned ? GC.AllocateArray<T>((int)newSize) : (new T[newSize]);
-            Tensor<T> output = new Tensor<T>(values, lengths, tensor._memoryOffset, false);
+            Tensor<T> output = new Tensor<T>(values, lengths, tensor._memoryOffset, isPinned: false);
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor.AsTensorSpan()._reference, (int)tensor._values.Length);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
             if (newSize > tensor._values.Length)
@@ -3217,7 +3217,7 @@ namespace System.Numerics.Tensors
             for (int i = 0; i < outputs.Length; i++)
             {
                 T[] values = new T[(int)totalToCopy];
-                outputs[i] = new Tensor<T>(values, newShape, 0);
+                outputs[i] = new Tensor<T>(values, newShape, memoryOffset: 0);
                 oIndices.Clear();
                 iIndices.Clear();
 

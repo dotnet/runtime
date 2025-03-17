@@ -99,7 +99,7 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
-            return new Tensor<T>(values, lengths.ToArray(), 0, pinned);
+            return new Tensor<T>(values, lengths.ToArray(), memoryOffset: 0, pinned);
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
-            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), 0, pinned);
+            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), memoryOffset: 0, pinned);
         }
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
-            return new Tensor<T>(values, lengths.ToArray(), 0, pinned);
+            return new Tensor<T>(values, lengths.ToArray(), memoryOffset: 0, pinned);
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
-            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), 0, pinned);
+            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), memoryOffset: 0, pinned);
         }
 
         // ITensor
@@ -381,7 +381,7 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Tensor{T}"/>.
         /// </summary>
-        public static implicit operator Tensor<T>(T[] array) => new Tensor<T>(array, [array.Length], 0);
+        public static implicit operator Tensor<T>(T[] array) => new Tensor<T>(array, [array.Length], memoryOffset: 0);
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/>.
