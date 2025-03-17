@@ -2484,7 +2484,9 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         }
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // LoongArch64 and Riscv64 ABIs require 32-bit values to be sign-extended to 64-bits.
+        // TODO-LOONGARCH64:
+        // TODO-RISCV64:
+        // LoongArch64 and RiscV64 ABIs require 32-bit values to be sign-extended to 64-bits.
         // We apply the sign-extension unconditionally here to avoid corner case bugs, even
         // though it may not be strictly necessary in all cases.
         m_extendKind = SIGN_EXTEND_INT;
