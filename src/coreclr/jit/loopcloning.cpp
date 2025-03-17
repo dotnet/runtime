@@ -80,6 +80,10 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
             arrAddr->gtFlags |= GTF_INX_ADDR_NONNULL;
 
             arr = comp->gtNewIndexIndir(arrAddr->AsIndexAddr());
+
+            // We don't really need to call morph here if we import arr[i] directly
+            // without gtNewArrayIndexAddr (but it's a bit of verbose).
+            arr = comp->fgMorphTree(arr);
         }
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
@@ -861,54 +865,12 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     //
     const weight_t fastLikelihood = fastPathWeightScaleFactor;
 
-    // Choose how to generate the conditions
-    const bool generateOneConditionPerBlock = true;
+    // N = conds.Size() branches must all be true to execute the fast loop.
+    // Use the N'th root....
+    //
+    const weight_t fastLikelihoodPerBlock = exp(log(fastLikelihood) / (weight_t)conds.Size());
 
-    if (generateOneConditionPerBlock)
-    {
-        // N = conds.Size() branches must all be true to execute the fast loop.
-        // Use the N'th root....
-        //
-        const weight_t fastLikelihoodPerBlock = exp(log(fastLikelihood) / (weight_t)conds.Size());
-
-        for (unsigned i = 0; i < conds.Size(); ++i)
-        {
-            BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
-            newBlk->inheritWeight(insertAfter);
-
-            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, slowPreheader->bbNum);
-            FlowEdge* const trueEdge = comp->fgAddRefPred(slowPreheader, newBlk);
-            newBlk->SetTrueEdge(trueEdge);
-            trueEdge->setLikelihood(1 - fastLikelihoodPerBlock);
-
-            if (insertAfter->KindIs(BBJ_COND))
-            {
-                JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
-                FlowEdge* const falseEdge = comp->fgAddRefPred(newBlk, insertAfter);
-                insertAfter->SetFalseEdge(falseEdge);
-                falseEdge->setLikelihood(fastLikelihoodPerBlock);
-            }
-
-            JITDUMP("Adding conditions %u to " FMT_BB "\n", i, newBlk->bbNum);
-
-            GenTree*   cond        = conds[i].ToGenTree(comp, newBlk, /* invert */ true);
-            GenTree*   jmpTrueTree = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cond);
-            Statement* stmt        = comp->fgNewStmtFromTree(jmpTrueTree);
-
-            comp->fgInsertStmtAtEnd(newBlk, stmt);
-
-            // Remorph.
-            JITDUMP("Loop cloning condition tree before morphing:\n");
-            DBEXEC(comp->verbose, comp->gtDispTree(jmpTrueTree));
-            JITDUMP("\n");
-            comp->fgMorphBlockStmt(newBlk, stmt DEBUGARG("Loop cloning condition"));
-
-            insertAfter = newBlk;
-        }
-
-        return insertAfter;
-    }
-    else
+    for (unsigned i = 0; i < conds.Size(); ++i)
     {
         BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
         newBlk->inheritWeight(insertAfter);
@@ -916,43 +878,28 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
         JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, slowPreheader->bbNum);
         FlowEdge* const trueEdge = comp->fgAddRefPred(slowPreheader, newBlk);
         newBlk->SetTrueEdge(trueEdge);
-        trueEdge->setLikelihood(1.0 - fastLikelihood);
+        trueEdge->setLikelihood(1 - fastLikelihoodPerBlock);
 
         if (insertAfter->KindIs(BBJ_COND))
         {
             JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
             FlowEdge* const falseEdge = comp->fgAddRefPred(newBlk, insertAfter);
             insertAfter->SetFalseEdge(falseEdge);
-            falseEdge->setLikelihood(fastLikelihood);
+            falseEdge->setLikelihood(fastLikelihoodPerBlock);
         }
 
-        JITDUMP("Adding conditions to " FMT_BB "\n", newBlk->bbNum);
+        JITDUMP("Adding conditions %u to " FMT_BB "\n", i, newBlk->bbNum);
 
-        // Get the first condition.
-        GenTree* cond = conds[0].ToGenTree(comp, newBlk, /* invert */ false);
-        for (unsigned i = 1; i < conds.Size(); ++i)
-        {
-            // Append all conditions using AND operator.
-            cond = comp->gtNewOperNode(GT_AND, TYP_INT, cond, conds[i].ToGenTree(comp, newBlk, /* invert */ false));
-        }
-
-        // Add "cond == 0" node
-        cond = comp->gtNewOperNode(GT_EQ, TYP_INT, cond, comp->gtNewIconNode(0));
-
-        // Add jmpTrue "cond == 0"
+        GenTree* cond = conds[i].ToGenTree(comp, newBlk, /* invert */ true);
+        cond->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
         GenTree*   jmpTrueTree = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cond);
         Statement* stmt        = comp->fgNewStmtFromTree(jmpTrueTree);
 
         comp->fgInsertStmtAtEnd(newBlk, stmt);
-
-        // Remorph.
-        JITDUMP("Loop cloning condition tree before morphing:\n");
-        DBEXEC(comp->verbose, comp->gtDispTree(jmpTrueTree));
-        JITDUMP("\n");
-        comp->fgMorphBlockStmt(newBlk, stmt DEBUGARG("Loop cloning condition"));
-
-        return newBlk;
+        insertAfter = newBlk;
     }
+
+    return insertAfter;
 }
 
 //--------------------------------------------------------------------------------------------------
