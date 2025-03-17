@@ -134,6 +134,8 @@ namespace Internal.TypeSystem
                 return result;
             }
 
+            var layoutMetadata = type.GetClassLayout();
+
             // If the type has layout, read its packing and size info
             // If the type has explicit layout, also read the field offset info
             if (type.IsExplicitLayout || type.IsSequentialLayout)
@@ -142,8 +144,6 @@ namespace Internal.TypeSystem
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
-
-                var layoutMetadata = type.GetClassLayout();
 
                 // If packing is out of range or not a power of two, throw that the size is invalid
                 int packing = layoutMetadata.PackingSize;
