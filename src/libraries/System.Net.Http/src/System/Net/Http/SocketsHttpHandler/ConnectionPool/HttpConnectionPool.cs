@@ -1011,19 +1011,6 @@ namespace System.Net.Http
             return false;
         }
 
-        /// <summary>Gets whether we're running on Windows 7 or Windows 2008 R2.</summary>
-        private static bool GetIsWindows7Or2008R2()
-        {
-            OperatingSystem os = Environment.OSVersion;
-            if (os.Platform == PlatformID.Win32NT)
-            {
-                // Both Windows 7 and Windows 2008 R2 report version 6.1.
-                Version v = os.Version;
-                return v.Major == 6 && v.Minor == 1;
-            }
-            return false;
-        }
-
         // For diagnostic purposes
         public override string ToString() =>
             $"{nameof(HttpConnectionPool)} " +
