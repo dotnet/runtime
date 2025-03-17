@@ -194,23 +194,25 @@ namespace System.Net.Security
                 // Protecting from X509Certificate2 derived classes.
                 X509Certificate2? certEx = MakeEx(certificate);
 
-                if (certEx != null)
+                if (certEx is null)
                 {
-                    if (certEx.HasPrivateKey)
-                    {
-                        if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.Log.CertIsType2(instance);
-
-                        return certEx;
-                    }
-
-                    if (!object.ReferenceEquals(certificate, certEx))
-                    {
-                        certEx.Dispose();
-                    }
+                    return null;
                 }
 
-                string certHash = certEx!.Thumbprint;
+                if (certEx.HasPrivateKey)
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                        NetEventSource.Log.CertIsType2(instance);
+
+                    return certEx;
+                }
+
+                byte[] certHash = certEx!.GetCertHash(HashAlgorithmName.SHA512);
+
+                if (!object.ReferenceEquals(certificate, certEx))
+                {
+                    certEx.Dispose();
+                }
 
                 // ELSE Try the MY user and machine stores for private key check.
                 // For server side mode MY machine store takes priority.
@@ -227,7 +229,7 @@ namespace System.Net.Security
                     if (CertificateValidationPal.EnsureStoreOpened(isServer) is X509Store store)
                     {
                         X509Certificate2Collection certs = store.Certificates;
-                        X509Certificate2Collection found = certs.Find(X509FindType.FindByThumbprint, certHash, false);
+                        X509Certificate2Collection found = certs.FindByThumbprint(HashAlgorithmName.SHA512, certHash);
                         X509Certificate2? cert = null;
                         try
                         {
