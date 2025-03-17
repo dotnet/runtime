@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "minipalconfig.h"
 #include "log.h"
 #include <string.h>
 #include <limits.h>
@@ -247,7 +248,7 @@ static int sync_file(minipal_log_flags flags)
 
     return errno;
 }
-#elif defined(HAVE_FSYNC)
+#elif HAVE_FSYNC
 #include <unistd.h>
 static int sync_file(minipal_log_flags flags)
 {
