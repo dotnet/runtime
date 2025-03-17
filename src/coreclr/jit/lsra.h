@@ -1030,7 +1030,7 @@ private:
 
     void addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
 
-    void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
+    void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition, bool update = false);
 
     void buildRefPositionsForNode(GenTree* tree, LsraLocation loc);
 
@@ -1192,7 +1192,7 @@ private:
     void setIntervalAsSplit(Interval* interval);
     void spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition));
 
-    void processKills(RefPosition* killRefPosition);
+    void processKills(RefPosition* killRefPosition, bool updateFixedRefs = true);
     void spillGCRefs(RefPosition* killRefPosition);
 
     /*****************************************************************************
@@ -1676,6 +1676,8 @@ private:
     RefPosition* killHead;
     // Tail slot of linked list of RefTypeKill ref positions
     RefPosition** killTail;
+    // During allocation, gives the next RefTypeKill RefPosition.
+    RefPosition* nextKill;
 
     // Per-block variable location mappings: an array indexed by block number that yields a
     // pointer to an array of regNumber, one per variable.
@@ -1818,6 +1820,7 @@ private:
     regMaskTP    fixedRegs;
     LsraLocation nextFixedRef[REG_COUNT];
     void         updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+    void         updateNextFixedRefLazy(RegRecord* regRecord);
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
     {
         LsraLocation loc = nextFixedRef[regNum];
@@ -1829,6 +1832,7 @@ private:
 #endif
         return loc;
     }
+    LsraLocation getNextFixedRefLazyUpdate(regNumber regNum, var_types regType);
 
     LsraLocation nextIntervalRef[REG_COUNT];
     LsraLocation getNextIntervalRef(regNumber regNum, var_types regType)
@@ -1874,7 +1878,7 @@ private:
         regsBusyUntilKill = RBM_NONE;
     }
 
-    bool conflictingFixedRegReference(regNumber regNum, RefPosition* refPosition);
+    bool conflictingFixedRegReference(regNumber regNum, RefPosition* refPosition, bool update = false);
 
     // This method should not be used and is here to retain old behavior.
     // It should be replaced by isRegAvailable().
