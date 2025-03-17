@@ -500,7 +500,7 @@ endif ; FEATURE_INTERPRETER
 ; rcx -This pointer
 ; rdx -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
-    mov  METHODDESC_REGISTER, [METHODDESC_REGISTER + 0]
+    mov  METHODDESC_REGISTER, [METHODDESC_REGISTER + ThisPtrRetBufPrecodeData__Target]
     mov r11, rcx
     mov rcx, rdx
     mov rdx, r11

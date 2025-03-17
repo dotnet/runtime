@@ -110,7 +110,7 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
         // We get the precode type in two phases:
         // 1. Read the precode type from the intruction address.
         // 2. If it's "stub", look at the stub data and get the actual precode type - it could be stub,
-        //    but it could also be a pinvoke precode
+        //    but it could also be a pinvoke precode or a ThisPtrRetBufPrecode
         // precode.h Precode::GetType()
         byte approxPrecodeType = ReadPrecodeType(instrAddress);
         byte exactPrecodeType;
