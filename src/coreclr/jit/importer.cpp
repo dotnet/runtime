@@ -1060,7 +1060,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 
     if (store->OperIs(GT_STORE_LCL_VAR) && src->IsMultiRegNode())
     {
-        lvaGetDesc(store->AsLclVar())->lvIsMultiRegRet = true;
+        lvaGetDesc(store->AsLclVar())->SetIsMultiRegDest();
     }
 
     return store;
@@ -4747,12 +4747,15 @@ void Compiler::impImportLeaveEHRegions(BasicBlock* block)
             }
 #endif
 
-            unsigned finallyNesting = compHndBBtab[XTnum].ebdHandlerNestingLevel;
-            assert(finallyNesting <= compHndBBtabCount);
+            // We now record the EH region ID on GT_END_LFIN instead of the finally nesting depth,
+            // as the later can change as we optimize the code.
+            //
+            unsigned const ehID = compHndBBtab[XTnum].ebdID;
+            assert(ehID <= impInlineRoot()->compEHID);
 
-            GenTree* endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, finallyNesting);
-            endLFinStmt      = gtNewStmt(endLFin);
-            endCatches       = NULL;
+            GenTree* const endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, ehID);
+            endLFinStmt            = gtNewStmt(endLFin);
+            endCatches             = NULL;
 
             encFinallies++;
         }
@@ -6757,7 +6760,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             VAR_ST_VALID:
 
                 /* if it is a struct store, make certain we don't overflow the buffer */
-                assert(lclTyp != TYP_STRUCT || lvaLclSize(lclNum) >= info.compCompHnd->getClassSize(clsHnd));
+                assert(lclTyp != TYP_STRUCT || lvaLclStackHomeSize(lclNum) >= info.compCompHnd->getClassSize(clsHnd));
 
                 if (lvaTable[lclNum].lvNormalizeOnLoad())
                 {
@@ -11004,8 +11007,7 @@ GenTree* Compiler::impStoreMultiRegValueToVar(GenTree*                    op,
 
     LclVarDsc* varDsc = lvaGetDesc(tmpNum);
 
-    // Set "lvIsMultiRegRet" to block promotion under "!lvaEnregMultiRegVars".
-    varDsc->lvIsMultiRegRet = true;
+    varDsc->SetIsMultiRegDest();
 
     GenTreeLclVar* ret = gtNewLclvNode(tmpNum, varDsc->lvType);
 
@@ -13783,10 +13785,6 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             if (varTypeIsStruct(lclTyp))
             {
                 lvaSetStruct(tmpNum, lclInfo.lclTypeHandle, true /* unsafe value cls check */);
-                if (info.compIsVarArgs)
-                {
-                    lvaSetStructUsedAsVarArg(tmpNum);
-                }
             }
 
             argInfo.argHasTmp = true;

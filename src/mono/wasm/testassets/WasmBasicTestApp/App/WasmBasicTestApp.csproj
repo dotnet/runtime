@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Json\Json.csproj" />
     <ProjectReference Include="..\ResourceLibrary\ResourceLibrary.csproj" />
+    <WasmEnvironmentVariable Include="baz" Value="boo" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestLazyLoading)' == 'true'">

@@ -380,6 +380,7 @@ namespace HttpServer
                 // context.Response.AppendHeader("cache-control", "public, max-age=31536000");
                 context.Response.AppendHeader("Cross-Origin-Embedder-Policy", "require-corp");
                 context.Response.AppendHeader("Cross-Origin-Opener-Policy", "same-origin");
+                context.Response.AppendHeader("Timing-Allow-Origin", "*");
                 context.Response.AppendHeader("ETag", fc.hash);
 
                 // test download re-try

@@ -590,6 +590,8 @@ PhaseStatus Compiler::fgImport()
         INDEBUG(fgPgoDeferredInconsistency = false);
     }
 
+    fgImportDone = true;
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -1461,6 +1463,7 @@ void Compiler::fgAddSyncMethodEnterExit()
 
         // Initialize the new entry
 
+        newEntry->ebdID          = impInlineRoot()->compEHID++;
         newEntry->ebdHandlerType = EH_HANDLER_FAULT;
 
         newEntry->ebdTryBeg  = tryBegBB;
@@ -1961,13 +1964,12 @@ public:
     //    True if any returns were impacted.
     //
     // Notes:
-    //    The goal is to set things up favorably for a reasonable layout without
-    //    putting too much burden on fgReorderBlocks; in particular, since that
-    //    method doesn't (currently) shuffle non-profile, non-rare code to create
-    //    fall-through and reduce gotos, this method places each const return
-    //    block immediately after its last predecessor, so that the flow from
-    //    there to it can become fallthrough without requiring any motion to be
-    //    performed by fgReorderBlocks.
+    //    Prematurely optimizing the block layout is unnecessary.
+    //    However, 'ReturnCountHardLimit' is small enough such that
+    //    any throughput savings from skipping this pass are negated
+    //    by the need to emit branches to these blocks in MinOpts.
+    //    If we decide to increase the number of epilogues allowed,
+    //    we should consider removing this pass.
     //
     bool PlaceReturns()
     {
@@ -6138,14 +6140,30 @@ bool FlowGraphNaturalLoop::CanDuplicateWithEH(INDEBUG(const char** reason))
             // Check if this is an "outermost" try within the loop.
             // If so, we have more checking to do later on.
             //
-            const bool headerInTry         = header->hasTryIndex();
-            unsigned   blockIndex          = block->getTryIndex();
-            unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndexIL(blockIndex);
+            bool const     headerIsInTry     = header->hasTryIndex();
+            unsigned const blockTryIndex     = block->getTryIndex();
+            unsigned const enclosingTryIndex = comp->ehTrueEnclosingTryIndex(blockTryIndex);
 
-            if ((headerInTry && (outermostBlockIndex == header->getTryIndex())) ||
-                (!headerInTry && (outermostBlockIndex == EHblkDsc::NO_ENCLOSING_INDEX)))
+            if ((headerIsInTry && (enclosingTryIndex == header->getTryIndex())) ||
+                (!headerIsInTry && (enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)))
             {
-                tryRegionsToClone.Push(block);
+                // When we clone a try we also clone its handler.
+                //
+                // This try may be enclosed in a handler whose try begin is in the loop.
+                // If so we'll clone this try when we clone (the handler of) that try.
+                //
+                bool isInHandlerOfInLoopTry = false;
+                if (block->hasHndIndex())
+                {
+                    unsigned const    enclosingHndIndex = block->getHndIndex();
+                    BasicBlock* const associatedTryBeg  = comp->ehGetDsc(enclosingHndIndex)->ebdTryBeg;
+                    isInHandlerOfInLoopTry              = this->ContainsBlock(associatedTryBeg);
+                }
+
+                if (!isInHandlerOfInLoopTry)
+                {
+                    tryRegionsToClone.Push(block);
+                }
             }
         }
 

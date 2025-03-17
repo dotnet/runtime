@@ -21,6 +21,7 @@ pr:
     # so that this build can block dependency auto-updates (this build is currently ignored)
     include:
     - src/coreclr/jit/*
+    - src/coreclr/gcinfo/*
 
 variables:
   - template: /eng/pipelines/common/variables.yml
