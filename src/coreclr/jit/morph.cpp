@@ -14011,7 +14011,7 @@ PhaseStatus Compiler::fgPromoteStructs()
             }
             tooManyLocalsReported = true;
         }
-        else if (varTypeIsStruct(varDsc) && !lvaIsImplicitByRefLocal(lclNum))
+        else if (varTypeIsStruct(varDsc))
         {
             assert(structPromotionHelper != nullptr);
             promotedVar = structPromotionHelper->TryPromoteStructVar(lclNum);
