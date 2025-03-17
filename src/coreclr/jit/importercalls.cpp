@@ -7886,7 +7886,9 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Abs:
         case NI_System_Math_Sqrt:
         case NI_System_Math_MinNumber:
+        case NI_System_Math_MinMagnitudeNumber:
         case NI_System_Math_MaxNumber:
+        case NI_System_Math_MaxMagnitudeNumber:
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
             return true;
@@ -10164,6 +10166,19 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
 #ifdef TARGET_RISCV64
+    if (isMagnitude && isNumber)
+    {
+        op2 = impPopStack().val;
+        op1 = impPopStack().val;
+        op1 = new (this, GT_INTRINSIC)
+            GenTreeIntrinsic(op1->TypeGet(), op1, NI_System_Math_Abs, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+        op2 = new (this, GT_INTRINSIC)
+            GenTreeIntrinsic(op2->TypeGet(), op2, NI_System_Math_Abs, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+        NamedIntrinsic name = isMax ? NI_System_Math_MaxNumber : NI_System_Math_MinNumber;
+        return new (this, GT_INTRINSIC)
+            GenTreeIntrinsic(genActualType(callType), op1, op2, name, method R2RARG(*entryPoint));
+    }
+
     return impMathIntrinsic(method, sig R2RARG(entryPoint), callType, intrinsicName, tailCall, isSpecial);
 #else
     // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
