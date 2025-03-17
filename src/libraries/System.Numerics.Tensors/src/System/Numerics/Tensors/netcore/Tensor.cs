@@ -69,7 +69,7 @@ namespace System.Numerics.Tensors
             _lengths = lengths.IsEmpty ? [values.Length] : lengths.ToArray();
             _memoryOffset = memoryOffset;
 
-            if (_memoryOffset < 0 || _memoryOffset >= values.Length)
+            if (_memoryOffset < 0 || (_memoryOffset >= values.Length && values.Length != 0 ))
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
             _flattenedLength = TensorSpanHelpers.CalculateTotalLength(_lengths);
