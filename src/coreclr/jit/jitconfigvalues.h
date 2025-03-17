@@ -798,9 +798,6 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, "JitEnablePhysicalPromotion",
 // Enable cross-block local assertion prop
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, "JitEnableCrossBlockLocalAssertionProp", 1)
 
-// Do greedy RPO-based layout in Compiler::fgReorderBlocks.
-RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, "JitDoReversePostOrderLayout", 1);
-
 // Enable strength reduction
 RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, "JitEnableStrengthReduction", 1)
 

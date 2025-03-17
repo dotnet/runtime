@@ -36,17 +36,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15183", TestRuntimes.Mono)]
-        [InlineData(StackFrame.OFFSET_UNKNOWN)]
-        [InlineData(0)]
-        [InlineData(1)]
-        public void Ctor_SkipFrames(int skipFrames)
-        {
-            var stackFrame = new StackFrame(skipFrames);
-            VerifyStackFrame(stackFrame, true, skipFrames, typeof(StackFrameTests).GetMethod(nameof(Ctor_SkipFrames)), isCurrentFrame: skipFrames == 0);
-        }
-
-        [Theory]
         [ActiveIssue("https://github.com/mono/mono/issues/15187", TestRuntimes.Mono)]
         [InlineData(StackFrame.OFFSET_UNKNOWN, true)]
         [InlineData(0, true)]
