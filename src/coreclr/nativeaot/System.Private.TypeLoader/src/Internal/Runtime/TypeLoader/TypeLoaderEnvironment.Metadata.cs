@@ -820,21 +820,13 @@ namespace Internal.Runtime.TypeLoader
                 if (((_flags & InvokeTableFlags.IsUniversalCanonicalEntry) != 0) != (_canonFormKind == CanonicalFormKind.Universal))
                     return;
 
-                if ((_flags & InvokeTableFlags.HasMetadataHandle) != 0)
-                {
-                    // Metadata handles are not known cross module, and cannot be compared across modules.
-                    if (_moduleHandle != _moduleForMethodHandle)
-                        return;
+                // Metadata handles are not known cross module, and cannot be compared across modules.
+                if (_moduleHandle != _moduleForMethodHandle)
+                    return;
 
-                    Handle entryMethodHandle = (((uint)HandleType.Method << 25) | entryParser.GetUnsigned()).AsHandle();
-                    if (!_methodHandle.Equals(entryMethodHandle))
-                        return;
-                }
-                else
-                {
-                    // unreached
-                    Debug.Assert(false);
-                }
+                Handle entryMethodHandle = (((uint)HandleType.Method << 25) | entryParser.GetUnsigned()).AsHandle();
+                if (!_methodHandle.Equals(entryMethodHandle))
+                    return;
 
                 _entryType = extRefTable.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                 if (!canonHelper.IsCanonicallyEquivalent(_entryType))

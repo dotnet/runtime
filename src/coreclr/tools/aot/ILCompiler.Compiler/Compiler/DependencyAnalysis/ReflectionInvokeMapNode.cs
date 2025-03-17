@@ -166,9 +166,6 @@ namespace ILCompiler.DependencyAnalysis
                 if (!method.IsAbstract)
                     flags |= InvokeTableFlags.HasEntrypoint;
 
-                if (mappingEntry.MetadataHandle != 0)
-                    flags |= InvokeTableFlags.HasMetadataHandle;
-
                 if (!factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method))
                     flags |= InvokeTableFlags.NeedsParameterInterpretation;
 
@@ -184,17 +181,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 Vertex vertex = writer.GetUnsignedConstant((uint)flags);
 
-                if ((flags & InvokeTableFlags.HasMetadataHandle) != 0)
-                {
-                    // Only store the offset portion of the metadata handle to get better integer compression
-                    vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant((uint)(mappingEntry.MetadataHandle & MetadataManager.MetadataOffsetMask)));
-                }
-                else
-                {
-                    // Dead code
-                    throw new NotImplementedException();
-                }
+                // Only store the offset portion of the metadata handle to get better integer compression
+                vertex = writer.GetTuple(vertex,
+                    writer.GetUnsignedConstant((uint)(mappingEntry.MetadataHandle & MetadataManager.MetadataOffsetMask)));
 
                 // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
                 IEETypeNode owningTypeSymbol = factory.NecessaryTypeSymbol(method.OwningType);

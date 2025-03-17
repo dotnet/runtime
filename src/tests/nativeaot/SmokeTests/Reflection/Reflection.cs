@@ -790,15 +790,36 @@ internal static class ReflectionTest
             if (mi.Name != nameof(GenericClass<object>.GenericMethod))
                 throw new Exception("Name");
 
+            // Unless we're doing REFLECTION_FROM_USAGE, we don't expect to see attributes
 #if !REFLECTION_FROM_USAGE
             if (mi.GetCustomAttributes(inherit: true).Length != 0)
                 throw new Exception("Attributes");
 #endif
 
+            // Unless we're doing REFLECTION_FROM_USAGE, we don't expect to be able to reflection-invoke
+            var mi2 = (MethodInfo)typeof(GenericClass<string>).GetMemberWithSameMetadataDefinitionAs(mi);
+#if !REFLECTION_FROM_USAGE
+            try
+#endif
+            {
+
+                mi2.MakeGenericMethod(typeof(string)).Invoke(null, [ null ]);
+#if !REFLECTION_FROM_USAGE
+                throw new Exception("Invoke");
+#endif
+            }
+#if !REFLECTION_FROM_USAGE
+            catch (NotSupportedException)
+            {
+            }
+#endif
+
+            // Parameter count should match no matter what
             var parameters = mi.GetParameters();
             if (parameters.Length != 1)
                 throw new Exception("ParamCount");
 
+            // But parameter names, default values, attributes should only work in REFLECTION_FROM_USAGE
 #if !REFLECTION_FROM_USAGE
             if (parameters[0].Name != null)
                 throw new Exception("ParamName");

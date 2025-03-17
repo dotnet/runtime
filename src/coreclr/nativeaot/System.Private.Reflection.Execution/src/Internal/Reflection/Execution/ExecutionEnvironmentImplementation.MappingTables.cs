@@ -704,36 +704,13 @@ namespace Internal.Reflection.Execution
                 declaringTypeHandle = GetExactDeclaringType(entryType, declaringTypeHandle);
             }
 
-            if ((entryFlags & InvokeTableFlags.HasMetadataHandle) != 0)
-            {
-                RuntimeTypeHandle declaringTypeHandleDefinition = GetTypeDefinition(declaringTypeHandle);
-                QTypeDefinition qTypeDefinition = GetMetadataForNamedType(declaringTypeHandleDefinition);
+            RuntimeTypeHandle declaringTypeHandleDefinition = GetTypeDefinition(declaringTypeHandle);
+            QTypeDefinition qTypeDefinition = GetMetadataForNamedType(declaringTypeHandleDefinition);
 
-                MethodHandle nativeFormatMethodHandle =
-                    (((int)HandleType.Method << 25) | (int)entryMethodHandleOrNameAndSigRaw).AsMethodHandle();
+            MethodHandle nativeFormatMethodHandle =
+                (((int)HandleType.Method << 25) | (int)entryMethodHandleOrNameAndSigRaw).AsMethodHandle();
 
-                methodHandle = new QMethodDefinition(qTypeDefinition.NativeFormatReader, nativeFormatMethodHandle);
-            }
-            else
-            {
-#if FEATURE_SHARED_LIBRARY
-                uint nameAndSigOffset = entryMethodHandleOrNameAndSigRaw;
-                MethodNameAndSignature nameAndSig;
-                if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(mappingTableModule.Handle, nameAndSigOffset, out nameAndSig))
-                {
-                    Debug.Assert(false);
-                    return false;
-                }
-
-                if (!TypeLoaderEnvironment.Instance.TryGetMetadataForTypeMethodNameAndSignature(declaringTypeHandle, nameAndSig, out methodHandle))
-                {
-                    Debug.Assert(false);
-                    return false;
-                }
-#else
-                throw NotImplemented.ByDesign;
-#endif
-            }
+            methodHandle = new QMethodDefinition(qTypeDefinition.NativeFormatReader, nativeFormatMethodHandle);
 
             return true;
         }
