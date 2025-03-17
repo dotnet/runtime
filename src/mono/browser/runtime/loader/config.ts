@@ -333,6 +333,16 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
         loaderHelpers.config.applicationEnvironment = "Production";
     }
 
+    if (loaderHelpers.config.debugLevel !== 0 && document.querySelector("script[src*='aspnetcore-browser-refresh']")) {
+        loaderHelpers.config.environmentVariables = loaderHelpers.config.environmentVariables || {};
+        if (!loaderHelpers.config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"]) {
+            loaderHelpers.config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
+        }
+        if (!loaderHelpers.config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"]) {
+            loaderHelpers.config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = "true";
+        }
+    }
+
     function fetchBootConfig (url: string): Promise<Response> {
         return loaderHelpers.fetch_like(url, {
             method: "GET",
