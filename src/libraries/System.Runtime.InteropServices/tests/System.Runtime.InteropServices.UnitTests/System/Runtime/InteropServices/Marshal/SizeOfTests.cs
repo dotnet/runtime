@@ -38,6 +38,13 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        public void SizeOf_Primitives_ReturnsExpected()
+        {
+            Assert.Equal(1, Marshal.SizeOf<char>());
+            Assert.Equal(4, Marshal.SizeOf<bool>());
+        }
+
+        [Fact]
         public void SizeOf_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("t", () => Marshal.SizeOf(null));

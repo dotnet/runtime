@@ -19,8 +19,7 @@ namespace Internal.TypeSystem.Interop
 
             typeDesc = typeDesc.UnderlyingType;
 
-            // TODO: There are primitive types which require marshalling, such as bool, char.
-            if (typeDesc.IsPrimitive)
+            if (typeDesc.IsPrimitive && typeDesc.Category is not TypeFlags.Boolean or TypeFlags.Char)
             {
                 return false;
             }
