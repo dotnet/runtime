@@ -7877,12 +7877,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 #elif defined(TARGET_RISCV64)
     switch (intrinsicName)
     {
-        case NI_System_Math_ReciprocalSqrtEstimate:
-        {
-            // TODO-RISCV64: support these standard intrinsics
-            return false;
-        }
-
         case NI_System_Math_Abs:
         case NI_System_Math_Sqrt:
         case NI_System_Math_MinNumber:
@@ -7891,6 +7885,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MaxMagnitudeNumber:
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
+        case NI_System_Math_ReciprocalSqrtEstimate:
             return true;
 
         default:
