@@ -43,6 +43,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool TryEnter_FastPath(object obj);
 
+        // These must match the values in syncblk.h
         private enum EnterHelperResult
         {
             Contention = 0,
@@ -50,6 +51,7 @@ namespace System.Threading
             UseSlowPath = 2
         }
 
+        // These must match the values in syncblk.h
         private enum LeaveHelperAction {
             None = 0,
             Signal = 1,
@@ -128,11 +130,11 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern LeaveHelperAction Exit_FastPath(object obj);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_Enter_Slowpath")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_Exit_Slowpath")]
         private static partial void Exit_Slowpath(ObjectHandleOnStack obj, LeaveHelperAction exitBehavior);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void Exit_Slowpath(object obj, LeaveHelperAction exitBehavior)
+        private static void Exit_Slowpath(LeaveHelperAction exitBehavior, object obj)
         {
             Exit_Slowpath(ObjectHandleOnStack.Create(ref obj), exitBehavior);
         }
@@ -153,7 +155,7 @@ namespace System.Threading
             if (exitBehavior == LeaveHelperAction.None)
                 return;
 
-            Exit_Slowpath(obj, exitBehavior);
+            Exit_Slowpath(exitBehavior, obj);
         }
 
         // Used to implement synchronized methods on non Windows-X86 architectures
@@ -171,7 +173,7 @@ namespace System.Threading
                     return;
                 }
 
-                Exit_Slowpath(obj, exitBehavior);
+                Exit_Slowpath(exitBehavior, obj);
                 lockTaken = false;
             }
         }

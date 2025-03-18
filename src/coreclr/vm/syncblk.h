@@ -162,18 +162,20 @@ class AwareLock
     friend class SyncBlock;
 
 public:
+    // These must match the values in Monitor.CoreCLR.cs
     enum class EnterHelperResult : INT32 {
-        Contention,
-        Entered,
-        UseSlowPath
+        Contention = 0,
+        Entered = 1,
+        UseSlowPath = 2
     };
 
+    // These must match the values in Monitor.CoreCLR.cs
     enum class LeaveHelperAction : INT32 {
-        None,
-        Signal,
-        Yield,
-        Contention,
-        Error,
+        None = 0,
+        Signal = 1,
+        Yield = 2,
+        Contention = 3,
+        Error = 4,
     };
 
 private:
