@@ -1421,7 +1421,7 @@ void emitter::emitPacInEpilog()
         return;
     }
     // TODO-PAC: should be autiasp
-    emitIns(INS_autiaz);
+    // emitIns(INS_autiaz);
     emitComp->unwindPacSignLR();
 }
 
