@@ -209,7 +209,7 @@ internal sealed class PInvokeCollector {
             {
                 if (IsFunctionPointer(p.ParameterType))
                 {
-                    reason = $"Parameter '{p.Name}' of type '{p.ParameterType.FullName}' is not supported.";
+                    throw new NotSupportedException("Parsing function pointer types in signatures is not supported.");
                     return true;
                 }
             }

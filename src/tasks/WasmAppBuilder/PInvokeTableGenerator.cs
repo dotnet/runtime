@@ -166,13 +166,13 @@ internal sealed class PInvokeTableGenerator
                 return false;
 
             PInvoke first = candidates[0];
-            if (TryIsMethodGetParametersUnsupported(first.Method, out _))
+            if (PInvokeCollector.TryIsMethodGetParametersUnsupported(first.Method, out _))
                 return false;
 
             int firstNumArgs = first.Method.GetParameters().Length;
             return candidates
                         .Skip(1)
-                        .Any(c => !TryIsMethodGetParametersUnsupported(c.Method, out _) &&
+                        .Any(c => !PInvokeCollector.TryIsMethodGetParametersUnsupported(c.Method, out _) &&
                                     c.Method.GetParameters().Length != firstNumArgs);
         }
     }
@@ -197,11 +197,6 @@ internal sealed class PInvokeTableGenerator
         nameof(UInt64) => "uint64_t",
         _ => "int"
     };
-
-    // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
-    // https://github.com/dotnet/runtime/issues/43791
-    private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
-        => PInvokeCollector.TryIsMethodGetParametersUnsupported(method, out reason);
 
     private string? GenPInvokeDecl(PInvoke pinvoke)
     {
