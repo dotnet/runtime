@@ -167,13 +167,7 @@ internal sealed class PInvokeCollector {
         }
     }
 
-    public static bool IsBlittable(Type type)
-    {
-        if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
-            return true;
-        else
-            return false;
-    }
+    public static bool IsBlittable(Type type) => type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum;
 
     private static void Error(string msg) => throw new LogAsErrorException(msg);
 
@@ -200,11 +194,25 @@ internal sealed class PInvokeCollector {
         return false;
     }
 
-    private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
+    public static bool IsFunctionPointer(Type type)
+    {
+        object? bIsFunctionPointer = type.GetType().GetProperty("IsFunctionPointer")?.GetValue(type);
+        return (bIsFunctionPointer is bool b) && b;
+    }
+
+    internal static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
     {
         try
         {
             method.GetParameters();
+            foreach (var p in method.GetParameters())
+            {
+                if (IsFunctionPointer(p.ParameterType))
+                {
+                    reason = $"Parameter '{p.Name}' of type '{p.ParameterType.FullName}' is not supported.";
+                    return true;
+                }
+            }
         }
         catch (NotSupportedException nse)
         {

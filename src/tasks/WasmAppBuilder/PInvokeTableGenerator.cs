@@ -13,8 +13,6 @@ using Microsoft.Build.Utilities;
 
 internal sealed class PInvokeTableGenerator
 {
-    private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
-
     private TaskLoggingHelper Log { get; set; }
     private readonly Func<string, string> _fixupSymbolName;
     private readonly HashSet<string> signatures = new();
@@ -203,24 +201,7 @@ internal sealed class PInvokeTableGenerator
     // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
     // https://github.com/dotnet/runtime/issues/43791
     private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
-    {
-        try
-        {
-            method.GetParameters();
-        }
-        catch (NotSupportedException nse)
-        {
-            reason = nse.Message;
-            return true;
-        }
-        catch
-        {
-            // not concerned with other exceptions
-        }
-
-        reason = null;
-        return false;
-    }
+        => PInvokeCollector.TryIsMethodGetParametersUnsupported(method, out reason);
 
     private string? GenPInvokeDecl(PInvoke pinvoke)
     {
@@ -379,26 +360,6 @@ internal sealed class PInvokeTableGenerator
             w.WriteLine($"\"{module_symbol}_{class_name}_{method_name}\",");
         }
         w.WriteLine("};");
-    }
-
-    private bool HasAssemblyDisableRuntimeMarshallingAttribute(Assembly assembly)
-    {
-        if (!_assemblyDisableRuntimeMarshallingAttributeCache.TryGetValue(assembly, out var value))
-        {
-            _assemblyDisableRuntimeMarshallingAttributeCache[assembly] = value = assembly
-                .GetCustomAttributesData()
-                .Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
-        }
-
-        return value;
-    }
-
-    private static bool IsBlittable(Type type)
-    {
-        if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
-            return true;
-        else
-            return false;
     }
 
     private static void Error(string msg) => throw new LogAsErrorException(msg);
