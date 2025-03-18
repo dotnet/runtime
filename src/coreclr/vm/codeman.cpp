@@ -1540,6 +1540,19 @@ void EEJitManager::SetCpuInfo()
     {
         g_arm64_atomics_present = true;
     }
+
+#elif defined(TARGET_RISCV64)
+
+    if ((cpuFeatures & RiscV64IntrinsicConstants_Zba) != 0)
+    {
+        CPUCompileFlags.Set(InstructionSet_Zba);
+    }
+
+    if ((cpuFeatures & RiscV64IntrinsicConstants_Zbb) != 0)
+    {
+        CPUCompileFlags.Set(InstructionSet_Zbb);
+    }
+
 #endif
 
     // These calls are very important as it ensures the flags are consistent with any

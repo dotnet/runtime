@@ -6226,6 +6226,12 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_APX);
         }
+
+#elif defined(TARGET_RISCV64)
+
+        instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Zba);
+
 #endif
 
         // These calls are important and explicitly ordered to ensure that the flags are correct in

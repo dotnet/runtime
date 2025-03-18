@@ -51,6 +51,21 @@
 #include <sys/sysctl.h>
 #endif
 
+#if HAVE_HWPROBE_H
+
+#include <asm/hwprobe.h>
+
+#include <asm/unistd.h>
+#include <unistd.h>
+#include <sched.h>
+
+long sys_riscv_hwprobe(struct riscv_hwprobe *pairs, size_t pair_count, size_t cpusetsize, cpu_set_t *cpus, unsigned int flags)
+{
+    return syscall(__NR_riscv_hwprobe, pairs, pair_count, cpusetsize, cpus, flags);
+}
+
+#endif // HAVE_HWPROBE_H
+
 #endif // !HOST_WINDOWS
 
 #if defined(HOST_UNIX)
@@ -329,7 +344,7 @@ int minipal_getcpufeatures(void)
                                         {
                                             result |= XArchIntrinsicConstants_Apx;
                                         }
-                                    }                                    
+                                    }
 
                                     if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
                                     {
@@ -346,7 +361,7 @@ int minipal_getcpufeatures(void)
                                             {
                                                 result |= XArchIntrinsicConstants_Avx10v2;
                                             }
-                                            
+
                                             // We assume that the Avx10/V512 support can be inferred from
                                             // both Avx10v1 and Avx512 being present.
                                             assert(((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0) ==                 // Avx10/V512
@@ -529,6 +544,38 @@ int minipal_getcpufeatures(void)
 #endif // HOST_WINDOWS
 
 #endif // HOST_ARM64
+
+#if defined(HOST_RISCV64)
+
+#if defined(HOST_UNIX)
+
+#if HAVE_HWPROBE_H
+
+    struct riscv_hwprobe pairs[1] = {
+        {RISCV_HWPROBE_KEY_IMA_EXT_0, 0}
+    };
+
+    sys_riscv_hwprobe(pairs, 1, 0, NULL, 0);
+
+    // Our baseline support is for RV64GC (see #73437)
+    assert(pairs[0].value & RISCV_HWPROBE_IMA_FD);
+    assert(pairs[0].value & RISCV_HWPROBE_IMA_C);
+
+    if (pairs[0].value & RISCV_HWPROBE_EXT_ZBA)
+    {
+        result |= RiscV64IntrinsicConstants_Zba;
+    }
+
+    if (pairs[0].value & RISCV_HWPROBE_EXT_ZBB)
+    {
+        result |= RiscV64IntrinsicConstants_Zbb;
+    }
+
+#endif // HAVE_HWPROBE_H
+
+#endif // HOST_UNIX
+
+#endif // HOST_RISCV64
 
     return result;
 }
