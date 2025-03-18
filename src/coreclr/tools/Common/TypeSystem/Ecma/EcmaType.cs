@@ -567,59 +567,11 @@ namespace Internal.TypeSystem.Ecma
         {
             TypeLayout layout = _typeDefinition.GetLayout();
 
-            ClassLayoutMetadata result;
-            result.PackingSize = layout.PackingSize;
-            result.Size = layout.Size;
-
-            // Skip reading field offsets if this is not explicit layout
-            var fieldDefinitionHandles = _typeDefinition.GetFields();
-            var numInstanceFields = 0;
-
-            foreach (var handle in fieldDefinitionHandles)
+            return new ClassLayoutMetadata
             {
-                var fieldDefinition = MetadataReader.GetFieldDefinition(handle);
-                if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
-                    continue;
-
-                numInstanceFields++;
-            }
-
-            if (IsExplicitLayout)
-            {
-                result.Offsets = new FieldAndOffset[numInstanceFields];
-            }
-            else
-            {
-                result.Offsets = null;
-            }
-
-            int index = 0;
-            foreach (var handle in fieldDefinitionHandles)
-            {
-                var fieldDefinition = MetadataReader.GetFieldDefinition(handle);
-                if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
-                    continue;
-
-                // Note: GetOffset() returns -1 when offset was not set in the metadata
-                int specifiedOffset = fieldDefinition.GetOffset();
-                if (!IsExplicitLayout)
-                {
-                    if (specifiedOffset != -1)
-                    {
-                        // If the field has an offset specified, but the type is not explicit layout, the field is invalid
-                        // and we should throw an exception.
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, this);
-                    }
-                }
-                else
-                {
-                    result.Offsets[index] =
-                        new FieldAndOffset(_module.GetField(handle, this), specifiedOffset == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(specifiedOffset));
-                    index++;
-                }
-            }
-
-            return result;
+                PackingSize = layout.PackingSize,
+                Size = layout.Size
+            };
         }
 
         public override bool IsExplicitLayout

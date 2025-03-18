@@ -134,7 +134,6 @@ namespace Internal.TypeSystem
                 return result;
             }
 
-            var layoutMetadata = type.GetClassLayout();
             // If the type has layout, read its packing and size info
             // If the type has explicit layout, also read the field offset info
             if (type.IsExplicitLayout || type.IsSequentialLayout)
@@ -144,14 +143,13 @@ namespace Internal.TypeSystem
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
 
+                var layoutMetadata = type.GetClassLayout();
                 // If packing is out of range or not a power of two, throw that the size is invalid
                 int packing = layoutMetadata.PackingSize;
                 if (packing < 0 || packing > 128 || ((packing & (packing - 1)) != 0))
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
-
-                Debug.Assert(layoutMetadata.Offsets == null || layoutMetadata.Offsets.Length == numInstanceFields);
             }
 
             // At this point all special cases are handled and all inputs validated
@@ -328,9 +326,12 @@ namespace Internal.TypeSystem
                 hasVectorTField = type.BaseType.IsVectorTOrHasVectorTFields;
             }
 
-            foreach (FieldAndOffset fieldAndOffset in layoutMetadata.Offsets)
+            foreach (FieldDesc field in type.GetFields())
             {
-                TypeDesc fieldType = fieldAndOffset.Field.FieldType;
+                if (field.IsStatic)
+                    continue;
+
+                TypeDesc fieldType = field.FieldType;
                 var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType.UnderlyingType, hasLayout: true, packingSize, out ComputedFieldData fieldData);
                 if (!fieldData.LayoutAbiStable)
                     layoutAbiStable = false;
@@ -343,10 +344,12 @@ namespace Internal.TypeSystem
 
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
-                if (fieldAndOffset.Offset == FieldAndOffset.InvalidOffset)
+                LayoutInt metadataOffset = field.MetadataOffset;
+
+                if (metadataOffset == LayoutInt.Indeterminate)
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
 
-                LayoutInt computedOffset = fieldAndOffset.Offset + cumulativeInstanceFieldPos + offsetBias;
+                LayoutInt computedOffset = metadataOffset + cumulativeInstanceFieldPos + offsetBias;
 
                 // GC pointers MUST be aligned.
                 bool needsToBeAligned =
@@ -362,11 +365,11 @@ namespace Internal.TypeSystem
                     int offsetModulo = computedOffset.AsInt % type.Context.Target.PointerSize;
                     if (offsetModulo != 0)
                     {
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadExplicitLayout, type, fieldAndOffset.Offset.ToStringInvariant());
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadExplicitLayout, type, metadataOffset.ToStringInvariant());
                     }
                 }
 
-                offsets[fieldOrdinal] = new FieldAndOffset(fieldAndOffset.Field, computedOffset);
+                offsets[fieldOrdinal] = new FieldAndOffset(field, computedOffset);
 
                 LayoutInt fieldExtent = computedOffset + fieldSizeAndAlignment.Size;
                 instanceSize = LayoutInt.Max(fieldExtent, instanceSize);
@@ -440,6 +443,9 @@ namespace Internal.TypeSystem
             {
                 if (field.IsStatic)
                     continue;
+
+                if (field.MetadataOffset != LayoutInt.Indeterminate)
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
 
                 var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType.UnderlyingType, hasLayout: true, packingSize, out ComputedFieldData fieldData);
                 if (!fieldData.LayoutAbiStable)
@@ -558,6 +564,9 @@ namespace Internal.TypeSystem
             {
                 if (field.IsStatic)
                     continue;
+
+                if (field.MetadataOffset != LayoutInt.Indeterminate)
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
 
                 TypeDesc fieldType = field.FieldType;
 

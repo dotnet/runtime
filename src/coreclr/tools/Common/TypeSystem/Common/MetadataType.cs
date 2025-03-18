@@ -110,7 +110,6 @@ namespace Internal.TypeSystem
     {
         public int PackingSize;
         public int Size;
-        public FieldAndOffset[] Offsets;
     }
 
     public struct FieldAndOffset

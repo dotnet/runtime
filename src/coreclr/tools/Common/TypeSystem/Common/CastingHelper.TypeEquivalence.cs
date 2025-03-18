@@ -293,17 +293,37 @@ namespace Internal.TypeSystem
                         (layoutMetadata1.Size != layoutMetadata2.Size))
                         return false;
 
-                    if ((explicitLayout) && !(layoutMetadata1.Offsets == null && layoutMetadata2.Offsets == null))
+                    if (explicitLayout)
                     {
-                        if (layoutMetadata1.Offsets == null)
-                            return false;
+                        IEnumerator<FieldDesc> fieldEnumerator1 = type1.GetFields().GetEnumerator();
+                        IEnumerator<FieldDesc> fieldEnumerator2 = type2.GetFields().GetEnumerator();
 
-                        if (layoutMetadata2.Offsets == null)
-                            return false;
+                        // Without using LINQ, check that fieldEnumerator1 and fieldEnumerator2 have the same number of instance fields
+                        // with offsets and that the offsets are the same
 
-                        for (int index = 0; index < layoutMetadata1.Offsets.Length; index++)
+                        while (fieldEnumerator1.MoveNext() && fieldEnumerator2.MoveNext())
                         {
-                            if (layoutMetadata1.Offsets[index].Offset != layoutMetadata2.Offsets[index].Offset)
+                            bool hasNextField1 = true;
+                            while (fieldEnumerator1.Current.IsStatic)
+                            {
+                                hasNextField1 = fieldEnumerator1.MoveNext();
+                            }
+
+                            bool hasNextField2 = true;
+                            while (fieldEnumerator1.Current.IsStatic)
+                            {
+                                hasNextField2 = fieldEnumerator1.MoveNext();
+                            }
+
+                            if (!hasNextField1 && !hasNextField2)
+                                break;
+                            else if (!hasNextField1 || !hasNextField2)
+                                return false;
+
+                            FieldDesc field1 = fieldEnumerator1.Current;
+                            FieldDesc field2 = fieldEnumerator2.Current;
+
+                            if (field1.MetadataOffset != field2.MetadataOffset)
                                 return false;
                         }
                     }
