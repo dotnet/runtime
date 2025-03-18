@@ -20,6 +20,7 @@ namespace System
         internal static unsafe string StrCns(uint rid, IntPtr scopeHandle)
         {
             void* ptr = StrCnsInternal(rid, scopeHandle);
+            Debug.Assert(ptr != null);
             return Unsafe.AsRef<string>(ptr);
         }
 
