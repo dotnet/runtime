@@ -1184,8 +1184,7 @@ ep_rt_mono_walk_managed_stack_for_thread (
 	stack_walk_data.safe_point_frame = false;
 	stack_walk_data.runtime_invoke_frame = false;
 
-	bool restore_async_context = FALSE;
-	bool prevent_profiler_event_recursion = FALSE;
+	bool prevent_profiler_event_recursion = false;
 	MonoUnwindOptions unwind_options = MONO_UNWIND_SIGNAL_SAFE;
 	EventPipeMonoThreadData *thread_data = ep_rt_mono_thread_data_get_or_create ();
 	if (thread_data) {
@@ -1196,7 +1195,7 @@ ep_rt_mono_walk_managed_stack_for_thread (
 			// potential triggering uncontrolled recursion in profiler class loading event.
 			unwind_options = MONO_UNWIND_SIGNAL_ASYNC_SAFE;
 		}
-		thread_data->prevent_profiler_event_recursion = TRUE;
+		thread_data->prevent_profiler_event_recursion = true;
 	}
 
 	if (thread == ep_rt_thread_get_handle () && mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
@@ -3021,13 +3020,13 @@ class_loading_callback (
 	MonoProfiler *prof,
 	MonoClass *klass)
 {
-	bool prevent_profiler_event_recursion = FALSE;
+	bool prevent_profiler_event_recursion = false;
 	EventPipeMonoThreadData *thread_data = ep_rt_mono_thread_data_get_or_create ();
 	if (thread_data) {
 		// Prevent additional class loading to happen recursively as part of fire TypeLoadStart event.
 		// Additional class loading can happen as part of capturing callstack for TypeLoadStart event.
 		prevent_profiler_event_recursion = thread_data->prevent_profiler_event_recursion;
-		thread_data->prevent_profiler_event_recursion = TRUE;
+		thread_data->prevent_profiler_event_recursion = true;
 	}
 
 	write_event_type_load_start (m_class_get_byval_arg (klass));
