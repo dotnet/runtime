@@ -4330,8 +4330,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = false;
                 const bool isNumber    = false;
 
-                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
-                                             isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4341,8 +4340,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = false;
                 const bool isNumber    = false;
 
-                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
-                                             isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4352,8 +4350,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = true;
                 const bool isNumber    = false;
 
-                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
-                                             isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4363,8 +4360,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = true;
                 const bool isNumber    = false;
 
-                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
-                                             isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4374,8 +4370,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = true;
                 const bool isNumber    = true;
 
-                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
-                                             isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4385,8 +4380,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = true;
                 const bool isNumber    = true;
 
-                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
-                                             isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4396,8 +4390,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = false;
                 const bool isNumber    = true;
 
-                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
-                                             isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -4407,8 +4400,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 const bool isMagnitude = false;
                 const bool isNumber    = true;
 
-                retNode = impMinMaxIntrinsic(method, sig R2RARG(entryPoint), callJitType, ni, tailCall, &isSpecial,
-                                             isMax, isMagnitude, isNumber);
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
             }
 
@@ -9661,11 +9653,10 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 //   isNumber      - true if the intrinsic propagates the number; false for NaN
 //
 GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
-                                      CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
+                                      CORINFO_SIG_INFO*     sig,
                                       CorInfoType           callJitType,
                                       NamedIntrinsic        intrinsicName,
                                       bool                  tailCall,
-                                      bool*                 isSpecial,
                                       bool                  isMax,
                                       bool                  isMagnitude,
                                       bool                  isNumber)
@@ -10161,24 +10152,29 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
 #ifdef TARGET_RISCV64
-    if (isMagnitude && isNumber)
+    if (isNumber)
     {
+        static const CORINFO_CONST_LOOKUP nullEntryPoint = {IAT_VALUE};
+
         op2 = impPopStack().val;
         op1 = impPopStack().val;
-        op1 = new (this, GT_INTRINSIC)
-            GenTreeIntrinsic(op1->TypeGet(), op1, NI_System_Math_Abs, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
-        op2 = new (this, GT_INTRINSIC)
-            GenTreeIntrinsic(op2->TypeGet(), op2, NI_System_Math_Abs, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+        if (isMagnitude)
+        {
+            op1 = new (this, GT_INTRINSIC)
+                GenTreeIntrinsic(op1->TypeGet(), op1, NI_System_Math_Abs, nullptr R2RARG(nullEntryPoint));
+            op2 = new (this, GT_INTRINSIC)
+                GenTreeIntrinsic(op2->TypeGet(), op2, NI_System_Math_Abs, nullptr R2RARG(nullEntryPoint));
+        }
         NamedIntrinsic name = isMax ? NI_System_Math_MaxNumber : NI_System_Math_MinNumber;
         return new (this, GT_INTRINSIC)
-            GenTreeIntrinsic(genActualType(callType), op1, op2, name, method R2RARG(*entryPoint));
+            GenTreeIntrinsic(genActualType(callType), op1, op2, name, nullptr R2RARG(nullEntryPoint));
     }
-
-    return impMathIntrinsic(method, sig R2RARG(entryPoint), callType, intrinsicName, tailCall, isSpecial);
-#else
-    // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
-    return nullptr;
 #endif
+
+    // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
+    // return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall, isSpecial);
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------

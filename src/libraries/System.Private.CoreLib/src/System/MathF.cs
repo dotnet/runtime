@@ -289,6 +289,11 @@ namespace System
             // otherwise returns the input with a lesser magnitude.
             // It treats +0 as greater than -0 as per the specification.
 
+#if TARGET_RISCV64
+            if (float.IsNaN(x)) return x;
+            if (float.IsNaN(y)) return y;
+            return float.MinMagnitudeNumber(x, y);
+#else
             float ax = Abs(x);
             float ay = Abs(y);
 
@@ -303,6 +308,7 @@ namespace System
             }
 
             return y;
+#endif
         }
 
         /// <summary>Returns an estimate of the reciprocal of a specified number.</summary>
@@ -334,7 +340,7 @@ namespace System
         [Intrinsic]
         public static float ReciprocalSqrtEstimate(float x)
         {
-#if MONO || TARGET_RISCV64 || TARGET_LOONGARCH64
+#if MONO || TARGET_LOONGARCH64
             return 1.0f / Sqrt(x);
 #else
             return ReciprocalSqrtEstimate(x);
