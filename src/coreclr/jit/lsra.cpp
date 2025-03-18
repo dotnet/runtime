@@ -4008,14 +4008,14 @@ void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
 //    The new register to use.
 //
 #ifdef DEBUG
-regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber targetReg, regMaskTP availableRegs)
+regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber targetReg, SingleTypeRegSet availableRegs)
 {
     if (targetReg != REG_STK && getLsraBlockBoundaryLocations() == LSRA_BLOCK_BOUNDARY_ROTATE)
     {
         // If we're rotating the register locations at block boundaries, try to use
         // the next higher register number of the appropriate register type.
         SingleTypeRegSet candidateRegs =
-            allRegs(interval->registerType) & availableRegs.GetRegSetForType(interval->registerType);
+            allRegs(interval->registerType) & availableRegs;
         regNumber firstReg = REG_NA;
         regNumber newReg   = REG_NA;
         while (candidateRegs != RBM_NONE)
@@ -4321,7 +4321,11 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     // inactive registers available for the rotation.
     regMaskTP inactiveRegs = RBM_NONE;
 #endif // DEBUG
-    regMaskTP       liveRegs = RBM_NONE;
+    SingleTypeRegSet liveRegsNonMask = RBM_NONE;
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    SingleTypeRegSet liveRegsMaskType = RBM_NONE;
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
     VarSetOps::Iter iter(compiler, currentLiveVars);
     unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex))
@@ -4334,6 +4338,12 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         Interval*    interval        = getIntervalForLocalVar(varIndex);
         RefPosition* nextRefPosition = interval->getNextRefPosition();
         assert((nextRefPosition != nullptr) || (interval->isWriteThru));
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        SingleTypeRegSet &liveRegsSingleType = (varTypeIsMask(interval->registerType)) ? liveRegsMaskType : liveRegsNonMask;
+#else  // !FEATURE_MASKED_HW_INTRINSICS
+        SingleTypeRegSet &liveRegsSingleType = liveRegsNonMask;
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         bool leaveOnStack = false;
 
@@ -4361,7 +4371,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 targetReg = REG_STK;
             }
 #ifdef DEBUG
-            regNumber newTargetReg = rotateBlockStartLocation(interval, targetReg, (~liveRegs | inactiveRegs));
+            regNumber newTargetReg = rotateBlockStartLocation(interval, targetReg, (~liveRegsSingleType | inactiveRegs.GetRegSetForType(interval->registerType)));
             if (newTargetReg != targetReg)
             {
                 targetReg = newTargetReg;
@@ -4416,7 +4426,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 assert(targetReg != REG_STK);
                 assert(interval->assignedReg != nullptr && interval->assignedReg->regNum == targetReg &&
                        interval->assignedReg->assignedInterval == interval);
-                liveRegs.AddRegNum(targetReg, interval->registerType);
+                liveRegsSingleType |= getSingleTypeRegMask(targetReg, interval->registerType);
                 continue;
             }
         }
@@ -4446,7 +4456,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 // likely to match other assignments this way.
                 targetReg          = interval->physReg;
                 interval->isActive = true;
-                liveRegs.AddRegNum(targetReg, interval->registerType);
+                liveRegsSingleType |= getSingleTypeRegMask(targetReg, interval->registerType);
                 INDEBUG(inactiveRegs |= genRegMask(targetReg));
                 setVarReg(inVarToRegMap, varIndex, targetReg);
             }
@@ -4458,7 +4468,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         if (targetReg != REG_STK)
         {
             RegRecord* targetRegRecord = getRegisterRecord(targetReg);
-            liveRegs.AddRegNum(targetReg, interval->registerType);
+            liveRegsSingleType |= getSingleTypeRegMask(targetReg, interval->registerType);
             if (!allocationPassComplete)
             {
                 updateNextIntervalRef(targetReg, interval);
@@ -4495,7 +4505,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(targetRegRecord);
 
                     // Use TYP_FLOAT to get the regmask of just the half reg.
-                    liveRegs.RemoveRegNum(anotherHalfRegRec->regNum, TYP_FLOAT);
+                    liveRegsSingleType &= ~(getSingleTypeRegMask(anotherHalfRegRec->regNum, TYP_FLOAT));
                 }
 
 #endif // TARGET_ARM
@@ -4509,7 +4519,10 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
             }
         }
     }
-
+    regMaskTP       liveRegs = regMaskTP(liveRegsNonMask);
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    liveRegs.AddRegsetForType(liveRegsMaskType, TYP_MASK);
+#endif // FEATURE_MASKED_HW_INTRINSICS
     // Unassign any registers that are no longer live, and set register state, if allocating.
     if (!allocationPassComplete)
     {
