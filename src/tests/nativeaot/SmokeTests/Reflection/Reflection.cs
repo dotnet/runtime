@@ -73,6 +73,7 @@ internal static class ReflectionTest
         TestTypeHandlesVisibleFromIDynamicInterfaceCastable.Run();
         TestCompilerGeneratedCode.Run();
         Test105034Regression.Run();
+        TestMethodsNeededFromNativeLayout.Run();
 
 
         //
@@ -93,6 +94,7 @@ internal static class ReflectionTest
         TestBaseOnlyUsedFromCode.Run();
         TestEntryPoint.Run();
         TestGenericAttributesOnEnum.Run();
+        TestLdtokenWithSignaturesDifferingInModifiers.Run();
 
         return 100;
     }
@@ -752,6 +754,82 @@ internal static class ReflectionTest
                 var f = Activate(t);
                 f.Make();
             }
+        }
+    }
+
+    class TestMethodsNeededFromNativeLayout
+    {
+        class MyAttribute : Attribute;
+
+        class GenericClass<T> where T : class
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            [My]
+            public static void GenericMethod<U>([My] string namedParameter = "Hello") { }
+
+            public GenericClass() => GenericMethod<T>(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetObjectType() => typeof(object);
+
+        public static void Run()
+        {
+            // This tests that limited reflection metadata (that was only needed for native layout)
+            // works within the reflection stack.
+            Activator.CreateInstance(typeof(GenericClass<>).MakeGenericType(GetObjectType()));
+
+            // This should succeed because of the Activator
+            Type testType = GetTestType(nameof(TestMethodsNeededFromNativeLayout), "GenericClass`1");
+
+            // This should succeed because native layout forces the metadata.
+            // If this ever starts breaking, replace this pattern with something else that forces limited method metadata.
+            MethodInfo mi = testType.GetMethod(nameof(GenericClass<object>.GenericMethod));
+
+            // We got a MethodInfo that is limited, check the reflection APIs work fine with it
+            if (mi.Name != nameof(GenericClass<object>.GenericMethod))
+                throw new Exception("Name");
+
+            // Unless we're doing REFLECTION_FROM_USAGE, we don't expect to see attributes
+#if !REFLECTION_FROM_USAGE
+            if (mi.GetCustomAttributes(inherit: true).Length != 0)
+                throw new Exception("Attributes");
+#endif
+
+            // Unless we're doing REFLECTION_FROM_USAGE, we don't expect to be able to reflection-invoke
+            var mi2 = (MethodInfo)typeof(GenericClass<string>).GetMemberWithSameMetadataDefinitionAs(mi);
+#if !REFLECTION_FROM_USAGE
+            try
+#endif
+            {
+
+                mi2.MakeGenericMethod(typeof(string)).Invoke(null, [ null ]);
+#if !REFLECTION_FROM_USAGE
+                throw new Exception("Invoke");
+#endif
+            }
+#if !REFLECTION_FROM_USAGE
+            catch (NotSupportedException)
+            {
+            }
+#endif
+
+            // Parameter count should match no matter what
+            var parameters = mi.GetParameters();
+            if (parameters.Length != 1)
+                throw new Exception("ParamCount");
+
+            // But parameter names, default values, attributes should only work in REFLECTION_FROM_USAGE
+#if !REFLECTION_FROM_USAGE
+            if (parameters[0].Name != null)
+                throw new Exception("ParamName");
+
+            if (parameters[0].HasDefaultValue)
+                throw new Exception("DefaultValue");
+
+            if (parameters[0].GetCustomAttributes(inherit: true).Length != 0)
+                throw new Exception("Attributes");
+#endif
         }
     }
 
@@ -2777,6 +2855,26 @@ internal static class ReflectionTest
         public static void Run()
         {
             if (GetVal().ToString() != "3")
+                throw new Exception();
+        }
+    }
+
+    unsafe class TestLdtokenWithSignaturesDifferingInModifiers
+    {
+        delegate string StdcallDelegate(delegate* unmanaged[Stdcall]<void>[] p);
+        delegate string CdeclDelegate(delegate* unmanaged[Cdecl]<void>[] p);
+
+        static string Method(delegate* unmanaged[Stdcall]<void>[] p) => "Stdcall";
+        static string Method(delegate* unmanaged[Cdecl]<void>[] p) => "Cdecl";
+
+        public static void Run()
+        {
+            Expression<StdcallDelegate> stdcall = x => Method(x);
+            if (stdcall.Compile()(null) != "Stdcall")
+                throw new Exception();
+
+            Expression<CdeclDelegate> cdecl = x => Method(x);
+            if (cdecl.Compile()(null) != "Cdecl")
                 throw new Exception();
         }
     }

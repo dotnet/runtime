@@ -132,12 +132,6 @@ extern bool g_arm64_atomics_present;
 
 #define DECLSPEC_NORETURN   PAL_NORETURN
 
-#ifdef __clang_analyzer__
-#define ANALYZER_NORETURN __attribute((analyzer_noreturn))
-#else
-#define ANALYZER_NORETURN
-#endif
-
 #define EMPTY_BASES_DECL
 
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
@@ -1552,7 +1546,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         M512 Zmm30;
         M512 Zmm31;
     };
-    
+
     struct
     {
         DWORD64 Egpr16;
@@ -1572,7 +1566,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         DWORD64 Egpr30;
         DWORD64 Egpr31;
     };
-    
+
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //
@@ -2475,7 +2469,9 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define CONTEXT_CONTROL 0
 #define CONTEXT_INTEGER 0
 #define CONTEXT_FLOATING_POINT 0
+#define CONTEXT_DEBUG_REGISTERS 0
 #define CONTEXT_FULL 0
+#define CONTEXT_ALL 0
 
 #define CONTEXT_XSTATE 0
 

@@ -5909,7 +5909,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     }
 
     pDispatcherContext->ControlPc = (UINT_PTR) GetIP(pDispatcherContext->ContextRecord);
-    
+
 #if defined(TARGET_ARM64)
     // Since this routine is used to fixup contexts for async exceptions,
     // clear the CONTEXT_UNWOUND_TO_CALL flag since, semantically, frames
@@ -8040,7 +8040,7 @@ extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvReg
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay)
+extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay)
 {
     QCALL_CONTRACT;
 
@@ -8106,7 +8106,7 @@ struct ExtendedEHClauseEnumerator : EH_CLAUSE_ENUMERATOR
     unsigned EHCount;
 };
 
-extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
+extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
 {
     QCALL_CONTRACT;
 
@@ -8128,10 +8128,10 @@ extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *p
     return pExtendedEHEnum->EHCount != 0;
 }
 
-extern "C" BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause)
+extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause)
 {
     QCALL_CONTRACT;
-    BOOL result = FALSE;
+    CLR_BOOL result = FALSE;
 
     BEGIN_QCALL;
     Thread* pThread = GET_THREAD();
@@ -8211,10 +8211,10 @@ extern uint32_t g_exceptionCount;
 
 MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
-static BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterator, ExInfo *pExInfo)
+static CLR_BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterator, ExInfo *pExInfo)
 {
     // check if the exception is intercepted.
-    BOOL isIntercepted = FALSE;
+    CLR_BOOL isIntercepted = FALSE;
     if (pExInfo->m_ExceptionFlags.DebuggerInterceptInfo())
     {
         MethodDesc *pMD = pStackFrameIterator->m_crawl.GetFunction();
@@ -8379,11 +8379,11 @@ static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExIn
     pExInfo->m_pMDToReportFunctionLeave = pMD;
 }
 
-extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault, bool* pfIsExceptionIntercepted)
+extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
 
-    bool result = false;
+    CLR_BOOL result = FALSE;
     Thread* pThread = GET_THREAD();
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
@@ -8531,7 +8531,7 @@ static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrame
 
 bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
-extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* pfIsExceptionIntercepted)
+extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR_BOOL* fUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
 
@@ -8556,7 +8556,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
     // Check for reverse pinvoke (but eliminate the case when the caller is managed) or CallDescrWorkerInternal.
     if (!ExecutionManager::IsManagedCode(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
     {
-        bool invalidRevPInvoke;
+        CLR_BOOL invalidRevPInvoke;
 #ifdef USE_GC_INFO_DECODER
         GcInfoDecoder gcInfoDecoder(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
         invalidRevPInvoke = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
@@ -8592,11 +8592,11 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
         {
             if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
             {
-                invalidRevPInvoke = true;
+                invalidRevPInvoke = TRUE;
             }
             else if (pThis->m_crawl.IsFilterFunclet())
             {
-                invalidRevPInvoke = true;
+                invalidRevPInvoke = TRUE;
             }
             else
             {
@@ -8653,7 +8653,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
     {
         if (fUnwoundReversePInvoke)
         {
-            *fUnwoundReversePInvoke = false;
+            *fUnwoundReversePInvoke = FALSE;
         }
     }
 
@@ -8762,10 +8762,10 @@ Exit:;
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pTopExInfo);
 
-        return true;
+        return TRUE;
     }
 
-    return false;
+    return FALSE;
 }
 
 namespace AsmOffsetsAsserts
