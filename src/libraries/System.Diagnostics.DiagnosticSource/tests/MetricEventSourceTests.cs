@@ -2300,7 +2300,9 @@ namespace System.Diagnostics.Metrics.Tests
 
         public Task WaitForMultipleSessionsConfiguredIncorrectlyError(TimeSpan timeout) => WaitForEvent(timeout, 1, "MultipleSessionsConfiguredIncorrectlyError");
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         async Task WaitForEvent(TimeSpan timeout, int numEvents, string eventName)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             DateTime startTime = DateTime.Now;
             DateTime stopTime = startTime + timeout;
