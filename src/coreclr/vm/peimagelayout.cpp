@@ -124,7 +124,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
     {
         if (!pOwner->IsInBundle()
 #if defined(TARGET_UNIX)
-            || (pOwner->GetUncompressedSize() == 0)
+            || !pOwner->IsCompressed()
 #endif
             )
         {
@@ -537,7 +537,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
     CONTRACTL_END;
 
     m_pOwner = pOwner;
-    _ASSERTE(pOwner->GetUncompressedSize() == 0);
+    _ASSERTE(!pOwner->IsCompressed());
 
 #ifndef TARGET_UNIX
     _ASSERTE(!pOwner->IsInBundle());
@@ -670,12 +670,13 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     // It's okay if resource files are length zero
     if (size > 0)
     {
-        INT64 uncompressedSize = pOwner->GetUncompressedSize();
+        INT64 uncompressedSize;
+        BOOL isCompressed = pOwner->IsCompressed(&uncompressedSize);
 
         DWORD mapAccess = PAGE_READONLY;
 #if !defined(TARGET_UNIX)
         // to map sections into executable views on Windows the mapping must have EXECUTE permissions
-        if (uncompressedSize == 0)
+        if (!isCompressed)
         {
             mapAccess = PAGE_EXECUTE_READ;
         }
@@ -701,7 +702,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         m_FileView.Assign(view);
         addr = (LPVOID)((size_t)view + offset - mapBegin);
 
-        if (uncompressedSize > 0)
+        if (isCompressed)
         {
 #if defined(CORECLR_EMBEDDED)
             // The mapping we have just created refers to the region in the bundle that contains compressed data.
@@ -1031,7 +1032,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
     }
     CONTRACTL_END;
 
-    if (!HavePlaceholderAPI() || m_pOwner->GetUncompressedSize() != 0)
+    if (!HavePlaceholderAPI() || m_pOwner->IsCompressed())
     {
         return NULL;
     }

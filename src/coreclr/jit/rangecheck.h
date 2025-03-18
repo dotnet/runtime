@@ -733,7 +733,7 @@ private:
                                     ValueNum         preferredBoundVN,
                                     ASSERT_VALARG_TP assertions,
                                     Range*           pRange,
-                                    bool             log = true);
+                                    bool             canUseCheckedBounds = true);
 
     // The maximum possible value of the given "limit". If such a value could not be determined
     // return "false". For example: CORINFO_Array_MaxLength for array length.

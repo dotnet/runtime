@@ -2450,40 +2450,40 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Dot:
         case NI_Vector256_Dot:
+        case NI_Vector512_Dot:
         {
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            if (varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType))
+            if ((simdSize == 32) && !varTypeIsFloating(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                // TODO-XARCH-CQ: We could support dot product for 8-bit and
-                // 64-bit integers if we support multiplication for the same
+                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
                 break;
             }
 
-            if (simdSize == 32)
+#if defined(TARGET_X86)
+            if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
-                if (!varTypeIsFloating(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
-                    break;
-                }
+                // We need SSE41 to handle long, use software fallback
+                break;
             }
-            else if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT))
-            {
-                if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    // TODO-XARCH-CQ: We can support 32-bit integers if we updating multiplication
-                    // to be lowered rather than imported as the relevant operations.
-                    break;
-                }
-            }
+#endif // TARGET_X86
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
+            if ((simdSize == 64) || varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType) ||
+                (varTypeIsInt(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+            {
+                // The lowering for Dot doesn't handle these cases, so import as Sum(left * right)
+                retNode = gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseJitType, simdSize);
+                retNode = gtNewSimdSumNode(retType, retNode, simdBaseJitType, simdSize);
+                break;
+            }
+
             retNode = gtNewSimdDotProdNode(simdType, op1, op2, simdBaseJitType, simdSize);
-            retNode = gtNewSimdGetElementNode(retType, retNode, gtNewIconNode(0), simdBaseJitType, simdSize);
+            retNode = gtNewSimdToScalarNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -3349,28 +3349,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
+#if defined(TARGET_X86)
             if (varTypeIsLong(simdBaseType))
             {
-                if (TARGET_POINTER_SIZE == 4)
-                {
-                    // TODO-XARCH-CQ: 32bit support
-                    break;
-                }
-
-                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
-                }
-                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
-                }
-                else if (simdSize != 64)
-                {
-                    // Software fallback
-                    break;
-                }
+                // TODO-XARCH-CQ: We can't handle long here, only because one of the args might
+                // be scalar, and gtNewSimdCreateBroadcastNode doesn't handle long on x86.
+                break;
             }
+#endif // TARGET_X86
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
             CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
@@ -3403,29 +3389,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
                 break;
-            }
-
-            if (varTypeIsLong(simdBaseType))
-            {
-                if (TARGET_POINTER_SIZE == 4)
-                {
-                    // TODO-XARCH-CQ: 32bit support
-                    break;
-                }
-
-                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
-                }
-                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
-                }
-                else if (simdSize != 64)
-                {
-                    // Software fallback
-                    break;
-                }
             }
 
             op3 = impSIMDPopStack();
@@ -3818,17 +3781,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                // Vector256 requires AVX2
-                break;
-            }
-            else if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_SSE2))
-            {
-                break;
-            }
 #if defined(TARGET_X86)
-            else if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
                 // We need SSE41 to handle long, use software fallback
                 break;

@@ -123,7 +123,14 @@ internal static partial class Interop
         internal static partial IntPtr SslGetCertificate(IntPtr ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertChain")]
-        internal static partial SafeSharedX509StackHandle SslGetPeerCertChain(SafeSslHandle ssl);
+        private static partial SafeSharedX509StackHandle SslGetPeerCertChain_private(SafeSslHandle ssl);
+
+        internal static SafeSharedX509StackHandle SslGetPeerCertChain(SafeSslHandle ssl)
+        {
+            return SafeInteriorHandle.OpenInteriorHandle(
+                SslGetPeerCertChain_private,
+                ssl);
+        }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerFinished")]
         internal static partial int SslGetPeerFinished(SafeSslHandle ssl, IntPtr buf, int count);
