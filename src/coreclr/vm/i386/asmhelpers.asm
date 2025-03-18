@@ -20,6 +20,11 @@ include asmconstants.inc
         option  casemap:none
         .code
 
+g_pThrowDivideByZeroExceptionLong    TEXTEQU <_g_pThrowDivideByZeroExceptionLong>
+g_pThrowOverflowExceptionLong        TEXTEQU <_g_pThrowOverflowExceptionLong>
+EXTERN g_pThrowDivideByZeroExceptionLong:DWORD
+EXTERN g_pThrowOverflowExceptionLong:DWORD
+
 EXTERN __imp__RtlUnwind@16:DWORD
 ifdef _DEBUG
 EXTERN _HelperMethodFrameConfirmState@20:PROC
@@ -63,9 +68,6 @@ EXTERN __alldiv:PROC
 EXTERN __allrem:PROC
 EXTERN __aulldiv:PROC
 EXTERN __aullrem:PROC
-
-EXTERN @JIT_ThrowDivideByZero@0:PROC
-EXTERN @JIT_ThrowOverflow@0:PROC
 
 UNREFERENCED macro arg
     local unref
@@ -1420,7 +1422,7 @@ FASTCALL_FUNC JIT_LDiv, 16
     cmp     edx,dword ptr [esp + DivisorHi32BitsOffset]
     jne     JIT_LDiv_Call__alldiv ; We're going to call CRT Helper routine
     test    eax, eax
-    je      JIT_ThrowDivideByZero_Pop16BytesOffStack
+    je      JIT_ThrowDivideByZero_Long
     cmp     eax,0FFFFFFFFh
     jne     JIT_LDiv_DoDivideBy32BitDivisor
     mov     eax,dword  ptr [esp + DividendLow32BitsOffset]
@@ -1428,7 +1430,7 @@ FASTCALL_FUNC JIT_LDiv, 16
     mov     edx,dword  ptr [esp + DividendHi32BitsOffset]
     jne     JIT_LDiv_DoNegate
     cmp     edx,80000000h
-    je      JIT_ThrowOverflow_Pop16BytesOffStack
+    je      JIT_ThrowOverflow_Long
 JIT_LDiv_DoNegate:
     neg     eax
     adc     edx,0
@@ -1472,7 +1474,7 @@ FASTCALL_FUNC JIT_LMod, 16
     cmp     edx,dword ptr [esp + DivisorHi32BitsOffset]
     jne     JIT_LMod_Call__allrem ; We're going to call CRT Helper routine
     test    eax, eax
-    je      JIT_ThrowDivideByZero_Pop16BytesOffStack
+    je      JIT_ThrowDivideByZero_Long
     cmp     eax,0FFFFFFFFh
     jne     JIT_LMod_DoDivideBy32BitDivisor
     mov     eax,dword  ptr [esp + DividendLow32BitsOffset]
@@ -1480,7 +1482,7 @@ FASTCALL_FUNC JIT_LMod, 16
     jne     JIT_LMod_ReturnZero
     mov     edx,dword  ptr [esp + DividendHi32BitsOffset]
     cmp     edx,80000000h
-    je      JIT_ThrowOverflow_Pop16BytesOffStack
+    je      JIT_ThrowOverflow_Long
 JIT_LMod_ReturnZero:
     xor     eax, eax
     xor     edx, edx
@@ -1523,7 +1525,7 @@ FASTCALL_FUNC JIT_ULDiv, 16
     cmp     dword ptr [esp + DivisorHi32BitsOffset], 0
     jne     JIT_ULDiv_Call__aulldiv ; We're going to call CRT Helper routine
     test    eax, eax
-    je      JIT_ThrowDivideByZero_Pop16BytesOffStack
+    je      JIT_ThrowDivideByZero_Long
     ; First check to see if dividend is also 32 bits
     mov     ecx, eax ; Put divisor in ecx
     cmp     dword ptr [esp + DividendHi32BitsOffset], 0
@@ -1559,7 +1561,7 @@ FASTCALL_FUNC JIT_ULMod, 16
     cmp     dword ptr [esp + DivisorHi32BitsOffset], 0
     jne     JIT_LMod_Call__aullrem ; We're going to call CRT Helper routine
     test    eax, eax
-    je      JIT_ThrowDivideByZero_Pop16BytesOffStack
+    je      JIT_ThrowDivideByZero_Long
     ; First check to see if dividend is also 32 bits
     mov     ecx, eax ; Put divisor in ecx
     cmp     dword ptr [esp + DividendHi32BitsOffset], 0
@@ -1583,18 +1585,14 @@ JIT_LMod_Call__aullrem:
     jne     __aullrem ; Tail call the CRT Helper routine for 64 bit unsigned modulus
 FASTCALL_ENDFUNC
 
-JIT_ThrowDivideByZero_Pop16BytesOffStack proc public
-    pop eax ; Pop return address into eax
-    add esp, 10h
-    push eax ; Fix return address
-    jmp @JIT_ThrowDivideByZero@0
-JIT_ThrowDivideByZero_Pop16BytesOffStack endp
+JIT_ThrowDivideByZero_Long proc public
+    mov eax, g_pThrowDivideByZeroExceptionLong
+    jmp eax
+JIT_ThrowDivideByZero_Long endp
 
-JIT_ThrowOverflow_Pop16BytesOffStack proc public
-    pop eax ; Pop return address into eax
-    add esp, 10h
-    push eax ; Fix return address
-    jmp @JIT_ThrowOverflow@0
-JIT_ThrowOverflow_Pop16BytesOffStack endp
+JIT_ThrowOverflow_Long proc public
+    mov eax, g_pThrowOverflowExceptionLong
+    jmp eax
+JIT_ThrowOverflow_Long endp
 
     end

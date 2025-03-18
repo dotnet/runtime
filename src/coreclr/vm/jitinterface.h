@@ -860,6 +860,11 @@ public:
                        void **            ppIndirection) override final;  /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
+    // Get the Helper Function Pointer, but don't throw an exception if its not found. Only
+    // safe to call if it is known that somewhere earlier in the process there was a call to
+    // getHelperFtnStatic with the same argument that did not throw.
+    static PCODE getHelperFtnStaticNoThrow(CorInfoHelpFunc ftnNum);
+
     // Override of CEEInfo::GetProfilingHandle.  The first time this is called for a
     // method desc, it calls through to CEEInfo::GetProfilingHandle and caches the
     // result in CEEJitInfo::GetProfilingHandleCache.  Thereafter, this wrapper regurgitates the cached values

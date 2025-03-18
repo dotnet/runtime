@@ -30,7 +30,7 @@
 #endif
 
 #if defined(TARGET_32BIT) && defined (TARGET_ARM)
-#define USE_HELPERS_FOR_INT_DIV
+#define FEATURE_USE_HELPERS_FOR_32BIT_INT_DIV
 #endif
 
 // pfnHelper is set to NULL if it is a stubbed helper.
@@ -39,7 +39,7 @@
     JITHELPER(CORINFO_HELP_UNDEF,               NULL,               METHOD__NIL)
 
     // Arithmetic
-#ifdef USE_HELPERS_FOR_INT_DIV
+#ifdef FEATURE_USE_HELPERS_FOR_32BIT_INT_DIV
     JITHELPER(CORINFO_HELP_DIV,                 JIT_Div,            METHOD__NIL)
     JITHELPER(CORINFO_HELP_MOD,                 JIT_Mod,            METHOD__NIL)
     JITHELPER(CORINFO_HELP_UDIV,                JIT_UDiv,           METHOD__NIL)

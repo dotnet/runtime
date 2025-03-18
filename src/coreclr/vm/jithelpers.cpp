@@ -117,22 +117,6 @@ HCIMPLEND
 #endif // !TARGET_X86 || TARGET_UNIX
 
 /*********************************************************************/
-extern "C" HCIMPL0(void, JIT_ThrowOverflow)
-{
-    FCALL_CONTRACT;
-
-    FCThrowRetVoid(kOverflowException);
-}
-HCIMPLEND
-
-extern "C" HCIMPL0(void, JIT_ThrowDivideByZero)
-{
-    FCALL_CONTRACT;
-
-    FCThrowRetVoid(kDivideByZeroException);
-}
-HCIMPLEND
-
 extern "C" FCDECL2(INT32, JIT_Div, INT32 dividend, INT32 divisor);
 extern "C" FCDECL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor);
 extern "C" FCDECL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor);
@@ -3475,53 +3459,24 @@ void InitJITHelpers2()
 #undef return
 #endif
 
-extern "C" HCIMPL2(INT32, JIT_ThrowOverflow_RetInt, INT32 a, INT32 b)
-{
-    FCALL_CONTRACT;
+#if TARGET_UNIX
+#ifdef __clang__
+#define MUSTTAIL [[clang::musttail]]
+#else // __clang__
+#define MUSTTAIL [[gnu::musttail]]
+#endif // __clang__
+#endif // TARGET_UNIX
 
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
+extern "C" PCODE g_pThrowOverflowException;
+extern "C" PCODE g_pThrowDivideByZeroException;
+extern "C" PCODE g_pThrowOverflowExceptionLong;
+extern "C" PCODE g_pThrowDivideByZeroExceptionLong;
 
-extern "C" HCIMPL2(INT32, JIT_ThrowDivideByZero_RetInt, INT32 a, INT32 b)
-{
-    FCALL_CONTRACT;
+typedef HCCALL2_PTR(ThrowExceptionPtr_int32, INT32, INT32);
+typedef HCCALL2_PTR(ThrowExceptionPtr_uint32, UINT32, UINT32);
 
-    FCThrow(kDivideByZeroException);
-}
-HCIMPLEND
-
-extern "C" HCIMPL2(UINT32, JIT_ThrowDivideByZero_RetUInt, UINT32 a, UINT32 b)
-{
-    FCALL_CONTRACT;
-
-    FCThrow(kDivideByZeroException);
-}
-HCIMPLEND
-
-extern "C" HCIMPL2(INT64, JIT_ThrowOverflow_RetInt64, INT64 a, INT64 b)
-{
-    FCALL_CONTRACT;
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-extern "C" HCIMPL2(INT64, JIT_ThrowDivideByZero_RetInt64, INT64 a, INT64 b)
-{
-    FCALL_CONTRACT;
-
-    FCThrow(kDivideByZeroException);
-}
-HCIMPLEND
-
-extern "C" HCIMPL2(UINT64, JIT_ThrowDivideByZero_RetUInt64, UINT64 a, UINT64 b)
-{
-    FCALL_CONTRACT;
-
-    FCThrow(kDivideByZeroException);
-}
-HCIMPLEND
+typedef HCCALL2_VV_PTR(ThrowExceptionPtr_int64, INT64, INT64);
+typedef HCCALL2_VV_PTR(ThrowExceptionPtr_uint64, UINT64, UINT64);
 
 HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
 {
@@ -3533,13 +3488,14 @@ HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
     {
         if (divisor == 0)
         {
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt(dividend, divisor);
+            ThrowExceptionPtr_int32
+            [[clang::musttail]] return HCCALL2((ThrowExceptionPtr_int32)g_pThrowDivideByZeroException, 0, 0);
         }
         else if (divisor == -1)
         {
             if (dividend == INT32_MIN)
             {
-                [[clang::musttail]] return JIT_ThrowOverflow_RetInt(dividend, divisor);
+                [[clang::musttail]] return HCCALL2((ThrowExceptionPtr_int32)g_pThrowOverflowException, 0, 0);
             }
             return -dividend;
         }
@@ -3560,13 +3516,13 @@ HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
     {
         if (divisor == 0)
         {
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt(dividend, divisor);
+            [[clang::musttail]] return HCCALL2((ThrowExceptionPtr_int32)g_pThrowDivideByZeroException, 0, 0);
         }
         else if (divisor == -1)
         {
             if (dividend == INT32_MIN)
             {
-                [[clang::musttail]] return JIT_ThrowOverflow_RetInt(dividend, divisor);
+                [[clang::musttail]] return HCCALL2((ThrowExceptionPtr_int32)g_pThrowOverflowException, 0, 0);
             }
             return 0;
         }
@@ -3582,7 +3538,7 @@ HCIMPL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor)
     FCALL_CONTRACT;
 
     if (divisor == 0)
-        [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt(dividend, divisor);
+        [[clang::musttail]] return HCCALL2((ThrowExceptionPtr_uint32)g_pThrowDivideByZeroException, 0, 0);
 
     return(dividend / divisor);
 }
@@ -3594,7 +3550,7 @@ HCIMPL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor)
     FCALL_CONTRACT;
 
     if (divisor == 0)
-        [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt(dividend, divisor);
+        [[clang::musttail]] return HCCALL2((ThrowExceptionPtr_uint32)g_pThrowDivideByZeroException, 0, 0);
 
     return(dividend % divisor);
 }
@@ -3611,14 +3567,14 @@ HCIMPL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor)
     {
         if ((INT32)divisor == 0)
         {
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt64(divisor, dividend);
+            [[clang::musttail]] return HCCALL2_VV((ThrowExceptionPtr_int64)g_pThrowDivideByZeroExceptionLong, 0, 0);
         }
 
         if ((INT32)divisor == -1)
         {
             if ((UINT64) dividend == UI64(0x8000000000000000))
             {
-                [[clang::musttail]] return JIT_ThrowOverflow_RetInt64(divisor, dividend);
+                [[clang::musttail]] return HCCALL2_VV((ThrowExceptionPtr_int64)g_pThrowOverflowExceptionLong, 0, 0);
             }
             return -dividend;
         }
@@ -3644,7 +3600,7 @@ HCIMPL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor)
     {
         if ((INT32)divisor == 0)
         {
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt64(divisor, dividend);
+            [[clang::musttail]] return HCCALL2_VV((ThrowExceptionPtr_int64)g_pThrowDivideByZeroExceptionLong, 0, 0);
         }
 
         if ((INT32)divisor == -1)
@@ -3653,7 +3609,7 @@ HCIMPL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor)
             // and the spec really says that it should not throw an exception. </TODO>
             if ((UINT64) dividend == UI64(0x8000000000000000))
             {
-                [[clang::musttail]] return JIT_ThrowOverflow_RetInt64(divisor, dividend);
+                [[clang::musttail]] return HCCALL2_VV((ThrowExceptionPtr_int64)g_pThrowOverflowExceptionLong, 0, 0);
             }
             return 0;
         }
@@ -3676,7 +3632,7 @@ HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor)
     if (Hi32Bits(divisor) == 0)
     {
         if ((UINT32)(divisor) == 0)
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt64(divisor, dividend);
+            [[clang::musttail]] return HCCALL2_VV((ThrowExceptionPtr_uint64)g_pThrowDivideByZeroExceptionLong, 0, 0);
 
         if (Hi32Bits(dividend) == 0)
             return((UINT32)dividend / (UINT32)divisor);
@@ -3694,7 +3650,7 @@ HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor)
     if (Hi32Bits(divisor) == 0)
     {
         if ((UINT32)(divisor) == 0)
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt64(divisor, dividend);
+            [[clang::musttail]] return HCCALL2_VV((ThrowExceptionPtr_uint64)g_pThrowDivideByZeroExceptionLong, 0, 0);
 
         if (Hi32Bits(dividend) == 0)
             return((UINT32)dividend % (UINT32)divisor);
