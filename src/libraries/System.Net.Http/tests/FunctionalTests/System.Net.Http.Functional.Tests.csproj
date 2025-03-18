@@ -51,7 +51,6 @@
     <NodeNpmModule Include="node-abort-controller" />
 
     <RuntimeHostConfigurationOption Include="System.Net.Http.EnableActivityPropagation" Value="true" Trim="true" />
-    <RuntimeHostConfigurationOption Include="System.Net.Http.EnableMetrics" Value="true" Trim="true" />
 
   </ItemGroup>
 
