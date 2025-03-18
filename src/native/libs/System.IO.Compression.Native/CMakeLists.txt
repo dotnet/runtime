@@ -4,7 +4,6 @@ find_library(BROTLIDEC brotlidec REQUIRED)
 find_library(BROTLIENC brotlienc REQUIRED)
 find_library(BROTLICOMMON brotlicommon)
 find_path(BROTLI_INCLUDE_DIRS "brotli/decode.h")
-find_package(ZLIB REQUIRED)
 
 set(BROTLI_LIBRARIES ${BROTLIDEC} ${BROTLIENC})
 if (BROTLICOMMON)
@@ -19,9 +18,12 @@ if (NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
     find_library(BROTLICOMMON_NOIPO brotlicommon REQUIRED)
     set (BROTLI_LIBRARIES_NOIPO ${BROTLIDEC_NOIPO} ${BROTLIENC_NOIPO} ${BROTLICOMMON_NOIPO})
 endif()
+
 if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
-    find_library(ZLIB_NOIPO NAMES zlib zlibstatic zlibstaticd REQUIRED)
+    set(ZLIB_USE_STATIC_LIBS ON)
+    find_library(ZLIB_NOIPO NAMES z zlibstatic zlibstaticd REQUIRED)
 endif()
+find_package(ZLIB REQUIRED)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/../Common/pal_config.h.in
