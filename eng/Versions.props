@@ -221,7 +221,7 @@
     <!-- Mono Cecil -->
     <MicrosoftDotNetCecilVersion>0.11.5-alpha.25152.2</MicrosoftDotNetCecilVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>10.0.0-preview.3.25159.2</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>10.0.0-preview.4.25167.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.3</MicrosoftNativeQuicMsQuicSchannelVersion>
     <SystemNetMsQuicTransportVersion>9.0.0-alpha.1.24167.3</SystemNetMsQuicTransportVersion>
