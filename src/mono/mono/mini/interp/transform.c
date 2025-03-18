@@ -330,15 +330,15 @@ enum_type:
 	case MONO_TYPE_ARRAY:
 		return MINT_TYPE_O;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto enum_type;
 		} else
 			return MINT_TYPE_VT;
 	case MONO_TYPE_TYPEDBYREF:
 		return MINT_TYPE_VT;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto enum_type;
 	case MONO_TYPE_VOID:
 		return MINT_TYPE_VOID;
@@ -734,6 +734,18 @@ handle_branch (TransformData *td, int long_op, int offset)
 		g_assert_not_reached ();
 	/* Add exception checkpoint or safepoint for backward branches */
 	if (offset < 0) {
+
+		InterpMethod *rtm = td->rtm;
+		guint16 samplepoint_profiling = 0;
+		if (mono_jit_trace_calls != NULL && mono_trace_eval (rtm->method))
+			samplepoint_profiling |= TRACING_FLAG;
+		if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT | MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT ))
+			samplepoint_profiling |= PROFILING_FLAG;
+		if (samplepoint_profiling) {
+			interp_add_ins (td, MINT_PROF_SAMPLEPOINT);
+			td->last_ins->data [0] = samplepoint_profiling;
+		}
+
 		if (mono_threads_are_safepoints_enabled ())
 			interp_add_ins (td, MINT_SAFEPOINT);
 	}
@@ -2795,7 +2807,7 @@ interp_type_as_ptr (MonoType *tp)
 		return TRUE;
 	if ((tp)->type == MONO_TYPE_CHAR)
 		return TRUE;
-	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (tp->data.klass))
+	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (tp)))
 		return TRUE;
 	if (is_scalar_vtype (tp))
 		return TRUE;
@@ -4627,8 +4639,8 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		int mt = mono_mint_type (header->locals [i]);
 		size = mono_interp_type_size (header->locals [i], mt, &align);
 		if (header->locals [i]->type == MONO_TYPE_VALUETYPE) {
-			if (mono_class_has_failure (header->locals [i]->data.klass)) {
-				mono_error_set_for_class_failure (error, header->locals [i]->data.klass);
+			if (mono_class_has_failure (m_type_data_get_klass_unchecked (header->locals [i]))) {
+				mono_error_set_for_class_failure (error, m_type_data_get_klass_unchecked (header->locals [i]));
 				return;
 			}
 		}
@@ -5367,7 +5379,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		guint16 enter_profiling = 0;
 		if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 			enter_profiling |= TRACING_FLAG;
-		if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER)
+		if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_ENTER | MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT))
 			enter_profiling |= PROFILING_FLAG;
 		if (enter_profiling) {
 			interp_add_ins (td, MINT_PROF_ENTER);
@@ -5936,7 +5948,7 @@ retry_emit:
 			guint16 exit_profiling = 0;
 			if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 				exit_profiling |= TRACING_FLAG;
-			if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE)
+			if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE | MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT))
 				exit_profiling |= PROFILING_FLAG;
 			if (exit_profiling) {
 				/* This does the return as well */

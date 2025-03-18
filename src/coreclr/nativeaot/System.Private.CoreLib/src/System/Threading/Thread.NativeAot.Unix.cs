@@ -87,7 +87,7 @@ namespace System.Threading
             }
         }
 
-        private unsafe bool CreateThread(GCHandle thisThreadHandle)
+        private unsafe bool CreateThread(GCHandle<Thread> thisThreadHandle)
         {
             // Create the Stop event before starting the thread to make sure
             // it is ready to be signaled at thread shutdown time.
@@ -101,7 +101,7 @@ namespace System.Threading
                 stackSize = GetDefaultStackSize();
             }
 
-            if (!Interop.Sys.CreateThread((IntPtr)stackSize, &ThreadEntryPoint, (IntPtr)thisThreadHandle))
+            if (!Interop.Sys.CreateThread((IntPtr)stackSize, &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle)))
             {
                 return false;
             }
@@ -143,10 +143,6 @@ namespace System.Threading
         }
 
         partial void InitializeComOnNewThread();
-
-        internal static void InitializeComForFinalizerThread()
-        {
-        }
 
         public void DisableComObjectEagerCleanup() { }
 

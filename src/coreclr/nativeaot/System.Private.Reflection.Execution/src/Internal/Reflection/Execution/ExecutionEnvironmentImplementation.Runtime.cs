@@ -38,7 +38,7 @@ namespace Internal.Reflection.Execution
                     goto notFound;
                 }
 
-                MethodBase methodBase = ReflectionExecution.GetMethodBaseFromStartAddressIfAvailable(classRtMethodHandle);
+                MethodBase methodBase = ReflectionExecution.GetMethodBaseFromOriginalLdftnResult(classRtMethodHandle, instanceType.TypeHandle);
                 if (methodBase == null)
                 {
                     goto notFound;

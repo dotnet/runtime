@@ -1741,7 +1741,6 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
-#if FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
@@ -1824,7 +1823,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
         inst_RV_IV(INS_mov, sizeReg, size, EA_PTRSIZE);
     }
 }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #if FEATURE_ARG_SPLIT
 //------------------------------------------------------------------------
@@ -1895,11 +1893,11 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // We can't write beyond the arg area unless this is a tail call, in which case we use
 // the first stack arg as the base of the incoming arg area.
 #ifdef DEBUG
-        unsigned areaSize = compiler->lvaLclSize(outArgVarNum);
+        unsigned areaSize = compiler->lvaLclStackHomeSize(outArgVarNum);
 #if FEATURE_FASTTAILCALL
         if (putArgStk->gtCall->IsFastTailCall())
         {
-            areaSize = compiler->info.compArgStackSize;
+            areaSize = compiler->lvaParameterStackSize;
         }
 #endif
 
@@ -2486,8 +2484,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         }
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
-        // the upper 32bits be sign-extended to 64 bits.
+        // TODO-LOONGARCH64:
+        // TODO-RISCV64:
+        // LoongArch64 and RiscV64 ABIs require 32-bit values to be sign-extended to 64-bits.
+        // We apply the sign-extension unconditionally here to avoid corner case bugs, even
+        // though it may not be strictly necessary in all cases.
         m_extendKind = SIGN_EXTEND_INT;
 #else
         m_extendKind = COPY;
@@ -2715,6 +2716,10 @@ void CodeGen::genEmitterUnitTests()
     if (unitTestSectionAll || (strstr(unitTestSection, "avx10v2") != nullptr))
     {
         genAmd64EmitterUnitTestsAvx10v2();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "ccmp") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCCMP();
     }
 
 #elif defined(TARGET_ARM64)

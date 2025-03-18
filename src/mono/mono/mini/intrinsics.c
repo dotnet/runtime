@@ -951,7 +951,7 @@ get_rttype_ins_relation (MonoCompile *cfg, MonoInst *ins1, MonoInst *ins2, gbool
 
 		/* Common case in gshared BCL code: t1 is a gshared type like T_INT, and t2 is a concrete type */
 		if (mono_class_is_gparam (k1)) {
-			MonoGenericParam *gparam = t1->data.generic_param;
+			MonoGenericParam *gparam = m_type_data_get_generic_param (t1);
 			constraint1 = gparam->gshared_constraint;
 		}
 		if (constraint1) {
@@ -1742,7 +1742,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				i2u_cmp->sreg1 = args[2]->dreg;
 				MONO_ADD_INS (cfg->cbb, i2u_cmp);
 			}
-			
+
 			if (is_ref && !mini_debug_options.weak_memory_model)
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
@@ -2206,7 +2206,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			/* Common case in gshared BCL code: t1 is a gshared type like T_INT */
 			if (mono_class_is_gparam (k1)) {
-				MonoGenericParam *gparam = t1->data.generic_param;
+				MonoGenericParam *gparam = m_type_data_get_generic_param (t1);
 				constraint1 = gparam->gshared_constraint;
 				if (constraint1) {
 					if (constraint1->type == MONO_TYPE_OBJECT) {
@@ -2396,22 +2396,24 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
 		const char* cmethod_name = cmethod->name;
 
-		if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
-			// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
-			// but, they all prefix the qualified name of the interface first, so we'll check for that and
-			// skip the prefix before trying to resolve the method.
+		if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.", 45) == 0) {
+			if (strncmp(cmethod_name + 45, "Runtime.Intrinsics.Vector", 25) == 0) {
+				// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+				// but, they all prefix the qualified name of the interface first, so we'll check for that and
+				// skip the prefix before trying to resolve the method.
 
-			if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
-				cmethod_name += 77;
-			} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
-				cmethod_name += 79;
-			} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
-				(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
-				(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
-				cmethod_name += 80;
+				if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+					cmethod_name += 79;
+				} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+					(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+					(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+					cmethod_name += 80;
+				}
+			} else if (strncmp(cmethod_name + 45, "Numerics.Vector<T>,T>.", 22) == 0) {
+				cmethod_name += 67;
 			}
 		}
-		
+
 		if (!strcmp (cmethod_name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;

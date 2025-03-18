@@ -53,13 +53,47 @@ static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 void __stdcall FiberDetachCallback(void* lpFlsData)
 {
     ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
+    ASSERT(g_flsIndex != NULL);
     ASSERT(lpFlsData == FlsGetValue(g_flsIndex));
 
-    if (lpFlsData != NULL)
+    // The current fiber is the home fiber of a thread, so the thread is shutting down
+    RuntimeThreadShutdown(lpFlsData);
+}
+
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInitComAndFlsSlot()
+{
+    ASSERT(g_flsIndex == FLS_OUT_OF_INDEXES);
+
+    // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
+    // termination callback.
+    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    if (FAILED(hr))
+        return false;
+
+    // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
+    // callback is made without the OS loader lock
+    g_flsIndex = FlsAlloc(FiberDetachCallback);
+    return g_flsIndex != FLS_OUT_OF_INDEXES;
+}
+
+// Register the thread with OS to be notified when thread is about to be destroyed
+// It fails fast if a different thread was already registered with the current fiber.
+// Parameters:
+//  thread        - thread to attach
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
+{
+    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
+
+    if (threadFromCurrentFiber != NULL)
     {
-        // The current fiber is the home fiber of a thread, so the thread is shutting down
-        RuntimeThreadShutdown(lpFlsData);
+        ASSERT_UNCONDITIONALLY("Multiple threads encountered from a single fiber");
+        RhFailFast();
     }
+
+    // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
+    // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
+    // is destroyed, we consider the thread to be destroyed.
+    FlsSetValue(g_flsIndex, thread);
 }
 
 static HMODULE LoadKernel32dll()
@@ -159,14 +193,6 @@ void InitializeCurrentProcessCpuCount()
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 {
-    // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
-    // callback is made without the OS loader lock
-    g_flsIndex = FlsAlloc(FiberDetachCallback);
-    if (g_flsIndex == FLS_OUT_OF_INDEXES)
-    {
-        return false;
-    }
-
     GCConfig::Initialize();
 
     if (!GCToOSInterface::Initialize())
@@ -176,54 +202,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 
     InitializeCurrentProcessCpuCount();
 
-    return true;
-}
-
-// Register the thread with OS to be notified when thread is about to be destroyed
-// It fails fast if a different thread was already registered with the current fiber.
-// Parameters:
-//  thread        - thread to attach
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
-{
-    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
-
-    if (threadFromCurrentFiber != NULL)
-    {
-        ASSERT_UNCONDITIONALLY("Multiple threads encountered from a single fiber");
-        RhFailFast();
-    }
-
-    // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
-    // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
-    // is destroyed, we consider the thread to be destroyed.
-    FlsSetValue(g_flsIndex, thread);
-}
-
-// Detach thread from OS notifications.
-// It fails fast if some other thread value was attached to the current fiber.
-// Parameters:
-//  thread        - thread to detach
-// Return:
-//  true if the thread was detached, false if there was no attached thread
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
-{
-    ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
-    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
-
-    if (threadFromCurrentFiber == NULL)
-    {
-        // we've seen this thread, but not this fiber.  It must be a "foreign" fiber that was
-        // borrowing this thread.
-        return false;
-    }
-
-    if (threadFromCurrentFiber != thread)
-    {
-        ASSERT_UNCONDITIONALLY("Detaching a thread from the wrong fiber");
-        RhFailFast();
-    }
-
-    FlsSetValue(g_flsIndex, NULL);
     return true;
 }
 
