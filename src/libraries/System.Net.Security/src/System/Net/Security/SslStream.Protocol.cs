@@ -207,7 +207,9 @@ namespace System.Net.Security
                     return certEx;
                 }
 
-                byte[] certHash = certEx.GetCertHash(HashAlgorithmName.SHA512);
+                Span<byte> certHash = stackalloc byte[SHA512.HashSizeInBytes];
+                bool ret = certEx.TryGetCertHash(HashAlgorithmName.SHA512, certHash, out int written);
+                Debug.Assert(ret && written == certHash.Length);
 
                 if (!object.ReferenceEquals(certificate, certEx))
                 {
@@ -249,18 +251,13 @@ namespace System.Net.Security
                         }
                         finally
                         {
-                            for (int i = 0; i < found.Count; i++)
+                            for (int i = 0; i < certs.Count; i++)
                             {
-                                X509Certificate2 toDispose = found[i];
+                                X509Certificate2 toDispose = certs[i];
                                 if (!ReferenceEquals(toDispose, cert))
                                 {
                                     toDispose.Dispose();
                                 }
-                            }
-
-                            for (int i = 0; i < certs.Count; i++)
-                            {
-                                certs[i].Dispose();
                             }
                         }
                     }
