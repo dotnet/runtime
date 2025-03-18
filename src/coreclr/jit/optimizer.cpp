@@ -2270,7 +2270,7 @@ PhaseStatus Compiler::optInvertLoops()
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         }
 
-        // fgRenumberBlocks();
+        fgRenumberBlocks();
     }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
