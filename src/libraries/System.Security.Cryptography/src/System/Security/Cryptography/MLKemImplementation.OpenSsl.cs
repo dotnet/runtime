@@ -21,8 +21,52 @@ namespace System.Security.Cryptography
         internal static MLKem Generate(MLKemAlgorithm algorithm)
         {
             Debug.Assert(IsSupported);
+            SafeEvpKemHandle handle = MapAlgorithmToHandle(algorithm); // Shared handle, do not dispose.
+            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(handle);
+            return new MLKemImplementation(algorithm, key);
+        }
 
-            SafeEvpKemHandle? handle = null; // Shared Handle. Do not dispose.
+
+        internal static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            Debug.Assert(IsSupported);
+            Debug.Assert(source.Length == SeedSize);
+            SafeEvpKemHandle handle = MapAlgorithmToHandle(algorithm); // Shared handle, do not dispose.
+            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(handle, source);
+            return new MLKemImplementation(algorithm, key);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            if (disposing)
+            {
+                _key.Dispose();
+            }
+        }
+
+        protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
+        {
+            ThrowIfDisposed();
+            throw new NotImplementedException();
+        }
+
+        protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
+        {
+            ThrowIfDisposed();
+            throw new NotImplementedException();
+        }
+
+        protected override void ExportMLKemPrivateSeedCore(Span<byte> destination)
+        {
+            ThrowIfDisposed();
+            Interop.Crypto.EvpKemExportPrivateSeed(_key, destination);
+        }
+
+        private static SafeEvpKemHandle MapAlgorithmToHandle(MLKemAlgorithm algorithm)
+        {
+            SafeEvpKemHandle? handle = null;
 
             if (algorithm == MLKemAlgorithm.MLKem512)
             {
@@ -43,34 +87,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(handle);
-            return new MLKemImplementation(algorithm, key);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-
-            if (disposing)
-            {
-                _key?.Dispose();
-            }
-        }
-
-        protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override void ExportMLKemPrivateSeedCore(Span<byte> destination)
-        {
-            ThrowIfDisposed();
-            Interop.Crypto.EvpKemExportPrivateSeed(_key, destination);
+            return handle;
         }
     }
 }

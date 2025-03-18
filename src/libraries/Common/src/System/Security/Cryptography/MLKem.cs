@@ -28,8 +28,8 @@ namespace System.Security.Cryptography
     public abstract class MLKem : IDisposable
     {
         private bool _disposed;
-        private const int SharedSecretSize = 32; // FIPS 203, Table 3.
-        private const int SeedSize = 64; // FIPS 203 Algorithm 19. Seed is d || z
+        private protected const int SharedSecretSize = 32; // FIPS 203, Table 3.
+        private protected const int SeedSize = 64; // FIPS 203 Algorithm 19. Seed is d || z
 
         /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
@@ -64,22 +64,25 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Generates a new ML-KEM-512 key.
+        ///   Generates a new ML-KEM key.
         /// </summary>
+        /// <param name="algorithm">
+        ///   An algorithm identifying what kind of ML-KEM key to generate.
+        /// </param>
         /// <returns>
         ///   The generated key.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   An error occured generating the ML-KEM-512 key.
+        ///   An error occured generating the ML-KEM key.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
-        ///   The platform does not support ML-KEM-512. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM-512.
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports MK-KEM.
         /// </exception>
-        public static MLKem GenerateMLKem512Key()
+        public static MLKem GenerateMLKemKey(MLKemAlgorithm algorithm)
         {
             ThrowIfNotSupported();
-            return MLKemImplementation.Generate(MLKemAlgorithm.MLKem512);
+            return MLKemImplementation.Generate(algorithm);
         }
 
         /// <summary>
@@ -200,6 +203,22 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the private seed.
         /// </param>
         protected abstract void ExportMLKemPrivateSeedCore(Span<byte> destination);
+
+        /// <summary>
+        /// Creates an ML-KEM key from a private seed.
+        /// </summary>
+        /// <param name="algorithm">The algorithm of the seed.</param>
+        /// <param name="source">The seed to create the algorithm from.</param>
+        /// <returns>The imported key.</returns>
+        public static MLKem ImportMLKemPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            if (source.Length != SeedSize)
+            {
+                throw new ArgumentException("TODO", nameof(source));
+            }
+
+            return MLKemImplementation.ImportPrivateSeed(algorithm, source);
+        }
 
         /// <summary>
         ///  Releases all resources used by the <see cref="MLKem"/> class.

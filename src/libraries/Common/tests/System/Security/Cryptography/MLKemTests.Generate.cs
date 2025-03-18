@@ -8,17 +8,49 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     public static partial class MLKemTests
     {
-        [Fact]
-        public static void Generate_MlKem512()
+        [Theory]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Generate_MlKemKeys(MLKemAlgorithm algorithm)
         {
-            using MLKem kem = MLKem.GenerateMLKem512Key();
-            Span<byte> key = stackalloc byte[64];
-            key.Clear();
+            using MLKem kem = MLKem.GenerateMLKemKey(algorithm);
+            Span<byte> seed = stackalloc byte[64];
+            seed.Clear();
 
-            kem.ExportMLKemPrivateSeed(key);
-            Assert.True(key.ContainsAnyExcept((byte)0));
+            kem.ExportMLKemPrivateSeed(seed);
+            Assert.True(seed.ContainsAnyExcept((byte)0));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Generate_Import(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.GenerateMLKemKey(algorithm);
+            Span<byte> seed = stackalloc byte[64];
+            seed.Clear();
+
+            kem.ExportMLKemPrivateSeed(seed);
+            Assert.True(seed.ContainsAnyExcept((byte)0));
+
+            using MLKem kem2 = MLKem.ImportMLKemPrivateSeed(algorithm, seed);
+            Span<byte> seed2 = stackalloc byte[64];
+            kem2.ExportMLKemPrivateSeed(seed2);
+            AssertExtensions.SequenceEqual(seed, seed2);
+        }
+
+        public static IEnumerable<object[]> MLKemAlgorithms
+        {
+            get
+            {
+                return
+                [
+                    [ MLKemAlgorithm.MLKem512 ],
+                    [ MLKemAlgorithm.MLKem768 ],
+                    [ MLKemAlgorithm.MLKem1024 ],
+                ];
+            }
         }
     }
 }

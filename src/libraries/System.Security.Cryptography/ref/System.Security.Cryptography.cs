@@ -1810,7 +1810,8 @@ namespace System.Security.Cryptography
         public void ExportMLKemPrivateSeed(System.Span<byte> destination) { }
         protected abstract void ExportMLKemPrivateSeedCore(System.Span<byte> destination);
         ~MLKem() { }
-        public static System.Security.Cryptography.MLKem GenerateMLKem512Key() { throw null; }
+        public static System.Security.Cryptography.MLKem GenerateMLKemKey(System.Security.Cryptography.MLKemAlgorithm algorithm) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportMLKemPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         protected void ThrowIfDisposed() { }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]

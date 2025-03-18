@@ -15,14 +15,34 @@ internal static partial class Interop
         internal static partial void EvpKemFree(IntPtr kem);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGeneratePkey")]
-        private static partial SafeEvpPKeyHandle CryptoNative_EvpKemGeneratePkey(SafeEvpKemHandle kem);
+        private static partial SafeEvpPKeyHandle CryptoNative_EvpKemGeneratePkey(SafeEvpKemHandle kem, ReadOnlySpan<byte> seed, int seedLength);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemExportPrivateSeed")]
         private static partial int CryptoNative_EvpKemExportPrivateSeed(SafeEvpPKeyHandle kem, Span<byte> destination, int destinationLength);
 
         internal static SafeEvpPKeyHandle EvpKemGeneratePkey(SafeEvpKemHandle kem)
         {
-            SafeEvpPKeyHandle handle = CryptoNative_EvpKemGeneratePkey(kem);
+            SafeEvpPKeyHandle handle = CryptoNative_EvpKemGeneratePkey(kem, ReadOnlySpan<byte>.Empty, 0);
+
+            if (handle.IsInvalid)
+            {
+                Exception ex = CreateOpenSslCryptographicException();
+                handle.Dispose();
+                throw ex;
+            }
+
+            return handle;
+        }
+
+        internal static SafeEvpPKeyHandle EvpKemGeneratePkey(SafeEvpKemHandle kem, ReadOnlySpan<byte> seed)
+        {
+            if (seed.IsEmpty)
+            {
+                Debug.Fail("Generating a key with a seed requires a non-empty seed.");
+                throw new CryptographicException();
+            }
+
+            SafeEvpPKeyHandle handle = CryptoNative_EvpKemGeneratePkey(kem, seed, seed.Length);
 
             if (handle.IsInvalid)
             {

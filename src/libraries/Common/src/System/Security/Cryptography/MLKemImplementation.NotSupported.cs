@@ -22,6 +22,14 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
+        internal static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            _ = algorithm;
+            _ = source;
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
             Debug.Fail("Caller should have checked platform availability.");
