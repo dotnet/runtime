@@ -3947,7 +3947,7 @@ public:
     unsigned lvaInlineeReturnSpillTemp = BAD_VAR_NUM; // The temp to spill the non-VOID return expression
                                         // in case there are multiple BBJ_RETURN blocks in the inlinee
                                         // or if the inlinee has GC ref locals.
-    
+
     bool lvaInlineeReturnSpillTempFreshlyCreated = false; // True if the temp was freshly created for the inlinee return
 
 #if FEATURE_FIXED_OUT_ARGS
@@ -4475,7 +4475,7 @@ protected:
             CompAllocator alloc(compiler->getAllocator(CMK_Generic));
             compiler->impEnumeratorGdvLocalMap = new (alloc) NodeToUnsignedMap(alloc);
         }
-        
+
         return compiler->impEnumeratorGdvLocalMap;
     }
 
