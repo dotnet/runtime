@@ -10,7 +10,7 @@
 
     LEAF_ENTRY StubPrecodeCode\STUB_PAGE_SIZE
         ldr x10, DATA_SLOT(StubPrecode, Target)
-        ldr x12, DATA_SLOT(StubPrecode, MethodDesc)
+        ldr x12, DATA_SLOT(StubPrecode, SecretParam)
         br x10
     LEAF_END_MARKED StubPrecodeCode\STUB_PAGE_SIZE
 

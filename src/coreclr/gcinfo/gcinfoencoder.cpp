@@ -909,97 +909,6 @@ void GcInfoEncoder::FinalizeSlotIds()
 #endif
 }
 
-#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-
-// tells whether a slot cannot contain an object reference
-// at call instruction or right after returning
-bool GcInfoEncoder::DoNotTrackInPartiallyInterruptible(GcSlotDesc &slotDesc)
-{
-#if defined(TARGET_ARM)
-
-    _ASSERTE( m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1 );
-    if(slotDesc.IsRegister())
-    {
-        int regNum = (int) slotDesc.Slot.RegisterNumber;
-        _ASSERTE(regNum >= 0 && regNum <= 14);
-        _ASSERTE(regNum != 13);  // sp
-
-        return ((regNum <= 3) || (regNum >= 12)) // R12 is volatile and SP/LR can't contain objects around calls
-            && regNum != 0                       // R0 can contain return value
-            ;
-    }
-    else if (!slotDesc.IsUntracked() && (slotDesc.Slot.Stack.Base == GC_SP_REL) &&
-        ((UINT32)slotDesc.Slot.Stack.SpOffset < m_SizeOfStackOutgoingAndScratchArea))
-    {
-        return TRUE;
-    }
-    else
-        return FALSE;
-
-#elif defined(TARGET_ARM64)
-
-    _ASSERTE(m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1);
-    if (slotDesc.IsRegister())
-    {
-        int regNum = (int)slotDesc.Slot.RegisterNumber;
-        _ASSERTE(regNum >= 0 && regNum <= 30);
-        _ASSERTE(regNum != 18);
-
-        return (regNum <= 17 || regNum >= 29) // X0 through X17 are scratch, FP/LR can't be used for objects around calls
-            && regNum != 0                    // X0 can contain return value
-            && regNum != 1                    // X1 can contain return value
-            ;
-    }
-    else if (!slotDesc.IsUntracked() && (slotDesc.Slot.Stack.Base == GC_SP_REL) &&
-        ((UINT32)slotDesc.Slot.Stack.SpOffset < m_SizeOfStackOutgoingAndScratchArea))
-    {
-        return TRUE;
-    }
-    else
-        return FALSE;
-
-#elif defined(TARGET_AMD64)
-
-    _ASSERTE( m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1 );
-    if(slotDesc.IsRegister())
-    {
-        int regNum = (int) slotDesc.Slot.RegisterNumber;
-        _ASSERTE(regNum >= 0 && regNum <= 16);
-        _ASSERTE(regNum != 4);  // rsp
-
-        UINT16 PreservedRegMask =
-            (1 << 3)  // rbx
-            | (1 << 5)  // rbp
-#ifndef UNIX_AMD64_ABI
-            | (1 << 6)  // rsi
-            | (1 << 7)  // rdi
-#endif // UNIX_AMD64_ABI
-            | (1 << 12)  // r12
-            | (1 << 13)  // r13
-            | (1 << 14)  // r14
-            | (1 << 15)  // r15
-            | (1 << 0)   // rax - may contain return value
-#ifdef UNIX_AMD64_ABI
-            | (1 << 2)   // rdx - may contain return value
-#endif
-            ;
-
-        return !(PreservedRegMask & (1 << regNum));
-    }
-    else if (!slotDesc.IsUntracked() && (slotDesc.Slot.Stack.Base == GC_SP_REL) &&
-        ((UINT32)slotDesc.Slot.Stack.SpOffset < m_SizeOfStackOutgoingAndScratchArea))
-    {
-        return TRUE;
-    }
-    else
-        return FALSE;
-
-#else
-    return FALSE;
-#endif
-}
-#endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-
 void GcInfoEncoder::Build()
 {
 #ifdef _DEBUG
@@ -1389,14 +1298,11 @@ void GcInfoEncoder::Build()
             else
             {
                 UINT32 slotIndex = pCurrent->SlotId;
-                if(!DoNotTrackInPartiallyInterruptible(m_SlotTable[slotIndex]))
-                {
-                    BYTE becomesLive = pCurrent->BecomesLive;
-                    _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
-                            || (!liveState.ReadBit(slotIndex) && becomesLive));
+                BYTE becomesLive = pCurrent->BecomesLive;
+                _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
+                        || (!liveState.ReadBit(slotIndex) && becomesLive));
 
-                    liveState.WriteBit(slotIndex, becomesLive);
-                }
+                liveState.WriteBit(slotIndex, becomesLive);
                 pCurrent++;
             }
         }

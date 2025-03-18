@@ -43,18 +43,32 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override DataCache ProcessedData { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
+    public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill);
+    public delegate int GetTargetPlatformDelegate(out int platform);
 
     /// <summary>
     /// Create a new target instance from a contract descriptor embedded in the target memory.
     /// </summary>
     /// <param name="contractDescriptor">The offset of the contract descriptor in the target memory</param>
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="getTargetPlatform">A callback to fetch the target's platform</param>
     /// <param name="target">The target object.</param>
     /// <returns>If a target instance could be created, <c>true</c>; otherwise, <c>false</c>.</returns>
-    public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, out ContractDescriptorTarget? target)
+    public static bool TryCreate(
+        ulong contractDescriptor,
+        ReadFromTargetDelegate readFromTarget,
+        GetTargetThreadContextDelegate getThreadContext,
+        GetTargetPlatformDelegate getTargetPlatform,
+        out ContractDescriptorTarget? target)
     {
-        Reader reader = new Reader(readFromTarget);
-        if (TryReadContractDescriptor(contractDescriptor, reader, out Configuration config, out ContractDescriptorParser.ContractDescriptor? descriptor, out TargetPointer[] pointerData))
+        Reader reader = new Reader(readFromTarget, getThreadContext, getTargetPlatform);
+        if (TryReadContractDescriptor(
+            contractDescriptor,
+            reader,
+            out Configuration config,
+            out ContractDescriptorParser.ContractDescriptor? descriptor,
+            out TargetPointer[] pointerData))
         {
             target = new ContractDescriptorTarget(config, descriptor!, pointerData, reader);
             return true;
@@ -70,12 +84,25 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="contractDescriptor">The contract descriptor to use for this target</param>
     /// <param name="globalPointerValues">The values for any global pointers specified in the contract descriptor.</param>
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="getTargetPlatform">A callback to fetch the target's platform</param>
     /// <param name="isLittleEndian">Whether the target is little-endian</param>
     /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
     /// <returns>The target object.</returns>
-    public static ContractDescriptorTarget Create(ContractDescriptorParser.ContractDescriptor contractDescriptor, TargetPointer[] globalPointerValues, ReadFromTargetDelegate readFromTarget, bool isLittleEndian, int pointerSize)
+    public static ContractDescriptorTarget Create(
+        ContractDescriptorParser.ContractDescriptor contractDescriptor,
+        TargetPointer[] globalPointerValues,
+        ReadFromTargetDelegate readFromTarget,
+        GetTargetThreadContextDelegate getThreadContext,
+        GetTargetPlatformDelegate getTargetPlatform,
+        bool isLittleEndian,
+        int pointerSize)
     {
-        return new ContractDescriptorTarget(new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize }, contractDescriptor, globalPointerValues, new Reader(readFromTarget));
+        return new ContractDescriptorTarget(
+            new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize },
+            contractDescriptor,
+            globalPointerValues,
+            new Reader(readFromTarget, getThreadContext, getTargetPlatform));
     }
 
     private ContractDescriptorTarget(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
@@ -236,6 +263,21 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override int PointerSize => _config.PointerSize;
     public override bool IsLittleEndian => _config.IsLittleEndian;
+    public override CorDebugPlatform Platform
+    {
+        get
+        {
+            _reader.GetTargetPlatform(out int platform);
+            return (CorDebugPlatform)platform;
+        }
+    }
+
+    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer)
+    {
+        // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
+        int hr = _reader.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, (uint)buffer.Length, buffer);
+        return hr == 0;
+    }
 
     /// <summary>
     /// Read a value from the target in target endianness
@@ -550,7 +592,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
     }
 
-    private readonly struct Reader(ReadFromTargetDelegate readFromTarget)
+    private readonly struct Reader(
+        ReadFromTargetDelegate readFromTarget,
+        GetTargetThreadContextDelegate getThreadContext,
+        GetTargetPlatformDelegate getTargetPlatform)
     {
         public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
@@ -559,5 +604,15 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
             => readFromTarget(address, new Span<byte>(buffer, checked((int)bytesToRead)));
+
+        public int GetTargetPlatform(out int platform)
+        {
+            return getTargetPlatform(out platform);
+        }
+
+        public int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> buffer)
+        {
+            return getThreadContext(threadId, contextFlags, contextSize, buffer);
+        }
     }
 }
