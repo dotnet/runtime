@@ -331,6 +331,39 @@ namespace System.Runtime.InteropServices
         }
     }
 
+    internal struct NullableComHolder : IDisposable
+    {
+        private IntPtr _ptr;
+
+        internal readonly IntPtr Ptr => _ptr;
+
+        public NullableComHolder(IntPtr ptr)
+        {
+            _ptr = ptr;
+        }
+
+        /// <summary>
+        /// Detaches the wrapper pointer, and clears the one held in the current instance.
+        /// </summary>
+        /// <remarks>No <c>Release</c> is performed, and callers take ownership.</remarks>
+        internal IntPtr Detach()
+        {
+            IntPtr ptr = _ptr;
+
+            _ptr = IntPtr.Zero;
+
+            return ptr;
+        }
+
+        public readonly void Dispose()
+        {
+            if (_ptr != IntPtr.Zero)
+            {
+                Marshal.Release(_ptr);
+            }
+        }
+    }
+
     // This is used during a GC callback so it needs to be free of any managed allocations.
     internal unsafe struct DependentHandleList
     {

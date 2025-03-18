@@ -506,17 +506,28 @@ namespace System.Runtime.InteropServices
                 ComAwareWeakReference.InitializeCallbacks(&ComWeakRefToObject, &PossiblyComObject, &ObjectToComWeakRef);
             }
 
-            public static NativeObjectWrapper Create(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
+            public static NativeObjectWrapper Create(
+                IntPtr externalComObject,
+                IntPtr inner,
+                ComWrappers comWrappers,
+                object comProxy,
+                CreateObjectFlags flags,
+                ref NullableComHolder referenceTracker)
             {
-                if (flags.HasFlag(CreateObjectFlags.TrackerObject) &&
-                    Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
+                if (flags.HasFlag(CreateObjectFlags.TrackerObject))
                 {
-                    return new ReferenceTrackerNativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags, trackerObject);
+                    IntPtr trackerObject = referenceTracker.Detach();
+
+                    // If we already have a reference tracker (that will be the case in aggregation scenarios), then reuse it.
+                    // Otherwise, do the 'QueryInterface' call for it here. This allows us to only ever query for this IID once.
+                    if (trackerObject != IntPtr.Zero ||
+                        Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out trackerObject) == HResults.S_OK)
+                    {
+                        return new ReferenceTrackerNativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags, trackerObject);
+                    }
                 }
-                else
-                {
-                    return new NativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags);
-                }
+
+                return new NativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags);
             }
 
             protected NativeObjectWrapper(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
@@ -881,7 +892,8 @@ namespace System.Runtime.InteropServices
             IntPtr innerMaybe,
             CreateObjectFlags flags,
             out IntPtr identity,
-            out IntPtr inner)
+            out IntPtr inner,
+            out IntPtr referenceTrackerMaybe)
         {
             inner = innerMaybe;
 
@@ -902,13 +914,15 @@ namespace System.Runtime.InteropServices
                 // to get identity from an inner is through a non-IUnknown
                 // interface QI. Once we have the IReferenceTracker
                 // instance we can be sure the QI for IUnknown will really
-                // be the true identity.
-                using ComHolder referenceTracker = new ComHolder(referenceTrackerPtr);
+                // be the true identity. This allows us to keep the reference tracker
+                // reference alive, so we can reuse it later.
                 checkForIdentity = referenceTrackerPtr;
+                referenceTrackerMaybe = referenceTrackerPtr;
                 Marshal.ThrowExceptionForHR(Marshal.QueryInterface(checkForIdentity, IID_IUnknown, out identity));
             }
             else
             {
+                referenceTrackerMaybe = IntPtr.Zero;
                 Marshal.ThrowExceptionForHR(Marshal.QueryInterface(externalComObject, IID_IUnknown, out identity));
             }
 
@@ -949,16 +963,18 @@ namespace System.Runtime.InteropServices
                 innerMaybe,
                 flags,
                 out IntPtr identity,
-                out IntPtr inner);
+                out IntPtr inner,
+                out IntPtr referenceTrackerMaybe);
 
             using ComHolder releaseIdentity = new ComHolder(identity);
+            using NullableComHolder referenceTracker = new NullableComHolder(referenceTrackerMaybe);
 
             // If the user has requested a unique instance,
             // we will immediately create the object, register it,
             // and return.
             if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags);
+                retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, ref *&referenceTracker);
                 return retValue is not null;
             }
 
@@ -974,7 +990,7 @@ namespace System.Runtime.InteropServices
             // that object as the wrapper.
             if (wrapperMaybe is not null)
             {
-                retValue = RegisterObjectForComInstance(identity, inner, wrapperMaybe, flags);
+                retValue = RegisterObjectForComInstance(identity, inner, wrapperMaybe, flags, ref *&referenceTracker);
                 return retValue is not null;
             }
 
@@ -1010,11 +1026,15 @@ namespace System.Runtime.InteropServices
 
             // If the user didn't provide a wrapper and couldn't unwrap a managed object wrapper,
             // create a new wrapper.
-            retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags);
+            retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, ref *&referenceTracker);
             return retValue is not null;
         }
 
-        private object? CreateAndRegisterObjectForComInstance(IntPtr identity, IntPtr inner, CreateObjectFlags flags)
+        private object? CreateAndRegisterObjectForComInstance(
+            IntPtr identity,
+            IntPtr inner,
+            CreateObjectFlags flags,
+            ref NullableComHolder referenceTracker)
         {
             object? retValue = CreateObject(identity, flags);
             if (retValue is null)
@@ -1023,17 +1043,23 @@ namespace System.Runtime.InteropServices
                 return null;
             }
 
-            return RegisterObjectForComInstance(identity, inner, retValue, flags);
+            return RegisterObjectForComInstance(identity, inner, retValue, flags, ref referenceTracker);
         }
 
-        private object RegisterObjectForComInstance(IntPtr identity, IntPtr inner, object comProxy, CreateObjectFlags flags)
+        private object RegisterObjectForComInstance(
+            IntPtr identity,
+            IntPtr inner,
+            object comProxy,
+            CreateObjectFlags flags,
+            ref NullableComHolder referenceTracker)
         {
             NativeObjectWrapper nativeObjectWrapper = NativeObjectWrapper.Create(
                 identity,
                 inner,
                 this,
                 comProxy,
-                flags);
+                flags,
+                ref referenceTracker);
 
             object actualProxy = comProxy;
             NativeObjectWrapper actualWrapper = nativeObjectWrapper;
