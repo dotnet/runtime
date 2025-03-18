@@ -623,6 +623,15 @@ namespace System.Runtime.CompilerServices
             return newContinuation;
         }
 
+        // We are allocating a box directly instead of relying on regular boxing because we want
+        // to store structs without changing layout, including nullables.
+        private static unsafe object AllocContinuationResultBox(void* ptr)
+        {
+            MethodTable* pMT = (MethodTable*)ptr;
+            Debug.Assert(pMT->IsValueType);
+            // We need no type/cctor checks since we will be storing an instance that already exists.
+            return RuntimeTypeHandle.InternalAllocNoChecks((MethodTable*)pMT);
+        }
         private struct RuntimeAsyncAwaitState
         {
             public Continuation? SentinelContinuation;
@@ -710,7 +719,12 @@ namespace System.Runtime.CompilerServices
                     Debug.Assert(finalResult == finalContinuation);
                     if (IsReferenceOrContainsReferences<T>())
                     {
-                        return (T?)finalResult.GCData![0];
+                        if (typeof(T).IsValueType)
+                        {
+                            return Unsafe.As<byte, T>(ref finalResult.GCData![0]!.GetRawData());
+                        }
+
+                        return Unsafe.As<object, T>(ref finalResult.GCData![0]!);
                     }
                     else
                     {
@@ -771,7 +785,12 @@ namespace System.Runtime.CompilerServices
                     Debug.Assert(finalResult == finalContinuation);
                     if (IsReferenceOrContainsReferences<T>())
                     {
-                        return (T?)finalResult.GCData![0];
+                        if (typeof(T).IsValueType)
+                        {
+                            return Unsafe.As<byte, T>(ref finalResult.GCData![0]!.GetRawData());
+                        }
+
+                        return Unsafe.As<object, T>(ref finalResult.GCData![0]!);
                     }
                     else
                     {

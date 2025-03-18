@@ -14526,11 +14526,34 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
             // Now we have the GC array. At the first index is the result.
             pCode->EmitLDC(0);
 
-            // Box the result.
-            pCode->EmitLDLOC(resultLoc);
-            pCode->EmitBOX(pCode->GetToken(resultTypeHnd));
+            // NOTE: that we are not using regular boxing (in EmitBOX sense) and allocate our own box instances via a helper.
+            // There are two reasons:
+            // - resultTypeHnd may be a nullable type and have different layout in boxed/unboxed forms.
+            //   We do not want to deal with that.
+            // - resultTypeHnd may contain __Canon fields. Regular boxing would not allow that, but this box is used for a very
+            //   specific internal purpose where we only require that the GC layout of the box matches the data
+            //   that we store in it, thus we want to allow __Canon.
+            if (resultTypeHnd.IsValueType())
+            {
+                // make a box and dup the ref
+                MethodDesc* md = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ALLOC_CONTINUATION_RESULT_BOX);
+                pCode->EmitLDC((DWORD_PTR)resultTypeHnd.AsMethodTable());
+                pCode->EmitCALL(pCode->GetToken(md), 1, 1);
+                pCode->EmitDUP();
+                // dst is the offset of the first field in the box
+                pCode->EmitLDFLDA(FIELD__RAW_DATA__DATA);
+                // load the result
+                pCode->EmitLDLOC(resultLoc);
+                // store into the box
+                pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
+            }
+            else
+            {
+                // load the result
+                pCode->EmitLDLOC(resultLoc);
+            }
 
-            // Finally store it.
+            // Store the result.
             pCode->EmitSTELEM_REF();
         }
         else
