@@ -2287,6 +2287,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
 #else
                 *use = fieldList->SoleFieldOrThis();
 #endif
+                *use = fgMorphTree(*use);
             }
             else
             {
@@ -2335,7 +2336,8 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
 
         // Try to see if we can use the promoted fields to pass this argument.
         //
-        if (varDsc->lvPromoted && (varDsc->lvFieldCnt == arg->AbiInfo.CountRegsAndStackSlots()))
+        if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister &&
+            (varDsc->lvFieldCnt == arg->AbiInfo.CountRegsAndStackSlots()))
         {
             bool fieldsMatch = true;
 
@@ -2366,6 +2368,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
             if (fieldsMatch)
             {
                 newArg = fgMorphLclToFieldList(lclNode)->SoleFieldOrThis();
+                newArg = fgMorphTree(newArg);
             }
         }
     }
@@ -2511,7 +2514,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                         lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
                     }
                 }
-                result->SetMorphed(this);
+                result = fgMorphTree(result);
                 return result;
             }
             else
@@ -2532,7 +2535,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                 }
 
                 GenTree* indir = gtNewIndir(type, addr);
-                indir->SetMorphed(this, /* doChildren*/ true);
+                indir->SetMorphed(this, /* doChildren */ true);
                 return indir;
             }
         };
@@ -2593,16 +2596,15 @@ GenTreeFieldList* Compiler::fgMorphLclToFieldList(GenTreeLclVar* lcl)
     unsigned fieldLclNum = varDsc->lvFieldLclStart;
 
     GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
-    fieldList->SetMorphed(this);
 
     for (unsigned i = 0; i < fieldCount; i++)
     {
         LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
         GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->TypeGet());
-        lclVar->SetMorphed(this);
         fieldList->AddField(this, lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->TypeGet());
         fieldLclNum++;
     }
+
     return fieldList;
 }
 
@@ -8366,7 +8368,10 @@ DONE_MORPHING_CHILDREN:
             GenTree*& retVal = tree->AsOp()->ReturnValueRef();
             if ((retVal != nullptr) && ((genReturnBB == nullptr) || (compCurBB == genReturnBB)))
             {
-                fgTryReplaceStructLocalWithFields(&retVal);
+                if (fgTryReplaceStructLocalWithFields(&retVal))
+                {
+                    retVal = fgMorphTree(retVal);
+                }
             }
             break;
         }
@@ -8424,19 +8429,22 @@ DONE_MORPHING_CHILDREN:
 // Notes:
 //    Currently only called when the tree parent is a GT_RETURN/GT_SWIFT_ERROR_RET.
 //
-void Compiler::fgTryReplaceStructLocalWithFields(GenTree** use)
+bool Compiler::fgTryReplaceStructLocalWithFields(GenTree** use)
 {
     if (!(*use)->OperIs(GT_LCL_VAR))
     {
-        return;
+        return false;
     }
 
     LclVarDsc* varDsc = lvaGetDesc((*use)->AsLclVar());
 
-    if (!varDsc->lvDoNotEnregister && varDsc->lvPromoted)
+    if (varDsc->lvDoNotEnregister || !varDsc->lvPromoted)
     {
-        *use = fgMorphLclToFieldList((*use)->AsLclVar());
+        return false;
     }
+
+    *use = fgMorphLclToFieldList((*use)->AsLclVar());
+    return true;
 }
 
 //------------------------------------------------------------------------
