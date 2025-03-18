@@ -25,6 +25,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 for (int i = 0; i < 8; i++)
                 {
+                    if (PlatformDetection.IsBrowser && i is 0 or 2 or 4 or 5 or 6) continue; // ignore sync reads
+
                     yield return new object[] { remoteServer, i };
                 }
             }
@@ -176,10 +178,13 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             using (Stream stream = await client.GetStreamAsync(remoteServer.EchoUri))
             {
-                Assert.Equal(0, stream.Read(new byte[1], 0, 0));
+                if (PlatformDetection.IsNotBrowser)
+                {
+                    Assert.Equal(0, stream.Read(new byte[1], 0, 0));
 #if !NETFRAMEWORK
-                Assert.Equal(0, stream.Read(new Span<byte>(new byte[1], 0, 0)));
+                    Assert.Equal(0, stream.Read(new Span<byte>(new byte[1], 0, 0)));
 #endif
+                }
                 Assert.Equal(0, await stream.ReadAsync(new byte[1], 0, 0));
             }
         }
@@ -200,7 +205,7 @@ namespace System.Net.Http.Functional.Tests
                 cts.Cancel();
 
                 // Verify that the task completed.
-                Assert.True(((IAsyncResult)task).AsyncWaitHandle.WaitOne(new TimeSpan(0, 5, 0)));
+                Assert.Same(task, await Task.WhenAny(task, Task.Delay(TimeSpan.FromMinutes(5))));
                 Assert.True(task.IsCompleted, "Task was not yet completed");
 
                 // Verify that the task completed successfully or is canceled.
@@ -327,12 +332,10 @@ namespace System.Net.Http.Functional.Tests
         public async Task BrowserHttpHandler_Streaming()
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
-            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
 
             var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteHttp2Server.BaseUri + "echobody.ashx");
 
             req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
-            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
 
             byte[] body = new byte[1024 * 1024];
             Random.Shared.NextBytes(body);
@@ -578,15 +581,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public async Task BrowserHttpHandler_StreamingResponseLarge()
         {
-            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
-
             var size = 1500 * 1024 * 1024;
             var req = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.RemoteSecureHttp11Server.BaseUri + "large.ashx?size=" + size);
-
-            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
 
             using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteSecureHttp11Server))
             // we need to switch off Response buffering of default ResponseContentRead option
@@ -605,7 +604,7 @@ namespace System.Net.Http.Functional.Tests
                 int fetchedCount = 0;
                 do
                 {
-                    // with WebAssemblyEnableStreamingResponse option set, we will be using https://developer.mozilla.org/en-US/docs/Web/API/ReadableStreamDefaultReader/read
+                    // we will be using https://developer.mozilla.org/en-US/docs/Web/API/ReadableStreamDefaultReader/read
                     fetchedCount = await stream.ReadAsync(buffer, 0, buffer.Length);
                     totalCount += fetchedCount;
                 } while (fetchedCount != 0);

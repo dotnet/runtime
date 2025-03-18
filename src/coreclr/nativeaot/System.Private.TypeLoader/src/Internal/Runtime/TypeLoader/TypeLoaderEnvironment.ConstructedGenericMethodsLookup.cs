@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection.Runtime.General;
 using System.Threading;
 
 using Internal.NativeFormat;
@@ -27,7 +28,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (!_hashCode.HasValue)
                 {
-                    _hashCode = _declaringTypeHandle.GetHashCode() ^ TypeHashingAlgorithms.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(_methodNameAndSignature.Name), _genericMethodArgumentHandles);
+                    _hashCode = _declaringTypeHandle.GetHashCode() ^ TypeHashingAlgorithms.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(_methodNameAndSignature.GetName()), _genericMethodArgumentHandles);
                 }
                 return _hashCode.Value;
             }
@@ -147,7 +148,7 @@ namespace Internal.Runtime.TypeLoader
                 RuntimeTypeHandle parsedDeclaringTypeHandle = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
                 // Hash table names / sigs are indirected through to the native layout info
-                MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignatureFromNativeLayoutOffset(moduleHandle, entryParser.GetUnsigned());
+                MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.GetMethodNameAndSignatureFromToken(moduleHandle, entryParser.GetUnsigned());
 
                 RuntimeTypeHandle[] parsedArgsHandles = GetTypeSequence(ref externalReferencesLookup, ref entryParser);
 
@@ -186,10 +187,8 @@ namespace Internal.Runtime.TypeLoader
         {
             if (!TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out nameAndSignature, out genericMethodArgumentHandles))
             {
-                if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out TypeManagerHandle typeManager, out uint nameAndSigOffset, out genericMethodArgumentHandles))
+                if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out nameAndSignature, out genericMethodArgumentHandles))
                     return false;
-
-                nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignatureFromNativeLayoutOffset(typeManager, nameAndSigOffset);
             }
 
             return true;
@@ -199,7 +198,7 @@ namespace Internal.Runtime.TypeLoader
         {
             TypeLoaderEnvironment instance = TypeLoaderEnvironment.InstanceOrNull;
             if (instance == null || !instance.TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out _, out genericMethodArgumentHandles))
-                if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out _, out _, out genericMethodArgumentHandles))
+                if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out _, out genericMethodArgumentHandles))
                     return false;
 
             return true;
@@ -370,7 +369,7 @@ namespace Internal.Runtime.TypeLoader
                 return true;
             }
         }
-        private static unsafe bool TryGetStaticGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out TypeManagerHandle typeManager, out uint nameAndSigOffset, out RuntimeTypeHandle[] genericMethodArgumentHandles)
+        private static unsafe bool TryGetStaticGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgumentHandles)
         {
             // Generic method dictionaries have a header that has the hash code in it. Locate the header
             IntPtr dictionaryHeader = IntPtr.Subtract(methodDictionary, IntPtr.Size);
@@ -398,8 +397,8 @@ namespace Internal.Runtime.TypeLoader
                     // We have a match - fill in the results
                     declaringType = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
-                    typeManager = module.Handle;
-                    nameAndSigOffset = entryParser.GetUnsigned();
+                    int token = (int)entryParser.GetUnsigned();
+                    nameAndSignature = new MethodNameAndSignature(module.MetadataReader, token.AsHandle().ToMethodHandle(module.MetadataReader));
 
                     uint arity = entryParser.GetSequenceCount();
                     genericMethodArgumentHandles = new RuntimeTypeHandle[arity];
@@ -414,8 +413,7 @@ namespace Internal.Runtime.TypeLoader
             }
 
             declaringType = default(RuntimeTypeHandle);
-            typeManager = default;
-            nameAndSigOffset = 0;
+            nameAndSignature = null;
             genericMethodArgumentHandles = null;
             return false;
         }

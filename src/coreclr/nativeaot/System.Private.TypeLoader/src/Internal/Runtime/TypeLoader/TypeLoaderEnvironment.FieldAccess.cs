@@ -127,16 +127,9 @@ namespace Internal.Runtime.TypeLoader
                         && !canonWrapper.IsCanonicallyEquivalent(entryDeclaringTypeHandle))
                         continue;
 
-                    if ((entryFlags & FieldTableFlags.HasMetadataHandle) != 0)
-                    {
-                        Handle entryFieldHandle = (((int)HandleType.Field << 25) | (int)entryParser.GetUnsigned()).AsHandle();
-                        if (!fieldHandle.Equals(entryFieldHandle))
-                            continue;
-                    }
-                    else
-                    {
-                        Debug.Fail("Multifile path");
-                    }
+                    Handle entryFieldHandle = (((int)HandleType.Field << 25) | (int)entryParser.GetUnsigned()).AsHandle();
+                    if (!fieldHandle.Equals(entryFieldHandle))
+                        continue;
 
                     int fieldOffset;
                     IntPtr fieldAddressCookie = IntPtr.Zero;
