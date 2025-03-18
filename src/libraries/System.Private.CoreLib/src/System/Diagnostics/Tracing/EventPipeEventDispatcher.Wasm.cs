@@ -42,7 +42,7 @@ namespace System.Diagnostics.Tracing
 
             // Wait for SignalSession() to be called before we call disable, otherwise
             // the SignalSession() call could be on a disabled session.
-            await Task.Yield().ConfigureAwait(false);
+            await Task.Yield();
 
             EventPipeInternal.Disable(sessionID);
         }
