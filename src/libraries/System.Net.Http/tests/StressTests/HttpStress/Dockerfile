@@ -43,6 +43,6 @@ ENV STRESS_ARGS=''
 
 # configure adress sanitizer
 ENV ASAN_OPTIONS='detect_leaks=0'
-ENV LD_PRELOAD=/usr/lib/gcc/x86_64-linux-gnu/12/libasan.so
+ENV LD_PRELOAD=/usr/lib/gcc/x86_64-linux-gnu/13/libasan.so
 
 CMD ./entrypoint.sh
