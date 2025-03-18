@@ -1779,6 +1779,15 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         return id->idHasMem();
     }
 
+    if ((insTupleTypeInfo(ins) & INS_TT_MEM128) != 0)
+    {
+        assert((ins == INS_pslld) || (ins == INS_psllq) || (ins == INS_psllw) || (ins == INS_psrad) ||
+               (ins == INS_psraw) || (ins == INS_psrld) || (ins == INS_psrlq) || (ins == INS_psrlw));
+
+        // Memory operand with immediate can only be encoded using EVEX
+        return id->idHasMemAndCns();
+    }
+
     return false;
 }
 
@@ -13425,7 +13434,7 @@ void emitter::emitDispIns(
             }
 
             emitAttr attr3 = attr;
-            if (hasTupleTypeInfo(ins) && ((insTupleTypeInfo(ins) & INS_TT_MEM128) != 0))
+            if ((insTupleTypeInfo(ins) & INS_TT_MEM128) != 0)
             {
                 // Shift instructions take xmm for the 3rd operand regardless of instruction size.
                 attr3 = EA_16BYTE;
