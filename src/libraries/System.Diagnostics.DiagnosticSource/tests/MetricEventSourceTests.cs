@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
@@ -77,7 +78,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_DifferentCounters()
+        public async Task MultipleListeners_DifferentCounters()
         {
             using Meter meter = new Meter("TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
@@ -94,20 +95,20 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter2"))
                 {
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                    await listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
                     c2.Add(5);
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                    await listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
                     c2.Add(12);
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                    await listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
                     events2 = listener2.Events.ToArray();
                 }
             }
@@ -125,7 +126,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_ReuseCounter()
+        public async Task MultipleListeners_ReuseCounter()
         {
             using Meter meter = new Meter("TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
@@ -142,22 +143,22 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1", "TestMeter2"))
                 {
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                    await listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
                     c.Add(6);
                     c2.Add(5);
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                    await listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
                     c.Add(13);
                     c2.Add(12);
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                    await listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
                     events2 = listener2.Events.ToArray();
                 }
             }
@@ -176,7 +177,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_CollectAfterDisableListener()
+        public async Task MultipleListeners_CollectAfterDisableListener()
         {
             using Meter meter = new Meter("TestMeter1", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } }, new object());
             Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
@@ -193,27 +194,27 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter2"))
                 {
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                    await listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
                     c2.Add(5);
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                    await listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
                     c2.Add(12);
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                    await listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
                     events2 = listener2.Events.ToArray();
                 }
 
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 7);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 7);
                 c.Add(6);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 8);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 8);
                 c.Add(13);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 9);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 9);
                 events = listener.Events.ToArray();
             }
 
@@ -230,7 +231,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_ThreeCounters()
+        public async Task MultipleListeners_ThreeCounters()
         {
             using Meter meter = new Meter("TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -250,23 +251,23 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events, events2, events3;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 events = listener.Events.ToArray();
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter2"))
                 {
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                    await listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
                     c2.Add(6);
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                    await listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
                     events2 = listener2.Events.ToArray();
 
                     using (MetricsEventListener listener3 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter3"))
                     {
-                        listener3.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                        await listener3.WaitForCollectionStop(s_waitForEventTimeout, 1);
                         c3.Add(7);
-                        listener3.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                        await listener3.WaitForCollectionStop(s_waitForEventTimeout, 2);
                         events3 = listener3.Events.ToArray();
                     }
                 }
@@ -290,7 +291,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void SingleListener_Wildcard()
+        public async Task SingleListener_Wildcard()
         {
             using Meter meter = new Meter("Test.TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -310,11 +311,11 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "*"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 c2.Add(10);
                 c3.Add(20);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 events = listener.Events.ToArray();
             }
 
@@ -333,7 +334,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void SingleListener_Prefix()
+        public async Task SingleListener_Prefix()
         {
             using Meter meter = new Meter("Company1.TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -353,11 +354,11 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "Company1*"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 c2.Add(10);
                 c3.Add(20);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 events = listener.Events.ToArray();
             }
 
@@ -370,7 +371,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_OverlappingListeners()
+        public async Task MultipleListeners_OverlappingListeners()
         {
             using Meter meter = new Meter("TestMeter1", null, new TagList() { { "Mk1", "Mv1" } }, new object());
             Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
@@ -389,13 +390,13 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter2"))
                 {
-                    listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                    await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                     c.Add(5);
                     c2.Add(6);
-                    listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                    await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                     c.Add(12);
                     c2.Add(13);
-                    listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                    await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                     events = listener.Events.ToArray();
                     events2 = listener2.Events.ToArray();
                 }
@@ -415,7 +416,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_UnsharedSessionRejectsUnsharedListener()
+        public async Task MultipleListeners_UnsharedSessionRejectsUnsharedListener()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
                                             {
@@ -438,21 +439,21 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
                 g.Record(-10);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
                 g.Record(9);
 
                 using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7");
-                listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
+                await listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
 
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -469,7 +470,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_UnsharedSessionRejectsSharedListener()
+        public async Task MultipleListeners_UnsharedSessionRejectsSharedListener()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
                                             {
@@ -493,12 +494,12 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
                 g.Record(-1);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
@@ -506,10 +507,10 @@ namespace System.Diagnostics.Metrics.Tests
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter7"))
                 {
-                    listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
+                    await listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
                 }
 
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -526,7 +527,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_SharedSessionRejectsUnsharedListener()
+        public async Task MultipleListeners_SharedSessionRejectsUnsharedListener()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
                                             {
@@ -549,12 +550,12 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter7"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
                 g.Record(100);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
@@ -562,10 +563,10 @@ namespace System.Diagnostics.Metrics.Tests
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7"))
                 {
-                    listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
+                    await listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
                 }
 
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -582,7 +583,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_SharedSessionRejectsListenerWithDifferentArgs()
+        public async Task MultipleListeners_SharedSessionRejectsListenerWithDifferentArgs()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
                                             {
@@ -596,21 +597,21 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 10, 12, "TestMeter7"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 13, "TestMeter7"))
                 {
-                    listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+                    await listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
                     events2 = listener2.Events.ToArray();
                     AssertMultipleSessionsConfiguredIncorrectlyErrorEventsPresent(events2, "12", "13", "10", "11", IntervalSecs.ToString(), IntervalSecs.ToString());
                 }
 
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 c.Add(19);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
                 events = listener.Events.ToArray();
             }
 
@@ -622,7 +623,7 @@ namespace System.Diagnostics.Metrics.Tests
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         [ActiveIssue("This test appears to interfere with the others due to the session not being shut down.")]
-        public void MultipleListeners_SharedSessionWithoutClientIdRejectsSharedListenerWithDifferentArgsAfterListenerDisposed()
+        public async Task MultipleListeners_SharedSessionWithoutClientIdRejectsSharedListenerWithDifferentArgsAfterListenerDisposed()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
                                             {
@@ -636,19 +637,19 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, string.Empty, isShared: true, IntervalSecs, 10, 12, "TestMeter7"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 c.Add(19);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
                 events = listener.Events.ToArray();
             }
 
             using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 13, "TestMeter7"))
             {
-                listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+                await listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
                 events2 = listener2.Events.ToArray();
                 AssertMultipleSessionsConfiguredIncorrectlyErrorEventsPresent(events2, "12", "13", "10", "11", IntervalSecs.ToString(), IntervalSecs.ToString());
             }
@@ -660,7 +661,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_SharedSessionRejectsListenerWithDifferentInterval()
+        public async Task MultipleListeners_SharedSessionRejectsListenerWithDifferentInterval()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
                                             {
@@ -683,12 +684,12 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter7"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
                 g.Record(5);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
@@ -696,13 +697,13 @@ namespace System.Diagnostics.Metrics.Tests
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs + 1, "TestMeter7"))
                 {
-                    listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+                    await listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
                     events2 = listener2.Events.ToArray();
                     AssertMultipleSessionsConfiguredIncorrectlyErrorEventsPresent(events2, MetricsEventListener.HistogramLimit.ToString(), MetricsEventListener.HistogramLimit.ToString(),
                         MetricsEventListener.TimeSeriesLimit.ToString(), MetricsEventListener.TimeSeriesLimit.ToString(), IntervalSecs.ToString(), (IntervalSecs + 1).ToString());
                 }
 
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -719,7 +720,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_DisposeMeterBeforeSecondListener()
+        public async Task MultipleListeners_DisposeMeterBeforeSecondListener()
         {
             using Meter meterA = new Meter("TestMeter8", null, null, new object());
             using Meter meterB = new Meter(new MeterOptions("TestMeter9")
@@ -743,20 +744,20 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter8;TestMeter9"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
                 g.Record(-100);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
                 g.Record(100);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
 
                 meterA.Dispose();
-                listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 3);
+                await listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 3);
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter8"))
                 {
@@ -764,7 +765,7 @@ namespace System.Diagnostics.Metrics.Tests
                 }
 
                 h.Record(21);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
                 events = listener.Events.ToArray();
             }
 
@@ -785,7 +786,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_DisposeMetersDuringAndAfterSecondListener()
+        public async Task MultipleListeners_DisposeMetersDuringAndAfterSecondListener()
         {
             using Meter meterA = new Meter("TestMeter8", null, new TagList() { { "1Mk1", "1Mv1" }, { "1Mk2", "Mv2" } });
             using Meter meterB = new Meter(new MeterOptions("TestMeter9")
@@ -809,31 +810,31 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter8;TestMeter9"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
                 g.Record(-10);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
                 g.Record(9);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter8;TestMeter9"))
                 {
                     meterA.Dispose();
-                    listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 3);
+                    await listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 3);
 
                     events2 = listener2.Events.ToArray();
                 }
 
                 h.Record(21);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
 
                 meterB.Dispose();
-                listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 5);
+                await listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 5);
 
                 events = listener.Events.ToArray();
             }
@@ -854,9 +855,9 @@ namespace System.Diagnostics.Metrics.Tests
             AssertEndInstrumentReportingEventsPresent(events2, c, oc, og, udc, oudc, g);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // time sensitive test
         [OuterLoop("Slow and has lots of console spew")]
-        public void MultipleListeners_PublishingInstruments()
+        public async Task MultipleListeners_PublishingInstruments()
         {
             using Meter meterA = new Meter(new MeterOptions("TestMeter10")
                                             {
@@ -880,10 +881,10 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, ""))
             {
-                listener.WaitForEnumerationComplete(s_waitForEventTimeout);
+                await listener.WaitForEnumerationComplete(s_waitForEventTimeout);
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, ""))
                 {
-                    listener2.WaitForEnumerationComplete(s_waitForEventTimeout);
+                    await listener2.WaitForEnumerationComplete(s_waitForEventTimeout);
                     events = listener.Events.ToArray();
                     events2 = listener2.Events.ToArray();
                 }
@@ -899,7 +900,7 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithEmptyMetadata()
         {
-            RemoteExecutor.Invoke(static () =>
+            RemoteExecutor.Invoke(async static () =>
             {
                 CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("fi-FI");
 
@@ -924,17 +925,17 @@ namespace System.Diagnostics.Metrics.Tests
                 EventWrittenEventArgs[] events;
                 using (MetricsEventListener listener = new MetricsEventListener(NullTestOutputHelper.Instance, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter1"))
                 {
-                    listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                    await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                     c.Add(5);
                     h.Record(19);
                     udc.Add(-33);
                     g.Record(200);
-                    listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                    await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                     c.Add(12);
                     h.Record(26);
                     udc.Add(-40);
                     g.Record(-200);
-                    listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                    await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                     events = listener.Events.ToArray();
                 }
 
@@ -960,7 +961,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesTimeSeriesWithMetadata()
+        public async Task EventSourcePublishesTimeSeriesWithMetadata()
         {
             using Meter meter = new Meter("TestMeter2");
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
@@ -977,17 +978,17 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter2"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
                 g.Record(77);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
                 g.Record(-177);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -1005,7 +1006,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesTimeSeriesForLateMeter()
+        public async Task EventSourcePublishesTimeSeriesForLateMeter()
         {
             // this ensures the MetricsEventSource exists when the listener tries to query
             using Meter dummy = new Meter("dummy");
@@ -1023,7 +1024,7 @@ namespace System.Diagnostics.Metrics.Tests
                 EventWrittenEventArgs[] events;
                 using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter3"))
                 {
-                    listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                    await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                     // the Meter is created after the EventSource was already monitoring
                     meter = new Meter("TestMeter3");
@@ -1043,12 +1044,12 @@ namespace System.Diagnostics.Metrics.Tests
                     h.Record(19);
                     udc.Add(33);
                     g.Record(1);
-                    listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                    await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                     c.Add(12);
                     h.Record(26);
                     udc.Add(40);
                     g.Record(-1);
-                    listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                    await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                     events = listener.Events.ToArray();
                 }
 
@@ -1071,7 +1072,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesTimeSeriesForLateInstruments()
+        public async Task EventSourcePublishesTimeSeriesForLateInstruments()
         {
             // this ensures the MetricsEventSource exists when the listener tries to query
             using Meter meter = new Meter("TestMeter4");
@@ -1086,7 +1087,7 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter4"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                 // Instruments are created after the EventSource was already monitoring
                 c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
@@ -1104,12 +1105,12 @@ namespace System.Diagnostics.Metrics.Tests
                 h.Record(19);
                 udc.Add(-33);
                 g.Record(-1000);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(-40);
                 g.Record(2000);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -1127,7 +1128,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesTimeSeriesWithTags()
+        public async Task EventSourcePublishesTimeSeriesWithTags()
         {
             using Meter meter = new Meter("TestMeter5");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -1168,7 +1169,7 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter5"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                 c.Add(5, new KeyValuePair<string,object?>("Color", "red"));
                 c.Add(6, new KeyValuePair<string, object?>("Color", "blue"));
@@ -1178,7 +1179,7 @@ namespace System.Diagnostics.Metrics.Tests
                 udc.Add(-34, new KeyValuePair<string, object?>("Color", "blue"));
                 g.Record(1, new KeyValuePair<string, object?>("Color", "black"));
                 g.Record(2, new KeyValuePair<string, object?>("Color", "white"));
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 c.Add(12, new KeyValuePair<string, object?>("Color", "red"));
                 c.Add(13, new KeyValuePair<string, object?>("Color", "blue"));
@@ -1188,7 +1189,7 @@ namespace System.Diagnostics.Metrics.Tests
                 udc.Add(41, new KeyValuePair<string, object?>("Color", "blue"));
                 g.Record(3, new KeyValuePair<string, object?>("Color", "black"));
                 g.Record(4, new KeyValuePair<string, object?>("Color", "white"));
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -1215,7 +1216,7 @@ namespace System.Diagnostics.Metrics.Tests
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/79749", TargetFrameworkMonikers.NetFramework)]
-        public void EventSourceFiltersInstruments()
+        public async Task EventSourceFiltersInstruments()
         {
             object scope = new object();
             using Meter meterA = new Meter("TestMeterA", null, new TagList() { { "1Mk1", null } }, scope);
@@ -1241,7 +1242,7 @@ namespace System.Diagnostics.Metrics.Tests
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs,
                 "TestMeterA\\counter3;TestMeterB\\counter1;TestMeterC\\counter2;TestMeterB;TestMeterC\\counter3"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                 c1a.Add(1);
                 c2a.Add(1);
@@ -1252,7 +1253,7 @@ namespace System.Diagnostics.Metrics.Tests
                 c1c.Add(1);
                 c2c.Add(1);
                 c3c.Add(1);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 c1a.Add(2);
                 c2a.Add(2);
@@ -1263,7 +1264,7 @@ namespace System.Diagnostics.Metrics.Tests
                 c1c.Add(2);
                 c2c.Add(2);
                 c3c.Add(2);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -1283,7 +1284,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesMissingDataPoints()
+        public async Task EventSourcePublishesMissingDataPoints()
         {
             using Meter meter = new Meter("TestMeter6", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } }, new object());
             Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
@@ -1343,21 +1344,21 @@ namespace System.Diagnostics.Metrics.Tests
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter6"))
             {
                 // no measurements in interval 1
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
                 g.Record(-123);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 // no measurements in interval 3
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
                 g.Record(123);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
                 // no measurements in interval 5
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 5);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 5);
                 events = listener.Events.ToArray();
             }
 
@@ -1375,7 +1376,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesEndEventsOnMeterDispose()
+        public async Task EventSourcePublishesEndEventsOnMeterDispose()
         {
             object scope = new object();
             using Meter meterA = new Meter("TestMeter8", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", null } }, scope);
@@ -1400,23 +1401,23 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter8;TestMeter9"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
                 g.Record(9);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
                 g.Record(90);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
 
                 meterA.Dispose();
-                listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 3);
+                await listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 3);
 
                 h.Record(21);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
                 events = listener.Events.ToArray();
             }
 
@@ -1437,7 +1438,7 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesInstruments()
         {
-            RemoteExecutor.Invoke(static () =>
+            RemoteExecutor.Invoke(async static () =>
             {
 
                 object scope = new object();
@@ -1466,7 +1467,7 @@ namespace System.Diagnostics.Metrics.Tests
                 EventWrittenEventArgs[] events;
                 using (MetricsEventListener listener = new MetricsEventListener(NullTestOutputHelper.Instance, MetricsEventListener.InstrumentPublishing, null, ""))
                 {
-                    listener.WaitForEnumerationComplete(s_waitForEventTimeout);
+                    await listener.WaitForEnumerationComplete(s_waitForEventTimeout);
                     events = listener.Events.ToArray();
                 }
 
@@ -1477,7 +1478,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesAllDataTypes()
+        public async Task EventSourcePublishesAllDataTypes()
         {
             using Meter meter = new Meter("TestMeter12");
             Counter<int> i = meter.CreateCounter<int>("counterInt");
@@ -1491,7 +1492,7 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter12"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                 i.Add(1_234_567);
                 s.Add(21_432);
@@ -1508,7 +1509,7 @@ namespace System.Diagnostics.Metrics.Tests
                 dec.Add(1);
                 f.Add(1);
                 d.Add(1);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 i.Add(1_234_567);
                 s.Add(21_432);
@@ -1525,7 +1526,7 @@ namespace System.Diagnostics.Metrics.Tests
                 dec.Add(1);
                 f.Add(1);
                 d.Add(1);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -1543,7 +1544,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceEnforcesTimeSeriesLimit()
+        public async Task EventSourceEnforcesTimeSeriesLimit()
         {
             using Meter meter = new Meter("TestMeter13");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -1551,19 +1552,19 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, 2, 50, "TestMeter13"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                 c.Add(5, new KeyValuePair<string, object?>("Color", "red"));
                 c.Add(6, new KeyValuePair<string, object?>("Color", "blue"));
                 c.Add(7, new KeyValuePair<string, object?>("Color", "green"));
                 c.Add(8, new KeyValuePair<string, object?>("Color", "yellow"));
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 c.Add(12, new KeyValuePair<string, object?>("Color", "red"));
                 c.Add(13, new KeyValuePair<string, object?>("Color", "blue"));
                 c.Add(14, new KeyValuePair<string, object?>("Color", "green"));
                 c.Add(15, new KeyValuePair<string, object?>("Color", "yellow"));
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -1579,7 +1580,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceEnforcesHistogramLimit()
+        public async Task EventSourceEnforcesHistogramLimit()
         {
             using Meter meter = new Meter("TestMeter14");
             Histogram<int> h = meter.CreateHistogram<int>("histogram1");
@@ -1588,19 +1589,19 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, 50, 2, "TestMeter14"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                 h.Record(5, new KeyValuePair<string, object?>("Color", "red"));
                 h.Record(6, new KeyValuePair<string, object?>("Color", "blue"));
                 h.Record(7, new KeyValuePair<string, object?>("Color", "green"));
                 h.Record(8, new KeyValuePair<string, object?>("Color", "yellow"));
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 h.Record(12, new KeyValuePair<string, object?>("Color", "red"));
                 h.Record(13, new KeyValuePair<string, object?>("Color", "blue"));
                 h.Record(14, new KeyValuePair<string, object?>("Color", "green"));
                 h.Record(15, new KeyValuePair<string, object?>("Color", "yellow"));
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -1616,7 +1617,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceHandlesObservableCallbackException()
+        public async Task EventSourceHandlesObservableCallbackException()
         {
             using Meter meter = new Meter("TestMeter15");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -1626,11 +1627,11 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter15"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -1643,7 +1644,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceWorksWithSequentialListeners()
+        public async Task EventSourceWorksWithSequentialListeners()
         {
             using Meter meter = new Meter("TestMeter16");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -1660,17 +1661,17 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter16"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
                 g.Record(-10);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
                 g.Record(10);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -1690,17 +1691,17 @@ namespace System.Diagnostics.Metrics.Tests
             events = null;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter16"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
                 g.Record(-10);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
                 g.Record(10);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -1718,7 +1719,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Fact]
         [OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceEnforcesHistogramLimitAndNotMaxTimeSeries()
+        public async Task EventSourceEnforcesHistogramLimitAndNotMaxTimeSeries()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter17")
                                             {
@@ -1734,19 +1735,19 @@ namespace System.Diagnostics.Metrics.Tests
             // HistogramLimitReached should be raised when Record(tags: "Color=green"), but TimeSeriesLimitReached should not be raised
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, 3, 2, "TestMeter17"))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                 h.Record(5, new KeyValuePair<string, object?>("Color", "red"));
                 h.Record(6, new KeyValuePair<string, object?>("Color", "blue"));
                 h.Record(7, new KeyValuePair<string, object?>("Color", "green"));
                 h.Record(8, new KeyValuePair<string, object?>("Color", "yellow"));
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 h.Record(12, new KeyValuePair<string, object?>("Color", "red"));
                 h.Record(13, new KeyValuePair<string, object?>("Color", "blue"));
                 h.Record(14, new KeyValuePair<string, object?>("Color", "green"));
                 h.Record(15, new KeyValuePair<string, object?>("Color", "yellow"));
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -1787,17 +1788,17 @@ namespace System.Diagnostics.Metrics.Tests
         [Theory]
         [OuterLoop("Slow and has lots of console spew")]
         [MemberData(nameof(DifferentMetersAndInstrumentsData))]
-        public void TestDifferentMetersAndInstruments(Counter<int> counter1, Counter<int> counter2, bool isSameCounters)
+        public async Task TestDifferentMetersAndInstruments(Counter<int> counter1, Counter<int> counter2, bool isSameCounters)
         {
             Assert.Equal(object.ReferenceEquals(counter1, counter2), isSameCounters);
 
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, counter1.Meter.Name, counter2.Meter.Name))
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 counter1.Add(1);
                 counter2.Add(1);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 events = listener.Events.ToArray();
             }
 
@@ -2289,17 +2290,17 @@ namespace System.Diagnostics.Metrics.Tests
             _autoResetEvent.Set();
         }
 
-        public void WaitForCollectionStop(TimeSpan timeout, int numEvents) => WaitForEvent(timeout, numEvents, "CollectionStop");
+        public Task WaitForCollectionStop(TimeSpan timeout, int numEvents) => WaitForEvent(timeout, numEvents, "CollectionStop");
 
-        public void WaitForEndInstrumentReporting(TimeSpan timeout, int numEvents) => WaitForEvent(timeout, numEvents, "EndInstrumentReporting");
+        public Task WaitForEndInstrumentReporting(TimeSpan timeout, int numEvents) => WaitForEvent(timeout, numEvents, "EndInstrumentReporting");
 
-        public void WaitForEnumerationComplete(TimeSpan timeout) => WaitForEvent(timeout, 1, "InitialInstrumentEnumerationComplete");
+        public Task WaitForEnumerationComplete(TimeSpan timeout) => WaitForEvent(timeout, 1, "InitialInstrumentEnumerationComplete");
 
-        public void WaitForMultipleSessionsNotSupportedError(TimeSpan timeout) => WaitForEvent(timeout, 1, "MultipleSessionsNotSupportedError");
+        public Task WaitForMultipleSessionsNotSupportedError(TimeSpan timeout) => WaitForEvent(timeout, 1, "MultipleSessionsNotSupportedError");
 
-        public void WaitForMultipleSessionsConfiguredIncorrectlyError(TimeSpan timeout) => WaitForEvent(timeout, 1, "MultipleSessionsConfiguredIncorrectlyError");
+        public Task WaitForMultipleSessionsConfiguredIncorrectlyError(TimeSpan timeout) => WaitForEvent(timeout, 1, "MultipleSessionsConfiguredIncorrectlyError");
 
-        void WaitForEvent(TimeSpan timeout, int numEvents, string eventName)
+        async Task WaitForEvent(TimeSpan timeout, int numEvents, string eventName)
         {
             DateTime startTime = DateTime.Now;
             DateTime stopTime = startTime + timeout;
@@ -2311,11 +2312,21 @@ namespace System.Diagnostics.Metrics.Tests
                     return;
                 }
                 TimeSpan remainingTime = stopTime - DateTime.Now;
-                if (remainingTime.TotalMilliseconds < 0 || !_autoResetEvent.WaitOne(remainingTime))
+                if (remainingTime.TotalMilliseconds < 0)
                 {
                     int currentEventCount = GetCountEvents(eventName);
                     throw new TimeoutException($"Timed out waiting for a {eventName} event. " +
                         $"StartTime={startTime} stopTime={stopTime} initialEventCount={initialEventCount} currentEventCount={currentEventCount} targetEventCount={numEvents}");
+                }
+                if (OperatingSystem.IsBrowser())
+                {
+                    // in the single-threaded browser environment, we need to yield to the browser to allow the event to be processed
+                    // we also can't block with WaitOne
+                    await Task.Delay(10);
+                }
+                else
+                {
+                    _autoResetEvent.WaitOne(remainingTime);
                 }
             }
         }
