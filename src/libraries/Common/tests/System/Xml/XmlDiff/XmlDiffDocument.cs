@@ -1560,16 +1560,16 @@ namespace System.Xml.XmlDiff
     {
         private string _value;
         private XmlDiffNodeType _nodetype;
-        public XmlDiffCharacterData(string value, XmlDiffNodeType nt, bool NormalizeNewline, bool NormalizeSpaces, bool IgnoreWhitespace)
+        public XmlDiffCharacterData(string value, XmlDiffNodeType nt, bool normalizeNewline, bool normalizeSpaces, bool ignoreWhitespace)
             : base()
         {
-            if (NormalizeNewline)
+            if (normalizeNewline)
                 value = value.Replace("\n", "").Replace("\r", "");
 
-            if (NormalizeSpaces)
-                value = Regex.Replace(value, "[\u00A0\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]", " ");
+            if (normalizeSpaces)
+                value = Regex.Replace(value, XmlDiffAdvancedOptions.SpaceStripPattern, " ");
 
-            if (IgnoreWhitespace)
+            if (ignoreWhitespace)
                 value = value.Trim();
 
             this._value = value;
@@ -1620,7 +1620,7 @@ namespace System.Xml.XmlDiff
     {
         private string _name;
         public XmlDiffProcessingInstruction(string name, string value)
-            : base(value, XmlDiffNodeType.PI, false, false, false)
+            : base(value, XmlDiffNodeType.PI, normalizeNewline: false, normalizeSpaces: false, ignoreWhitespace: false)
         {
             this._name = name;
         }

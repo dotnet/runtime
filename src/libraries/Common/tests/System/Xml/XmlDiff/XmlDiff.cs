@@ -444,7 +444,7 @@ namespace System.Xml.XmlDiff
                 return value;
 
             if (NormalizeSpaces)
-                value = Regex.Replace(value, "[\u00A0\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]", " ");
+                value = Regex.Replace(value, XmlDiffAdvancedOptions.SpaceStripPattern, " ");
 
             if (IgnoreWhitespace)
                 value = value.Trim();

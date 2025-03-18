@@ -22,6 +22,8 @@ namespace System.Xml.XmlDiff
 
     public class XmlDiffAdvancedOptions
     {
+        internal const string SpaceStripPattern = "[\u00A0\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]";
+
         private string _IgnoreNodesExpr;
         private string _IgnoreValuesExpr;
         private string _IgnoreChildOrderExpr;
