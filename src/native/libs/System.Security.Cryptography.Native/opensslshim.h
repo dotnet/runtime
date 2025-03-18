@@ -447,6 +447,8 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_KDF_derive) \
     LIGHTUP_FUNCTION(EVP_KDF_fetch) \
     LIGHTUP_FUNCTION(EVP_KDF_free) \
+    LIGHTUP_FUNCTION(EVP_KEM_fetch) \
+    LIGHTUP_FUNCTION(EVP_KEM_free) \
     LIGHTUP_FUNCTION(EVP_MAC_fetch) \
     LIGHTUP_FUNCTION(EVP_MAC_final) \
     LIGHTUP_FUNCTION(EVP_MAC_free) \
@@ -997,6 +999,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_KDF_derive EVP_KDF_derive_ptr
 #define EVP_KDF_fetch EVP_KDF_fetch_ptr
 #define EVP_KDF_free EVP_KDF_free_ptr
+#define EVP_KEM_fetch EVP_KEM_fetch_ptr
+#define EVP_KEM_free EVP_KEM_free_ptr
 #define EVP_MAC_fetch EVP_MAC_fetch_ptr
 #define EVP_MAC_final EVP_MAC_final_ptr
 #define EVP_MAC_free EVP_MAC_free_ptr
