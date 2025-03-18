@@ -1278,6 +1278,8 @@ walk_stack_full_llvm_only(MonoJitStackWalk func, MonoContext* start_ctx, MonoJit
 	GSList *l, *ips;
 	StackFrameInfo frame;
 
+	g_assert(mono_llvm_only);
+
 	memset (&frame, 0, sizeof (StackFrameInfo));
 
 	// TODO: Fix async support.
