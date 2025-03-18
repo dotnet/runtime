@@ -3975,6 +3975,12 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     }
 
     const ValueNum  treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+
+    if (vnStore->IsVNCheckedBound(treeVN))
+    {
+        *isKnownNonNegative = true;
+    }
+
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
