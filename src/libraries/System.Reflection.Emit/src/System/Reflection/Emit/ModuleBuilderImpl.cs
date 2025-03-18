@@ -802,14 +802,19 @@ namespace System.Reflection.Emit
 
         internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConvention)
         {
-            SignatureCallingConvention convention = SignatureCallingConvention.Default;
+            SignatureCallingConventionEx convention = (SignatureCallingConventionEx)SignatureCallingConvention.Default;
 
             if ((callingConvention & CallingConventions.VarArgs) != 0)
             {
-                convention = SignatureCallingConvention.VarArgs;
+                convention = (SignatureCallingConventionEx)SignatureCallingConvention.VarArgs;
             }
 
-            return convention;
+            if ((callingConvention & CallingConventions.HasThis) != 0)
+            {
+                convention |= SignatureCallingConventionEx.HasThis;
+            }
+
+            return (SignatureCallingConvention)convention;
         }
 
         private MemberInfo GetOriginalMemberIfConstructedType(MemberInfo memberInfo)
