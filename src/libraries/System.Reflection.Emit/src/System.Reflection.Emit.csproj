@@ -28,7 +28,6 @@
     <Compile Include="System\Reflection\Emit\PersistedAssemblyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\PropertyBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\PseudoCustomAttributesData.cs" />
-    <Compile Include="System\Reflection\Emit\SignatureCallingConventionEx.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="System\Reflection\Emit\TypeBuilderImpl.cs" />
   </ItemGroup>
