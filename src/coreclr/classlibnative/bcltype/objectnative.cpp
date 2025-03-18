@@ -211,9 +211,12 @@ extern "C" void QCALLTYPE Monitor_Enter_Slowpath(QCall::ObjectHandleOnStack objH
 {
     QCALL_CONTRACT;
 
+    BEGIN_QCALL;
+
     GCX_COOP();
 
     objHandle.Get()->EnterObjMonitor();
+    END_QCALL;
 }
 
 /*********************************************************************/
@@ -267,12 +270,18 @@ extern "C" INT32 QCALLTYPE Monitor_TryEnter_Slowpath(QCall::ObjectHandleOnStack 
 {
     QCALL_CONTRACT;
 
+    BOOL result = FALSE;
+
+    BEGIN_QCALL;
+
     GCX_COOP();
 
     if (timeOut < -1)
         COMPlusThrow(kArgumentOutOfRangeException);
 
-    BOOL result = objHandle.Get()->TryEnterObjMonitor(timeOut);
+    result = objHandle.Get()->TryEnterObjMonitor(timeOut);
+
+    END_QCALL;
 
     return result;
 }
@@ -281,6 +290,8 @@ extern "C" INT32 QCALLTYPE Monitor_TryEnter_Slowpath(QCall::ObjectHandleOnStack 
 extern "C" void QCALLTYPE Monitor_Exit_Slowpath(QCall::ObjectHandleOnStack objHandle, AwareLock::LeaveHelperAction exitBehavior)
 {
     QCALL_CONTRACT;
+
+    BEGIN_QCALL;
 
     GCX_COOP();
 
@@ -296,6 +307,7 @@ extern "C" void QCALLTYPE Monitor_Exit_Slowpath(QCall::ObjectHandleOnStack objHa
         if (psb != NULL)
             psb->QuickGetMonitor()->Signal();
     }
+    END_QCALL;
 }
 
 #include <optsmallperfcritical.h>
