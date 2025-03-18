@@ -46,7 +46,7 @@ public:
         return value;
     }
 
-    static uint32_t ReadInt32(uint8_t* & p)
+    static int32_t ReadInt32(uint8_t* & p)
     {
         int32_t value = *p | (*(p+1) << 8) | (*(p+2) << 16) | (*(p+3) << 24);
         p += 4;
