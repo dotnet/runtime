@@ -527,3 +527,7 @@ if (NOT CLR_CMAKE_TARGET_ANDROID)
     # opt into building tools like ildasm/ilasm
     set(CLR_CMAKE_BUILD_TOOLS 1)
 endif()
+
+if (CLR_CMAKE_TARGET_UNIX)
+    list(APPEND CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+endif()
