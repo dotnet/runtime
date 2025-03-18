@@ -602,11 +602,14 @@ namespace Internal.TypeSystem.Ecma
 
                 // Note: GetOffset() returns -1 when offset was not set in the metadata
                 int specifiedOffset = fieldDefinition.GetOffset();
-                if (specifiedOffset != -1 && !IsExplicitLayout)
+                if (!IsExplicitLayout)
                 {
-                    // If the field has an offset specified, but the type is not explicit layout, the field is invalid
-                    // and we should throw an exception.
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, this);
+                    if (specifiedOffset != -1)
+                    {
+                        // If the field has an offset specified, but the type is not explicit layout, the field is invalid
+                        // and we should throw an exception.
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, this);
+                    }
                 }
                 else
                 {

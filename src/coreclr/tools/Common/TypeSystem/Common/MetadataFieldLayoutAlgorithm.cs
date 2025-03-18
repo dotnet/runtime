@@ -135,7 +135,6 @@ namespace Internal.TypeSystem
             }
 
             var layoutMetadata = type.GetClassLayout();
-
             // If the type has layout, read its packing and size info
             // If the type has explicit layout, also read the field offset info
             if (type.IsExplicitLayout || type.IsSequentialLayout)
