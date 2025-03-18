@@ -198,9 +198,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 IMethodNode methodEntryPointNode = GetMethodEntrypointNode(factory);
                 fptrReferenceId = factory.MetadataManager.NativeLayoutInfo.ExternalReferences.GetIndex(methodEntryPointNode);
-
-                if (methodEntryPointNode.Method.IsCanonicalMethod(CanonicalFormKind.Universal))
-                    flags |= MethodFlags.FunctionPointerIsUSG;
             }
 
             int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, _method.GetTypicalMethodDefinition());
@@ -683,14 +680,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (owningMethodOrType is MethodDesc owningMethod)
             {
-                Debug.Assert(owningMethod.IsCanonicalMethod(CanonicalFormKind.Universal) || nodeFactory.LazyGenericsPolicy.UsesLazyGenerics(owningMethod));
+                Debug.Assert(nodeFactory.LazyGenericsPolicy.UsesLazyGenerics(owningMethod));
                 Debug.Assert(owningMethod.IsCanonicalMethod(CanonicalFormKind.Any));
                 Debug.Assert(owningMethod.HasInstantiation);
             }
             else
             {
                 TypeDesc owningType = (TypeDesc)owningMethodOrType;
-                Debug.Assert(owningType.IsCanonicalSubtype(CanonicalFormKind.Universal) || nodeFactory.LazyGenericsPolicy.UsesLazyGenerics(owningType));
+                Debug.Assert(nodeFactory.LazyGenericsPolicy.UsesLazyGenerics(owningType));
                 Debug.Assert(owningType.IsCanonicalSubtype(CanonicalFormKind.Any));
             }
 
@@ -830,7 +827,7 @@ namespace ILCompiler.DependencyAnalysis
             DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_method);
             ICollection<NativeLayoutVertexNode> templateLayout = associatedLayout.GetTemplateEntries(factory);
 
-            if (!(_method.IsCanonicalMethod(CanonicalFormKind.Universal) || (factory.LazyGenericsPolicy.UsesLazyGenerics(_method))) && (templateLayout.Count > 0))
+            if (!factory.LazyGenericsPolicy.UsesLazyGenerics(_method) && templateLayout.Count > 0)
             {
                 List<NativeLayoutVertexNode> dictionaryVertices = new List<NativeLayoutVertexNode>();
 
@@ -853,7 +850,6 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class NativeLayoutTemplateTypeLayoutVertexNode : NativeLayoutSavedVertexNode
     {
         private TypeDesc _type;
-        private bool _isUniversalCanon;
 
         public TypeDesc CanonType => _type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
@@ -863,7 +859,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(type.ConvertToCanonForm(CanonicalFormKind.Specific) == type, "Assert that the canonical type passed in is in standard canonical form");
-            _isUniversalCanon = type.IsCanonicalSubtype(CanonicalFormKind.Universal);
 
             _type = GetActualTemplateTypeForType(factory, type);
         }
@@ -941,20 +936,15 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (!_isUniversalCanon)
+            DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+            if (closestCanonDefType.GCStaticFieldSize.AsInt > 0)
             {
-                DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
-                if (closestCanonDefType.GCStaticFieldSize.AsInt > 0)
-                {
-                    BagElementKind ignored;
-                    yield return new DependencyListEntry(GetStaticsNode(context, out ignored), "type gc static info");
-                }
+                yield return new DependencyListEntry(GetStaticsNode(context, out _), "type gc static info");
+            }
 
-                if (closestCanonDefType.ThreadGcStaticFieldSize.AsInt > 0)
-                {
-                    BagElementKind ignored;
-                    yield return new DependencyListEntry(GetThreadStaticsNode(context, out ignored), "type thread static info");
-                }
+            if (closestCanonDefType.ThreadGcStaticFieldSize.AsInt > 0)
+            {
+                yield return new DependencyListEntry(GetThreadStaticsNode(context, out _), "type thread static info");
             }
 
             if (_type.BaseType != null && !_type.BaseType.IsRuntimeDeterminedSubtype)
@@ -976,124 +966,14 @@ namespace ILCompiler.DependencyAnalysis
                     yield return new DependencyListEntry(dependency, "base type must be template loadable");
                 }
             }
-            else if (_type.IsDelegate && _isUniversalCanon)
-            {
-                // For USG delegate, we need to write the signature of the Invoke method to the native layout.
-                // This signature is used by the calling convention converter to marshal parameters during delegate calls.
-                yield return new DependencyListEntry(context.NativeLayout.MethodSignatureVertex(_type.GetMethod("Invoke", null).GetTypicalMethodDefinition().Signature), "invoke method signature");
-            }
-
-            if (_isUniversalCanon)
-            {
-                // For universal canonical template types, we need to write out field layout information so that we
-                // can correctly compute the type sizes for dynamically created types at runtime, and construct
-                // their GCDesc info
-                foreach (FieldDesc field in _type.GetFields())
-                {
-                    // If this field does not contribute to layout, skip
-                    if (field.HasRva || field.IsLiteral)
-                    {
-                        continue;
-                    }
-
-                    DependencyListEntry typeForFieldLayout;
-
-                    if (field.FieldType.IsGCPointer)
-                    {
-                        typeForFieldLayout = new DependencyListEntry(context.NativeLayout.PlacedSignatureVertex(context.NativeLayout.TypeSignatureVertex(field.Context.GetWellKnownType(WellKnownType.Object))), "universal field layout type object sized");
-                    }
-                    else if (field.FieldType.IsPointer || field.FieldType.IsFunctionPointer)
-                    {
-                        typeForFieldLayout = new DependencyListEntry(context.NativeLayout.PlacedSignatureVertex(context.NativeLayout.TypeSignatureVertex(field.Context.GetWellKnownType(WellKnownType.IntPtr))), "universal field layout type IntPtr sized");
-                    }
-                    else
-                    {
-                        typeForFieldLayout = new DependencyListEntry(context.NativeLayout.PlacedSignatureVertex(context.NativeLayout.TypeSignatureVertex(field.FieldType)), "universal field layout type");
-
-                        // And ensure the type can be properly laid out
-                        foreach (var dependency in context.NativeLayout.TemplateConstructableTypes(field.FieldType))
-                        {
-                            yield return new DependencyListEntry(dependency, "template construction dependency");
-                        }
-                    }
-
-                    yield return typeForFieldLayout;
-                }
-
-                // We also need to write out the signatures of interesting methods in the type's vtable, which
-                // will be needed by the calling convention translation logic at runtime, when the type's methods
-                // get invoked. This logic gathers nodes for entries *unconditionally* present. (entries may be conditionally
-                // present if a type has a vtable which has a size computed by usage not by IL contents)
-                List<NativeLayoutVertexNode> vtableSignatureNodeEntries = null;
-                int currentVTableIndexUnused = 0;
-                ProcessVTableEntriesForCallingConventionSignatureGeneration(context, VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables, ref currentVTableIndexUnused,
-                    (int vtableIndex, bool isSealedVTableSlot, MethodDesc declMethod, MethodDesc implMethod) =>
-                    {
-                        if (implMethod.IsAbstract)
-                            return;
-
-                        if (UniversalGenericParameterLayout.VTableMethodRequiresCallingConventionConverter(implMethod))
-                        {
-                            vtableSignatureNodeEntries ??= new List<NativeLayoutVertexNode>();
-
-                            vtableSignatureNodeEntries.Add(context.NativeLayout.MethodSignatureVertex(declMethod.GetTypicalMethodDefinition().Signature));
-                        }
-                    }, _type, _type, _type);
-
-                if (vtableSignatureNodeEntries != null)
-                {
-                    foreach (NativeLayoutVertexNode node in vtableSignatureNodeEntries)
-                        yield return new DependencyListEntry(node, "vtable cctor sig");
-                }
-            }
         }
 
-        public override bool HasConditionalStaticDependencies => _isUniversalCanon;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
-        {
-            List<CombinedDependencyListEntry> conditionalDependencies = null;
-
-            if (_isUniversalCanon)
-            {
-                // We also need to write out the signatures of interesting methods in the type's vtable, which
-                // will be needed by the calling convention translation logic at runtime, when the type's methods
-                // get invoked. This logic gathers nodes for entries *conditionally* present. (entries may be conditionally
-                // present if a type has a vtable which has a size computed by usage not by IL contents)
-
-                int currentVTableIndexUnused = 0;
-                ProcessVTableEntriesForCallingConventionSignatureGeneration(context, VTableEntriesToProcess.AllOnTypesThatProducePartialVTables, ref currentVTableIndexUnused,
-                    (int vtableIndex, bool isSealedVTableSlot, MethodDesc declMethod, MethodDesc implMethod) =>
-                    {
-                        if (implMethod.IsAbstract)
-                            return;
-
-                        if (UniversalGenericParameterLayout.VTableMethodRequiresCallingConventionConverter(implMethod))
-                        {
-                            conditionalDependencies ??= new List<CombinedDependencyListEntry>();
-
-                            conditionalDependencies.Add(
-                                new CombinedDependencyListEntry(context.NativeLayout.MethodSignatureVertex(declMethod.GetTypicalMethodDefinition().Signature),
-                                                                context.VirtualMethodUse(declMethod),
-                                                                "conditional vtable cctor sig"));
-                        }
-                    }, _type, _type, _type);
-            }
-
-            if (conditionalDependencies != null)
-                return conditionalDependencies;
-            else
-                return Array.Empty<CombinedDependencyListEntry>();
-        }
+        public override bool HasConditionalStaticDependencies => false;
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
 
         private static int CompareDictionaryEntries(KeyValuePair<int, NativeLayoutVertexNode> left, KeyValuePair<int, NativeLayoutVertexNode> right)
         {
             return left.Key - right.Key;
-        }
-
-        private bool HasInstantiationDeterminedSize()
-        {
-            Debug.Assert(_isUniversalCanon);
-            return _type.GetClosestDefType().InstanceFieldSize.IsIndeterminate;
         }
 
         public override Vertex WriteVertex(NodeFactory factory)
@@ -1104,8 +984,6 @@ namespace ILCompiler.DependencyAnalysis
 
             DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific).GetClosestDefType());
             ICollection<NativeLayoutVertexNode> templateLayout = associatedLayout.GetTemplateEntries(factory);
-
-            NativeWriter writer = GetNativeWriter(factory);
 
             // Interfaces
             if (_type.RuntimeInterfaces.Length > 0)
@@ -1121,7 +999,7 @@ namespace ILCompiler.DependencyAnalysis
                 layoutInfo.Append(BagElementKind.ImplementedInterfaces, implementedInterfaces.WriteVertex(factory));
             }
 
-            if (!(_isUniversalCanon || (factory.LazyGenericsPolicy.UsesLazyGenerics(_type)) )&& (templateLayout.Count > 0))
+            if (!factory.LazyGenericsPolicy.UsesLazyGenerics(_type) && templateLayout.Count > 0)
             {
                 List<NativeLayoutVertexNode> dictionaryVertices = new List<NativeLayoutVertexNode>();
 
@@ -1144,31 +1022,28 @@ namespace ILCompiler.DependencyAnalysis
                 layoutInfo.AppendUnsigned(BagElementKind.ClassConstructorPointer, cctorStaticsIndex);
             }
 
-            if (!_isUniversalCanon)
+            DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+            if (closestCanonDefType.NonGCStaticFieldSize.AsInt != 0)
             {
-                DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
-                if (closestCanonDefType.NonGCStaticFieldSize.AsInt != 0)
-                {
-                    layoutInfo.AppendUnsigned(BagElementKind.NonGcStaticDataSize, checked((uint)closestCanonDefType.NonGCStaticFieldSize.AsInt));
-                }
+                layoutInfo.AppendUnsigned(BagElementKind.NonGcStaticDataSize, checked((uint)closestCanonDefType.NonGCStaticFieldSize.AsInt));
+            }
 
-                if (closestCanonDefType.GCStaticFieldSize.AsInt != 0)
-                {
-                    layoutInfo.AppendUnsigned(BagElementKind.GcStaticDataSize, checked((uint)closestCanonDefType.GCStaticFieldSize.AsInt));
-                    BagElementKind staticDescBagType;
-                    ISymbolNode staticsDescSymbol = GetStaticsNode(factory, out staticDescBagType);
-                    uint gcStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(staticsDescSymbol);
-                    layoutInfo.AppendUnsigned(staticDescBagType, gcStaticsSymbolIndex);
-                }
+            if (closestCanonDefType.GCStaticFieldSize.AsInt != 0)
+            {
+                layoutInfo.AppendUnsigned(BagElementKind.GcStaticDataSize, checked((uint)closestCanonDefType.GCStaticFieldSize.AsInt));
+                BagElementKind staticDescBagType;
+                ISymbolNode staticsDescSymbol = GetStaticsNode(factory, out staticDescBagType);
+                uint gcStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(staticsDescSymbol);
+                layoutInfo.AppendUnsigned(staticDescBagType, gcStaticsSymbolIndex);
+            }
 
-                if (closestCanonDefType.ThreadGcStaticFieldSize.AsInt != 0)
-                {
-                    layoutInfo.AppendUnsigned(BagElementKind.ThreadStaticDataSize, checked((uint)closestCanonDefType.ThreadGcStaticFieldSize.AsInt));
-                    BagElementKind threadStaticDescBagType;
-                    ISymbolNode threadStaticsDescSymbol = GetThreadStaticsNode(factory, out threadStaticDescBagType);
-                    uint threadStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(threadStaticsDescSymbol);
-                    layoutInfo.AppendUnsigned(threadStaticDescBagType, threadStaticsSymbolIndex);
-                }
+            if (closestCanonDefType.ThreadGcStaticFieldSize.AsInt != 0)
+            {
+                layoutInfo.AppendUnsigned(BagElementKind.ThreadStaticDataSize, checked((uint)closestCanonDefType.ThreadGcStaticFieldSize.AsInt));
+                BagElementKind threadStaticDescBagType;
+                ISymbolNode threadStaticsDescSymbol = GetThreadStaticsNode(factory, out threadStaticDescBagType);
+                uint threadStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(threadStaticsDescSymbol);
+                layoutInfo.AppendUnsigned(threadStaticDescBagType, threadStaticsSymbolIndex);
             }
 
             if (_type.BaseType != null && _type.BaseType.IsRuntimeDeterminedSubtype)
@@ -1176,71 +1051,9 @@ namespace ILCompiler.DependencyAnalysis
                 layoutInfo.Append(BagElementKind.BaseType, factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.TypeSignatureVertex(_type.BaseType)).WriteVertex(factory));
             }
 
-            if (_isUniversalCanon)
-            {
-                // For universal canonical template types, we need to write out field layout information so that we
-                // can correctly compute the type sizes for dynamically created types at runtime, and construct
-                // their GCDesc info
-                VertexSequence fieldsSequence = null;
-
-                foreach (FieldDesc field in _type.GetFields())
-                {
-                    // If this field does contribute to layout, skip
-                    if (field.HasRva || field.IsLiteral)
-                        continue;
-
-                    // NOTE: The order and contents of the signature vertices emitted here is what we consider a field ordinal for the
-                    // purpose of NativeLayoutFieldOffsetGenericDictionarySlotNode.
-
-                    FieldStorage fieldStorage = FieldStorage.Instance;
-                    if (field.IsStatic)
-                    {
-                        if (field.IsThreadStatic)
-                            fieldStorage = FieldStorage.TLSStatic;
-                        else if (field.HasGCStaticBase)
-                            fieldStorage = FieldStorage.GCStatic;
-                        else
-                            fieldStorage = FieldStorage.NonGCStatic;
-                    }
-
-
-                    NativeLayoutPlacedSignatureVertexNode fieldTypeSignature;
-                    if (field.FieldType.IsGCPointer)
-                    {
-                        fieldTypeSignature = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.TypeSignatureVertex(field.Context.GetWellKnownType(WellKnownType.Object)));
-                    }
-                    else if (field.FieldType.IsPointer || field.FieldType.IsFunctionPointer)
-                    {
-                        fieldTypeSignature = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.TypeSignatureVertex(field.Context.GetWellKnownType(WellKnownType.IntPtr)));
-                    }
-                    else
-                    {
-                        fieldTypeSignature = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.TypeSignatureVertex(field.FieldType));
-                    }
-
-                    Vertex staticFieldVertexData = writer.GetTuple(fieldTypeSignature.WriteVertex(factory), writer.GetUnsignedConstant((uint)fieldStorage));
-
-                    fieldsSequence ??= new VertexSequence();
-                    fieldsSequence.Append(staticFieldVertexData);
-                }
-
-                if (fieldsSequence != null)
-                {
-                    Vertex placedFieldsLayout = factory.MetadataManager.NativeLayoutInfo.SignaturesSection.Place(fieldsSequence);
-                    layoutInfo.Append(BagElementKind.FieldLayout, placedFieldsLayout);
-                }
-            }
-
             factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(layoutInfo);
 
             return SetSavedVertex(layoutInfo);
-        }
-
-        private enum VTableEntriesToProcess
-        {
-            AllInVTable,
-            AllOnTypesThatShouldProduceFullVTables,
-            AllOnTypesThatProducePartialVTables
         }
 
         private static IEnumerable<MethodDesc> EnumVirtualSlotsDeclaredOnType(TypeDesc declType)
@@ -1264,101 +1077,6 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 yield return method;
-            }
-        }
-
-        /// <summary>
-        /// Process the vtable entries of a type by calling operation with the vtable index, declaring method, and implementing method
-        /// Process them in order from 0th entry to last.
-        /// Skip generic virtual methods, as they are not present in the vtable itself
-        /// Do not adjust vtable index for generic dictionary slot
-        /// The vtable index is only actually valid if whichEntries is set to VTableEntriesToProcess.AllInVTable
-        /// </summary>
-        private static void ProcessVTableEntriesForCallingConventionSignatureGeneration(NodeFactory factory, VTableEntriesToProcess whichEntries, ref int currentVTableIndex, Action<int, bool, MethodDesc, MethodDesc> operation, TypeDesc implType, TypeDesc declType, TypeDesc templateType)
-        {
-            if (implType.IsInterface)
-                return;
-
-            declType = declType.GetClosestDefType();
-            templateType = templateType.ConvertToCanonForm(CanonicalFormKind.Specific);
-
-            bool canShareNormalCanonicalCode = declType != declType.ConvertToCanonForm(CanonicalFormKind.Specific);
-
-            var baseType = declType.BaseType;
-            if (baseType != null)
-            {
-                Debug.Assert(templateType.BaseType != null);
-                ProcessVTableEntriesForCallingConventionSignatureGeneration(factory, whichEntries, ref currentVTableIndex, operation, implType, baseType, templateType.BaseType);
-            }
-
-            IEnumerable<MethodDesc> vtableEntriesToProcess;
-
-            if (ConstructedEETypeNode.CreationAllowed(declType))
-            {
-                switch (whichEntries)
-                {
-                    case VTableEntriesToProcess.AllInVTable:
-                        vtableEntriesToProcess = factory.VTable(declType).Slots;
-                        break;
-
-                    case VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables:
-                        if (factory.VTable(declType).HasKnownVirtualMethodUse)
-                        {
-                            vtableEntriesToProcess = factory.VTable(declType).Slots;
-                        }
-                        else
-                        {
-                            vtableEntriesToProcess = Array.Empty<MethodDesc>();
-                        }
-                        break;
-
-                    case VTableEntriesToProcess.AllOnTypesThatProducePartialVTables:
-                        if (factory.VTable(declType).HasKnownVirtualMethodUse)
-                        {
-                            vtableEntriesToProcess = Array.Empty<MethodDesc>();
-                        }
-                        else
-                        {
-                            vtableEntriesToProcess = EnumVirtualSlotsDeclaredOnType(declType);
-                        }
-                        break;
-
-                    default:
-                        throw new Exception();
-                }
-            }
-            else
-            {
-                // If allocating an object of the MethodTable isn't permitted, don't process any vtable entries.
-                vtableEntriesToProcess = Array.Empty<MethodDesc>();
-            }
-
-            // Dictionary slot
-            if (declType.HasGenericDictionarySlot() || templateType.HasGenericDictionarySlot())
-                currentVTableIndex++;
-
-            int sealedVTableSlot = 0;
-            DefType closestDefType = implType.GetClosestDefType();
-
-            // Actual vtable slots follow
-            foreach (MethodDesc declMethod in vtableEntriesToProcess)
-            {
-                // No generic virtual methods can appear in the vtable!
-                Debug.Assert(!declMethod.HasInstantiation);
-
-                MethodDesc implMethod = closestDefType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
-
-                if (implMethod.CanMethodBeInSealedVTable(factory) && !implType.IsArrayTypeWithoutGenericInterfaces())
-                {
-                    // Sealed vtable entries on other types in the hierarchy should not be reported (types read entries
-                    // from their own sealed vtables, and not from the sealed vtables of base types).
-                    if (implMethod.OwningType == closestDefType)
-                        operation(sealedVTableSlot++, true, declMethod, implMethod);
-                }
-                else
-                {
-                    operation(currentVTableIndex++, false, declMethod, implMethod);
-                }
             }
         }
     }
