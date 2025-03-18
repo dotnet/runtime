@@ -235,7 +235,7 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the decapsulation key.
         /// </param>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is the incorrect length to receive the private seed.
+        ///   <paramref name="destination"/> is the incorrect length to receive the decapsulation key.
         /// </exception>
         public void ExportMLKemDecapsulationKey(Span<byte> destination)
         {
@@ -254,6 +254,33 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the decapsulation key.
         /// </param>
         protected abstract void ExportMLKemDecapsulationKeyCore(Span<byte> destination);
+
+        /// <summary>
+        ///   Exports the encapsulation key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the encapsulation key.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination"/> is the incorrect length to receive the encapsulation key.
+        /// </exception>
+        public void ExportMLKemEncapsulationKey(Span<byte> destination)
+        {
+            if (destination.Length != Algorithm.EncapsulationKeySizeInBytes)
+            {
+                throw new ArgumentException("TODO", nameof(destination));
+            }
+
+            ExportMLKemEncapsulationKeyCore(destination);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, exports the encapsulation key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the encapsulation key.
+        /// </param>
+        protected abstract void ExportMLKemEncapsulationKeyCore(Span<byte> destination);
 
         /// <summary>
         ///  Releases all resources used by the <see cref="MLKem"/> class.
@@ -300,10 +327,5 @@ namespace System.Security.Cryptography
                 throw new ArgumentException("TODO", nameof(ciphertext));
             }
         }
-
-        /// <summary>
-        ///   Releases any unmanged resources associated with the current instance.
-        /// </summary>
-        ~MLKem() => Dispose(false);
     }
 }
