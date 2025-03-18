@@ -61,3 +61,82 @@ EVP_KEM* CryptoNative_EvpKemFetch(const char* algorithm, int32_t* haveFeature)
     *haveFeature = 0;
     return NULL;
 }
+
+EVP_PKEY* CryptoNative_EvpKemGeneratePkey(const EVP_KEM* kem)
+{
+    assert(kem);
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_KEM_fetch))
+    {
+        assert(API_EXISTS(EVP_KEM_get0_name) && API_EXISTS(EVP_PKEY_CTX_new_from_name));
+
+        ERR_clear_error();
+        const char* name = EVP_KEM_get0_name(kem);
+
+        if (name == NULL)
+        {
+            return NULL;
+        }
+
+        EVP_PKEY_CTX* ctx = NULL;
+        EVP_PKEY* key = NULL;
+
+        ctx = EVP_PKEY_CTX_new_from_name(NULL, name, NULL);
+
+        if (ctx == NULL)
+        {
+            goto done;
+        }
+
+        if (EVP_PKEY_keygen_init(ctx) != 1)
+        {
+            goto done;
+        }
+
+        if (EVP_PKEY_keygen(ctx, &key) != 1)
+        {
+            if (key != NULL)
+            {
+                EVP_PKEY_free(key);
+                key = NULL;
+            }
+
+            goto done;
+        }
+done:
+        if (ctx)
+        {
+            EVP_PKEY_CTX_free(ctx);
+        }
+
+        return key;
+    }
+#else
+    (void)kem;
+#endif
+
+    return NULL;
+}
+
+int32_t CryptoNative_EvpKemExportPrivateSeed(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
+{
+    assert(pKey);
+    assert(destination);
+
+    size_t destinationLengthT = Int32ToSizeT(destinationLength);
+    size_t outLength = 0;
+    int ret = EVP_PKEY_get_octet_string_param(
+        pKey,
+        OSSL_PKEY_PARAM_ML_KEM_SEED,
+        (unsigned char*)destination,
+        destinationLengthT,
+        &outLength);
+
+    if (outLength != destinationLengthT)
+    {
+        return -1;
+    }
+
+    return ret == 1 ? 1 : 0;
+}

@@ -8,11 +8,14 @@ namespace System.Security.Cryptography
 {
     internal sealed class MLKemImplementation : MLKem
     {
+        private SafeEvpPKeyHandle _key;
+
         // OpenSSL is expected to give "all or none" support.
         internal static new bool IsSupported => Interop.Crypto.EvpKemAlgs.MlKem512 is not null;
 
-        private MLKemImplementation(MLKemAlgorithm algorithm) : base(algorithm)
+        private MLKemImplementation(MLKemAlgorithm algorithm, SafeEvpPKeyHandle key) : base(algorithm)
         {
+            _key = key;
         }
 
         internal static MLKem Generate(MLKemAlgorithm algorithm)
@@ -40,7 +43,18 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            return null!;
+            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(handle);
+            return new MLKemImplementation(algorithm, key);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            if (disposing)
+            {
+                _key?.Dispose();
+            }
         }
 
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
@@ -51,6 +65,12 @@ namespace System.Security.Cryptography
         protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
         {
             throw new NotImplementedException();
+        }
+
+        protected override void ExportMLKemPrivateSeedCore(Span<byte> destination)
+        {
+            ThrowIfDisposed();
+            Interop.Crypto.EvpKemExportPrivateSeed(_key, destination);
         }
     }
 }

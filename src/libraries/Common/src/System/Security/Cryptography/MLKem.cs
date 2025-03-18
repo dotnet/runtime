@@ -29,6 +29,7 @@ namespace System.Security.Cryptography
     {
         private bool _disposed;
         private const int SharedSecretSize = 32; // FIPS 203, Table 3.
+        private const int SeedSize = 64; // FIPS 203 Algorithm 19. Seed is d || z
 
         /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
@@ -172,6 +173,33 @@ namespace System.Security.Cryptography
                 throw new ObjectDisposedException(nameof(MLKem));
             }
         }
+
+        /// <summary>
+        ///   Exports the private seed into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the private seed.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination"/> is the incorrect length to receive the private seed.
+        /// </exception>
+        public void ExportMLKemPrivateSeed(Span<byte> destination)
+        {
+            if (destination.Length != SeedSize)
+            {
+                throw new ArgumentException("TODO", nameof(destination));
+            }
+
+            ExportMLKemPrivateSeedCore(destination);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, exports the private seed into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the private seed.
+        /// </param>
+        protected abstract void ExportMLKemPrivateSeedCore(Span<byte> destination);
 
         /// <summary>
         ///  Releases all resources used by the <see cref="MLKem"/> class.

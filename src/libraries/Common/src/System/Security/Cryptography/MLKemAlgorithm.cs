@@ -102,11 +102,35 @@ namespace System.Security.Cryptography
         /// <inheritdoc />
         public override int GetHashCode() => Name.GetHashCode();
 
+        /// <summary>
+        ///   Determines whether two <see cref="MLKemAlgorithm" /> objects specify the same algorithm name.
+        /// </summary>
+        /// <param name="left">
+        ///   An object that specifies an algorithm name.
+        /// </param>
+        /// <param name="right">
+        ///   A second object, to be compared to the object that is identified by the <paramref name="left" /> parameter.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if the objects are considered equal; otherwise, <see langword="false" />.
+        /// </returns>
         public static bool operator ==(MLKemAlgorithm? left, MLKemAlgorithm? right)
         {
             return left is null ? right is null : left.Equals(right);
         }
 
+        /// <summary>
+        ///   Determines whether two <see cref="MLKemAlgorithm" /> objects do not specify the same algorithm name.
+        /// </summary>
+        /// <param name="left">
+        ///   An object that specifies an algorithm name.
+        /// </param>
+        /// <param name="right">
+        ///   A second object, to be compared to the object that is identified by the <paramref name="left" /> parameter.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if the objects are not considered equal; otherwise, <see langword="false" />.
+        /// </returns>
         public static bool operator !=(MLKemAlgorithm? left, MLKemAlgorithm? right)
         {
             return !(left == right);

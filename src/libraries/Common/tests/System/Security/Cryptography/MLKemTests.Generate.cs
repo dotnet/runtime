@@ -14,6 +14,11 @@ namespace System.Security.Cryptography.Tests
         public static void Generate_MlKem512()
         {
             using MLKem kem = MLKem.GenerateMLKem512Key();
+            Span<byte> key = stackalloc byte[64];
+            key.Clear();
+
+            kem.ExportMLKemPrivateSeed(key);
+            Assert.True(key.ContainsAnyExcept((byte)0));
         }
     }
 }

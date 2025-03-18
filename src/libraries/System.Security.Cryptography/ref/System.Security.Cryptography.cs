@@ -1807,6 +1807,8 @@ namespace System.Security.Cryptography
         protected virtual void Dispose(bool disposing) { }
         public void Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
         protected abstract void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret);
+        public void ExportMLKemPrivateSeed(System.Span<byte> destination) { }
+        protected abstract void ExportMLKemPrivateSeedCore(System.Span<byte> destination);
         ~MLKem() { }
         public static System.Security.Cryptography.MLKem GenerateMLKem512Key() { throw null; }
         protected void ThrowIfDisposed() { }
