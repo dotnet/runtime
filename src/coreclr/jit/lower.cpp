@@ -5943,13 +5943,6 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(comp->info.compUnmanagedCallCountWithGCTransition);
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
-    if (comp->opts.ShouldUsePInvokeHelpers())
-    {
-        return;
-    }
-
-    JITDUMP("======= Inserting PInvoke method prolog\n");
-
     LIR::Range& firstBlockRange = LIR::AsRange(comp->fgFirstBB);
 
     const CORINFO_EE_INFO*                       pInfo         = comp->eeGetEEInfo();
@@ -5971,6 +5964,13 @@ void Lowering::InsertPInvokeMethodProlog()
         firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
         DISPTREERANGE(firstBlockRange, store);
     }
+
+    if (comp->opts.ShouldUsePInvokeHelpers())
+    {
+        return;
+    }
+
+    JITDUMP("======= Inserting PInvoke method prolog\n");
 
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart);
