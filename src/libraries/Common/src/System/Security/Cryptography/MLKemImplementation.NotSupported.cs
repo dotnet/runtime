@@ -47,5 +47,11 @@ namespace System.Security.Cryptography
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();
         }
+
+        protected override void ExportMLKemDecapsulationKeyCore(Span<byte> destination)
+        {
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
     }
 }

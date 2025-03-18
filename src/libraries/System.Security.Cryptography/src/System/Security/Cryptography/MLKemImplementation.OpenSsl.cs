@@ -64,6 +64,12 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpKemExportPrivateSeed(_key, destination);
         }
 
+        protected override void ExportMLKemDecapsulationKeyCore(Span<byte> destination)
+        {
+            ThrowIfDisposed();
+            Interop.Crypto.EvpKemExportDecapsulationKey(_key, destination);
+        }
+
         private static SafeEvpKemHandle MapAlgorithmToHandle(MLKemAlgorithm algorithm)
         {
             SafeEvpKemHandle? handle = null;

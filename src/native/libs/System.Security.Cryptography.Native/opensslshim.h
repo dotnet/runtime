@@ -134,8 +134,14 @@ c_static_assert(EVP_KDF_HKDF_MODE_EXPAND_ONLY == 2);
 
 #ifndef OSSL_PKEY_PARAM_ML_KEM_SEED
 #define OSSL_PKEY_PARAM_ML_KEM_SEED   "seed"
-#else
-c_static_assert(strcmp(OSSL_PKEY_PARAM_ML_KEM_SEED, "seed") == 0);
+#endif
+
+#ifndef OSSL_PKEY_PARAM_PUB_KEY
+#define OSSL_PKEY_PARAM_PUB_KEY "pub"
+#endif
+
+#ifndef OSSL_PKEY_PARAM_PRIV_KEY
+#define OSSL_PKEY_PARAM_PRIV_KEY "priv"
 #endif
 
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM

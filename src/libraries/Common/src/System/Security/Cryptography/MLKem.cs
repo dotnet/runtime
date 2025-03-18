@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// The private seed size for ML-KEM, in bytes.
         /// </summary>
-        public const int PrivateSeedSizeInBytes = 64; // FIPS 203 Algorithm 19. Seed is d || z
+        public const int PrivateSeedSizeInBytes = 64; // FIPS 203 Algorithm 19. Seed is z || d
 
         /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
@@ -227,6 +227,33 @@ namespace System.Security.Cryptography
 
             return MLKemImplementation.ImportPrivateSeed(algorithm, source);
         }
+
+        /// <summary>
+        ///   Exports the decapsulation key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the decapsulation key.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination"/> is the incorrect length to receive the private seed.
+        /// </exception>
+        public void ExportMLKemDecapsulationKey(Span<byte> destination)
+        {
+            if (destination.Length != Algorithm.DecapsulationKeySizeInBytes)
+            {
+                throw new ArgumentException("TODO", nameof(destination));
+            }
+
+            ExportMLKemDecapsulationKeyCore(destination);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, exports the decapsulation key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the decapsulation key.
+        /// </param>
+        protected abstract void ExportMLKemDecapsulationKeyCore(Span<byte> destination);
 
         /// <summary>
         ///  Releases all resources used by the <see cref="MLKem"/> class.
