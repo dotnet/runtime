@@ -144,19 +144,92 @@ int32_t CryptoNative_EvpKemExportPrivateSeed(const EVP_PKEY* pKey, uint8_t* dest
     assert(pKey);
     assert(destination);
 
-    size_t destinationLengthT = Int32ToSizeT(destinationLength);
-    size_t outLength = 0;
-    int ret = EVP_PKEY_get_octet_string_param(
-        pKey,
-        OSSL_PKEY_PARAM_ML_KEM_SEED,
-        (unsigned char*)destination,
-        destinationLengthT,
-        &outLength);
-
-    if (outLength != destinationLengthT)
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_get_octet_string_param))
     {
-        return -1;
-    }
+        size_t destinationLengthT = Int32ToSizeT(destinationLength);
+        size_t outLength = 0;
+        int ret = EVP_PKEY_get_octet_string_param(
+            pKey,
+            OSSL_PKEY_PARAM_ML_KEM_SEED,
+            (unsigned char*)destination,
+            destinationLengthT,
+            &outLength);
 
-    return ret == 1 ? 1 : 0;
+        if (outLength != destinationLengthT)
+        {
+            return -1;
+        }
+
+        return ret == 1 ? 1 : 0;
+    }
+#else
+    (void)pKey;
+    (void)destination;
+    (void)destinationLength;
+#endif
+
+    return 0;
+}
+
+int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
+                                       uint8_t* ciphertext,
+                                       int32_t ciphertextLength,
+                                       uint8_t* sharedSecret,
+                                       int32_t sharedSecretLength)
+{
+    assert(pKey);
+    assert(ciphertext);
+    assert(sharedSecret);
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_encapsulate_init))
+    {
+        assert(API_EXISTS(EVP_PKEY_CTX_new_from_pkey));
+
+        EVP_PKEY_CTX* ctx = NULL;
+        ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
+        int32_t ret = 0;
+
+        if (ctx == NULL)
+        {
+            goto done;
+        }
+
+        if (EVP_PKEY_encapsulate_init(ctx, NULL) != 1)
+        {
+            goto done;
+        }
+
+        size_t ciphertextLengthT = Int32ToSizeT(ciphertextLength);
+        size_t sharedSecretLengthT = Int32ToSizeT(sharedSecretLength);
+
+        if (EVP_PKEY_encapsulate(ctx, ciphertext, &ciphertextLengthT, sharedSecret, &sharedSecretLengthT) != 1)
+        {
+            goto done;
+        }
+
+        if (ciphertextLengthT != Int32ToSizeT(ciphertextLength) || sharedSecretLengthT != Int32ToSizeT(sharedSecretLength))
+        {
+            ret = -1;
+        }
+
+        ret = 1;
+
+done:
+        if (ctx != NULL)
+        {
+            EVP_PKEY_CTX_free(ctx);
+        }
+
+        return ret;
+    }
+#endif
+
+    (void)pKey;
+    (void)ciphertext;
+    (void)ciphertextLength;
+    (void)sharedSecret;
+    (void)sharedSecretLength;
+    return 0;
 }

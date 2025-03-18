@@ -40,6 +40,16 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(seed, seed2);
         }
 
+        [Theory]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Encapsulate(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.GenerateMLKemKey(algorithm);
+            Span<byte> ciphertext = new byte[algorithm.CiphertextSizeInBytes];
+            Span<byte> sharedSecret = new byte[32];
+            kem.Encapsulate(ciphertext, sharedSecret);
+        }
+
         public static IEnumerable<object[]> MLKemAlgorithms
         {
             get

@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
         protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
         {
             ThrowIfDisposed();
-            throw new NotImplementedException();
+            Interop.Crypto.EvpKemEncapsulate(_key, ciphertext, sharedSecret);
         }
 
         protected override void ExportMLKemPrivateSeedCore(Span<byte> destination)

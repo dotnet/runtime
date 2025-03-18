@@ -494,6 +494,8 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_PKEY_derive_set_peer) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive) \
+    LIGHTUP_FUNCTION(EVP_PKEY_encapsulate) \
+    LIGHTUP_FUNCTION(EVP_PKEY_encapsulate_init) \
     REQUIRED_FUNCTION(EVP_PKEY_encrypt) \
     REQUIRED_FUNCTION(EVP_PKEY_encrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
@@ -1047,6 +1049,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_derive_set_peer EVP_PKEY_derive_set_peer_ptr
 #define EVP_PKEY_derive_init EVP_PKEY_derive_init_ptr
 #define EVP_PKEY_derive EVP_PKEY_derive_ptr
+#define EVP_PKEY_encapsulate EVP_PKEY_encapsulate_ptr
+#define EVP_PKEY_encapsulate_init EVP_PKEY_encapsulate_init_ptr
 #define EVP_PKEY_encrypt_init EVP_PKEY_encrypt_init_ptr
 #define EVP_PKEY_encrypt EVP_PKEY_encrypt_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
