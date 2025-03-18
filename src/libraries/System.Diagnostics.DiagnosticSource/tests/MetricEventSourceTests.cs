@@ -2318,6 +2318,7 @@ namespace System.Diagnostics.Metrics.Tests
                     throw new TimeoutException($"Timed out waiting for a {eventName} event. " +
                         $"StartTime={startTime} stopTime={stopTime} initialEventCount={initialEventCount} currentEventCount={currentEventCount} targetEventCount={numEvents}");
                 }
+#if OS_ISBROWSER_SUPPORT
                 if (OperatingSystem.IsBrowser())
                 {
                     // in the single-threaded browser environment, we need to yield to the browser to allow the event to be processed
@@ -2325,6 +2326,7 @@ namespace System.Diagnostics.Metrics.Tests
                     await Task.Delay(10);
                 }
                 else
+#endif
                 {
                     _autoResetEvent.WaitOne(remainingTime);
                 }
