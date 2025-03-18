@@ -512,11 +512,14 @@ namespace System.Runtime.InteropServices
                 ComWrappers comWrappers,
                 object comProxy,
                 CreateObjectFlags flags,
-                ref NullableComHolder referenceTracker)
+                ref IntPtr referenceTrackerMaybe)
             {
                 if (flags.HasFlag(CreateObjectFlags.TrackerObject))
                 {
-                    IntPtr trackerObject = referenceTracker.Detach();
+                    IntPtr trackerObject = referenceTrackerMaybe;
+
+                    // We're taking ownership of this reference tracker object, so reset the reference
+                    referenceTrackerMaybe = IntPtr.Zero;
 
                     // If we already have a reference tracker (that will be the case in aggregation scenarios), then reuse it.
                     // Otherwise, do the 'QueryInterface' call for it here. This allows us to only ever query for this IID once.
@@ -966,75 +969,87 @@ namespace System.Runtime.InteropServices
                 out IntPtr inner,
                 out IntPtr referenceTrackerMaybe);
 
-            using ComHolder releaseIdentity = new ComHolder(identity);
-            using NullableComHolder referenceTracker = new NullableComHolder(referenceTrackerMaybe);
-
-            // If the user has requested a unique instance,
-            // we will immediately create the object, register it,
-            // and return.
-            if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
+            try
             {
-                retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, ref *&referenceTracker);
-                return retValue is not null;
-            }
-
-            // If we have a live cached wrapper currently,
-            // return that.
-            if (_rcwCache.FindProxyForComInstance(identity) is object liveCachedWrapper)
-            {
-                retValue = liveCachedWrapper;
-                return true;
-            }
-
-            // If the user tried to provide a pre-created managed wrapper, try to register
-            // that object as the wrapper.
-            if (wrapperMaybe is not null)
-            {
-                retValue = RegisterObjectForComInstance(identity, inner, wrapperMaybe, flags, ref *&referenceTracker);
-                return retValue is not null;
-            }
-
-            // Check if the provided COM instance is actually a managed object wrapper from this
-            // ComWrappers instance, and use it if it is.
-            if (flags.HasFlag(CreateObjectFlags.Unwrap))
-            {
-                ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
-                if (comInterfaceDispatch != null)
+                // If the user has requested a unique instance,
+                // we will immediately create the object, register it,
+                // and return.
+                if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
                 {
-                    // If we found a managed object wrapper in this ComWrappers instance
-                    // and it has the same identity pointer as the one we're creating a NativeObjectWrapper for,
-                    // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
-                    //
-                    // A managed object can have multiple managed object wrappers, with a max of one per context.
-                    // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
-                    // managed object wrappers for A created with C1 and C2 respectively.
-                    // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
-                    // we will create a new wrapper. In this scenario, we'll only unwrap B2.
-                    object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
-                    if (_managedObjectWrapperTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
+                    retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, ref referenceTrackerMaybe);
+                    return retValue is not null;
+                }
+
+                // If we have a live cached wrapper currently,
+                // return that.
+                if (_rcwCache.FindProxyForComInstance(identity) is object liveCachedWrapper)
+                {
+                    retValue = liveCachedWrapper;
+                    return true;
+                }
+
+                // If the user tried to provide a pre-created managed wrapper, try to register
+                // that object as the wrapper.
+                if (wrapperMaybe is not null)
+                {
+                    retValue = RegisterObjectForComInstance(identity, inner, wrapperMaybe, flags, ref referenceTrackerMaybe);
+                    return retValue is not null;
+                }
+
+                // Check if the provided COM instance is actually a managed object wrapper from this
+                // ComWrappers instance, and use it if it is.
+                if (flags.HasFlag(CreateObjectFlags.Unwrap))
+                {
+                    ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
+                    if (comInterfaceDispatch != null)
                     {
-                        // The unwrapped object has a CCW in this context. Compare with identity
-                        // so we can see if it's the CCW for the unwrapped object in this context.
-                        if (unwrappedWrapperInThisContext.ComIp == identity)
+                        // If we found a managed object wrapper in this ComWrappers instance
+                        // and it has the same identity pointer as the one we're creating a NativeObjectWrapper for,
+                        // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
+                        //
+                        // A managed object can have multiple managed object wrappers, with a max of one per context.
+                        // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
+                        // managed object wrappers for A created with C1 and C2 respectively.
+                        // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
+                        // we will create a new wrapper. In this scenario, we'll only unwrap B2.
+                        object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
+                        if (_managedObjectWrapperTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
                         {
-                            retValue = unwrapped;
-                            return true;
+                            // The unwrapped object has a CCW in this context. Compare with identity
+                            // so we can see if it's the CCW for the unwrapped object in this context.
+                            if (unwrappedWrapperInThisContext.ComIp == identity)
+                            {
+                                retValue = unwrapped;
+                                return true;
+                            }
                         }
                     }
                 }
-            }
 
-            // If the user didn't provide a wrapper and couldn't unwrap a managed object wrapper,
-            // create a new wrapper.
-            retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, ref *&referenceTracker);
-            return retValue is not null;
+                // If the user didn't provide a wrapper and couldn't unwrap a managed object wrapper,
+                // create a new wrapper.
+                retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, ref referenceTrackerMaybe);
+                return retValue is not null;
+            }
+            finally
+            {
+                // Releasing a native object can never throw (it's a native call, so exceptions can't
+                // go through the ABI, it'd just crash the whole process). So we can use a single
+                // 'finally' block to release both native pointers we're holding in this scope.
+                Marshal.Release(identity);
+
+                if (referenceTrackerMaybe != IntPtr.Zero)
+                {
+                    Marshal.Release(referenceTrackerMaybe);
+                }
+            }
         }
 
         private object? CreateAndRegisterObjectForComInstance(
             IntPtr identity,
             IntPtr inner,
             CreateObjectFlags flags,
-            ref NullableComHolder referenceTracker)
+            ref IntPtr referenceTrackerMaybe)
         {
             object? retValue = CreateObject(identity, flags);
             if (retValue is null)
@@ -1043,7 +1058,7 @@ namespace System.Runtime.InteropServices
                 return null;
             }
 
-            return RegisterObjectForComInstance(identity, inner, retValue, flags, ref referenceTracker);
+            return RegisterObjectForComInstance(identity, inner, retValue, flags, ref referenceTrackerMaybe);
         }
 
         private object RegisterObjectForComInstance(
@@ -1051,7 +1066,7 @@ namespace System.Runtime.InteropServices
             IntPtr inner,
             object comProxy,
             CreateObjectFlags flags,
-            ref NullableComHolder referenceTracker)
+            ref IntPtr referenceTrackerMaybe)
         {
             NativeObjectWrapper nativeObjectWrapper = NativeObjectWrapper.Create(
                 identity,
@@ -1059,7 +1074,7 @@ namespace System.Runtime.InteropServices
                 this,
                 comProxy,
                 flags,
-                ref referenceTracker);
+                ref referenceTrackerMaybe);
 
             object actualProxy = comProxy;
             NativeObjectWrapper actualWrapper = nativeObjectWrapper;
