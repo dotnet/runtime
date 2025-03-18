@@ -28,7 +28,6 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pLowFrequencyHeap = NULL;
     m_pHighFrequencyHeap = NULL;
     m_pStubHeap = NULL;
-    m_pPrecodeHeap = NULL;
     m_pExecutableHeap = NULL;
 #ifdef FEATURE_READYTORUN
     m_pDynamicHelpersHeap = NULL;
@@ -1197,8 +1196,6 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 
     initReservedMem += dwStubHeapReserveSize;
 
-    m_pPrecodeHeap = new (&m_PrecodeHeapInstance) CodeFragmentHeap(this, STUB_CODE_BLOCK_PRECODE);
-
     m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
                                                                            2 * GetStubCodePageSize(),
                                                                            &m_stubPrecodeRangeList,
@@ -1389,12 +1386,6 @@ void LoaderAllocator::Terminate()
         m_pStubHeap = NULL;
     }
 
-    if (m_pPrecodeHeap != NULL)
-    {
-        m_pPrecodeHeap->~CodeFragmentHeap();
-        m_pPrecodeHeap = NULL;
-    }
-
     if (m_pFixupPrecodeHeap != NULL)
     {
         m_pFixupPrecodeHeap->~LoaderHeap();
@@ -1469,10 +1460,6 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     if (m_pStubHeap.IsValid())
     {
         m_pStubHeap->EnumMemoryRegions(flags);
-    }
-    if (m_pPrecodeHeap.IsValid())
-    {
-        m_pPrecodeHeap->EnumMemoryRegions(flags);
     }
     if (m_pExecutableHeap.IsValid())
     {

@@ -263,8 +263,8 @@ namespace JIT.HardwareIntrinsics.Arm
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref maskArray[0]), firstOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(secondOp), (uint)Unsafe.SizeOf<{RetVectorType}<{Op2BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(secondOp), (uint)(sizeof({Op2BaseType}) * Op2ElementCount));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)(sizeof({RetBaseType}) * RetElementCount));
 
             ValidateResult(maskArray, inArray, outArray, method);
         }

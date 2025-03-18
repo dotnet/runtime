@@ -21,8 +21,9 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return count <= 0 ?
-                source :
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                count <= 0 ? source :
                 Impl(source, count, default);
 
             static async IAsyncEnumerable<TSource> Impl(

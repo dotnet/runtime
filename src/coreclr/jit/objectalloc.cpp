@@ -828,7 +828,7 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
         blockSize = AlignUp(blockSize, 8);
     }
 
-    comp->lvaSetStruct(lclNum, comp->typGetBlkLayout(blockSize), /* unsafeValueClsCheck */ false);
+    comp->lvaSetStruct(lclNum, comp->typGetArrayLayout(clsHnd, length), /* unsafe */ false);
     lclDsc->lvStackAllocatedObject = true;
 
     // Initialize the object memory if necessary.
@@ -1138,6 +1138,25 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 {
                     canLclVarEscapeViaParentStack =
                         !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(asCall->gtCallMethHnd));
+                }
+                else if (asCall->IsSpecialIntrinsic())
+                {
+                    // Some known special intrinsics don't escape. At this moment, only the ones accepting byrefs
+                    // are supported. In order to support more intrinsics accepting objects, we need extra work
+                    // on the VM side which is not ready for that yet.
+                    //
+                    switch (comp->lookupNamedIntrinsic(asCall->gtCallMethHnd))
+                    {
+                        case NI_System_SpanHelpers_ClearWithoutReferences:
+                        case NI_System_SpanHelpers_Fill:
+                        case NI_System_SpanHelpers_Memmove:
+                        case NI_System_SpanHelpers_SequenceEqual:
+                            canLclVarEscapeViaParentStack = false;
+                            break;
+
+                        default:
+                            break;
+                    }
                 }
 
                 // Note there is nothing special here about the parent being a call. We could move all this processing

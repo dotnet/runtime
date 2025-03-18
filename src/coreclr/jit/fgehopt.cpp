@@ -690,7 +690,9 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // Handler index of any nested blocks will update when we
         // remove the EH table entry.  Change handler exits to jump to
         // the continuation.  Clear catch type on handler entry.
-        // Decrement nesting level of enclosed GT_END_LFINs.
+        //
+        // GT_END_LFIN no longer need updates here, now their gtVal1 fields refer to EH IDs.
+        //
         for (BasicBlock* const block : Blocks(firstHandlerBlock, lastHandlerBlock))
         {
             if (block == firstHandlerBlock)
@@ -725,25 +727,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     }
                 }
             }
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-            if (!UsesFunclets())
-            {
-                // If we're in a non-funclet model, decrement the nesting
-                // level of any GT_END_LFIN we find in the handler region,
-                // since we're removing the enclosing handler.
-                for (Statement* const stmt : block->Statements())
-                {
-                    GenTree* expr = stmt->GetRootNode();
-                    if (expr->gtOper == GT_END_LFIN)
-                    {
-                        const size_t nestLevel = expr->AsVal()->gtVal1;
-                        assert(nestLevel > 0);
-                        expr->AsVal()->gtVal1 = nestLevel - 1;
-                    }
-                }
-            }
-#endif // FEATURE_EH_WINDOWS_X86
         }
 
         // (6) Update any impacted ACDs.
@@ -2697,8 +2680,8 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 if (bbIsTryBeg(block))
                 {
                     assert(added);
-                    JITDUMP("==> found try entry for EH#%02u nested in handler at " FMT_BB "\n", block->bbNum,
-                            block->getTryIndex());
+                    JITDUMP("==> found try entry for EH#%02u nested in handler at " FMT_BB "\n", block->getTryIndex(),
+                            block->bbNum);
                     regionsToProcess.Push(block->getTryIndex());
                 }
             }
@@ -2736,7 +2719,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 break;
             }
             outermostEbd = ehGetDsc(enclosingTryIndex);
-            if (!EHblkDsc::ebdIsSameILTry(outermostEbd, tryEbd))
+            if (!EHblkDsc::ebdIsSameTry(outermostEbd, tryEbd))
             {
                 break;
             }
@@ -2776,6 +2759,12 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     {
         JITDUMP("Cloned EH clauses will go before enclosing try region EH#%02u\n", enclosingTryIndex);
         assert(insertBeforeIndex == enclosingTryIndex);
+    }
+
+    if (insertBeforeIndex != compHndBBtabCount)
+    {
+        JITDUMP("Existing EH region(s) EH#%02u...EH#%02u will become EH#%02u...EH#%02u\n", insertBeforeIndex,
+                compHndBBtabCount - 1, insertBeforeIndex + regionCount, compHndBBtabCount + regionCount - 1);
     }
 
     // Once we call fgTryAddEHTableEntries with deferCloning = false,
@@ -2870,12 +2859,14 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         compHndBBtab[XTnum]    = compHndBBtab[originalXTnum];
         EHblkDsc* const ebd    = &compHndBBtab[XTnum];
 
+        ebd->ebdID = impInlineRoot()->compEHID++;
+
         // Note the outermost region enclosing indices stay the same, because the original
         // clause entries got adjusted when we inserted the new clauses.
         //
         if (ebd->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            if (XTnum < clonedOutermostRegionIndex)
+            if (ebd->ebdEnclosingTryIndex < clonedOutermostRegionIndex)
             {
                 ebd->ebdEnclosingTryIndex += (unsigned short)indexShift;
             }
@@ -2888,7 +2879,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
 
         if (ebd->ebdEnclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            if (XTnum < clonedOutermostRegionIndex)
+            if (ebd->ebdEnclosingHndIndex < clonedOutermostRegionIndex)
             {
                 ebd->ebdEnclosingHndIndex += (unsigned short)indexShift;
             }
@@ -3028,6 +3019,22 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 newBlock->bbRefs++;
             }
         }
+
+#if defined(FEATURE_EH_WINDOWS_X86)
+        // Update the EH ID for any cloned GT_END_LFIN.
+        //
+        for (Statement* const stmt : newBlock->Statements())
+        {
+            GenTree* const rootNode = stmt->GetRootNode();
+            if (rootNode->OperIs(GT_END_LFIN))
+            {
+                GenTreeVal* const endNode = rootNode->AsVal();
+                EHblkDsc* const   oldEbd  = ehFindEHblkDscById((unsigned short)endNode->gtVal1);
+                EHblkDsc* const   newEbd  = oldEbd + indexShift;
+                endNode->gtVal1           = newEbd->ebdID;
+            }
+        }
+#endif
     }
     JITDUMP("Done fixing region indices\n");
 
