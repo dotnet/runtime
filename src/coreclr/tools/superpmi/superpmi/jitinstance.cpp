@@ -94,24 +94,15 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool breakOnDebugBreakorAV, Method
         return E_FAIL;
     }
 
-    // Store the full path to the jit
-    PathToOriginalJit = (char*)malloc(MAX_PATH);
-    if (PathToOriginalJit == nullptr)
-    {
-        LogError("1st HeapAlloc failed (0x%08x)", ::GetLastError());
-        return E_FAIL;
-    }
-    ::strcpy_s(PathToOriginalJit, MAX_PATH, pFullPathName);
-
 #ifndef TARGET_UNIX // No file version APIs in the PAL
     // Do a quick version check
     DWORD dwHandle = 0;
-    DWORD fviSize  = GetFileVersionInfoSizeA(PathToOriginalJit, &dwHandle);
+    DWORD fviSize  = GetFileVersionInfoSizeA(pFullPathName, &dwHandle);
 
     if ((fviSize != 0) && (dwHandle == 0))
     {
         unsigned char* fviData = new unsigned char[fviSize];
-        if (GetFileVersionInfoA(PathToOriginalJit, dwHandle, fviSize, fviData))
+        if (GetFileVersionInfoA(pFullPathName, dwHandle, fviSize, fviData))
         {
             UINT              size    = 0;
             VS_FIXEDFILEINFO* verInfo = nullptr;
@@ -120,7 +111,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool breakOnDebugBreakorAV, Method
                 if (size)
                 {
                     if (verInfo->dwSignature == 0xfeef04bd)
-                        LogDebug("'%s' is version %u.%u.%u.%u", PathToOriginalJit, (verInfo->dwFileVersionMS) >> 16,
+                        LogDebug("'%s' is version %u.%u.%u.%u", pFullPathName, (verInfo->dwFileVersionMS) >> 16,
                                  (verInfo->dwFileVersionMS) & 0xFFFF, (verInfo->dwFileVersionLS) >> 16,
                                  (verInfo->dwFileVersionLS) & 0xFFFF);
                 }
@@ -131,7 +122,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool breakOnDebugBreakorAV, Method
 #endif // !TARGET_UNIX
 
     // Load Library
-    hLib = ::LoadLibraryExA(PathToOriginalJit, NULL, 0);
+    hLib = ::LoadLibraryExA(pFullPathName, NULL, 0);
     if (hLib == 0)
     {
         LogError("LoadLibrary failed (0x%08x)", ::GetLastError());
@@ -193,51 +184,6 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool breakOnDebugBreakorAV, Method
     icji = InitICorJitInfo(this);
 
     return S_OK;
-}
-
-bool JitInstance::reLoad(MethodContext* firstContext)
-{
-    FreeLibrary(hLib);
-
-    // Load Library
-    hLib = ::LoadLibraryExA(PathToOriginalJit, NULL, 0);
-    if (hLib == 0)
-    {
-        LogError("LoadLibrary failed (0x%08x)", ::GetLastError());
-        return false;
-    }
-
-    // get entry points
-    pngetJit = (PgetJit)::GetProcAddress(hLib, "getJit");
-    if (pngetJit == 0)
-    {
-        LogError("GetProcAddress 'getJit' failed (0x%08x)", ::GetLastError());
-        return false;
-    }
-    pnjitStartup    = (PjitStartup)::GetProcAddress(hLib, "jitStartup");
-
-    // Setup ICorJitHost and call jitStartup if necessary
-    if (pnjitStartup != nullptr)
-    {
-        mc      = firstContext;
-        jitHost = new JitHost(*this);
-        if (!callJitStartup(jitHost))
-        {
-            LogError("jitStartup failed");
-            return false;
-        }
-    }
-
-    pJitInstance = pngetJit();
-    if (pJitInstance == nullptr)
-    {
-        LogError("pngetJit gave us null");
-        return false;
-    }
-
-    icji = InitICorJitInfo(this);
-
-    return true;
 }
 
 #undef DLLEXPORT

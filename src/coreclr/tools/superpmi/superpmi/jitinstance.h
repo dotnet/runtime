@@ -27,7 +27,6 @@ struct ReplayResults
 class JitInstance
 {
 private:
-    char*          PathToOriginalJit;
     HMODULE        hLib;
     PgetJit        pngetJit;
     PjitStartup    pnjitStartup;
@@ -62,7 +61,6 @@ public:
                                 LightWeightMap<DWORD, DWORD>* options);
 
     HRESULT StartUp(char* PathToJit, bool breakOnDebugBreakorAV, MethodContext* firstContext);
-    bool reLoad(MethodContext* firstContext);
 
     bool callJitStartup(ICorJitHost* newHost);
 
