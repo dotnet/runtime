@@ -210,7 +210,7 @@ internal sealed class PInvokeTableGenerator
             return sb.ToString();
         }
 
-        if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
+        if (PInvokeCollector.TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
             // Don't use method.ToString() or any of it's parameters, or return type
             // because at least one of those are unsupported, and will throw
