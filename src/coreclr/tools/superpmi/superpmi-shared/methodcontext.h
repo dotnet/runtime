@@ -126,6 +126,10 @@ public:
     void dmpNotifyMethodInfoUsage(DWORDLONG key, DWORD value);
     bool repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn);
 
+    void recNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool result);
+    void dmpNotifyInstructionSetUsage(DD key, DWORD supported);
+    bool repNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported);
+
     void recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs);
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
     DWORD repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle);
@@ -1203,6 +1207,7 @@ enum mcPackets
     Packet_GetSZArrayHelperEnumeratorClass = 226,
     Packet_GetMethodInstantiationArgument = 227,
     Packet_GetInstantiatedEntry = 228,
+    Packet_NotifyInstructionSetUsage = 229,
 };
 
 void SetDebugDumpVariables();

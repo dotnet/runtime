@@ -845,12 +845,19 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 
     for (int i = 0; i < regStack.Height(); ++i)
     {
-        RegPair regPair = regStack.Bottom(i);
+        RegPair regPair = genReverseAndPairCalleeSavedRegisters ? regStack.Top(i) : regStack.Bottom(i);
         if (regPair.reg2 != REG_NA)
         {
             // We can use a STP instruction.
-            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_IP0,
-                                 nullptr);
+            if (genReverseAndPairCalleeSavedRegisters)
+            {
+                genPrologSaveRegPair(regPair.reg2, regPair.reg1, spOffset, spDelta, false, REG_IP0, nullptr);
+            }
+            else
+            {
+                genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_IP0,
+                                     nullptr);
+            }
 
             spOffset += 2 * slotSize;
         }
@@ -926,8 +933,9 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     // Save integer registers at higher addresses than floating-point registers.
 
+    regMaskTP maskSaveRegsFrame = regsToSaveMask & (RBM_FP | RBM_LR);
     regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
+    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat & ~maskSaveRegsFrame;
 
     if (maskSaveRegsFloat != RBM_NONE)
     {
@@ -939,6 +947,13 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     if (maskSaveRegsInt != RBM_NONE)
     {
         genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset);
+        spDelta = 0;
+        lowestCalleeSavedOffset += genCountBits(maskSaveRegsInt) * FPSAVE_REGSIZE_BYTES;
+    }
+
+    if (maskSaveRegsFrame != RBM_NONE)
+    {
+        genPrologSaveRegPair(REG_FP, REG_LR, lowestCalleeSavedOffset, spDelta, false, REG_IP0, nullptr);
         // No need to update spDelta, lowestCalleeSavedOffset since they're not used after this.
     }
 }
@@ -970,13 +985,20 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
             stackDelta = spDelta;
         }
 
-        RegPair regPair = regStack.Top(i);
+        RegPair regPair = genReverseAndPairCalleeSavedRegisters ? regStack.Bottom(i) : regStack.Top(i);
         if (regPair.reg2 != REG_NA)
         {
             spOffset -= 2 * slotSize;
 
-            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair, REG_IP1,
-                                    nullptr);
+            if (genReverseAndPairCalleeSavedRegisters)
+            {
+                genEpilogRestoreRegPair(regPair.reg2, regPair.reg1, spOffset, stackDelta, false, REG_IP1, nullptr);
+            }
+            else
+            {
+                genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair,
+                                        REG_IP1, nullptr);
+            }
         }
         else
         {
@@ -1043,10 +1065,18 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
 
     // Save integer registers at higher addresses than floating-point registers.
 
+    regMaskTP maskRestoreRegsFrame = regsToRestoreMask & (RBM_FP | RBM_LR);
     regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
-    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
+    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat & ~maskRestoreRegsFrame;
 
     // Restore in the opposite order of saving.
+
+    if (maskRestoreRegsFrame != RBM_NONE)
+    {
+        int spFrameDelta = (maskRestoreRegsFloat != RBM_NONE || maskRestoreRegsInt != RBM_NONE) ? 0 : spDelta;
+        spOffset -= 2 * REGSIZE_BYTES;
+        genEpilogRestoreRegPair(REG_FP, REG_LR, spOffset, spFrameDelta, false, REG_IP1, nullptr);
+    }
 
     if (maskRestoreRegsInt != RBM_NONE)
     {
@@ -1751,7 +1781,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         // We furthermore allocate the "monitor acquired" bool between PSP and
         // the saved registers because this is part of the EnC header.
         // Note that OSR methods reuse the monitor bool created by tier 0.
-        saveRegsPlusPSPSize += compiler->lvaLclSize(compiler->lvaMonAcquired);
+        saveRegsPlusPSPSize += compiler->lvaLclStackHomeSize(compiler->lvaMonAcquired);
     }
 
     unsigned const saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
@@ -2550,7 +2580,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     genProduceReg(treeNode);
 }
 
-// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, AND_NOT, OR and XOR
+// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, AND_NOT, OR, OR_NOT, XOR and XOR_NOT
 // This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTreeOp* tree)
 {
@@ -2559,7 +2589,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     var_types        targetType = tree->TypeGet();
     emitter*         emit       = GetEmitter();
 
-    assert(tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
+    assert(tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_OR_NOT, GT_XOR,
+                        GT_XOR_NOT));
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
@@ -2642,6 +2673,12 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
                 case GT_AND:
                 {
                     ins = INS_ands;
+                    break;
+                }
+
+                case GT_AND_NOT:
+                {
+                    ins = INS_bics;
                     break;
                 }
 
@@ -2929,7 +2966,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
     if (lclNode->IsMultiReg())
     {
         // This is the case of storing to a multi-reg HFA local from a fixed-size SIMD type.
-        assert(varTypeIsSIMD(data) && varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
+        assert(varTypeIsSIMD(data));
         regNumber    operandReg = genConsumeReg(data);
         unsigned int regCount   = varDsc->lvFieldCnt;
         for (unsigned i = 0; i < regCount; ++i)
@@ -3454,13 +3491,15 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 
     GenTree* operand = tree->gtGetOp1();
     // The src must be a register.
-    if (tree->OperIs(GT_NEG) && operand->isContained())
+    if (tree->OperIs(GT_NEG, GT_NOT) && operand->isContained())
     {
         genTreeOps oper = operand->OperGet();
         switch (oper)
         {
             case GT_MUL:
             {
+                assert(tree->OperIs(GT_NEG));
+
                 ins          = INS_mneg;
                 GenTree* op1 = tree->gtGetOp1();
                 GenTree* a   = op1->gtGetOp1();
@@ -3474,7 +3513,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
             case GT_RSH:
             case GT_RSZ:
             {
-                assert(ins == INS_neg || ins == INS_negs);
+                assert(ins == INS_neg || ins == INS_negs || ins == INS_mvn);
                 assert(operand->gtGetOp2()->IsCnsIntOrI());
                 assert(operand->gtGetOp2()->isContained());
 
@@ -3583,9 +3622,10 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             }
             else
             {
-                // Check if the divisor is zero throw a DivideByZeroException
-                emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
-                genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+                genJumpToThrowHlpBlk(SCK_DIV_BY_ZERO, [&](BasicBlock* target, bool invert) {
+                    GenCondition::Code cond = invert ? GenCondition::NE : GenCondition::EQ;
+                    genCompareImmAndJump(cond, divisorReg, 0, size, target);
+                });
             }
         }
 
@@ -3665,8 +3705,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack =
-        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -4239,6 +4278,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
             case GT_OR:
                 ins = INS_orr;
                 break;
+            case GT_OR_NOT:
+                ins = INS_orn;
+                break;
             case GT_ROR:
                 ins = INS_ror;
                 break;
@@ -4253,6 +4295,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
                 break;
             case GT_XOR:
                 ins = INS_eor;
+                break;
+            case GT_XOR_NOT:
+                ins = INS_eon;
                 break;
 
             default:
@@ -4730,8 +4775,44 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                                 emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), shiftOp1->GetRegNum(),
                                                     shiftOp2->AsIntConCommon()->IntegralValue(),
                                                     ShiftOpToInsOpts(oper));
+                                break;
                             }
-                            break;
+                            case GT_CAST:
+                            {
+                                GenTreeCast* cast = op2->gtGetOp1()->AsCast();
+
+                                GenIntCastDesc desc(cast);
+
+                                // These casts should not lead to an overflow check.
+                                assert(desc.CheckKind() == GenIntCastDesc::CHECK_NONE);
+
+                                insOpts extOpts = INS_OPTS_NONE;
+                                switch (desc.ExtendKind())
+                                {
+                                    case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
+                                        extOpts = (desc.ExtendSrcSize() == 1) ? INS_OPTS_UXTB : INS_OPTS_UXTH;
+                                        break;
+                                    case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
+                                        extOpts = (desc.ExtendSrcSize() == 1) ? INS_OPTS_SXTB : INS_OPTS_SXTH;
+                                        break;
+                                    case GenIntCastDesc::ZERO_EXTEND_INT:
+                                        extOpts = INS_OPTS_UXTW;
+                                        break;
+                                    case GenIntCastDesc::SIGN_EXTEND_INT:
+                                        extOpts = INS_OPTS_SXTW;
+                                        break;
+                                    case GenIntCastDesc::COPY:
+                                        extOpts = INS_OPTS_NONE; // Perform cast implicitly.
+                                        break;
+                                    default:
+                                        // Other casts should not lead here as they will not pass the
+                                        // IsContainableUnaryOrBinaryOp check.
+                                        unreached();
+                                }
+
+                                emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), cast->CastOp()->GetRegNum(), extOpts);
+                                break;
+                            }
 
                             default:
                                 unreached();
@@ -4753,6 +4834,45 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                                         op2->gtGetOp2()->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
                     break;
 
+                case GT_CAST:
+                {
+                    assert(ins == INS_cmp);
+                    assert(cmpSize >= genTypeSize(op2->CastToType()));
+                    assert(cmpSize == EA_4BYTE || cmpSize == EA_8BYTE);
+                    assert(op1->gtHasReg(compiler));
+                    assert(op2->gtGetOp1()->gtHasReg(compiler));
+
+                    GenTreeCast* cast = op2->AsCast();
+
+                    GenIntCastDesc desc(cast);
+
+                    // These casts should not lead to an overflow check.
+                    assert(desc.CheckKind() == GenIntCastDesc::CHECK_NONE);
+
+                    insOpts extOpts = INS_OPTS_NONE;
+                    switch (desc.ExtendKind())
+                    {
+                        case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
+                            extOpts = (desc.ExtendSrcSize() == 1) ? INS_OPTS_UXTB : INS_OPTS_UXTH;
+                            break;
+                        case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
+                            extOpts = (desc.ExtendSrcSize() == 1) ? INS_OPTS_SXTB : INS_OPTS_SXTH;
+                            break;
+                        case GenIntCastDesc::ZERO_EXTEND_INT:
+                            extOpts = INS_OPTS_UXTW;
+                            break;
+                        case GenIntCastDesc::SIGN_EXTEND_INT:
+                            extOpts = INS_OPTS_SXTW;
+                            break;
+                        default:
+                            // Other casts should not lead here as they will not pass the
+                            // IsContainableUnaryOrBinaryOp check.
+                            unreached();
+                    }
+
+                    emit->emitIns_R_R(INS_cmp, cmpSize, op1->GetRegNum(), cast->gtGetOp1()->GetRegNum(), extOpts);
+                    break;
+                }
                 default:
                     unreached();
             }
@@ -5024,6 +5144,34 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
     {
         inst_JMP(EJ_jmp, falseTarget);
+    }
+}
+
+void CodeGen::genCompareImmAndJump(
+    GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target)
+{
+    // For ARM64 we only expect equality comparisons.
+    assert((cond == GenCondition::EQ) || (cond == GenCondition::NE));
+
+    if (compareImm == 0)
+    {
+        // We can use cbz/cbnz
+        instruction ins = (cond == GenCondition::EQ) ? INS_cbz : INS_cbnz;
+        GetEmitter()->emitIns_J_R(ins, size, target, reg);
+    }
+    else if (isPow2(compareImm))
+    {
+        // We can use tbz/tbnz
+        instruction ins = (cond == GenCondition::EQ) ? INS_tbz : INS_tbnz;
+        int         imm = genLog2((size_t)compareImm);
+        GetEmitter()->emitIns_J_R_I(ins, size, target, reg, imm);
+    }
+    else
+    {
+        // Emit compare and branch pair default.
+        emitJumpKind jumpKind = (cond == GenCondition::EQ) ? EJ_eq : EJ_ne;
+        GetEmitter()->emitIns_R_I(INS_cmp, size, reg, compareImm);
+        inst_JMP(jumpKind, target);
     }
 }
 
@@ -5893,6 +6041,29 @@ insOpts CodeGen::ShiftOpToInsOpts(genTreeOps shiftOp)
             NO_WAY("expected a shift-op");
             return INS_OPTS_NONE;
     }
+}
+
+//---------------------------------------------------------------------------------
+// genGetThrowHelper: Search for the throw helper for the exception kind `codeKind`
+BasicBlock* CodeGen::genGetThrowHelper(SpecialCodeKind codeKind)
+{
+    BasicBlock* excpRaisingBlock = nullptr;
+    if (compiler->fgUseThrowHelperBlocks())
+    {
+        // For code with throw helper blocks, find and use the helper block for
+        // raising the exception. The block may be shared by other trees too.
+        Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
+        PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+        assert(add->acdUsed);
+        excpRaisingBlock = add->acdDstBlk;
+#if !FEATURE_FIXED_OUT_ARGS
+        assert(add->acdStkLvlInit || isFramePointerUsed());
+#endif // !FEATURE_FIXED_OUT_ARGS
+
+        noway_assert(excpRaisingBlock != nullptr);
+    }
+
+    return excpRaisingBlock;
 }
 
 #endif // TARGET_ARM64

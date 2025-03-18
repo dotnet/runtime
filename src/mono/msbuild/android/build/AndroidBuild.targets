@@ -7,9 +7,6 @@
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 
-  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
-             TaskName="NdkToolFinderTask"
-             AssemblyFile="$(MobileBuildTasksAssemblyPath)" />
   <UsingTask Condition="'$(AndroidGenerateAppBundle)' == 'true'"
              TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
@@ -24,6 +21,8 @@
     <PropertyGroup>
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
       <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(PlatformTarget)</TargetArchitecture>
+      <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
+      <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">False</StripDebugSymbols>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -38,10 +37,18 @@
       <AndroidBundleDir Condition="'$(AndroidBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AndroidBundleDir>
 
       <BundleDir>$(AndroidBundleDir)</BundleDir>
-      <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(UseNativeAOTRuntime)' != 'true'">
+    <ItemGroup>
+      <RuntimeHeaders Include="$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))"
+                      Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'"/>
+      <RuntimeHeaders Include="$(CoreClrProjectRoot)hosts\inc"
+                      Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'" />
+      <RuntimeHeaders Include="$(SharedNativeRoot)"
+                      Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
       <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)" />
       <!-- Make sure marshal-ilgen is included in the components list. -->
       <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' != 'true'" Include="marshal-ilgen" KeepDuplicates="false" />
@@ -94,7 +101,7 @@
     <PropertyGroup>
       <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Normal</_AOTMode>
       <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
-      <_AOTMode Condition="'$(ForceFullAOT)' == 'true'">Full</_AOTMode>
+      <_AOTMode Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' != 'true'">Full</_AOTMode>
       <_AotOutputType>AsmOnly</_AotOutputType>
     </PropertyGroup>
     <!-- Should consider renaming property to something more appropriate-->
@@ -112,33 +119,11 @@
       <_AotOutputType>ObjectFile</_AotOutputType>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <_Triple Condition="'$(TargetArchitecture)' == 'arm'">armv7-linux-gnueabi</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'arm64'">aarch64-linux-android</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'x86'">i686-linux-android</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-linux-android</_Triple>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <_AsOptions>-target $(_Triple) -c -x assembler</_AsOptions>
-      <_LdName>clang</_LdName>
-      <_LdOptions>-fuse-ld=lld</_LdOptions>
-      <_AsName>clang</_AsName>
-    </PropertyGroup>
-
+    <!-- Extend default AOT arguments -->
     <ItemGroup>
-      <MonoAOTCompilerDefaultAotArguments Include="static" />
-      <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(_IsLibraryMode)' == 'true'" Include="direct-icalls" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(_UsesRuntimeInitCallback)' == 'true' and $(CustomRuntimeInitCallback) == ''" Include="runtime-init-callback" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(_UsesRuntimeInitCallback)' == 'true' and $(CustomRuntimeInitCallback) != ''" Include="runtime-init-callback=$(CustomRuntimeInitCallback)" />
-
-      <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
-      <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=10000" />
-      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=256" />
-      <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
-      <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
-      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=31000" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -148,11 +133,6 @@
 
     <PropertyGroup>
       <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">21</AndroidLibraryMinApiLevel>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true' or '$(_IsLibraryMode)' == 'true'">
-      <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
-      <_ToolPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_ToolPrefixPath)'))</_ToolPrefixPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -246,8 +226,7 @@
   </Target>
 
 
-  <Target
-    Name="_AndroidGenerateAppBundle"
+  <Target Name="_AndroidGenerateAppBundle"
     Condition="$(AndroidGenerateAppBundle) == 'true'"
     DependsOnTargets="_AndroidGenerateRuntimeConfig">
 
@@ -255,7 +234,15 @@
       <_NativeDependencies Include="$(LibraryOutputPath)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <!-- TODO: Revisit this.
+        We are using a private property to determine the target runtime, we should instead unify the resolution with Apple targets instead, (see: https://github.com/dotnet/runtime/issues/111923) -->
+      <_RuntimeFlavor>Mono</_RuntimeFlavor>
+      <_RuntimeFlavor Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'">CoreCLR</_RuntimeFlavor>
+    </PropertyGroup>
+
     <AndroidAppBuilderTask
+        RuntimeFlavor="$(_RuntimeFlavor)"
         AppDir="$(AndroidBuildDir)"
         Assemblies="@(_AssembliesToBundleInternal)"
         DiagnosticPorts="$(DiagnosticPorts)"
@@ -266,13 +253,13 @@
         ForceInterpreter="$(MonoForceInterpreter)"
         IsLibraryMode="$(_IsLibraryMode)"
         MainLibraryFileName="$(MainLibraryFileName)"
-        MonoRuntimeHeaders="$(_MonoHeaderPath)"
+        RuntimeHeaders="@(RuntimeHeaders)"
         NativeDependencies="@(_NativeDependencies)"
         OutputDir="$(AndroidBundleDir)"
-        ProjectName="$(AssemblyName)"
+        ProjectName="$(AppName)"
         RuntimeComponents="@(RuntimeComponents)"
         RuntimeIdentifier="$(RuntimeIdentifier)"
-        StripDebugSymbols="False">
+        StripDebugSymbols="$(StripDebugSymbols)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>

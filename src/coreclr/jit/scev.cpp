@@ -60,6 +60,19 @@
 
 #include "jitpch.h"
 
+ScevConstant::ScevConstant(var_types type, int64_t value)
+    : Scev(ScevOper::Constant, type)
+{
+    if (genTypeSize(type) == 4)
+    {
+        Value = (int32_t)value;
+    }
+    else
+    {
+        Value = value;
+    }
+}
+
 //------------------------------------------------------------------------
 // GetConstantValue: If this SSA use refers to a constant, then fetch that
 // constant.
@@ -1559,22 +1572,18 @@ RelopEvaluationResult ScalarEvolutionContext::EvaluateRelop(ValueNum vn)
             continue;
         }
 
-        bool domIsInferredRelop = (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Inferred);
-        bool domIsSameRelop     = (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Same) ||
-                              (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Swap);
-
         bool trueReaches  = m_comp->optReachable(idom->GetTrueTarget(), m_loop->GetHeader(), idom);
         bool falseReaches = m_comp->optReachable(idom->GetFalseTarget(), m_loop->GetHeader(), idom);
 
         if (trueReaches && !falseReaches && rii.canInferFromTrue)
         {
-            bool relopIsTrue = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
+            bool relopIsTrue = !rii.reverseSense;
             return relopIsTrue ? RelopEvaluationResult::True : RelopEvaluationResult::False;
         }
 
         if (falseReaches && !trueReaches && rii.canInferFromFalse)
         {
-            bool relopIsFalse = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
+            bool relopIsFalse = !rii.reverseSense;
             return relopIsFalse ? RelopEvaluationResult::False : RelopEvaluationResult::True;
         }
     }

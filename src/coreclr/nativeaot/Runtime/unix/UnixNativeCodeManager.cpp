@@ -9,7 +9,7 @@
 #include "regdisplay.h"
 #include "ICodeManager.h"
 #include "UnixNativeCodeManager.h"
-#include "varint.h"
+#include "NativePrimitiveDecoder.h"
 #include "holder.h"
 
 #include "CommonMacros.inl"
@@ -17,7 +17,7 @@
 #define GCINFODECODER_NO_EE
 #include "gcinfodecoder.cpp"
 
-#include "UnixContext.h"
+#include "NativeContext.h"
 #include "UnwindHelpers.h"
 
 #define UBF_FUNC_KIND_MASK      0x03
@@ -373,7 +373,7 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     ASSERT(((uintptr_t)pvAddress & 1) == 0);
 #endif
 
-#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     MethodInfo methodInfo;
     FindMethodInfo(pvAddress, &methodInfo);
     pMethodInfo = &methodInfo;
@@ -684,6 +684,64 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
             establishedFp = true;
         }
         else
+        {
+            // JIT generates other patterns into the prolog that we currently don't
+            // recognize (saving unpaired register, stack pointer adjustments). We
+            // don't need to recognize these patterns unless a compact unwinding code
+            // is generated for them in ILC.
+            // https://github.com/dotnet/runtime/issues/76371
+            return -1;
+        }
+    }
+
+    return savedFp && savedRa && establishedFp ? 0 : 1;
+
+#elif defined(TARGET_RISCV64)
+
+// store doubleword with signed offset
+#define SD_BITS 0x00003023
+#define SD_MASK 0x0000707F
+
+// addi fp, sp, x
+#define ADD_FP_SP_BITS 0x00010413
+#define ADD_FP_SP_MASK 0x000FFFFF
+
+// addi sp, sp, x
+#define ADD_SP_SP_BITS 0x00010113
+#define ADD_SP_SP_MASK 0x000FFFFF
+
+#define SD_RS1_MASK 0xF8000
+#define SD_RS1_SP   0x10000
+#define SD_RS1_FP   0x40000
+#define SD_RS2_MASK 0x1F00000
+#define SD_RS2_FP   0x800000
+#define SD_RS2_RA   0x100000
+
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+    ASSERT(pNativeMethodInfo != NULL);
+
+    uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
+    bool savedFp = false;
+    bool savedRa = false;
+    bool establishedFp = false;
+
+    for (uint32_t* pInstr = (uint32_t*)start; pInstr < pvAddress && !(savedFp && savedRa && establishedFp); pInstr++)
+    {
+        uint32_t instr = *pInstr;
+
+        if (((instr & SD_MASK) == SD_BITS) &&
+            ((instr & SD_RS1_MASK) == SD_RS1_SP || (instr & SD_RS1_MASK) == SD_RS1_FP) &&
+            ((instr & SD_RS2_MASK) == SD_RS2_FP || (instr & SD_RS2_MASK) == SD_RS2_RA))
+        {
+            // SP/FP-relative store of pair of registers
+            savedFp |= (instr & SD_RS2_MASK) == SD_RS2_FP;
+            savedRa |= (instr & SD_RS2_MASK) == SD_RS2_RA;
+        }
+        else if ((instr & ADD_FP_SP_MASK) == ADD_FP_SP_BITS)
+        {
+            establishedFp = true;
+        }
+        else if ((instr & ADD_SP_SP_MASK) != ADD_SP_SP_BITS)
         {
             // JIT generates other patterns into the prolog that we currently don't
             // recognize (saving unpaired register, stack pointer adjustments). We
@@ -1126,6 +1184,60 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
         }
     }
 
+#elif defined(TARGET_RISCV64)
+
+// Load with register offset
+// LD with register offset
+#define LD_BITS 0x00000003
+#define LD_MASK 0x0000007F
+
+// Branches
+// BEQ, BNE, etc.
+#define BEGS_BITS 0x00000063
+#define BEGS_MASK 0x0000007F
+
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+    ASSERT(pNativeMethodInfo != NULL);
+
+    uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
+
+    // Since we stop on branches, the search is roughly limited by the containing basic block.
+    // We typically examine just 1-5 instructions and in rare cases up to 30.
+    //
+    // TODO: we can also limit the search by the longest possible epilogue length, but
+    // we must be sure the longest length considers all possibilities,
+    // which is somewhat nontrivial to derive/prove.
+    // It does not seem urgent, but it could be nice to have a constant upper bound.
+    for (uint32_t* pInstr = (uint32_t*)pvAddress - 1; pInstr > start; pInstr--)
+    {
+        uint32_t instr = *pInstr;
+
+        // Check for branches, jumps, or system calls.
+        // If we see such instructions before registers are restored, we are not in an epilogue.
+        // Note: this includes RET, branches, jumps, and system calls.
+        if ((instr & BEGS_MASK) == BEGS_BITS)
+        {
+            // not in an epilogue
+            break;
+        }
+
+        // Check for restoring registers (FP or RA) with `ld`
+        if ((instr & LD_MASK) == LD_BITS)  // Match `ld` instruction
+        {
+            int rd = (instr >> 7) & 0x1F;  // Extract the destination register
+            if (rd == 8 || rd == 1)  // Check for FP (x8) or RA (x1)
+            {
+                return -1;
+            }
+        }
+
+        // Check for adjusting stack pointer
+        if ((instr & ADD_SP_SP_MASK) == ADD_SP_SP_BITS)
+        {
+            return -1;
+        }
+    }
+
 #endif
 
     return 0;
@@ -1205,7 +1317,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() - sizeof(TADDR));
     return true;
 
-#elif defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
         p += sizeof(int32_t);
@@ -1230,43 +1342,23 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-#ifndef TARGET_LOONGARCH64
-    PTR_uintptr_t pLR = pRegisterSet->pLR;
+    PTR_uintptr_t oldLocation = pRegisterSet->GetReturnAddressRegisterLocation();
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
         return false;
     }
 
-    if (pRegisterSet->pLR == pLR)
+    if (pRegisterSet->GetReturnAddressRegisterLocation() == oldLocation)
     {
         // This is the case when we are either:
         //
-        // 1) In a leaf method that does not push LR on stack, OR
-        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed LR on stack
-        //    or has LR already popped off.
+        // 1) In a leaf method that does not push return address register on stack, OR
+        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed return address register on stack
+        //    or has return address register already popped off.
         return false;
     }
 
-    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pLR;
-#elif
-    PTR_uintptr_t pRA = pRegisterSet->pRA;
-    if (!VirtualUnwind(pMethodInfo, pRegisterSet))
-    {
-        return false;
-    }
-
-    if (pRegisterSet->pRA == pRA)
-    {
-        // This is the case when we are either:
-        //
-        // 1) In a leaf method that does not push RA on stack, OR
-        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed RA on stack
-        //    or has RA already popped off.
-        return false;
-    }
-
-    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pRA;
-#endif     // TARGET_LOONGARCH64
+    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->GetReturnAddressRegisterLocation();
 
     return true;
 #else
@@ -1329,7 +1421,7 @@ bool UnixNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
     pEnumState->pMethodStartAddress = dac_cast<PTR_uint8_t>(pNativeMethodInfo->pMethodStartAddress);
     pEnumState->pEHInfo = dac_cast<PTR_uint8_t>(p + *dac_cast<PTR_int32_t>(p));
     pEnumState->uClause = 0;
-    pEnumState->nClauses = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+    pEnumState->nClauses = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
 
     return true;
 }
@@ -1347,9 +1439,9 @@ bool UnixNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
 
     pEnumState->uClause++;
 
-    pEHClauseOut->m_tryStartOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+    pEHClauseOut->m_tryStartOffset = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
 
-    uint32_t tryEndDeltaAndClauseKind = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+    uint32_t tryEndDeltaAndClauseKind = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
     pEHClauseOut->m_clauseKind = (EHClauseKind)(tryEndDeltaAndClauseKind & 0x3);
     pEHClauseOut->m_tryEndOffset = pEHClauseOut->m_tryStartOffset + (tryEndDeltaAndClauseKind >> 2);
 
@@ -1365,23 +1457,23 @@ bool UnixNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
     switch (pEHClauseOut->m_clauseKind)
     {
     case EH_CLAUSE_TYPED:
-        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
 
         // Read target type
         {
             // @TODO: Compress EHInfo using type table index scheme
             // https://github.com/dotnet/corert/issues/972
-            int32_t typeRelAddr = *((PTR_int32_t&)pEnumState->pEHInfo);
-            pEHClauseOut->m_pTargetType = dac_cast<PTR_VOID>(pEnumState->pEHInfo + typeRelAddr);
-            pEnumState->pEHInfo += 4;
+            uint8_t* pBase = pEnumState->pEHInfo;
+            int32_t typeRelAddr = NativePrimitiveDecoder::ReadInt32(pEnumState->pEHInfo);
+            pEHClauseOut->m_pTargetType = dac_cast<PTR_VOID>(pBase + typeRelAddr);
         }
         break;
     case EH_CLAUSE_FAULT:
-        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
         break;
     case EH_CLAUSE_FILTER:
-        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + VarInt::ReadUnsigned(pEnumState->pEHInfo);
-        pEHClauseOut->m_filterAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_filterAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
         break;
     default:
         UNREACHABLE_MSG("unexpected EHClauseKind");

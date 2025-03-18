@@ -11,12 +11,11 @@
     <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
   </PropertyGroup>
 
-  <!-- NativeAOT -->
+  <!-- NativeAOT (needs configuration of additional feeds to properly restore packages) -->
   <PropertyGroup Condition="'$(UsingNativeAOT)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <PublishDir>$(MSBuildThisFileDirectory)/bin/$(Configuration)/AppBundle</PublishDir>
     <DebugType>none</DebugType>
-    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json</RestoreAdditionalProjectSources>
     <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
     <UsingWasiRuntimeWorkload>false</UsingWasiRuntimeWorkload>
     <UsingEmscriptenWorkload>true</UsingEmscriptenWorkload>
@@ -59,7 +58,7 @@
 
   <Target Name="SetNugetConfigContent">
     <GetNugetConfigTask
-      InputFile="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/nuget10.config"
+      InputFile="$(MonoProjectRoot)wasm\Wasm.Build.Tests\data\nuget.config"
       ArtifactsDir="$(ArtifactsDir)"
       Configuration="$(Configuration)">
       <Output TaskParameter="NugetConfigContent" PropertyName="NugetConfigContent"/>

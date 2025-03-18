@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
@@ -16,14 +16,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Release'">false</MonoDiagnosticsMock>
-    <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Debug'">true</MonoDiagnosticsMock>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
     <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
     <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
+    <WasmEnableStreamingResponse Condition="'$(WasmEnableStreamingResponse)' == ''">true</WasmEnableStreamingResponse>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
@@ -32,6 +28,7 @@
     <EmccMaximumHeapSize Condition="'$(EmccMaximumHeapSize)' == ''">2147483648</EmccMaximumHeapSize>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
+    <WasmPerfTracing Condition="'$(WasmPerfTracing)' == ''">false</WasmPerfTracing>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
@@ -53,7 +50,7 @@
     <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
-  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
     <PropertyGroup>
       <WasmPInvokeTablePath>$(WasmObjDir)\pinvoke-table.h</WasmPInvokeTablePath>
@@ -85,7 +82,7 @@
     </ManagedToNativeGenerator>
   </Target>
 
-  <UsingTask TaskName="EmitBundleSourceFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <UsingTask TaskName="EmitBundleSourceFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)" Condition="'$(InvariantTimezone)' != 'true'">
     <PropertyGroup>
       <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
@@ -339,10 +336,13 @@
     "PropertiesThatTriggerRelinking": [
       { "identity": "InvariantTimezone",            "defaultValueInRuntimePack": "$(InvariantTimezone)" },
       { "identity": "InvariantGlobalization",       "defaultValueInRuntimePack": "$(InvariantGlobalization)" },
+      { "identity": "WasmEnableStreamingResponse",  "defaultValueInRuntimePack": "$(WasmEnableStreamingResponse)" },
       { "identity": "WasmNativeStrip",              "defaultValueInRuntimePack": "$(WasmNativeStrip)" },
       { "identity": "WasmSingleFileBundle",         "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
       { "identity": "WasmEnableSIMD",               "defaultValueInRuntimePack": "$(WasmEnableSIMD)" },
       { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "$(WasmEnableExceptionHandling)" },
+      { "identity": "WasmPerfTracing",              "defaultValueInRuntimePack": "$(WasmPerfTracing)" },
+      { "identity": "WasmProfilers",                "defaultValueInRuntimePack": "$(WasmProfilers)" },
       { "identity": "EmccMaximumHeapSize",          "defaultValueInRuntimePack": "$(EmccMaximumHeapSize)" }
     ]
   }
@@ -428,6 +428,8 @@
       <_CmakeEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' == 'false'"/>
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
+      <_CmakeEnvironmentVariable Include="WASM_PERFTRACING=1" Condition="'$(WasmPerfTracing)' == 'true'" />
+      <_CmakeEnvironmentVariable Include="WASM_PERFTRACING=0" Condition="'$(WasmPerfTracing)' != 'true'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_CmakeEnvironmentVariable Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
@@ -498,6 +500,8 @@
                        $(NativeBinDir)dotnet.js.map;
                        $(NativeBinDir)dotnet.runtime.js;
                        $(NativeBinDir)dotnet.runtime.js.map;
+                       $(NativeBinDir)dotnet.diagnostics.js;
+                       $(NativeBinDir)dotnet.diagnostics.js.map;
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)package.json;
@@ -548,10 +552,9 @@
 
   <ItemGroup>
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/**/*.ts"
-		   Exclude="$(BrowserProjectRoot)runtime/dotnet.d.ts;$(BrowserProjectRoot)runtime/diagnostics-mock.d.ts;$(BrowserProjectRoot)runtime/node_modules/**/*.ts" />
+		   Exclude="$(BrowserProjectRoot)runtime/dotnet.d.ts;$(BrowserProjectRoot)runtime/node_modules/**/*.ts" />
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/**/tsconfig.*"
 		   Exclude="$(BrowserProjectRoot)runtime/node_modules/**/tsconfig.*" />
-    <_RollupInputs Include="$(BrowserProjectRoot)runtime/workers/**/*.js"/>
     <_RollupInputs Include="$(BrowserProjectRoot)runtimetypes/*.d.ts"/>
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/*.json"/>
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/*.js"/>
@@ -559,7 +562,7 @@
 
   <Target Name="SetMonoRollupEnvironment">
     <!-- Retrieve the runtime pack product version. -->
-    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.Mono.sfxproj"
              Targets="ReturnProductVersion"
              Properties="Crossgen2SdkOverridePropsPath=;
                          Crossgen2SdkOverrideTargetsPath=">
@@ -573,11 +576,12 @@
       <_MonoRollupEnvironmentVariable Include="WasmEnableThreads:$(WasmEnableThreads)" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:0" Condition="'$(WasmEnableSIMD)' == 'false'" />
+      <_MonoRollupEnvironmentVariable Include="WASM_PERFTRACING:1" Condition="'$(WasmPerfTracing)' == 'true'" />
+      <_MonoRollupEnvironmentVariable Include="WASM_PERFTRACING:0" Condition="'$(WasmPerfTracing)' != 'true'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_EH:1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_EH:0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_MonoRollupEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE:1" Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
       <_MonoRollupEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE:0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
-      <_MonoRollupEnvironmentVariable Include="MonoDiagnosticsMock:$(MonoDiagnosticsMock)" />
       <_MonoRollupEnvironmentVariable Include="ContinuousIntegrationBuild:$(ContinuousIntegrationBuild)" />
     </ItemGroup>
 

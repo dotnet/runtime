@@ -29,6 +29,9 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #endif
 #include <errno.h>
 #include <unistd.h>
+#if defined(HOST_APPLE) && !defined(HOST_OSX)
+#include <libkern/OSCacheControl.h>
+#endif
 
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
@@ -177,7 +180,6 @@ typedef int __ptrace_request;
 
 #define ASSIGN_INTEGER_REGS \
     ASSIGN_REG(R0)     \
-    ASSIGN_REG(Tp)     \
     ASSIGN_REG(A0)     \
     ASSIGN_REG(A1)     \
     ASSIGN_REG(A2)     \
@@ -314,6 +316,11 @@ typedef int __ptrace_request;
     ASSIGN_REG(R29)     \
     ASSIGN_REG(R30)
 
+#elif defined(HOST_WASM)
+#define ASSIGN_CONTROL_REGS  \
+    ASSERT("WASM does not have registers");
+#define ASSIGN_INTEGER_REGS  \
+    ASSERT("WASM does not have registers");
 #else
 #error "Don't know how to assign registers on this architecture"
 #endif
@@ -722,7 +729,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 #endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X && !HOST_LOONGARCH64 && !HOST_RISCV64 && !HOST_POWERPC64
 #endif // !HAVE_FPREGS_WITH_CW
 
-#if defined(HOST_ARM64) && !defined(TARGET_OSX) && !defined(TARGET_FREEBSD)
+#if defined(HOST_ARM64) && !defined(__APPLE__) && !defined(TARGET_FREEBSD)
     sve_context* sve = nullptr;
     fpsimd_context* fp = nullptr;
     if (((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT) ||
@@ -730,7 +737,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     {
         GetNativeSigSimdContext(native, &fp, &sve);
     }
-#endif // HOST_ARM64 && !TARGET_OSX && !TARGET_FREEBSD
+#endif // HOST_ARM64 && !__APPLE__ && !TARGET_FREEBSD
 
     if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
@@ -760,7 +767,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
             FPREG_Xmm(native, i) = lpContext->FltSave.XmmRegisters[i];
         }
 #elif defined(HOST_ARM64)
-#ifdef TARGET_OSX
+#ifdef __APPLE__
         _STRUCT_ARM_NEON_STATE64* fp = GetNativeSigSimdContext(native);
         fp->__fpsr = lpContext->Fpsr;
         fp->__fpcr = lpContext->Fpcr;
@@ -779,7 +786,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 *(NEON128*) &fp->fp_q[i] = lpContext->V[i];
             }
         }
-#else // TARGET_OSX
+#else // __APPLE__
         if (fp)
         {
             fp->fpsr = lpContext->Fpsr;
@@ -789,7 +796,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 *(NEON128*) &fp->vregs[i] = lpContext->V[i];
             }
         }
-#endif // TARGET_OSX
+#endif // __APPLE__
 #elif defined(HOST_ARM)
         VfpSigFrame* fp = GetNativeSigSimdContext(native);
         if (fp)
@@ -917,7 +924,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 
 }
 
-#if defined(HOST_64BIT) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(TARGET_OSX)
+#if defined(HOST_64BIT) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(__APPLE__)
 /*++
 Function :
     _GetNativeSigSimdContext
@@ -1007,7 +1014,7 @@ void _GetNativeSigSimdContext(uint8_t *data, uint32_t size, fpsimd_context **fp_
         *sve_ptr = sve;
     }
 }
-#endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !TARGET_OSX
+#endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !__APPLE__
 
 /*++
 Function :
@@ -1074,7 +1081,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X && !HOST_LOONGARCH64 && !HOST_RISCV64 && !HOST_POWERPC64 && !HOST_POWERPC64
 #endif // !HAVE_FPREGS_WITH_CW
 
-#if defined(HOST_ARM64) && !defined(TARGET_OSX) && !defined(TARGET_FREEBSD)
+#if defined(HOST_ARM64) && !defined(__APPLE__) && !defined(TARGET_FREEBSD)
     const fpsimd_context* fp = nullptr;
     const sve_context* sve = nullptr;
     if (((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT) ||
@@ -1082,7 +1089,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     {
         GetConstNativeSigSimdContext(native, &fp, &sve);
     }
-#endif // HOST_ARM64 && !TARGET_OSX && !TARGET_FREEBSD
+#endif // HOST_ARM64 && !__APPLE__ && !TARGET_FREEBSD
 
     if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
@@ -1111,7 +1118,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->FltSave.XmmRegisters[i] = FPREG_Xmm(native, i);
         }
 #elif defined(HOST_ARM64)
-#ifdef TARGET_OSX
+#ifdef __APPLE__
         const _STRUCT_ARM_NEON_STATE64* fp = GetConstNativeSigSimdContext(native);
         lpContext->Fpsr = fp->__fpsr;
         lpContext->Fpcr = fp->__fpcr;
@@ -1130,7 +1137,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 lpContext->V[i] = *(NEON128*) &fp->fp_q[i];
             }
         }
-#else // TARGET_OSX
+#else // __APPLE__
         if (fp)
         {
             lpContext->Fpsr = fp->fpsr;
@@ -1140,7 +1147,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 lpContext->V[i] = *(NEON128*) &fp->vregs[i];
             }
         }
-#endif // TARGET_OSX
+#endif // __APPLE__
 #elif defined(HOST_ARM)
         const VfpSigFrame* fp = GetConstNativeSigSimdContext(native);
         if (fp)
@@ -2181,6 +2188,10 @@ DBG_FlushInstructionCache(
 #endif
 
     syscall(__NR_riscv_flush_icache, (char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize), 0 /* all harts */);
+#elif defined(HOST_WASM)
+    // do nothing, no instruction cache to flush
+#elif defined(HOST_APPLE) && !defined(HOST_OSX)
+    sys_icache_invalidate((void *)lpBaseAddress, dwSize);
 #else
     __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
 #endif
