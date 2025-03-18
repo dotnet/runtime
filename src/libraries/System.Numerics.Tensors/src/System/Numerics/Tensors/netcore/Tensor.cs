@@ -6,6 +6,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Dynamic;
+using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -441,7 +443,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="start">The start locations you want in the <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <returns></returns>
-        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<nint> start) => AsTensorSpan().Slice(start);
+        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<nint> start) => AsReadOnlyTensorSpan().Slice(start);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="ReadOnlyTensorSpan{T}"/> pointing to the same backing memory based on the provided start indexes."/>
@@ -645,7 +647,7 @@ namespace System.Numerics.Tensors
             internal Enumerator(Tensor<T> tensor)
             {
                 _tensor = tensor;
-                _items = -1;
+                _items = 0;
                 _curIndices = new nint[_tensor.Rank];
                 _curIndices[_tensor.Rank - 1] = -1;
             }
@@ -656,7 +658,7 @@ namespace System.Numerics.Tensors
                 TensorSpanHelpers.AdjustIndexes(_tensor.Rank - 1, 1, ref _curIndices, _tensor.Lengths);
 
                 _items++;
-                return _items < _tensor.FlattenedLength;
+                return _items <= _tensor.FlattenedLength;
             }
 
             /// <summary>
@@ -745,6 +747,318 @@ namespace System.Numerics.Tensors
             unsafe
             {
                 return new MemoryHandle(Unsafe.AsPointer(ref GetPinnableReference()), handle);
+            }
+        }
+
+        /// <inheritdoc/>
+        public Tensor<T> SliceAlongDimension(int dimension, nint index)
+        {
+            if (dimension < 0 || dimension >= Rank)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            if (index < 0)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            Tensor<T> toReturn;
+
+            nint items = 1;
+            for (int i = 0; i <= dimension; i++)
+            {
+                items *= Lengths[i];
+            }
+
+            if (index >= items)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            nint[] _curIndices = new nint[Rank];
+            NRange[] _curRanges = new NRange[Rank];
+
+            TensorSpanHelpers.AdjustIndexes(dimension, index, ref _curIndices, Lengths);
+
+            for (int i = 0; i < Rank; i++)
+            {
+                if (i <= dimension)
+                    _curRanges[i] = new NRange(new NIndex(_curIndices[i]), new NIndex(_curIndices[i] + 1));
+                else
+                    _curRanges[i] = new NRange(new NIndex(0), new NIndex(0, true));
+            }
+
+            toReturn = Slice(_curRanges);
+
+            // Since all the dimensions before the _dimension will have length of 1, we can use the no copy constructor and slice the Lengths/Strides for performance.
+            return new Tensor<T>(toReturn._values, toReturn.Lengths.Slice(dimension), toReturn.Strides.Slice(dimension), toReturn._memoryOffset);
+        }
+
+        /// <summary>
+        /// Gets the dimensions of the <see cref="Tensor{T}"/>.
+        /// </summary>
+        public DimensionCollection Dimensions => new DimensionCollection(this);
+
+        /// <summary>
+        /// A collection of the dimensions of a <see cref="Tensor{T}"/>.
+        /// </summary>
+        public sealed class DimensionCollection
+            : System.Collections.Generic.ICollection<Tensor<T>>,
+              System.Collections.Generic.IEnumerable<Tensor<T>>,
+              System.Collections.Generic.IReadOnlyCollection<Tensor<T>>,
+              System.Collections.ICollection
+        {
+            private readonly Tensor<T> _tensor;
+
+            internal DimensionCollection(Tensor<T> tensor)
+            {
+                if (tensor == null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(nameof(tensor));
+                }
+
+                _tensor = tensor;
+            }
+
+            /// <summary>
+            /// The number of items in the collection.
+            /// </summary>
+            public int Count => (int)_tensor.Lengths[0];
+
+            /// <summary>
+            /// Is this collection read only?
+            /// </summary>
+            public bool IsReadOnly => true;
+
+            /// <summary>
+            /// Is this collection synchronized?
+            /// </summary>
+            public bool IsSynchronized => false;
+
+            /// <summary>
+            /// The sync root for this collection.
+            /// </summary>
+            public object SyncRoot => this;
+
+            /// <summary>
+            /// Adds the specified tensor to the collection.
+            /// </summary>
+            /// <param name="item">The <see cref="Tensor{T}"/> item to add.</param>
+            public void Add(Tensor<T> item) => ThrowHelper.ThrowNotSupportedDimensionCollectionException();
+
+            /// <summary>
+            /// Removes all items from the collection.
+            /// </summary>
+            public void Clear() => ThrowHelper.ThrowNotSupportedDimensionCollectionException();
+
+            /// <summary>
+            /// Checks if the collection contains the specified item.
+            /// </summary>
+            /// <param name="item"></param>
+            /// <returns></returns>
+            public bool Contains(Tensor<T> item)
+            {
+                ThrowHelper.ThrowNotSupportedDimensionCollectionException();
+                return false;
+            }
+
+            /// <summary>
+            /// Copies the elements of the collection to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
+            /// </summary>
+            /// <param name="array">The <see cref="Array"/> to copy to.</param>
+            /// <param name="index"><paramref name="array"/> offset to start at.</param>
+            public void CopyTo(Tensor<T>[] array, int index)
+            {
+                if (array == null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(nameof(array));
+                }
+
+                if ((uint)index > (uint)array.Length)
+                {
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                }
+
+                if (array.Length - index < Count)
+                {
+                    ThrowHelper.ThrowArgument_DestinationTooShort();
+                }
+
+                int count = Count;
+                Enumerator enumerator = GetEnumerator();
+                for (int i = 0; i < count; i++)
+                {
+                    if (enumerator.MoveNext()) array[index++] = enumerator.Current;
+                }
+            }
+
+            /// <summary>
+            /// Copies the elements of the collection to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
+            /// </summary>
+            /// <param name="array">The <see cref="Array"/> to copy to.</param>
+            /// <param name="index"><paramref name="array"/> offset to start at.</param>
+            public void CopyTo(Array array, int index)
+            {
+                if (array == null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(nameof(array));
+                }
+
+                if (array.Rank != 1)
+                {
+                    ThrowHelper.ThrowArg_RankMultiDimNotSupported();
+                }
+
+                if (array.GetLowerBound(0) != 0)
+                {
+                    ThrowHelper.ThrowArg_NonZeroLowerBound();
+                }
+
+                if ((uint)index > (uint)array.Length)
+                {
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                }
+
+                if (array.Length - index < Count)
+                {
+                    ThrowHelper.ThrowArgument_DestinationTooShort();
+                }
+
+                if (array is Tensor<T>[] tensorArray)
+                {
+                    CopyTo(tensorArray, index);
+                }
+                else
+                {
+                    object[]? objects = array as object[];
+                    if (objects == null)
+                    {
+                        ThrowHelper.ThrowArrayTypeMismatchException();
+                    }
+
+                    int count = Count;
+                    Enumerator enumerator = GetEnumerator();
+                    try
+                    {
+                        for (int i = 0; i < count; i++)
+                        {
+                            if (enumerator.MoveNext()) objects[index++] = enumerator.Current;
+                        }
+                    }
+                    catch (ArrayTypeMismatchException)
+                    {
+                        ThrowHelper.ThrowArrayTypeMismatchException();
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Gets an enumerator that iterates through the collection.
+            /// </summary>
+            /// <returns></returns>
+            public Enumerator GetEnumerator(int index = 0) => new Enumerator(_tensor, index);
+
+            /// <summary>
+            /// Removes the specified item from the collection.
+            /// </summary>
+            /// <param name="item">The <see cref="Tensor{T}"/> item to remove.</param>
+            /// <returns>Bool</returns>
+            public bool Remove(Tensor<T> item)
+            {
+                ThrowHelper.ThrowNotSupportedDimensionCollectionException();
+                return false;
+            }
+
+            IEnumerator<Tensor<T>> IEnumerable<Tensor<T>>.GetEnumerator() => GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            /// <summary>
+            /// Enumerator for the <see cref="DimensionCollection"/>.
+            /// </summary>
+            public struct Enumerator : IEnumerator<Tensor<T>>
+            {
+                private readonly Tensor<T> _tensor;
+                private int _dimension;
+                private nint[] _curIndices;
+                private NRange[] _curRanges;
+                private nint _curIndex;
+                private Tensor<T>? _currentValue;
+                private nint _items;
+
+                internal Enumerator(Tensor<T> tensor, int dimension)
+                {
+                    _tensor = tensor;
+                    _dimension = dimension;
+                    _curIndices = new nint[_tensor.Rank];
+                    _curIndices[_dimension] = -1;
+
+                    _curRanges = new NRange[_tensor.Rank];
+                    _curIndex = 0;
+
+                    for (int i = 0; i < _tensor.Rank; i++)
+                    {
+                        _curRanges[i] = new NRange(new NIndex(0), new NIndex(0, true));
+                    }
+
+                    _items = 1;
+                    for (int i = 0; i <= _dimension; i++)
+                    {
+                        _items *= _tensor.Lengths[i];
+                    }
+                }
+
+                /// <summary>
+                /// Advances the enumerator to the next element of the collection.
+                /// </summary>
+                /// <returns><see langword="true"/> if the enumerator moved, <see langword="false"/> otherwise.</returns>
+                public bool MoveNext()
+                {
+                    _curIndex++;
+
+                    TensorSpanHelpers.AdjustIndexes(_dimension, 1, ref _curIndices, _tensor.Lengths);
+
+                    for (int i = 0; i <= _dimension; i++)
+                    {
+                        _curRanges[i] = new NRange(new NIndex(_curIndices[i]), new NIndex(_curIndices[i] + 1));
+                    }
+
+                    if (_curIndex <= _items)
+                    {
+                        _currentValue = _tensor.Slice(_curRanges);
+
+                        // Since all the dimensions before the _dimension will have length of 1, we can use the no copy constructor and slice the Lengths/Strides for performance.
+                        _currentValue = new Tensor<T>(_currentValue._values, _currentValue.Lengths.Slice(_dimension), _currentValue.Strides.Slice(_dimension), _currentValue._memoryOffset);
+
+                        return true;
+                    }
+                    _currentValue = default;
+                    return false;
+                }
+
+                /// <summary>
+                /// Resets the enumerator to the beginning of the span.
+                /// </summary>
+                public void Reset()
+                {
+                    _curIndex = 0;
+                    _currentValue = default;
+                    _curIndices.AsSpan().Clear();
+                    _curIndices[_dimension] = -1;
+                }
+
+                /// <summary>
+                /// Disposes of the enumerator.
+                /// </summary>
+                public void Dispose()
+                {
+
+                }
+
+                internal int Count => (int)_tensor.Lengths[0];
+
+                /// <summary>
+                /// Current <see cref="Tensor{T}"/> value of the <see cref="IEnumerator{T}"/>
+                /// </summary>
+                public Tensor<T> Current => ((IEnumerator<Tensor<T>>)this).Current;
+
+                Tensor<T> IEnumerator<Tensor<T>>.Current => _currentValue!;
+
+                object? IEnumerator.Current => _currentValue;
             }
         }
     }
