@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
         internal static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(IsSupported);
-            Debug.Assert(source.Length == SeedSize);
+            Debug.Assert(source.Length == PrivateSeedSizeInBytes);
             SafeEvpKemHandle handle = MapAlgorithmToHandle(algorithm); // Shared handle, do not dispose.
             SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(handle, source);
             return new MLKemImplementation(algorithm, key);

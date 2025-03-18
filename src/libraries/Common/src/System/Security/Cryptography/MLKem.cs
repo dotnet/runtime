@@ -28,8 +28,16 @@ namespace System.Security.Cryptography
     public abstract class MLKem : IDisposable
     {
         private bool _disposed;
-        private protected const int SharedSecretSize = 32; // FIPS 203, Table 3.
-        private protected const int SeedSize = 64; // FIPS 203 Algorithm 19. Seed is d || z
+
+        /// <summary>
+        /// The shared secret size for ML-KEM, in bytes.
+        /// </summary>
+        public const int SharedSecretSizeInBytes = 32; // FIPS 203, Table 3.
+
+        /// <summary>
+        /// The private seed size for ML-KEM, in bytes.
+        /// </summary>
+        public const int PrivateSeedSizeInBytes = 64; // FIPS 203 Algorithm 19. Seed is d || z
 
         /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
@@ -188,7 +196,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public void ExportMLKemPrivateSeed(Span<byte> destination)
         {
-            if (destination.Length != SeedSize)
+            if (destination.Length != PrivateSeedSizeInBytes)
             {
                 throw new ArgumentException("TODO", nameof(destination));
             }
@@ -212,7 +220,7 @@ namespace System.Security.Cryptography
         /// <returns>The imported key.</returns>
         public static MLKem ImportMLKemPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            if (source.Length != SeedSize)
+            if (source.Length != PrivateSeedSizeInBytes)
             {
                 throw new ArgumentException("TODO", nameof(source));
             }
@@ -252,7 +260,7 @@ namespace System.Security.Cryptography
 
         private static void ValidateSharedSecretSize(ReadOnlySpan<byte> sharedSecret)
         {
-            if (sharedSecret.Length != SharedSecretSize)
+            if (sharedSecret.Length != SharedSecretSizeInBytes)
             {
                 throw new ArgumentException("TODO", nameof(sharedSecret));
             }

@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Tests
         public static void Generate_MlKemKeys(MLKemAlgorithm algorithm)
         {
             using MLKem kem = MLKem.GenerateMLKemKey(algorithm);
-            Span<byte> seed = stackalloc byte[64];
+            Span<byte> seed = stackalloc byte[MLKem.PrivateSeedSizeInBytes];
             seed.Clear();
 
             kem.ExportMLKemPrivateSeed(seed);
@@ -28,14 +28,14 @@ namespace System.Security.Cryptography.Tests
         public static void Generate_Import(MLKemAlgorithm algorithm)
         {
             using MLKem kem = MLKem.GenerateMLKemKey(algorithm);
-            Span<byte> seed = stackalloc byte[64];
+            Span<byte> seed = stackalloc byte[MLKem.PrivateSeedSizeInBytes];
             seed.Clear();
 
             kem.ExportMLKemPrivateSeed(seed);
             Assert.True(seed.ContainsAnyExcept((byte)0));
 
             using MLKem kem2 = MLKem.ImportMLKemPrivateSeed(algorithm, seed);
-            Span<byte> seed2 = stackalloc byte[64];
+            Span<byte> seed2 = stackalloc byte[MLKem.PrivateSeedSizeInBytes];
             kem2.ExportMLKemPrivateSeed(seed2);
             AssertExtensions.SequenceEqual(seed, seed2);
         }
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Tests
         {
             using MLKem kem = MLKem.GenerateMLKemKey(algorithm);
             Span<byte> ciphertext = new byte[algorithm.CiphertextSizeInBytes];
-            Span<byte> sharedSecret = new byte[32];
+            Span<byte> sharedSecret = new byte[MLKem.SharedSecretSizeInBytes];
             kem.Encapsulate(ciphertext, sharedSecret);
         }
 
