@@ -977,7 +977,11 @@ void Thread::UnhijackWorker()
 
     // Restore the original return address.
     ASSERT(m_ppvHijackedReturnAddressLocation != NULL);
+
     *m_ppvHijackedReturnAddressLocation = m_pvHijackedReturnAddress;
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+    *m_ppvHijackedReturnAddressLocation = PacSignPtr(*m_ppvHijackedReturnAddressLocation);
+#endif // TARGET_ARM64 && __GNUC__
 
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;

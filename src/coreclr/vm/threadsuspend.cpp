@@ -4674,6 +4674,9 @@ void Thread::UnhijackThread()
         STRESS_LOG2(LF_SYNC, LL_INFO100, "Unhijacking return address 0x%p for thread %p\n", m_pvHJRetAddr, this);
         // restore the return address and clear the flag
         *m_ppvHJRetAddrPtr = m_pvHJRetAddr;
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+        *m_ppvHJRetAddrPtr = PacSignPtr(*m_ppvHJRetAddrPtr);
+#endif // TARGET_ARM64 && __GNUC__
         ResetThreadState(TS_Hijacked);
 
         // But don't touch m_pvHJRetAddr.  We may need that to resume a thread that
