@@ -240,10 +240,7 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
     try {
         if (!module.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
             // if config file location nor assets are provided
-            // Temporal way for tests to opt-in for using boot.js
-            module.configSrc = (globalThis as any)["__DOTNET_INTERNAL_BOOT_CONFIG_SRC"]
-                ?? globalThis.window?.document?.documentElement?.getAttribute("data-dotnet_internal_boot_config_src")
-                ?? "blazor.boot.json";
+            module.configSrc = "dotnet.boot.js";
         }
 
         configFilePath = module.configSrc;
@@ -334,6 +331,16 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
 
     if (!loaderHelpers.config.applicationEnvironment) {
         loaderHelpers.config.applicationEnvironment = "Production";
+    }
+
+    if (loaderHelpers.config.debugLevel !== 0 && document.querySelector("script[src*='aspnetcore-browser-refresh']")) {
+        loaderHelpers.config.environmentVariables = loaderHelpers.config.environmentVariables || {};
+        if (!loaderHelpers.config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"]) {
+            loaderHelpers.config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
+        }
+        if (!loaderHelpers.config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"]) {
+            loaderHelpers.config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = "true";
+        }
     }
 
     function fetchBootConfig (url: string): Promise<Response> {

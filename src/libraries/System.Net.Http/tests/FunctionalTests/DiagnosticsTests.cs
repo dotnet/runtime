@@ -1542,7 +1542,7 @@ namespace System.Net.Http.Functional.Tests
             }   
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task SendAsync_ReuseRequestInHandler_ResetsHeadersForEachReuse()
         {
             Activity parent0 = new Activity("parent0");
