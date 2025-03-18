@@ -2868,32 +2868,25 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
                             case INS_rorx:
                             case INS_pdep:
                             case INS_mulx:
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
                             case INS_shrx:
-#endif
                             {
                                 evexPrefix |= (0x03 << 8);
                                 break;
                             }
 
                             case INS_pext:
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
                             case INS_sarx:
-#endif
                             {
                                 evexPrefix |= (0x02 << 8);
                                 break;
                             }
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
+
                             case INS_shlx:
                             {
                                 evexPrefix |= (0x01 << 8);
                                 break;
                             }
-#endif
+
                             default:
                             {
                                 break;
