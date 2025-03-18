@@ -1491,7 +1491,7 @@ void AppDomain::Create()
 
     _ASSERTE(m_pTheAppDomain == NULL);
 
-    AppDomainRefHolder pDomain(new AppDomain());
+    NewHolder<AppDomain> pDomain(new AppDomain());
     pDomain->Init();
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
@@ -1620,8 +1620,6 @@ AppDomain::AppDomain()
     , m_pDelayedLoaderAllocatorUnloadList{NULL}
     , m_friendlyName{NULL}
     , m_pRootAssembly{NULL}
-    , m_dwFlags{0}
-    , m_cRef{1}
 #ifdef FEATURE_COMINTEROP
     , m_pRCWCache{NULL}
 #endif //FEATURE_COMINTEROP
@@ -1629,7 +1627,6 @@ AppDomain::AppDomain()
     , m_pRCWRefCache{NULL}
 #endif // FEATURE_COMWRAPPERS
     , m_Stage{STAGE_CREATING}
-    , m_MemoryPressure{0}
     , m_ForceTrivialWaitOperations{false}
 #ifdef FEATURE_TYPEEQUIVALENCE
     , m_pTypeEquivalenceTable{NULL}
@@ -3359,35 +3356,6 @@ PEAssembly *AppDomain::TryResolveAssemblyUsingEvent(AssemblySpec *pSpec)
     return result;
 }
 
-
-ULONG AppDomain::AddRef()
-{
-    LIMITED_METHOD_CONTRACT;
-    return InterlockedIncrement(&m_cRef);
-}
-
-ULONG AppDomain::Release()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(m_cRef > 0);
-    }
-    CONTRACTL_END;
-
-    ULONG   cRef = InterlockedDecrement(&m_cRef);
-    if (!cRef)
-    {
-        _ASSERTE (m_Stage == STAGE_CREATING);
-        delete this;
-    }
-    return (cRef);
-}
-
-
-
 void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
 {
     CONTRACTL
@@ -3438,7 +3406,7 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
     EX_END_CATCH(SwallowAllExceptions);
 }
 
-BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating/*=TRUE*/)
+BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -3450,7 +3418,7 @@ BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating/*
 
     EX_TRY
     {
-        retVal = GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable, isTerminating);
+        retVal = GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable);
     }
     EX_CATCH
     {
@@ -3479,7 +3447,7 @@ void AppDomain::RaiseExitProcessEvent()
 }
 
 BOOL
-AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating)
+AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable)
 {
     CONTRACTL
     {
@@ -3506,7 +3474,7 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
     GCPROTECT_BEGIN(gc);
     if (orDelegate != NULL)
     {
-        DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable, isTerminating);
+        DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable);
     }
     GCPROTECT_END();
     return TRUE;
@@ -4382,27 +4350,6 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
     return hr;
 }
 #endif // !defined(DACCESS_COMPILE)
-
-//approximate size of loader data
-//maintained for each assembly
-#define APPROX_LOADER_DATA_PER_ASSEMBLY 8196
-
-size_t AppDomain::EstimateSize()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    size_t retval = sizeof(AppDomain);
-    retval += GetLoaderAllocator()->EstimateSize();
-    //very rough estimate
-    retval += GetAssemblyCount() * APPROX_LOADER_DATA_PER_ASSEMBLY;
-    return retval;
-}
 
 #ifdef DACCESS_COMPILE
 

@@ -2052,13 +2052,13 @@ GenTree* DecomposeLongs::StoreNodeToVar(LIR::Use& use)
     if (user->OperGet() == GT_STORE_LCL_VAR)
     {
         // If parent is already a STORE_LCL_VAR, just mark it lvIsMultiRegRet.
-        m_compiler->lvaGetDesc(user->AsLclVar())->lvIsMultiRegRet = true;
+        m_compiler->lvaGetDesc(user->AsLclVar())->SetIsMultiRegDest();
         return tree->gtNext;
     }
 
     // Otherwise, we need to force var = call()
-    unsigned lclNum                              = use.ReplaceWithLclVar(m_compiler);
-    m_compiler->lvaTable[lclNum].lvIsMultiRegRet = true;
+    unsigned lclNum = use.ReplaceWithLclVar(m_compiler);
+    m_compiler->lvaGetDesc(lclNum)->SetIsMultiRegDest();
 
     if (m_compiler->lvaEnregMultiRegVars)
     {

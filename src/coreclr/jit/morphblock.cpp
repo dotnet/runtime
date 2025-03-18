@@ -679,7 +679,7 @@ void MorphCopyBlockHelper::TrySpecialCases()
     {
         assert(m_store->OperIs(GT_STORE_LCL_VAR));
 
-        m_dstVarDsc->lvIsMultiRegRet = true;
+        m_dstVarDsc->SetIsMultiRegDest();
 
         JITDUMP("Not morphing a multireg node return\n");
         m_transformationDecision = BlockTransformation::SkipMultiRegSrc;

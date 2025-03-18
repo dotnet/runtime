@@ -2279,7 +2279,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
             // TODO-Arm-CQ: support decomposing "large" promoted structs into field lists.
             if (!isSplit)
             {
-                GenTreeFieldList* fieldList = fgMorphLclArgToFieldList(argNode->AsLclVar());
+                GenTreeFieldList* fieldList = fgMorphLclToFieldList(argNode->AsLclVar());
                 // TODO-Cleanup: The containment/reg optionality for x86 is
                 // conservative in the "no field list" case.
 #ifdef TARGET_X86
@@ -2287,6 +2287,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
 #else
                 *use = fieldList->SoleFieldOrThis();
 #endif
+                *use = fgMorphTree(*use);
             }
             else
             {
@@ -2321,9 +2322,9 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
 
     if (argNode->OperIs(GT_LCL_VAR))
     {
-        GenTreeLclVarCommon* lclNode = argNode->AsLclVarCommon();
-        unsigned             lclNum  = lclNode->GetLclNum();
-        LclVarDsc*           varDsc  = lvaGetDesc(lclNum);
+        GenTreeLclVar* lclNode = argNode->AsLclVar();
+        unsigned       lclNum  = lclNode->GetLclNum();
+        LclVarDsc*     varDsc  = lvaGetDesc(lclNum);
 
         if (!arg->AbiInfo.HasExactlyOneRegisterSegment())
         {
@@ -2335,7 +2336,8 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
 
         // Try to see if we can use the promoted fields to pass this argument.
         //
-        if (varDsc->lvPromoted && (varDsc->lvFieldCnt == arg->AbiInfo.CountRegsAndStackSlots()))
+        if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister &&
+            (varDsc->lvFieldCnt == arg->AbiInfo.CountRegsAndStackSlots()))
         {
             bool fieldsMatch = true;
 
@@ -2365,7 +2367,8 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
 
             if (fieldsMatch)
             {
-                newArg = fgMorphLclArgToFieldList(lclNode)->SoleFieldOrThis();
+                newArg = fgMorphLclToFieldList(lclNode)->SoleFieldOrThis();
+                newArg = fgMorphTree(newArg);
             }
         }
     }
@@ -2511,7 +2514,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                         lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
                     }
                 }
-                result->SetMorphed(this);
+                result = fgMorphTree(result);
                 return result;
             }
             else
@@ -2532,7 +2535,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                 }
 
                 GenTree* indir = gtNewIndir(type, addr);
-                indir->SetMorphed(this, /* doChildren*/ true);
+                indir->SetMorphed(this, /* doChildren */ true);
                 return indir;
             }
         };
@@ -2577,7 +2580,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
 }
 
 //------------------------------------------------------------------------
-// fgMorphLclArgToFieldList: Morph a GT_LCL_VAR node to a GT_FIELD_LIST of its promoted fields
+// fgMorphLclToFieldList: Morph a GT_LCL_VAR node to a GT_FIELD_LIST of its promoted fields
 //
 // Arguments:
 //    lcl  - The GT_LCL_VAR node we will transform
@@ -2585,7 +2588,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
 // Return value:
 //    The new GT_FIELD_LIST that we have created.
 //
-GenTreeFieldList* Compiler::fgMorphLclArgToFieldList(GenTreeLclVarCommon* lcl)
+GenTreeFieldList* Compiler::fgMorphLclToFieldList(GenTreeLclVar* lcl)
 {
     LclVarDsc* varDsc = lvaGetDesc(lcl);
     assert(varDsc->lvPromoted);
@@ -2593,16 +2596,15 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldList(GenTreeLclVarCommon* lcl)
     unsigned fieldLclNum = varDsc->lvFieldLclStart;
 
     GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
-    fieldList->SetMorphed(this);
 
     for (unsigned i = 0; i < fieldCount; i++)
     {
         LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
         GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->TypeGet());
-        lclVar->SetMorphed(this);
         fieldList->AddField(this, lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->TypeGet());
         fieldLclNum++;
     }
+
     return fieldList;
 }
 
@@ -7458,7 +7460,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         case GT_RETURN:
         case GT_SWIFT_ERROR_RET:
         {
-            GenTree* retVal = tree->AsOp()->GetReturnValue();
+            GenTree*& retVal = tree->AsOp()->ReturnValueRef();
 
             // Apply some optimizations that change the type of the return.
             // These are not applicable when this is a merged return that will
@@ -7470,7 +7472,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                     retVal = fgMorphRetInd(tree->AsOp());
                 }
 
-                fgTryReplaceStructLocalWithField(retVal);
+                fgTryReplaceStructLocalWithFields(&retVal);
             }
 
             // normalize small integer return values
@@ -7496,7 +7498,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 retVal->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
 
                 retVal = fgMorphTree(retVal);
-                tree->AsOp()->SetReturnValue(retVal);
 
                 // Propagate side effect flags
                 tree->SetAllEffectsFlags(retVal);
@@ -8364,10 +8365,13 @@ DONE_MORPHING_CHILDREN:
             // prop done when morphing this operand changed the local.
             // Skip this for merged returns that will be changed to a store and
             // jump to the return BB.
-            GenTree* const retVal = tree->AsOp()->GetReturnValue();
+            GenTree*& retVal = tree->AsOp()->ReturnValueRef();
             if ((retVal != nullptr) && ((genReturnBB == nullptr) || (compCurBB == genReturnBB)))
             {
-                fgTryReplaceStructLocalWithField(retVal);
+                if (fgTryReplaceStructLocalWithFields(&retVal))
+                {
+                    retVal = fgMorphTree(retVal);
+                }
             }
             break;
         }
@@ -8425,30 +8429,22 @@ DONE_MORPHING_CHILDREN:
 // Notes:
 //    Currently only called when the tree parent is a GT_RETURN/GT_SWIFT_ERROR_RET.
 //
-void Compiler::fgTryReplaceStructLocalWithField(GenTree* tree)
+bool Compiler::fgTryReplaceStructLocalWithFields(GenTree** use)
 {
-    if (!tree->OperIs(GT_LCL_VAR))
+    if (!(*use)->OperIs(GT_LCL_VAR))
     {
-        return;
+        return false;
     }
 
-    GenTreeLclVar*   lclVar = tree->AsLclVar();
-    unsigned         lclNum = lclVar->GetLclNum();
-    LclVarDsc* const varDsc = lvaGetDesc(lclVar);
-    if (varDsc->CanBeReplacedWithItsField(this))
-    {
-        // We can replace the struct with its only field and allow copy propagation to replace
-        // return value that was written as a field.
-        unsigned const   fieldLclNum = varDsc->lvFieldLclStart;
-        LclVarDsc* const fieldDsc    = lvaGetDesc(fieldLclNum);
+    LclVarDsc* varDsc = lvaGetDesc((*use)->AsLclVar());
 
-        JITDUMP("Replacing an independently promoted local var V%02u with its only field  "
-                "V%02u for "
-                "the return [%06u]\n",
-                lclVar->GetLclNum(), fieldLclNum, dspTreeID(tree));
-        lclVar->SetLclNum(fieldLclNum);
-        lclVar->ChangeType(fieldDsc->lvType);
+    if (varDsc->lvDoNotEnregister || !varDsc->lvPromoted)
+    {
+        return false;
     }
+
+    *use = fgMorphLclToFieldList((*use)->AsLclVar());
+    return true;
 }
 
 //------------------------------------------------------------------------

@@ -651,13 +651,10 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
 //    assertions       - the assertions to use
 //    pRange           - the range to tighten with assertions
 //
-void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
-                                     ValueNum         normalLclVN,
-                                     ValueNum         preferredBoundVN,
-                                     ASSERT_VALARG_TP assertions,
-                                     Range*           pRange,
-                                     bool             log)
+void RangeCheck::MergeEdgeAssertions(
+    Compiler* comp, ValueNum normalLclVN, ValueNum preferredBoundVN, ASSERT_VALARG_TP assertions, Range* pRange)
 {
+    Range assertedRange = Range(Limit(Limit::keUnknown));
     if (BitVecOps::IsEmpty(comp->apTraits, assertions))
     {
         return;
@@ -897,90 +894,15 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             continue;
         }
 
-        // Skip if it doesn't tighten the current bound:
-        if (pRange->uLimit.IsConstant() && ((cmpOper == GT_LE) || (cmpOper == GT_LT)))
-        {
-            if (!limit.IsConstant() && (limit.vn != arrLenVN))
-            {
-                // If our new limit is not constant and doesn't represent the array's length - bail out.
-                // NOTE: it's fine to replace the current constant limit with a non-constant arrLenVN.
-                continue;
-            }
-            if (limit.IsConstant() && (limit.cns > pRange->uLimit.cns))
-            {
-                // The new constant limit doesn't tighten the current constant bound.
-                // E.g. current is "X < 10" and the new one is "X < 100"
-                continue;
-            }
-        }
-        // Same for the lower bound:
-        if (pRange->lLimit.IsConstant() && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
-        {
-            if (!limit.IsConstant() && (limit.vn != arrLenVN))
-            {
-                // If our new limit is not constant and doesn't represent the array's length - bail out.
-                // NOTE: it's fine to replace the current constant limit with a non-constant arrLenVN.
-                continue;
-            }
-            if (limit.IsConstant() && (limit.cns < pRange->lLimit.cns))
-            {
-                // The new constant limit doesn't tighten the current constant bound.
-                // E.g. current is "X > 10" and the new one is "X > 5"
-                continue;
-            }
-        }
-
-        // Check if the incoming limit from assertions tightens the existing upper limit.
-        if (pRange->uLimit.IsBinOpArray() && (pRange->uLimit.vn == arrLenVN))
-        {
-            // We have checked the current range's (pRange's) upper limit is either of the form:
-            //      length + cns
-            //      and length == the bndsChkCandidate's arrLen
-            //
-            // We want to check if the incoming limit tightens the bound, and for that
-            // we need to make sure that incoming limit is also on the same length (or
-            // length + cns) and not some other length.
-
-            if (limit.vn != arrLenVN)
-            {
-                if (log)
-                {
-                    JITDUMP("Array length VN did not match arrLen=" FMT_VN ", limit=" FMT_VN "\n", arrLenVN, limit.vn);
-                }
-                continue;
-            }
-
-            int curCns = pRange->uLimit.cns;
-            int limCns = limit.IsBinOpArray() ? limit.cns : 0;
-
-            // Incoming limit doesn't tighten the existing upper limit.
-            if (limCns >= curCns)
-            {
-                if (log)
-                {
-                    JITDUMP("Bound limit %d doesn't tighten current bound %d\n", limCns, curCns);
-                }
-                continue;
-            }
-        }
-        else
-        {
-            // Current range's upper bound is not "length + cns" and the
-            // incoming limit is not on the same length as the bounds check candidate.
-            // So we could skip this assertion. But in cases, of Dependent or Unknown
-            // type of upper limit, the incoming assertion still tightens the upper
-            // bound to a saner value. So do not skip the assertion.
-        }
-
         // cmpOp (loop index i) cmpOper len +/- cns
         switch (cmpOper)
         {
             case GT_LT:
             case GT_LE:
-                pRange->uLimit = limit;
+                assertedRange.uLimit = limit;
                 if (isUnsigned)
                 {
-                    pRange->lLimit = Limit(Limit::keConstant, 0);
+                    assertedRange.lLimit = Limit(Limit::keConstant, 0);
                 }
                 break;
 
@@ -990,18 +912,13 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 // using single Range object.
                 if (!isUnsigned)
                 {
-                    pRange->lLimit = limit;
-                    // INT32_MAX as the upper limit is better than UNKNOWN for a constant lower limit.
-                    if (limit.IsConstant() && pRange->UpperLimit().IsUnknown())
-                    {
-                        pRange->uLimit = Limit(Limit::keConstant, INT32_MAX);
-                    }
+                    assertedRange.lLimit = limit;
                 }
                 break;
 
             case GT_EQ:
-                pRange->uLimit = limit;
-                pRange->lLimit = limit;
+                assertedRange.uLimit = limit;
+                assertedRange.lLimit = limit;
                 break;
 
             default:
@@ -1009,12 +926,84 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 break;
         }
 
-        if (log)
-        {
-            JITDUMP("The range after edge merging:");
-            JITDUMP(pRange->ToString(comp));
-            JITDUMP("\n");
-        }
+        // We have two ranges - we need to merge (tighten) them.
+
+        auto tightenLimit = [](Limit l1, Limit l2, ValueNum preferredBound, bool isLower) -> Limit {
+            // 1) One of the limits is undef, unknown or dependent
+            if (l1.IsUndef() || l2.IsUndef())
+            {
+                // Anything is better than undef.
+                return l1.IsUndef() ? l2 : l1;
+            }
+            if (l1.IsUnknown() || l2.IsUnknown())
+            {
+                // Anything is better than unknown.
+                return l1.IsUnknown() ? l2 : l1;
+            }
+            if (l1.IsDependent() || l2.IsDependent())
+            {
+                // Anything is better than dependent.
+                return l1.IsDependent() ? l2 : l1;
+            }
+
+            // 2) Both limits are constants
+            if (l1.IsConstant() && l2.IsConstant())
+            {
+                //  isLower: whatever is higher is better.
+                // !isLower: whatever is lower is better.
+                return isLower ? (l1.cns > l2.cns ? l1 : l2) : (l1.cns < l2.cns ? l1 : l2);
+            }
+
+            // 3) Both limits are BinOpArray (which is "arrLen + cns")
+            if (l1.IsBinOpArray() && l2.IsBinOpArray())
+            {
+                // If one of them is preferredBound and the other is not, use the preferredBound.
+                if (preferredBound != ValueNumStore::NoVN)
+                {
+                    if ((l1.vn == preferredBound) && (l2.vn != preferredBound))
+                    {
+                        return l1;
+                    }
+                    if ((l2.vn == preferredBound) && (l1.vn != preferredBound))
+                    {
+                        return l2;
+                    }
+                }
+
+                // Otherwise, just use the one with the higher/lower constant.
+                // even if they use different arrLen.
+                return isLower ? (l1.cns > l2.cns ? l1 : l2) : (l1.cns < l2.cns ? l1 : l2);
+            }
+
+            // 4) One of the limits is a constant and the other is BinOpArray
+            if ((l1.IsConstant() && l2.IsBinOpArray()) || (l2.IsConstant() && l1.IsBinOpArray()))
+            {
+                // l1 - BinOpArray, l2 - constant
+                if (l1.IsConstant())
+                {
+                    std::swap(l1, l2);
+                }
+
+                if (((preferredBound == ValueNumStore::NoVN) || (l1.vn != preferredBound)))
+                {
+                    // if we don't have a preferred bound,
+                    // or it doesn't match l1.vn, use the constant (l2).
+                    return l2;
+                }
+
+                // Otherwise, prefer the BinOpArray(preferredBound) over the constant.
+                return l1;
+            }
+            unreached();
+        };
+
+        JITDUMP("Tightening pRange: [%s] with assertedRange: [%s] into ", pRange->ToString(comp),
+                assertedRange.ToString(comp));
+
+        pRange->lLimit = tightenLimit(assertedRange.lLimit, pRange->lLimit, preferredBoundVN, true);
+        pRange->uLimit = tightenLimit(assertedRange.uLimit, pRange->uLimit, preferredBoundVN, false);
+
+        JITDUMP("[%s]\n", pRange->ToString(comp));
     }
 }
 
