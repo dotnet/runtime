@@ -13,7 +13,6 @@
 #include "GcEnum.h"
 #include "shash.h"
 #include "TypeManager.h"
-#include "varint.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "holder.h"
@@ -266,7 +265,6 @@ EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation8;
 EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation16;
 EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation32;
 EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation64;
-EXTERN_C CODE_LOCATION RhpVTableOffsetDispatchAVLocation;
 
 static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
 {
@@ -281,7 +279,6 @@ static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpInterfaceDispatchAVLocation16,
         (uintptr_t)&RhpInterfaceDispatchAVLocation32,
         (uintptr_t)&RhpInterfaceDispatchAVLocation64,
-        (uintptr_t)&RhpVTableOffsetDispatchAVLocation,
     };
 
     // compare the IP against the list of known possible AV locations in the interface dispatch helpers

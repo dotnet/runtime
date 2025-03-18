@@ -10,10 +10,18 @@ namespace System.Threading
 {
     public sealed partial class Mutex
     {
-        private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
+        private void CreateMutexCore(bool initiallyOwned) => SafeWaitHandle = WaitSubsystem.NewMutex(initiallyOwned);
+
+        private void CreateMutexCore(
+            bool initiallyOwned,
+            string? name,
+            NamedWaitHandleOptionsInternal options,
+            out bool createdNew)
         {
-            if (name != null)
+            if (!string.IsNullOrEmpty(name))
             {
+                name = BuildNameForOptions(name, options);
+
                 SafeWaitHandle? safeWaitHandle = WaitSubsystem.CreateNamedMutex(initiallyOwned, name, out createdNew);
                 if (safeWaitHandle == null)
                 {
@@ -27,13 +35,39 @@ namespace System.Threading
             createdNew = true;
         }
 
-        private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
+        private static OpenExistingResult OpenExistingWorker(
+            string name,
+            NamedWaitHandleOptionsInternal options,
+            out Mutex? result)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
+
+            name = BuildNameForOptions(name, options);
 
             OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, out SafeWaitHandle? safeWaitHandle);
             result = status == OpenExistingResult.Success ? new Mutex(safeWaitHandle!) : null;
             return status;
+        }
+
+        private static string BuildNameForOptions(string name, NamedWaitHandleOptionsInternal options)
+        {
+            if (options.WasSpecified)
+            {
+                name = options.GetNameWithSessionPrefix(name);
+            }
+
+            if (name.StartsWith(NamedWaitHandleOptionsInternal.CurrentSessionPrefix) &&
+                name.Length > NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length)
+            {
+                name = name.Substring(NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length);
+            }
+
+            if (options.WasSpecified && options.CurrentUserOnly)
+            {
+                name = @"User\" + name;
+            }
+
+            return name;
         }
 
         public void ReleaseMutex()
