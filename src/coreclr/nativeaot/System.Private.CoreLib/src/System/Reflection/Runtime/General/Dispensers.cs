@@ -43,17 +43,7 @@ namespace System.Reflection.Runtime.Assemblies
         /// </summary>
         internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore)
         {
-            AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
-            if (!binder.Bind(rawAssembly, pdbSymbolStore, out AssemblyBindResult bindResult, out Exception exception))
-            {
-                if (exception != null)
-                    throw exception;
-                else
-                    throw new BadImageFormatException();
-            }
-
-            RuntimeAssembly result = GetRuntimeAssembly(bindResult);
-            return result;
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>
@@ -61,17 +51,7 @@ namespace System.Reflection.Runtime.Assemblies
         /// </summary>
         internal static RuntimeAssembly GetRuntimeAssemblyFromPath(string assemblyPath)
         {
-            AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
-            if (!binder.Bind(assemblyPath, out AssemblyBindResult bindResult, out Exception exception))
-            {
-                if (exception != null)
-                    throw exception;
-                else
-                    throw new BadImageFormatException();
-            }
-
-            RuntimeAssembly result = GetRuntimeAssembly(bindResult, assemblyPath);
-            return result;
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>
