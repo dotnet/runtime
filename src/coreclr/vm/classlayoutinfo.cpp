@@ -930,12 +930,14 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
     EEClassLayoutInfo* pEEClassLayoutInfo = pMT->GetLayoutInfo();
 
-    ULONG classSizeInMetadata = 0;
     if (pEEClassLayoutInfo->HasExplicitSize())
     {
+        ULONG classSizeInMetadata = 0;
         HRESULT hr = pInternalImport->GetClassTotalSize(pMT->GetCl(), &classSizeInMetadata);
 
         CONSISTENCY_CHECK(hr == S_OK);
+
+        pNativeLayoutInfo->m_size = CalculateSizeWithMetadataSize(cbAdjustedParentLayoutNativeSize, lastFieldEnd, classSizeInMetadata);
     }
     else if (pMT->GetClass()->IsInlineArray())
     {
@@ -957,7 +959,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
                 INT32 repeat = GET_UNALIGNED_VAL32((byte*)pVal + 2);
                 if (repeat > 0)
                 {
-                    classSizeInMetadata = repeat * pInfoArray[0].m_nfd.NativeSize();
+                    pNativeLayoutInfo->m_size = repeat * pInfoArray[0].m_nfd.NativeSize();
                 }
             }
         }
