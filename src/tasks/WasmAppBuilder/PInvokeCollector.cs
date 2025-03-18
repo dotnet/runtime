@@ -210,7 +210,6 @@ internal sealed class PInvokeCollector {
                 if (IsFunctionPointer(p.ParameterType))
                 {
                     throw new NotSupportedException("Parsing function pointer types in signatures is not supported.");
-                    return true;
                 }
             }
         }
