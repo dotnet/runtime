@@ -247,8 +247,6 @@ namespace Internal.Runtime.TypeLoader
         {
             if (!method.CanShareNormalGenericCode())
             {
-                // First see if we can find an exact method implementation for the GVM (avoid using USG implementations if we can,
-                // because USG code is much slower).
                 if (TryLookupExactMethodPointer(method, out methodPointer))
                 {
                     Debug.Assert(methodPointer != IntPtr.Zero);
