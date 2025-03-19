@@ -204,11 +204,11 @@ namespace System.Threading
             return TryEnter_Slowpath(obj);
         }
 
-        private static void TryEnter_Timeout_WithLockTaken(object obj, int timeout, ref bool lockTaken)
+        private static void TryEnter_Timeout_WithLockTaken(object obj, int millisecondsTimeout, ref bool lockTaken)
         {
-            if (timeout >= -1)
+            if (millisecondsTimeout >= -1)
             {
-                EnterHelperResult tryEnterResult = TryEnter_FastPath_WithTimeout(obj, timeout);
+                EnterHelperResult tryEnterResult = TryEnter_FastPath_WithTimeout(obj, millisecondsTimeout);
                 if (tryEnterResult == EnterHelperResult.Entered)
                 {
                     lockTaken = true;
@@ -220,7 +220,7 @@ namespace System.Threading
                 }
             }
 
-            if (TryEnter_Slowpath(obj, timeout))
+            if (TryEnter_Slowpath(obj, millisecondsTimeout))
             {
                 lockTaken = true;
             }
