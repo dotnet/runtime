@@ -1823,7 +1823,7 @@ static void TransitionBlockToContext(TransitionBlock* transitionBlock, T_CONTEXT
     ENUM_CALLEE_SAVED_REGISTERS();
     #undef CALLEE_SAVED_REGISTER
 
-    pContext->Esp = (UINT_PTR)transitionBlock + 2 * sizeof(PVOID);
+    pContext->Esp = (UINT_PTR)(transitionBlock + 1);
     pContext->Eip = transitionBlock->m_ReturnAddress;
 }
 #endif

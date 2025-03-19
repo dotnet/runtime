@@ -193,9 +193,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         if ((compiler->lvaPSPSym == BAD_VAR_NUM) ||
             (!compiler->compLocallocUsed && (compiler->funCurrentFunc()->funKind == FUNC_ROOT)))
         {
-#ifndef UNIX_X86_ABI
+#ifndef TARGET_X86
             inst_Mov(TYP_I_IMPL, REG_ARG_0, REG_SPBASE, /* canSkip */ false);
-#endif // !UNIX_X86_ABI
+#endif // !TARGET_X86
         }
         else
         {
