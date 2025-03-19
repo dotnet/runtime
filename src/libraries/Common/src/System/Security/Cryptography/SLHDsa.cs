@@ -7,55 +7,38 @@ using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 
-// The type being internal is making unused parameter warnings fire for
-// not-implemented methods. Suppress those warnings.
-#pragma warning disable IDE0060
-
 namespace System.Security.Cryptography
 {
     /// <summary>
     ///   Represents an SLH-DSA key.
     /// </summary>
     /// <remarks>
-    ///   Developers are encouraged to program against the <c>SLHDsa</c> base class,
+    ///   Developers are encouraged to program against the <c>SlhDsa</c> base class,
     ///   rather than any specific derived class.
     ///   The derived classes are intended for interop with the underlying system
     ///   cryptographic libraries.
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-    internal abstract partial class SLHDsa : IDisposable
+    internal abstract partial class SlhDsa : IDisposable
 #if DESIGNTIMEINTERFACES
 #pragma warning disable SA1001
-        , IImportExportShape<SLHDsa>
+        , IImportExportShape<SlhDsa>
 #pragma warning restore SA1001
 #endif
     {
         private const int MaxContextLength = 255;
 
-        private readonly ParameterSetInfo _parameterSetInfo;
         private bool _disposed;
 
-        private SLHDsa(ParameterSetInfo parameterSetInfo)
-        {
-            Debug.Assert(parameterSetInfo is not null);
-
-            _parameterSetInfo = parameterSetInfo;
-        }
-
         /// <summary>
-        ///   Initializes a new instance of the <see cref="SLHDsa" /> class.
+        ///   Initializes a new instance of the <see cref="SlhDsa" /> class.
         /// </summary>
         /// <param name="algorithm">
         ///   The specific SLH-DSA algorithm for this key.
         /// </param>
-        protected SLHDsa(SLHDsaAlgorithm algorithm)
-            : this(ParameterSetInfo.GetParameterSetInfo(algorithm))
+        protected SlhDsa(SlhDsaAlgorithm algorithm)
         {
-        }
-
-        protected void ThrowIfDisposed()
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            Algorithm = algorithm;
         }
 
         /// <summary>
@@ -64,86 +47,15 @@ namespace System.Security.Cryptography
         /// <value>
         ///   <see langword="true" /> if the current platform supports SLH-DSA; otherwise, <see langword="false" />.
         /// </value>
-        public static bool IsSupported { get; } = SLHDsaImplementation.SupportsAny();
+        public static bool IsSupported { get; } = SlhDsa.SupportsAnyHelper();
 
         /// <summary>
-        ///   Gets the size of the signature for the specified algorithm.
-        /// </summary>
-        /// <param name="algorithm">
-        ///   The specific SLH-DSA algorithm to query.
-        /// </param>
-        /// <returns>
-        ///   The size, in bytes, of the signature for the specified algorithm.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
-        /// </exception>
-        public static int GetSignatureSizeInBytes(SLHDsaAlgorithm algorithm) =>
-            ParameterSetInfo.GetParameterSetInfo(algorithm).SignatureSizeInBytes;
-
-        /// <summary>
-        ///   Gets the size of the SLH-DSA secret key for the specified algorithm.
-        /// </summary>
-        /// <param name="algorithm">
-        ///   The specific SLH-DSA algorithm to query.
-        /// </param>
-        /// <returns>
-        ///   The size, in bytes, of the SLH-DSA secret key for the specified algorithm.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
-        /// </exception>
-        public static int GetSecretKeySizeInBytes(SLHDsaAlgorithm algorithm) =>
-            ParameterSetInfo.GetParameterSetInfo(algorithm).SecretKeySizeInBytes;
-
-        /// <summary>
-        ///   Gets the size of the SLH-DSA public key for the specified algorithm.
-        /// </summary>
-        /// <param name="algorithm">
-        ///   The specific SLH-DSA algorithm to query.
-        /// </param>
-        /// <returns>
-        ///   The size, in bytes, of the SLH-DSA public key for the specified algorithm.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
-        /// </exception>
-        public static int GetPublicKeySizeInBytes(SLHDsaAlgorithm algorithm) =>
-            ParameterSetInfo.GetParameterSetInfo(algorithm).PublicKeySizeInBytes;
-
-        /// <summary>
-        ///   Gets the size, in bytes, of the signature for the current instance.
+        ///   Gets the specific SLH-DSA algorithm for this key.
         /// </summary>
         /// <value>
-        ///   The size, in bytes, of the signature for the current instance.
+        ///   The specific SLH-DSA algorithm for this key.
         /// </value>
-        public int SignatureSizeInBytes => _parameterSetInfo.SignatureSizeInBytes;
-
-        /// <summary>
-        ///   Gets the size, in bytes, of the SLH-DSA secret key for the current instance.
-        /// </summary>
-        /// <value>
-        ///   The size, in bytes, of the SLH-DSA secret key for the current instance.
-        /// </value>
-        public int SecretKeySizeInBytes => _parameterSetInfo.SecretKeySizeInBytes;
-
-        /// <summary>
-        ///   Gets the size, in bytes, of the SLH-DSA public key for the current instance.
-        /// </summary>
-        /// <value>
-        ///   The size, in bytes, of the SLH-DSA public key for the current instance.
-        /// </value>
-        public int PublicKeySizeInBytes => _parameterSetInfo.PublicKeySizeInBytes;
-
-        /// <summary>
-        ///  Releases all resources used by the <see cref="SLHDsa"/> class.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            _disposed = true;
-            GC.SuppressFinalize(this);
-        }
+        public SlhDsaAlgorithm Algorithm { get; }
 
         /// <summary>
         ///   Sign the specified data, writing the signature into the provided buffer.
@@ -188,16 +100,15 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            if (destination.Length < SignatureSizeInBytes)
+            int signatureSizeInBytes = Algorithm.SignatureSizeInBytes;
+            if (destination.Length < signatureSizeInBytes)
             {
                 throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
             }
 
-            SignDataCore(data, context, destination.Slice(0, SignatureSizeInBytes));
-            return SignatureSizeInBytes;
+            SignDataCore(data, context, destination.Slice(0, signatureSizeInBytes));
+            return signatureSizeInBytes;
         }
-
-        // TODO: SignPreHash
 
         /// <summary>
         ///   Verifies that the specified signature is valid for this key and the provided data.
@@ -239,7 +150,7 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            if (signature.Length != SignatureSizeInBytes)
+            if (signature.Length != Algorithm.SignatureSizeInBytes)
             {
                 return false;
             }
@@ -247,7 +158,80 @@ namespace System.Security.Cryptography
             return VerifyDataCore(data, context, signature);
         }
 
-        // TODO: VerifyPreHash
+        /// <summary>
+        ///   Sign the specified hash, writing the signature into the provided buffer.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to sign.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature.
+        /// </param>
+        /// <param name="preHashAlgorithm"></param>
+        /// <param name="context">
+        ///   An optional context-specific value to limit the scope of the signature.
+        ///   The default value is an empty buffer.
+        /// </param>
+        /// <returns>
+        ///   The number of bytes written to the <paramref name="destination" /> buffer.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="destination"/> is too small to hold the signature.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
+        ///   255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the hash.</para>
+        /// </exception>
+        public int SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> context = default)
+        {
+            // TODO: Support pre-hashed signing.
+
+            throw new NotSupportedException(SR.Cryptography_InvalidOperation);
+        }
+
+        /// <summary>
+        ///   Verifies that the specified signature is valid for this key and the provided hash.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to verify.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <param name="preHashAlgorithm"></param>
+        /// <param name="context">
+        ///   The context value which was provided during signing.
+        ///   The default value is an empty buffer.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
+        ///   255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the hash.</para>
+        /// </exception>
+        public bool SignPreHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> context = default)
+        {
+            // TODO: Support pre-hashed signing.
+
+            throw new NotSupportedException(SR.Cryptography_InvalidOperation);
+        }
 
         /// <summary>
         ///  Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
@@ -682,17 +666,18 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is too small to hold the public key.
         /// </exception>
-        public int ExportSLHDsaPublicKey(Span<byte> destination)
+        public int ExportSlhDsaPublicKey(Span<byte> destination)
         {
             ThrowIfDisposed();
 
-            if (destination.Length < PublicKeySizeInBytes)
+            int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
+            if (destination.Length < publicKeySizeInBytes)
             {
                 throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
             }
 
-            ExportSLHDsaPublicKeyCore(destination.Slice(0, PublicKeySizeInBytes));
-            return PublicKeySizeInBytes;
+            ExportSlhDsaPublicKeyCore(destination.Slice(0, publicKeySizeInBytes));
+            return publicKeySizeInBytes;
         }
 
         /// <summary>
@@ -710,17 +695,18 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        public int ExportSLHDsaSecretKey(Span<byte> destination)
+        public int ExportSlhDsaSecretKey(Span<byte> destination)
         {
             ThrowIfDisposed();
 
-            if (destination.Length < SecretKeySizeInBytes)
+            int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
+            if (destination.Length < secretKeySizeInBytes)
             {
                 throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
             }
 
-            ExportSLHDsaSecretKeyCore(destination.Slice(0, SecretKeySizeInBytes));
-            return SecretKeySizeInBytes;
+            ExportSlhDsaSecretKeyCore(destination.Slice(0, secretKeySizeInBytes));
+            return secretKeySizeInBytes;
         }
 
         /// <summary>
@@ -738,584 +724,42 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the private seed.
         /// </exception>
-        public int ExportSLHDsaPrivateSeed(Span<byte> destination)
+        public int ExportSlhDsaPrivateSeed(Span<byte> destination)
         {
             ThrowIfDisposed();
 
-            int privateSeedSizeInBytes = _parameterSetInfo.PrivateSeedSizeInBytes;
+            int privateSeedSizeInBytes = Algorithm.PrivateSeedSizeInBytes;
             if (destination.Length < privateSeedSizeInBytes)
             {
                 throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
             }
 
-            ExportSLHDsaPrivateSeedCore(destination.Slice(0, privateSeedSizeInBytes));
+            ExportSlhDsaPrivateSeedCore(destination.Slice(0, privateSeedSizeInBytes));
             return privateSeedSizeInBytes;
         }
 
         /// <summary>
-        ///   Generates a new SLH-DSA-SHA2-128s key.
+        ///   Generates a new SLH-DSA key for the specified algorithm.
         /// </summary>
         /// <returns>
-        ///   The generated key.
+        ///   The generated object.
         /// </returns>
-        public static SLHDsa GenerateSLHDsaSha2_128sKey()
-        {
-            ThrowIfNotSupported();
+        public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) =>
+            GenerateKeyHelper(algorithm);
 
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaSha2_128s);
+        protected void ThrowIfDisposed()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         /// <summary>
-        ///   Generates a new SLH-DSA-SHAKE-128s key.
+        ///  Releases all resources used by the <see cref="SlhDsa"/> class.
         /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static SLHDsa GenerateSLHDsaShake_128sKey()
+        public void Dispose()
         {
-            ThrowIfNotSupported();
-
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaShake_128s);
-        }
-
-        /// <summary>
-        ///   Generates a new SLH-DSA-SHA2-128f key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static SLHDsa GenerateSLHDsaSha2_128fKey()
-        {
-            ThrowIfNotSupported();
-
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaSha2_128f);
-        }
-
-        /// <summary>
-        ///   Generates a new SLH-DSA-SHAKE-128f key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static SLHDsa GenerateSLHDsaShake_128fKey()
-        {
-            ThrowIfNotSupported();
-
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaShake_128f);
-        }
-
-        /// <summary>
-        ///   Generates a new SLH-DSA-SHA2-192s key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static SLHDsa GenerateSLHDsaSha2_192sKey()
-        {
-            ThrowIfNotSupported();
-
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaSha2_192s);
-        }
-
-        /// <summary>
-        ///   Generates a new SLH-DSA-SHAKE-192s key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static SLHDsa GenerateSLHDsaShake_192sKey()
-        {
-            ThrowIfNotSupported();
-
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaShake_192s);
-        }
-
-        /// <summary>
-        ///   Generates a new SLH-DSA-SHA2-192f key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static SLHDsa GenerateSLHDsaSha2_192fKey()
-        {
-            ThrowIfNotSupported();
-
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaSha2_192f);
-        }
-
-        /// <summary>
-        ///   Generates a new SLH-DSA-SHAKE-192f key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static SLHDsa GenerateSLHDsaShake_192fKey()
-        {
-            ThrowIfNotSupported();
-
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaShake_192f);
-        }
-
-        /// <summary>
-        ///   Generates a new SLH-DSA-SHA2-256s key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static SLHDsa GenerateSLHDsaSha2_256sKey()
-        {
-            ThrowIfNotSupported();
-
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaSha2_256s);
-        }
-
-        /// <summary>
-        ///   Generates a new SLH-DSA-SHAKE-256s key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static SLHDsa GenerateSLHDsaShake_256sKey()
-        {
-            ThrowIfNotSupported();
-
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaShake_256s);
-        }
-
-        /// <summary>
-        ///   Generates a new SLH-DSA-SHA2-256f key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static SLHDsa GenerateSLHDsaSha2_256fKey()
-        {
-            ThrowIfNotSupported();
-
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaSha2_256f);
-        }
-
-        /// <summary>
-        ///   Generates a new SLH-DSA-SHAKE-256f key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static SLHDsa GenerateSLHDsaShake_256fKey()
-        {
-            ThrowIfNotSupported();
-
-            return SLHDsaImplementation.GenerateKey(SLHDsaAlgorithm.SLHDsaShake_256f);
-        }
-
-        /// <summary>
-        ///  Imports an SLH-DSA public key from an X.509 SubjectPublicKeyInfo structure.
-        /// </summary>
-        /// <param name="source">
-        ///  The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
-        /// </param>
-        /// <returns>
-        ///   The imported key.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     The contents of <paramref name="source"/> do not represent an ASN.1-DER-encoded X.509 SubjectPublicKeyInfo structure.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The SubjectPublicKeyInfo value does not represent an SLH-DSA key.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The algorithm-specific import failed.
-        ///   </para>
-        /// </exception>
-        public static SLHDsa ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
-        {
-            ThrowIfNotSupported();
-
-            unsafe
-            {
-                fixed (byte* pointer = source)
-                {
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
-                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-
-                        ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfoFromOid(spki.Algorithm.Algorithm);
-
-                        if (spki.Algorithm.Parameters.HasValue)
-                        {
-                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                            spki.Algorithm.Encode(writer);
-                            ThrowAlgorithmUnknown(writer);
-                            Debug.Fail("Execution should have halted in the throw-helper.");
-                        }
-
-                        return SLHDsaImplementation.ImportPublicKey(info, spki.SubjectPublicKey.Span);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        ///  Imports an SLH-DSA private key from a PKCS#8 PrivateKeyInfo structure.
-        /// </summary>
-        /// <param name="source">
-        ///  The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-DER encoding.
-        /// </param>
-        /// <returns>
-        ///   The imported key.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 PrivateKeyInfo structure.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The PrivateKeyInfo value does not represent an SLH-DSA key.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The algorithm-specific import failed.
-        ///   </para>
-        /// </exception>
-        public static SLHDsa ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
-        {
-            ThrowIfNotSupported();
-
-            unsafe
-            {
-                fixed (byte* pointer = source)
-                {
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
-                        PrivateKeyInfoAsn.Decode(ref reader, manager.Memory, out PrivateKeyInfoAsn pki);
-
-                        ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfoFromOid(pki.PrivateKeyAlgorithm.Algorithm);
-
-                        if (pki.PrivateKeyAlgorithm.Parameters.HasValue)
-                        {
-                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                            pki.PrivateKeyAlgorithm.Encode(writer);
-                            ThrowAlgorithmUnknown(writer);
-                            Debug.Fail("Execution should have halted in the throw-helper.");
-                        }
-
-                        return SLHDsaImplementation.ImportPkcs8PrivateKeyValue(info, pki.PrivateKey.Span);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        ///   Imports an SLH-DSA private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
-        /// </summary>
-        /// <param name="passwordBytes">
-        ///   The bytes to use as a password when decrypting the key material.
-        /// </param>
-        /// <param name="source">
-        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
-        /// </param>
-        /// <returns>
-        ///   The imported key.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The specified password is incorrect.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The EncryptedPrivateKeyInfo indicates the Key Derivation Function (KDF) to apply is the legacy PKCS#12 KDF,
-        ///     which requires <see cref="char"/>-based passwords.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The value does not represent an SLH-DSA key.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The algorithm-specific import failed.
-        ///   </para>
-        /// </exception>
-        public static SLHDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
-        {
-            ThrowIfNotSupported();
-
-            return KeyFormatHelper.DecryptPkcs8(
-                passwordBytes,
-                source,
-                ImportPkcs8PrivateKey,
-                out _);
-        }
-
-        /// <summary>
-        ///   Imports an SLH-DSA private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
-        /// </summary>
-        /// <param name="password">
-        ///   The password to use when decrypting the key material.
-        /// </param>
-        /// <param name="source">
-        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
-        /// </param>
-        /// <returns>
-        ///   The imported key.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The specified password is incorrect.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The value does not represent an SLH-DSA key.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The algorithm-specific import failed.
-        ///   </para>
-        /// </exception>
-        public static SLHDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
-        {
-            ThrowIfNotSupported();
-
-            return KeyFormatHelper.DecryptPkcs8(
-                password,
-                source,
-                ImportPkcs8PrivateKey,
-                out _);
-        }
-
-        /// <summary>
-        ///  Imports an SLH-DSA key from an RFC 7468 PEM-encoded string.
-        /// </summary>
-        /// <param name="source">
-        ///   The text of the PEM key to import.
-        /// </param>
-        /// <returns>
-        ///   The imported SLH-DSA key.
-        /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> contains multiple PEM-encoded SLH-DSA keys.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> contains no PEM-encoded SLH-DSA keys.</para>
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred while importing the key.
-        /// </exception>
-        public static SLHDsa ImportFromPem(ReadOnlySpan<char> source)
-        {
-            ThrowIfNotSupported();
-
-            // TODO: Match the behavior of ECDsa.ImportFromPem.
-            // Double-check that the base64-decoded data has no trailing contents.
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        ///   Imports an SLH-DSA key from an RFC 7468 PEM-encoded string.
-        /// </summary>
-        /// <param name="source">
-        ///   The text of the PEM key to import.
-        /// </param>
-        /// <param name="password">
-        ///  The password to use when decrypting the key material.
-        /// </param>
-        /// <returns>
-        ///   <see langword="false" /> if the source did not contain a PEM-encoded SLH-DSA key;
-        ///   <see langword="true" /> if the source contains an SLH-DSA key and it was successfully imported;
-        ///   otherwise, an exception is thrown.
-        /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> contains multiple PEM-encoded SLH-DSA keys.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> contains no PEM-encoded SLH-DSA keys.</para>
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred while importing the key.
-        /// </exception>
-        public static SLHDsa ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<char> password)
-        {
-            ThrowIfNotSupported();
-
-            // TODO: Match the behavior of ECDsa.ImportFromEncryptedPem.
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        ///   Imports an SLH-DSA key from an RFC 7468 PEM-encoded string.
-        /// </summary>
-        /// <param name="source">
-        ///   The text of the PEM key to import.
-        /// </param>
-        /// <param name="passwordBytes">
-        ///  The password to use when decrypting the key material.
-        /// </param>
-        /// <returns>
-        ///   <see langword="false" /> if the source did not contain a PEM-encoded SLH-DSA key;
-        ///   <see langword="true" /> if the source contains an SLH-DSA key and it was successfully imported;
-        ///   otherwise, an exception is thrown.
-        /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> contains multiple PEM-encoded SLH-DSA keys.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> contains no PEM-encoded SLH-DSA keys.</para>
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred while importing the key.
-        /// </exception>
-        public static SLHDsa ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<byte> passwordBytes)
-        {
-            ThrowIfNotSupported();
-
-            // TODO: Match the behavior of ECDsa.ImportFromEncryptedPem.
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        ///   Imports an SLH-DSA public key in the FIPS 205 public key format.
-        /// </summary>
-        /// <param name="algorithm">
-        ///   The specific SLH-DSA algorithm for this key.
-        /// </param>
-        /// <param name="source">
-        ///   The bytes of a FIPS 205 public key.
-        /// </param>
-        /// <returns>
-        ///   The imported key.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="source"/> is not the correct size for the specified algorithm.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     An error occurred while importing the key.
-        ///   </para>
-        /// </exception>
-        public static SLHDsa ImportSLHDsaPublicKey(SLHDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
-        {
-            ThrowIfNotSupported();
-            ArgumentNullException.ThrowIfNull(algorithm);
-
-            ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfo(algorithm);
-
-            if (source.Length != info.PublicKeySizeInBytes)
-            {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
-            }
-
-            return SLHDsaImplementation.ImportPublicKey(info, source);
-        }
-
-        /// <summary>
-        ///   Imports an SLH-DSA private key in the FIPS 205 secret key format.
-        /// </summary>
-        /// <param name="algorithm">
-        ///   The specific SLH-DSA algorithm for this key.
-        /// </param>
-        /// <param name="source">
-        ///   The bytes of a FIPS 205 secret key.
-        /// </param>
-        /// <returns>
-        ///   The imported key.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="source"/> is not the correct size for the specified algorithm.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     An error occurred while importing the key.
-        ///   </para>
-        /// </exception>
-        public static SLHDsa ImportSLHDsaSecretKey(SLHDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
-        {
-            ThrowIfNotSupported();
-            ArgumentNullException.ThrowIfNull(algorithm);
-
-            ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfo(algorithm);
-
-            if (source.Length != info.SecretKeySizeInBytes)
-            {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
-            }
-
-            return SLHDsaImplementation.ImportSecretKey(info, source);
-        }
-
-        /// <summary>
-        ///   Imports an SLH-DSA private key from its private seed value.
-        /// </summary>
-        /// <param name="algorithm">
-        ///   The specific SLH-DSA algorithm for this key.
-        /// </param>
-        /// <param name="source">
-        ///   The bytes the key seed.
-        /// </param>
-        /// <returns>
-        ///   The imported key.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="source"/> is not the correct size for the specified algorithm.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     An error occurred while importing the key.
-        ///   </para>
-        /// </exception>
-        public static SLHDsa ImportSLHDsaPrivateSeed(SLHDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
-        {
-            ThrowIfNotSupported();
-
-            ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfo(algorithm);
-
-            if (source.Length != info.PrivateSeedSizeInBytes)
-            {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
-            }
-
-            return SLHDsaImplementation.ImportSeed(info, source);
-        }
-
-        /// <summary>
-        ///   Called by the <c>Dispose()</c> and <c>Finalize()</c> methods to release the managed and unmanaged
-        ///   resources used by the current instance of the <see cref="SLHDsa"/> class.
-        /// </summary>
-        /// <param name="disposing">
-        ///   <see langword="true" /> to release managed and unmanaged resources;
-        ///   <see langword="false" /> to release only unmanaged resources.
-        /// </param>
-        protected virtual void Dispose(bool disposing)
-        {
+            Dispose(true);
+            _disposed = true;
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -1357,12 +801,57 @@ namespace System.Security.Cryptography
         protected abstract bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
 
         /// <summary>
+        ///   When overridden in a derived class, computes the signature of the specified hash and context,
+        ///   writing it into the provided buffer.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to sign.
+        /// </param>
+        /// <param name="context">
+        ///   The signature context.
+        /// </param>
+        /// <param name="preHashAlgorithm">
+        ///   The algorithm used to compute the hash.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature, which will always be the exactly correct size for the algorithm.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while signing the hash.
+        /// </exception>
+        protected abstract void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, verifies the signature of the specified hash and context.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to verify.
+        /// </param>
+        /// <param name="context">
+        ///   The signature context.
+        /// </param>
+        /// <param name="preHashAlgorithm">
+        ///   The algorithm used to compute the hash.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while signing the hash.
+        /// </exception>
+        protected abstract bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> signature);
+
+
+        /// <summary>
         ///   When overridden in a derived class, exports the FIPS 205 public key to the specified buffer.
         /// </summary>
         /// <param name="destination">
         ///   The buffer to receive the public key.
         /// </param>
-        protected abstract void ExportSLHDsaPublicKeyCore(Span<byte> destination);
+        protected abstract void ExportSlhDsaPublicKeyCore(Span<byte> destination);
 
         /// <summary>
         ///   When overridden in a derived class, exports the FIPS 205 secret key to the specified buffer.
@@ -1370,7 +859,7 @@ namespace System.Security.Cryptography
         /// <param name="destination">
         ///   The buffer to receive the secret key.
         /// </param>
-        protected abstract void ExportSLHDsaSecretKeyCore(Span<byte> destination);
+        protected abstract void ExportSlhDsaSecretKeyCore(Span<byte> destination);
 
         /// <summary>
         ///   When overridden in a derived class, exports the private seed to the specified buffer.
@@ -1378,18 +867,422 @@ namespace System.Security.Cryptography
         /// <param name="destination">
         ///   The buffer to receive the private seed.
         /// </param>
-        protected abstract void ExportSLHDsaPrivateSeedCore(Span<byte> destination);
+        protected abstract void ExportSlhDsaPrivateSeedCore(Span<byte> destination);
+
+        /// <summary>
+        ///  Imports an SLH-DSA public key from an X.509 SubjectPublicKeyInfo structure.
+        /// </summary>
+        /// <param name="source">
+        ///  The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-DER-encoded X.509 SubjectPublicKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The SubjectPublicKeyInfo value does not represent an SLH-DSA key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        public static SlhDsa ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
+        {
+            ThrowIfNotSupported();
+
+            unsafe
+            {
+                fixed (byte* pointer = source)
+                {
+                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
+                    {
+                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
+                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
+
+                        SlhDsaAlgorithm algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(spki.Algorithm.Algorithm);
+
+                        if (spki.Algorithm.Parameters.HasValue)
+                        {
+                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                            spki.Algorithm.Encode(writer);
+                            ThrowAlgorithmUnknown(writer);
+                            Debug.Fail("Execution should have halted in the throw-helper.");
+                        }
+
+                        return SlhDsa.ImportPublicKey(algorithm, spki.SubjectPublicKey.Span);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        ///  Imports an SLH-DSA private key from a PKCS#8 PrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="source">
+        ///  The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-DER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 PrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The PrivateKeyInfo value does not represent an SLH-DSA key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        public static SlhDsa ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
+        {
+            ThrowIfNotSupported();
+
+            unsafe
+            {
+                fixed (byte* pointer = source)
+                {
+                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
+                    {
+                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
+                        PrivateKeyInfoAsn.Decode(ref reader, manager.Memory, out PrivateKeyInfoAsn pki);
+
+                        SlhDsaAlgorithm info = SlhDsaAlgorithm.GetAlgorithmFromOid(pki.PrivateKeyAlgorithm.Algorithm);
+
+                        if (pki.PrivateKeyAlgorithm.Parameters.HasValue)
+                        {
+                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                            pki.PrivateKeyAlgorithm.Encode(writer);
+                            ThrowAlgorithmUnknown(writer);
+                            Debug.Fail("Execution should have halted in the throw-helper.");
+                        }
+
+                        return SlhDsa.ImportPkcs8PrivateKeyValue(info, pki.PrivateKey.Span);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        ///   Imports an SLH-DSA private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="passwordBytes">
+        ///   The bytes to use as a password when decrypting the key material.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The EncryptedPrivateKeyInfo indicates the Key Derivation Function (KDF) to apply is the legacy PKCS#12 KDF,
+        ///     which requires <see cref="char"/>-based passwords.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The value does not represent an SLH-DSA key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        public static SlhDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
+        {
+            ThrowIfNotSupported();
+
+            return KeyFormatHelper.DecryptPkcs8(
+                passwordBytes,
+                source,
+                ImportPkcs8PrivateKey,
+                out _);
+        }
+
+        /// <summary>
+        ///   Imports an SLH-DSA private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when decrypting the key material.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The value does not represent an SLH-DSA key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        public static SlhDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
+        {
+            ThrowIfNotSupported();
+
+            return KeyFormatHelper.DecryptPkcs8(
+                password,
+                source,
+                ImportPkcs8PrivateKey,
+                out _);
+        }
+
+        /// <summary>
+        ///  Imports an SLH-DSA key from an RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The text of the PEM key to import.
+        /// </param>
+        /// <returns>
+        ///   The imported SLH-DSA key.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains multiple PEM-encoded SLH-DSA keys.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains no PEM-encoded SLH-DSA keys.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        public static SlhDsa ImportFromPem(ReadOnlySpan<char> source)
+        {
+            ThrowIfNotSupported();
+
+            // TODO: Match the behavior of ECDsa.ImportFromPem.
+            // Double-check that the base64-decoded data has no trailing contents.
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        ///   Imports an SLH-DSA key from an RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The text of the PEM key to import.
+        /// </param>
+        /// <param name="password">
+        ///  The password to use when decrypting the key material.
+        /// </param>
+        /// <returns>
+        ///   <see langword="false" /> if the source did not contain a PEM-encoded SLH-DSA key;
+        ///   <see langword="true" /> if the source contains an SLH-DSA key and it was successfully imported;
+        ///   otherwise, an exception is thrown.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains multiple PEM-encoded SLH-DSA keys.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains no PEM-encoded SLH-DSA keys.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        public static SlhDsa ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<char> password)
+        {
+            ThrowIfNotSupported();
+
+            // TODO: Match the behavior of ECDsa.ImportFromEncryptedPem.
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        ///   Imports an SLH-DSA key from an RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The text of the PEM key to import.
+        /// </param>
+        /// <param name="passwordBytes">
+        ///  The password to use when decrypting the key material.
+        /// </param>
+        /// <returns>
+        ///   <see langword="false" /> if the source did not contain a PEM-encoded SLH-DSA key;
+        ///   <see langword="true" /> if the source contains an SLH-DSA key and it was successfully imported;
+        ///   otherwise, an exception is thrown.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains multiple PEM-encoded SLH-DSA keys.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains no PEM-encoded SLH-DSA keys.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        public static SlhDsa ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<byte> passwordBytes)
+        {
+            ThrowIfNotSupported();
+
+            // TODO: Match the behavior of ECDsa.ImportFromEncryptedPem.
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        ///   Imports an SLH-DSA public key in the FIPS 205 public key format.
+        /// </summary>
+        /// <param name="algorithm">
+        ///   The specific SLH-DSA algorithm for this key.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes of a FIPS 205 public key.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="source"/> is not the correct size for the specified algorithm.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     An error occurred while importing the key.
+        ///   </para>
+        /// </exception>
+        public static SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            ThrowIfNotSupported();
+            ArgumentNullException.ThrowIfNull(algorithm);
+
+            if (source.Length != algorithm.PublicKeySizeInBytes)
+            {
+                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+            }
+
+            return SlhDsa.ImportPublicKey(algorithm, source);
+        }
+
+        /// <summary>
+        ///   Imports an SLH-DSA private key in the FIPS 205 secret key format.
+        /// </summary>
+        /// <param name="algorithm">
+        ///   The specific SLH-DSA algorithm for this key.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes of a FIPS 205 secret key.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="source"/> is not the correct size for the specified algorithm.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     An error occurred while importing the key.
+        ///   </para>
+        /// </exception>
+        public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            ThrowIfNotSupported();
+            ArgumentNullException.ThrowIfNull(algorithm);
+
+            if (source.Length != algorithm.SecretKeySizeInBytes)
+            {
+                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+            }
+
+            return SlhDsa.ImportSecretKey(algorithm, source);
+        }
+
+        /// <summary>
+        ///   Imports an SLH-DSA private key from its private seed value.
+        /// </summary>
+        /// <param name="algorithm">
+        ///   The specific SLH-DSA algorithm for this key.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes the key seed.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="source"/> is not the correct size for the specified algorithm.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     An error occurred while importing the key.
+        ///   </para>
+        /// </exception>
+        public static SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            ThrowIfNotSupported();
+
+            if (source.Length != algorithm.PrivateSeedSizeInBytes)
+            {
+                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+            }
+
+            return SlhDsa.ImportSeed(algorithm, source);
+        }
+
+        /// <summary>
+        ///   Called by the <c>Dispose()</c> and <c>Finalize()</c> methods to release the managed and unmanaged
+        ///   resources used by the current instance of the <see cref="SlhDsa"/> class.
+        /// </summary>
+        /// <param name="disposing">
+        ///   <see langword="true" /> to release managed and unmanaged resources;
+        ///   <see langword="false" /> to release only unmanaged resources.
+        /// </param>
+        protected virtual void Dispose(bool disposing)
+        {
+        }
 
         private AsnWriter ExportSubjectPublicKeyInfoCore()
         {
             ThrowIfDisposed();
 
-            byte[] rented = CryptoPool.Rent(_parameterSetInfo.PublicKeySizeInBytes);
+            byte[] rented = CryptoPool.Rent(Algorithm.PublicKeySizeInBytes);
 
             try
             {
-                Span<byte> keySpan = rented.AsSpan(0, _parameterSetInfo.PublicKeySizeInBytes);
-                ExportSLHDsaPublicKey(keySpan);
+                Span<byte> keySpan = rented.AsSpan(0, Algorithm.PublicKeySizeInBytes);
+                ExportSlhDsaPublicKey(keySpan);
 
                 AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
@@ -1397,7 +1290,7 @@ namespace System.Security.Cryptography
                 {
                     using (writer.PushSequence())
                     {
-                        writer.WriteObjectIdentifier(_parameterSetInfo.Oid);
+                        writer.WriteObjectIdentifier(Algorithm.Oid);
                     }
 
                     writer.WriteBitString(keySpan);
@@ -1417,7 +1310,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             // TODO: Determine a more appropriate maximum size once the format is actually known.
-            int size = _parameterSetInfo.SecretKeySizeInBytes * 2;
+            int size = Algorithm.SecretKeySizeInBytes * 2;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully
             // hold on to it without being malicious.
             byte[] rented = CryptoPool.Rent(size);
@@ -1449,7 +1342,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             // TODO: Determine a more appropriate maximum size once the format is actually known.
-            int initialSize = _parameterSetInfo.SecretKeySizeInBytes * 2;
+            int initialSize = Algorithm.SecretKeySizeInBytes * 2;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully
             // hold on to it without being malicious.
             byte[] rented = CryptoPool.Rent(initialSize);
@@ -1479,7 +1372,7 @@ namespace System.Security.Cryptography
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SLHDsa)));
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
             }
         }
 
@@ -1494,127 +1387,6 @@ namespace System.Security.Cryptography
             throw new CryptographicException(
                 SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, Convert.ToHexString(encodedId.Encode())));
 #endif
-        }
-
-        [DoesNotReturn]
-        private static ParameterSetInfo ThrowAlgorithmUnknown(string algorithmId)
-        {
-            throw new CryptographicException(
-                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, algorithmId));
-        }
-
-        internal sealed class ParameterSetInfo
-        {
-            // TODO: If SLHDsaAlgorithm is a class, this class can be merged into it.
-            // TODO: Some of the information maybe then becomes public on SLHDsaAlgorithm, rather than SLHDsa?
-
-            internal int PrivateSeedSizeInBytes { get; }
-            internal int SecretKeySizeInBytes { get; }
-            internal int PublicKeySizeInBytes { get; }
-            internal int SignatureSizeInBytes { get; }
-            internal SLHDsaAlgorithm Algorithm { get; }
-            internal string Oid { get; }
-
-            private ParameterSetInfo(
-                int n, // Also referred to as the "security parameter" in FIPS 205
-                int signatureSizeInBytes,
-                SLHDsaAlgorithm algorithm,
-                string oid)
-            {
-
-                // The seed, secret key and public key sizes are shown to be n, 4n and 2n respectively in
-                // section 9.1 "Key Generation", particularly figure 15 and 16.
-                PrivateSeedSizeInBytes = n;
-                SecretKeySizeInBytes = 4 * n;
-                PublicKeySizeInBytes = 2 * n;
-                SignatureSizeInBytes = signatureSizeInBytes;
-                Algorithm = algorithm;
-                Oid = oid;
-            }
-
-            // SLH-DSA parameter sets, and the sizes associated with them,
-            // are defined in FIPS 205, section 11 "Parameter Sets",
-            // particularly Table 2 "SLH-DSA parameter sets".
-
-            internal static readonly ParameterSetInfo SLHDsaSha2_128s =
-                new ParameterSetInfo(16, 7856, SLHDsaAlgorithm.SLHDsaSha2_128s, Oids.SLHDsaSha2_128s);
-
-            internal static readonly ParameterSetInfo SLHDsaShake_128s =
-                new ParameterSetInfo(16, 7856, SLHDsaAlgorithm.SLHDsaShake_128s, Oids.SLHDsaShake_128s);
-
-            internal static readonly ParameterSetInfo SLHDsaSha2_128f =
-                new ParameterSetInfo(16, 17088, SLHDsaAlgorithm.SLHDsaSha2_128f, Oids.SLHDsaSha2_128f);
-
-            internal static readonly ParameterSetInfo SLHDsaShake_128f =
-                new ParameterSetInfo(16, 17088, SLHDsaAlgorithm.SLHDsaShake_128f, Oids.SLHDsaShake_128f);
-
-            internal static readonly ParameterSetInfo SLHDsaSha2_192s =
-                new ParameterSetInfo(24, 15616, SLHDsaAlgorithm.SLHDsaSha2_192s, Oids.SLHDsaSha2_192s);
-
-            internal static readonly ParameterSetInfo SLHDsaShake_192s =
-                new ParameterSetInfo(24, 15616, SLHDsaAlgorithm.SLHDsaShake_192s, Oids.SLHDsaShake_192s);
-
-            internal static readonly ParameterSetInfo SLHDsaSha2_192f =
-                new ParameterSetInfo(24, 35664, SLHDsaAlgorithm.SLHDsaSha2_192f, Oids.SLHDsaSha2_192f);
-
-            internal static readonly ParameterSetInfo SLHDsaShake_192f =
-                new ParameterSetInfo(24, 35664, SLHDsaAlgorithm.SLHDsaShake_192f, Oids.SLHDsaShake_192f);
-
-            internal static readonly ParameterSetInfo SLHDsaSha2_256s =
-                new ParameterSetInfo(32, 29792, SLHDsaAlgorithm.SLHDsaSha2_256s, Oids.SLHDsaSha2_256s);
-
-            internal static readonly ParameterSetInfo SLHDsaShake_256s =
-                new ParameterSetInfo(32, 29792, SLHDsaAlgorithm.SLHDsaShake_256s, Oids.SLHDsaShake_256s);
-
-            internal static readonly ParameterSetInfo SLHDsaSha2_256f =
-                new ParameterSetInfo(32, 49856, SLHDsaAlgorithm.SLHDsaSha2_256f, Oids.SLHDsaSha2_256f);
-
-            internal static readonly ParameterSetInfo SLHDsaShake_256f =
-                new ParameterSetInfo(32, 49856, SLHDsaAlgorithm.SLHDsaShake_256f, Oids.SLHDsaShake_256f);
-
-            internal static ParameterSetInfo GetParameterSetInfo(SLHDsaAlgorithm algorithm)
-            {
-                ArgumentNullException.ThrowIfNull(algorithm);
-
-                return algorithm.Name switch
-                {
-                    "SLH-DSA-SHA2-128s" => SLHDsaShake_128s,
-                    "SLH-DSA-SHAKE-128s" => SLHDsaShake_128s,
-                    "SLH-DSA-SHA2-128f" => SLHDsaShake_128f,
-                    "SLH-DSA-SHAKE-128f" => SLHDsaShake_128f,
-                    "SLH-DSA-SHA2-192s" => SLHDsaShake_192s,
-                    "SLH-DSA-SHAKE-192s" => SLHDsaShake_192s,
-                    "SLH-DSA-SHA2-192f" => SLHDsaShake_192f,
-                    "SLH-DSA-SHAKE-192f" => SLHDsaShake_192f,
-                    "SLH-DSA-SHA2-256s" => SLHDsaShake_256s,
-                    "SLH-DSA-SHAKE-256s" => SLHDsaShake_256s,
-                    "SLH-DSA-SHA2-256f" => SLHDsaShake_256f,
-                    "SLH-DSA-SHAKE-256f" => SLHDsaShake_256f,
-
-                    _ => ThrowAlgorithmUnknown(algorithm.Name),
-                };
-            }
-
-            internal static ParameterSetInfo GetParameterSetInfoFromOid(string oid)
-            {
-                return oid switch
-                {
-                    Oids.SLHDsaSha2_128s => SLHDsaSha2_128s,
-                    Oids.SLHDsaShake_128s => SLHDsaShake_128s,
-                    Oids.SLHDsaSha2_128f => SLHDsaSha2_128f,
-                    Oids.SLHDsaShake_128f => SLHDsaShake_128f,
-                    Oids.SLHDsaSha2_192s => SLHDsaSha2_192s,
-                    Oids.SLHDsaShake_192s => SLHDsaShake_192s,
-                    Oids.SLHDsaSha2_192f => SLHDsaSha2_192f,
-                    Oids.SLHDsaShake_192f => SLHDsaShake_192f,
-                    Oids.SLHDsaSha2_256s => SLHDsaSha2_256s,
-                    Oids.SLHDsaShake_256s => SLHDsaShake_256s,
-                    Oids.SLHDsaSha2_256f => SLHDsaSha2_256f,
-                    Oids.SLHDsaShake_256f => SLHDsaShake_256f,
-
-                    _ => ThrowAlgorithmUnknown(oid),
-                };
-            }
         }
     }
 }

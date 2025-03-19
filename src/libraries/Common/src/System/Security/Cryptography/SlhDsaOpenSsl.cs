@@ -1,0 +1,43 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
+namespace System.Security.Cryptography
+{
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    internal sealed partial class SlhDsaOpenSsl : SlhDsa
+    {
+        internal SlhDsaOpenSsl(SlhDsaAlgorithm algorithm)
+            : base(algorithm)
+        {
+            ThrowIfNotSupported();
+        }
+
+        internal static bool SupportsAny() => false;
+
+        // TODO: Define this in terms of Windows BCrypt.dll (ephemeral keys)
+
+        protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
+        protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override void ExportSlhDsaPrivateSeedCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+    }
+}
