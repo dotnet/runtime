@@ -181,7 +181,6 @@ DEBUG_NOINLINE FCallCheck::~FCallCheck()
     // If you don't have a helper frame you can used
     //
     //      FC_GC_POLL_AND_RETURN_OBJREF        or
-    //      FC_GC_POLL                          or
     //      FC_GC_POLL_RET
     //
     // Note that these must be at GC safe points.  In particular

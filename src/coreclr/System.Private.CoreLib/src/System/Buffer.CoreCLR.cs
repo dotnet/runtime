@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System
 {
@@ -16,7 +17,13 @@ namespace System
         private static unsafe partial void __Memmove(byte* dest, byte* src, nuint len);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
+        private static extern void BulkMoveWithWriteBarrierInternal(ref byte destination, ref byte source, nuint byteCount);
+
+        private static void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
+        {
+            Thread.PollGC();
+            BulkMoveWithWriteBarrierInternal(ref destination, ref source, byteCount);
+        }
 
         // Used by ilmarshalers.cpp
         internal static unsafe void Memcpy(byte* dest, byte* src, int len)
