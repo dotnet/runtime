@@ -47,7 +47,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
-            value = (value + (value >>= 15)) ^ value;
+            value = unchecked((value + (value >>= 15)) ^ value);
 
             if (value == short.MinValue)
             {
@@ -59,7 +59,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Abs(int value)
         {
-            value = (value + (value >>= 31)) ^ value;
+            value = unchecked((value + (value >>= 31)) ^ value);
 
             if (value == int.MinValue)
             {
@@ -71,7 +71,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Abs(long value)
         {
-            value = (value + (value >>= 63)) ^ value;
+            value = unchecked((value + (value >>= 63)) ^ value);
 
             if (value == long.MinValue)
             {
@@ -101,7 +101,7 @@ namespace System
         [CLSCompliant(false)]
         public static sbyte Abs(sbyte value)
         {
-            value = (value + (value >>= 7)) ^ value;
+            value = unchecked((value + (value >>= 7)) ^ value);
 
             if (value == sbyte.MinValue)
             {
