@@ -624,16 +624,16 @@ struct AMD64GcInfoEncoding {
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
 
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
-    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)>>3); }
-    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)<<3); }
+    static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return ((x)>>3); }
+    static inline constexpr int32_t DENORMALIZE_STACK_SLOT (int32_t x) { return ((x)<<3); }
     static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
 
     // Encode RBP as 0
-    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) ^ 5); }
-    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) ^ 5); }
-    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)>>3); }
-    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)<<3); }
+    static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x) ^ 5); }
+    static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x) ^ 5); }
+    static inline constexpr uint32_t NORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)>>3); }
+    static inline constexpr uint32_t DENORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)<<3); }
     static const bool CODE_OFFSETS_NEED_NORMALIZATION = false;
     static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
@@ -680,15 +680,15 @@ struct AMD64GcInfoEncoding {
 struct ARM32GcInfoEncoding {
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
-    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)>>2); }
-    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)<<2); }
+    static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return ((x)>>2); }
+    static inline constexpr int32_t DENORMALIZE_STACK_SLOT (int32_t x) { return ((x)<<2); }
     static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)>>1); }
     static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)<<1); }
     // Encode R11 as zero
-    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((((x) - 4) & 7) ^ 7); }
-    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return (((x) ^ 7) + 4); }
-    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)>>2); }
-    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)<<2); }
+    static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((((x) - 4) & 7) ^ 7); }
+    static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return (((x) ^ 7) + 4); }
+    static inline constexpr uint32_t NORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)>>2); }
+    static inline constexpr uint32_t DENORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)<<2); }
     static const bool CODE_OFFSETS_NEED_NORMALIZATION = true;
     static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)>>1)   /* Instructions are 2/4 bytes long in Thumb/ARM states */; }
     static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)<<1); }
@@ -738,16 +738,16 @@ struct ARM64GcInfoEncoding {
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
     // GC Pointers are 8-bytes aligned
-    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)>>3); }
-    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)<<3); }
+    static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return ((x)>>3); }
+    static inline constexpr int32_t DENORMALIZE_STACK_SLOT (int32_t x) { return ((x)<<3); }
     // All Instructions are 4 bytes long
     static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)>>2); }
     static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)<<2); }
     // Encode Frame pointer X29 as zero
-    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x)^29); }
-    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x)^29); }
-    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)>>3); }
-    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)<<3); }
+    static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x)^29); }
+    static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x)^29); }
+    static inline constexpr uint32_t NORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)>>3); }
+    static inline constexpr uint32_t DENORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)<<3); }
     static const bool CODE_OFFSETS_NEED_NORMALIZATION = true;
     // Instructions are 4 bytes long
     static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)>>2); }
@@ -797,16 +797,16 @@ struct LoongArch64GcInfoEncoding {
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
     // GC Pointers are 8-bytes aligned
-    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)>>3); }
-    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)<<3); }
+    static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return ((x)>>3); }
+    static inline constexpr int32_t DENORMALIZE_STACK_SLOT (int32_t x) { return ((x)<<3); }
     // All Instructions are 4 bytes long
     static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)>>2); }
     static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)<<2); }
     // Encode Frame pointer fp=$22 as zero
-    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) == 22 ? 0u : 1u); }
-    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) == 0 ? 22u : 3u); }
-    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)>>3); }
-    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)<<3); }
+    static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x) == 22 ? 0u : 1u); }
+    static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x) == 0 ? 22u : 3u); }
+    static inline constexpr uint32_t NORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)>>3); }
+    static inline constexpr uint32_t DENORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)<<3); }
     static const bool CODE_OFFSETS_NEED_NORMALIZATION = true;
     // Instructions are 4 bytes long
     static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)>>2); }
@@ -855,16 +855,16 @@ struct RISCV64GcInfoEncoding {
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
     // GC Pointers are 8-bytes aligned
-    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)>>3); }
-    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)<<3); }
+    static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return ((x)>>3); }
+    static inline constexpr int32_t DENORMALIZE_STACK_SLOT (int32_t x) { return ((x)<<3); }
     // All Instructions are 4 bytes long
     static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)>>2); }
     static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)<<2); }
     // Encode Frame pointer X8 as zero, sp/x2 as 1
-    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) == 8 ? 0u : 1u); }
-    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) == 0 ? 8u : 2u); }
-    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)>>3); }
-    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)<<3); }
+    static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x) == 8 ? 0u : 1u); }
+    static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x) == 0 ? 8u : 2u); }
+    static inline constexpr uint32_t NORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)>>3); }
+    static inline constexpr uint32_t DENORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)<<3); }
     static const bool CODE_OFFSETS_NEED_NORMALIZATION = true;
     // Instructions are 4 bytes long
     static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)>>2); }
@@ -920,14 +920,14 @@ PORTABILITY_WARNING("Please specialize these definitions for your platform!")
 struct X86GcInfoEncoding {
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
-    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return (x); }
-    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return (x); }
+    static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return (x); }
+    static inline constexpr int32_t DENORMALIZE_STACK_SLOT (int32_t x) { return (x); }
     static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return (x); }
+    static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr uint32_t NORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return (x); }
     static const bool CODE_OFFSETS_NEED_NORMALIZATION = false;
     static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
