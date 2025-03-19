@@ -3878,15 +3878,14 @@ void LinearScan::processKills(RefPosition* killRefPosition)
 //   regBase - `0` or `64` based on the `killedRegs` being processed
 //
 void LinearScan::freeKilledRegs(RefPosition* killRefPosition,
-                                regMaskSmall killedRegs,
+                                SingleTypeRegSet killedRegs,
                                 RefPosition* nextKill,
                                 int          regBase)
 {
 
     while (killedRegs != RBM_NONE)
     {
-        regNumber killedReg = (regNumber)(BitOperations::BitScanForward(killedRegs) + regBase);
-        killedRegs ^= genSingleTypeRegMask(killedReg);
+        regNumber killedReg = (regNumber)(genFirstRegNumFromMaskAndToggle(killedRegs) + regBase);
         RegRecord* regRecord        = getRegisterRecord(killedReg);
         Interval*  assignedInterval = regRecord->assignedInterval;
         if (assignedInterval != nullptr)
@@ -4605,7 +4604,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 }
 
 //------------------------------------------------------------------------
-// handleDeadCandidates: Handle registers thata re assigned to local variables.
+// handleDeadCandidates: Handle registers that are assigned to local variables.
 //
 // Arguments:
 //    deadCandidates - mask of registers.
@@ -4615,12 +4614,11 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 // Return Value:
 //    None
 //
-void LinearScan::handleDeadCandidates(regMaskSmall deadCandidates, int regBase, VarToRegMap inVarToRegMap)
+void LinearScan::handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBase, VarToRegMap inVarToRegMap)
 {
     while (deadCandidates != RBM_NONE)
     {
-        regNumber reg = (regNumber)(BitOperations::BitScanForward(deadCandidates) + regBase);
-        deadCandidates ^= genSingleTypeRegMask(reg);
+        regNumber reg = (regNumber)(genFirstRegNumFromMaskAndToggle(deadCandidates) + regBase);
         RegRecord* physRegRecord = getRegisterRecord(reg);
 
         makeRegAvailable(reg, physRegRecord->registerType);
@@ -4805,13 +4803,11 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
 //    regsToFree         - the mask of registers to free, separated into low and high parts.
 //    regBase            - `0` or `64` depending on if the registers to be freed are in the lower or higher bank.
 //
-void LinearScan::freeRegistersNoMask(SingleTypeRegSet regsToFree, int regBase)
+void LinearScan::freeRegistersSingleType(SingleTypeRegSet regsToFree, int regBase)
 {
     while (regsToFree != RBM_NONE)
     {
-        regNumber nextReg = (regNumber)(BitOperations::BitScanForward(regsToFree) + regBase);
-        regsToFree ^= genSingleTypeRegMask(nextReg);
-
+        regNumber nextReg = (regNumber)(genFirstRegNumFromMaskAndToggle(regsToFree) + regBase);
         RegRecord* regRecord = getRegisterRecord(nextReg);
         freeRegister(regRecord);
     }
@@ -4845,9 +4841,9 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
         freeRegister(regRecord);
     }
 #else
-    freeRegistersNoMask(regsToFree.getLow(), REG_LOW_BASE);
+    freeRegistersSingleType(regsToFree.getLow(), REG_LOW_BASE);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    freeRegistersNoMask(regsToFree.getHigh(), REG_HIGH_BASE);
+    freeRegistersSingleType(regsToFree.getHigh(), REG_HIGH_BASE);
 #endif
 
 #endif

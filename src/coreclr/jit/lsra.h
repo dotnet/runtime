@@ -1006,7 +1006,7 @@ private:
     // Record variable locations at start/end of block
     void processBlockStartLocations(BasicBlock* current);
 
-    FORCEINLINE void handleDeadCandidates(regMaskSmall deadCandidates, int regBase, VarToRegMap inVarToRegMap);
+    FORCEINLINE void handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBase, VarToRegMap inVarToRegMap);
     void             processBlockEndLocations(BasicBlock* current);
     void             resetAllRegistersState();
 
@@ -1084,7 +1084,7 @@ private:
     void             makeRegisterInactive(RegRecord* physRegRecord);
     void             freeRegister(RegRecord* physRegRecord);
     void             freeRegisters(regMaskTP regsToFree);
-    FORCEINLINE void freeRegistersNoMask(SingleTypeRegSet regsToFree, int regBase);
+    FORCEINLINE void freeRegistersSingleType(SingleTypeRegSet regsToFree, int regBase);
 
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
@@ -1197,7 +1197,7 @@ private:
 
     void             processKills(RefPosition* killRefPosition);
     FORCEINLINE void freeKilledRegs(RefPosition* killRefPosition,
-                                    regMaskSmall killedRegs,
+                                    SingleTypeRegSet killedRegs,
                                     RefPosition* nextKill,
                                     int          regBase);
     void             spillGCRefs(RefPosition* killRefPosition);
