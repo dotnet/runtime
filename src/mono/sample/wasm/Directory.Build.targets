@@ -68,7 +68,6 @@
     <ItemGroup>
       <NestedBuildProperty>
         <NestedIdentity>Nested_%(NestedBuildProperty.Identity)</NestedIdentity>
-        <ParentValue>$(Nested_%(NestedBuildProperty.Identity))</ParentValue>
       </NestedBuildProperty>
     </ItemGroup>
 
