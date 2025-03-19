@@ -177,11 +177,6 @@ done:
     return NULL;
 }
 
-int32_t CryptoNative_EvpKemExportPrivateSeed(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
-{
-    return GetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_ML_KEM_SEED, destination, destinationLength);
-}
-
 int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
                                        uint8_t* ciphertext,
                                        int32_t ciphertextLength,
@@ -304,6 +299,11 @@ done:
     (void)sharedSecret;
     (void)sharedSecretLength;
     return 0;
+}
+
+int32_t CryptoNative_EvpKemExportPrivateSeed(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
+{
+    return GetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_ML_KEM_SEED, destination, destinationLength);
 }
 
 int32_t CryptoNative_EvpKemExportDecapsulationKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
