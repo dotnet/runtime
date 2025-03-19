@@ -151,6 +151,8 @@
              Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs"
              Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemAlgorithmTests.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.ArgValidation.cs"
