@@ -1810,12 +1810,11 @@ namespace System.Security.Cryptography
         public void Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
         protected abstract void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret);
         public void ExportMLKemDecapsulationKey(System.Span<byte> destination) { }
-        public void ExportMLKemEncapsulationKey(System.Span<byte> destination) { }
         protected abstract void ExportMLKemDecapsulationKeyCore(System.Span<byte> destination);
+        public void ExportMLKemEncapsulationKey(System.Span<byte> destination) { }
         protected abstract void ExportMLKemEncapsulationKeyCore(System.Span<byte> destination);
         public void ExportMLKemPrivateSeed(System.Span<byte> destination) { }
         protected abstract void ExportMLKemPrivateSeedCore(System.Span<byte> destination);
-        ~MLKem() { }
         public static System.Security.Cryptography.MLKem GenerateMLKemKey(System.Security.Cryptography.MLKemAlgorithm algorithm) { throw null; }
         public static System.Security.Cryptography.MLKem ImportMLKemPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         protected void ThrowIfDisposed() { }

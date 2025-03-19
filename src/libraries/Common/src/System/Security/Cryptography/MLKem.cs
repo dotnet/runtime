@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// The private seed size for ML-KEM, in bytes.
         /// </summary>
-        public const int PrivateSeedSizeInBytes = 64; // FIPS 203 Algorithm 19. Seed is z || d
+        public const int PrivateSeedSizeInBytes = 64; // FIPS 203 Algorithm 19. Seed is d || z
 
         /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
