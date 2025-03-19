@@ -45,5 +45,11 @@ namespace ILLink.RoslynAnalyzer.Tests.Interop
         {
             return RunTest();
         }
+
+	[Fact]
+	public Task NoSpecialMarking ()
+	{
+	    return RunTest ();
+	 }
     }
 }
