@@ -214,7 +214,7 @@ namespace System.Threading
                     lockTaken = true;
                     return;
                 }
-                else if (tryEnterResult == EnterHelperResult.Contention)
+                else if (millisecondsTimeout == 0 && (tryEnterResult == EnterHelperResult.Contention))
                 {
                     return;
                 }
@@ -257,7 +257,7 @@ namespace System.Threading
                 {
                     return true;
                 }
-                else if (tryEnterResult == EnterHelperResult.Contention)
+                else if (millisecondsTimeout == 0 && (tryEnterResult == EnterHelperResult.Contention))
                 {
                     return false;
                 }
