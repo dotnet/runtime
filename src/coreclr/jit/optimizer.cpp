@@ -1975,11 +1975,11 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         }
     }
 
-    weight_t       loopIterations            = BB_LOOP_WEIGHT_SCALE;
-    bool           haveProfileWeights        = false;
-    weight_t const weightPreheader           = preheader->bbWeight;
-    weight_t const weightCond                = condBlock->bbWeight;
-    weight_t const weightStayInLoopSucc      = stayInLoopSucc->bbWeight;
+    weight_t       loopIterations       = BB_LOOP_WEIGHT_SCALE;
+    bool           haveProfileWeights   = false;
+    weight_t const weightPreheader      = preheader->bbWeight;
+    weight_t const weightCond           = condBlock->bbWeight;
+    weight_t const weightStayInLoopSucc = stayInLoopSucc->bbWeight;
 
     // If we have profile data then we calculate the number of times
     // the loop will iterate into loopIterations
@@ -2174,22 +2174,23 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     if (haveProfileWeights)
     {
-        newPreheader->setBBProfileWeight(newPreheader->computeIncomingWeight());
+        // Reduce flow into the new loop entry/exit blocks
+        newPreheader->setBBProfileWeight(newCondToNewPreheader->getLikelyWeight());
+        exit->decreaseBBProfileWeight(newCondToNewExit->getLikelyWeight());
 
         // Update the weight for the duplicated blocks. Normally, this reduces
         // the weight of condBlock, except in odd cases of stress modes with
         // inconsistent weights.
-        
+
         for (int i = 0; i < duplicatedBlocks.Height(); i++)
         {
             BasicBlock* block = duplicatedBlocks.Bottom(i);
             JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", block->bbNum, weightCond,
                     weightStayInLoopSucc);
-            block->inheritWeight(stayInLoopSucc);
+            block->setBBProfileWeight(weightStayInLoopSucc);
         }
 
         condBlock->setBBProfileWeight(condBlock->computeIncomingWeight());
-        exit->setBBProfileWeight(exit->computeIncomingWeight());
     }
 
     // Finally compact the condition with its pred if that is possible now.
