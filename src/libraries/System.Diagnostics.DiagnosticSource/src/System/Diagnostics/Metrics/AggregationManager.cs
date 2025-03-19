@@ -28,7 +28,9 @@ namespace System.Diagnostics.Metrics
         private readonly ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private readonly CancellationTokenSource _cts = new();
         private Thread? _collectThread;
+#if OS_ISBROWSER_SUPPORT
         private Timer? _pollingTimer;
+#endif
         private readonly MeterListener _listener;
         private int _currentTimeSeries;
         private int _currentHistograms;
