@@ -146,7 +146,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
     // Decode the offset to the GS cookie.
     if (m_headerFlags & GC_INFO_HAS_GS_COOKIE)
     {
-        m_GSCookieStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(GcInfoEncoding::GS_COOKIE_STACK_SLOT_ENCBASE));
+        m_GSCookieStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::GS_COOKIE_STACK_SLOT_ENCBASE));
     }
     else
     {
@@ -164,7 +164,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
     // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before any stack allocation on X64 (InitialSP).
     if (m_headerFlags & GC_INFO_HAS_PSP_SYM)
     {
-        m_PSPSymStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(GcInfoEncoding::PSP_SYM_STACK_SLOT_ENCBASE));
+        m_PSPSymStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::PSP_SYM_STACK_SLOT_ENCBASE));
     }
     else
     {
@@ -181,7 +181,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
     // Decode the offset to the generics type context.
     if ((m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
     {
-        m_GenericsInstContextStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(GcInfoEncoding::GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE));
+        m_GenericsInstContextStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE));
     }
     else
     {
@@ -197,7 +197,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
 
     if (m_headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER)
     {
-        m_StackBaseRegister = (UINT32)GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER(m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::STACK_BASE_REGISTER_ENCBASE));
+        m_StackBaseRegister = (UINT32)GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::STACK_BASE_REGISTER_ENCBASE));
     }
     else
     {
@@ -228,7 +228,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
 
     if (m_headerFlags & GC_INFO_REVERSE_PINVOKE_FRAME)
     {
-        m_ReversePInvokeFrameStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(GcInfoEncoding::REVERSE_PINVOKE_FRAME_ENCBASE));
+        m_ReversePInvokeFrameStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::REVERSE_PINVOKE_FRAME_ENCBASE));
     }
     else
     {
@@ -243,7 +243,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
     }
 
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    m_SizeOfStackOutgoingAndScratchArea = (UINT32)GcInfoEncoding::DENORMALIZE_SIZE_OF_STACK_AREA(m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE));
+    m_SizeOfStackOutgoingAndScratchArea = (UINT32)GcInfoEncoding::DENORMALIZE_SIZE_OF_STACK_AREA((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE));
 #endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
     return false;
