@@ -59,10 +59,10 @@
 
     .method public static int32 Main()
     {
-      .entrypoint
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
+      .entrypoint
       .maxstack  1
       call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsWindows()
       brtrue.s   DoTest
