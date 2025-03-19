@@ -155,7 +155,7 @@ inline var_types HfaTypeFromElemKind(CorInfoHFAElemType kind)
 #ifdef FEATURE_SIMD
 #ifdef TARGET_ARM64
         case CORINFO_HFA_ELEM_VECTOR_VL:
-            return TYP_SIMD;
+            return TYP_SIMDVL;
 #endif
         case CORINFO_HFA_ELEM_VECTOR64:
             return TYP_SIMD8;
@@ -179,7 +179,7 @@ inline CorInfoHFAElemType HfaElemKindFromType(var_types type)
             return CORINFO_HFA_ELEM_DOUBLE;
 #ifdef FEATURE_SIMD
 #ifdef TARGET_ARM64
-        case TYP_SIMD:
+        case TYP_SIMDVL:
             return CORINFO_HFA_ELEM_VECTOR_VL;
 #endif
         case TYP_SIMD8:
@@ -9596,7 +9596,7 @@ public:
     }
 
 private:
-    // Returns true if the TYP_SIMD locals on stack are aligned at their
+    // Returns true if the TYP_SIMDVL locals on stack are aligned at their
     // preferred byte boundary specified by getSIMDTypeAlignment().
     //
     // As per the Intel manual, the preferred alignment for AVX vectors is
