@@ -1433,10 +1433,6 @@ AGAIN:
 #endif
 
 FOUND_AM:
-#ifdef TARGET_RISCV64
-    assert(mul == 0 || mul == 1);
-#endif
-
     if (rv2)
     {
         // Make sure a GC address doesn't end up in 'rv2'
