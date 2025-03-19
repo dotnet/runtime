@@ -47,13 +47,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
-            if (value < 0)
+            value = (value + (value >>= 15)) ^ value;
+
+            if (value == short.MinValue)
             {
-                value = (short)-value;
-                if (value < 0)
-                {
-                    ThrowNegateTwosCompOverflow();
-                }
+                ThrowNegateTwosCompOverflow();
             }
             return value;
         }
@@ -61,13 +59,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Abs(int value)
         {
-            if (value < 0)
+            value = (value + (value >>= 31)) ^ value;
+
+            if (value == int.MinValue)
             {
-                value = -value;
-                if (value < 0)
-                {
-                    ThrowNegateTwosCompOverflow();
-                }
+                ThrowNegateTwosCompOverflow();
             }
             return value;
         }
@@ -75,13 +71,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Abs(long value)
         {
-            if (value < 0)
+            value = (value + (value >>= 63)) ^ value;
+
+            if (value == long.MinValue)
             {
-                value = -value;
-                if (value < 0)
-                {
-                    ThrowNegateTwosCompOverflow();
-                }
+                ThrowNegateTwosCompOverflow();
             }
             return value;
         }
@@ -107,13 +101,11 @@ namespace System
         [CLSCompliant(false)]
         public static sbyte Abs(sbyte value)
         {
-            if (value < 0)
+            value = (value + (value >>= 7)) ^ value;
+
+            if (value == sbyte.MinValue)
             {
-                value = (sbyte)-value;
-                if (value < 0)
-                {
-                    ThrowNegateTwosCompOverflow();
-                }
+                ThrowNegateTwosCompOverflow();
             }
             return value;
         }
