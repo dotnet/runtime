@@ -67,6 +67,8 @@ EXTERN @ProfileTailcall@8:PROC
 EXTERN @IL_Throw_x86@8:PROC
 EXTERN @IL_Rethrow_x86@4:PROC
 
+EXTERN _VSD_ResolveWorker@12:PROC
+
 UNREFERENCED macro arg
     local unref
     unref equ size arg
@@ -1545,23 +1547,98 @@ _CallEHFilterFunclet@16 proc public
 _CallEHFilterFunclet@16 endp
 
 FASTCALL_FUNC IL_Throw, 4
-        STUB_PROLOG
+    STUB_PROLOG
 
-        mov     edx, esp
-        call    @IL_Throw_x86@8
+    mov     edx, esp
+    call    @IL_Throw_x86@8
 
-        STUB_EPILOG
-        ret     4
+    STUB_EPILOG
+    ret     4
 FASTCALL_ENDFUNC IL_Throw
 
 FASTCALL_FUNC IL_Rethrow, 0
-        STUB_PROLOG
+    STUB_PROLOG
 
-        mov     ecx, esp
-        call    @IL_Rethrow_x86@4
+    mov     ecx, esp
+    call    @IL_Rethrow_x86@4
 
-        STUB_EPILOG
-        ret     4
+    STUB_EPILOG
+    ret     4
 FASTCALL_ENDFUNC IL_Rethrow
+
+;==========================================================================
+; Call the resolver, it will return where we are supposed to go.
+; There is a little stack magic here, in that we are entered with one
+; of the arguments for the resolver (the token) on the stack already.
+; We just push the other arguments, <this> in the call frame and the call site pointer,
+; and call the resolver.
+;
+; On return we have the stack frame restored to the way it was when the ResolveStub
+; was called, i.e. as it was at the actual call site.  The return value from
+; the resolver is the address we need to transfer control to, simulating a direct
+; call from the original call site.  If we get passed back NULL, it means that the
+; resolution failed, an unimpelemented method is being called.
+;
+; Entry stack:
+;          dispatch token
+;          siteAddrForRegisterIndirect (used only if this is a RegisterIndirect dispatch call)
+;          return address of caller to stub
+;
+; Call stack:
+;          pointer to TransitionBlock
+;          call site
+;          dispatch token
+;          TransitionBlock
+;              ArgumentRegisters (ecx, edx)
+;              CalleeSavedRegisters (ebp, ebx, esi, edi)
+;          return address of caller to stub
+;==========================================================================
+_ResolveWorkerAsmStub@0 proc public
+    ;
+    ; The stub arguments are where we want to setup the TransitionBlock. We will
+    ; setup the TransitionBlock later once we can trash them
+    ;
+    ; push ebp-frame
+    ; push  ebp
+    ; mov   ebp,esp
+
+    ; save CalleeSavedRegisters
+    ; push  ebx
+
+    push    esi
+    push    edi
+
+    ; push ArgumentRegisters
+    push    ecx
+    push    edx
+
+    mov     esi, esp
+
+    PUSH_CLR_EXCEPTION_HANDLER
+
+    push    [esi + 4*4]     ; dispatch token
+    push    [esi + 5*4]     ; siteAddrForRegisterIndirect
+    push    esi             ; pTransitionBlock
+
+    ; Setup up proper EBP frame now that the stub arguments can be trashed
+    mov     [esi + 4*4], ebx
+    mov     [esi + 5*4], ebp
+    lea     ebp, [esi + 5*4]
+
+    ; Make the call
+    call    _VSD_ResolveWorker@12
+
+    ; From here on, mustn't trash eax
+
+    POP_CLR_EXCEPTION_HANDLER
+
+    STUB_EPILOG
+    jmp     eax
+
+    ; This will never be executed. It is just to help out stack-walking logic
+    ; which disassembles the epilog to unwind the stack.
+    ret
+_ResolveWorkerAsmStub@0 endp
+
 
     end
