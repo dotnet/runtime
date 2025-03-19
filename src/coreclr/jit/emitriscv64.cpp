@@ -51,6 +51,26 @@ const emitJumpKind emitReverseJumpKinds[] = {
 }
 
 /*****************************************************************************
+ * Look up the (conditional) jump kind for an instruction.
+ */
+
+/*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
+{
+    assert(emitter::isCondJumpInstruction(ins));
+
+    for (unsigned i = 0; i < ArrLen(emitJumpKindInstructions); i++)
+    {
+        if (ins == emitJumpKindInstructions[i])
+        {
+            emitJumpKind ret = (emitJumpKind)i;
+            assert(EJ_NONE < ret && ret < EJ_COUNT);
+            return ret;
+        }
+    }
+    unreached();
+}
+
+/*****************************************************************************
  * Reverse the conditional jump
  */
 
@@ -58,6 +78,23 @@ const emitJumpKind emitReverseJumpKinds[] = {
 {
     assert(jumpKind < EJ_COUNT);
     return emitReverseJumpKinds[jumpKind];
+}
+
+/*****************************************************************************
+ * Reverse the conditional jump instruction
+ */
+
+/*static*/ instruction emitter::emitReverseJumpIns(instruction ins)
+{
+    assert(emitter::isCondJumpInstruction(ins));
+
+    return emitJumpKindToIns(
+        emitReverseJumpKind(
+            emitInsToJumpKind(
+                ins
+            )
+        )
+    );
 }
 
 /*****************************************************************************
@@ -1176,15 +1213,14 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 {
-    assert(dst != nullptr);
-    //
-    // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JALR.
-    // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dst
+    assert(isCondJumpInstruction(ins) || isJumpInstruction(ins));
 
-    assert(dst->HasFlag(BBF_HAS_LABEL));
+    if (dst != nullptr)
+    {
+        assert(dst->HasFlag(BBF_HAS_LABEL));
+    }
 
     instrDescJmp* id = emitNewInstrJmp();
-    assert((INS_jal <= ins) && (ins <= INS_bgeu));
     id->idIns(ins);
     id->idReg1((regNumber)(instrCount & 0x1f));
     id->idReg2((regNumber)((instrCount >> 5) & 0x1f));
