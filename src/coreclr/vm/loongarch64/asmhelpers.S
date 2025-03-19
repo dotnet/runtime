@@ -1142,3 +1142,13 @@ LOCAL_LABEL(JIT_PollGCRarePath):
         ld.d    $t0, $t0, 0
         EPILOG_BRANCH_REG $t0
 LEAF_END JIT_PollGC, _TEXT
+
+//a0 -This pointer
+//a1 -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    ld.w  $METHODDESC_REGISTER, $METHODDESC_REGISTER, ThisPtrRetBufPrecodeData__Target
+    move  $t0, $a0     // Move first arg pointer to temp register
+    move  $a0, $a1     // Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
+    move  $a1, $t0     // Move temp register to first arg register for static method with return buffer
+    EPILOG_BRANCH_REG $METHODDESC_REGISTER
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT

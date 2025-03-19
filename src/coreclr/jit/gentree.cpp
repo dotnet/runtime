@@ -7124,15 +7124,27 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
             GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
 
+            ExceptionSetFlags flags = ExceptionSetFlags::None;
             if (hwIntrinsicNode->OperIsMemoryLoadOrStore())
             {
                 // TODO-CQ: We should use comp->fgAddrCouldBeNull on the address operand
                 // to determine if this can actually produce an NRE or not
-
-                return ExceptionSetFlags::NullReferenceException;
+                flags |= ExceptionSetFlags::NullReferenceException;
             }
 
-            return ExceptionSetFlags::None;
+#ifdef TARGET_XARCH
+            NamedIntrinsic intrinsicId = hwIntrinsicNode->GetHWIntrinsicId();
+            if ((intrinsicId == NI_Vector128_op_Division) || (intrinsicId == NI_Vector256_op_Division) ||
+                (intrinsicId == NI_Vector512_op_Division))
+            {
+                // We currently don't try to avoid setting these flags and GTF_EXCEPT when
+                // we know that the operation in fact cannot overflow/divide by zero.
+                assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
+                flags |= ExceptionSetFlags::OverflowException | ExceptionSetFlags::DivideByZeroException;
+            }
+#endif
+
+            return flags;
         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -12321,7 +12333,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
 #if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
-            printf(" endNstLvl=%d", tree->AsVal()->gtVal1);
+            printf(" ehID=%d", tree->AsVal()->gtVal1);
             break;
 #endif // FEATURE_EH_WINDOWS_X86
 

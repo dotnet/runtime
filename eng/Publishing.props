@@ -7,7 +7,6 @@
 
   <PropertyGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuild)' != 'true'">
     <PushToLocalStorage>true</PushToLocalStorage>
-    <PreserveRepoOrigin>true</PreserveRepoOrigin>
     <ArtifactsStagingDir>$(ArtifactsDir)staging/</ArtifactsStagingDir>
     <SourceBuiltPdbArtifactsDir>$(ArtifactsStagingDir)SymStore</SourceBuiltPdbArtifactsDir>
     <!-- Put blobs where we put packages so our regular globbing in our publish join job finds them. -->

@@ -132,12 +132,6 @@ extern bool g_arm64_atomics_present;
 
 #define DECLSPEC_NORETURN   PAL_NORETURN
 
-#ifdef __clang_analyzer__
-#define ANALYZER_NORETURN __attribute((analyzer_noreturn))
-#else
-#define ANALYZER_NORETURN
-#endif
-
 #define EMPTY_BASES_DECL
 
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
@@ -528,20 +522,6 @@ SearchPathW(
 #define SearchPath  SearchPathW
 
 PALIMPORT
-BOOL
-PALAPI
-CopyFileW(
-      IN LPCWSTR lpExistingFileName,
-      IN LPCWSTR lpNewFileName,
-      IN BOOL bFailIfExists);
-
-#ifdef UNICODE
-#define CopyFile CopyFileW
-#else
-#define CopyFile CopyFileA
-#endif
-
-PALIMPORT
 DWORD
 PALAPI
 GetFileAttributesW(
@@ -719,21 +699,6 @@ GetFullPathNameW(
 #endif
 
 PALIMPORT
-UINT
-PALAPI
-GetTempFileNameW(
-         IN LPCWSTR lpPathName,
-         IN LPCWSTR lpPrefixString,
-         IN UINT uUnique,
-         OUT LPWSTR lpTempFileName);
-
-#ifdef UNICODE
-#define GetTempFileName GetTempFileNameW
-#else
-#define GetTempFileName GetTempFileNameA
-#endif
-
-PALIMPORT
 DWORD
 PALAPI
 GetTempPathW(
@@ -854,6 +819,7 @@ PALAPI
 PAL_CreateMutexW(
     IN BOOL bInitialOwner,
     IN LPCWSTR lpName,
+    IN BOOL bCurrentUserOnly,
     IN LPSTR lpSystemCallErrors,
     IN DWORD dwSystemCallErrorsBufferSize);
 
@@ -875,6 +841,7 @@ HANDLE
 PALAPI
 PAL_OpenMutexW(
        IN LPCWSTR lpName,
+       IN BOOL bCurrentUserOnly,
        IN LPSTR lpSystemCallErrors,
        IN DWORD dwSystemCallErrorsBufferSize);
 
@@ -1550,7 +1517,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         M512 Zmm30;
         M512 Zmm31;
     };
-    
+
     struct
     {
         DWORD64 Egpr16;
@@ -1570,7 +1537,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         DWORD64 Egpr30;
         DWORD64 Egpr31;
     };
-    
+
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //
@@ -2473,7 +2440,9 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define CONTEXT_CONTROL 0
 #define CONTEXT_INTEGER 0
 #define CONTEXT_FLOATING_POINT 0
+#define CONTEXT_DEBUG_REGISTERS 0
 #define CONTEXT_FULL 0
+#define CONTEXT_ALL 0
 
 #define CONTEXT_XSTATE 0
 

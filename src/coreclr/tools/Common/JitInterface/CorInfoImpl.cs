@@ -4421,29 +4421,38 @@ namespace Internal.JitInterface
                 }
                 else
                 {
+                    // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+                    // but, they all prefix the qualified name of the interface first, so we'll check for that and
+                    // skip the prefix before trying to resolve the method.
                     ReadOnlySpan<char> methodName = MethodBeingCompiled.Name.AsSpan();
 
-                    if (methodName.StartsWith("System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"))
+                    if (methodName.StartsWith("System.Runtime.Intrinsics.ISimdVector<System."))
                     {
-                        // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
-                        // but, they all prefix the qualified name of the interface first, so we'll check for that and
-                        // skip the prefix before trying to resolve the method.
+                        ReadOnlySpan<char> partialMethodName = methodName.Slice(45);
 
-                        ReadOnlySpan<char> partialMethodName = methodName.Slice(70);
+                        if (partialMethodName.StartsWith("Numerics.Vector"))
+                        {
+                            partialMethodName = partialMethodName.Slice(15);
 
-                        if (partialMethodName.StartsWith("<T>,T>."))
-                        {
-                            methodName = partialMethodName.Slice(7);
+                            if (partialMethodName.StartsWith("<T>,T>."))
+                            {
+                                methodName = partialMethodName.Slice(7);
+                            }
                         }
-                        else if (partialMethodName.StartsWith("64<T>,T>."))
+                        if (partialMethodName.StartsWith("Runtime.Intrinsics.Vector"))
                         {
-                            methodName = partialMethodName.Slice(9);
-                        }
-                        else if (partialMethodName.StartsWith("128<T>,T>.") ||
-                                 partialMethodName.StartsWith("256<T>,T>.") ||
-                                 partialMethodName.StartsWith("512<T>,T>."))
-                        {
-                            methodName = partialMethodName.Slice(10);
+                            partialMethodName = partialMethodName.Slice(25);
+
+                            if (partialMethodName.StartsWith("64<T>,T>."))
+                            {
+                                methodName = partialMethodName.Slice(9);
+                            }
+                            else if (partialMethodName.StartsWith("128<T>,T>.") ||
+                                    partialMethodName.StartsWith("256<T>,T>.") ||
+                                    partialMethodName.StartsWith("512<T>,T>."))
+                            {
+                                methodName = partialMethodName.Slice(10);
+                            }
                         }
                     }
 

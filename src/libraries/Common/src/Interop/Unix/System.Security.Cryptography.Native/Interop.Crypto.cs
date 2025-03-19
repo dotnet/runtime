@@ -120,9 +120,9 @@ internal static partial class Interop
             return new X500DistinguishedName(buf);
         }
 
-        internal static byte[] GetX509PublicKeyParameterBytes(SafeX509Handle x509)
+        internal static byte[]? GetX509PublicKeyParameterBytes(SafeX509Handle x509)
         {
-            return GetDynamicBuffer(GetX509PublicKeyParameterBytes, x509);
+            return GetNullableDynamicBuffer(GetX509PublicKeyParameterBytes, x509);
         }
 
         internal static void X509StoreSetVerifyTime(SafeX509StoreHandle ctx, DateTime verifyTime)
@@ -161,6 +161,34 @@ internal static partial class Interop
             int ret = method(handle, bytes, bytes.Length);
 
             if (ret != 1)
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
+            return bytes;
+        }
+
+        internal static byte[]? GetNullableDynamicBuffer<THandle>(NegativeSizeReadMethod<THandle> method, THandle handle)
+        {
+            const int MissingData = 2;
+            const int DataCopied = 1;
+            int returnValue = method(handle, null, 0);
+
+            if (returnValue == MissingData)
+            {
+                return null;
+            }
+
+            if (returnValue > 0)
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
+            byte[] bytes = new byte[-returnValue];
+
+            int ret = method(handle, bytes, bytes.Length);
+
+            if (ret != DataCopied)
             {
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }

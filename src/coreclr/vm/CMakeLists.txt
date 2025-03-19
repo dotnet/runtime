@@ -293,6 +293,7 @@ set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     appdomainnative.cpp
     assemblynative.cpp
+    assemblyprobeextension.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
@@ -390,6 +391,7 @@ set(VM_HEADERS_WKS
     ../inc/jithelpers.h
     appdomainnative.hpp
     assemblynative.hpp
+    ../inc/assemblyprobeextension.h
     assemblyspec.hpp
     assemblyspecbase.h
     baseassemblyspec.h
@@ -956,10 +958,12 @@ convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})
 
-add_library_clr(cee_dac ${VM_SOURCES_DAC})
-add_dependencies(cee_dac eventing_headers)
-set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
-target_precompile_headers(cee_dac PRIVATE [["common.h"]])
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    add_library_clr(cee_dac ${VM_SOURCES_DAC})
+    add_dependencies(cee_dac eventing_headers)
+    set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
+    target_precompile_headers(cee_dac PRIVATE [["common.h"]])
+endif()
 
 add_subdirectory(wks)
 
