@@ -1403,6 +1403,13 @@ protected:
         {
             return idHasMemGenWrite() || idHasMemStkWrite() || idHasMemAdrWrite();
         }
+
+        bool idHasMemAndCns() const
+        {
+            assert((unsigned)idInsFmt() < emitFmtCount);
+            ID_OPS idOp = (ID_OPS)emitFmtToOps[idInsFmt()];
+            return ((idOp == ID_OP_CNS) || (idOp == ID_OP_DSP_CNS) || (idOp == ID_OP_AMD_CNS));
+        }
 #endif // defined(TARGET_XARCH)
 #ifdef TARGET_ARMARCH
         insOpts idInsOpt() const
@@ -4060,10 +4067,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
         // which case we load either a scalar or full vector; otherwise,
         // we load a 128-bit vector
 
-        assert((unsigned)id->idInsFmt() < emitFmtCount);
-        ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
-
-        if ((idOp != ID_OP_CNS) && (idOp != ID_OP_SCNS) && (idOp != ID_OP_DSP_CNS) && (idOp != ID_OP_AMD_CNS))
+        if (!id->idHasMemAndCns())
         {
             memSize = 16;
         }
@@ -4098,10 +4102,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
         // Embedded broadcast is never supported so if we have a cns operand
         // we load a full vector; otherwise, we load a 128-bit vector
 
-        assert((unsigned)id->idInsFmt() < emitFmtCount);
-        ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
-
-        if ((idOp != ID_OP_CNS) && (idOp != ID_OP_SCNS) && (idOp != ID_OP_DSP_CNS) && (idOp != ID_OP_AMD_CNS))
+        if (!id->idHasMemAndCns())
         {
             memSize = 16;
         }

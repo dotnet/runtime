@@ -1130,39 +1130,28 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
     AssertionDsc assertion = {OAK_INVALID};
     assert(assertion.assertionKind == OAK_INVALID);
 
-    if (op1->OperIs(GT_BOUNDS_CHECK))
+    if (op1->OperIs(GT_BOUNDS_CHECK) && (assertionKind == OAK_NO_THROW))
     {
-        if (assertionKind == OAK_NO_THROW)
-        {
-            GenTreeBoundsChk* arrBndsChk = op1->AsBoundsChk();
-            assertion.assertionKind      = assertionKind;
-            assertion.op1.kind           = O1K_ARR_BND;
-            assertion.op1.bnd.vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
-            assertion.op1.bnd.vnLen      = optConservativeNormalVN(arrBndsChk->GetArrayLength());
-
-            if ((assertion.op1.bnd.vnIdx == ValueNumStore::NoVN) || (assertion.op1.bnd.vnLen == ValueNumStore::NoVN))
-            {
-                // Don't make an assertion if one of the operands has no VN
-                return NO_ASSERTION_INDEX;
-            }
-
-            goto DONE_ASSERTION;
-        }
+        GenTreeBoundsChk* arrBndsChk = op1->AsBoundsChk();
+        assertion.assertionKind      = assertionKind;
+        assertion.op1.kind           = O1K_ARR_BND;
+        assertion.op1.bnd.vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
+        assertion.op1.bnd.vnLen      = optConservativeNormalVN(arrBndsChk->GetArrayLength());
     }
-
     //
     // Are we trying to make a non-null assertion?
     //
-    if (op2 == nullptr)
+    else if (op2 == nullptr)
     {
-        //
-        // Must be an OAK_NOT_EQUAL assertion
-        //
-        noway_assert(assertionKind == OAK_NOT_EQUAL);
+        if (!varTypeIsGC(op1))
+        {
+            return NO_ASSERTION_INDEX; // Don't make an assertion
+        }
 
-        //
+        // Must be an OAK_NOT_EQUAL assertion
+        assert(assertionKind == OAK_NOT_EQUAL);
+
         // Set op1 to the instance pointer of the indirection
-        //
         op1 = op1->gtEffectiveVal();
 
         ssize_t offset = 0;
@@ -1184,39 +1173,18 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
             }
         }
 
-        if (fgIsBigOffset(offset) || op1->gtOper != GT_LCL_VAR)
+        if (!fgIsBigOffset(offset) && op1->OperIs(GT_LCL_VAR) && !lvaVarAddrExposed(op1->AsLclVar()->GetLclNum()))
         {
-            goto DONE_ASSERTION; // Don't make an assertion
+            assertion.op1.kind       = O1K_LCLVAR;
+            assertion.op1.lcl.lclNum = op1->AsLclVarCommon()->GetLclNum();
+            assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
+            assertion.op1.vn         = optConservativeNormalVN(op1);
+            assertion.assertionKind  = assertionKind;
+            assertion.op2.kind       = O2K_CONST_INT;
+            assertion.op2.vn         = ValueNumStore::VNForNull();
+            assertion.op2.u1.iconVal = 0;
+            assertion.op2.SetIconFlag(GTF_EMPTY);
         }
-
-        unsigned   lclNum = op1->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* lclVar = lvaGetDesc(lclNum);
-
-        ValueNum vn;
-
-        // We only perform null-checks on byrefs and GC refs
-        if (!varTypeIsGC(lclVar->TypeGet()))
-        {
-            goto DONE_ASSERTION; // Don't make an assertion
-        }
-
-        //  If the local variable has its address exposed then bail
-        if (lclVar->IsAddressExposed())
-        {
-            goto DONE_ASSERTION; // Don't make an assertion
-        }
-
-        assertion.op1.kind       = O1K_LCLVAR;
-        assertion.op1.lcl.lclNum = lclNum;
-        assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
-        vn                       = optConservativeNormalVN(op1);
-
-        assertion.op1.vn         = vn;
-        assertion.assertionKind  = assertionKind;
-        assertion.op2.kind       = O2K_CONST_INT;
-        assertion.op2.vn         = ValueNumStore::VNForNull();
-        assertion.op2.u1.iconVal = 0;
-        assertion.op2.SetIconFlag(GTF_EMPTY);
     }
     //
     // Are we making an assertion about a local variable?
@@ -1431,8 +1399,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
             ValueNum op2VN = optConservativeNormalVN(op2);
 
             // For TP reasons, limited to 32-bit constants on the op2 side.
-            if ((op1VN != ValueNumStore::NoVN) && (op2VN != ValueNumStore::NoVN) && vnStore->IsVNInt32Constant(op2VN) &&
-                !vnStore->IsVNHandle(op2VN))
+            if (vnStore->IsVNInt32Constant(op2VN) && !vnStore->IsVNHandle(op2VN))
             {
                 assert(assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL);
                 assertion.assertionKind  = assertionKind;
@@ -2370,7 +2337,11 @@ void Compiler::optAssertionGen(GenTree* tree)
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
-            assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, OAK_NOT_EQUAL);
+            // These indirs (esp. GT_IND and GT_STOREIND) are the most popular sources of assertions.
+            if (tree->IndirMayFault(this))
+            {
+                assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, OAK_NOT_EQUAL);
+            }
             break;
 
         case GT_INTRINSIC:

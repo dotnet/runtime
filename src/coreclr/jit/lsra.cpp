@@ -8218,7 +8218,7 @@ void LinearScan::resolveRegisters()
 
                 // Determine initial position for parameters
 
-                if (varDsc->lvIsParam)
+                if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
                 {
                     SingleTypeRegSet initialRegMask = interval->firstRefPosition->registerAssignment;
                     regNumber        initialReg = (initialRegMask == RBM_NONE || interval->firstRefPosition->spillAfter)

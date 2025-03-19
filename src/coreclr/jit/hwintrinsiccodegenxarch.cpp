@@ -2297,15 +2297,47 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             assert(!op2->isUsedFromReg() || (op2->GetRegNum() != targetReg) || (op1Reg == targetReg));
             emit->emitIns_Mov(INS_mov, emitTypeSize(targetType), targetReg, op1Reg, /* canSkip */ true);
 
+            instruction ins = INS_crc32;
+#ifdef TARGET_AMD64
+            bool needsEvex = false;
+            if (emit->IsExtendedGPReg(targetReg))
+            {
+                needsEvex = true;
+            }
+            else if (op2->isUsedFromReg() && emit->IsExtendedGPReg(op2->GetRegNum()))
+            {
+                needsEvex = true;
+            }
+            else if (op2->isIndir())
+            {
+                GenTreeIndir* indir = op2->AsIndir();
+
+                // We don't need to check if they are actually enregistered.
+                if (indir->HasBase() && emit->IsExtendedGPReg(indir->Base()->GetRegNum()))
+                {
+                    needsEvex = true;
+                }
+
+                if (indir->HasIndex() && emit->IsExtendedGPReg(indir->Index()->GetRegNum()))
+                {
+                    needsEvex = true;
+                }
+            }
+
+            if (needsEvex)
+            {
+                ins = INS_crc32_apx;
+            }
+#endif                                                               // TARGET_AMD64
             if ((baseType == TYP_UBYTE) || (baseType == TYP_USHORT)) // baseType is the type of the second argument
             {
                 assert(targetType == TYP_INT);
-                genHWIntrinsic_R_RM(node, INS_crc32, emitTypeSize(baseType), targetReg, op2, instOptions);
+                genHWIntrinsic_R_RM(node, ins, emitTypeSize(baseType), targetReg, op2, instOptions);
             }
             else
             {
                 assert((targetType == TYP_INT) || (targetType == TYP_LONG));
-                genHWIntrinsic_R_RM(node, INS_crc32, emitTypeSize(targetType), targetReg, op2, instOptions);
+                genHWIntrinsic_R_RM(node, ins, emitTypeSize(targetType), targetReg, op2, instOptions);
             }
 
             break;

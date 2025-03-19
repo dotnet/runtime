@@ -8453,20 +8453,39 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 {
     assert(node->OperIsShiftOrRotate());
+
+    GenTree* source  = node->gtOp1;
+    GenTree* shiftBy = node->gtOp2;
+
 #ifdef TARGET_X86
-    GenTree* source = node->gtOp1;
     if (node->OperIsShiftLong())
     {
-        assert(source->OperGet() == GT_LONG);
+        assert(source->OperIs(GT_LONG));
         MakeSrcContained(node, source);
     }
-#endif
+#endif // TARGET_X86
 
-    GenTree* shiftBy = node->gtOp2;
     if (IsContainableImmed(node, shiftBy) && (shiftBy->AsIntConCommon()->IconValue() <= 255) &&
         (shiftBy->AsIntConCommon()->IconValue() >= 0))
     {
         MakeSrcContained(node, shiftBy);
+    }
+
+    bool canContainSource = !source->isContained() && (genTypeSize(source) >= genTypeSize(node));
+
+    // BMI2 rotate and shift instructions take memory operands but do not set flags.
+    // rorx takes imm8 for the rotate amount; shlx/shrx/sarx take r32/64 for shift amount.
+    if (canContainSource && !node->gtSetFlags() && (shiftBy->isContained() != node->OperIsShift()) &&
+        comp->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+    {
+        if (IsContainableMemoryOp(source) && IsSafeToContainMem(node, source))
+        {
+            MakeSrcContained(node, source);
+        }
+        else if (IsSafeToMarkRegOptional(node, source))
+        {
+            MakeSrcRegOptional(node, source);
+        }
     }
 }
 
@@ -9152,6 +9171,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX10v1_ShiftRightArithmetic:
                 {
                     assert((tupleType & INS_TT_MEM128) != 0);
+                    tupleType = static_cast<insTupleType>(tupleType & ~INS_TT_MEM128);
 
                     // Shift amount (op2) can be either imm8 or vector. If vector, it will always be xmm/m128.
                     //
@@ -9163,12 +9183,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                         expectedSize = genTypeSize(TYP_SIMD16);
                         break;
                     }
-                    else if ((expectedSize < genTypeSize(TYP_SIMD64)) && (ins != INS_vpsraq))
+                    else if (!comp->canUseEvexEncoding())
                     {
-                        // TODO-XArch-CQ: This should really only be checking EVEX capability, however
-                        // emitter::TakesEvexPrefix doesn't currently handle requiring EVEX based on presence
-                        // of an immediate operand. For now we disable containment of op1 unless EVEX is
-                        // required for some other reason.
                         supportsMemoryOp = false;
                         break;
                     }
@@ -9214,7 +9230,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 default:
                 SIZE_FROM_TUPLE_TYPE:
                 {
-                    tupleType = static_cast<insTupleType>(tupleType & ~INS_TT_MEM128);
                     switch (tupleType)
                     {
                         case INS_TT_NONE:
