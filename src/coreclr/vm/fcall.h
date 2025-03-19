@@ -815,7 +815,6 @@ Object* FC_GCPoll(void* me, Object* objToProtect = NULL);
         }                                                   \
     }
 
-#define FC_GC_POLL()        FC_GC_POLL_EX(;)
 #define FC_GC_POLL_RET()    FC_GC_POLL_EX(0)
 
 #define FC_GC_POLL_AND_RETURN_OBJREF(obj)                   \
