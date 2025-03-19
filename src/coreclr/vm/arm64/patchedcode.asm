@@ -135,12 +135,12 @@ wbs_highest_address
         PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionToGeneration
             DCQ 0
         PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionShr
-            DCW 0
+            DCQ 0
 #ifdef WRITE_BARRIER_CHECK
         PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadow
             DCQ 0
         PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadowEnd
-        DCQ 0
+            DCQ 0
 #endif
     WRITE_BARRIER_END JIT_WriteBarrier_Table
 
