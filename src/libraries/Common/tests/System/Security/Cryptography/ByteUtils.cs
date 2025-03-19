@@ -74,6 +74,23 @@ namespace Test.Cryptography
             return value;
         }
 
+        internal static bool ContainsAnyExcept(this ReadOnlySpan<byte> bytes, byte value)
+        {
+#if NET9_0_OR_GREATER
+            return bytes.ContainsAnyExcept(value);
+#else
+            foreach (byte b in bytes)
+            {
+                if (b != value)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+#endif
+        }
+
         internal static string PemEncode(string label, byte[] data)
         {
 #if NET

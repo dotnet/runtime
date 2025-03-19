@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Microsoft.DotNet.XUnitExtensions;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -35,16 +36,16 @@ namespace System.Security.Cryptography.Tests
         {
             foreach (MLKemGenerateTestVector vector in MLKemGenerateTestVectors)
             {
-                using MLKem kem = MLKem.ImportMLKemPrivateSeed(vector.Algorithm, Convert.FromHexString(vector.Seed));
+                using MLKem kem = MLKem.ImportMLKemPrivateSeed(vector.Algorithm, vector.Seed.HexToByteArray());
                 Assert.Equal(vector.Algorithm, kem.Algorithm);
 
                 byte[] decapsKey = new byte[vector.Algorithm.DecapsulationKeySizeInBytes];
                 kem.ExportMLKemDecapsulationKey(decapsKey);
-                AssertExtensions.SequenceEqual(Convert.FromHexString(vector.DecapsulationKey), decapsKey);
+                AssertExtensions.SequenceEqual(vector.DecapsulationKey.HexToByteArray(), decapsKey);
 
                 byte[] encapsKey = new byte[vector.Algorithm.EncapsulationKeySizeInBytes];
                 kem.ExportMLKemEncapsulationKey(encapsKey);
-                AssertExtensions.SequenceEqual(Convert.FromHexString(vector.EncapsulationKey), encapsKey);
+                AssertExtensions.SequenceEqual(vector.EncapsulationKey.HexToByteArray(), encapsKey);
             }
         }
 
@@ -60,7 +61,7 @@ namespace System.Security.Cryptography.Tests
         {
             foreach (MLKemGenerateTestVector vector in MLKemGenerateTestVectors)
             {
-                byte[] encapsulationKeyBytes = Convert.FromHexString(vector.EncapsulationKey);
+                byte[] encapsulationKeyBytes = vector.EncapsulationKey.HexToByteArray();
                 using MLKem kem = MLKem.ImportMLKemEncapsulationKey(vector.Algorithm, encapsulationKeyBytes);
                 Assert.Equal(vector.Algorithm, kem.Algorithm);
 
@@ -84,8 +85,8 @@ namespace System.Security.Cryptography.Tests
         {
             foreach (MLKemGenerateTestVector vector in MLKemGenerateTestVectors)
             {
-                byte[] decapsulationKeyBytes = Convert.FromHexString(vector.DecapsulationKey);
-                byte[] encapsulationKeyBytes = Convert.FromHexString(vector.EncapsulationKey);
+                byte[] decapsulationKeyBytes = vector.DecapsulationKey.HexToByteArray();
+                byte[] encapsulationKeyBytes = vector.EncapsulationKey.HexToByteArray();
                 using MLKem kem = MLKem.ImportMLKemDecapsulationKey(vector.Algorithm, decapsulationKeyBytes);
                 Assert.Equal(vector.Algorithm, kem.Algorithm);
 
@@ -114,7 +115,7 @@ namespace System.Security.Cryptography.Tests
             MLKemGenerateTestVector vector = MLKemGenerateTestVectors.First();
             using MLKem kem = MLKem.ImportMLKemDecapsulationKey(
                 vector.Algorithm,
-                Convert.FromHexString(vector.DecapsulationKey));
+                vector.DecapsulationKey.HexToByteArray());
 
             Assert.Throws<CryptographicException>(() => kem.ExportMLKemPrivateSeed(
                 new byte[MLKem.PrivateSeedSizeInBytes]));
@@ -126,7 +127,7 @@ namespace System.Security.Cryptography.Tests
             MLKemGenerateTestVector vector = MLKemGenerateTestVectors.First();
             using MLKem kem = MLKem.ImportMLKemEncapsulationKey(
                 vector.Algorithm,
-                Convert.FromHexString(vector.EncapsulationKey));
+                vector.EncapsulationKey.HexToByteArray());
 
             Assert.Throws<CryptographicException>(() => kem.ExportMLKemPrivateSeed(
                 new byte[MLKem.PrivateSeedSizeInBytes]));
@@ -138,7 +139,7 @@ namespace System.Security.Cryptography.Tests
             MLKemGenerateTestVector vector = MLKemGenerateTestVectors.First();
             using MLKem kem = MLKem.ImportMLKemEncapsulationKey(
                 vector.Algorithm,
-                Convert.FromHexString(vector.EncapsulationKey));
+                vector.EncapsulationKey.HexToByteArray());
 
             Assert.Throws<CryptographicException>(() => kem.ExportMLKemDecapsulationKey(
                 new byte[vector.Algorithm.DecapsulationKeySizeInBytes]));

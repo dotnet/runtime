@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using Microsoft.DotNet.XUnitExtensions;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -14,8 +15,8 @@ namespace System.Security.Cryptography.Tests
         {
             foreach (MLKemTestDecapsulationVector vector in MLKemDecapsulationTestVectors)
             {
-                byte[] decapsulationKeyBytes = Convert.FromHexString(vector.DecapsulationKey);
-                byte[] encapsulationKeyBytes = Convert.FromHexString(vector.EncapsulationKey);
+                byte[] decapsulationKeyBytes = vector.DecapsulationKey.HexToByteArray();
+                byte[] encapsulationKeyBytes = vector.EncapsulationKey.HexToByteArray();
 
                 using MLKem kem = MLKem.ImportMLKemDecapsulationKey(vector.Algorithm, decapsulationKeyBytes);
                 byte[] exportedEncapsulationKey = new byte[vector.Algorithm.EncapsulationKeySizeInBytes];
@@ -23,8 +24,8 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.SequenceEqual(encapsulationKeyBytes, exportedEncapsulationKey);
 
                 byte[] sharedSecretBuffer = new byte[MLKem.SharedSecretSizeInBytes];
-                byte[] expectedSharedSecret = Convert.FromHexString(vector.SharedSecret);
-                kem.Decapsulate(Convert.FromHexString(vector.Ciphertext), sharedSecretBuffer);
+                byte[] expectedSharedSecret = vector.SharedSecret.HexToByteArray();
+                kem.Decapsulate(vector.Ciphertext.HexToByteArray(), sharedSecretBuffer);
 
                 AssertExtensions.SequenceEqual(expectedSharedSecret, sharedSecretBuffer);
             }
@@ -35,12 +36,12 @@ namespace System.Security.Cryptography.Tests
         {
             foreach (MLKemTestDecapsulationVector vector in MLKemDecapsulationTestVectors)
             {
-                byte[] encapsulationKeyBytes = Convert.FromHexString(vector.EncapsulationKey);
+                byte[] encapsulationKeyBytes = vector.EncapsulationKey.HexToByteArray();
                 using MLKem kem = MLKem.ImportMLKemEncapsulationKey(vector.Algorithm, encapsulationKeyBytes);
                 byte[] sharedSecretBuffer = new byte[MLKem.SharedSecretSizeInBytes];
 
                 Assert.ThrowsAny<CryptographicException>(() => kem.Decapsulate(
-                    Convert.FromHexString(vector.Ciphertext),
+                    vector.Ciphertext.HexToByteArray(),
                     sharedSecretBuffer));
             }
         }
@@ -50,12 +51,12 @@ namespace System.Security.Cryptography.Tests
         {
             foreach (MLKemTestDecapsulationVector vector in MLKemDecapsulationTestVectors)
             {
-                byte[] decapsulationKeyBytes = Convert.FromHexString(vector.DecapsulationKey);
+                byte[] decapsulationKeyBytes = vector.DecapsulationKey.HexToByteArray();
                 using MLKem kem = MLKem.ImportMLKemDecapsulationKey(vector.Algorithm, decapsulationKeyBytes);
 
                 byte[] sharedSecretBuffer = new byte[MLKem.SharedSecretSizeInBytes];
-                byte[] expectedSharedSecret = Convert.FromHexString(vector.SharedSecret);
-                byte[] ciphertext = Convert.FromHexString(vector.Ciphertext);
+                byte[] expectedSharedSecret = vector.SharedSecret.HexToByteArray();
+                byte[] ciphertext = vector.Ciphertext.HexToByteArray();
 
                 Tamper(ciphertext);
                 kem.Decapsulate(ciphertext, sharedSecretBuffer);
@@ -82,7 +83,7 @@ namespace System.Security.Cryptography.Tests
 
         private static void Tamper(Span<byte> buffer)
         {
-            buffer[^1] ^= 0xFF;
+            buffer[buffer.Length - 1] ^= 0xFF;
         }
 
         public record MLKemTestDecapsulationVector(MLKemAlgorithm Algorithm, string EncapsulationKey, string DecapsulationKey, string Ciphertext, string SharedSecret);
