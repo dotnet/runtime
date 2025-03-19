@@ -3,7 +3,6 @@
 
 namespace System.Diagnostics.Tracing
 {
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class DiagnosticCounter : System.IDisposable
     {
         internal DiagnosticCounter() { }
@@ -14,13 +13,11 @@ namespace System.Diagnostics.Tracing
         public void AddMetadata(string key, string? value) { }
         public void Dispose() { }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class PollingCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {
         public PollingCounter(string name, System.Diagnostics.Tracing.EventSource eventSource, System.Func<double> metricProvider) { }
         public override string ToString() { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class IncrementingEventCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {
         public IncrementingEventCounter(string name, System.Diagnostics.Tracing.EventSource eventSource) { }
@@ -28,14 +25,12 @@ namespace System.Diagnostics.Tracing
         public void Increment(double increment = 1) { }
         public override string ToString() { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class IncrementingPollingCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {
         public IncrementingPollingCounter(string name, System.Diagnostics.Tracing.EventSource eventSource, System.Func<double> totalValueProvider) { }
         public System.TimeSpan DisplayRateTimeScale { get { throw null; } set { } }
         public override string ToString() { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class EventCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {
         public EventCounter(string name, System.Diagnostics.Tracing.EventSource eventSource) { }
