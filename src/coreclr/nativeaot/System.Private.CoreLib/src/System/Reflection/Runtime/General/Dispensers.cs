@@ -39,22 +39,6 @@ namespace System.Reflection.Runtime.Assemblies
         }
 
         /// <summary>
-        /// Returns non-null or throws.
-        /// </summary>
-        internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        /// <summary>
-        /// Returns non-null or throws.
-        /// </summary>
-        internal static RuntimeAssembly GetRuntimeAssemblyFromPath(string assemblyPath)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        /// <summary>
         /// Returns null if no assembly matches the assemblyRefName. Throws for other error cases.
         /// </summary>
         internal static RuntimeAssemblyInfo GetRuntimeAssemblyIfExists(RuntimeAssemblyName assemblyRefName)
