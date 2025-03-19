@@ -45,6 +45,20 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Fact]
+        public static void ImportMLKemEncapsulationKey_Roundtrip()
+        {
+            foreach (MLKemTestVector vector in MLKemGenerateTestVectors)
+            {
+                byte[] encapsulationKeyBytes = Convert.FromHexString(vector.EncapsulationKey);
+                using MLKem kem = MLKem.ImportMLKemEncapsulationKey(vector.Algorithm, encapsulationKeyBytes);
+
+                byte[] exportedEncapsulationKey = new byte[vector.Algorithm.EncapsulationKeySizeInBytes];
+                kem.ExportMLKemEncapsulationKey(exportedEncapsulationKey);
+                AssertExtensions.SequenceEqual(encapsulationKeyBytes, exportedEncapsulationKey);
+            }
+        }
+
         public static IEnumerable<object[]> MLKemAlgorithms
         {
             get
