@@ -24,6 +24,9 @@ namespace Test.Cryptography
 
         internal static byte[] HexToByteArray(this string hexString)
         {
+#if NET9_0_OR_GREATER
+            return Convert.FromHexString(hexString);
+#else
             byte[] bytes = new byte[hexString.Length / 2];
 
             for (int i = 0; i < hexString.Length; i += 2)
@@ -33,6 +36,7 @@ namespace Test.Cryptography
             }
 
             return bytes;
+#endif
         }
 
         internal static string ByteArrayToHex(this byte[] bytes)
@@ -52,6 +56,9 @@ namespace Test.Cryptography
 
         internal static string ByteArrayToHex(this ReadOnlySpan<byte> bytes)
         {
+#if NET9_0_OR_GREATER
+            return Convert.ToHexString(bytes);
+#else
             StringBuilder builder = new StringBuilder(bytes.Length * 2);
 
             for (int i = 0; i < bytes.Length; i++)
@@ -60,16 +67,22 @@ namespace Test.Cryptography
             }
 
             return builder.ToString();
+#endif
         }
 
         internal static byte[] RepeatByte(byte b, int count)
         {
+
             byte[] value = new byte[count];
 
+#if NET
+            value.AsSpan().Fill(b);
+#else
             for (int i = 0; i < count; i++)
             {
                 value[i] = b;
             }
+#endif
 
             return value;
         }
