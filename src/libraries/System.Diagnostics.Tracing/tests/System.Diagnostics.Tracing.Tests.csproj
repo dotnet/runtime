@@ -1,14 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TestDisableParallelization>true</TestDisableParallelization>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+  <PropertyGroup>
+    <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.
+    https://github.com/dotnet/docs/blob/main/docs/core/deploying/trimming/trimming-options.md#trim-framework-library-features 
+    -->
     <MetricsSupport>true</MetricsSupport>
     <EventSourceSupport>true</EventSourceSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- this is necessary for libmono-component-diagnostics_tracing-static.a to be linked, which makes the EventPipeEventProvider.EventActivityIdControl to work in Mono -->
     <WasmPerfTracing>true</WasmPerfTracing>
   </PropertyGroup>

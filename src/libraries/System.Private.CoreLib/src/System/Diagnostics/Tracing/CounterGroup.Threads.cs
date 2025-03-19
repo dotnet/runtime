@@ -20,7 +20,6 @@ namespace System.Diagnostics.Tracing
             {
                 s_pollingThreadSleepEvent = new AutoResetEvent(false);
                 s_counterGroupEnabledList = new List<CounterGroup>();
-                // TODO
                 s_pollingThread = new Thread(PollForValues)
                 {
                     IsBackground = true,
