@@ -1235,12 +1235,16 @@ _GenericCLRToCOMCallStub@0 proc public
     ; return value
     sub         esp, 8
 
+    PUSH_CLR_EXCEPTION_HANDLER
+
     ; save pMD
     mov         ebx, eax
 
     push        eax                 ; pMD
     push        esi                 ; pTransitionBlock
     call        _CLRToCOMWorker@8
+
+    POP_CLR_EXCEPTION_HANDLER
 
     push        eax
     call        _setFPReturn@12     ; pop & set the return value
