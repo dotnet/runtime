@@ -10191,7 +10191,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     }
 
     return minMax;
-#endif
+#endif // TARGET_RISCV64
 
     // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
     // return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall, isSpecial);
