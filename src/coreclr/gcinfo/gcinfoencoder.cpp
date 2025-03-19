@@ -1126,7 +1126,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         m_pCallSites[numCallSites++] = normOffset;
     }
 
-    GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_NUM_SAFE_POINTS(numCallSites), GcInfoEncoding::NUM_SAFE_POINTS_ENCBASE, NumCallSitesSize);
+    GCINFO_WRITE_VARL_U(m_Info1, numCallSites, GcInfoEncoding::NUM_SAFE_POINTS_ENCBASE, NumCallSitesSize);
     m_NumCallSites = numCallSites;
 #endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
@@ -1136,7 +1136,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     }
     else
     {
-        GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_NUM_INTERRUPTIBLE_RANGES(numInterruptibleRanges), GcInfoEncoding::NUM_INTERRUPTIBLE_RANGES_ENCBASE, NumRangesSize);
+        GCINFO_WRITE_VARL_U(m_Info1, numInterruptibleRanges, GcInfoEncoding::NUM_INTERRUPTIBLE_RANGES_ENCBASE, NumRangesSize);
     }
 
 

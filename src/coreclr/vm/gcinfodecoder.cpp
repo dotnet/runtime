@@ -347,7 +347,7 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
     }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    m_NumSafePoints = (UINT32) GcInfoEncoding::DENORMALIZE_NUM_SAFE_POINTS(m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::NUM_SAFE_POINTS_ENCBASE));
+    m_NumSafePoints = (UINT32) m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::NUM_SAFE_POINTS_ENCBASE);
     m_SafePointIndex = m_NumSafePoints;
 #endif
 
@@ -357,7 +357,7 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
     }
     else
     {
-        m_NumInterruptibleRanges = (UINT32) GcInfoEncoding::DENORMALIZE_NUM_INTERRUPTIBLE_RANGES(m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::NUM_INTERRUPTIBLE_RANGES_ENCBASE));
+        m_NumInterruptibleRanges = (UINT32) m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::NUM_INTERRUPTIBLE_RANGES_ENCBASE);
     }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED

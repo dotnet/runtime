@@ -639,10 +639,6 @@ struct AMD64GcInfoEncoding {
     static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
     static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
     static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
     static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
@@ -698,10 +694,6 @@ struct ARM32GcInfoEncoding {
     static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)<<1); }
     static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
     // The choices of these encoding bases only affects space overhead
     // and performance, not semantics/correctness.
@@ -762,10 +754,6 @@ struct ARM64GcInfoEncoding {
     static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)<<2); }
     static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
     static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
     static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
@@ -825,10 +813,6 @@ struct LoongArch64GcInfoEncoding {
     static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)<<2); }
     static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
     static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
     static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
@@ -887,10 +871,6 @@ struct RISCV64GcInfoEncoding {
     static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)<<2); }
     static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
     static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
     static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
@@ -953,10 +933,6 @@ struct X86GcInfoEncoding {
     static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
     static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
-    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
-    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
     static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
     static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
