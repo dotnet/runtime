@@ -276,6 +276,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void TestEncodedParameters_None()
+        {
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaNoParametersCertificate))
+            {
+                PublicKey key = cert.PublicKey;
+                Assert.Null(key.EncodedParameters);
+
+                using (AsymmetricAlgorithm alg = key.Key)
+                {
+                    Assert.NotNull(alg);
+                }
+
+                byte[] spki = key.ExportSubjectPublicKeyInfo();
+                PublicKey imported = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out _);
+                Assert.Null(imported.EncodedParameters);
+            }
+        }
+
+        [Fact]
         public static void TestKey_RSA()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))

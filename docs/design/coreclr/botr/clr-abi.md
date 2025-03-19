@@ -452,7 +452,7 @@ The code this finally returns to looks like this:
 
 In this case, it zeros out the ShadowSP slot that it previously set to 0xFC, then jumps to the address that is the actual target of the leave from the finally.
 
-The JIT does this "end finally restore" by creating a GT_END_LFIN tree node, with the appropriate stack level as an operand, that generates this code.
+The JIT does this "end finally restore" by creating a GT_END_LFIN tree node, with the appropriate EH region ID as an operand, that generates this code.
 
 In the case of an exceptional 'finally' invocation, the VM sets up the 'return address' to whatever address it wants the JIT to return to.
 
@@ -476,7 +476,7 @@ The VM walks the ShadowSP slots in the function `GetHandlerFrameInfo()`, and set
 
 An aside on the JIT implementation for x86.
 
-The JIT creates BBJ_CALLFINALLY/BBJ_ALWAYS pairs for calling the 'finally' clause. The BBJ_CALLFINALLY block will have a series of CORINFO_JIT_ENDCATCH calls appended at the end, if we need to "leave" a series of nested catches before calling the finally handler (due to a single 'leave' opcode attempting to leave multiple levels of different types of handlers). Then, a GT_END_LFIN statement with the finally clause handler nesting level as an argument is added to the step block where the finally returns to. This is used to generate code to zero out the appropriate level of the ShadowSP slot array after the finally has been executed. The BBJ_CALLFINALLY block itself generates the code to insert the 0xFC value into the ShadowSP slot array. If the 'finally' is invoked by the VM, in exceptional cases, then the VM itself updates the ShadowSP slot array before invoking the 'finally'.
+The JIT creates BBJ_CALLFINALLY/BBJ_ALWAYS pairs for calling the 'finally' clause. The BBJ_CALLFINALLY block will have a series of CORINFO_JIT_ENDCATCH calls appended at the end, if we need to "leave" a series of nested catches before calling the finally handler (due to a single 'leave' opcode attempting to leave multiple levels of different types of handlers). Then, a GT_END_LFIN statement with EH region ID as an argument is added to the step block where the finally returns to. This is used to generate code to zero out the appropriate level of the ShadowSP slot array after the finally has been executed and the final EH nesting depth is known. The BBJ_CALLFINALLY block itself generates the code to insert the 0xFC value into the ShadowSP slot array. If the 'finally' is invoked by the VM, in exceptional cases, then the VM itself updates the ShadowSP slot array before invoking the 'finally'.
 
 At the end of a finally or filter, a GT_RETFILT is inserted. For a finally, this is a TYP_VOID which is just a placeholder. For a filter, it takes an argument which evaluates to the return value from the filter. On legacy JIT, this tree triggers the generation of both the return value load (for filters) and the "funclet" exit sequence, which is either a "pop eax; jmp eax" for a finally, or a "ret" for a filter. When processing the BBJ_EHFINALLYRET or BBJ_EHFILTERRET block itself (at the end of code generation for the block), nothing is generated. In RyuJIT, the GT_RETFILT only loads up the return value (for filters) and does nothing for finally, and the block type processing after all the tree processing triggers the exit sequence to be generated. There is no real difference between these, except to centralize all "exit sequence" generation in the same place.
 

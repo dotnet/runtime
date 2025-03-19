@@ -7810,10 +7810,10 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
         return true;
     }
 
-    if (node->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR, GT_OR, GT_XOR) &&
-        (op1->IsIntegralConst(0) || op2->IsIntegralConst(0)))
+    if ((node->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR) && op2->IsIntegralConst(0)) ||
+        (node->OperIs(GT_OR, GT_XOR) && (op1->IsIntegralConst(0) || op2->IsIntegralConst(0))))
     {
-        GenTree* zeroOp  = op1->IsIntegralConst(0) ? op1 : op2;
+        GenTree* zeroOp  = op2->IsIntegralConst(0) ? op2 : op1;
         GenTree* otherOp = zeroOp == op1 ? op2 : op1;
 
         LIR::Use use;

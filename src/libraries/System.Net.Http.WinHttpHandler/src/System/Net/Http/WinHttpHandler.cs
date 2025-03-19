@@ -1176,40 +1176,43 @@ namespace System.Net.Http
         {
             const SslProtocols Tls13 = (SslProtocols)12288; // enum is missing in .NET Standard
             uint optionData = 0;
-            SslProtocols sslProtocols =
-                (_sslProtocols == SslProtocols.None) ? SecurityProtocol.DefaultSecurityProtocols : _sslProtocols;
+
+            if (_sslProtocols == SslProtocols.None)
+            {
+                return;
+            }
 
 #pragma warning disable 0618 // SSL2/SSL3 are deprecated
-            if ((sslProtocols & SslProtocols.Ssl2) != 0)
+            if ((_sslProtocols & SslProtocols.Ssl2) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL2;
             }
 
-            if ((sslProtocols & SslProtocols.Ssl3) != 0)
+            if ((_sslProtocols & SslProtocols.Ssl3) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL3;
             }
 #pragma warning restore 0618
 
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
-            if ((sslProtocols & SslProtocols.Tls) != 0)
+            if ((_sslProtocols & SslProtocols.Tls) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1;
             }
 
-            if ((sslProtocols & SslProtocols.Tls11) != 0)
+            if ((_sslProtocols & SslProtocols.Tls11) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1;
             }
 #pragma warning restore SYSLIB0039
 
-            if ((sslProtocols & SslProtocols.Tls12) != 0)
+            if ((_sslProtocols & SslProtocols.Tls12) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
             }
 
             // Set this only if supported by WinHttp version.
-            if (s_supportsTls13.Value && (sslProtocols & Tls13) != 0)
+            if (s_supportsTls13.Value && (_sslProtocols & Tls13) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
             }
