@@ -65,12 +65,6 @@
   </Target>
 
   <Target Name="_ExpandNestedProps" BeforeTargets="PrepareForBuild" Condition="'$(ExpandNested)' == 'true'">
-    <ItemGroup>
-      <NestedBuildProperty>
-        <NestedIdentity>Nested_%(NestedBuildProperty.Identity)</NestedIdentity>
-      </NestedBuildProperty>
-    </ItemGroup>
-
     <CreateProperty Value="$(Nested_%(NestedBuildProperty.Identity))" Condition="'$(Nested_%(NestedBuildProperty.Identity))' != ''">
       <Output TaskParameter="Value" PropertyName="%(NestedBuildProperty.Identity)" />
     </CreateProperty>
