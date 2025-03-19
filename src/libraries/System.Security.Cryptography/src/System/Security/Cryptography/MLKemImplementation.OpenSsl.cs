@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
             _key = key;
         }
 
-        internal static MLKem Generate(MLKemAlgorithm algorithm)
+        internal static MLKem GenerateKeyImpl(MLKemAlgorithm algorithm)
         {
             Debug.Assert(IsSupported);
             SafeEvpKemHandle handle = MapAlgorithmToHandle(algorithm); // Shared handle, do not dispose.
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
         }
 
 
-        internal static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static MLKem ImportPrivateSeedImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(IsSupported);
             Debug.Assert(source.Length == PrivateSeedSizeInBytes);
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
             return new MLKemImplementation(algorithm, key);
         }
 
-        internal static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static MLKem ImportDecapsulationKeyImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(IsSupported);
             Debug.Assert(source.Length == algorithm.DecapsulationKeySizeInBytes);
@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
             return new MLKemImplementation(algorithm, key);
         }
 
-        internal static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static MLKem ImportEncapsulationKeyImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(IsSupported);
             Debug.Assert(source.Length == algorithm.EncapsulationKeySizeInBytes);
@@ -76,19 +76,19 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpKemEncapsulate(_key, ciphertext, sharedSecret);
         }
 
-        protected override void ExportMLKemPrivateSeedCore(Span<byte> destination)
+        protected override void ExportPrivateSeedCore(Span<byte> destination)
         {
             ThrowIfDisposed();
             Interop.Crypto.EvpKemExportPrivateSeed(_key, destination);
         }
 
-        protected override void ExportMLKemDecapsulationKeyCore(Span<byte> destination)
+        protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
             ThrowIfDisposed();
             Interop.Crypto.EvpKemExportDecapsulationKey(_key, destination);
         }
 
-        protected override void ExportMLKemEncapsulationKeyCore(Span<byte> destination)
+        protected override void ExportEncapsulationKeyCore(Span<byte> destination)
         {
             ThrowIfDisposed();
             Interop.Crypto.EvpKemExportEncapsulationKey(_key, destination);

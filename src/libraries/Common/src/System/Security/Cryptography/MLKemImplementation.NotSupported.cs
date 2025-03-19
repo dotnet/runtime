@@ -15,22 +15,14 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
-        internal static MLKem Generate(MLKemAlgorithm algorithm)
+        internal static MLKem GenerateKeyImpl(MLKemAlgorithm algorithm)
         {
             _ = algorithm;
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();
         }
 
-        internal static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
-        {
-            _ = algorithm;
-            _ = source;
-            Debug.Fail("Caller should have checked platform availability.");
-            throw new PlatformNotSupportedException();
-        }
-
-        internal static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static MLKem ImportPrivateSeedImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             _ = algorithm;
             _ = source;
@@ -38,7 +30,15 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
-        internal static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static MLKem ImportDecapsulationKeyImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            _ = algorithm;
+            _ = source;
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
+        internal static MLKem ImportEncapsulationKeyImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             _ = algorithm;
             _ = source;
@@ -58,19 +58,19 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
-        protected override void ExportMLKemPrivateSeedCore(Span<byte> destination)
+        protected override void ExportPrivateSeedCore(Span<byte> destination)
         {
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();
         }
 
-        protected override void ExportMLKemDecapsulationKeyCore(Span<byte> destination)
+        protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();
         }
 
-        protected override void ExportMLKemEncapsulationKeyCore(Span<byte> destination)
+        protected override void ExportEncapsulationKeyCore(Span<byte> destination)
         {
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();

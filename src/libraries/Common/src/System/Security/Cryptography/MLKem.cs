@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports MK-KEM.
         /// </exception>
-        public static MLKem GenerateMLKemKey(MLKemAlgorithm algorithm)
+        public static MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
             if (algorithm is null)
             {
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
             }
 
             ThrowIfNotSupported();
-            return MLKemImplementation.Generate(algorithm);
+            return MLKemImplementation.GenerateKeyImpl(algorithm);
         }
 
         /// <summary>
@@ -221,7 +221,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is the incorrect length to receive the private seed.
         /// </exception>
-        public void ExportMLKemPrivateSeed(Span<byte> destination)
+        public void ExportPrivateSeed(Span<byte> destination)
         {
             if (destination.Length != PrivateSeedSizeInBytes)
             {
@@ -231,7 +231,7 @@ namespace System.Security.Cryptography
             }
 
             ThrowIfDisposed();
-            ExportMLKemPrivateSeedCore(destination);
+            ExportPrivateSeedCore(destination);
         }
 
         /// <summary>
@@ -240,7 +240,7 @@ namespace System.Security.Cryptography
         /// <param name="destination">
         ///   The buffer to receive the private seed.
         /// </param>
-        protected abstract void ExportMLKemPrivateSeedCore(Span<byte> destination);
+        protected abstract void ExportPrivateSeedCore(Span<byte> destination);
 
         /// <summary>
         /// Creates an ML-KEM key from a private seed.
@@ -248,7 +248,7 @@ namespace System.Security.Cryptography
         /// <param name="algorithm">The algorithm of the seed.</param>
         /// <param name="source">The private seed.</param>
         /// <returns>The imported key.</returns>
-        public static MLKem ImportMLKemPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             if (algorithm is null)
             {
@@ -261,7 +261,7 @@ namespace System.Security.Cryptography
             }
 
             ThrowIfNotSupported();
-            return MLKemImplementation.ImportPrivateSeed(algorithm, source);
+            return MLKemImplementation.ImportPrivateSeedImpl(algorithm, source);
         }
 
         /// <summary>
@@ -270,7 +270,7 @@ namespace System.Security.Cryptography
         /// <param name="algorithm">The algorithm of the decapsulation key.</param>
         /// <param name="source">The decapsulation key.</param>
         /// <returns>The imported key.</returns>
-        public static MLKem ImportMLKemDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             if (algorithm is null)
             {
@@ -283,7 +283,7 @@ namespace System.Security.Cryptography
             }
 
             ThrowIfNotSupported();
-            return MLKemImplementation.ImportDecapsulationKey(algorithm, source);
+            return MLKemImplementation.ImportDecapsulationKeyImpl(algorithm, source);
         }
 
         /// <summary>
@@ -292,7 +292,7 @@ namespace System.Security.Cryptography
         /// <param name="algorithm">The algorithm of the encapsulation key.</param>
         /// <param name="source">The encapsulation key.</param>
         /// <returns>The imported key.</returns>
-        public static MLKem ImportMLKemEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             if (algorithm is null)
             {
@@ -305,7 +305,7 @@ namespace System.Security.Cryptography
             }
 
             ThrowIfNotSupported();
-            return MLKemImplementation.ImportEncapsulationKey(algorithm, source);
+            return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, source);
         }
 
         /// <summary>
@@ -317,7 +317,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is the incorrect length to receive the decapsulation key.
         /// </exception>
-        public void ExportMLKemDecapsulationKey(Span<byte> destination)
+        public void ExportDecapsulationKey(Span<byte> destination)
         {
             if (destination.Length != Algorithm.DecapsulationKeySizeInBytes)
             {
@@ -327,7 +327,7 @@ namespace System.Security.Cryptography
             }
 
             ThrowIfDisposed();
-            ExportMLKemDecapsulationKeyCore(destination);
+            ExportDecapsulationKeyCore(destination);
         }
 
         /// <summary>
@@ -336,7 +336,7 @@ namespace System.Security.Cryptography
         /// <param name="destination">
         ///   The buffer to receive the decapsulation key.
         /// </param>
-        protected abstract void ExportMLKemDecapsulationKeyCore(Span<byte> destination);
+        protected abstract void ExportDecapsulationKeyCore(Span<byte> destination);
 
         /// <summary>
         ///   Exports the encapsulation key into the provided buffer.
@@ -347,7 +347,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is the incorrect length to receive the encapsulation key.
         /// </exception>
-        public void ExportMLKemEncapsulationKey(Span<byte> destination)
+        public void ExportEncapsulationKey(Span<byte> destination)
         {
             if (destination.Length != Algorithm.EncapsulationKeySizeInBytes)
             {
@@ -357,7 +357,7 @@ namespace System.Security.Cryptography
             }
 
             ThrowIfDisposed();
-            ExportMLKemEncapsulationKeyCore(destination);
+            ExportEncapsulationKeyCore(destination);
         }
 
         /// <summary>
@@ -366,7 +366,7 @@ namespace System.Security.Cryptography
         /// <param name="destination">
         ///   The buffer to receive the encapsulation key.
         /// </param>
-        protected abstract void ExportMLKemEncapsulationKeyCore(Span<byte> destination);
+        protected abstract void ExportEncapsulationKeyCore(Span<byte> destination);
 
         /// <summary>
         ///  Releases all resources used by the <see cref="MLKem"/> class.
