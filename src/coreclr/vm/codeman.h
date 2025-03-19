@@ -92,7 +92,7 @@ enum StubCodeBlockKind : int
 {
     STUB_CODE_BLOCK_UNKNOWN = 0,
     STUB_CODE_BLOCK_JUMPSTUB = 1,
-    STUB_CODE_BLOCK_PRECODE = 2,
+    UNUSED = 2,
     STUB_CODE_BLOCK_DYNAMICHELPER = 3,
     STUB_CODE_BLOCK_STUBPRECODE = 4,
     STUB_CODE_BLOCK_FIXUPPRECODE = 5,
@@ -105,11 +105,11 @@ enum StubCodeBlockKind : int
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholders returned by code:GetStubCodeBlockKind
-    STUB_CODE_BLOCK_NOCODE,
-    STUB_CODE_BLOCK_MANAGED,
-    STUB_CODE_BLOCK_STUBLINK,
+    STUB_CODE_BLOCK_NOCODE = 0x10,
+    STUB_CODE_BLOCK_MANAGED = 0x11,
+    STUB_CODE_BLOCK_STUBLINK = 0x12,
     // Placeholdes used by ReadyToRun images
-    STUB_CODE_BLOCK_METHOD_CALL_THUNK,
+    STUB_CODE_BLOCK_METHOD_CALL_THUNK = 0x13,
 };
 
 //-----------------------------------------------------------------------------
@@ -2564,6 +2564,10 @@ public:
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
 #endif // TARGET_X86
+
+#if defined(TARGET_WASM)
+ULONG       GetFixedStackSize();
+#endif
 
 #if defined(TARGET_AMD64)
     BOOL        HasFrameRegister();

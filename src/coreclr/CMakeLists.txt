@@ -35,6 +35,10 @@ endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
+if (DEFINED CLR_CMAKE_ICU_DIR)
+  include_directories(${CLR_CMAKE_ICU_DIR}/include)
+endif(DEFINED CLR_CMAKE_ICU_DIR)
+
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------
@@ -59,7 +63,7 @@ include(components.cmake)
 #---------------------------
 # Build the single file host
 #---------------------------
-if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set(CLR_SINGLE_FILE_HOST_ONLY 1)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
   add_dependencies(runtime singlefilehost)
@@ -267,7 +271,7 @@ if(CLR_CMAKE_HOST_UNIX)
   add_subdirectory(nativeresources)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_BROWSER)
+if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(utilcode)
   add_subdirectory(inc)
 
@@ -276,16 +280,27 @@ if(NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_BROWSER)
     add_subdirectory(ildasm)
   endif(CLR_CMAKE_BUILD_TOOLS)
   add_subdirectory(gcinfo)
-  add_subdirectory(jit)
+
+  if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    add_subdirectory(jit)
+  endif()
+
   add_subdirectory(vm)
   add_subdirectory(md)
-  add_subdirectory(debug)
+
+  if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    add_subdirectory(debug)
+  endif()
+
   add_subdirectory(binder)
   add_subdirectory(classlibnative)
   add_subdirectory(dlls)
-  add_subdirectory(unwinder)
-  add_subdirectory(interop)
-endif(NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_BROWSER)
+
+  if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    add_subdirectory(unwinder)
+    add_subdirectory(interop)
+  endif()
+endif(NOT CLR_CMAKE_HOST_TVOS)
 
 if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(tools)

@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Augments;
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
@@ -31,7 +34,7 @@ namespace System
             return Equals((RuntimeMethodHandle)obj);
         }
 
-        public bool Equals(RuntimeMethodHandle handle)
+        public unsafe bool Equals(RuntimeMethodHandle handle)
         {
             if (_value == handle._value)
                 return true;
@@ -39,52 +42,40 @@ namespace System
             if (_value == IntPtr.Zero || handle._value == IntPtr.Zero)
                 return false;
 
-            RuntimeTypeHandle declaringType1, declaringType2;
-            MethodNameAndSignature nameAndSignature1, nameAndSignature2;
-            RuntimeTypeHandle[] genericArgs1, genericArgs2;
+            MethodHandleInfo* thisInfo = ToMethodHandleInfo();
+            MethodHandleInfo* thatInfo = handle.ToMethodHandleInfo();
 
-            RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType1, out nameAndSignature1, out genericArgs1);
-            RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(handle, out declaringType2, out nameAndSignature2, out genericArgs2);
+            if (!thisInfo->DeclaringType.Equals(thatInfo->DeclaringType))
+                return false;
+            if (!thisInfo->Handle.Equals(thatInfo->Handle))
+                return false;
+            if (thisInfo->NumGenericArgs != thatInfo->NumGenericArgs)
+                return false;
 
-            if (!declaringType1.Equals(declaringType2))
-                return false;
-            if (!nameAndSignature1.Equals(nameAndSignature2))
-                return false;
-            if ((genericArgs1 == null && genericArgs2 != null) || (genericArgs1 != null && genericArgs2 == null))
-                return false;
-            if (genericArgs1 != null)
+            RuntimeTypeHandle* thisFirstArg = &thisInfo->FirstArgument;
+            RuntimeTypeHandle* thatFirstArg = &thatInfo->FirstArgument;
+            for (int i = 0; i < thisInfo->NumGenericArgs; i++)
             {
-                if (genericArgs1.Length != genericArgs2!.Length)
+                if (!thisFirstArg[i].Equals(thatFirstArg[i]))
                     return false;
-                for (int i = 0; i < genericArgs1.Length; i++)
-                {
-                    if (!genericArgs1[i].Equals(genericArgs2![i]))
-                        return false;
-                }
             }
 
             return true;
         }
 
-        public override int GetHashCode()
+        public override unsafe int GetHashCode()
         {
             if (_value == IntPtr.Zero)
                 return 0;
 
-            RuntimeTypeHandle declaringType;
-            MethodNameAndSignature nameAndSignature;
-            RuntimeTypeHandle[] genericArgs;
-            RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out nameAndSignature, out genericArgs);
+            MethodHandleInfo* info = ToMethodHandleInfo();
 
-            int hashcode = declaringType.GetHashCode();
-            hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ nameAndSignature.Name.GetHashCode();
-            if (genericArgs != null)
+            int hashcode = info->DeclaringType.GetHashCode();
+            hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ info->Handle.GetHashCode();
+            for (int i = 0; i < info->NumGenericArgs; i++)
             {
-                for (int i = 0; i < genericArgs.Length; i++)
-                {
-                    int argumentHashCode = genericArgs[i].GetHashCode();
-                    hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ argumentHashCode;
-                }
+                int argumentHashCode = (&info->FirstArgument)[i].GetHashCode();
+                hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ argumentHashCode;
             }
 
             return hashcode;
@@ -104,12 +95,12 @@ namespace System
             return !left.Equals(right);
         }
 
-        public IntPtr GetFunctionPointer()
+        public unsafe IntPtr GetFunctionPointer()
         {
-            RuntimeTypeHandle declaringType;
-            RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out _, out _);
+            if (_value == IntPtr.Zero)
+                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
 
-            return ReflectionAugments.GetFunctionPointer(this, declaringType);
+            return ReflectionAugments.GetFunctionPointer(this, ToMethodHandleInfo()->DeclaringType);
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -118,5 +109,21 @@ namespace System
         {
             throw new PlatformNotSupportedException();
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal readonly unsafe MethodHandleInfo* ToMethodHandleInfo()
+        {
+            return (MethodHandleInfo*)_value;
+        }
+    }
+
+    [CLSCompliant(false)]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MethodHandleInfo
+    {
+        public RuntimeTypeHandle DeclaringType;
+        public MethodHandle Handle;
+        public int NumGenericArgs;
+        public RuntimeTypeHandle FirstArgument;
     }
 }
