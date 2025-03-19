@@ -7757,7 +7757,7 @@ void Thread::InitializeSpecialUserModeApc()
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
 #if defined(TARGET_AMD64)
-EXTERN_C void STCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
+EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
 void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
