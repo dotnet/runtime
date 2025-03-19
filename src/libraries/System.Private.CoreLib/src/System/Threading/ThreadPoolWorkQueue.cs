@@ -691,6 +691,27 @@ namespace System.Threading
             EnsureThreadRequested();
         }
 
+        internal static void TransferAllLocalWorkItemsToHighPriorityGlobalQueue()
+        {
+            // If there's no local queue, there's nothing to transfer.
+            if (ThreadPoolWorkQueueThreadLocals.threadLocals is not ThreadPoolWorkQueueThreadLocals tl)
+            {
+                return;
+            }
+
+            // Pop each work item off the local queue and push it onto the global. This is a
+            // bounded loop as no other thread is allowed to push into this thread's queue.
+            ThreadPoolWorkQueue queue = ThreadPool.s_workQueue;
+            while (tl.workStealingQueue.LocalPop() is object workItem)
+            {
+                queue.highPriorityWorkItems.Enqueue(workItem);
+            }
+
+            Volatile.Write(ref queue._mayHaveHighPriorityWorkItems, 1);
+
+            queue.EnsureThreadRequested();
+        }
+
         internal static bool LocalFindAndPop(object callback)
         {
             ThreadPoolWorkQueueThreadLocals? tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
@@ -1183,6 +1204,9 @@ namespace System.Threading
             Interlocked.MemoryBarrier();
             if (!_workItems.TryDequeue(out T workItem))
             {
+                // Discount a work item here to avoid counting this queue processing work item
+                ThreadInt64PersistentCounter.Decrement(
+                    ThreadPoolWorkQueueThreadLocals.threadLocals!.threadLocalCompletionCountObject!);
                 return;
             }
 
@@ -1226,7 +1250,11 @@ namespace System.Threading
                 currentThread.ResetThreadPoolThread();
             }
 
-            ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount);
+            // Discount a work item here to avoid counting this queue processing work item
+            if (completedCount > 1)
+            {
+                ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount - 1);
+            }
         }
     }
 
