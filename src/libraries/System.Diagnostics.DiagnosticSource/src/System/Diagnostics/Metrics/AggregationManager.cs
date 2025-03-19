@@ -164,12 +164,14 @@ namespace System.Diagnostics.Metrics
             Debug.Assert(CollectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
 
             _intervalStartTime = _nextIntervalStartTime = _startTime = DateTime.UtcNow;
+#if OS_ISBROWSER_SUPPORT
             if (OperatingSystem.IsBrowser())
             {
                 TimeSpan delayTime = CalculateDelayTime(CollectionPeriod.TotalSeconds);
                 _pollingTimer = new Timer(CollectOnTimer, null, (int)delayTime.TotalMilliseconds, 0);
             }
             else
+#endif
             {
                 // This explicitly uses a Thread and not a Task so that metrics still work
                 // even when an app is experiencing thread-pool starvation. Although we
@@ -298,12 +300,14 @@ namespace System.Diagnostics.Metrics
         public void Dispose()
         {
             _cts.Cancel();
+#if OS_ISBROWSER_SUPPORT
             if (OperatingSystem.IsBrowser())
             {
                 _pollingTimer?.Dispose();
                 _pollingTimer = null;
             }
             else
+#endif
             {
                 _collectThread?.Join();
                 _collectThread = null;
