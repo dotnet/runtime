@@ -265,6 +265,31 @@ inline static bool isFloatReg(regNumber reg)
     return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
 }
 
+inline static bool isCondJumpInstruction(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_beq:
+        case INS_bne:
+        case INS_blt:
+        case INS_bge:
+        case INS_bltu:
+        case INS_bgeu:
+        // C extension
+        case INS_beqz:
+        case INS_bnez:
+            return true;
+        default:
+            return false;
+    }
+    unreached();
+}
+
+inline static bool isJumpInstruction(instruction ins)
+{
+    return ins == INS_j || ins == INS_jal || ins == INS_jalr;
+}
+
 /************************************************************************/
 /*                   Output target-independent instructions             */
 /************************************************************************/
@@ -276,6 +301,8 @@ void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 /************************************************************************/
 
 public:
+inline static instruction emitReverseJumpIns(instruction ins);
+
 void emitIns(instruction ins);
 
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
