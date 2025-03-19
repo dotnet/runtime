@@ -734,6 +734,7 @@ namespace System.Tests
             }
 
             Assert.False(enumerator.MoveNext());
+            Assert.Equal(source.ToString(), enumerator.Source.ToString());
         }
     }
 }
