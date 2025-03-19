@@ -53,12 +53,14 @@ _JIT_PInvokeBegin@4 PROC public
         mov             eax, [esp]
         mov             dword ptr [ecx + InlinedCallFrame__m_pCallerReturnAddress], eax
 
+ifdef FEATURE_EH_FUNCLETS
         ;; Link SEH exception registration
         mov             eax, dword ptr fs:[0]
         mov             dword ptr [ecx + InlinedCallFrame__m_ExceptionRecord], eax
         mov             dword ptr [ecx + InlinedCallFrame__m_ExceptionRecord + 4], _ProcessCLRException
         lea             eax, [ecx + InlinedCallFrame__m_ExceptionRecord]
         mov             dword ptr fs:[0], eax
+endif
 
         ;; edx = GetThread(). Trashes eax
         INLINE_GETTHREAD edx, eax
@@ -102,9 +104,11 @@ _JIT_PInvokeEnd@4 PROC public
         mov             eax, dword ptr [ecx + Frame__m_Next]
         mov             dword ptr [edx + Thread_m_pFrame], eax
 
+ifdef FEATURE_EH_FUNCLETS
         ;; Unlink SEH exception registration
         mov             eax, dword ptr [ecx + InlinedCallFrame__m_ExceptionRecord]
         mov             dword ptr fs:[0], eax
+endif
 
         ret
 

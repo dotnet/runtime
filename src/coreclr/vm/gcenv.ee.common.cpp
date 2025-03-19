@@ -54,11 +54,11 @@ bool FindFirstInterruptiblePointStateCB(
     return false;
 }
 
+#ifdef USE_GC_INFO_DECODER
 // Find the first interruptible point in the range [offs .. endOffs) (the beginning of the range is inclusive,
 // the end is exclusive). Return -1 if no such point exists.
 unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
 {
-#ifdef USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
     GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
 
@@ -70,11 +70,8 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
     gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
 
     return state.returnOffs;
-#else
-    _ASSERTE(!"FindFirstInterruptiblePoint");
-    return -1;
-#endif // USE_GC_INFO_DECODER
 }
+#endif // USE_GC_INFO_DECODER
 
 #endif // FEATURE_EH_FUNCLETS
 

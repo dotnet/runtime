@@ -5943,6 +5943,13 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(comp->info.compUnmanagedCallCountWithGCTransition);
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
+    if (!comp->info.compPublishStubParam && comp->opts.ShouldUsePInvokeHelpers())
+    {
+        return;
+    }
+
+    JITDUMP("======= Inserting PInvoke method prolog\n");
+
     LIR::Range& firstBlockRange = LIR::AsRange(comp->fgFirstBB);
 
     const CORINFO_EE_INFO*                       pInfo         = comp->eeGetEEInfo();
@@ -5965,12 +5972,12 @@ void Lowering::InsertPInvokeMethodProlog()
         DISPTREERANGE(firstBlockRange, store);
     }
 
+    // Bail out for the win-x86 case of generating stub parameter along with
+    // P/Invoke helper calls. No other platforms use this at the moment.
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
         return;
     }
-
-    JITDUMP("======= Inserting PInvoke method prolog\n");
 
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart);

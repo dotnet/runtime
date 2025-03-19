@@ -556,7 +556,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 {
     PCODE uControlPc;
 
-#if defined(_DEBUG) &&defined(TARGET_WINDOWS) && !defined(TARGET_X86)
+#if defined(_DEBUG) && defined(TARGET_WINDOWS) && !defined(TARGET_X86)
     UINT_PTR uImageBase;
 
     PT_RUNTIME_FUNCTION pFunctionEntry  = RtlLookupFunctionEntry((UINT_PTR)GetIP(pContext),
@@ -568,13 +568,13 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 
 #if defined(TARGET_AMD64)
 
-    uControlPc = *(TADDR*)pContext->Rsp;
-    pContext->Rsp += sizeof(TADDR);
+    uControlPc = *(ULONGLONG*)pContext->Rsp;
+    pContext->Rsp += sizeof(ULONGLONG);
 #ifdef TARGET_WINDOWS
     DWORD64 ssp = GetSSP(pContext);
     if (ssp != 0)
     {
-        SetSSP(pContext, ssp + sizeof(TADDR));
+        SetSSP(pContext, ssp + sizeof(ULONGLONG));
     }
 #endif // TARGET_WINDOWS
 

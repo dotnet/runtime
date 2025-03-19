@@ -3759,7 +3759,7 @@ ThrowControlForThread(
 #elif defined(TARGET_X86)
             _ASSERTE(!"NYI");
 #else // FEATURE_EH_FUNCLETS
-            __asan_handle_no_return();            
+            __asan_handle_no_return();
             RtlRestoreContext(pThread->m_OSContext, NULL);
 #endif // FEATURE_EH_FUNCLETS
             _ASSERTE(!"Should not reach here");

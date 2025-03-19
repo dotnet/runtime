@@ -3229,15 +3229,6 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandlerRevCom)
 #endif // !DACCESS_COMPILE
 #endif // !FEATURE_EH_FUNCLETS
 
-PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    UINT_PTR stackSlot = pContext->Ebp + REDIRECTSTUB_EBP_OFFSET_CONTEXT;
-    PTR_PTR_CONTEXT ppContext = dac_cast<PTR_PTR_CONTEXT>((TADDR)stackSlot);
-    return *ppContext;
-}
-
 #ifdef FEATURE_EH_FUNCLETS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
 {
@@ -3248,6 +3239,15 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispa
     return *ppContext;
 }
 #endif
+
+PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    UINT_PTR stackSlot = pContext->Ebp + REDIRECTSTUB_EBP_OFFSET_CONTEXT;
+    PTR_PTR_CONTEXT ppContext = dac_cast<PTR_PTR_CONTEXT>((TADDR)stackSlot);
+    return *ppContext;
+}
 
 #ifndef DACCESS_COMPILE
 LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)

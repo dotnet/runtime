@@ -5997,6 +5997,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     pDispatcherContext->HandlerData     = NULL;
     pDispatcherContext->HistoryTable    = NULL;
 
+
     // Why does the OS consider it invalid to have a NULL personality routine (or, why does
     // the OS assume that DispatcherContext returned from ExceptionCollidedUnwind will always
     // have a valid personality routine)?
@@ -8466,13 +8467,13 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
         pThis->SetAdjustedControlPC(controlPC);
         pThis->UpdateIsRuntimeWrappedExceptions();
 
-        *pfIsExceptionIntercepted = (CLR_BOOL)CheckExceptionInterception(pThis, pExInfo);
+        *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pExInfo);
     }
     else
     {
         // There are no managed frames on the stack, fail fast and report unhandled exception
         LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
-#if defined(HOST_WINDOWS) && !defined(HOST_X86)
+#ifdef HOST_WINDOWS
         CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
         GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
         RaiseException(pExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE_EXCEPTION, pExInfo->m_ptrs.ExceptionRecord->NumberParameters, pExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
@@ -8481,7 +8482,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
 #endif
     }
 
-    return result ? TRUE : FALSE;
+    return result;
 }
 
 static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrameIterator)
@@ -8578,7 +8579,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 
         if (fUnwoundReversePInvoke)
         {
-            *fUnwoundReversePInvoke = invalidRevPInvoke ? TRUE : FALSE;
+            *fUnwoundReversePInvoke = invalidRevPInvoke;
         }
 
         if (invalidRevPInvoke)
