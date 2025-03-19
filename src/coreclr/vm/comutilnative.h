@@ -181,7 +181,6 @@ public:
 
     static FCDECL0(int,     GetMaxGeneration);
     static FCDECL1(void,    KeepAlive, Object *obj);
-    static FCDECL1(void,    SuppressFinalize, Object *obj);
     static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
 
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
@@ -211,6 +210,8 @@ extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT3
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
 extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode);
+
+extern "C" void QCALLTYPE GCInterface_SuppressFinalize(QCall::ObjectHandleOnStack pObj);
 
 extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
 
