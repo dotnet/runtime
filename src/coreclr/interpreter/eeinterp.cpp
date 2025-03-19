@@ -40,6 +40,9 @@ extern "C" INTERP_API ICorJitCompiler* getJit()
     return &g_CILInterp;
 }
 
+
+static CORINFO_MODULE_HANDLE g_interpModule = NULL;
+
 //****************************************************************************
 CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                                    CORINFO_METHOD_INFO* methodInfo,
@@ -48,20 +51,34 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                                    uint32_t*            nativeSizeOfCode)
 {
 
-    const char *methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
+    bool doInterpret;
 
-    // TODO: replace this by something like the JIT does to support multiple methods being specified and we don't
-    // keep fetching it on each call to compileMethod
-    const char *methodToInterpret = g_interpHost->getStringConfigValue("AltJit");
-    bool doInterpret = (methodName != NULL && strcmp(methodName, methodToInterpret) == 0);
-    g_interpHost->freeStringConfigValue(methodToInterpret);
+    if (g_interpModule != NULL)
+    {
+        if (methodInfo->scope == g_interpModule)
+            doInterpret = true;
+        else
+            doInterpret = false;
+    }
+    else
+    {
+        const char *methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
+
+        // TODO: replace this by something like the JIT does to support multiple methods being specified and we don't
+        // keep fetching it on each call to compileMethod
+        const char *methodToInterpret = g_interpHost->getStringConfigValue("AltJit");
+        doInterpret = (methodName != NULL && strcmp(methodName, methodToInterpret) == 0);
+        g_interpHost->freeStringConfigValue(methodToInterpret);
+        if (doInterpret)
+            g_interpModule = methodInfo->scope;
+    }
 
     if (!doInterpret)
     {
         return CORJIT_SKIPPED;
     }
 
-    InterpCompiler compiler(compHnd, methodInfo);
+    InterpCompiler compiler(compHnd, methodInfo, false /* verbose */);
     InterpMethod *pMethod = compiler.CompileMethod();
 
     int32_t IRCodeSize;

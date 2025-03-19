@@ -5021,17 +5021,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // We won't introduce new blocks from here on out,
         // so run the new block layout.
         //
-        if (JitConfig.JitDoReversePostOrderLayout())
-        {
-            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::fgSearchImprovedLayout);
-        }
-        else
-        {
-            // If we didn't run 3-opt, we might still have a profile-aware DFS tree computed during LSRA available.
-            // This tree's presence can trigger asserts if pre/postorder numbers are recomputed,
-            // so invalidate the tree either way.
-            fgInvalidateDfsTree();
-        }
+        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::fgSearchImprovedLayout);
 
         // Now that the flowgraph is finalized, run post-layout optimizations.
         //
@@ -5205,6 +5195,21 @@ void Compiler::FinalizeEH()
         lvaShadowSPslotsVar = lvaGrabTempWithImplicitUse(false DEBUGARG("lvaShadowSPslotsVar"));
         lvaSetStruct(lvaShadowSPslotsVar, typGetBlkLayout(slotsNeeded * TARGET_POINTER_SIZE), false);
         lvaSetVarAddrExposed(lvaShadowSPslotsVar DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
+    }
+
+    // Build up a mapping from EH IDs to EHblkDsc*
+    //
+    assert(m_EHIDtoEHblkDsc == nullptr);
+
+    if (compHndBBtabCount > 0)
+    {
+        m_EHIDtoEHblkDsc = new (getAllocator()) EHIDtoEHblkDscMap(getAllocator());
+
+        for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+        {
+            EHblkDsc* const HBtab = &compHndBBtab[XTnum];
+            m_EHIDtoEHblkDsc->Set(HBtab->ebdID, HBtab);
+        }
     }
 
 #endif // FEATURE_EH_WINDOWS_X86
