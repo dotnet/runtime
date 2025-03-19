@@ -271,6 +271,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
+#if OS_ISBROWSER_SUPPORT
         private void CollectOnTimer(object? _)
         {
             try
@@ -298,6 +299,7 @@ namespace System.Diagnostics.Metrics
                 _collectionError(e);
             }
         }
+#endif
 
         public void Dispose()
         {
