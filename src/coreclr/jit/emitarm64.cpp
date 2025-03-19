@@ -2363,6 +2363,33 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     return code;
 }
 
+/*static*/ bool emitter::emitIns_valid_imm_for_sve_mov(INT64 imm, emitAttr elemsize)
+{
+    switch (elemsize)
+    {
+        case EA_1BYTE:
+        {
+            return (-128 <= imm) && (imm <= 127);
+        }
+        case EA_2BYTE:
+        case EA_4BYTE:
+        case EA_8BYTE:
+
+        {
+            if ((-32768 <= imm) && (imm <= 32512) && (imm != 0))
+            {
+                return imm % 256 == 0;
+            }
+            break;
+        }
+        default:
+        {
+            unreached();
+        }
+    }
+    return false;
+}
+
 // true if this 'imm' can be encoded as a input operand to a mov instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_mov(INT64 imm, emitAttr size)
 {

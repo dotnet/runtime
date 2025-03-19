@@ -125,6 +125,12 @@ var_types ABIPassingSegment::GetRegisterType() const
                 return TYP_SIMD16;
 #endif
             default:
+#ifdef TARGET_ARM64
+                if (Size == Compiler::compVectorTLength)
+                {
+                    return TYP_SIMD;
+                }
+#endif
                 assert(!"Unexpected size for floating point register");
                 return TYP_UNDEF;
         }

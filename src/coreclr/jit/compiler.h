@@ -153,6 +153,10 @@ inline var_types HfaTypeFromElemKind(CorInfoHFAElemType kind)
         case CORINFO_HFA_ELEM_DOUBLE:
             return TYP_DOUBLE;
 #ifdef FEATURE_SIMD
+#ifdef TARGET_ARM64
+        case CORINFO_HFA_ELEM_VECTOR_VL:
+            return TYP_SIMD;
+#endif
         case CORINFO_HFA_ELEM_VECTOR64:
             return TYP_SIMD8;
         case CORINFO_HFA_ELEM_VECTOR128:
@@ -174,6 +178,10 @@ inline CorInfoHFAElemType HfaElemKindFromType(var_types type)
         case TYP_DOUBLE:
             return CORINFO_HFA_ELEM_DOUBLE;
 #ifdef FEATURE_SIMD
+#ifdef TARGET_ARM64
+        case TYP_SIMD:
+            return CORINFO_HFA_ELEM_VECTOR_VL;
+#endif
         case TYP_SIMD8:
             return CORINFO_HFA_ELEM_VECTOR64;
         case TYP_SIMD16:
@@ -9176,7 +9184,11 @@ public:
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
-        if (compExactlyDependsOn(InstructionSet_VectorT128))
+        if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
+        {
+            return Compiler::compVectorTLength;
+        }
+        else if (compExactlyDependsOn(InstructionSet_VectorT128))
         {
             return FP_REGSIZE_BYTES;
         }

@@ -1029,6 +1029,9 @@ static unsigned insGetRegisterListSize(instruction ins);
 /************************************************************************/
 
 public:
+// true if this 'imm' can be encoded as a input operand to a SVE mov instruction
+static bool emitIns_valid_imm_for_sve_mov(INT64 imm, emitAttr size);
+
 // true if this 'imm' can be encoded as a input operand to a mov instruction
 static bool emitIns_valid_imm_for_mov(INT64 imm, emitAttr size);
 

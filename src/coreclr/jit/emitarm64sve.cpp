@@ -2662,6 +2662,27 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
                                              // iiiiii
 
             assert(insScalableOptsNone(sopt));
+
+            // Since SVE uses "mul vl", we need to make sure that we calculate
+            // the offset correctly.
+            if (Compiler::compVectorTLength > 16) // TODO-VL: Convert it into helper method
+            {
+                if ((imm % Compiler::compVectorTLength) == 0)
+                {
+                    // If imm is a multiple of Compiler::compVectorTLength,
+                    // we can use the `[#imm mul vl]`
+                    imm = imm / Compiler::compVectorTLength;
+                }
+                else
+                {
+                    // Otherwise, create the address first and then
+                    // use it in str
+                    // add reg2, reg2, imm
+                    // str zn, [reg2]
+                    emitIns_R_R_I(INS_add, EA_8BYTE, reg2, reg2, imm);
+                    imm = 0;
+                }
+            }
             if (isVectorRegister(reg1))
             {
                 fmt = IF_SVE_IE_2A;
@@ -2681,6 +2702,27 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
                                              // iiiiii
 
             assert(insScalableOptsNone(sopt));
+
+            // Since SVE uses "mul vl", we need to make sure that we calculate
+            // the offset correctly.
+            if (Compiler::compVectorTLength > 16) // TODO-VL: Convert it into helper method
+            {
+                if ((imm % Compiler::compVectorTLength) == 0)
+                {
+                    // If imm is a multiple of Compiler::compVectorTLength,
+                    // we can use the `[#imm mul vl]`
+                    imm = imm / Compiler::compVectorTLength;
+                }
+                else
+                {
+                    // Otherwise, create the address first and then
+                    // use it in str
+                    // add reg2, reg2, imm
+                    // str zn, [reg2]
+                    emitIns_R_R_I(INS_add, EA_8BYTE, reg2, reg2, imm);
+                    imm = 0;
+                }
+            }
             if (isVectorRegister(reg1))
             {
                 fmt = IF_SVE_JH_2A;

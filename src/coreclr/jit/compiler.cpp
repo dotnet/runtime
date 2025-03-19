@@ -495,7 +495,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     Compiler::compVectorTLength = 32; // TODO-VL: This should come from runtime itself
     genTypeSizes[TYP_SIMD]      = (BYTE)Compiler::compVectorTLength;
     emitTypeSizes[TYP_SIMD]     = (unsigned short)Compiler::compVectorTLength;
-    emitTypeActSz[TYP_SIMD]     = (unsigned short)Compiler::compVectorTLength;
+    emitTypeActSz[TYP_SIMD]     = EA_SCALABLE;
     genTypeStSzs[TYP_SIMD]      = (BYTE)Compiler::compVectorTLength / sizeof(int);
 #endif // TARGET_ARM64
 }
@@ -683,6 +683,13 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
         {
             return useType;
         }
+#ifdef TARGET_ARM64
+        if (structSize == compVectorTLength)
+        {
+            var_types hfaType = GetHfaType(clsHnd);
+            return hfaType == TYP_SIMD ? TYP_SIMD : TYP_UNKNOWN;
+        }
+#endif
     }
 
     // Now deal with non-HFA/HVA structs.
@@ -908,7 +915,12 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     // The largest "primitive type" is MAX_PASS_SINGLEREG_BYTES
     // so we can skip calling getPrimitiveTypeForStruct when we
     // have a struct that is larger than that.
-    if (canReturnInRegister && (useType == TYP_UNKNOWN) && (structSize <= MAX_PASS_SINGLEREG_BYTES))
+    if (canReturnInRegister && (useType == TYP_UNKNOWN) &&
+    ((structSize <= MAX_PASS_SINGLEREG_BYTES)
+#ifdef TARGET_ARM64
+        || ((GetHfaType(clsHnd) == TYP_SIMD) && (structSize == compVectorTLength)))
+#endif
+        )
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
