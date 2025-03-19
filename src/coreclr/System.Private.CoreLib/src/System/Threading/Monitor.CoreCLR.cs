@@ -150,6 +150,8 @@ namespace System.Threading
         =========================================================================*/
         public static void Exit(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             LeaveHelperAction exitBehavior = Exit_FastPath(obj);
 
             if (exitBehavior == LeaveHelperAction.None)
