@@ -544,7 +544,7 @@ if [[ "$os" == "browser" ]]; then
     arch=wasm
     # because on docker instance without swap file, MSBuild nodes need to make some room for LLVM
     export DOTNET_GCHighMemPercent="10"
-    export DOTNET_GCHeapHardLimitPercent="24"
+    export DOTNET_GCHeapHardLimitPercent="14"
 fi
 if [[ "$os" == "wasi" ]]; then
     # override default arch for wasi, we only support wasm
