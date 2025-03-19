@@ -1905,35 +1905,17 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
     JITDUMP("[DecomposeHWIntrinsicToScalar]: Saving op1 tree to a temp var:\n");
     DISPTREERANGE(Range(), simdTmpVar);
 
-    GenTreeHWIntrinsic* loResult =
-        m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, intrinsicId, CORINFO_TYPE_INT, simdSize);
+    GenTree* loResult = m_compiler->gtNewSimdToScalarNode(TYP_INT, simdTmpVar, CORINFO_TYPE_INT, simdSize);
     Range().InsertAfter(simdTmpVar, loResult);
 
     simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
     Range().InsertAfter(loResult, simdTmpVar);
 
-    GenTreeHWIntrinsic* hiResult;
+    GenTree* hiResult;
     if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
     {
-        NamedIntrinsic getElement = NI_Illegal;
-        switch (simdSize)
-        {
-            case 16:
-                getElement = NI_Vector128_GetElement;
-                break;
-            case 32:
-                getElement = NI_Vector256_GetElement;
-                break;
-            case 64:
-                getElement = NI_Vector512_GetElement;
-                break;
-            default:
-                unreached();
-        }
-
         GenTree* one = m_compiler->gtNewIconNode(1);
-        hiResult =
-            m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, one, getElement, CORINFO_TYPE_INT, simdSize);
+        hiResult     = m_compiler->gtNewSimdGetElementNode(TYP_INT, simdTmpVar, one, CORINFO_TYPE_INT, simdSize);
 
         Range().InsertAfter(simdTmpVar, one, hiResult);
     }
@@ -1944,7 +1926,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
         GenTree* thirtyTwo = m_compiler->gtNewIconNode(32);
         GenTree* shift     = m_compiler->gtNewSimdBinOpNode(GT_RSZ, op1->TypeGet(), simdTmpVar, thirtyTwo,
                                                             node->GetSimdBaseJitType(), simdSize);
-        hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, shift, intrinsicId, CORINFO_TYPE_INT, simdSize);
+        hiResult           = m_compiler->gtNewSimdToScalarNode(TYP_INT, shift, CORINFO_TYPE_INT, simdSize);
 
         Range().InsertAfter(simdTmpVar, thirtyTwo, shift, hiResult);
     }
