@@ -4,9 +4,9 @@ resources:
   repositories:
     - repository: diagnostics
       type: github
-      name: dotnet/diagnostics
+      name: steveisok/diagnostics
       endpoint: public
-      ref: refs/heads/stpfiste/live-runtime-option
+      ref: refs/heads/live-runtime-option
 
 variables:
   - template: /eng/pipelines/common/variables.yml
@@ -37,9 +37,13 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
             postBuildSteps:
+            - powershell: |
+                $versionDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)\artifacts\bin\testhost\net*\shared\Microsoft.NETCore.App" | Select-Object -ExpandProperty FullName
+                Write-Host "##vso[task.setvariable variable=versionDir]$versionDir"
+              displayName: 'Set Path to Shared Framework Artifacts'
             - template: /eng/pipelines/common/upload-artifact-step.yml
               parameters:
-                rootFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost/net*/shared/Microsoft.NETCore.App/**/
+                rootFolder: $(versionDir)
                 includeRootFolder: false
                 archiveType: $(archiveType)
                 archiveExtension: $(archiveExtension)
@@ -58,7 +62,8 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
-            dependsOn: build_windows_x64_release_AllSubsets_CoreCLR
+            dependsOn: 
+            - build_windows_x64_release_AllSubsets_CoreCLR
             preBuildSteps:
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
