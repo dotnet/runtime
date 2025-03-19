@@ -84,7 +84,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
             {
                 ReferenceAssemblies = targetFramework switch
                 {
-                    TestTargetFramework.Framework => ReferenceAssemblies.NetFramework.Net481.Default,
+                    TestTargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
                     TestTargetFramework.Standard2_0 => ReferenceAssemblies.NetStandard.NetStandard20,
                     TestTargetFramework.Standard2_1 => ReferenceAssemblies.NetStandard.NetStandard21,
                     _ => ReferenceAssemblies.Default
