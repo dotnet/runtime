@@ -346,14 +346,18 @@ namespace System
 
         // Indicates that the system should not call the Finalize() method on
         // an object that would normally require this call.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _SuppressFinalize(object o);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_SuppressFinalize")]
+        [SuppressGCTransition]
+        private static partial void SuppressFinalize(ObjectHandleOnStack obj);
 
-        public static void SuppressFinalize(object obj)
+        public static unsafe void SuppressFinalize(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            _SuppressFinalize(obj);
+            if (RuntimeHelpers.GetMethodTable(obj)->HasFinalizer)
+            {
+                SuppressFinalize(ObjectHandleOnStack.Create(ref obj));
+            }
         }
 
         // Indicates that the system should call the Finalize() method on an object
