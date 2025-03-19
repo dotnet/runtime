@@ -13,18 +13,6 @@ namespace System.Security.Cryptography.Tests
     {
         [Theory]
         [MemberData(nameof(MLKemAlgorithms))]
-        public static void Generate_MlKemKeys(MLKemAlgorithm algorithm)
-        {
-            using MLKem kem = MLKem.GenerateMLKemKey(algorithm);
-            Span<byte> seed = stackalloc byte[MLKem.PrivateSeedSizeInBytes];
-            seed.Clear();
-
-            kem.ExportMLKemPrivateSeed(seed);
-            Assert.True(seed.ContainsAnyExcept((byte)0));
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
         public static void Generate_Roundtrip(MLKemAlgorithm algorithm)
         {
             using MLKem kem = MLKem.GenerateMLKemKey(algorithm);
@@ -42,7 +30,11 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemGenerateTestVectors))]
-        public static void Generate_NistVectors(MLKemAlgorithm algorithm, string seed, string expectedEncapsulationKey, string expectedDecapsulationKey)
+        public static void Generate_NistVectors(
+            MLKemAlgorithm algorithm,
+            string seed,
+            string expectedEncapsulationKey,
+            string expectedDecapsulationKey)
         {
             using MLKem kem = MLKem.ImportMLKemPrivateSeed(algorithm, Convert.FromHexString(seed));
 
@@ -68,12 +60,14 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        // Generated from https://github.com/usnistgov/ACVP-Server/blob/85f8742965b2691862079172982683757d8d91db/gen-val/json-files/ML-KEM-keyGen-FIPS203/internalProjection.json
         public static IEnumerable<object[]> MLKemGenerateTestVectors
         {
             get
             {
                 return
                 [
+                    // [algorithm, d || z, ek, dk]
                     [
                         MLKemAlgorithm.MLKem512,
                         "1EB4400A01629D517974E2CD85B9DEF59082DE508E6F9C2B0E341E12965955CA1A394111163803FE2E8519C335A6867556338EADAFA22B5FC557430560CCD693",

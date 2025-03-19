@@ -220,6 +220,8 @@ namespace System.Security.Cryptography
         /// <returns>The imported key.</returns>
         public static MLKem ImportMLKemPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
+            ThrowIfNotSupported();
+
             if (source.Length != PrivateSeedSizeInBytes)
             {
                 throw new ArgumentException("TODO", nameof(source));
