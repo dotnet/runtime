@@ -9,12 +9,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.
-    https://github.com/dotnet/docs/blob/main/docs/core/deploying/trimming/trimming-options.md#trim-framework-library-features 
-    -->
-    <MetricsSupport>true</MetricsSupport>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
 
@@ -34,6 +28,10 @@
     <!-- This WASM test is slow on NodeJS. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
     <XunitShowProgress Condition="'$(FeatureWasmManagedThreads)' == 'true'">true</XunitShowProgress>
+    <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.
+    https://github.com/dotnet/docs/blob/main/docs/core/deploying/trimming/trimming-options.md#trim-framework-library-features 
+    -->
+    <MetricsSupport>true</MetricsSupport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">

@@ -6,13 +6,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TestDisableParallelization>true</TestDisableParallelization>
   </PropertyGroup>
-  <PropertyGroup>
-    <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.
-    https://github.com/dotnet/docs/blob/main/docs/core/deploying/trimming/trimming-options.md#trim-framework-library-features 
-    -->
-    <MetricsSupport>true</MetricsSupport>
-    <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- this is necessary for libmono-component-diagnostics_tracing-static.a to be linked, which makes the EventPipeEventProvider.EventActivityIdControl to work in Mono -->
     <WasmPerfTracing>true</WasmPerfTracing>
