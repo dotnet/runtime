@@ -315,14 +315,6 @@ private:
 typedef UINT32 GcSlotId;
 
 
-// FIXME: Dead code that breaks with these definitions moved into a traits type
-/*
-inline UINT32 GetCodeOffsetChunk(UINT32 codeOffset)
-{
-  return (NORMALIZE_CODE_OFFSET(codeOffset)) / NUM_NORM_CODE_OFFSETS_PER_CHUNK;
-}
-*/
-
 enum GENERIC_CONTEXTPARAM_TYPE
 {
     GENERIC_CONTEXTPARAM_NONE = 0,
