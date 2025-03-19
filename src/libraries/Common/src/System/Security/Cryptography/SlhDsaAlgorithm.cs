@@ -44,7 +44,6 @@ namespace System.Security.Cryptography
         ///  The size of the signature in bytes for this algorithm.
         /// </value>
         public int SignatureSizeInBytes { get; }
-        public string Oid { get; }
 
         /// <summary>
         ///  Gets the size of the private seed in bytes for this algorithm.
@@ -53,6 +52,14 @@ namespace System.Security.Cryptography
         ///  The size of the private seed in bytes for this algorithm.
         /// </value>
         internal int PrivateSeedSizeInBytes { get; }
+
+        /// <summary>
+        ///  Gets the Object Identifier (OID) for this algorithm.
+        /// </summary>
+        /// <value>
+        ///  The Object Identifier (OID) for this algorithm.
+        /// </value>
+        internal string Oid { get; }
 
         /// <summary>
         ///  Initializes a new instance of the <see cref="SlhDsaAlgorithm" /> structure with a custom name.
@@ -73,137 +80,114 @@ namespace System.Security.Cryptography
         {
             Name = name;
 
-            // The seed, secret key and public key sizes are shown to be n, 4n and 2n respectively in
+            // The seed, secret key and public key sizes are shown to be 3n, 4n and 2n respectively in
             // section 9.1 "Key Generation", particularly figure 15 and 16.
-            PrivateSeedSizeInBytes = n;
+            PrivateSeedSizeInBytes = 3 * n;
             SecretKeySizeInBytes = 4 * n;
             PublicKeySizeInBytes = 2 * n;
             SignatureSizeInBytes = signatureSizeInBytes;
             Oid = oid;
         }
 
-        // Slh-DSA parameter sets, and the sizes associated with them,
+        // SLH-DSA parameter sets, and the sizes associated with them,
         // are defined in FIPS 205, section 11 "Parameter Sets",
-        // particularly Table 2 "Slh-DSA parameter sets".
+        // particularly Table 2 "SLH-DSA parameter sets".
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHA2-128s algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-128s algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHA2-128s algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHA2-128s algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaSha2_128s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHA2-128s", 16, 7856, Oids.SlhDsaSha2_128s);
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-128s algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-128s algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-128s algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-128s algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaShake128s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-128s", 16, 7856, Oids.SlhDsaShake_128s);
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHA2-128f algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-128f algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHA2-128f algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHA2-128f algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaSha2_128f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHA2-128f", 16, 17088, Oids.SlhDsaSha2_128f);
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-128f algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-128f algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-128f algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-128f algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaShake128f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-128f", 16, 17088, Oids.SlhDsaShake_128f);
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHA2-192s algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-192s algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHA2-192s algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHA2-192s algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaSha2_192s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHA2-192s", 24, 15616, Oids.SlhDsaSha2_192s);
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-192s algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-192s algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-192s algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-192s algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaShake192s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-192s", 24, 15616, Oids.SlhDsaShake_192s);
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHA2-192f algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-192f algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHA2-192f algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHA2-192f algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaSha2_192f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHA2-192f", 24, 35664, Oids.SlhDsaSha2_192f);
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-192f algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-192f algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-192f algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-192f algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaShake192f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-192f", 24, 35664, Oids.SlhDsaShake_192f);
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHA2-256s algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-256s algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHA2-256s algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHA2-256s algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaSha2_256s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHA2-256s", 32, 29792, Oids.SlhDsaSha2_256s);
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-256s algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-256s algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-256s algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-256s algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaShake256s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-256s", 32, 29792, Oids.SlhDsaShake_256s);
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHA2-256f algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-256f algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHA2-256f algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHA2-256f algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaSha2_256f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHA2-256f", 32, 49856, Oids.SlhDsaSha2_256f);
 
         /// <summary>
-        ///   Gets an Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-256f algorithm.
+        ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-256f algorithm.
         /// </summary>
         /// <value>
-        ///   An Slh-DSA algorithm identifier for the SLH-DSA-SHAKE-256f algorithm.
+        ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-256f algorithm.
         /// </value>
         public static SlhDsaAlgorithm SlhDsaShake256f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-256f", 32, 49856, Oids.SlhDsaShake_256f);
-
-        internal static SlhDsaAlgorithm GetParameterSetInfo(SlhDsaAlgorithm algorithm)
-        {
-            ArgumentNullException.ThrowIfNull(algorithm);
-
-            return algorithm.Name switch
-            {
-                "SLH-DSA-SHA2-128s" => SlhDsaSha2_128s,
-                "SLH-DSA-SHAKE-128s" => SlhDsaShake128s,
-                "SLH-DSA-SHA2-128f" => SlhDsaSha2_128f,
-                "SLH-DSA-SHAKE-128f" => SlhDsaShake128f,
-                "SLH-DSA-SHA2-192s" => SlhDsaSha2_192s,
-                "SLH-DSA-SHAKE-192s" => SlhDsaShake192s,
-                "SLH-DSA-SHA2-192f" => SlhDsaSha2_192f,
-                "SLH-DSA-SHAKE-192f" => SlhDsaShake192f,
-                "SLH-DSA-SHA2-256s" => SlhDsaSha2_256s,
-                "SLH-DSA-SHAKE-256s" => SlhDsaShake256s,
-                "SLH-DSA-SHA2-256f" => SlhDsaSha2_256f,
-                "SLH-DSA-SHAKE-256f" => SlhDsaShake256f,
-
-                _ => ThrowAlgorithmUnknown(algorithm.Name),
-            };
-        }
 
         internal static SlhDsaAlgorithm GetAlgorithmFromOid(string oid)
         {

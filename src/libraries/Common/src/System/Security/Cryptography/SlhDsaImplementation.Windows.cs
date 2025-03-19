@@ -1,21 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-    internal sealed partial class SlhDsaOpenSsl : SlhDsa
+    internal sealed partial class SlhDsaImplementation : SlhDsa
     {
-        internal SlhDsaOpenSsl(SlhDsaAlgorithm algorithm)
-            : base(algorithm)
-        {
-            ThrowIfNotSupported();
-        }
-
-        internal static bool SupportsAny() => false;
+        internal static partial bool SupportsAny() => false;
 
         // TODO: Define this in terms of Windows BCrypt.dll (ephemeral keys)
 
@@ -25,12 +18,6 @@ namespace System.Security.Cryptography
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             throw new PlatformNotSupportedException();
 
-        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, Span<byte> destination) =>
-            throw new PlatformNotSupportedException();
-
-        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> signature) =>
-            throw new PlatformNotSupportedException();
-
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
@@ -38,6 +25,18 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
 
         protected override void ExportSlhDsaPrivateSeedCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        internal static partial SlhDsa ImportPublicKey(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
+            throw new PlatformNotSupportedException();
+
+        internal static partial SlhDsa ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
+            throw new PlatformNotSupportedException();
+
+        internal static partial SlhDsa ImportSecretKey(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
+            throw new PlatformNotSupportedException();
+
+        internal static partial SlhDsa ImportSeed(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
     }
 }

@@ -41,13 +41,18 @@ namespace System.Security.Cryptography
             Algorithm = algorithm;
         }
 
+        protected void ThrowIfDisposed()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+        }
+
         /// <summary>
         ///   Gets a value indicating whether the current platform supports SLH-DSA.
         /// </summary>
         /// <value>
         ///   <see langword="true" /> if the current platform supports SLH-DSA; otherwise, <see langword="false" />.
         /// </value>
-        public static bool IsSupported { get; } = SlhDsa.SupportsAnyHelper();
+        public static bool IsSupported { get; } = SlhDsaImplementation.SupportsAny();
 
         /// <summary>
         ///   Gets the specific SLH-DSA algorithm for this key.
@@ -56,6 +61,16 @@ namespace System.Security.Cryptography
         ///   The specific SLH-DSA algorithm for this key.
         /// </value>
         public SlhDsaAlgorithm Algorithm { get; }
+
+        /// <summary>
+        ///  Releases all resources used by the <see cref="SlhDsa"/> class.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            _disposed = true;
+            GC.SuppressFinalize(this);
+        }
 
         /// <summary>
         ///   Sign the specified data, writing the signature into the provided buffer.
@@ -101,6 +116,7 @@ namespace System.Security.Cryptography
             }
 
             int signatureSizeInBytes = Algorithm.SignatureSizeInBytes;
+
             if (destination.Length < signatureSizeInBytes)
             {
                 throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
@@ -156,81 +172,6 @@ namespace System.Security.Cryptography
             }
 
             return VerifyDataCore(data, context, signature);
-        }
-
-        /// <summary>
-        ///   Sign the specified hash, writing the signature into the provided buffer.
-        /// </summary>
-        /// <param name="hash">
-        ///   The hash to sign.
-        /// </param>
-        /// <param name="destination">
-        ///   The buffer to receive the signature.
-        /// </param>
-        /// <param name="preHashAlgorithm"></param>
-        /// <param name="context">
-        ///   An optional context-specific value to limit the scope of the signature.
-        ///   The default value is an empty buffer.
-        /// </param>
-        /// <returns>
-        ///   The number of bytes written to the <paramref name="destination" /> buffer.
-        /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   The buffer in <paramref name="destination"/> is too small to hold the signature.
-        /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
-        ///   255 bytes.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">
-        ///   This instance has been disposed.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   <para>The instance represents only a public key.</para>
-        ///   <para>-or-</para>
-        ///   <para>An error occurred while signing the hash.</para>
-        /// </exception>
-        public int SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> context = default)
-        {
-            // TODO: Support pre-hashed signing.
-
-            throw new NotSupportedException(SR.Cryptography_InvalidOperation);
-        }
-
-        /// <summary>
-        ///   Verifies that the specified signature is valid for this key and the provided hash.
-        /// </summary>
-        /// <param name="hash">
-        ///   The hash to verify.
-        /// </param>
-        /// <param name="signature">
-        ///   The signature to verify.
-        /// </param>
-        /// <param name="preHashAlgorithm"></param>
-        /// <param name="context">
-        ///   The context value which was provided during signing.
-        ///   The default value is an empty buffer.
-        /// </param>
-        /// <returns>
-        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
-        /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
-        ///   255 bytes.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">
-        ///   This instance has been disposed.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   <para>The instance represents only a public key.</para>
-        ///   <para>-or-</para>
-        ///   <para>An error occurred while signing the hash.</para>
-        /// </exception>
-        public bool SignPreHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> context = default)
-        {
-            // TODO: Support pre-hashed signing.
-
-            throw new NotSupportedException(SR.Cryptography_InvalidOperation);
         }
 
         /// <summary>
@@ -671,6 +612,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
+
             if (destination.Length < publicKeySizeInBytes)
             {
                 throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
@@ -700,6 +642,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
+
             if (destination.Length < secretKeySizeInBytes)
             {
                 throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
@@ -729,6 +672,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             int privateSeedSizeInBytes = Algorithm.PrivateSeedSizeInBytes;
+
             if (destination.Length < privateSeedSizeInBytes)
             {
                 throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
@@ -745,129 +689,7 @@ namespace System.Security.Cryptography
         ///   The generated object.
         /// </returns>
         public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) =>
-            GenerateKeyHelper(algorithm);
-
-        protected void ThrowIfDisposed()
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-        }
-
-        /// <summary>
-        ///  Releases all resources used by the <see cref="SlhDsa"/> class.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            _disposed = true;
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        ///   When overridden in a derived class, computes the signature of the specified data and context,
-        ///   writing it into the provided buffer.
-        /// </summary>
-        /// <param name="data">
-        ///   The data to sign.
-        /// </param>
-        /// <param name="context">
-        ///   The signature context.
-        /// </param>
-        /// <param name="destination">
-        ///   The buffer to receive the signature, which will always be the exactly correct size for the algorithm.
-        /// </param>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred while signing the data.
-        /// </exception>
-        protected abstract void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination);
-
-        /// <summary>
-        ///   When overridden in a derived class, verifies the signature of the specified data and context.
-        /// </summary>
-        /// <param name="data">
-        ///   The data to verify.
-        /// </param>
-        /// <param name="context">
-        ///   The signature context.
-        /// </param>
-        /// <param name="signature">
-        ///   The signature to verify.
-        /// </param>
-        /// <returns>
-        ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred while signing the data.
-        /// </exception>
-        protected abstract bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
-
-        /// <summary>
-        ///   When overridden in a derived class, computes the signature of the specified hash and context,
-        ///   writing it into the provided buffer.
-        /// </summary>
-        /// <param name="hash">
-        ///   The hash to sign.
-        /// </param>
-        /// <param name="context">
-        ///   The signature context.
-        /// </param>
-        /// <param name="preHashAlgorithm">
-        ///   The algorithm used to compute the hash.
-        /// </param>
-        /// <param name="destination">
-        ///   The buffer to receive the signature, which will always be the exactly correct size for the algorithm.
-        /// </param>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred while signing the hash.
-        /// </exception>
-        protected abstract void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, Span<byte> destination);
-
-        /// <summary>
-        ///   When overridden in a derived class, verifies the signature of the specified hash and context.
-        /// </summary>
-        /// <param name="hash">
-        ///   The hash to verify.
-        /// </param>
-        /// <param name="context">
-        ///   The signature context.
-        /// </param>
-        /// <param name="preHashAlgorithm">
-        ///   The algorithm used to compute the hash.
-        /// </param>
-        /// <param name="signature">
-        ///   The signature to verify.
-        /// </param>
-        /// <returns>
-        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred while signing the hash.
-        /// </exception>
-        protected abstract bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> signature);
-
-
-        /// <summary>
-        ///   When overridden in a derived class, exports the FIPS 205 public key to the specified buffer.
-        /// </summary>
-        /// <param name="destination">
-        ///   The buffer to receive the public key.
-        /// </param>
-        protected abstract void ExportSlhDsaPublicKeyCore(Span<byte> destination);
-
-        /// <summary>
-        ///   When overridden in a derived class, exports the FIPS 205 secret key to the specified buffer.
-        /// </summary>
-        /// <param name="destination">
-        ///   The buffer to receive the secret key.
-        /// </param>
-        protected abstract void ExportSlhDsaSecretKeyCore(Span<byte> destination);
-
-        /// <summary>
-        ///   When overridden in a derived class, exports the private seed to the specified buffer.
-        /// </summary>
-        /// <param name="destination">
-        ///   The buffer to receive the private seed.
-        /// </param>
-        protected abstract void ExportSlhDsaPrivateSeedCore(Span<byte> destination);
+            new SlhDsaImplementation(algorithm);
 
         /// <summary>
         ///  Imports an SLH-DSA public key from an X.509 SubjectPublicKeyInfo structure.
@@ -914,7 +736,7 @@ namespace System.Security.Cryptography
                             Debug.Fail("Execution should have halted in the throw-helper.");
                         }
 
-                        return SlhDsa.ImportPublicKey(algorithm, spki.SubjectPublicKey.Span);
+                        return SlhDsaImplementation.ImportPublicKey(algorithm, spki.SubjectPublicKey.Span);
                     }
                 }
             }
@@ -965,7 +787,7 @@ namespace System.Security.Cryptography
                             Debug.Fail("Execution should have halted in the throw-helper.");
                         }
 
-                        return SlhDsa.ImportPkcs8PrivateKeyValue(info, pki.PrivateKey.Span);
+                        return SlhDsaImplementation.ImportPkcs8PrivateKeyValue(info, pki.PrivateKey.Span);
                     }
                 }
             }
@@ -1183,7 +1005,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
             }
 
-            return SlhDsa.ImportPublicKey(algorithm, source);
+            return SlhDsaImplementation.ImportPublicKey(algorithm, source);
         }
 
         /// <summary>
@@ -1221,7 +1043,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
             }
 
-            return SlhDsa.ImportSecretKey(algorithm, source);
+            return SlhDsaImplementation.ImportSecretKey(algorithm, source);
         }
 
         /// <summary>
@@ -1258,7 +1080,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
             }
 
-            return SlhDsa.ImportSeed(algorithm, source);
+            return SlhDsaImplementation.ImportSeed(algorithm, source);
         }
 
         /// <summary>
@@ -1272,6 +1094,68 @@ namespace System.Security.Cryptography
         protected virtual void Dispose(bool disposing)
         {
         }
+
+        /// <summary>
+        ///   When overridden in a derived class, computes the signature of the specified data and context,
+        ///   writing it into the provided buffer.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to sign.
+        /// </param>
+        /// <param name="context">
+        ///   The signature context.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature, which will always be the exactly correct size for the algorithm.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while signing the data.
+        /// </exception>
+        protected abstract void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, verifies the signature of the specified data and context.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to verify.
+        /// </param>
+        /// <param name="context">
+        ///   The signature context.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while signing the data.
+        /// </exception>
+        protected abstract bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
+
+        /// <summary>
+        ///   When overridden in a derived class, exports the FIPS 205 public key to the specified buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the public key.
+        /// </param>
+        protected abstract void ExportSlhDsaPublicKeyCore(Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, exports the FIPS 205 secret key to the specified buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the secret key.
+        /// </param>
+        protected abstract void ExportSlhDsaSecretKeyCore(Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, exports the private seed to the specified buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the private seed.
+        /// </param>
+        protected abstract void ExportSlhDsaPrivateSeedCore(Span<byte> destination);
 
         private AsnWriter ExportSubjectPublicKeyInfoCore()
         {
