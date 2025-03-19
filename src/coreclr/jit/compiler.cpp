@@ -104,7 +104,7 @@ inline bool _our_GetThreadCycles(uint64_t* cycleOut)
 
 #endif // which host OS
 
-const BYTE genTypeSizes[] = {
+BYTE genTypeSizes[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
@@ -116,7 +116,7 @@ const BYTE genTypeAlignments[] = {
 #undef DEF_TP
 };
 
-const BYTE genTypeStSzs[] = {
+BYTE genTypeStSzs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) st,
 #include "typelist.h"
 #undef DEF_TP
@@ -490,6 +490,14 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
     info.compHasNextCallRetAddr = false;
     info.compIsVarArgs          = false;
+
+#if defined(TARGET_ARM64)
+    Compiler::compVectorTLength = 32; // TODO-VL: This should come from runtime itself
+    genTypeSizes[TYP_SIMD]      = (BYTE)Compiler::compVectorTLength;
+    emitTypeSizes[TYP_SIMD]     = (unsigned short)Compiler::compVectorTLength;
+    emitTypeActSz[TYP_SIMD]     = (unsigned short)Compiler::compVectorTLength;
+    genTypeStSzs[TYP_SIMD]      = (BYTE)Compiler::compVectorTLength / sizeof(int);
+#endif // TARGET_ARM64
 }
 
 //------------------------------------------------------------------------
@@ -7759,7 +7767,6 @@ START:
                 compilerMem = pParam->pAlloc->allocateMemory(sizeof(Compiler));
             }
 
-            Compiler::compVectorTLength = 32; // TODO-VL: This should come from runtime itself
             pParam->pComp = new (compilerMem, jitstd::placement_t()) Compiler(pParam->pAlloc, pParam->methodHnd, pParam->compHnd, pParam->methodInfo, pParam->inlineInfo);
 
 #if MEASURE_CLRAPI_CALLS

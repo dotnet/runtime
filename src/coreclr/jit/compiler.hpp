@@ -1115,7 +1115,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask, var_typ
  *  Return the size in bytes of the given type.
  */
 
-extern const BYTE genTypeSizes[TYP_COUNT];
+extern BYTE genTypeSizes[TYP_COUNT];
 
 template <class T>
 inline unsigned genTypeSize(T value)
@@ -1131,7 +1131,7 @@ inline unsigned genTypeSize(T value)
  *      returns 1 for 32-bit types and 2 for 64-bit types.
  */
 
-extern const BYTE genTypeStSzs[TYP_COUNT];
+extern BYTE genTypeStSzs[TYP_COUNT];
 
 template <class T>
 inline unsigned genTypeStSz(T value)

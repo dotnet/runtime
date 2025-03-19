@@ -595,13 +595,13 @@ void emitterStats(FILE* fout)
 
 /*****************************************************************************/
 
-const unsigned short emitTypeSizes[] = {
+unsigned short emitTypeSizes[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
-const unsigned short emitTypeActSz[] = {
+unsigned short emitTypeActSz[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) asze,
 #include "typelist.h"
 #undef DEF_TP

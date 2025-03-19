@@ -3714,7 +3714,7 @@ inline unsigned emitter::emitSpecifiedOffset(unsigned insCount, unsigned igSize)
     return codePos;
 }
 
-extern const unsigned short emitTypeSizes[TYP_COUNT];
+extern unsigned short emitTypeSizes[TYP_COUNT];
 
 template <class T>
 inline emitAttr emitTypeSize(T type)
@@ -3724,7 +3724,7 @@ inline emitAttr emitTypeSize(T type)
     return (emitAttr)emitTypeSizes[TypeGet(type)];
 }
 
-extern const unsigned short emitTypeActSz[TYP_COUNT];
+extern unsigned short emitTypeActSz[TYP_COUNT];
 
 template <class T>
 inline emitAttr emitActualTypeSize(T type)

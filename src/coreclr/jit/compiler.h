@@ -12567,9 +12567,9 @@ const instruction INS_BREAKPOINT = INS_ebreak;
 
 /*****************************************************************************/
 
-extern const BYTE genTypeSizes[];
+extern BYTE genTypeSizes[];
 extern const BYTE genTypeAlignments[];
-extern const BYTE genTypeStSzs[];
+extern BYTE genTypeStSzs[];
 extern const BYTE genActualTypes[];
 
 /*****************************************************************************/
