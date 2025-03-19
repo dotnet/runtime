@@ -373,7 +373,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
 
     EX_TRY
     {
-        SString message;
+        StackSString message;
         if (exitCode == (UINT)COR_E_FAILFAST)
         {
             message.Append(W("Process terminated. "));
@@ -387,6 +387,10 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
         {
             message.Append(errorSource);
             message.Append(W("\n"));
+
+            PrintToStdErrW(message.GetUnicode());
+
+            message.Clear();
         }
 
         if (pszMessage != NULL)
@@ -396,7 +400,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
         else
         {
             // If no message was passed in, generate it from the exitCode
-            SString exitCodeMessage;
+            InlineSString<256> exitCodeMessage;
             GetHRMsg(exitCode, exitCodeMessage);
             message.Append(exitCodeMessage);
         }
