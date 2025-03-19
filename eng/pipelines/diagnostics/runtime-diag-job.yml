@@ -36,6 +36,7 @@ parameters:
   templatePath: 'templates'
   templateContext: ''
   disableComponentGovernance: ''
+  liveRuntimeDir: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -86,10 +87,7 @@ jobs:
       - _TestArgs: '-test'
       - _Cross: ''
 
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - _buildScript: $(Build.SourcesDirectory)\diagnostics\build.cmd
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - _buildScript: $(Build.SourcesDirectory)/diagnostics/build.sh
+      - _buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
 
       - ${{ if and(eq(parameters.testOnly, 'true'), eq(parameters.buildOnly, 'true')) }}:
         'error, testOnly and buildOnly cannot be true at the same time': error
@@ -136,12 +134,7 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
 
-    - checkout: self
-      path: s
-      clean: true
-      fetchDepth: $(checkoutFetchDepth)
     - checkout: diagnostics
-      path: s/diagnostics
       clean: true
       fetchDepth: $(checkoutFetchDepth)
 
@@ -215,6 +208,9 @@ jobs:
           -ci
           -configuration ${{ parameters.buildConfig }}
           -architecture ${{ parameters.archType }}
+          -privatebuild
+          -useCdac
+          -liveRuntimeDir ${{ parameters.liveRuntimeDir }}
           $(_TestArgs)
           $(_Cross)
           $(_InternalInstallArgs)

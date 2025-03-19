@@ -6,6 +6,7 @@ resources:
       type: github
       name: dotnet/diagnostics
       endpoint: public
+      ref: refs/heads/stpfiste/live-runtime-option
 
 variables:
   - template: /eng/pipelines/common/variables.yml
@@ -38,7 +39,7 @@ extends:
             postBuildSteps:
             - template: /eng/pipelines/common/upload-artifact-step.yml
               parameters:
-                rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                rootFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost/net*/shared/Microsoft.NETCore.App/**/
                 includeRootFolder: false
                 archiveType: $(archiveType)
                 archiveExtension: $(archiveExtension)
@@ -55,4 +56,13 @@ extends:
           jobParameters:
             name: Windows
             isOfficialBuild: ${{ variables.isOfficialBuild }}
+            liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
+            dependsOn: build_windows_x64_release_AllSubsets_CoreCLR
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+                  artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
+                  displayName: 'Runtime Build Artifacts'
