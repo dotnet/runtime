@@ -47,7 +47,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
-            value = unchecked((value + (value >>= 15)) ^ value);
+            value = unchecked((short)((value + (value >>= 15)) ^ value));
 
             if (value == short.MinValue)
             {
