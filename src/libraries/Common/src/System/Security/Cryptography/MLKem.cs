@@ -216,7 +216,7 @@ namespace System.Security.Cryptography
         /// Creates an ML-KEM key from a private seed.
         /// </summary>
         /// <param name="algorithm">The algorithm of the seed.</param>
-        /// <param name="source">The seed to create the algorithm from.</param>
+        /// <param name="source">The private seed.</param>
         /// <returns>The imported key.</returns>
         public static MLKem ImportMLKemPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
@@ -228,6 +228,24 @@ namespace System.Security.Cryptography
             }
 
             return MLKemImplementation.ImportPrivateSeed(algorithm, source);
+        }
+
+        /// <summary>
+        /// Creates an ML-KEM key from an encapsulation key.
+        /// </summary>
+        /// <param name="algorithm">The algorithm of the encapsulation key.</param>
+        /// <param name="source">The encapsulation key.</param>
+        /// <returns>The imported key.</returns>
+        public static MLKem ImportMLKemEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            ThrowIfNotSupported();
+
+            if (source.Length != algorithm.EncapsulationKeySizeInBytes)
+            {
+                throw new ArgumentException("TODO", nameof(source));
+            }
+
+            return MLKemImplementation.ImportEncapsulationKey(algorithm, source);
         }
 
         /// <summary>

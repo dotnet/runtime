@@ -516,6 +516,9 @@
   <data name="Cryptography_NoPemOfLabel" xml:space="preserve">
     <value>The contents do not contain a PEM with a '{0}' label, or the content is malformed.</value>
   </data>
+  <data name="Cryptography_NotRetrievable" xml:space="preserve">
+    <value>The key contents are not retrievable.</value>
+  </data>
   <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
     <value>Key is not a valid private key.</value>
   </data>

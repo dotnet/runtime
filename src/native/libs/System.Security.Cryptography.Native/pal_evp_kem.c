@@ -19,21 +19,41 @@ static int32_t GetKeyOctetStringParam(const EVP_PKEY* pKey,
 #ifdef NEED_OPENSSL_3_0
     if (API_EXISTS(EVP_PKEY_get_octet_string_param))
     {
+        ERR_clear_error();
+
         size_t destinationLengthT = Int32ToSizeT(destinationLength);
         size_t outLength = 0;
+
         int ret = EVP_PKEY_get_octet_string_param(
+            pKey,
+            name,
+            NULL,
+            0,
+            &outLength);
+
+        if (ret != 1)
+        {
+            return -1;
+        }
+
+        ret = EVP_PKEY_get_octet_string_param(
             pKey,
             name,
             (unsigned char*)destination,
             destinationLengthT,
             &outLength);
 
-        if (outLength != destinationLengthT)
+        if (ret != 1)
         {
-            return -1;
+            return 0;
         }
 
-        return ret == 1 ? 1 : 0;
+        if (outLength != destinationLengthT)
+        {
+            return -2;
+        }
+
+        return 1;
     }
 #else
     (void)pKey;
@@ -100,18 +120,87 @@ EVP_KEM* CryptoNative_EvpKemFetch(const char* algorithm, int32_t* haveFeature)
     return NULL;
 }
 
+EVP_PKEY* CryptoNative_EvpKemImportKey(const EVP_KEM* kem, uint8_t* key, int32_t keyLength, int32_t privateKey)
+{
+    assert(kem);
+    assert(key);
+    assert(keyLength > 0);
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_CTX_new_from_name))
+    {
+        ERR_clear_error();
+        const char* name = EVP_KEM_get0_name(kem);
+
+        if (name == NULL)
+        {
+            return NULL;
+        }
+
+        EVP_PKEY_CTX* ctx = NULL;
+        EVP_PKEY* pkey = NULL;
+        ctx = EVP_PKEY_CTX_new_from_name(NULL, name, NULL);
+
+        if (ctx == NULL)
+        {
+            goto done;
+        }
+
+        if (EVP_PKEY_fromdata_init(ctx) != 1)
+        {
+            goto done;
+        }
+
+        const char* paramName = privateKey == 0 ? OSSL_PKEY_PARAM_PUB_KEY : OSSL_PKEY_PARAM_PRIV_KEY;
+        int selection = privateKey == 0 ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY;
+        size_t keyLengthT = Int32ToSizeT(keyLength);
+
+        OSSL_PARAM params[] =
+        {
+            OSSL_PARAM_construct_octet_string(paramName, (void*)key, keyLengthT),
+            OSSL_PARAM_construct_end(),
+        };
+
+        if (EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1)
+        {
+            if (pkey != NULL)
+            {
+                EVP_PKEY_free(pkey);
+                pkey = NULL;
+            }
+
+            goto done;
+        }
+
+done:
+        if (ctx)
+        {
+            EVP_PKEY_CTX_free(ctx);
+        }
+
+        return pkey;
+    }
+#endif
+
+    (void)kem;
+    (void)key;
+    (void)keyLength;
+    (void)privateKey;
+    return NULL;
+}
+
 EVP_PKEY* CryptoNative_EvpKemGeneratePkey(const EVP_KEM* kem, uint8_t* seed, int32_t seedLength)
 {
     assert(kem);
     assert((seed == NULL) == (seedLength == 0));
 
 #ifdef NEED_OPENSSL_3_0
-    if (API_EXISTS(EVP_KEM_fetch))
+    if (API_EXISTS(EVP_PKEY_CTX_new_from_name))
     {
         assert(
             API_EXISTS(EVP_KEM_get0_name) &&
-            API_EXISTS(EVP_PKEY_CTX_new_from_name) &&
             API_EXISTS(OSSL_PARAM_construct_octet_string) &&
+            API_EXISTS(OSSL_PARAM_construct_end) &&
             API_EXISTS(EVP_PKEY_CTX_set_params));
 
         ERR_clear_error();
@@ -124,7 +213,6 @@ EVP_PKEY* CryptoNative_EvpKemGeneratePkey(const EVP_KEM* kem, uint8_t* seed, int
 
         EVP_PKEY_CTX* ctx = NULL;
         EVP_PKEY* key = NULL;
-
         ctx = EVP_PKEY_CTX_new_from_name(NULL, name, NULL);
 
         if (ctx == NULL)

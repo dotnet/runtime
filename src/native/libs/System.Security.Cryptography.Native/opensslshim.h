@@ -144,6 +144,24 @@ c_static_assert(EVP_KDF_HKDF_MODE_EXPAND_ONLY == 2);
 #define OSSL_PKEY_PARAM_PRIV_KEY "priv"
 #endif
 
+#ifndef EVP_PKEY_KEYPAIR
+#define EVP_PKEY_KEYPAIR 135
+#else
+c_static_assert(EVP_PKEY_KEYPAIR == 135);
+#endif
+
+#ifndef EVP_PKEY_KEYPAIR
+#define EVP_PKEY_KEYPAIR 135
+#else
+c_static_assert(EVP_PKEY_KEYPAIR == 135);
+#endif
+
+#ifndef EVP_PKEY_PUBLIC_KEY
+#define EVP_PKEY_PUBLIC_KEY 134
+#else
+c_static_assert(EVP_PKEY_PUBLIC_KEY == 134);
+#endif
+
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include "apibridge_30_rev.h"
 #endif
@@ -510,6 +528,8 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_PKEY_encrypt) \
     REQUIRED_FUNCTION(EVP_PKEY_encrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
+    LIGHTUP_FUNCTION(EVP_PKEY_fromdata) \
+    LIGHTUP_FUNCTION(EVP_PKEY_fromdata_init) \
     RENAMED_FUNCTION(EVP_PKEY_get_base_id, EVP_PKEY_base_id) \
     RENAMED_FUNCTION(EVP_PKEY_get_bits, EVP_PKEY_bits) \
     LIGHTUP_FUNCTION(EVP_PKEY_get_octet_string_param) \
@@ -1073,6 +1093,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_encrypt_init EVP_PKEY_encrypt_init_ptr
 #define EVP_PKEY_encrypt EVP_PKEY_encrypt_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
+#define EVP_PKEY_fromdata EVP_PKEY_fromdata_ptr
+#define EVP_PKEY_fromdata_init EVP_PKEY_fromdata_init_ptr
 #define EVP_PKEY_get_base_id EVP_PKEY_get_base_id_ptr
 #define EVP_PKEY_get_bits EVP_PKEY_get_bits_ptr
 #define EVP_PKEY_get_octet_string_param EVP_PKEY_get_octet_string_param_ptr

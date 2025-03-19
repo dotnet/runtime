@@ -36,6 +36,15 @@ namespace System.Security.Cryptography
             return new MLKemImplementation(algorithm, key);
         }
 
+        internal static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            Debug.Assert(IsSupported);
+            Debug.Assert(source.Length == algorithm.EncapsulationKeySizeInBytes);
+            SafeEvpKemHandle handle = MapAlgorithmToHandle(algorithm); // Shared handle, do not dispose.
+            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemImportKey(handle, source, privateKey: false);
+            return new MLKemImplementation(algorithm, key);
+        }
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);

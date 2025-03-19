@@ -22,3 +22,4 @@ PALEXPORT int32_t CryptoNative_EvpKemDecapsulate(EVP_PKEY* pKey,
                                                  int32_t ciphertextLength,
                                                  uint8_t* sharedSecret,
                                                  int32_t sharedSecretLength);
+PALEXPORT EVP_PKEY* CryptoNative_EvpKemImportKey(const EVP_KEM* kem, uint8_t* key, int32_t keyLength, int32_t privateKey);
