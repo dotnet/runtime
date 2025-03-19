@@ -433,11 +433,19 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     LOG((LF_GC, LL_INFO10, "Finalizer thread starting...\n"));
 
-#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(FEATURE_COMINTEROP)
-    // Make sure the finalizer thread is set to MTA to avoid hitting
-    // DevDiv Bugs 180773 - [Stress Failure] AV at CoreCLR!SafeQueryInterfaceHelper
-    GetFinalizerThread()->SetApartment(Thread::AS_InMTA);
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT && !FEATURE_COMINTEROP
+#ifdef TARGET_WINDOWS
+#ifdef FEATURE_COMINTEROP
+    // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
+    // termination callback.
+    ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    g_fComStarted = true;
+#endif
+
+    InitFlsSlot();
+
+    // handshake with EE initialization, as now we can attach Thread objects to native threads.
+    hEventFinalizerDone->Set();
+#endif
 
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();
 
@@ -548,6 +556,15 @@ void FinalizerThread::SignalFinalizationDone(int observedFullGcCount)
 
     g_fullGcCountSeenByFinalization = observedFullGcCount;
     hEventFinalizerDone->Set();
+}
+
+void FinalizerThread::WaitForFinalizerThreadStart()
+{
+    // this should be only called during EE startup
+    _ASSERTE(!g_fEEStarted);
+
+    hEventFinalizerDone->Wait(INFINITE,FALSE);
+    hEventFinalizerDone->Reset();
 }
 
 // Wait for the finalizer thread to complete one pass.
