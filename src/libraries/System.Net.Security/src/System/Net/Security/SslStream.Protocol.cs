@@ -219,14 +219,14 @@ namespace System.Net.Security
                 // ELSE Try the MY user and machine stores for private key check.
                 // For server side mode MY machine store takes priority.
                 X509Certificate2? found =
-                    FindCertWithPrivateKey(isServer) ??
-                    FindCertWithPrivateKey(!isServer);
+                    FindCertWithPrivateKey(isServer, certHash) ??
+                    FindCertWithPrivateKey(!isServer, certHash);
                 if (found is not null)
                 {
                     return found;
                 }
 
-                X509Certificate2? FindCertWithPrivateKey(bool isServer)
+                X509Certificate2? FindCertWithPrivateKey(bool isServer, ReadOnlySpan<byte> certHash)
                 {
                     if (CertificateValidationPal.EnsureStoreOpened(isServer) is X509Store store)
                     {
