@@ -11558,18 +11558,20 @@ void SoftwareExceptionFrame::Init()
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
+#ifdef TARGET_WINDOWS
+    // On Windows/x86 we don't have unwinding available for native code
+    // so we capture the context differently in IL_Throw and IL_Rethrow.
 #ifndef TARGET_X86
-#ifndef TARGET_UNIX
-    Thread::VirtualUnwindCallFrame(&m_Context, &m_ContextPointers);
-#else // !TARGET_UNIX
     BOOL success = PAL_VirtualUnwind(&m_Context, &m_ContextPointers);
     if (!success)
     {
         _ASSERTE(!"SoftwareExceptionFrame::Init failed");
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
-#endif // !TARGET_UNIX
-#endif
+#endif // !TARGET_X86
+#else // !TARGET_WINDOWS
+    Thread::VirtualUnwindCallFrame(&m_Context, &m_ContextPointers);
+#endif // !TARGET_WINDOWS
 
 #define CALLEE_SAVED_REGISTER(regname) if (m_ContextPointers.regname == NULL) m_ContextPointers.regname = &m_Context.regname;
     ENUM_CALLEE_SAVED_REGISTERS();

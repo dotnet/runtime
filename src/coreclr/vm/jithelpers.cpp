@@ -1810,7 +1810,7 @@ HCIMPLEND
 
 /*************************************************************/
 
-#ifdef TARGET_X86
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 static void TransitionBlockToContext(TransitionBlock* transitionBlock, T_CONTEXT *pContext)
 {
     //#define ARGUMENT_REGISTER(reg) pContext->reg = transitionBlock->m_argumentRegisters.reg;
@@ -1828,7 +1828,7 @@ static void TransitionBlockToContext(TransitionBlock* transitionBlock, T_CONTEXT
 }
 #endif
 
-#ifdef TARGET_X86
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
 EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
 #else
@@ -1850,7 +1850,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
         Thread *pThread = GetThread();
 
         SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
         TransitionBlockToContext(transitionBlock, exceptionFrame.GetContext());
 #else
         ClrCaptureContext(exceptionFrame.GetContext());
@@ -1932,7 +1932,7 @@ HCIMPLEND
 
 /*************************************************************/
 
-#ifdef TARGET_X86
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 EXTERN_C FCDECL0(void, IL_Rethrow);
 EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
 #else
@@ -1949,7 +1949,7 @@ HCIMPL0(void, IL_Rethrow)
         Thread *pThread = GetThread();
 
         SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
         TransitionBlockToContext(transitionBlock, exceptionFrame.GetContext());
 #else
         ClrCaptureContext(exceptionFrame.GetContext());
