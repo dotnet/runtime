@@ -227,28 +227,8 @@ namespace Internal.Reflection.Execution
         {
             MethodBase methodInfo = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
 
-            MethodInvokeInfo methodInvokeInfo;
-#if GENERICS_FORCE_USG
-            // Stress mode to force the usage of universal canonical method targets for reflection invokes.
-            // It is recommended to use "/SharedGenericsMode GenerateAllUniversalGenerics" NUTC command line argument when
-            // compiling the application in order to effectively use the GENERICS_FORCE_USG mode.
-
-            // If we are just trying to invoke a non-generic method on a non-generic type, we won't force the universal lookup
-            if (!RuntimeAugments.IsGenericType(declaringTypeHandle) && (genericMethodTypeArgumentHandles == null || genericMethodTypeArgumentHandles.Length == 0))
-                methodInvokeInfo = TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                    methodInfo, ref methodSignatureComparer, CanonicalFormKind.Specific);
-            else
-                methodInvokeInfo = TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                    methodInfo, ref methodSignatureComparer, CanonicalFormKind.Universal);
-#else
-            methodInvokeInfo = TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                methodInfo, CanonicalFormKind.Specific);
-
-            // If we failed to get a MethodInvokeInfo for an exact method, or a canonically equivalent method, check if there is a universal canonically
-            // equivalent entry that could be used (it will be much slower, and require a calling convention converter)
-            methodInvokeInfo ??= TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                    methodInfo, CanonicalFormKind.Universal);
-#endif
+            MethodInvokeInfo methodInvokeInfo = TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
+                methodInfo);
 
             if (methodInvokeInfo == null)
                 return null;
@@ -307,14 +287,12 @@ namespace Internal.Reflection.Execution
         /// <param name="methodHandle">Handle of method to look up</param>
         /// <param name="genericMethodTypeArgumentHandles">Runtime handles of generic method arguments</param>
         /// <param name="methodInfo">MethodInfo of method to look up</param>
-        /// <param name="canonFormKind">Requested canon form</param>
         /// <returns>Constructed method invoke info, null on failure</returns>
         private static unsafe MethodInvokeInfo TryGetMethodInvokeInfo(
             RuntimeTypeHandle declaringTypeHandle,
             QMethodDefinition methodHandle,
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
-            MethodBase methodInfo,
-            CanonicalFormKind canonFormKind)
+            MethodBase methodInfo)
         {
             MethodInvokeMetadata methodInvokeMetadata;
 
@@ -322,7 +300,6 @@ namespace Internal.Reflection.Execution
                 declaringTypeHandle,
                 methodHandle,
                 genericMethodTypeArgumentHandles,
-                canonFormKind,
                 out methodInvokeMetadata))
             {
                 // Method invoke info not found
@@ -740,8 +717,7 @@ namespace Internal.Reflection.Execution
         {
             FieldAccessMetadata fieldAccessMetadata;
 
-            if (!TypeLoaderEnvironment.TryGetFieldAccessMetadata(
-                metadataReader,
+            if (!TypeLoaderEnvironment.TryGetFieldAccessMetadataFromFieldAccessMap(
                 declaringTypeHandle,
                 fieldHandle,
                 out fieldAccessMetadata))
@@ -788,8 +764,6 @@ namespace Internal.Reflection.Execution
                         }
                         else
                         {
-                            Debug.Assert((fieldAccessMetadata.Flags & FieldTableFlags.IsUniversalCanonicalEntry) == 0);
-
                             if (fieldBase != FieldTableFlags.NonGCStatic)
                             {
                                 fieldOffset = fieldAccessMetadata.Offset;

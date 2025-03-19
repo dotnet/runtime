@@ -354,8 +354,10 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EC_GROUP_get_degree) \
     REQUIRED_FUNCTION(EC_GROUP_get_order) \
     REQUIRED_FUNCTION(EC_GROUP_get_seed_len) \
+    LIGHTUP_FUNCTION(EC_GROUP_get_field_type) \
     REQUIRED_FUNCTION(EC_GROUP_method_of) \
     REQUIRED_FUNCTION(EC_GROUP_new) \
+    LIGHTUP_FUNCTION(EC_GROUP_new_by_curve_name) \
     REQUIRED_FUNCTION(EC_GROUP_set_curve_GFp) \
     REQUIRED_FUNCTION(EC_GROUP_set_generator) \
     REQUIRED_FUNCTION(EC_GROUP_set_seed) \
@@ -378,6 +380,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EC_POINT_mul) \
     REQUIRED_FUNCTION(EC_POINT_new) \
     REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates_GFp) \
+    LIGHTUP_FUNCTION(EC_POINT_oct2point) \
     LIGHTUP_FUNCTION(ENGINE_by_id) \
     LIGHTUP_FUNCTION(ENGINE_finish) \
     LIGHTUP_FUNCTION(ENGINE_free) \
@@ -504,6 +507,9 @@ extern bool g_libSslUses32BitTime;
     FALLBACK_FUNCTION(EVP_PKEY_up_ref) \
     REQUIRED_FUNCTION(EVP_PKEY_verify) \
     REQUIRED_FUNCTION(EVP_PKEY_verify_init) \
+    LIGHTUP_FUNCTION(EVP_PKEY_get_bn_param) \
+    LIGHTUP_FUNCTION(EVP_PKEY_get_utf8_string_param) \
+    LIGHTUP_FUNCTION(EVP_PKEY_get_octet_string_param) \
     LIGHTUP_FUNCTION(EVP_rc2_cbc) \
     LIGHTUP_FUNCTION(EVP_rc2_ecb) \
     REQUIRED_FUNCTION(EVP_sha1) \
@@ -903,8 +909,10 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EC_GROUP_get_degree EC_GROUP_get_degree_ptr
 #define EC_GROUP_get_order EC_GROUP_get_order_ptr
 #define EC_GROUP_get_seed_len EC_GROUP_get_seed_len_ptr
+#define EC_GROUP_get_field_type EC_GROUP_get_field_type_ptr
 #define EC_GROUP_method_of EC_GROUP_method_of_ptr
 #define EC_GROUP_new EC_GROUP_new_ptr
+#define EC_GROUP_new_by_curve_name EC_GROUP_new_by_curve_name_ptr
 #define EC_GROUP_set_curve_GFp EC_GROUP_set_curve_GFp_ptr
 #define EC_GROUP_set_generator EC_GROUP_set_generator_ptr
 #define EC_GROUP_set_seed EC_GROUP_set_seed_ptr
@@ -927,6 +935,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EC_POINT_mul EC_POINT_mul_ptr
 #define EC_POINT_new EC_POINT_new_ptr
 #define EC_POINT_set_affine_coordinates_GFp EC_POINT_set_affine_coordinates_GFp_ptr
+#define EC_POINT_oct2point EC_POINT_oct2point_ptr
 #define ENGINE_by_id ENGINE_by_id_ptr
 #define ENGINE_finish ENGINE_finish_ptr
 #define ENGINE_free ENGINE_free_ptr
@@ -1053,6 +1062,9 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_up_ref EVP_PKEY_up_ref_ptr
 #define EVP_PKEY_verify_init EVP_PKEY_verify_init_ptr
 #define EVP_PKEY_verify EVP_PKEY_verify_ptr
+#define EVP_PKEY_get_bn_param EVP_PKEY_get_bn_param_ptr
+#define EVP_PKEY_get_utf8_string_param EVP_PKEY_get_utf8_string_param_ptr
+#define EVP_PKEY_get_octet_string_param EVP_PKEY_get_octet_string_param_ptr
 #define EVP_rc2_cbc EVP_rc2_cbc_ptr
 #define EVP_rc2_ecb EVP_rc2_ecb_ptr
 #define EVP_sha1 EVP_sha1_ptr
