@@ -231,6 +231,24 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Creates an ML-KEM key from a decapsulation key.
+        /// </summary>
+        /// <param name="algorithm">The algorithm of the decapsulation key.</param>
+        /// <param name="source">The decapsulation key.</param>
+        /// <returns>The imported key.</returns>
+        public static MLKem ImportMLKemDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            ThrowIfNotSupported();
+
+            if (source.Length != algorithm.DecapsulationKeySizeInBytes)
+            {
+                throw new ArgumentException("TODO", nameof(source));
+            }
+
+            return MLKemImplementation.ImportDecapsulationKey(algorithm, source);
+        }
+
+        /// <summary>
         /// Creates an ML-KEM key from an encapsulation key.
         /// </summary>
         /// <param name="algorithm">The algorithm of the encapsulation key.</param>

@@ -30,6 +30,14 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
+        internal static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            _ = algorithm;
+            _ = source;
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
         internal static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             _ = algorithm;

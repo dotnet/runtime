@@ -1816,6 +1816,7 @@ namespace System.Security.Cryptography
         public void ExportMLKemPrivateSeed(System.Span<byte> destination) { }
         protected abstract void ExportMLKemPrivateSeedCore(System.Span<byte> destination);
         public static System.Security.Cryptography.MLKem GenerateMLKemKey(System.Security.Cryptography.MLKemAlgorithm algorithm) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportMLKemDecapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportMLKemEncapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportMLKemPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         protected void ThrowIfDisposed() { }

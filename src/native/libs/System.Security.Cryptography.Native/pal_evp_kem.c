@@ -152,7 +152,7 @@ EVP_PKEY* CryptoNative_EvpKemImportKey(const EVP_KEM* kem, uint8_t* key, int32_t
         }
 
         const char* paramName = privateKey == 0 ? OSSL_PKEY_PARAM_PUB_KEY : OSSL_PKEY_PARAM_PRIV_KEY;
-        int selection = privateKey == 0 ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY;
+        int selection = privateKey == 0 ? EVP_PKEY_PUBLIC_KEY : EVP_PKEY_KEYPAIR;
         size_t keyLengthT = Int32ToSizeT(keyLength);
 
         OSSL_PARAM params[] =
