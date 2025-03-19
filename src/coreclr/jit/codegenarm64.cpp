@@ -5414,13 +5414,27 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
 
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
-    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
-
-    regNumber tgtReg = node->GetRegNum();
-    assert(tgtReg != REG_NA);
+    unsigned       varSize = emitTypeSize(varDsc->GetRegisterType(lclNode));
+    assert((varSize == 16) || (varSize == Compiler::compVectorTLength));
 
     regNumber op1Reg = genConsumeReg(op1);
     assert(op1Reg != REG_NA);
+
+    regNumber tgtReg = node->GetRegNum();
+#ifdef TARGET_ARM64
+    // TODO-VL: Write a helper to do this check for LclVars*, GenTree*, etc.
+    if (op1->TypeIs(TYP_SIMDVL))
+    {
+        // Until we custom ABI for SVE, we will just store entire contents of Z* registers
+        // on stack. If we don't do it, we will need multiple free registers to save the
+        // contents of everything but lower 8-bytes.
+        assert(tgtReg == REG_NA);
+
+        GetEmitter()->emitIns_S_R(INS_sve_str, EA_SCALABLE, op1Reg, lclNode->GetLclNum(), 0);
+        return;
+    }
+#endif // TARGET_ARM64
+    assert(tgtReg != REG_NA);
 
     GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_8BYTE, tgtReg, op1Reg, 0, 1);
 
@@ -5470,10 +5484,12 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
 
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
-    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
+
+    unsigned       varSize = emitTypeSize(varDsc->GetRegisterType(lclNode));
+    assert((varSize == 16) || (varSize == Compiler::compVectorTLength));
 
     regNumber srcReg = node->GetRegNum();
-    assert(srcReg != REG_NA);
+    assert((srcReg != REG_NA) || (node->TypeIs(TYP_SIMDVL)));
 
     regNumber lclVarReg = genConsumeReg(lclNode);
     assert(lclVarReg != REG_NA);
@@ -5484,6 +5500,19 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
     {
         // The localVar must have a stack home.
         assert(varDsc->lvOnFrame);
+
+#ifdef TARGET_ARM64
+        // TODO-VL: Write a helper to do this check for LclVars*, GenTree*, etc.
+        if (TypeGet(op1) == TYP_SIMDVL)
+        {
+            // Until we custom ABI for SVE, we will just store entire contents of Z* registers
+            // on stack. If we don't do it, we will need multiple free registers to save the
+            // contents of everything but lower 8-bytes.
+
+            GetEmitter()->emitIns_R_S(INS_sve_ldr, EA_SCALABLE, lclVarReg, varNum, 0);
+            return;
+        }
+#endif // TARGET_ARM64
 
         // We will load this from the upper 8 bytes of this localVar's home.
         int offset = 8;

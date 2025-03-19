@@ -1603,6 +1603,9 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
+#if defined(TARGET_ARM64)
+        case TYP_SIMDVL:
+#endif // TARGET_ARM64
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         case TYP_SIMD64:
@@ -5917,6 +5920,14 @@ void LinearScan::allocateRegisters()
                     allocate                           = false;
                     lclVarInterval->isPartiallySpilled = true;
                 }
+#elif defined(TARGET_ARM64)
+                else if (lclVarInterval->registerType == TYP_SIMDVL)
+                {
+                    // TODO-VL: Need to do this for allocateRegistersMinimal too?
+                    allocate                           = false;
+                    lclVarInterval->isPartiallySpilled = true;
+                    setIntervalAsSpilled(currentInterval); // Just mark it spill at this point.
+                }
 #endif // TARGET_XARCH
                 else
                 {
@@ -5929,6 +5940,13 @@ void LinearScan::allocateRegisters()
                 if (lclVarInterval->isPartiallySpilled)
                 {
                     lclVarInterval->isPartiallySpilled = false;
+#if defined(TARGET_ARM64)
+                    if (lclVarInterval->registerType == TYP_SIMDVL)
+                    {
+                        // TODO-VL: Need to do this for allocateRegistersMinimal too?
+                        allocate = false;
+                    }
+#endif // TARGET_ARM64
                 }
                 else
                 {
@@ -7405,8 +7423,9 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     // while on x86 we can spill directly to memory.
     regNumber spillReg = refPosition->assignedReg();
 #ifdef TARGET_ARM64
-    bool spillToMem = refPosition->spillAfter;
-    assert(spillReg != REG_NA);
+    bool isVariableVL = tree->TypeIs(TYP_SIMDVL);
+    bool spillToMem   = refPosition->spillAfter || isVariableVL;
+    assert((spillReg != REG_NA) || isVariableVL);
 #else
     bool spillToMem = (spillReg == REG_NA);
     assert(!refPosition->spillAfter);
@@ -7507,7 +7526,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         simdUpperRestore->gtFlags |= GTF_NOREG_AT_USE;
 #else
         simdUpperRestore->gtFlags |= GTF_SPILLED;
-        assert(refPosition->assignedReg() != REG_NA);
+        assert((refPosition->assignedReg() != REG_NA) || (restoreLcl->TypeIs(TYP_SIMDVL)));
         restoreReg = refPosition->assignedReg();
 #endif
     }
