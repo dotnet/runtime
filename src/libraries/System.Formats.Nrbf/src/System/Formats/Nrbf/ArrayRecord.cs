@@ -65,7 +65,8 @@ public abstract class ArrayRecord : SerializationRecord
     /// <returns>An array filled with the data provided in the serialized records.</returns>
     /// <exception cref="InvalidOperationException"><paramref name="expectedArrayType" /> does not match the data from the payload.</exception>
     /// <remarks>
-    /// Before calling this method, check the total length of the array by using the <see cref="Lengths"/> property. An attacker could have sent a small payload that requires allocation of a very large array, which could cause <see cref="OutOfMemoryException"/> and denial of service.
+    /// Before calling this method, check the total length of the array by using the <see cref="Lengths"/> property.
+    /// An attacker could have sent a small payload that requires allocation of a very large array, which could cause <see cref="OutOfMemoryException"/> and denial of service.
     /// </remarks>
     [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
     public Array GetArray(Type expectedArrayType, bool allowNulls = true)

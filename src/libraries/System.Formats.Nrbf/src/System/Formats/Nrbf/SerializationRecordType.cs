@@ -7,7 +7,7 @@ namespace System.Formats.Nrbf;
 /// Specifies record types.
 /// </summary>
 /// <remarks>
-/// The <c>SerializationRecordType</c> is described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/954a0657-b901-4813-9398-4ec732fe8b32">[MS-NRBF] 2.1.2.1</see>.
+/// The <c>RecordTypeEnumeration</c> enumeration is described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/954a0657-b901-4813-9398-4ec732fe8b32">[MS-NRBF] 2.1.2.1</see>.
 /// </remarks>
 public enum SerializationRecordType
 {
