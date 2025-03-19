@@ -65,11 +65,16 @@ namespace System.Security.Cryptography.Tests
             foreach (MLKemTestVector vector in MLKemGenerateTestVectors)
             {
                 byte[] decapsulationKeyBytes = Convert.FromHexString(vector.DecapsulationKey);
+                byte[] encapsulationKeyBytes = Convert.FromHexString(vector.EncapsulationKey);
                 using MLKem kem = MLKem.ImportMLKemDecapsulationKey(vector.Algorithm, decapsulationKeyBytes);
 
                 byte[] exportedDecapsulationKey = new byte[vector.Algorithm.DecapsulationKeySizeInBytes];
                 kem.ExportMLKemDecapsulationKey(exportedDecapsulationKey);
                 AssertExtensions.SequenceEqual(decapsulationKeyBytes, exportedDecapsulationKey);
+
+                byte[] exportedEncapsulationKey = new byte[vector.Algorithm.EncapsulationKeySizeInBytes];
+                kem.ExportMLKemEncapsulationKey(exportedEncapsulationKey);
+                AssertExtensions.SequenceEqual(encapsulationKeyBytes, exportedEncapsulationKey);
             }
         }
 
