@@ -1780,7 +1780,19 @@ CorInfoHFAElemType MethodTable::GetHFAType()
         int vectorSize = pMT->GetVectorSize();
         if (vectorSize != 0)
         {
-            return (vectorSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
+            if (vectorSize == 8)
+            {
+                return CORINFO_HFA_ELEM_VECTOR64;
+            }
+            else if (vectorSize == 16)
+            {
+                return CORINFO_HFA_ELEM_VECTOR128;
+            }
+            else
+            {
+                assert ((vectorSize % 16) == 0);
+                return CORINFO_HFA_ELEM_VECTOR_VL;
+            }
         }
 
         PTR_FieldDesc pFirstField = pMT->GetApproxFieldDescListRaw();
@@ -1885,7 +1897,19 @@ EEClass::CheckForHFA()
                 int thisElemSize = pMT->GetVectorSize();
                 if (thisElemSize != 0)
                 {
-                    fieldHFAType = (thisElemSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
+                    if (thisElemSize == 8)
+                    {
+                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR64;
+                    }
+                    else if (thisElemSize == 16)
+                    {
+                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR128;
+                    }
+                    else
+                    {
+                        assert ((thisElemSize % 16) == 0);
+                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR_VL;
+                    }
                 }
                 else
 #endif // TARGET_ARM64
@@ -1955,6 +1979,9 @@ EEClass::CheckForHFA()
 #ifdef TARGET_ARM64
     case CORINFO_HFA_ELEM_VECTOR128:
         elemSize = 16;
+        break;
+    case CORINFO_HFA_ELEM_VECTOR_VL:
+        elemSize = g_sve_length; //TODO-VL: Need to cache it
         break;
 #endif
     default:

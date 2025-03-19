@@ -1750,6 +1750,7 @@ typedef enum CorInfoHFAElemType : unsigned {
     CORINFO_HFA_ELEM_DOUBLE,
     CORINFO_HFA_ELEM_VECTOR64,
     CORINFO_HFA_ELEM_VECTOR128,
+    CORINFO_HFA_ELEM_VECTOR_VL,
 } CorInfoHFAElemType;
 
 //

@@ -60,6 +60,9 @@ struct ArgLocDesc
         case CORINFO_HFA_ELEM_DOUBLE: return 8;
         case CORINFO_HFA_ELEM_VECTOR64: return 8;
         case CORINFO_HFA_ELEM_VECTOR128: return 16;
+#if defined(TARGET_ARM64)
+        case CORINFO_HFA_ELEM_VECTOR_VL: return g_sve_length; // TODO-VL: Need to return the cached value
+#endif
         default: _ASSERTE(!"Invalid HFA Type"); return 0;
         }
     }
