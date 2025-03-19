@@ -144,9 +144,42 @@ void ObjectAllocator::AddConnGraphEdge(unsigned int sourceLclNum, unsigned int t
 }
 
 //------------------------------------------------------------------------
+// IsTrackedType: Check if this type is one we will track
+//
+// Arguments:
+//    type - type of interest
+//
+// Returns:
+//    true if so
+//
+bool ObjectAllocator::IsTrackedType(var_types type)
+{
+    const bool isTrackableScalar = (type == TYP_REF) || (genActualType(type) == TYP_I_IMPL) || (type == TYP_BYREF);
+    const bool isTrackableStruct = (type == TYP_STRUCT) && m_trackFields;
+
+    return isTrackableScalar || isTrackableStruct;
+}
+
+//------------------------------------------------------------------------
+// IsTrackedLocal: Check if this local is one we will track
+//
+// Arguments:
+//    lclNum - local of interest
+//
+// Returns:
+//    true if so
+//
+bool ObjectAllocator::IsTrackedLocal(unsigned lclNum)
+{
+    assert(lclNum < m_initialLocalCount);
+    var_types type = comp->lvaTable[lclNum].TypeGet();
+    return IsTrackedType(type);
+}
+
+//------------------------------------------------------------------------
 // DoAnalysis: Walk over basic blocks of the method and detect all local
 //             variables that can be allocated on the stack.
-
+//
 void ObjectAllocator::DoAnalysis()
 {
     assert(m_IsObjectStackAllocationEnabled);
@@ -233,7 +266,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                 lclEscapes = false;
                 m_allocator->CheckForGuardedAllocationOrCopy(m_block, m_stmt, use, lclNum);
             }
-            else if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL))
+            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_ADDR) && m_allocator->IsTrackedLocal(lclNum))
             {
                 assert(tree == m_ancestors.Top());
                 if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum, m_block))
@@ -263,15 +296,20 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
     for (unsigned int lclNum = 0; lclNum < comp->lvaCount; ++lclNum)
     {
-        var_types type = comp->lvaTable[lclNum].TypeGet();
-
-        if (type == TYP_REF || genActualType(type) == TYP_I_IMPL || type == TYP_BYREF)
+        if (IsTrackedLocal(lclNum))
         {
             m_ConnGraphAdjacencyMatrix[lclNum] = BitVecOps::MakeEmpty(&m_bitVecTraits);
 
+            // Pre-classify locals that we know lead to escape
+            //
             if (comp->lvaTable[lclNum].IsAddressExposed())
             {
                 JITDUMP("   V%02u is address exposed\n", lclNum);
+                MarkLclVarAsEscaping(lclNum);
+            }
+            else if (lclNum == comp->info.compRetBuffArg)
+            {
+                JITDUMP("   V%02u is retbuff\n", lclNum);
                 MarkLclVarAsEscaping(lclNum);
             }
         }
@@ -393,13 +431,15 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
     while (changed)
     {
         changed = false;
-        for (unsigned int lclNum = 0; lclNum < comp->lvaCount; ++lclNum)
-        {
-            LclVarDsc* lclVarDsc = comp->lvaGetDesc(lclNum);
-            var_types  type      = lclVarDsc->TypeGet();
 
-            if (type == TYP_REF || type == TYP_I_IMPL || type == TYP_BYREF)
+        // Exclude newly allocated locals
+        //
+        for (unsigned int lclNum = 0; lclNum < m_initialLocalCount; ++lclNum)
+        {
+            if (IsTrackedLocal(lclNum))
             {
+                LclVarDsc* lclVarDsc = comp->lvaGetDesc(lclNum);
+
                 if (!MayLclVarPointToStack(lclNum) &&
                     !BitVecOps::IsEmptyIntersection(bitVecTraits, m_PossiblyStackPointingPointers,
                                                     m_ConnGraphAdjacencyMatrix[lclNum]))
@@ -414,7 +454,27 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
                     {
                         // Check if we know what is assigned to this pointer.
                         unsigned bitCount = BitVecOps::Count(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
-                        assert(bitCount <= 1);
+
+#ifdef DEBUG
+                        if (bitCount > 1)
+                        {
+                            // We expect only one edge in the connection graph, from the place this
+                            // local is assigned. But in some odd cases (eg subs of byrefs) we were
+                            // improperly seeing two or more connected GC refs. Fix these by adjusting
+                            // the connection building logic.
+                            //
+                            JITDUMP("Unexpected: single-def V%02u has %u connections:", lclNum, bitCount);
+                            BitVecOps::Iter iter(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
+                            unsigned        bitIndex = 0;
+                            while (iter.NextElem(&bitIndex))
+                            {
+                                JITDUMP(" V%02u", bitIndex);
+                            }
+                            JITDUMP("\n");
+                            assert(bitCount <= 1);
+                        }
+#endif
+
                         if (bitCount == 1)
                         {
                             BitVecOps::Iter iter(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
@@ -1023,10 +1083,13 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
     assert(parentStack != nullptr);
     int parentIndex = 1;
 
-    bool keepChecking                  = true;
-    bool canLclVarEscapeViaParentStack = true;
-    bool isCopy                        = true;
-    bool isEnumeratorLocal             = comp->lvaGetDesc(lclNum)->lvIsEnumerator;
+    LclVarDsc* const lclDsc = comp->lvaGetDesc(lclNum);
+
+    bool       keepChecking                  = true;
+    bool       canLclVarEscapeViaParentStack = true;
+    bool       isCopy                        = true;
+    bool const isEnumeratorLocal             = lclDsc->lvIsEnumerator;
+    int        numIndirs                     = 0;
 
     while (keepChecking)
     {
@@ -1049,10 +1112,11 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
         switch (parent->OperGet())
         {
             // Update the connection graph if we are storing to a local.
-            // For all other stores we mark the local as escaping.
+            //
             case GT_STORE_LCL_VAR:
             {
-                // Add an edge to the connection graph.
+                // Add an edge to the connection graph, if destination is a local we're tracking
+                // (i.e. a local var or a field of a local var).
                 const unsigned int dstLclNum = parent->AsLclVar()->GetLclNum();
                 const unsigned int srcLclNum = lclNum;
 
@@ -1077,6 +1141,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_GE:
             case GT_NULLCHECK:
             case GT_ARR_LENGTH:
+            case GT_BOUNDS_CHECK:
                 canLclVarEscapeViaParentStack = false;
                 break;
 
@@ -1091,9 +1156,22 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_COLON:
             case GT_QMARK:
             case GT_ADD:
-            case GT_SUB:
             case GT_FIELD_ADDR:
-                // Check whether the local escapes via its grandparent.
+            case GT_LCL_ADDR:
+                // Check whether the local escapes higher up
+                ++parentIndex;
+                keepChecking = true;
+                break;
+
+            case GT_SUB:
+                // Sub of two GC refs is no longer a GC ref.
+                if (!parent->TypeIs(TYP_BYREF, TYP_REF))
+                {
+                    canLclVarEscapeViaParentStack = false;
+                    break;
+                }
+
+                // Check whether the local escapes higher up
                 ++parentIndex;
                 keepChecking = true;
                 break;
@@ -1119,33 +1197,106 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_STOREIND:
             case GT_STORE_BLK:
             case GT_BLK:
-                if (tree != parent->AsIndir()->Addr())
+            {
+                GenTree* const addr = parent->AsIndir()->Addr();
+                if (tree != addr)
                 {
-                    // TODO-ObjectStackAllocation: track stores to fields.
+                    JITDUMP("... store value\n");
+
+                    // Is this a store to a field of a local struct...?
+                    //
+                    if (parent->OperIs(GT_STOREIND) && addr->OperIs(GT_FIELD_ADDR, GT_LCL_ADDR))
+                    {
+                        // Do we know which local?
+                        //
+                        GenTree* const base = addr->OperIs(GT_FIELD_ADDR) ? addr->AsOp()->gtGetOp1() : addr;
+
+                        if (base->OperIs(GT_LCL_ADDR))
+                        {
+                            unsigned const dstLclNum = base->AsLclVarCommon()->GetLclNum();
+
+                            if (IsTrackedLocal(dstLclNum))
+                            {
+                                JITDUMP("... local [struct] store\n");
+                                // Add an edge to the connection graph.
+                                AddConnGraphEdge(dstLclNum, lclNum);
+                                canLclVarEscapeViaParentStack = false;
+                            }
+                            else
+                            {
+                                // Store to untracked local. Assume escape.
+                            }
+                        }
+                        else
+                        {
+                            // Store destination unknown. Assume escape.
+                            //
+                            // TODO: handle more general trees here.
+                            // Since we visit the address subtree first, perhaps we can annotate somehow.
+                        }
+                    }
+                    else
+                    {
+                        // Likely heap store. Assume escape.
+                    }
+                }
+                else
+                {
+                    canLclVarEscapeViaParentStack = false;
+                    JITDUMP("... store address\n");
+                }
+                break;
+            }
+
+            case GT_IND:
+            {
+                GenTree* const addr = parent->AsIndir()->Addr();
+
+                // For loads from structs we may be tracking the underlying fields.
+                //
+                // We don't handle TYP_REF locals (yet), and allowing that requires separating out the object from
+                // its fields in our tracking.
+                //
+                // We treat TYP_BYREF like TYP_STRUCT, though possibly this needs more scrutiny, as byrefs may alias.
+                // Ditto for TYP_I_IMPL.
+                //
+                // We can assume that the local being read is lclNum, since we have walked up to this node from a leaf
+                // local.
+                //
+                // We only track through the first indir.
+                //
+                if (m_trackFields && (numIndirs == 0) && varTypeIsGC(parent->TypeGet()) &&
+                    (lclDsc->TypeGet() != TYP_REF))
+                {
+                    JITDUMP("... local [struct] load\n");
+                    ++parentIndex;
+                    ++numIndirs;
+                    keepChecking = true;
                     break;
                 }
-                FALLTHROUGH;
-            case GT_IND:
-                // Address of the field/ind is not taken so the local doesn't escape.
+
+                // Address doesn't refer to anything we track
+                //
                 canLclVarEscapeViaParentStack = false;
                 break;
+            }
 
             case GT_CALL:
             {
-                GenTreeCall* const asCall = parent->AsCall();
+                GenTreeCall* const call = parent->AsCall();
 
-                if (asCall->IsHelperCall())
+                if (call->IsHelperCall())
                 {
                     canLclVarEscapeViaParentStack =
-                        !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(asCall->gtCallMethHnd));
+                        !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(call->gtCallMethHnd));
                 }
-                else if (asCall->IsSpecialIntrinsic())
+                else if (call->IsSpecialIntrinsic())
                 {
                     // Some known special intrinsics don't escape. At this moment, only the ones accepting byrefs
                     // are supported. In order to support more intrinsics accepting objects, we need extra work
                     // on the VM side which is not ready for that yet.
                     //
-                    switch (comp->lookupNamedIntrinsic(asCall->gtCallMethHnd))
+                    switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
                     {
                         case NI_System_SpanHelpers_ClearWithoutReferences:
                         case NI_System_SpanHelpers_Fill:
@@ -1243,15 +1394,24 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 FALLTHROUGH;
             case GT_QMARK:
             case GT_ADD:
-            case GT_SUB:
             case GT_FIELD_ADDR:
             case GT_INDEX_ADDR:
+            case GT_LCL_ADDR:
                 if (parent->TypeGet() == TYP_REF)
                 {
                     parent->ChangeType(newType);
                 }
                 ++parentIndex;
                 keepChecking = true;
+                break;
+
+            case GT_SUB:
+                if (parent->TypeGet() != newType)
+                {
+                    parent->ChangeType(newType);
+                    ++parentIndex;
+                    keepChecking = true;
+                }
                 break;
 
             case GT_COLON:
@@ -1283,17 +1443,18 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_STOREIND:
             case GT_STORE_BLK:
             case GT_BLK:
-                assert(tree == parent->AsIndir()->Addr());
-
-                // The new target could be *not* on the heap.
-                parent->gtFlags &= ~GTF_IND_TGT_HEAP;
-
-                if (newType != TYP_BYREF)
+                if (tree == parent->AsIndir()->Addr())
                 {
-                    // This indicates that a write barrier is not needed when writing
-                    // to this field/indirection since the address is not pointing to the heap.
-                    // It's either null or points to inside a stack-allocated object.
-                    parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                    // The new target could be *not* on the heap.
+                    parent->gtFlags &= ~GTF_IND_TGT_HEAP;
+
+                    if (newType != TYP_BYREF)
+                    {
+                        // This indicates that a write barrier is not needed when writing
+                        // to this field/indirection since the address is not pointing to the heap.
+                        // It's either null or points to inside a stack-allocated object.
+                        parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                    }
                 }
                 break;
 
@@ -1302,6 +1463,8 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 break;
 
             default:
+                JITDUMP("UpdateAncestorTypes: unexpected op %s in [%06u]\n", GenTree::OpName(parent->OperGet()),
+                        comp->dspTreeID(parent));
                 unreached();
         }
 
@@ -1354,10 +1517,7 @@ void ObjectAllocator::RewriteUses()
             if ((lclNum < BitVecTraits::GetSize(&m_allocator->m_bitVecTraits)) &&
                 m_allocator->MayLclVarPointToStack(lclNum))
             {
-                // Analysis does not handle indirect access to pointer locals.
-                assert(tree->OperIsScalarLocal());
-
-                var_types newType;
+                var_types newType = TYP_UNDEF;
                 if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
                 {
                     assert(tree->OperIs(GT_LCL_VAR)); // Must be a use.
@@ -1374,12 +1534,38 @@ void ObjectAllocator::RewriteUses()
                     }
                 }
 
-                if (lclVarDsc->lvType != newType)
+                // For local structs, retype the GC fields.
+                //
+                if (lclVarDsc->lvType == TYP_STRUCT)
+                {
+                    ClassLayout* const layout    = lclVarDsc->GetLayout();
+                    ClassLayout*       newLayout = nullptr;
+
+                    if ((newType == TYP_I_IMPL) && !layout->IsBlockLayout())
+                    {
+                        // New layout with no gc refs + padding
+                        newLayout = m_compiler->typGetNonGCLayout(layout);
+                        JITDUMP("Changing layout of struct V%02u to block\n", lclNum);
+                        lclVarDsc->ChangeLayout(newLayout);
+                    }
+                    else if (!layout->IsCustomLayout()) // hacky... want to know if there are any TYP_GC
+                    {
+                        // New layout with all gc refs as byrefs + padding
+                        // (todo, perhaps: see if old layout was already all byrefs)
+                        newLayout = m_compiler->typGetByrefLayout(layout);
+                        JITDUMP("Changing layout of struct V%02u to byref\n", lclNum);
+                        lclVarDsc->ChangeLayout(newLayout);
+                    }
+                }
+                // For locals, retype the local
+                //
+                else if (lclVarDsc->lvType != newType)
                 {
                     JITDUMP("Changing the type of V%02u from %s to %s\n", lclNum, varTypeName(lclVarDsc->lvType),
                             varTypeName(newType));
                     lclVarDsc->lvType = newType;
                 }
+
                 m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType);
 
                 if (newLclNum != BAD_VAR_NUM)
