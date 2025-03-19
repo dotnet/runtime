@@ -495,6 +495,8 @@ extern bool g_libSslUses32BitTime;
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_pss_saltlen) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_signature_md) \
     FALLBACK_FUNCTION(EVP_PKEY_check) \
+    LIGHTUP_FUNCTION(EVP_PKEY_decapsulate) \
+    LIGHTUP_FUNCTION(EVP_PKEY_decapsulate_init) \
     REQUIRED_FUNCTION(EVP_PKEY_decrypt) \
     REQUIRED_FUNCTION(EVP_PKEY_decrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_set_peer) \
@@ -1050,6 +1052,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_CTX_set_rsa_pss_saltlen EVP_PKEY_CTX_set_rsa_pss_saltlen_ptr
 #define EVP_PKEY_CTX_set_signature_md EVP_PKEY_CTX_set_signature_md_ptr
 #define EVP_PKEY_check EVP_PKEY_check_ptr
+#define EVP_PKEY_decapsulate EVP_PKEY_decapsulate_ptr
+#define EVP_PKEY_decapsulate_init EVP_PKEY_decapsulate_init_ptr
 #define EVP_PKEY_decrypt_init EVP_PKEY_decrypt_init_ptr
 #define EVP_PKEY_decrypt EVP_PKEY_decrypt_ptr
 #define EVP_PKEY_derive_set_peer EVP_PKEY_derive_set_peer_ptr

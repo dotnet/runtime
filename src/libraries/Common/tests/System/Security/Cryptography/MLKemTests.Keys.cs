@@ -47,6 +47,25 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(Convert.FromHexString(expectedEncapsulationKey), encapsKey);
         }
 
+        [Fact]
+        public static void Scratch_EncapRoundTrip()
+        {
+            MLKemAlgorithm algorithm = MLKemAlgorithm.MLKem512;
+            using MLKem kem = MLKem.GenerateMLKemKey(algorithm);
+            Span<byte> seed = stackalloc byte[MLKem.PrivateSeedSizeInBytes];
+            kem.ExportMLKemPrivateSeed(seed);
+            using MLKem kem2 = MLKem.ImportMLKemPrivateSeed(algorithm, seed);
+
+            byte[] ciphertext = new byte[algorithm.CiphertextSizeInBytes];
+            byte[] sharedSecret1 = new byte[MLKem.SharedSecretSizeInBytes];
+            kem.Encapsulate(ciphertext, sharedSecret1);
+
+            byte[] sharedSecret2 = new byte[MLKem.SharedSecretSizeInBytes];
+            kem2.Decapsulate(ciphertext, sharedSecret2);
+
+            AssertExtensions.SequenceEqual(sharedSecret1, sharedSecret2);
+        }
+
         public static IEnumerable<object[]> MLKemAlgorithms
         {
             get

@@ -49,7 +49,7 @@ namespace System.Security.Cryptography
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
             ThrowIfDisposed();
-            throw new NotImplementedException();
+            Interop.Crypto.EvpKemDecapsulate(_key, ciphertext, sharedSecret);
         }
 
         protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
