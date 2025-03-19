@@ -4616,7 +4616,23 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
                 if (isValidSimm12(offset))
                 {
-                    if (lsl > 0)
+                    // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+                    if (0 < lsl && lsl <= 3)
+                    {
+                        switch (lsl)
+                        {
+                            case 1:
+                                emitIns_R_R_R(INS_sh1add, addType, tmpReg, index->GetRegNum(), memBase->GetRegNum());
+                                break;
+                            case 2:
+                                emitIns_R_R_R(INS_sh2add, addType, tmpReg, index->GetRegNum(), memBase->GetRegNum());
+                                break;
+                            case 3:
+                                emitIns_R_R_R(INS_sh3add, addType, tmpReg, index->GetRegNum(), memBase->GetRegNum());
+                                break;
+                        }
+                    }
+                    else if (lsl > 0)
                     {
                         // Generate code to set tmpReg = base + index*scale
                         emitIns_R_R_I(INS_slli, addType, tmpReg, index->GetRegNum(), lsl);
@@ -4714,7 +4730,27 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                         NO_WAY("illegal ins within emitInsLoadStoreOp!");
                 }
 
-                if (lsl > 0)
+                // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+                if (0 < lsl && lsl <= 3)
+                {
+                    switch (lsl)
+                    {
+                        case 1:
+                            emitIns_R_R_R(INS_sh1add, addType, codeGen->rsGetRsvdReg(), index->GetRegNum(),
+                                          memBase->GetRegNum());
+                            break;
+                        case 2:
+                            emitIns_R_R_R(INS_sh2add, addType, codeGen->rsGetRsvdReg(), index->GetRegNum(),
+                                          memBase->GetRegNum());
+                            break;
+                        case 3:
+                            emitIns_R_R_R(INS_sh3add, addType, codeGen->rsGetRsvdReg(), index->GetRegNum(),
+                                          memBase->GetRegNum());
+                            break;
+                    }
+                    emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), 0);
+                }
+                else if (lsl > 0)
                 {
                     // Then load/store dataReg from/to [memBase + index*scale]
                     emitIns_R_R_I(INS_slli, emitActualTypeSize(index->TypeGet()), codeGen->rsGetRsvdReg(),
