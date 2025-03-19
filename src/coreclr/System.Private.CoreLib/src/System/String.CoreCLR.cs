@@ -11,7 +11,7 @@ namespace System
     public partial class String
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_StrCns")]
-        private static unsafe partial void* StrCnsInternal(uint rid, IntPtr scopeHandle);
+        private static unsafe partial string* StrCnsInternal(uint rid, IntPtr scopeHandle);
 
         // implementation of CORINFO_HELP_STRCNS
         [StackTraceHidden]
@@ -19,9 +19,9 @@ namespace System
         [DebuggerHidden]
         internal static unsafe string StrCns(uint rid, IntPtr scopeHandle)
         {
-            void* ptr = StrCnsInternal(rid, scopeHandle);
+            string* ptr = StrCnsInternal(rid, scopeHandle);
             Debug.Assert(ptr != null);
-            return Unsafe.AsRef<string>(ptr);
+            return *ptr;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

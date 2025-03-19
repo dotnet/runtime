@@ -129,7 +129,7 @@ extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str)
     END_QCALL;
 }
 
-extern "C" void* QCALLTYPE String_StrCns(UINT32 rid, CORINFO_MODULE_HANDLE scopeHnd)
+extern "C" STRINGREF* QCALLTYPE String_StrCns(UINT32 rid, CORINFO_MODULE_HANDLE scopeHnd)
 {
     QCALL_CONTRACT;
 
