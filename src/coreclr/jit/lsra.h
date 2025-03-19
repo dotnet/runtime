@@ -849,7 +849,7 @@ private:
     {
         return (LsraBlockBoundaryLocations)(lsraStressMask & LSRA_BLOCK_BOUNDARY_MASK);
     }
-    regNumber rotateBlockStartLocation(Interval* interval, regNumber targetReg, SingleTypeRegSet availableRegs);
+    regNumber rotateBlockStartLocation(Interval* interval, regNumber targetReg, regMaskTP availableRegs);
 
     // This controls whether we always insert a GT_RELOAD instruction after a spill
     // Note that this can be combined with LSRA_SPILL_ALWAYS (or not)
