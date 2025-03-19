@@ -1108,11 +1108,6 @@ namespace System
             // otherwise returns the lesser of the inputs. It
             // treats +0 as greater than -0 as per the specification.
 
-#if TARGET_RISCV64
-            if (double.IsNaN(val1)) return val1;
-            if (double.IsNaN(val2)) return val2;
-            return double.MinNumber(val1, val2);
-#else
             if (val1 != val2)
             {
                 if (!double.IsNaN(val1))
@@ -1124,7 +1119,6 @@ namespace System
             }
 
             return double.IsNegative(val1) ? val1 : val2;
-#endif
         }
 
         [NonVersionable]
@@ -1172,11 +1166,6 @@ namespace System
             // otherwise returns the lesser of the inputs. It
             // treats +0 as greater than -0 as per the specification.
 
-#if TARGET_RISCV64
-            if (float.IsNaN(val1)) return val1;
-            if (float.IsNaN(val2)) return val2;
-            return float.MinNumber(val1, val2);
-#else
             if (val1 != val2)
             {
                 if (!float.IsNaN(val1))
@@ -1188,7 +1177,6 @@ namespace System
             }
 
             return float.IsNegative(val1) ? val1 : val2;
-#endif
         }
 
         [CLSCompliant(false)]
@@ -1232,11 +1220,6 @@ namespace System
             // otherwise returns the input with a lesser magnitude.
             // It treats +0 as greater than -0 as per the specification.
 
-#if TARGET_RISCV64
-            if (double.IsNaN(x)) return x;
-            if (double.IsNaN(y)) return y;
-            return double.MinMagnitudeNumber(x, y);
-#else
             double ax = Abs(x);
             double ay = Abs(y);
 
@@ -1251,7 +1234,6 @@ namespace System
             }
 
             return y;
-#endif
         }
 
         /// <summary>Returns an estimate of the reciprocal of a specified number.</summary>

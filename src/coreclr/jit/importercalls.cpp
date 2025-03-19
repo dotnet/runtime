@@ -7875,6 +7875,10 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MinMagnitudeNumber:
         case NI_System_Math_MaxNumber:
         case NI_System_Math_MaxMagnitudeNumber:
+        case NI_System_Math_Min:
+        case NI_System_Math_MinMagnitude:
+        case NI_System_Math_Max:
+        case NI_System_Math_MaxMagnitude:
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
@@ -10152,23 +10156,41 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
 #ifdef TARGET_RISCV64
-    if (isNumber)
-    {
-        static const CORINFO_CONST_LOOKUP nullEntryPoint = {IAT_VALUE};
+    op2 = impPopStack().val;
+    op1 = impPopStack().val;
 
-        op2 = impPopStack().val;
-        op1 = impPopStack().val;
-        if (isMagnitude)
-        {
-            op1 = new (this, GT_INTRINSIC)
-                GenTreeIntrinsic(op1->TypeGet(), op1, NI_System_Math_Abs, nullptr R2RARG(nullEntryPoint));
-            op2 = new (this, GT_INTRINSIC)
-                GenTreeIntrinsic(op2->TypeGet(), op2, NI_System_Math_Abs, nullptr R2RARG(nullEntryPoint));
-        }
-        NamedIntrinsic name = isMax ? NI_System_Math_MaxNumber : NI_System_Math_MinNumber;
-        return new (this, GT_INTRINSIC)
-            GenTreeIntrinsic(genActualType(callType), op1, op2, name, nullptr R2RARG(nullEntryPoint));
+    GenTree *op1Clone = nullptr, *op2Clone = nullptr;
+    if (!isNumber)
+    {
+        op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_NONE, nullptr DEBUGARG("Clone op1 for Math.Min/Max non-Number"));
+        op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_NONE, nullptr DEBUGARG("Clone op2 for Math.Min/Max non-Number"));
     }
+
+    static const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
+    if (isMagnitude)
+    {
+        op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op1, NI_System_Math_Abs, nullptr R2RARG(nullEntry));
+        op2 = new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op2, NI_System_Math_Abs, nullptr R2RARG(nullEntry));
+    }
+    NamedIntrinsic name = isMax ? NI_System_Math_MaxNumber : NI_System_Math_MinNumber;
+    GenTree* minMax = new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op1, op2, name, nullptr R2RARG(nullEntry));
+
+    if (!isNumber)
+    {
+        GenTreeOp* isOp1Number   = gtNewOperNode(GT_EQ, TYP_INT, op1Clone, gtCloneExpr(op1Clone));
+        GenTreeOp* isOp2Number   = gtNewOperNode(GT_EQ, TYP_INT, op2Clone, gtCloneExpr(op2Clone));
+        GenTreeOp* isOkForMinMax = gtNewOperNode(GT_EQ, TYP_INT, isOp1Number, isOp2Number);
+
+        GenTreeOp* nanPropagator = gtNewOperNode(GT_ADD, callType, gtCloneExpr(op1Clone), gtCloneExpr(op2Clone));
+
+        GenTreeQmark* qmark = gtNewQmarkNode(callType, isOkForMinMax, gtNewColonNode(callType, minMax, nanPropagator));
+        // QMARK has to be a root node
+        unsigned tmp = lvaGrabTemp(true DEBUGARG("Temp for Qmark in Math.Min/Max non-Number"));
+        impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+        minMax = gtNewLclvNode(tmp, callType);
+    }
+
+    return minMax;
 #endif
 
     // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
