@@ -2949,9 +2949,9 @@ get_thread_dump (MonoThreadInfo *info, gpointer ud)
 
 	/* This needs to be async safe */
 	if (thread == mono_thread_internal_current ())
-		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (collect_frame, NULL, MONO_UNWIND_SIGNAL_ASYNC_SAFE, ud);
+		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (collect_frame, NULL, MONO_UNWIND_SIGNAL_SAFE, ud);
 	else
-		mono_get_eh_callbacks ()->mono_walk_stack_with_state (collect_frame, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_ASYNC_SAFE, ud);
+		mono_get_eh_callbacks ()->mono_walk_stack_with_state (collect_frame, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, ud);
 
 	return MonoResumeThread;
 }
@@ -4100,7 +4100,7 @@ mono_thread_info_get_last_managed (MonoThreadInfo *info)
 	 * The suspended thread might be holding runtime locks. Make sure we don't try taking
 	 * any runtime locks while unwinding.
 	 */
-	mono_get_eh_callbacks ()->mono_walk_stack_with_state (last_managed, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_ASYNC_SAFE, &ji);
+	mono_get_eh_callbacks ()->mono_walk_stack_with_state (last_managed, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, &ji);
 
 	return ji;
 }

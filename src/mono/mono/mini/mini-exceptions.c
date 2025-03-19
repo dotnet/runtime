@@ -160,7 +160,7 @@ static gpointer
 mono_thread_get_managed_sp (void)
 {
 	gpointer addr = NULL;
-	mono_walk_stack (first_managed, MONO_UNWIND_SIGNAL_SAFE, &addr);
+	mono_walk_stack (first_managed, MONO_UNWIND_NONE, &addr);
 	return addr;
 }
 
@@ -1243,7 +1243,7 @@ mono_walk_stack_with_state (MonoJitStackWalk func, MonoThreadUnwindState *state,
 	MonoThreadUnwindState extra_state;
 
 	if (!state) {
-		g_assert (!(unwind_options & MONO_UNWIND_SIGNAL_ASYNC_SAFE) && !mono_thread_info_is_async_context ());
+		g_assert (!(unwind_options & MONO_UNWIND_SIGNAL_SAFE) && !mono_thread_info_is_async_context ());
 		if (!mono_thread_state_init_from_current (&extra_state))
 			return;
 		state = &extra_state;
@@ -1434,7 +1434,7 @@ static void
 mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data)
 {
 	gboolean restore_async_context = FALSE;
-	if ((unwind_options & MONO_UNWIND_SIGNAL_ASYNC_SAFE) && !mono_thread_info_is_async_context ()) {
+	if ((unwind_options & MONO_UNWIND_SIGNAL_SAFE) && !mono_thread_info_is_async_context ()) {
 		mono_thread_info_set_is_async_context (TRUE);
 		restore_async_context = TRUE;
 	}
@@ -3006,7 +3006,7 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 		g_async_safe_printf ("\tManaged Stacktrace:\n");
 		g_async_safe_printf ("=================================================================\n");
 
-		mono_walk_stack_full (print_stack_frame_signal_safe, mctx, jit_tls, mono_get_lmf (), MONO_UNWIND_LOOKUP_IL_OFFSET | MONO_UNWIND_SIGNAL_ASYNC_SAFE, NULL);
+		mono_walk_stack_full (print_stack_frame_signal_safe, mctx, jit_tls, mono_get_lmf (), MONO_UNWIND_LOOKUP_IL_OFFSET | MONO_UNWIND_SIGNAL_SAFE, NULL);
 
 		g_async_safe_printf ("=================================================================\n");
 	}
@@ -3183,7 +3183,7 @@ mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 		return FALSE;
 
 	/* Do an async safe stack walk */
-	mono_walk_stack_with_state (find_last_handler_block, ctx, MONO_UNWIND_SIGNAL_ASYNC_SAFE, &data);
+	mono_walk_stack_with_state (find_last_handler_block, ctx, MONO_UNWIND_SIGNAL_SAFE, &data);
 
 	if (!data.ji)
 		return FALSE;
