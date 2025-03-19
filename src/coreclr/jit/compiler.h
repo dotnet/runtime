@@ -8185,6 +8185,7 @@ public:
 
     bool optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
     bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
+    bool optExtractSpanIndex(GenTree* tree, SpanIndex* result);
     bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
     bool optReconstructArrIndex(GenTree* tree, ArrIndex* result);
     bool optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
