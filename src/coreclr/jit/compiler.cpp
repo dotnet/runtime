@@ -2047,6 +2047,10 @@ void Compiler::compSetProcessor()
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
     }
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_Sve))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector);
+    }
 #endif // TARGET_ARM64
 
     assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));

@@ -114,6 +114,14 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             return InstructionSet_Vector128;
         }
+        else if (strncmp(className, "Vector`1", 8) == 0)
+        {
+            return InstructionSet_Vector;
+        }
+        else if (strncmp(className, "Vector", 6) == 0)
+        {
+            return InstructionSet_Vector;
+        }
     }
 
     return InstructionSet_ILLEGAL;
@@ -212,6 +220,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_Sha256_Arm64:
         case InstructionSet_Sve:
         case InstructionSet_Sve_Arm64:
+        case InstructionSet_Vector:
         case InstructionSet_Vector64:
         case InstructionSet_Vector128:
             return true;

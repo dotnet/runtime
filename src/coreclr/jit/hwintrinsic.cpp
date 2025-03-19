@@ -1148,6 +1148,13 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             return NI_Illegal;
         }
     }
+    else if (isa == InstructionSet_Vector)
+    {
+        if (!comp->IsBaselineSimdIsaSupported())
+        {
+            return NI_Illegal;
+        }
+    }
 #endif
 
     size_t isaIndex = static_cast<size_t>(isa) - 1;
