@@ -4741,9 +4741,8 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2IfPresent();
 
-    var_types type = op1->TypeGet();
-    emitAttr  size = emitActualTypeSize(type);
-    bool      is4  = (size == 4);
+    emitAttr size = emitActualTypeSize(treeNode);
+    bool     is4  = (size == 4);
 
     instruction instr = INS_invalid;
     switch (treeNode->gtIntrinsicName)
@@ -4768,17 +4767,14 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     genConsumeOperands(treeNode->AsOp());
     regNumber dest = treeNode->GetRegNum();
     regNumber src1 = op1->GetRegNum();
-
-    emitter& e = *GetEmitter();
     if (op2 == nullptr)
     {
-        e.emitIns_R_R(instr, size, dest, src1);
+        GetEmitter()->emitIns_R_R(instr, size, dest, src1);
     }
     else
     {
-        e.emitIns_R_R_R(instr, size, dest, src1, op2->GetRegNum());
+        GetEmitter()->emitIns_R_R_R(instr, size, dest, src1, op2->GetRegNum());
     }
-
     genProduceReg(treeNode);
 }
 
