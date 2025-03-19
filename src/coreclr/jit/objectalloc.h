@@ -134,6 +134,8 @@ class ObjectAllocator final : public Phase
     LocalToLocalMap     m_HeapLocalToStackLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
     unsigned int        m_StackAllocMaxSize;
+    bool                m_UseLocalloc;
+    bool                m_UseLocallocInLoop;
 
     // Info for conditionally-escaping locals
     LocalToLocalMap m_EnumeratorLocalToPseudoLocalMap;
@@ -152,6 +154,7 @@ public:
                                   CORINFO_CLASS_HANDLE clsHnd,
                                   ObjectAllocationType allocType,
                                   ssize_t              length,
+                                  bool                 lengthKnown,
                                   unsigned int*        blockSize,
                                   const char**         reason,
                                   bool                 preliminaryCheck = false);
@@ -176,12 +179,11 @@ private:
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
     unsigned int MorphAllocObjNodeIntoStackAlloc(
         GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
-    unsigned int MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
-                                               CORINFO_CLASS_HANDLE clsHnd,
-                                               unsigned int         length,
-                                               unsigned int         blockSize,
-                                               BasicBlock*          block,
-                                               Statement*           stmt);
+    void MorphNewArrNodeIntoStackAlloc(
+        GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, GenTree* length, BasicBlock* block, Statement* stmt);
+    void MorphNewArrNodeIntoLocAlloc(
+        GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, GenTree* length, BasicBlock* block, Statement* stmt);
+
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
@@ -284,6 +286,11 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     m_ConnGraphAdjacencyMatrix        = nullptr;
 
     m_StackAllocMaxSize = (unsigned)JitConfig.JitObjectStackAllocationSize();
+
+    // OSR does not support localloc (though seems like late-introduced localloc might be ok)
+    //
+    m_UseLocalloc       = JitConfig.JitObjectStackAllocationLocalloc() && !comp->opts.IsOSR();
+    m_UseLocallocInLoop = m_UseLocalloc && JitConfig.JitObjectStackAllocationInLoop();
 }
 
 //------------------------------------------------------------------------
@@ -313,7 +320,8 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 //    lclNum   - Local variable number
 //    clsHnd   - Class/struct handle of the variable class
 //    allocType - Type of allocation (newobj or newarr)
-//    length    - Length of the array (for newarr)
+//    length    - Length of the array (for newarr), 1 for runtime determined size
+//    lengthKnown - true if length is known
 //    blockSize - [out, optional] exact size of the object
 //    reason   - [out, required] if result is false, reason why
 //    preliminaryCheck - if true, allow checking before analysis is done
@@ -326,6 +334,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
                                                       CORINFO_CLASS_HANDLE clsHnd,
                                                       ObjectAllocationType allocType,
                                                       ssize_t              length,
+                                                      bool                 lengthKnown,
                                                       unsigned int*        blockSize,
                                                       const char**         reason,
                                                       bool                 preliminaryCheck)
@@ -361,6 +370,15 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
 
         ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
         classSize                 = layout->GetSize();
+
+        if (!lengthKnown && layout->HasGCPtr())
+        {
+            // We can't represent GC info for these yet
+            //
+            assert(length == 1);
+            *reason = "[unknown length, gc elements]";
+            return false;
+        }
     }
     else if (allocType == OAT_NEWOBJ)
     {
