@@ -127,7 +127,7 @@ public:
     PTR_BYTE            phdrDebugInfo;
 
     // Note - *(&(pCodeHeader->phdrJitEHInfo) - sizeof(size_t))
-    // contains the number of EH clauses, See EEJitManager::allocEHInfo
+    // contains the number of EH clauses, See CEECodeGenInfo::setEHcountWorker
     PTR_EE_ILEXCEPTION  phdrJitEHInfo;
     PTR_BYTE            phdrJitGCInfo;
 
@@ -152,7 +152,7 @@ public:
     PTR_BYTE            phdrDebugInfo;
 
     // Note - *(&(pCodeHeader->phdrJitEHInfo) - sizeof(size_t))
-    // contains the number of EH clauses, See EEJitManager::allocEHInfo
+    // contains the number of EH clauses, See CEECodeGenInfo::setEHcountWorker
     PTR_EE_ILEXCEPTION  phdrJitEHInfo;
     PTR_BYTE            phdrJitGCInfo;
     PTR_MethodDesc      phdrMDesc;
@@ -1836,11 +1836,7 @@ public:
 #endif
                   );
 
-    template<typename TCodeHeader>
-    inline BYTE *allocGCInfo(TCodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize);
-
-    template<typename TCodeHeader>
-    inline EE_ILEXCEPTION* allocEHInfo(TCodeHeader* pCodeHeader, unsigned numClauses, size_t * pAllocationSize);
+    BYTE *allocFromJitMetaHeap(MethodDesc *pMD, DWORD blockSize, size_t * pAllocationSize);
 
 	// Heap Management functions
     void NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize);
@@ -1859,7 +1855,6 @@ public:
 
 protected:
     void* allocCodeRaw(CodeHeapRequestInfo *pInfo, size_t header, size_t blockSize, unsigned align, HeapList ** ppCodeHeap);
-    void* allocEHInfoRaw(MethodDesc *pMD, DWORD blockSize, size_t * pAllocationSize);
     virtual void UnpublishUnwindInfoForMethod(TADDR codeStart) = 0;
     virtual void DeleteFunctionTable(PVOID pvTableID) = 0;
 

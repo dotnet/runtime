@@ -422,7 +422,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
         {
             // This cast is justified because only EEJitManager's have the code type above.
             EEJitManager* pJitMgr = (EEJitManager*)(pRS->_pjit);
-            CodeHeader * pHeader = dac_cast<PTR_CodeHeader>(pJitMgr->GetCodeHeaderFromStartAddress(entryPoint));
+            CodeHeader * pHeader = pJitMgr->GetCodeHeaderFromStartAddress(entryPoint);
             for(ULONG i = 0; i < pHeader->GetNumberOfUnwindInfos(); i++)
                 RemoveFromUnwindInfoTable(&pRS->_pUnwindInfoTable, pRS->_range.RangeStart(), pRS->_range.RangeStart() + pHeader->GetUnwindInfo(i)->BeginAddress);
         }
@@ -461,7 +461,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
                 {
                     // This cast is justified because only EEJitManager's have the code type above.
                     EEJitManager* pJitMgr = (EEJitManager*)(pRS->_pjit);
-                    CodeHeader * pHeader = dac_cast<PTR_CodeHeader>(pJitMgr->GetCodeHeaderFromStartAddress(methodEntry));
+                    CodeHeader * pHeader = pJitMgr->GetCodeHeaderFromStartAddress(methodEntry);
                     int unwindInfoCount = pHeader->GetNumberOfUnwindInfos();
                     for(int i = 0; i < unwindInfoCount; i++)
                         AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, pHeader->GetUnwindInfo(i), pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
@@ -519,8 +519,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 Setters of EECodeGenManager::m_CodeHeapCritSec
 -----------------------------------------------
 allocCode
-allocGCInfo
-allocEHInfo
+allocFromJitMetaHeap
 allocJumpStubBlock
 ResolveEHClause
 RemoveJitData
@@ -2916,7 +2915,6 @@ void EECodeGenManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reser
 #endif
         _ASSERTE(reserveForJumpStubs == 0);
         requestInfo.SetInterpreted();
-        requestInfo.SetDynamicDomain();
         realHeaderSize = sizeof(InterpreterRealCodeHeader);
     }
     else
@@ -3198,33 +3196,6 @@ LoaderHeap *EECodeGenManager::GetJitMetaHeap(MethodDesc *pMD)
     return pAllocator->GetLowFrequencyHeap();
 }
 
-void* EECodeGenManager::allocEHInfoRaw(MethodDesc* pMD, DWORD blockSize, size_t * pAllocationSize)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    void * mem = NULL;
-
-    // sadly for light code gen I need the check in here. We should change GetJitMetaHeap
-    if (pMD->IsLCGMethod())
-    {
-        CrstHolder ch(&m_CodeHeapCritSec);
-        mem = (void*)pMD->AsDynamicMethodDesc()->GetResolver()->GetJitMetaHeap()->New(blockSize);
-    }
-    else
-    {
-        mem = (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize));
-    }
-    _ASSERTE(mem);   // AllocMem throws if there's not enough memory
-
-    * pAllocationSize = blockSize; // Store the allocation size so we can backout later.
-
-    return(mem);
-}
-
-
 JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD numJumps,
                                                         BYTE * loAddr, BYTE * hiAddr,
                                                         LoaderAllocator *pLoaderAllocator,
@@ -3326,53 +3297,27 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
     RETURN((void *)mem);
 }
 
-template<typename TCodeHeader>
-BYTE* EECodeGenManager::allocGCInfo(TCodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize)
+BYTE* EECodeGenManager::allocFromJitMetaHeap(MethodDesc* pMD, DWORD blockSize, size_t * pAllocationSize)
 {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    MethodDesc* pMD = pCodeHeader->GetMethodDesc();
-    // sadly for light code gen I need the check in here. We should change GetJitMetaHeap
+    BYTE *pMem = NULL;
     if (pMD->IsLCGMethod())
     {
         CrstHolder ch(&m_CodeHeapCritSec);
-        pCodeHeader->SetGCInfo((BYTE*)(void*)pMD->AsDynamicMethodDesc()->GetResolver()->GetJitMetaHeap()->New(blockSize));
+        pMem = (BYTE*)(void*)pMD->AsDynamicMethodDesc()->GetResolver()->GetJitMetaHeap()->New(blockSize);
     }
     else
     {
-        pCodeHeader->SetGCInfo((BYTE*) (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize)));
+        pMem = (BYTE*) (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize));
     }
-    _ASSERTE(pCodeHeader->GetGCInfo()); // AllocMem throws if there's not enough memory
 
-    * pAllocationSize = blockSize;  // Store the allocation size so we can backout later.
+    *pAllocationSize = blockSize;  // Store the allocation size so we can backout later.
 
-    return(pCodeHeader->GetGCInfo());
-}
-
-template<typename TCodeHeader>
-EE_ILEXCEPTION* EECodeGenManager::allocEHInfo(TCodeHeader* pCodeHeader, unsigned numClauses, size_t * pAllocationSize)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    // Note - pCodeHeader->phdrJitEHInfo - sizeof(size_t) contains the number of EH clauses
-
-    DWORD temp =  EE_ILEXCEPTION::Size(numClauses);
-    DWORD blockSize = 0;
-    if (!ClrSafeInt<DWORD>::addition(temp, sizeof(size_t), blockSize))
-        COMPlusThrowOM();
-
-    BYTE *EHInfo = (BYTE*)allocEHInfoRaw(pCodeHeader->GetMethodDesc(), blockSize, pAllocationSize);
-
-    pCodeHeader->SetEHInfo((EE_ILEXCEPTION*) (EHInfo + sizeof(size_t)));
-    pCodeHeader->GetEHInfo()->Init(numClauses);
-    *((size_t *)EHInfo) = numClauses;
-    return(pCodeHeader->GetEHInfo());
+    return pMem;
 }
 
 template<typename TCodeHeader>
@@ -3470,20 +3415,9 @@ void EECodeGenManager::RemoveJitData(TCodeHeader * pCHdr, size_t GCinfo_len, siz
 // before the codeman.h is included.
 
 template
-BYTE* EECodeGenManager::allocGCInfo<CodeHeader>(CodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize);
-
-template
-EE_ILEXCEPTION* EECodeGenManager::allocEHInfo<CodeHeader>(CodeHeader* pCodeHeader, unsigned numClauses, size_t * pAllocationSize);
-
-template
 void EECodeGenManager::RemoveJitData<CodeHeader>(CodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len);
 
 #ifdef FEATURE_INTERPRETER
-template
-BYTE* EECodeGenManager::allocGCInfo<InterpreterCodeHeader>(InterpreterCodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize);
-
-template
-EE_ILEXCEPTION* EECodeGenManager::allocEHInfo<InterpreterCodeHeader>(InterpreterCodeHeader* pCodeHeader, unsigned numClauses, size_t * pAllocationSize);
 
 template
 void EECodeGenManager::RemoveJitData<InterpreterCodeHeader>(InterpreterCodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len);

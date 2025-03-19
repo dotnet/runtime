@@ -11025,7 +11025,7 @@ void CEECodeGenInfo::reportRichMappings(
 
     JIT_TO_EE_TRANSITION();
 
-    if (((EEJitManager*)m_jitManager)->IsStoringRichDebugInfo())
+    if (((EECodeGenManager*)m_jitManager)->IsStoringRichDebugInfo())
     {
         m_inlineTreeNodes = inlineTreeNodes;
         m_numInlineTreeNodes = numInlineTreeNodes;
@@ -11184,7 +11184,7 @@ void * CInterpreterJitInfo::allocGCInfo (size_t size)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void * block = NULL;
+    BYTE * block = NULL;
 
     JIT_TO_EE_TRANSITION();
 
@@ -11198,13 +11198,10 @@ void * CInterpreterJitInfo::allocGCInfo (size_t size)
     }
 #endif // HOST_64BIT
 
-    block = m_jitManager->allocGCInfo((InterpreterCodeHeader*)m_CodeHeaderRW,(DWORD)size, &m_GCinfo_len);
-    if (!block)
-    {
-        COMPlusThrowHR(CORJIT_OUTOFMEM);
-    }
+    block = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
+    _ASSERTE(block);      // allocFromJitMetaHeap throws if there's not enough memory
 
-    _ASSERTE(((InterpreterCodeHeader*)m_CodeHeaderRW)->GetGCInfo() != 0 && block == ((InterpreterCodeHeader*)m_CodeHeaderRW)->GetGCInfo());
+    ((InterpreterCodeHeader*)m_CodeHeaderRW)->SetGCInfo(block);
 
     EE_TO_JIT_TRANSITION();
 
@@ -12547,7 +12544,7 @@ void * CEEJitInfo::allocGCInfo (size_t size)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void * block = NULL;
+    BYTE * block = NULL;
 
     JIT_TO_EE_TRANSITION();
 
@@ -12561,13 +12558,10 @@ void * CEEJitInfo::allocGCInfo (size_t size)
     }
 #endif // HOST_64BIT
 
-    block = m_jitManager->allocGCInfo((CodeHeader*)m_CodeHeaderRW, (DWORD)size, &m_GCinfo_len);
-    if (!block)
-    {
-        COMPlusThrowHR(CORJIT_OUTOFMEM);
-    }
+    block = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
+    _ASSERTE(block);      // allocFromJitMetaHeap throws if there's not enough memory
 
-    _ASSERTE(((CodeHeader*)m_CodeHeaderRW)->GetGCInfo() != 0 && block == ((CodeHeader*)m_CodeHeaderRW)->GetGCInfo());
+    ((CodeHeader*)m_CodeHeaderRW)->SetGCInfo(block);
 
     EE_TO_JIT_TRANSITION();
 
@@ -12587,13 +12581,23 @@ void CEECodeGenInfo::setEHcountWorker(unsigned cEH)
 
     _ASSERTE(cEH != 0);
     _ASSERTE(m_CodeHeaderRW != 0);
-    _ASSERTE(((TCodeHeader*)m_CodeHeaderRW)->GetEHInfo() == 0);
 
-    EE_ILEXCEPTION* ret;
-    ret = m_jitManager->allocEHInfo((TCodeHeader*)m_CodeHeaderRW, cEH, &m_EHinfo_len);
-    _ASSERTE(ret);      // allocEHInfo throws if there's not enough memory
+    TCodeHeader *pCodeHeaderRW = ((TCodeHeader*)m_CodeHeaderRW);
 
-    _ASSERTE(((TCodeHeader*)m_CodeHeaderRW)->GetEHInfo() != 0 && ((TCodeHeader*)m_CodeHeaderRW)->GetEHInfo()->EHCount() == cEH);
+    _ASSERTE(pCodeHeaderRW->GetEHInfo() == 0);
+
+    DWORD temp =  EE_ILEXCEPTION::Size(cEH);
+    DWORD blockSize = 0;
+    if (!ClrSafeInt<DWORD>::addition(temp, sizeof(size_t), blockSize))
+        COMPlusThrowOM();
+
+    BYTE *pEHInfo = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled, blockSize, &m_EHinfo_len);
+    _ASSERTE(pEHInfo);      // allocFromJitMetaHeap throws if there's not enough memory
+    _ASSERTE(m_EHinfo_len != 0);
+
+    pCodeHeaderRW->SetEHInfo((EE_ILEXCEPTION*)(pEHInfo + sizeof(size_t)));
+    pCodeHeaderRW->GetEHInfo()->Init(cEH);
+    *((size_t *)pEHInfo) = cEH;
 
     EE_TO_JIT_TRANSITION();
 }
@@ -13306,8 +13310,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     if (useInterpreter)
     {
-        CInterpreterJitInfo jitInfo(ftn, ILHeader, interpreterMgr, !pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
-        ret = UnsafeJitFunctionWorker(interpreterMgr, &jitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
+        CInterpreterJitInfo interpreterJitInfo(ftn, ILHeader, interpreterMgr, !pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
+        ret = UnsafeJitFunctionWorker(interpreterMgr, &interpreterJitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
     }
 #endif // FEATURE_INTERPRETER
 
