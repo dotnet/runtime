@@ -2598,6 +2598,10 @@ public:
     EHNodeDsc* ehnTree; // root of the tree comprising the EHnodes.
     EHNodeDsc* ehnNext; // root of the tree comprising the EHnodes.
 
+#if defined(TARGET_ARM64)
+    static unsigned compVectorTLength;
+#endif
+
     struct EHNodeDsc
     {
         enum EHBlockType

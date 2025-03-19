@@ -2134,6 +2134,10 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
     return result;
 }
 
+#ifdef TARGET_ARM64
+unsigned Compiler::compVectorTLength = 0;
+#endif
+
 void Compiler::compInitOptions(JitFlags* jitFlags)
 {
     opts = {};
@@ -7751,6 +7755,7 @@ START:
                 compilerMem = pParam->pAlloc->allocateMemory(sizeof(Compiler));
             }
 
+            Compiler::compVectorTLength = 32; // TODO-VL: This should come from runtime itself
             pParam->pComp = new (compilerMem, jitstd::placement_t()) Compiler(pParam->pAlloc, pParam->methodHnd, pParam->compHnd, pParam->methodInfo, pParam->inlineInfo);
 
 #if MEASURE_CLRAPI_CALLS
