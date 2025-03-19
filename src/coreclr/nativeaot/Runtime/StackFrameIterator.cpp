@@ -2122,7 +2122,7 @@ void StackFrameIterator::CalculateCurrentMethodState()
     }
 
     //TODO-PAC: Strip the address at the source
-    m_ControlPC = (PTR_VOID)((long)m_ControlPC & 0x0000FFFFFFFFFFFF);
+    m_ControlPC = (PTR_VOID)((unsigned long)m_ControlPC & 0x0000FFFFFFFFFFFF);
     // Assume that the caller is likely to be in the same module
     if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo))
     {
