@@ -492,9 +492,16 @@ CDAC_TYPE_END(PlatformMetadata)
 
 CDAC_TYPE_BEGIN(StubPrecodeData)
 CDAC_TYPE_INDETERMINATE(StubPrecodeData)
-CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, MethodDesc, offsetof(StubPrecodeData, SecretParam))
+CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, SecretParam, offsetof(StubPrecodeData, SecretParam))
 CDAC_TYPE_FIELD(StubPrecodeData, /*uint8*/, Type, offsetof(StubPrecodeData, Type))
 CDAC_TYPE_END(StubPrecodeData)
+
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+CDAC_TYPE_BEGIN(ThisPtrRetBufPrecodeData)
+CDAC_TYPE_INDETERMINATE(ThisPtrRetBufPrecodeData)
+CDAC_TYPE_FIELD(ThisPtrRetBufPrecodeData, /*pointer*/, MethodDesc, offsetof(ThisPtrRetBufPrecodeData, MethodDesc))
+CDAC_TYPE_END(ThisPtrRetBufPrecodeData)
+#endif
 
 CDAC_TYPE_BEGIN(FixupPrecodeData)
 CDAC_TYPE_INDETERMINATE(FixupPrecodeData)
