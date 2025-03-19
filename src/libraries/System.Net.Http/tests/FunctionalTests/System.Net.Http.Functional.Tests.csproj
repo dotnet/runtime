@@ -57,7 +57,7 @@
   <ItemGroup>
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'"/>
 
-    <RuntimeHostConfigurationOption Include="System.Net.Http.EnableActivityPropagation" Value="true" Trim="true" />
+    <RuntimeHostConfigurationOption Include="System.Net.Http.EnableActivityPropagation" Value="true" Trim="true" Condition="'$(TargetOS)' == 'browser'" />
   </ItemGroup>
 
   <ItemGroup>
