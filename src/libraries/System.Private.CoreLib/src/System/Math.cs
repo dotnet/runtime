@@ -47,37 +47,34 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
-            value = unchecked((short)((value + (value >>= 15)) ^ value));
-
             if (value == short.MinValue)
             {
                 ThrowNegateTwosCompOverflow();
             }
-            return value;
+            
+            return unchecked((short)((value + (value >>= 15)) ^ value));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Abs(int value)
         {
-            value = unchecked((value + (value >>= 31)) ^ value);
-
             if (value == int.MinValue)
             {
                 ThrowNegateTwosCompOverflow();
             }
-            return value;
+
+            return unchecked((value + (value >>= 31)) ^ value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Abs(long value)
         {
-            value = unchecked((value + (value >>= 63)) ^ value);
-
             if (value == long.MinValue)
             {
                 ThrowNegateTwosCompOverflow();
             }
-            return value;
+
+            value = unchecked((value + (value >>= 63)) ^ value);
         }
 
         /// <summary>Returns the absolute value of a native signed integer.</summary>
@@ -101,13 +98,12 @@ namespace System
         [CLSCompliant(false)]
         public static sbyte Abs(sbyte value)
         {
-            value = unchecked((value + (value >>= 7)) ^ value);
-
             if (value == sbyte.MinValue)
             {
                 ThrowNegateTwosCompOverflow();
             }
-            return value;
+
+            return unchecked((sbyte)((value + (value >>= 7)) ^ value));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
