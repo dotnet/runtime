@@ -9,6 +9,8 @@ namespace System.Security.Cryptography.Tests
 {
     public static partial class MLKemTests
     {
+        public static bool IsNotSupported => !MLKem.IsSupported;
+
         [Fact]
         public static void IsSupported_AgreesWithPlatform()
         {
