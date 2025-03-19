@@ -303,7 +303,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
 
             unsigned flags = pCF->GetCodeManagerFlags();
 
-    #ifdef TARGET_X86
+    #if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM EIP = %p &EIP = %p\n",
                 pMD, GetControlPC(pCF->GetRegisterSet()), pCF->GetRegisterSet()->PCTAddr);
     #else

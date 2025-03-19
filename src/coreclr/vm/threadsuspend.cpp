@@ -4800,7 +4800,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
         }
         else
         {
-#ifdef TARGET_X86
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
             STRESS_LOG2(LF_SYNC, LL_INFO1000, "Not in Jitted code at EIP = %p, &EIP = %p\n", GetControlPC(pCF->GetRegisterSet()), pCF->GetRegisterSet()->PCTAddr);
 #else
             STRESS_LOG1(LF_SYNC, LL_INFO1000, "Not in Jitted code at pc = %p\n", GetControlPC(pCF->GetRegisterSet()));

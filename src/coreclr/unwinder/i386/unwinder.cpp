@@ -14,7 +14,6 @@ BOOL OOPStackUnwinderX86::Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTE
     FillRegDisplay(&rd, pContextRecord);
 
     rd.SP = pContextRecord->Esp;
-    rd.PCTAddr = (UINT_PTR)&(pContextRecord->Eip);
 
     if (pContextPointers)
     {

@@ -763,8 +763,10 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         // unwind to a valid return address), but we only do the precise checking when
         // we are certain we have a good caller state
         if (gcCover->doingEpilogChecks) {
+#ifndef FEATURE_EH_FUNCLETS
             // Confirm that we recovered our register state properly
             _ASSERTE(regDisp.PCTAddr == TADDR(gcCover->callerRegs.Esp));
+#endif
 
             // If a GC happened in this function, then the registers will not match
             // precisely.  However there is still checks we can do.  Also we can update
