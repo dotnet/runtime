@@ -8,14 +8,15 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     public static partial class MLKemTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemAlgorithms))]
         public static void Generate_Roundtrip(MLKemAlgorithm algorithm)
         {
             using MLKem kem = MLKem.GenerateMLKemKey(algorithm);
+            Assert.Equal(algorithm, kem.Algorithm);
+
             Span<byte> seed = stackalloc byte[MLKem.PrivateSeedSizeInBytes];
             seed.Clear();
 
@@ -28,12 +29,13 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(seed, seed2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void Generate_NistVectors()
         {
             foreach (MLKemTestVector vector in MLKemGenerateTestVectors)
             {
                 using MLKem kem = MLKem.ImportMLKemPrivateSeed(vector.Algorithm, Convert.FromHexString(vector.Seed));
+                Assert.Equal(vector.Algorithm, kem.Algorithm);
 
                 byte[] decapsKey = new byte[vector.Algorithm.DecapsulationKeySizeInBytes];
                 kem.ExportMLKemDecapsulationKey(decapsKey);
@@ -45,13 +47,14 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void ImportMLKemEncapsulationKey_Roundtrip()
         {
             foreach (MLKemTestVector vector in MLKemGenerateTestVectors)
             {
                 byte[] encapsulationKeyBytes = Convert.FromHexString(vector.EncapsulationKey);
                 using MLKem kem = MLKem.ImportMLKemEncapsulationKey(vector.Algorithm, encapsulationKeyBytes);
+                Assert.Equal(vector.Algorithm, kem.Algorithm);
 
                 byte[] exportedEncapsulationKey = new byte[vector.Algorithm.EncapsulationKeySizeInBytes];
                 kem.ExportMLKemEncapsulationKey(exportedEncapsulationKey);
@@ -59,7 +62,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void ImportMLKemDecapsulationKey_Roundtrip()
         {
             foreach (MLKemTestVector vector in MLKemGenerateTestVectors)
@@ -67,6 +70,7 @@ namespace System.Security.Cryptography.Tests
                 byte[] decapsulationKeyBytes = Convert.FromHexString(vector.DecapsulationKey);
                 byte[] encapsulationKeyBytes = Convert.FromHexString(vector.EncapsulationKey);
                 using MLKem kem = MLKem.ImportMLKemDecapsulationKey(vector.Algorithm, decapsulationKeyBytes);
+                Assert.Equal(vector.Algorithm, kem.Algorithm);
 
                 byte[] exportedDecapsulationKey = new byte[vector.Algorithm.DecapsulationKeySizeInBytes];
                 kem.ExportMLKemDecapsulationKey(exportedDecapsulationKey);

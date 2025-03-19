@@ -373,9 +373,12 @@ namespace System.Security.Cryptography
         /// </summary>
         public void Dispose()
         {
-            _disposed = true;
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            if (!_disposed)
+            {
+                _disposed = true;
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
         }
 
         /// <summary>
