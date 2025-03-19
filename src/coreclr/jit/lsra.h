@@ -1196,10 +1196,10 @@ private:
     void spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition));
 
     void             processKills(RefPosition* killRefPosition);
-    FORCEINLINE void freeKilledRegs(RefPosition* killRefPosition,
+    FORCEINLINE void freeKilledRegs(RefPosition*     killRefPosition,
                                     SingleTypeRegSet killedRegs,
-                                    RefPosition* nextKill,
-                                    int          regBase);
+                                    RefPosition*     nextKill,
+                                    int              regBase);
     void             spillGCRefs(RefPosition* killRefPosition);
 
     /*****************************************************************************

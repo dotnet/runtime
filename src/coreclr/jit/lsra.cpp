@@ -3877,15 +3877,15 @@ void LinearScan::processKills(RefPosition* killRefPosition)
 //   nextKill - The RefPosition for next kill
 //   regBase - `0` or `64` based on the `killedRegs` being processed
 //
-void LinearScan::freeKilledRegs(RefPosition* killRefPosition,
+void LinearScan::freeKilledRegs(RefPosition*     killRefPosition,
                                 SingleTypeRegSet killedRegs,
-                                RefPosition* nextKill,
-                                int          regBase)
+                                RefPosition*     nextKill,
+                                int              regBase)
 {
 
     while (killedRegs != RBM_NONE)
     {
-        regNumber killedReg = (regNumber)(genFirstRegNumFromMaskAndToggle(killedRegs) + regBase);
+        regNumber  killedReg        = (regNumber)(genFirstRegNumFromMaskAndToggle(killedRegs) + regBase);
         RegRecord* regRecord        = getRegisterRecord(killedReg);
         Interval*  assignedInterval = regRecord->assignedInterval;
         if (assignedInterval != nullptr)
@@ -4605,7 +4605,7 @@ void LinearScan::handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBa
 {
     while (deadCandidates != RBM_NONE)
     {
-        regNumber reg = (regNumber)(genFirstRegNumFromMaskAndToggle(deadCandidates) + regBase);
+        regNumber  reg           = (regNumber)(genFirstRegNumFromMaskAndToggle(deadCandidates) + regBase);
         RegRecord* physRegRecord = getRegisterRecord(reg);
 
         makeRegAvailable(reg, physRegRecord->registerType);
@@ -4794,7 +4794,7 @@ void LinearScan::freeRegistersSingleType(SingleTypeRegSet regsToFree, int regBas
 {
     while (regsToFree != RBM_NONE)
     {
-        regNumber nextReg = (regNumber)(genFirstRegNumFromMaskAndToggle(regsToFree) + regBase);
+        regNumber  nextReg   = (regNumber)(genFirstRegNumFromMaskAndToggle(regsToFree) + regBase);
         RegRecord* regRecord = getRegisterRecord(nextReg);
         freeRegister(regRecord);
     }
