@@ -89,6 +89,11 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem GenerateMLKemKey(MLKemAlgorithm algorithm)
         {
+            if (algorithm is null)
+            {
+                throw new ArgumentNullException(nameof(algorithm));
+            }
+
             ThrowIfNotSupported();
             return MLKemImplementation.Generate(algorithm);
         }
@@ -113,9 +118,21 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void Encapsulate(Span<byte> ciphertext, Span<byte> sharedSecret)
         {
+            if (ciphertext.Length != Algorithm.CiphertextSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.CiphertextSizeInBytes),
+                    nameof(ciphertext));
+            }
+
+            if (sharedSecret.Length != SharedSecretSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, SharedSecretSizeInBytes),
+                    nameof(sharedSecret));
+            }
+
             ThrowIfDisposed();
-            ValidatedCiphertextSize(ciphertext);
-            ValidateSharedSecretSize(sharedSecret);
             EncapsulateCore(ciphertext, sharedSecret);
         }
 
@@ -154,9 +171,19 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void Decapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
+            if (ciphertext.Length != Algorithm.CiphertextSizeInBytes)
+            {
+                throw new ArgumentException(SR.Argument_KemInvalidCiphertextLength, nameof(ciphertext));
+            }
+
+            if (sharedSecret.Length != SharedSecretSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, SharedSecretSizeInBytes),
+                    nameof(sharedSecret));
+            }
+
             ThrowIfDisposed();
-            ValidatedCiphertextSize(ciphertext);
-            ValidateSharedSecretSize(sharedSecret);
             DecapsulateCore(ciphertext, sharedSecret);
         }
 
@@ -198,9 +225,12 @@ namespace System.Security.Cryptography
         {
             if (destination.Length != PrivateSeedSizeInBytes)
             {
-                throw new ArgumentException("TODO", nameof(destination));
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, PrivateSeedSizeInBytes),
+                    nameof(destination));
             }
 
+            ThrowIfDisposed();
             ExportMLKemPrivateSeedCore(destination);
         }
 
@@ -220,13 +250,17 @@ namespace System.Security.Cryptography
         /// <returns>The imported key.</returns>
         public static MLKem ImportMLKemPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
+            if (algorithm is null)
+            {
+                throw new ArgumentNullException(nameof(algorithm));
+            }
 
             if (source.Length != PrivateSeedSizeInBytes)
             {
-                throw new ArgumentException("TODO", nameof(source));
+                throw new ArgumentException(SR.Argument_KemInvalidSeedLength, nameof(source));
             }
 
+            ThrowIfNotSupported();
             return MLKemImplementation.ImportPrivateSeed(algorithm, source);
         }
 
@@ -238,13 +272,17 @@ namespace System.Security.Cryptography
         /// <returns>The imported key.</returns>
         public static MLKem ImportMLKemDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
+            if (algorithm is null)
+            {
+                throw new ArgumentNullException(nameof(algorithm));
+            }
 
             if (source.Length != algorithm.DecapsulationKeySizeInBytes)
             {
-                throw new ArgumentException("TODO", nameof(source));
+                throw new ArgumentException(SR.Argument_KemInvalidDecapsulationKeyLength, nameof(source));
             }
 
+            ThrowIfNotSupported();
             return MLKemImplementation.ImportDecapsulationKey(algorithm, source);
         }
 
@@ -256,13 +294,17 @@ namespace System.Security.Cryptography
         /// <returns>The imported key.</returns>
         public static MLKem ImportMLKemEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
+            if (algorithm is null)
+            {
+                throw new ArgumentNullException(nameof(algorithm));
+            }
 
             if (source.Length != algorithm.EncapsulationKeySizeInBytes)
             {
-                throw new ArgumentException("TODO", nameof(source));
+                throw new ArgumentException(SR.Argument_KemInvalidEncapsulationKeyLength, nameof(source));
             }
 
+            ThrowIfNotSupported();
             return MLKemImplementation.ImportEncapsulationKey(algorithm, source);
         }
 
@@ -279,9 +321,12 @@ namespace System.Security.Cryptography
         {
             if (destination.Length != Algorithm.DecapsulationKeySizeInBytes)
             {
-                throw new ArgumentException("TODO", nameof(destination));
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.DecapsulationKeySizeInBytes),
+                    nameof(destination));
             }
 
+            ThrowIfDisposed();
             ExportMLKemDecapsulationKeyCore(destination);
         }
 
@@ -306,9 +351,12 @@ namespace System.Security.Cryptography
         {
             if (destination.Length != Algorithm.EncapsulationKeySizeInBytes)
             {
-                throw new ArgumentException("TODO", nameof(destination));
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.EncapsulationKeySizeInBytes),
+                    nameof(destination));
             }
 
+            ThrowIfDisposed();
             ExportMLKemEncapsulationKeyCore(destination);
         }
 
@@ -347,22 +395,6 @@ namespace System.Security.Cryptography
             if (!IsSupported)
             {
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
-            }
-        }
-
-        private static void ValidateSharedSecretSize(ReadOnlySpan<byte> sharedSecret)
-        {
-            if (sharedSecret.Length != SharedSecretSizeInBytes)
-            {
-                throw new ArgumentException("TODO", nameof(sharedSecret));
-            }
-        }
-
-        private void ValidatedCiphertextSize(ReadOnlySpan<byte> ciphertext)
-        {
-            if (ciphertext.Length != Algorithm.CiphertextSizeInBytes)
-            {
-                throw new ArgumentException("TODO", nameof(ciphertext));
             }
         }
     }

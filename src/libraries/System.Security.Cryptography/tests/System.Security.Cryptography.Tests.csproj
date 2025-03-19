@@ -151,8 +151,12 @@
              Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs"
              Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.ArgValidation.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemTests.ArgValidation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.Keys.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemTests.Keys.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.Encapsulation.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemTests.Encapsulation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs"

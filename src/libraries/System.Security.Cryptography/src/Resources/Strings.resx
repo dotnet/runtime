@@ -93,6 +93,9 @@
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
   </data>
+  <data name="Argument_DestinationImprecise" xml:space="preserve">
+    <value>Destination must exactly {0} bytes.</value>
+  </data>
   <data name="Argument_EmptyString" xml:space="preserve">
     <value>The value cannot be an empty string.</value>
   </data>
@@ -122,6 +125,18 @@
   </data>
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
+  </data>
+  <data name="Argument_KemInvalidCiphertextLength" xml:space="preserve">
+    <value>The specified ciphertext is not the correct length for the ML-KEM algorithm.</value>
+  </data>
+  <data name="Argument_KemInvalidDecapsulationKeyLength" xml:space="preserve">
+    <value>The specified decapsulation key is not the correct length for the ML-KEM algorithm.</value>
+  </data>
+  <data name="Argument_KemInvalidEncapsulationKeyLength" xml:space="preserve">
+    <value>The specified encapsulation key is not the correct length for the ML-KEM algorithm.</value>
+  </data>
+  <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
+    <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
   <data name="Argument_SignatureContextTooLong255" xml:space="preserve">
     <value>The specified signature context exceeds the maximum length of 255 bytes.</value>
