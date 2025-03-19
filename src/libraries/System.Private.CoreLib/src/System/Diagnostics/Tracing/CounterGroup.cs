@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Runtime.Versioning;
 using System.Threading;
 
+#pragma warning disable CA1416 // DiagnosticCounter is not supported public API on the browser OS
+
 namespace System.Diagnostics.Tracing
 {
     internal sealed partial class CounterGroup

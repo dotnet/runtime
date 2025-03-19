@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+#pragma warning disable CA1416 // DiagnosticCounter is not supported public API on the browser OS
+
 namespace System.Diagnostics.Tracing
 {
     /// <summary>

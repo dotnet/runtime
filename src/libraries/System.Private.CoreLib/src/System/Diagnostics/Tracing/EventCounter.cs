@@ -16,6 +16,9 @@ namespace System.Diagnostics.Tracing
     /// See https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.Tracing/tests/BasicEventSourceTest/TestEventCounter.cs
     /// which shows tests, which are also useful in seeing actual use.
     /// </summary>
+#if !ES_BUILD_STANDALONE
+    [UnsupportedOSPlatform("browser")]
+#endif
     public partial class EventCounter : DiagnosticCounter
     {
         /// <summary>
