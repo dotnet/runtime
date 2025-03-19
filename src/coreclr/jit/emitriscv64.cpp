@@ -3677,6 +3677,11 @@ void emitter::emitDispInsName(
                     {
                         printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5 BITS for SHAMT in RISCV64
                     }
+                    // SLLI.UW's instruction code's upper 6 bits have to be equal to 0x2
+                    else if (((imm12 >> 6) & 0x3f) == 0x2)
+                    {
+                        printf("slli.uw        %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
+                    }
                     else
                     {
                         emitDispIllegalInstruction(code);
@@ -3792,6 +3797,20 @@ void emitter::emitDispInsName(
                             return emitDispIllegalInstruction(code);
                     }
                     return;
+                case 0b0010000:
+                    switch (opcode3)
+                    {
+                        case 0x2: // SH1ADD
+                            printf("sh1add         %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x4: // SH2ADD
+                            printf("sh2add         %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x6: // SH3ADD
+                            printf("sh3add         %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                    }
+                    return;
                 default:
                     return emitDispIllegalInstruction(code);
             }
@@ -3855,6 +3874,20 @@ void emitter::emitDispInsName(
                             return;
                         default:
                             return emitDispIllegalInstruction(code);
+                    }
+                    return;
+                case 0b0010000:
+                    switch (opcode3)
+                    {
+                        case 0x2: // SH1ADD.UW
+                            printf("sh1add.uw           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x4: // SH2ADD.UW
+                            printf("sh2add.uw           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x6: // SH3ADD.UW
+                            printf("sh3add.uw           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
                     }
                     return;
                 default:
