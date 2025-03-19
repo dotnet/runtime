@@ -5833,7 +5833,7 @@ static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunct
     LOG((LF_CORDB,LL_INFO1000, "ITCTR: ret addr is %p, tailcall aware ret addr is %p\n",
         retAddr, tailCallAwareRetAddr));
 
-    return ((ulong)retAddr & 0x0000FFFFFFFFFFFF) == ((ulong)tailCallAwareRetAddr & 0x0000FFFFFFFFFFFF);
+    return ((unsigned long)retAddr & 0x0000FFFFFFFFFFFF) == ((unsigned long)tailCallAwareRetAddr & 0x0000FFFFFFFFFFFF);
 }
 
 // bool DebuggerStepper::TrapStep()   TrapStep attepts to set a
