@@ -504,6 +504,8 @@ namespace TestLibrary
         // Ensure that the OS doesn't generate core dump for the current process
         public static void DisableOSCoreDump()
         {
+            // At present, RLimit is defined in a way where the fields are always 64-bit.
+            // Before adding support for a new platform, its definition of rlimit should be confirmed.
             if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
                 RLimit rlimit = new RLimit
