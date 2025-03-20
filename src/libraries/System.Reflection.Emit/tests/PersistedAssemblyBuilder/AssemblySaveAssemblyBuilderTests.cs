@@ -303,10 +303,13 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        [Fact]
-        public unsafe void AssemblyWithInstanceBasedFunctionPointer()
+        [Theory]
+        [InlineData(true)] // todo: this is failing
+        [InlineData(false)]
+        public unsafe void AssemblyWithInstanceBasedFunctionPointer(bool useExplicitThis)
         {
-            byte[] assemblyData = GenerateMethodInPersistedAssembly();
+            byte[] assemblyData = GenerateMethodInPersistedAssembly(useExplicitThis);
+
             using MemoryStream stream = new MemoryStream(assemblyData);
             TestAssemblyLoadContext testAssemblyLoadContext = new();
 
@@ -318,7 +321,7 @@ namespace System.Reflection.Emit.Tests
                 Assert.NotNull(generatedType);
                 MethodInfo generatedMethod = generatedType.GetMethod("GetGuid")!;
                 Assert.NotNull(generatedMethod);
-                Func<object, IntPtr, Guid> generatedMethodToCall = generatedMethod.CreateDelegate<Func<object, IntPtr, Guid>>();
+                Func<MyClassWithGuidProperty, IntPtr, Guid> generatedMethodToCall = generatedMethod.CreateDelegate<Func<MyClassWithGuidProperty, IntPtr, Guid>>();
 
                 // Call the property getter through the generated method.
                 IntPtr fn = typeof(MyClassWithGuidProperty).GetProperty(nameof(MyClassWithGuidProperty.MyGuid))!.GetGetMethod().MethodHandle.GetFunctionPointer();
@@ -331,7 +334,7 @@ namespace System.Reflection.Emit.Tests
                 testAssemblyLoadContext.Unload();
             }
 
-            static unsafe byte[] GenerateMethodInPersistedAssembly()
+            static unsafe byte[] GenerateMethodInPersistedAssembly(bool useExplicitThis)
             {
                 AssemblyName assemblyName = new("MyAssembly");
                 PersistedAssemblyBuilder ab = new(assemblyName, typeof(object).Assembly);
@@ -343,12 +346,24 @@ namespace System.Reflection.Emit.Tests
                     "GetGuid",
                     MethodAttributes.Public | MethodAttributes.Static,
                     typeof(Guid),
-                    new Type[] { typeof(object), typeof(IntPtr) });
+                    [typeof(MyClassWithGuidProperty), typeof(IntPtr)]);
+
 
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_0); // this
                 il.Emit(OpCodes.Ldarg_1); // fn
-                il.EmitCalli(OpCodes.Calli, CallingConventions.HasThis, typeof(Guid), null, null);
+
+                if (useExplicitThis)
+                {
+                    il.EmitCalli(OpCodes.Calli, CallingConventions.HasThis | CallingConventions.ExplicitThis,
+                        returnType: typeof(Guid), parameterTypes: [typeof(MyClassWithGuidProperty)], null);
+                }
+                else
+                {
+                    il.EmitCalli(OpCodes.Calli, CallingConventions.HasThis,
+                        returnType: typeof(Guid), parameterTypes: null, null);
+                }
+
                 il.Emit(OpCodes.Ret);
 
                 typeBuilder.CreateType();
