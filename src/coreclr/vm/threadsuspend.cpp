@@ -4823,7 +4823,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     }
     else
     {
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
+#ifdef TARGET_X86
         // Second pass, looking for the address of the return address so we can
         // hijack:
 
@@ -4838,8 +4838,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
             STRESS_LOG2(LF_SYNC, LL_INFO1000, "Partially Int case hijack address = 0x%x val = 0x%x\n", pES->m_ppvRetAddrPtr, *pES->m_ppvRetAddrPtr);
         }
 #else
-        // PORTABILITY_ASSERT("Platform NYI");
-        _ASSERTE(!"NYI");
+        PORTABILITY_ASSERT("Platform NYI");
 #endif
     }
 
