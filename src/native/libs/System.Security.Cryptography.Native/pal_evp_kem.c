@@ -279,6 +279,7 @@ int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
     if (API_EXISTS(EVP_PKEY_encapsulate_init))
     {
         assert(API_EXISTS(EVP_PKEY_CTX_new_from_pkey) && API_EXISTS(EVP_PKEY_encapsulate));
+        ERR_clear_error();
 
         EVP_PKEY_CTX* ctx = NULL;
         ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
@@ -341,6 +342,7 @@ int32_t CryptoNative_EvpKemDecapsulate(EVP_PKEY* pKey,
     if (API_EXISTS(EVP_PKEY_decapsulate_init))
     {
         assert(API_EXISTS(EVP_PKEY_CTX_new_from_pkey) && API_EXISTS(EVP_PKEY_decapsulate));
+        ERR_clear_error();
 
         EVP_PKEY_CTX* ctx = NULL;
         ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
