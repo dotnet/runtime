@@ -96,9 +96,11 @@ int EVP_PKEY_decapsulate(EVP_PKEY_CTX *ctx,
                          size_t wrappedlen);
 int EVP_PKEY_decapsulate_init(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[]);
 int EVP_PKEY_encapsulate_init(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[]);
-    int EVP_PKEY_encapsulate(EVP_PKEY_CTX *ctx,
-                             unsigned char *wrappedkey, size_t *wrappedkeylen,
-                             unsigned char *genkey, size_t *genkeylen);
+int EVP_PKEY_encapsulate(EVP_PKEY_CTX *ctx,
+                         unsigned char *wrappedkey,
+                         size_t *wrappedkeylen,
+                         unsigned char *genkey,
+                         size_t *genkeylen);
 int EVP_PKEY_fromdata_init(EVP_PKEY_CTX *ctx);
 int EVP_PKEY_fromdata(EVP_PKEY_CTX *ctx,
                       EVP_PKEY **ppkey,
