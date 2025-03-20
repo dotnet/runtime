@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
     ///   cryptographic libraries.
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-    internal abstract partial class SlhDsa : IDisposable
+    public abstract partial class SlhDsa : IDisposable
 #if DESIGNTIMEINTERFACES
 #pragma warning disable SA1001
         , IImportExportShape<SlhDsa>
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography
 
             if (destination.Length < signatureSizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
             SignDataCore(data, context, destination.Slice(0, signatureSizeInBytes));
@@ -348,6 +348,7 @@ namespace System.Security.Cryptography
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             // TODO: Validation on pbeParameters.
 
@@ -390,6 +391,7 @@ namespace System.Security.Cryptography
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             // TODO: Validation on pbeParameters.
 
@@ -442,6 +444,7 @@ namespace System.Security.Cryptography
             out int bytesWritten)
         {
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
 
@@ -494,6 +497,7 @@ namespace System.Security.Cryptography
             out int bytesWritten)
         {
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
 
@@ -535,6 +539,7 @@ namespace System.Security.Cryptography
             PbeParameters pbeParameters)
         {
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             // TODO: Validation on pbeParameters.
 
@@ -580,6 +585,7 @@ namespace System.Security.Cryptography
             PbeParameters pbeParameters)
         {
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             // TODO: Validation on pbeParameters.
 
@@ -615,7 +621,7 @@ namespace System.Security.Cryptography
 
             if (destination.Length < publicKeySizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
             ExportSlhDsaPublicKeyCore(destination.Slice(0, publicKeySizeInBytes));
@@ -645,7 +651,7 @@ namespace System.Security.Cryptography
 
             if (destination.Length < secretKeySizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
             ExportSlhDsaSecretKeyCore(destination.Slice(0, secretKeySizeInBytes));
@@ -675,7 +681,7 @@ namespace System.Security.Cryptography
 
             if (destination.Length < privateSeedSizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
             ExportSlhDsaPrivateSeedCore(destination.Slice(0, privateSeedSizeInBytes));
@@ -688,8 +694,13 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   The generated object.
         /// </returns>
-        public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) =>
-            new SlhDsaImplementation(algorithm);
+        public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm)
+        {
+            ThrowIfNotSupported();
+            ArgumentNullException.ThrowIfNull(algorithm);
+
+            return SlhDsaImplementation.GenerateImpl(algorithm);
+        }
 
         /// <summary>
         ///  Imports an SLH-DSA public key from an X.509 SubjectPublicKeyInfo structure.
@@ -1074,6 +1085,7 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             ThrowIfNotSupported();
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
             {

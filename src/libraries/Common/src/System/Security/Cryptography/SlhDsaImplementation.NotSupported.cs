@@ -10,7 +10,13 @@ namespace System.Security.Cryptography
     {
         internal static partial bool SupportsAny() => false;
 
-        // The instance override methods are unreachable, as the constructor will always throw.
+        private SlhDsaImplementation(SlhDsaAlgorithm algorithm)
+            : base(algorithm) =>
+            throw new PlatformNotSupportedException();
+
+        internal static partial SlhDsa GenerateImpl(SlhDsaAlgorithm algorithm) =>
+            throw new PlatformNotSupportedException();
+
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
@@ -26,16 +32,16 @@ namespace System.Security.Cryptography
         protected override void ExportSlhDsaPrivateSeedCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportPublicKey(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsa ImportPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsa ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportSecretKey(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsa ImportSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportSeed(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsa ImportSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
     }
 }

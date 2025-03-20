@@ -8,9 +8,16 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class SlhDsaImplementation : SlhDsa
     {
-        internal static partial bool SupportsAny() => false;
+        internal static partial bool SupportsAny() => true;
 
-        // TODO: Define this in terms of OpenSSL
+        private SlhDsaImplementation(SlhDsaAlgorithm algorithm)
+            : base(algorithm)
+        {
+            // TODO
+        }
+
+        internal static partial SlhDsa GenerateImpl(SlhDsaAlgorithm algorithm) =>
+            new SlhDsaImplementation(algorithm);
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             throw new PlatformNotSupportedException();
@@ -27,16 +34,16 @@ namespace System.Security.Cryptography
         protected override void ExportSlhDsaPrivateSeedCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportPublicKey(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsa ImportPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsa ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportSecretKey(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsa ImportSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportSeed(SlhDsaAlgorithm info, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsa ImportSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
     }
 }
