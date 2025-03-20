@@ -381,8 +381,6 @@ CONFIG_INTEGER(JitStressPromotedEvexEncoding, "JitStressPromotedEvexEncoding", 0
 CONFIG_INTEGER(JitStressEvexEncoding, "JitStressEvexEncoding", 0)
 #endif
 
-RELEASE_CONFIG_INTEGER(PreferredVectorBitWidth,     "PreferredVectorBitWidth",   0) // The preferred decimal width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
-
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
 //
@@ -797,9 +795,6 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, "JitEnablePhysicalPromotion",
 
 // Enable cross-block local assertion prop
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, "JitEnableCrossBlockLocalAssertionProp", 1)
-
-// Do greedy RPO-based layout in Compiler::fgReorderBlocks.
-RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, "JitDoReversePostOrderLayout", 1);
 
 // Enable strength reduction
 RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, "JitEnableStrengthReduction", 1)

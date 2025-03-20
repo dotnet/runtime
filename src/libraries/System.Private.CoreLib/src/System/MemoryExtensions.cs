@@ -5822,7 +5822,7 @@ namespace System
         public ref struct SpanSplitEnumerator<T> where T : IEquatable<T>
         {
             /// <summary>The input span being split.</summary>
-            private readonly ReadOnlySpan<T> _span;
+            private readonly ReadOnlySpan<T> _source;
 
             /// <summary>A single separator to use when <see cref="_splitMode"/> is <see cref="SpanSplitEnumeratorMode.SingleElement"/>.</summary>
             private readonly T _separator = default!;
@@ -5836,25 +5836,29 @@ namespace System
 
             /// <summary>Mode that dictates how the instance was configured and how its fields should be used in <see cref="MoveNext"/>.</summary>
             private SpanSplitEnumeratorMode _splitMode;
-            /// <summary>The inclusive starting index in <see cref="_span"/> of the current range.</summary>
+            /// <summary>The inclusive starting index in <see cref="_source"/> of the current range.</summary>
             private int _startCurrent = 0;
-            /// <summary>The exclusive ending index in <see cref="_span"/> of the current range.</summary>
+            /// <summary>The exclusive ending index in <see cref="_source"/> of the current range.</summary>
             private int _endCurrent = 0;
-            /// <summary>The index in <see cref="_span"/> from which the next separator search should start.</summary>
+            /// <summary>The index in <see cref="_source"/> from which the next separator search should start.</summary>
             private int _startNext = 0;
 
             /// <summary>Gets an enumerator that allows for iteration over the split span.</summary>
             /// <returns>Returns a <see cref="SpanSplitEnumerator{T}"/> that can be used to iterate over the split span.</returns>
             public SpanSplitEnumerator<T> GetEnumerator() => this;
 
+            /// <summary>Gets the source span being enumerated.</summary>
+            /// <returns>Returns the <see cref="ReadOnlySpan{T}"/> that was provided when creating this enumerator.</returns>
+            public readonly ReadOnlySpan<T> Source => _source;
+
             /// <summary>Gets the current element of the enumeration.</summary>
             /// <returns>Returns a <see cref="Range"/> instance that indicates the bounds of the current element withing the source span.</returns>
             public Range Current => new Range(_startCurrent, _endCurrent);
 
             /// <summary>Initializes the enumerator for <see cref="SpanSplitEnumeratorMode.SearchValues"/>.</summary>
-            internal SpanSplitEnumerator(ReadOnlySpan<T> span, SearchValues<T> searchValues)
+            internal SpanSplitEnumerator(ReadOnlySpan<T> source, SearchValues<T> searchValues)
             {
-                _span = span;
+                _source = source;
                 _splitMode = SpanSplitEnumeratorMode.SearchValues;
                 _searchValues = searchValues;
             }
@@ -5865,9 +5869,9 @@ namespace System
             /// it will instead use <see cref="SpanSplitEnumeratorMode.SearchValues"/> with a cached <see cref="SearchValues{Char}"/>
             /// for all whitespace characters.
             /// </remarks>
-            internal SpanSplitEnumerator(ReadOnlySpan<T> span, ReadOnlySpan<T> separators)
+            internal SpanSplitEnumerator(ReadOnlySpan<T> source, ReadOnlySpan<T> separators)
             {
-                _span = span;
+                _source = source;
                 if (typeof(T) == typeof(char) && separators.Length == 0)
                 {
                     _searchValues = Unsafe.As<SearchValues<T>>(string.SearchValuesStorage.WhiteSpaceChars);
@@ -5882,11 +5886,11 @@ namespace System
 
             /// <summary>Initializes the enumerator for <see cref="SpanSplitEnumeratorMode.Sequence"/> (or <see cref="SpanSplitEnumeratorMode.EmptySequence"/> if the separator is empty).</summary>
             /// <remarks><paramref name="treatAsSingleSeparator"/> must be true.</remarks>
-            internal SpanSplitEnumerator(ReadOnlySpan<T> span, ReadOnlySpan<T> separator, bool treatAsSingleSeparator)
+            internal SpanSplitEnumerator(ReadOnlySpan<T> source, ReadOnlySpan<T> separator, bool treatAsSingleSeparator)
             {
                 Debug.Assert(treatAsSingleSeparator, "Should only ever be called as true; exists to differentiate from separators overload");
 
-                _span = span;
+                _source = source;
                 _separatorBuffer = separator;
                 _splitMode = separator.Length == 0 ?
                     SpanSplitEnumeratorMode.EmptySequence :
@@ -5894,9 +5898,9 @@ namespace System
             }
 
             /// <summary>Initializes the enumerator for <see cref="SpanSplitEnumeratorMode.SingleElement"/>.</summary>
-            internal SpanSplitEnumerator(ReadOnlySpan<T> span, T separator)
+            internal SpanSplitEnumerator(ReadOnlySpan<T> source, T separator)
             {
-                _span = span;
+                _source = source;
                 _separator = separator;
                 _splitMode = SpanSplitEnumeratorMode.SingleElement;
             }
@@ -5915,17 +5919,17 @@ namespace System
                         return false;
 
                     case SpanSplitEnumeratorMode.SingleElement:
-                        separatorIndex = _span.Slice(_startNext).IndexOf(_separator);
+                        separatorIndex = _source.Slice(_startNext).IndexOf(_separator);
                         separatorLength = 1;
                         break;
 
                     case SpanSplitEnumeratorMode.Any:
-                        separatorIndex = _span.Slice(_startNext).IndexOfAny(_separatorBuffer);
+                        separatorIndex = _source.Slice(_startNext).IndexOfAny(_separatorBuffer);
                         separatorLength = 1;
                         break;
 
                     case SpanSplitEnumeratorMode.Sequence:
-                        separatorIndex = _span.Slice(_startNext).IndexOf(_separatorBuffer);
+                        separatorIndex = _source.Slice(_startNext).IndexOf(_separatorBuffer);
                         separatorLength = _separatorBuffer.Length;
                         break;
 
@@ -5936,7 +5940,7 @@ namespace System
 
                     default:
                         Debug.Assert(_splitMode == SpanSplitEnumeratorMode.SearchValues, $"Unknown split mode: {_splitMode}");
-                        separatorIndex = _span.Slice(_startNext).IndexOfAny(_searchValues);
+                        separatorIndex = _source.Slice(_startNext).IndexOfAny(_searchValues);
                         separatorLength = 1;
                         break;
                 }
@@ -5949,7 +5953,7 @@ namespace System
                 }
                 else
                 {
-                    _startNext = _endCurrent = _span.Length;
+                    _startNext = _endCurrent = _source.Length;
 
                     // Set _splitMode to None so that subsequent MoveNext calls will return false.
                     _splitMode = SpanSplitEnumeratorMode.None;

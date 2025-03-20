@@ -379,6 +379,11 @@ public:
 #endif
     }
 
+    static regMaskTP FromIntRegSet(SingleTypeRegSet intRegs)
+    {
+        return regMaskTP(intRegs);
+    }
+
     void operator|=(const regMaskTP& second)
     {
         low |= second.getLow();
@@ -1065,16 +1070,6 @@ inline SingleTypeRegSet getSingleTypeRegMask(regNumber reg, var_types regType)
 #endif // TARGET_ARM
     return regMask;
 }
-
-/*****************************************************************************
- *
- *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for
- *  the current architecture.
- */
-extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALL_GC_REGS];
-
-// This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.
-regMaskTP genRegMaskFromCalleeSavedMask(unsigned short);
 
 /*****************************************************************************
  *

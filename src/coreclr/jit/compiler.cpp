@@ -1984,9 +1984,34 @@ void Compiler::compSetProcessor()
 // don't actually exist. The JIT is in charge of adding those and ensuring
 // the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
-    // Get the preferred vector bitwidth, rounding down to the nearest multiple of 128-bits
-    uint32_t preferredVectorBitWidth   = (ReinterpretHexAsDecimal(JitConfig.PreferredVectorBitWidth()) / 128) * 128;
-    uint32_t preferredVectorByteLength = preferredVectorBitWidth / 8;
+    // If the VM passed in a virtual vector ISA, it was done to communicate PreferredVectorBitWidth.
+    // No check is done for the validity of the value, since it will be clamped to max supported by
+    // hardware and config when queried.  We will, therefore, remove the marker ISA and allow it to
+    // be re-added if appropriate based on the hardware ISA evaluations below.
+
+    uint32_t preferredVectorBitWidth = 0;
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector128))
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector128);
+        preferredVectorBitWidth = 128;
+    }
+    else if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector256))
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector256);
+        preferredVectorBitWidth = 256;
+    }
+    else if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector512))
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector512);
+        preferredVectorBitWidth = 512;
+    }
+
+    opts.preferredVectorByteLength = preferredVectorBitWidth / BITS_PER_BYTE;
+
+    // Only one marker ISA should have been passed in, and it should now be cleared.
+    assert(!instructionSetFlags.HasInstructionSet(InstructionSet_Vector128) &&
+           !instructionSetFlags.HasInstructionSet(InstructionSet_Vector256) &&
+           !instructionSetFlags.HasInstructionSet(InstructionSet_Vector512));
 
     if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
     {
@@ -2018,20 +2043,6 @@ void Compiler::compSetProcessor()
             assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
 
             instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
-
-            if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
-            {
-                // Some architectures can experience frequency throttling when
-                // executing 512-bit width instructions. To account for this we set the
-                // default preferred vector width to 256-bits in some scenarios. Power
-                // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
-                // allow using such instructions where hardware support is available.
-                //
-                // Do not condition this based on stress mode as it makes the support
-                // reported inconsistent across methods and breaks expectations/functionality
-
-                preferredVectorByteLength = 256 / 8;
-            }
         }
         else
         {
@@ -2039,8 +2050,6 @@ void Compiler::compSetProcessor()
             assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX10v1));
         }
     }
-
-    opts.preferredVectorByteLength = preferredVectorByteLength;
 #elif defined(TARGET_ARM64)
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
     {
@@ -4936,13 +4945,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
-        // Optimize block order
+        // Conditional to switch conversion, and switch peeling
         //
-        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
 
-        // Conditional to Switch conversion
+        // Run flow optimizations before reordering blocks
         //
-        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
+        DoPhase(this, PHASE_OPTIMIZE_PRE_LAYOUT, &Compiler::optOptimizePreLayout);
 
         // Run profile repair
         //
@@ -5021,17 +5030,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // We won't introduce new blocks from here on out,
         // so run the new block layout.
         //
-        if (JitConfig.JitDoReversePostOrderLayout())
-        {
-            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::fgSearchImprovedLayout);
-        }
-        else
-        {
-            // If we didn't run 3-opt, we might still have a profile-aware DFS tree computed during LSRA available.
-            // This tree's presence can trigger asserts if pre/postorder numbers are recomputed,
-            // so invalidate the tree either way.
-            fgInvalidateDfsTree();
-        }
+        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::fgSearchImprovedLayout);
 
         // Now that the flowgraph is finalized, run post-layout optimizations.
         //
@@ -5205,6 +5204,21 @@ void Compiler::FinalizeEH()
         lvaShadowSPslotsVar = lvaGrabTempWithImplicitUse(false DEBUGARG("lvaShadowSPslotsVar"));
         lvaSetStruct(lvaShadowSPslotsVar, typGetBlkLayout(slotsNeeded * TARGET_POINTER_SIZE), false);
         lvaSetVarAddrExposed(lvaShadowSPslotsVar DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
+    }
+
+    // Build up a mapping from EH IDs to EHblkDsc*
+    //
+    assert(m_EHIDtoEHblkDsc == nullptr);
+
+    if (compHndBBtabCount > 0)
+    {
+        m_EHIDtoEHblkDsc = new (getAllocator()) EHIDtoEHblkDscMap(getAllocator());
+
+        for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+        {
+            EHblkDsc* const HBtab = &compHndBBtab[XTnum];
+            m_EHIDtoEHblkDsc->Set(HBtab->ebdID, HBtab);
+        }
     }
 
 #endif // FEATURE_EH_WINDOWS_X86

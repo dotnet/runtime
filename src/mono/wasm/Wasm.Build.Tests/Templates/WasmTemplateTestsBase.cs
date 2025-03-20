@@ -60,7 +60,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         Configuration config,
         bool aot,
         string idPrefix = "wbt",
-        bool appendUnicodeToPath = true,
+        bool? appendUnicodeToPath = null,
         string extraArgs = "",
         bool runAnalyzers = true,
         bool addFrameworkArg = false,
@@ -69,7 +69,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         string insertAtEnd = "")
     {
         (string projectName, string logPath, string nugetDir) =
-            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
+            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
 
         if (addFrameworkArg)
             extraArgs += $" -f {DefaultTargetFramework}";
@@ -90,14 +90,14 @@ public class WasmTemplateTestsBase : BuildTestBase
         bool aot,
         TestAsset asset,
         string idPrefix,
-        bool appendUnicodeToPath = true,
+        bool? appendUnicodeToPath = null,
         bool runAnalyzers = true,
         string extraProperties = "",
         string extraItems = "",
         string insertAtEnd = "")
     {
         (string projectName, string logPath, string nugetDir) =
-            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue: s_isWindows && aot);
+            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI, avoidAotLongPathIssue: s_isWindows && aot);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, asset.Name), Path.Combine(_projectDir));
         if (!string.IsNullOrEmpty(asset.RunnableProjectSubPath))
         {
@@ -162,6 +162,12 @@ public class WasmTemplateTestsBase : BuildTestBase
             buildOptions = buildOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
 
         buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
+
+        if (buildOptions.BootConfigFileName != "dotnet.boot.js")
+        {
+            // Omit implicit default
+            buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:WasmBootConfigFileName={buildOptions.BootConfigFileName}" };
+        }
 
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(configuration, info.ProjectName, buildOptions);
 

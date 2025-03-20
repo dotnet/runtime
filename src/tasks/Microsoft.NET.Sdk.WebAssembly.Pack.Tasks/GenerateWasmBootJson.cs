@@ -56,6 +56,8 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] ConfigurationFiles { get; set; }
 
+    public ITaskItem[] EnvVariables { get; set; }
+
     public ITaskItem[] Extensions { get; set; }
 
     public string StartupMemoryCache { get; set; }
@@ -84,14 +86,15 @@ public class GenerateWasmBootJson : Task
 
     public bool FingerprintAssets { get; set; }
 
+    public string ApplicationEnvironment { get; set; }
+
     public override bool Execute()
     {
-        using var fileStream = File.Create(OutputPath);
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
 
         try
         {
-            WriteBootJson(fileStream, entryAssemblyName);
+            WriteBootConfig(entryAssemblyName);
         }
         catch (Exception ex)
         {
@@ -101,16 +104,20 @@ public class GenerateWasmBootJson : Task
         return !Log.HasLoggedErrors;
     }
 
-    // Internal for tests
-    public void WriteBootJson(Stream output, string entryAssemblyName)
+    private void WriteBootConfig(string entryAssemblyName)
     {
         var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish);
 
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache),
+            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache)
         };
+
+        if (IsTargeting100OrLater())
+        {
+            result.applicationEnvironment = ApplicationEnvironment;
+        }
 
         if (IsTargeting80OrLater())
         {
@@ -403,13 +410,16 @@ public class GenerateWasmBootJson : Task
             }
         }
 
-        var jsonOptions = new JsonSerializerOptions()
-        {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-            WriteIndented = true
-        };
 
+        if (EnvVariables != null && EnvVariables.Length > 0)
+        {
+            result.environmentVariables = new Dictionary<string, string>();
+            foreach (var env in EnvVariables)
+            {
+                string name = env.ItemSpec;
+                result.environmentVariables[name] = env.GetMetadata("Value");
+            }
+        }
         if (Extensions != null && Extensions.Length > 0)
         {
             result.extensions = new Dictionary<string, Dictionary<string, object>>();
@@ -417,13 +427,13 @@ public class GenerateWasmBootJson : Task
             {
                 var key = configExtension.GetMetadata("key");
                 using var fs = File.OpenRead(configExtension.ItemSpec);
-                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(fs, jsonOptions);
+                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(fs, BootJsonBuilderHelper.JsonOptions);
                 result.extensions[key] = config;
             }
         }
 
         helper.ComputeResourcesHash(result);
-        JsonSerializer.Serialize(output, result, jsonOptions);
+        helper.WriteConfigToFile(result, OutputPath);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {
@@ -480,12 +490,16 @@ public class GenerateWasmBootJson : Task
     private Version? parsedTargetFrameworkVersion;
     private static readonly Version version80 = new Version(8, 0);
     private static readonly Version version90 = new Version(9, 0);
+    private static readonly Version version100 = new Version(10, 0);
 
     private bool IsTargeting80OrLater()
         => IsTargetingVersionOrLater(version80);
 
     private bool IsTargeting90OrLater()
         => IsTargetingVersionOrLater(version90);
+
+    private bool IsTargeting100OrLater()
+        => IsTargetingVersionOrLater(version100);
 
     private bool IsTargetingVersionOrLater(Version version)
     {
