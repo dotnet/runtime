@@ -2405,7 +2405,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                     loadWidth = 16;
                     loadType  = TYP_SIMD16;
                 }
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
                 else if ((loadWidth == 32) || (MaxUnrollSize == 64))
                 {
                     loadWidth = 32;
@@ -2416,7 +2416,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                     loadWidth = 64;
                     loadType  = TYP_SIMD64;
                 }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 #endif // FEATURE_SIMD
                 else
                 {
@@ -9753,7 +9753,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
                 }
                 return;
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
             case TYP_SIMD16:
                 if (comp->getPreferredVectorByteLength() >= 32)
                 {
@@ -9771,12 +9771,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
                 }
                 tryReusingPrevValue = true;
                 break;
-#elif defined(TARGET_ARM64) // TARGET_AMD64
-            case TYP_SIMD16:
-                tryReusingPrevValue = true;
-                break;
-
-#endif // TARGET_ARM64
+#endif // TARGET_AMD64 || TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_64BIT
 

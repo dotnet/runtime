@@ -346,7 +346,7 @@ private:
                             primitiveType = TYP_SIMD16;
                         }
                         break;
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
                     case 32:
                         if (m_compiler->getPreferredVectorByteLength() >= 32)
                         {
@@ -360,7 +360,7 @@ private:
                             primitiveType = TYP_SIMD64;
                         }
                         break;
-#endif
+#endif // TARGET_XARCH || TARGET_ARM64
 #endif
                 }
             }

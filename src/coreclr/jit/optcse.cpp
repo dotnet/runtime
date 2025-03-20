@@ -4533,7 +4533,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             //
             int spillSimdRegInProlog = 1;
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             // If we have a SIMD32/64 that is live across a call we have even higher spill costs
             //
             if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
@@ -4548,7 +4548,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
                 //
                 cse_use_cost += 2;
             }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
             extra_yes_cost = (BB_UNITY_WEIGHT_UNSIGNED * spillSimdRegInProlog) * 3;
         }

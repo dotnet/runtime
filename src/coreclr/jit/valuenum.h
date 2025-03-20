@@ -382,10 +382,10 @@ public:
     simd8_t  GetConstantSimd8(ValueNum argVN);
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     simd32_t GetConstantSimd32(ValueNum argVN);
     simd64_t GetConstantSimd64(ValueNum argVN);
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     simdmask_t GetConstantSimdMask(ValueNum argVN);
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -468,10 +468,10 @@ public:
     ValueNum VNForSimd8Con(const simd8_t& cnsVal);
     ValueNum VNForSimd12Con(const simd12_t& cnsVal);
     ValueNum VNForSimd16Con(const simd16_t& cnsVal);
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     ValueNum VNForSimd32Con(const simd32_t& cnsVal);
     ValueNum VNForSimd64Con(const simd64_t& cnsVal);
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     ValueNum VNForSimdMaskCon(const simdmask_t& cnsVal);
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -1864,7 +1864,7 @@ private:
         return m_simd16CnsMap;
     }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     struct Simd32PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd32_t>
     {
         static bool Equals(const simd32_t& x, const simd32_t& y)
@@ -1942,7 +1942,7 @@ private:
         }
         return m_simd64CnsMap;
     }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     struct SimdMaskPrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmask_t>
@@ -2142,7 +2142,7 @@ struct ValueNumStore::VarTypConv<TYP_SIMD16>
     typedef simd16_t Type;
     typedef simd16_t Lang;
 };
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 template <>
 struct ValueNumStore::VarTypConv<TYP_SIMD32>
 {
@@ -2156,7 +2156,7 @@ struct ValueNumStore::VarTypConv<TYP_SIMD64>
     typedef simd64_t Type;
     typedef simd64_t Lang;
 };
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
@@ -2227,7 +2227,7 @@ FORCEINLINE simd16_t ValueNumStore::SafeGetConstantValue<simd16_t>(Chunk* c, uns
     return reinterpret_cast<VarTypConv<TYP_SIMD16>::Lang*>(c->m_defs)[offset];
 }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 template <>
 FORCEINLINE simd32_t ValueNumStore::SafeGetConstantValue<simd32_t>(Chunk* c, unsigned offset)
 {
@@ -2241,7 +2241,7 @@ FORCEINLINE simd64_t ValueNumStore::SafeGetConstantValue<simd64_t>(Chunk* c, uns
     assert(c->m_typ == TYP_SIMD64);
     return reinterpret_cast<VarTypConv<TYP_SIMD64>::Lang*>(c->m_defs)[offset];
 }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
@@ -2294,7 +2294,7 @@ FORCEINLINE simd16_t ValueNumStore::ConstantValueInternal<simd16_t>(ValueNum vn 
     return SafeGetConstantValue<simd16_t>(c, offset);
 }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 template <>
 FORCEINLINE simd32_t ValueNumStore::ConstantValueInternal<simd32_t>(ValueNum vn DEBUGARG(bool coerce))
 {
@@ -2322,7 +2322,7 @@ FORCEINLINE simd64_t ValueNumStore::ConstantValueInternal<simd64_t>(ValueNum vn 
 
     return SafeGetConstantValue<simd64_t>(c, offset);
 }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>

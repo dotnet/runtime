@@ -3111,10 +3111,10 @@ void Compiler::lvaSortByRefCount()
 #ifdef TARGET_ARM64
                 case TYP_SIMDVL:
 #endif
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
                 case TYP_SIMD32:
                 case TYP_SIMD64:
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 #ifdef FEATURE_MASKED_HW_INTRINSICS
                 case TYP_MASK:
 #endif // FEATURE_MASKED_HW_INTRINSICS

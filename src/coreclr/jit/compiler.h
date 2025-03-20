@@ -8223,7 +8223,7 @@ public:
         assert(type != TYP_STRUCT);
         // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
         // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
-        return ((type == TYP_SIMD16) || (type == TYP_SIMD12) || (type == TYP_SIMDVL));
+        return ((type == TYP_SIMD16) || (type == TYP_SIMD12) || (type == TYP_SIMDVL) || (type == TYP_SIMD32) || (type == TYP_SIMD64));
     }
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #error("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE")
@@ -9388,7 +9388,7 @@ public:
             simdType = TYP_SIMDVL;
         }
 #endif // TARGET_ARM64
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         else if (size == 32)
         {
             simdType = TYP_SIMD32;
@@ -9397,7 +9397,7 @@ public:
         {
             simdType = TYP_SIMD64;
         }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
         else
         {
             noway_assert(!"Unexpected size for SIMD type");

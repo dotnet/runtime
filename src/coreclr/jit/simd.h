@@ -192,7 +192,7 @@ struct simd16_t
 };
 static_assert_no_msg(sizeof(simd16_t) == 16);
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 struct simd32_t
 {
     union
@@ -303,7 +303,7 @@ struct simd64_t
     }
 };
 static_assert_no_msg(sizeof(simd64_t) == 64);
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 struct simdmask_t
@@ -357,10 +357,8 @@ struct simdmask_t
 static_assert_no_msg(sizeof(simdmask_t) == 8);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 typedef simd64_t simd_t;
-#else
-typedef simd16_t simd_t;
 #endif
 
 inline bool IsUnaryBitwiseOperation(genTreeOps oper)
