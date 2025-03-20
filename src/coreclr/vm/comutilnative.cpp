@@ -734,9 +734,7 @@ FCIMPL1(int, GCInterface::GetGenerationInternal, Object* objUNSAFE)
 {
     FCALL_CONTRACT;
     _ASSERTE(objUNSAFE != NULL);
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
-    FC_GC_POLL_RET();
-    return result;
+    return (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
 }
 FCIMPLEND
 
@@ -754,8 +752,6 @@ FCIMPL0(UINT64, GCInterface::GetSegmentSize)
     _ASSERTE(segment_size < SIZE_T_MAX && large_segment_size < SIZE_T_MAX);
     if (segment_size < large_segment_size)
         segment_size = large_segment_size;
-
-    FC_GC_POLL_RET();
     return (UINT64) segment_size;
 }
 FCIMPLEND
@@ -774,9 +770,7 @@ FCIMPL2(int, GCInterface::CollectionCount, INT32 generation, INT32 getSpecialGCC
     _ASSERTE(generation >= 0);
 
     //We don't need to check the top end because the GC will take care of that.
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
-    FC_GC_POLL_RET();
-    return result;
+    return (INT32)GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
 }
 FCIMPLEND
 
