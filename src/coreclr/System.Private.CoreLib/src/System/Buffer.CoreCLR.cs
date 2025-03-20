@@ -16,14 +16,9 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
         private static unsafe partial void __Memmove(byte* dest, byte* src, nuint len);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void BulkMoveWithWriteBarrierInternal(ref byte destination, ref byte source, nuint byteCount);
-
-        private static void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
-        {
-            Thread.PollGC();
-            BulkMoveWithWriteBarrierInternal(ref destination, ref source, byteCount);
-        }
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_BulkMoveWithWriteBarrier")]
+        [SuppressGCTransition]
+        private static partial void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
 
         // Used by ilmarshalers.cpp
         internal static unsafe void Memcpy(byte* dest, byte* src, int len)

@@ -249,10 +249,6 @@ FCFuncStart(gArrayFuncs)
     FCFuncElement("GetCorElementTypeOfElementType", ArrayNative::GetCorElementTypeOfElementType)
 FCFuncEnd()
 
-FCFuncStart(gBufferFuncs)
-    FCFuncElement("BulkMoveWithWriteBarrierInternal", Buffer::BulkMoveWithWriteBarrier)
-FCFuncEnd()
-
 FCFuncStart(gGCFrameRegistration)
     FCFuncElement("RegisterForGCReporting", GCReporting::Register)
     FCFuncElement("UnregisterForGCReporting", GCReporting::Unregister)
@@ -373,7 +369,6 @@ FCFuncEnd()
 
 FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
-FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
 FCClassElement("ComAwareWeakReference", "System", gComAwareWeakReferenceFuncs)
 FCClassElement("Delegate", "System", gDelegateFuncs)

@@ -547,20 +547,19 @@ extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
     memset(dst, 0, length);
 }
 
-FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
-{
-    FCALL_CONTRACT;
-
-    if (dst != src && byteCount != 0)
-        InlinedMemmoveGCRefsHelper(dst, src, byteCount);
-}
-FCIMPLEND
-
 extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length)
 {
     QCALL_CONTRACT;
 
     memmove(dst, src, length);
+}
+
+extern "C" void QCALLTYPE Buffer_BulkMoveWithWriteBarrier(void *dst, void *src, size_t length)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    if (dst != src && length != 0)
+        InlinedMemmoveGCRefsHelper(dst, src, length);
 }
 
 //
