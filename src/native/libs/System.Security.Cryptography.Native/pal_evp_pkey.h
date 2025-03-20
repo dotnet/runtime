@@ -4,6 +4,16 @@
 #include "pal_types.h"
 #include "pal_compiler.h"
 #include "opensslshim.h"
+#include "pal_atomic.h"
+
+struct EvpPKeyExtraHandle_st
+{
+    atomic_int refCount;
+    OSSL_LIB_CTX* libCtx;
+    OSSL_PROVIDER* prov;
+};
+
+typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
 
 /*
 Shims the EVP_PKEY_new method.
@@ -129,3 +139,11 @@ It's a wrapper for EVP_PKEY_CTX_new_from_pkey and EVP_PKEY_CTX_new
 which handles extraHandle.
 */
 EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle);
+
+/*
+Internal function to get the octet string parameter from the given EVP_PKEY.
+*/
+int32_t EvpPKeyGetKeyOctetStringParam(const EVP_PKEY* pKey,
+    const char* name,
+    uint8_t* destination,
+    int32_t destinationLength);
