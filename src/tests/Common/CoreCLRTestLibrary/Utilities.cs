@@ -488,5 +488,35 @@ namespace TestLibrary
 
             Assert.False(alcWeakRef.IsAlive);
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RLimit
+        {
+            public ulong rlim_cur; // Soft limit
+            public ulong rlim_max; // Hard limit
+        }
+
+        public const int RLIMIT_CORE = 4; // Core file size
+
+        [DllImport("libc", SetLastError = true)]
+        public static extern int setrlimit(int resource, ref RLimit rlim);
+
+        // Ensure that the OS doesn't generate core dump for the current process
+        public static void DisableOSCoreDump()
+        {
+            if ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX))
+            {
+                RLimit rlimit = new RLimit
+                {
+                    rlim_cur = 0,
+                    rlim_max = 0
+                };
+
+                if (setrlimit(RLIMIT_CORE, ref rlimit) != 0)
+                {
+                    throw new Exception($"Failed to disable core dump, error {Marshal.GetLastPInvokeError()} - {Marshal.GetLastPInvokeErrorMessage()}.");
+                }
+            }
+        }
     }
 }
