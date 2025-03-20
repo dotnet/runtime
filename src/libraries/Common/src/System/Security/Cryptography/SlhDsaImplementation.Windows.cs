@@ -11,6 +11,11 @@ namespace System.Security.Cryptography
         internal static partial bool SupportsAny() => false;
 
         // TODO: Define this in terms of Windows BCrypt.dll (ephemeral keys)
+        private SlhDsaImplementation(/* CngKey key, */ SlhDsaAlgorithm algorithm) : base(algorithm) =>
+            throw new PlatformNotSupportedException();
+
+        internal static partial SlhDsa GenerateKeyCore(SlhDsaAlgorithm info) =>
+            throw new PlatformNotSupportedException();
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             throw new PlatformNotSupportedException();

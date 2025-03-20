@@ -7,6 +7,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 
+// The type being internal is making unused parameter warnings fire for
+// not-implemented methods. Suppress those warnings.
+#pragma warning disable IDE0060
+
 namespace System.Security.Cryptography
 {
     /// <summary>
@@ -689,7 +693,7 @@ namespace System.Security.Cryptography
         ///   The generated object.
         /// </returns>
         public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) =>
-            new SlhDsaImplementation(algorithm);
+            SlhDsaImplementation.GenerateKeyCore(algorithm);
 
         /// <summary>
         ///  Imports an SLH-DSA public key from an X.509 SubjectPublicKeyInfo structure.

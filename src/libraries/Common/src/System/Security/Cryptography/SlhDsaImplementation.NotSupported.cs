@@ -10,6 +10,12 @@ namespace System.Security.Cryptography
     {
         internal static partial bool SupportsAny() => false;
 
+        private SlhDsaImplementation(SlhDsaAlgorithm algorithm) : base(algorithm) =>
+            throw new PlatformNotSupportedException();
+
+        internal static partial SlhDsa GenerateKeyCore(SlhDsaAlgorithm info) =>
+            throw new PlatformNotSupportedException();
+
         // The instance override methods are unreachable, as the constructor will always throw.
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             throw new PlatformNotSupportedException();
