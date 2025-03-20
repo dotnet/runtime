@@ -171,6 +171,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_TargetingNET90OrLater>false</_TargetingNET90OrLater>
       <_TargetingNET80OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</_TargetingNET80OrLater>
       <_TargetingNET90OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0'))">true</_TargetingNET90OrLater>
+      <_TargetingNET100OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '10.0'))">true</_TargetingNET100OrLater>
 
       <_BlazorEnableTimeZoneSupport>$(BlazorEnableTimeZoneSupport)</_BlazorEnableTimeZoneSupport>
       <_BlazorEnableTimeZoneSupport Condition="'$(_BlazorEnableTimeZoneSupport)' == ''">true</_BlazorEnableTimeZoneSupport>
@@ -193,7 +194,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(WriteImportMapToHtml)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
+      <_WasmFingerprintBootConfig>$(WasmFingerprintBootConfig)</_WasmFingerprintBootConfig>
+      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">$(WriteImportMapToHtml)</_WasmFingerprintBootConfig>
+      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">false</_WasmFingerprintBootConfig>
       <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
+      <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true'">dotnet.boot.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == ''">blazor.boot.json</_WasmBootConfigFileName>
       <_WasmPublishBootConfigFileName>publish.$(_WasmBootConfigFileName)</_WasmPublishBootConfigFileName>
 
@@ -316,9 +321,9 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_AddWasmStaticWebAssets" DependsOnTargets="$(AddWasmStaticWebAssetsDependsOn)">
     <ItemGroup>
       <StaticWebAsset Include="@(WasmStaticWebAsset)" />
-      <StaticWebAsset Include="@(_BuildWasmBootJsonStaticWebAsset)" />
+      <StaticWebAsset Include="@(_WasmBuildBootConfigStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(WasmStaticWebAssetEndpoint)" />
-      <StaticWebAssetEndpoint Include="@(_BuildWasmBootJsonStaticWebAssetEndpoint)" />
+      <StaticWebAssetEndpoint Include="@(_WasmBuildBootConfigStaticWebAssetEndpoint)" />
     </ItemGroup>
   </Target>
 
@@ -391,18 +396,18 @@ Copyright (c) .NET Foundation. All rights reserved.
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(_WasmBootConfigFileName)</_WasmBuildBootJsonPath>
-    </PropertyGroup>
-
     <ItemGroup>
-      <_BuildWasmBootJson
+      <_WasmBuildBootConfigCandidate
         Include="$(_WasmBuildBootJsonPath)"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
+
+      <_WasmBuildBootConfigFingerprintPatterns Include="WasmBootConfigFiles" Pattern="*%(_WasmBuildBootConfigCandidate.Extension)" Expression="#[.{fingerprint}]!" />
     </ItemGroup>
 
     <DefineStaticWebAssets
-      CandidateAssets="@(_BuildWasmBootJson)"
+      CandidateAssets="@(_WasmBuildBootConfigCandidate)"
+      FingerprintCandidates="$(_WasmFingerprintBootConfig)"
+      FingerprintPatterns="@(_WasmBuildBootConfigFingerprintPatterns)"
       SourceId="$(PackageId)"
       SourceType="Computed"
       AssetKind="Build"
@@ -414,15 +419,15 @@ Copyright (c) .NET Foundation. All rights reserved.
       ContentRoot="$(OutDir)wwwroot"
       BasePath="$(StaticWebAssetBasePath)"
     >
-      <Output TaskParameter="Assets" ItemName="_BuildWasmBootJsonStaticWebAsset" />
+      <Output TaskParameter="Assets" ItemName="_WasmBuildBootConfigStaticWebAsset" />
     </DefineStaticWebAssets>
 
     <DefineStaticWebAssetEndpoints
-      CandidateAssets="@(_BuildWasmBootJsonStaticWebAsset)"
+      CandidateAssets="@(_WasmBuildBootConfigStaticWebAsset)"
       ExistingEndpoints="@(StaticWebAssetEndpoint)"
       ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
     >
-      <Output TaskParameter="Endpoints" ItemName="_BuildWasmBootJsonStaticWebAssetEndpoint" />
+      <Output TaskParameter="Endpoints" ItemName="_WasmBuildBootConfigStaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
 
   </Target>
@@ -587,14 +592,19 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_AddPublishWasmBootJsonToStaticWebAssets" DependsOnTargets="GeneratePublishWasmBootJson">
+
     <ItemGroup>
-      <_PublishWasmBootJson
+      <_WasmPublishBootConfigCandidate
         Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
+
+      <_WasmPublishBootConfigFingerprintPatterns Include="WasmBootConfigFiles" Pattern="*%(_WasmPublishBootConfigCandidate.Extension)" Expression="#[.{fingerprint}]!" />
     </ItemGroup>
 
     <DefineStaticWebAssets
-      CandidateAssets="@(_PublishWasmBootJson)"
+      CandidateAssets="@(_WasmPublishBootConfigCandidate)"
+      FingerprintCandidates="$(_WasmFingerprintBootConfig)"
+      FingerprintPatterns="@(_WasmPublishBootConfigFingerprintPatterns)"
       SourceId="$(PackageId)"
       SourceType="Computed"
       AssetKind="Publish"
@@ -607,11 +617,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       BasePath="$(StaticWebAssetBasePath)"
     >
       <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
-      <Output TaskParameter="Assets" ItemName="_PublishWasmBootJsonStaticWebAsset" />
+      <Output TaskParameter="Assets" ItemName="_WasmPublishBootConfigStaticWebAsset" />
     </DefineStaticWebAssets>
 
     <DefineStaticWebAssetEndpoints
-      CandidateAssets="@(_PublishWasmBootJsonStaticWebAsset)"
+      CandidateAssets="@(_WasmPublishBootConfigStaticWebAsset)"
       ExistingEndpoints="@(StaticWebAssetEndpoint)"
       ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
     >

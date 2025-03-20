@@ -637,7 +637,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 //
 bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange)
 {
-    MergeEdgeAssertions(comp, num, num, assertions, pRange);
+    MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, pRange, false);
     return !pRange->LowerLimit().IsUnknown() || !pRange->UpperLimit().IsUnknown();
 }
 
@@ -645,14 +645,19 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
 // MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
 //
 // Arguments:
-//    comp             - the compiler instance
-//    normalLclVN      - the value number to look for assertions for
-//    preferredBoundVN - when this VN is set, it will be given preference over constant limits
-//    assertions       - the assertions to use
-//    pRange           - the range to tighten with assertions
+//    comp                - the compiler instance
+//    normalLclVN         - the value number to look for assertions for
+//    preferredBoundVN    - when this VN is set, it will be given preference over constant limits
+//    assertions          - the assertions to use
+//    pRange              - the range to tighten with assertions
+//    canUseCheckedBounds - true if we can use checked bounds assertions (cache)
 //
-void RangeCheck::MergeEdgeAssertions(
-    Compiler* comp, ValueNum normalLclVN, ValueNum preferredBoundVN, ASSERT_VALARG_TP assertions, Range* pRange)
+void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
+                                     ValueNum         normalLclVN,
+                                     ValueNum         preferredBoundVN,
+                                     ASSERT_VALARG_TP assertions,
+                                     Range*           pRange,
+                                     bool             canUseCheckedBounds)
 {
     Range assertedRange = Range(Limit(Limit::keUnknown));
     if (BitVecOps::IsEmpty(comp->apTraits, assertions))
@@ -680,7 +685,7 @@ void RangeCheck::MergeEdgeAssertions(
         bool       isUnsigned          = false;
 
         // Current assertion is of the form (i < len - cns) != 0
-        if (curAssertion->IsCheckedBoundArithBound())
+        if (canUseCheckedBounds && curAssertion->IsCheckedBoundArithBound())
         {
             ValueNumStore::CompareCheckedBoundArithInfo info;
 
@@ -709,7 +714,7 @@ void RangeCheck::MergeEdgeAssertions(
             cmpOper  = (genTreeOps)info.cmpOper;
         }
         // Current assertion is of the form (i < len) != 0
-        else if (curAssertion->IsCheckedBoundBound())
+        else if (canUseCheckedBounds && curAssertion->IsCheckedBoundBound())
         {
             ValueNumStore::CompareCheckedBoundArithInfo info;
 
@@ -767,7 +772,7 @@ void RangeCheck::MergeEdgeAssertions(
             int cnstLimit = (int)curAssertion->op2.u1.iconVal;
             assert(cnstLimit == comp->vnStore->CoercedConstantValue<int>(curAssertion->op2.vn));
 
-            if ((cnstLimit == 0) && (curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL) &&
+            if ((cnstLimit == 0) && (curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL) && canUseCheckedBounds &&
                 comp->vnStore->IsVNCheckedBound(curAssertion->op1.vn))
             {
                 // we have arr.Len != 0, so the length must be atleast one

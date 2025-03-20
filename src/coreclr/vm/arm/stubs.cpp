@@ -287,6 +287,9 @@ struct WriteBarrierDescriptor
     DWORD   m_dw_g_ephemeral_low_offset;    // Offset of the instruction reading g_ephemeral_low
     DWORD   m_dw_g_ephemeral_high_offset;   // Offset of the instruction reading g_ephemeral_high
     DWORD   m_dw_g_card_table_offset;       // Offset of the instruction reading g_card_table
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    DWORD   m_dw_g_sw_ww_table_offset;      // Offset of the instruction reading g_sw_ww_table
+#endif
 };
 
 // Infrastructure used for mapping of the source and destination of current WB patching
@@ -455,6 +458,9 @@ void UpdateGCWriteBarriers(bool postGrow = false)
             GWB_PATCH_OFFSET(g_ephemeral_low);
             GWB_PATCH_OFFSET(g_ephemeral_high);
             GWB_PATCH_OFFSET(g_card_table);
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+            GWB_PATCH_OFFSET(g_sw_ww_table);
+#endif
         }
 
         pDesc++;
@@ -493,6 +499,24 @@ int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
     UpdateGCWriteBarriers();
     return SWB_ICACHE_FLUSH;
 }
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
+{
+    UNREFERENCED_PARAMETER(isRuntimeSuspended);
+    _ASSERTE(isRuntimeSuspended);
+    UpdateGCWriteBarriers();
+    return SWB_ICACHE_FLUSH;
+}
+
+int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
+{
+    UNREFERENCED_PARAMETER(isRuntimeSuspended);
+    _ASSERTE(isRuntimeSuspended);
+    UpdateGCWriteBarriers();
+    return SWB_ICACHE_FLUSH;
+}
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 void FlushWriteBarrierInstructionCache()
 {
@@ -708,26 +732,6 @@ void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
 }
 
 #ifndef DACCESS_COMPILE
-
-void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    int n = 0;
-
-    m_rgCode[n++] = 0x4684; // mov r12, r0
-    m_rgCode[n++] = 0x4608; // mov r0, r1
-    m_rgCode[n++] = 0xea4f; // mov r1, r12
-    m_rgCode[n++] = 0x010c;
-    m_rgCode[n++] = 0xf8df; // ldr pc, [pc, #0]
-    m_rgCode[n++] = 0xf000;
-
-    _ASSERTE(n == ARRAY_SIZE(m_rgCode));
-
-    m_pTarget = GetPreStubEntryPoint();
-    m_pMethodDesc = (TADDR)pMD;
-}
-
 
 /*
 Rough pseudo-code of interface dispatching:
