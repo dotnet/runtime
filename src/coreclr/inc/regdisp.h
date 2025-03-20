@@ -345,6 +345,25 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     return GetSP(display->pCallerContext);
 }
 
+#elif defined(TARGET_WASM)
+struct REGDISPLAY : public REGDISPLAY_BASE {
+    REGDISPLAY()
+    {
+        // Initialize
+        memset(this, 0, sizeof(REGDISPLAY));
+    }
+};
+
+inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
+{
+}
+
+// This function tells us if the given stack pointer is in one of the frames of the functions called by the given frame
+inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
+    _ASSERTE("IsInCalleesFrames is not implemented on wasm");
+    return FALSE;
+}
+
 #else // none of the above processors
 #error "RegDisplay functions are not implemented on this platform."
 #endif

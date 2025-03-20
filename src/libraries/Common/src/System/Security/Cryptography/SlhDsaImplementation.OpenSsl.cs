@@ -10,11 +10,10 @@ namespace System.Security.Cryptography
     {
         internal static partial bool SupportsAny() => true;
 
-        private SlhDsaImplementation(SlhDsaAlgorithm algorithm)
-            : base(algorithm)
-        {
-            // TODO
-        }
+        // TODO: Define this in terms of OpenSSL
+        private SlhDsaImplementation(/* SafeEvpPKeyHandle handle, */ SlhDsaAlgorithm algorithm) : base(algorithm) =>
+            GC.KeepAlive(this);
+
 
         internal static partial SlhDsa GenerateImpl(SlhDsaAlgorithm algorithm) =>
             new SlhDsaImplementation(algorithm);

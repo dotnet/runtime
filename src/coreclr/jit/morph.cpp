@@ -4686,8 +4686,13 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // fgMorphRecursiveFastTailCallIntoLoop() is not handling update of generic context while transforming
     // a recursive call into a loop.  Another option is to modify gtIsRecursiveCall() to check that the
     // generic type parameters of both caller and callee generic method are the same.
-    if (opts.compTailCallLoopOpt && canFastTailCall && gtIsRecursiveCall(call) && !lvaReportParamTypeArg() &&
-        !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam && !varTypeIsStruct(call->TypeGet()))
+    //
+    // For OSR, we prefer to tailcall for call counting + potential transition
+    // into the actual tier1 version.
+    //
+    if (opts.compTailCallLoopOpt && canFastTailCall && !opts.IsOSR() && gtIsRecursiveCall(call) &&
+        !lvaReportParamTypeArg() && !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam &&
+        !varTypeIsStruct(call->TypeGet()))
     {
         fastTailCallToLoop = true;
     }
@@ -6161,23 +6166,12 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // Remove the call
     fgRemoveStmt(block, lastStmt);
 
+    assert(!opts.IsOSR());
     // Set the loop edge.
-    BasicBlock* entryBB;
-    if (opts.IsOSR())
-    {
-        // Todo: this may not look like a viable loop header.
-        // Might need the moral equivalent of an init BB.
-        entryBB = fgEntryBB;
-    }
-    else
-    {
-        assert(doesMethodHaveRecursiveTailcall());
-
-        // TODO-Cleanup: We should really be expanding tailcalls into loops
-        // much earlier than this, at a place where we do not need to have
-        // hacky workarounds to figure out what the actual IL entry block is.
-        entryBB = fgGetFirstILBlock();
-    }
+    // TODO-Cleanup: We should really be expanding tailcalls into loops much
+    // earlier than this, at a place where we can just use the init BB here.
+    BasicBlock* entryBB = fgGetFirstILBlock();
+    assert(doesMethodHaveRecursiveTailcall());
 
     FlowEdge* const newEdge = fgAddRefPred(entryBB, block);
     block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);

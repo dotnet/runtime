@@ -7,6 +7,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 
+// The type being internal is making unused parameter warnings fire for
+// not-implemented methods. Suppress those warnings.
+#pragma warning disable IDE0060
+
 namespace System.Security.Cryptography
 {
     /// <summary>
@@ -699,7 +703,7 @@ namespace System.Security.Cryptography
             ThrowIfNotSupported();
             ArgumentNullException.ThrowIfNull(algorithm);
 
-            return SlhDsaImplementation.GenerateImpl(algorithm);
+            return SlhDsaImplementation.GenerateKeyCore(algorithm);
         }
 
         /// <summary>
