@@ -504,7 +504,7 @@ namespace TestLibrary
         // Ensure that the OS doesn't generate core dump for the current process
         public static void DisableOSCoreDump()
         {
-            if ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX))
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
                 RLimit rlimit = new RLimit
                 {
