@@ -150,12 +150,6 @@ c_static_assert(EVP_KDF_HKDF_MODE_EXPAND_ONLY == 2);
 c_static_assert(EVP_PKEY_KEYPAIR == 135);
 #endif
 
-#ifndef EVP_PKEY_KEYPAIR
-#define EVP_PKEY_KEYPAIR 135
-#else
-c_static_assert(EVP_PKEY_KEYPAIR == 135);
-#endif
-
 #ifndef EVP_PKEY_PUBLIC_KEY
 #define EVP_PKEY_PUBLIC_KEY 134
 #else
