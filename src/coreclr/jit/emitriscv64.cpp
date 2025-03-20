@@ -777,7 +777,7 @@ void emitter::emitIns_R_R_I(
         code |= reg2 << 15;                                        // rs1
         code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7); // imm
     }
-    else if (INS_beq <= ins && INS_bgeu >= ins)
+    else if (isCondJumpInstruction(ins))
     {
         assert(isGeneralRegister(reg1));
         assert(isGeneralRegister(reg2));
@@ -1206,12 +1206,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
-void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
-{
-    NYI_RISCV64("emitIns_J_R-----unimplemented/unused on RISCV64 yet----");
-}
-
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount, regNumber reg1, regNumber reg2)
 {
     assert(isCondJumpInstruction(ins) || isJumpInstruction(ins));
 
@@ -1220,14 +1215,35 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
         assert(dst->HasFlag(BBF_HAS_LABEL));
     }
 
+    if (!isCondJumpInstruction(ins) && ins != INS_jalr)
+    {
+
+    }
+    else if (ins == INS_jalr)
+    {
+
+    }
+    else
+    {
+
+    }
+
     instrDescJmp* id = emitNewInstrJmp();
     id->idIns(ins);
-    id->idReg1((regNumber)(instrCount & 0x1f));
-    id->idReg2((regNumber)((instrCount >> 5) & 0x1f));
+    id->idReg1(reg1);
+    id->idReg2(reg2);
 
     id->idInsOpt(INS_OPTS_J);
     emitCounts_INS_OPTS_J++;
-    id->idAddr()->iiaBBlabel = dst;
+
+    if (dst != nullptr)
+    {
+        id->idAddr()->iiaBBlabel = dst;
+    }
+    else
+    {
+        id->idAddr()->iiaSetInstrCount(instrCount);
+    }
 
     if (emitComp->opts.compReloc)
     {
@@ -1236,18 +1252,18 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
     id->idjShort = false;
 
-    // TODO-RISCV64: maybe deleted this.
-    id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+    // long jumps only possible by using auipc+jalr
+    id->idjKeepLong = false;
 #ifdef DEBUG
     if (emitComp->opts.compLongAddress) // Force long branches
         id->idjKeepLong = 1;
 #endif // DEBUG
 
-    /* Record the jump's IG and offset within it */
+    // Record the jump's IG and offset within it
     id->idjIG   = emitCurIG;
     id->idjOffs = emitCurIGsize;
 
-    /* Append this jump to this IG's jump list */
+    // Append this jump to this IG's jump list
     id->idjNext      = emitCurIGjmpList;
     emitCurIGjmpList = id;
 
