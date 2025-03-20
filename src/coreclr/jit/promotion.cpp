@@ -1307,6 +1307,13 @@ public:
                 rep.LclNum     = m_compiler->lvaGrabTemp(false DEBUGARG(rep.Description));
                 LclVarDsc* dsc = m_compiler->lvaGetDesc(rep.LclNum);
                 dsc->lvType    = rep.AccessType;
+
+                // Are we promoting Span<>._length field?
+                if ((rep.Offset == OFFSETOF__CORINFO_Span__length) && (rep.AccessType == TYP_INT) &&
+                    m_compiler->lvaGetDesc(agg->LclNum)->IsSpan())
+                {
+                    dsc->SetIsNeverNegative(true);
+                }
             }
 
 #ifdef DEBUG

@@ -276,12 +276,19 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> AsVector256<T>(this Vector<T> value)
         {
-            Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
-            Vector256<T> result = default;
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<T>, byte>(ref result), value);
-            return result;
+            if (Vector<T>.Count >= Vector256<T>.Count)
+            {
+                ref byte address = ref Unsafe.As<Vector<T>, byte>(ref value);
+                return Unsafe.ReadUnaligned<Vector256<T>>(ref address);
+            }
+            else
+            {
+                Vector256<T> result = default;
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<T>, byte>(ref result), value);
+                return result;
+            }
         }
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector{T}" />.</summary>
@@ -293,11 +300,19 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> AsVector<T>(this Vector256<T> value)
         {
-            Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
-            ref byte address = ref Unsafe.As<Vector256<T>, byte>(ref value);
-            return Unsafe.ReadUnaligned<Vector<T>>(ref address);
+            if (Vector256<T>.Count >= Vector<T>.Count)
+            {
+                ref byte address = ref Unsafe.As<Vector256<T>, byte>(ref value);
+                return Unsafe.ReadUnaligned<Vector<T>>(ref address);
+            }
+            else
+            {
+                Vector<T> result = default;
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector<T>, byte>(ref result), value);
+                return result;
+            }
         }
 
         /// <summary>Computes the bitwise-and of two vectors.</summary>
