@@ -2664,9 +2664,10 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 #endif // DEBUG
 
+    // Computing the duplication cost may have triggered node reordering, so return true to indicate we modified IR
     if (costIsTooHigh)
     {
-        return false;
+        return true;
     }
 
     /* Looks good - duplicate the conditional block */
