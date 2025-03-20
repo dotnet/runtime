@@ -125,6 +125,7 @@ namespace System.Security.Cryptography.Tests
 
         public record MLKemTestDecapsulationVector(MLKemAlgorithm Algorithm, string EncapsulationKey, string DecapsulationKey, string Ciphertext, string SharedSecret);
 
+        // Generated from https://github.com/usnistgov/ACVP-Server/blob/85f8742965b2691862079172982683757d8d91db/gen-val/json-files/ML-KEM-encapDecap-FIPS203/internalProjection.json
         public static IEnumerable<MLKemTestDecapsulationVector> MLKemDecapsulationTestVectors
         {
             get
