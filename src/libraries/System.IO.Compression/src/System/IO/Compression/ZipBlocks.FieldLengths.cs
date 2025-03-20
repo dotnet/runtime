@@ -51,7 +51,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal sealed partial class ZipLocalFileHeader
+    internal readonly partial struct ZipLocalFileHeader
     {
         internal static class FieldLengths
         {

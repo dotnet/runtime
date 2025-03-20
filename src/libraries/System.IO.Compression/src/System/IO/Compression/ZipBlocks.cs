@@ -506,7 +506,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal sealed partial class ZipLocalFileHeader
+    internal readonly partial struct ZipLocalFileHeader
     {
         // The Zip File Format Specification references 0x08074B50 and 0x04034B50, these are big endian representations.
         // ZIP files store values in little endian, so these are reversed.
