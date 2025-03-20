@@ -101,7 +101,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
         return true;
     }
 
-    m_CodeLength = (UINT32)GcInfoEncoding::DENORMALIZE_CODE_LENGTH((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::CODE_LENGTH_ENCBASE));
+    m_CodeLength = GcInfoEncoding::DENORMALIZE_CODE_LENGTH((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::CODE_LENGTH_ENCBASE));
     remainingFlags &= ~DECODE_CODE_LENGTH;
     if (remainingFlags == 0)
     {
@@ -146,7 +146,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
     // Decode the offset to the GS cookie.
     if (m_headerFlags & GC_INFO_HAS_GS_COOKIE)
     {
-        m_GSCookieStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::GS_COOKIE_STACK_SLOT_ENCBASE));
+        m_GSCookieStackSlot = GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::GS_COOKIE_STACK_SLOT_ENCBASE));
     }
     else
     {
@@ -164,7 +164,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
     // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before any stack allocation on X64 (InitialSP).
     if (m_headerFlags & GC_INFO_HAS_PSP_SYM)
     {
-        m_PSPSymStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::PSP_SYM_STACK_SLOT_ENCBASE));
+        m_PSPSymStackSlot = GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::PSP_SYM_STACK_SLOT_ENCBASE));
     }
     else
     {
@@ -181,7 +181,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
     // Decode the offset to the generics type context.
     if ((m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
     {
-        m_GenericsInstContextStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE));
+        m_GenericsInstContextStackSlot = GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE));
     }
     else
     {
@@ -197,7 +197,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
 
     if (m_headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER)
     {
-        m_StackBaseRegister = (UINT32)GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::STACK_BASE_REGISTER_ENCBASE));
+        m_StackBaseRegister = GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::STACK_BASE_REGISTER_ENCBASE));
     }
     else
     {
@@ -228,7 +228,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
 
     if (m_headerFlags & GC_INFO_REVERSE_PINVOKE_FRAME)
     {
-        m_ReversePInvokeFrameStackSlot = (INT32)GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::REVERSE_PINVOKE_FRAME_ENCBASE));
+        m_ReversePInvokeFrameStackSlot = GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::REVERSE_PINVOKE_FRAME_ENCBASE));
     }
     else
     {
@@ -289,7 +289,7 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
         if (m_Reader.ReadOneFast())
         {
             m_headerFlags = GC_INFO_HAS_STACK_BASE_REGISTER;
-            m_StackBaseRegister = (UINT32)GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER(0);
+            m_StackBaseRegister = GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER(0);
         }
         else
         {
@@ -308,7 +308,7 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
             return;
         }
 
-        m_CodeLength = (UINT32)GcInfoEncoding::DENORMALIZE_CODE_LENGTH((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::CODE_LENGTH_ENCBASE));
+        m_CodeLength = GcInfoEncoding::DENORMALIZE_CODE_LENGTH((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::CODE_LENGTH_ENCBASE));
 
         //
         // predecoding the rest of slim header does not require any reading.
@@ -1397,7 +1397,7 @@ template <typename GcInfoEncoding> const GcSlotDesc* GcSlotDecoder<GcInfoEncodin
                 if(m_pLastSlot->Flags)
                 {
                     INT32 normSpOffset = (INT32) m_SlotReader.DecodeVarLengthSigned(GcInfoEncoding::STACK_SLOT_ENCBASE);
-                    m_pLastSlot->Slot.Stack.SpOffset = (INT32) GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
+                    m_pLastSlot->Slot.Stack.SpOffset = GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
                     m_pLastSlot->Flags = (GcSlotFlags) m_SlotReader.Read(2);
                 }
                 else

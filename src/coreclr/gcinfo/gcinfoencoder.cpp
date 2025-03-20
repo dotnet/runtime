@@ -1529,7 +1529,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         // Encode slot identification
         _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
         GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, StackSlotSize);
-        INT32 currentNormStackSlot = (INT32) GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
+        INT32 currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
         GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, StackSlotSize);
 
         GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, StackSlotSize);
@@ -1548,7 +1548,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             _ASSERTE(!pSlotDesc->IsRegister());
             _ASSERTE(!pSlotDesc->IsUntracked());
 
-            currentNormStackSlot = (INT32) GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
+            currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
 
             _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
             GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, StackSlotSize);
@@ -1581,7 +1581,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         // Encode slot identification
         _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
         GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, UntrackedSlotSize);
-        INT32 currentNormStackSlot = (INT32) GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
+        INT32 currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
         GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, UntrackedSlotSize);
 
         GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, UntrackedSlotSize);
@@ -1600,7 +1600,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             _ASSERTE(!pSlotDesc->IsRegister());
             _ASSERTE(pSlotDesc->IsUntracked());
 
-            currentNormStackSlot = (INT32) GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
+            currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
 
             _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
             GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, UntrackedSlotSize);
