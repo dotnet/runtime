@@ -530,8 +530,7 @@ namespace System.IO.Compression
                     while (continueReadingCentralDirectory
                         && currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize < sizedFileBuffer.Length)
                     {
-                        if (!continueReadingCentralDirectory ||
-                            !ZipCentralDirectoryFileHeader.TryReadBlock(sizedFileBuffer.Slice(currPosition), _archiveStream,
+                        if (!ZipCentralDirectoryFileHeader.TryReadBlock(sizedFileBuffer.Slice(currPosition), _archiveStream,
                             saveExtraFieldsAndComments, out bytesConsumed, out ZipCentralDirectoryFileHeader? currentHeader))
                         {
                             continueReadingCentralDirectory = false;
