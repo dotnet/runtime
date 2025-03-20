@@ -132,6 +132,11 @@ namespace System.Security.Cryptography
                     nameof(sharedSecret));
             }
 
+            if (ciphertext.Overlaps(sharedSecret))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
+            }
+
             ThrowIfDisposed();
             EncapsulateCore(ciphertext, sharedSecret);
         }

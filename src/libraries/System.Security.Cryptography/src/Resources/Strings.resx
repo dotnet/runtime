@@ -564,6 +564,9 @@
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
   </data>
+  <data name="Cryptography_OverlappingBuffers" xml:space="preserve">
+    <value>One or more provided buffers overlap.</value>
+  </data>
   <data name="Cryptography_OwnerNotCurrentUser" xml:space="preserve">
     <value>The owner of '{0}' is not the current user.</value>
   </data>

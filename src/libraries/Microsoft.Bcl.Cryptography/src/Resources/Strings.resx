@@ -123,6 +123,9 @@
   <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
     <value>Key is not a valid public or private key.</value>
   </data>
+  <data name="Cryptography_OverlappingBuffers" xml:space="preserve">
+    <value>One or more provided buffers overlap.</value>
+  </data>
   <data name="Cryptography_Pfx_BadPassword" xml:space="preserve">
     <value>The certificate data cannot be read with the provided password, the password may be incorrect.</value>
   </data>
