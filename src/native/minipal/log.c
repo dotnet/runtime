@@ -46,6 +46,9 @@ static int android_log_flag(minipal_log_flags flags)
 
 static size_t log_write(minipal_log_flags flags, const char* msg, size_t msg_len)
 {
+    if (msg_len == 1 && msg[0] == '\n')
+        return 0;
+
     return __android_log_write(android_log_flag(flags), MINIPAL_LOG_RUNTIME_TAG, msg) == 1 ? msg_len : 0;
 }
 

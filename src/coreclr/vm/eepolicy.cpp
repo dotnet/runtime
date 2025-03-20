@@ -373,41 +373,34 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
 
     EX_TRY
     {
-        StackSString message;
         if (exitCode == (UINT)COR_E_FAILFAST)
         {
-            message.Append(W("Process terminated. "));
+            PrintToStdErrA("Process terminated.\n");
         }
         else
         {
-            message.Append(W("Fatal error. "));
+            PrintToStdErrA("Fatal error.\n");
         }
 
         if (errorSource != NULL)
         {
-            message.Append(errorSource);
-            message.Append(W("\n"));
-
-            PrintToStdErrW(message.GetUnicode());
-
-            message.Clear();
+            PrintToStdErrW(errorSource);
+            PrintToStdErrA("\n");
         }
 
         if (pszMessage != NULL)
         {
-            message.Append(pszMessage);
+            PrintToStdErrW(pszMessage);
         }
         else
         {
             // If no message was passed in, generate it from the exitCode
             InlineSString<256> exitCodeMessage;
             GetHRMsg(exitCode, exitCodeMessage);
-            message.Append(exitCodeMessage);
+            PrintToStdErrW(exitCodeMessage.GetUnicode());
         }
 
-        message.Append(W("\n"));
-
-        PrintToStdErrW(message.GetUnicode());
+        PrintToStdErrA("\n");
 
         Thread* pThread = GetThreadNULLOk();
         if (pThread && errorSource == NULL)
