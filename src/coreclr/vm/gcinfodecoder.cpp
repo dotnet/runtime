@@ -119,15 +119,15 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
         UINT32 normPrologSize = (UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::NORM_PROLOG_SIZE_ENCBASE) + 1;
         UINT32 normEpilogSize = (UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::NORM_EPILOG_SIZE_ENCBASE);
 
-        m_ValidRangeStart = (UINT32)GcInfoEncoding::DENORMALIZE_CODE_OFFSET(normPrologSize);
-        m_ValidRangeEnd = (UINT32)GcInfoEncoding::DENORMALIZE_CODE_OFFSET(normCodeLength - normEpilogSize);
+        m_ValidRangeStart = GcInfoEncoding::DENORMALIZE_CODE_OFFSET(normPrologSize);
+        m_ValidRangeEnd = GcInfoEncoding::DENORMALIZE_CODE_OFFSET(normCodeLength - normEpilogSize);
         _ASSERTE(m_ValidRangeStart < m_ValidRangeEnd);
     }
     else if ((m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
     {
         // Decode prolog information
         UINT32 normPrologSize = (UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::NORM_PROLOG_SIZE_ENCBASE) + 1;
-        m_ValidRangeStart = (UINT32)GcInfoEncoding::DENORMALIZE_CODE_OFFSET(normPrologSize);
+        m_ValidRangeStart = GcInfoEncoding::DENORMALIZE_CODE_OFFSET(normPrologSize);
         // satisfy asserts that assume m_GSCookieValidRangeStart != 0 ==> m_GSCookieValidRangeStart < m_GSCookieValidRangeEnd
         m_ValidRangeEnd = m_ValidRangeStart + 1;
     }
@@ -243,7 +243,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
     }
 
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    m_SizeOfStackOutgoingAndScratchArea = (UINT32)GcInfoEncoding::DENORMALIZE_SIZE_OF_STACK_AREA((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE));
+    m_SizeOfStackOutgoingAndScratchArea = GcInfoEncoding::DENORMALIZE_SIZE_OF_STACK_AREA((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE));
 #endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
     return false;
@@ -1171,7 +1171,7 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
 
         GcStackSlotBase spBase = (GcStackSlotBase) reader.Read(2);
         UINT32 normSpOffset = (INT32) reader.DecodeVarLengthSigned(GcInfoEncoding::STACK_SLOT_ENCBASE);
-        INT32 spOffset = (UINT32) GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
+        INT32 spOffset = GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
         GcSlotFlags flags = (GcSlotFlags) reader.Read(2);
 
         m_SlotArray[i].Slot.Stack.SpOffset = spOffset;
@@ -1186,14 +1186,14 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
             if(flags)
             {
                 normSpOffset = (INT32) reader.DecodeVarLengthSigned(GcInfoEncoding::STACK_SLOT_ENCBASE);
-                spOffset = (UINT32) GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
+                spOffset = GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
                 flags = (GcSlotFlags) reader.Read(2);
             }
             else
             {
                 INT32 normSpOffsetDelta = (INT32) reader.DecodeVarLengthUnsigned(GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE);
                 normSpOffset += normSpOffsetDelta;
-                spOffset = (UINT32) GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
+                spOffset = GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
             }
 
             m_SlotArray[i].Slot.Stack.SpOffset = spOffset;
@@ -1208,7 +1208,7 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
 
         GcStackSlotBase spBase = (GcStackSlotBase) reader.Read(2);
         UINT32 normSpOffset = (INT32) reader.DecodeVarLengthSigned(GcInfoEncoding::STACK_SLOT_ENCBASE);
-        INT32 spOffset = (UINT32) GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
+        INT32 spOffset = GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
         GcSlotFlags flags = (GcSlotFlags) reader.Read(2);
 
         m_SlotArray[i].Slot.Stack.SpOffset = spOffset;
@@ -1223,14 +1223,14 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
             if(flags)
             {
                 normSpOffset = (INT32) reader.DecodeVarLengthSigned(GcInfoEncoding::STACK_SLOT_ENCBASE);
-                spOffset = (UINT32) GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
+                spOffset = GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
                 flags = (GcSlotFlags) reader.Read(2);
             }
             else
             {
                 INT32 normSpOffsetDelta = (INT32) reader.DecodeVarLengthUnsigned(GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE);
                 normSpOffset += normSpOffsetDelta;
-                spOffset = (UINT32) GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
+                spOffset = GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
             }
 
             m_SlotArray[i].Slot.Stack.SpOffset = spOffset;
@@ -1387,7 +1387,7 @@ template <typename GcInfoEncoding> const GcSlotDesc* GcSlotDecoder<GcInfoEncodin
                 // Decode the first stack slot or first untracked slot
                 m_pLastSlot->Slot.Stack.Base = (GcStackSlotBase) m_SlotReader.Read(2);
                 UINT32 normSpOffset = (INT32) m_SlotReader.DecodeVarLengthSigned(GcInfoEncoding::STACK_SLOT_ENCBASE);
-                m_pLastSlot->Slot.Stack.SpOffset = (UINT32) GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
+                m_pLastSlot->Slot.Stack.SpOffset = GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
                 m_pLastSlot->Flags = (GcSlotFlags) m_SlotReader.Read(2);
             }
             else
@@ -1403,8 +1403,8 @@ template <typename GcInfoEncoding> const GcSlotDesc* GcSlotDecoder<GcInfoEncodin
                 else
                 {
                     INT32 normSpOffsetDelta = (INT32) m_SlotReader.DecodeVarLengthUnsigned(GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE);
-                    INT32 normSpOffset = normSpOffsetDelta + (INT32)GcInfoEncoding::NORMALIZE_STACK_SLOT(m_pLastSlot->Slot.Stack.SpOffset);
-                    m_pLastSlot->Slot.Stack.SpOffset = (INT32) GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
+                    INT32 normSpOffset = normSpOffsetDelta + GcInfoEncoding::NORMALIZE_STACK_SLOT(m_pLastSlot->Slot.Stack.SpOffset);
+                    m_pLastSlot->Slot.Stack.SpOffset = GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
                 }
             }
         }
