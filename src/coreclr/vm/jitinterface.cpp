@@ -11738,7 +11738,7 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
     {
         // If ConstructStringLiteral returns a pinned reference we can return it by value (IAT_VALUE)
         void* ppPinnedString = nullptr;
-        void** ptr = (void**)ConstructStringLiteral(scopeHnd, metaTok, &ppPinnedString);
+        STRINGREF* ptr = ConstructStringLiteral(scopeHnd, metaTok, &ppPinnedString);
 
         if (ppPinnedString != nullptr)
         {
