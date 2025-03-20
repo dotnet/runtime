@@ -3888,7 +3888,7 @@ namespace System.Diagnostics.Tracing
 // it to mean other aspects of tracing such as these EventSources.
 #if FEATURE_PERFTRACING
             _ = NativeRuntimeEventSource.Log;
-#if !TARGET_BROWSER && !TARGET_WASI
+#if !TARGET_BROWSER
             _ = RuntimeEventSource.Log;
 #endif
 #endif
