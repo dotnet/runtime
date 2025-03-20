@@ -2182,7 +2182,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         // the weight of condBlock, except in odd cases of stress modes with
         // inconsistent weights.
 
-        for (int i = 0; i < duplicatedBlocks.Height(); i++)
+        for (int i = 0; i < (duplicatedBlocks.Height() - 1); i++)
         {
             BasicBlock* block = duplicatedBlocks.Bottom(i);
             JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", block->bbNum, weightCond,
@@ -2270,8 +2270,6 @@ PhaseStatus Compiler::optInvertLoops()
             m_dfsTree = fgComputeDfs();
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         }
-
-        fgRenumberBlocks();
     }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
