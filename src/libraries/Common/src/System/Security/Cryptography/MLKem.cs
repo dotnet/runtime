@@ -103,7 +103,7 @@ namespace System.Security.Cryptography
         /// </param>
         /// <exception cref="CryptographicException">
         ///   <para>An error occurred during encapsulation.</para>
-        ///   <para> -or - </para>
+        ///   <para>-or -</para>
         ///   <para><paramref name="ciphertext"/> overlaps with <paramref name="sharedSecret"/>.</para>
         /// </exception>
         /// <exception cref="ArgumentException">
@@ -162,7 +162,7 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the shared secret.
         /// </param>
         /// <exception cref="CryptographicException">
-        ///   An error occurred during encapsulation.
+        ///   An error occurred during decapsulation.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <para><paramref name="ciphertext" /> is not the correct size.</para>
@@ -198,7 +198,7 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the shared secret.
         /// </param>
         /// <exception cref="CryptographicException">
-        ///   An error occurred during encapsulation.
+        ///   An error occurred during decapsulation.
         /// </exception>
         protected abstract void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret);
 
@@ -223,7 +223,9 @@ namespace System.Security.Cryptography
         ///   <paramref name="destination"/> is the incorrect length to receive the private seed.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The current instance cannot export a seed.
+        ///   <para>The current instance cannot export a seed.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         public void ExportPrivateSeed(Span<byte> destination)
         {
@@ -247,9 +249,9 @@ namespace System.Security.Cryptography
         protected abstract void ExportPrivateSeedCore(Span<byte> destination);
 
         /// <summary>
-        /// Creates an ML-KEM key from a private seed.
+        /// Imports an ML-KEM key from its private seed value.
         /// </summary>
-        /// <param name="algorithm">The algorithm of the seed.</param>
+        /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
         /// <param name="source">The private seed.</param>
         /// <returns>The imported key.</returns>
         /// <exception cref="ArgumentException">
@@ -258,6 +260,9 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="algorithm" /> is <see langword="null" />
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
@@ -280,9 +285,9 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Creates an ML-KEM key from a decapsulation key.
+        /// Imports an ML-KEM key from a decapsulation key.
         /// </summary>
-        /// <param name="algorithm">The algorithm of the decapsulation key.</param>
+        /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
         /// <param name="source">The decapsulation key.</param>
         /// <returns>The imported key.</returns>
         /// <exception cref="ArgumentException">
@@ -290,6 +295,9 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="algorithm" /> is <see langword="null" />
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
@@ -312,9 +320,9 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Creates an ML-KEM key from an encapsulation key.
+        /// Imports an ML-KEM key from a encapsulation key.
         /// </summary>
-        /// <param name="algorithm">The algorithm of the encapsulation key.</param>
+        /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
         /// <param name="source">The encapsulation key.</param>
         /// <returns>The imported key.</returns>
         /// <exception cref="ArgumentException">
@@ -322,6 +330,9 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="algorithm" /> is <see langword="null" />
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
@@ -353,7 +364,9 @@ namespace System.Security.Cryptography
         ///   <paramref name="destination"/> is the incorrect length to receive the decapsulation key.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   The current instance cannot export a decapsulation key.
+        ///   <para>The current instance cannot export a decapsulation key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while importing the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void ExportDecapsulationKey(Span<byte> destination)
