@@ -174,6 +174,7 @@ private:
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
     bool         MayLclVarPointToStack(unsigned int lclNum);
     bool         DoesLclVarPointToStack(unsigned int lclNum);
+    void         PrepareAnalysis();
     void         DoAnalysis();
     void         MarkLclVarAsEscaping(unsigned int lclNum);
     void         MarkEscapingVarsAndBuildConnGraph();

@@ -50,167 +50,11 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_maxPseudoLocals(0)
     , m_regionsToClone(0)
 {
-    // Determine how locals map to indicies in the bit vectors / connection graph.
-    //
-    // In "lcl num" space
-    //
-    // We reserve the range [0...L-1] for the initial set of locals.
-    // Here L is the initial lvaCount.
-    //
-    // If conditional escape analysis is enabled, we reserve the range [L...L+M-1]
-    // for locals allocated during the conditional escape analysis expansions,
-    // where M is the maximum number of pseudo-vars.
-    //
-    // We reserve the range [L+M ... L+2M-1] for pseudo locals themselves.
-    //
-    // In "bv" space
-    //
-    // We reserve the range [0...N-1] for the initial set of tracked locals.
-    // Here N <= L is the number of tracked locals, determined below, an each
-    // tracked local has an index assigned in this range.
-    //
-    // If conditional escape analysis is enabled, we reserve the range [N...N+M-1]
-    // for locals allocated during the conditional escape analysis expansions,
-    // where N is the maximum number of pseudo-vars.
-    //
-    // We reserve the range [N+M ... N+2M-1] for pseudo locals themselves.
-    //
-    // LocalToIndex translates from "lcl num" space to "bv" space
-    // IndexToLocal translates from "bv" space space to "lcl num" space
-    //
-    const unsigned localCount = comp->lvaCount;
-    unsigned       bvNext     = 0;
-
-    // Enumerate which locals are going to appear in our connection
-    // graph, and assign them BV indicies.
-    //
-    for (unsigned lclNum = 0; lclNum < localCount; lclNum++)
-    {
-        LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
-
-        if (IsTrackedType(varDsc->TypeGet()))
-        {
-            varDsc->lvTracked  = 1;
-            varDsc->lvVarIndex = (unsigned short)bvNext;
-            bvNext++;
-        }
-        else
-        {
-            varDsc->lvTracked  = 0;
-            varDsc->lvVarIndex = 0;
-        }
-    }
-
-    m_nextLocalIndex = bvNext;
-
-    // If we are going to do any conditional escape analysis, determine
-    // how much extra BV space we'll need.
-    //
-    bool const hasEnumeratorLocals = comp->hasImpEnumeratorGdvLocalMap();
-
-    if (hasEnumeratorLocals)
-    {
-        unsigned const enumeratorLocalCount = comp->getImpEnumeratorGdvLocalMap()->GetCount();
-        assert(enumeratorLocalCount > 0);
-
-        // For now, disable conditional escape analysis with OSR
-        // since the dominance picture is muddled at this point.
-        //
-        // The conditionally escaping allocation sites will likely be in loops anyways.
-        //
-        bool const enableConditionalEscape = JitConfig.JitObjectStackAllocationConditionalEscape() > 0;
-        bool const isOSR                   = comp->opts.IsOSR();
-
-        if (enableConditionalEscape && !isOSR)
-        {
-
-#ifdef DEBUG
-            static ConfigMethodRange JitObjectStackAllocationConditionalEscapeRange;
-            JitObjectStackAllocationConditionalEscapeRange.EnsureInit(
-                JitConfig.JitObjectStackAllocationConditionalEscapeRange());
-            const unsigned hash    = comp->info.compMethodHash();
-            const bool     inRange = JitObjectStackAllocationConditionalEscapeRange.Contains(hash);
-#else
-            const bool inRange = true;
-#endif
-
-            if (inRange)
-            {
-                JITDUMP("Enabling conditional escape analysis [%u pseudo-vars]\n", enumeratorLocalCount);
-                m_maxPseudoLocals = enumeratorLocalCount;
-            }
-            else
-            {
-                JITDUMP("Not enabling conditional escape analysis (disabled by range config)\n");
-            }
-        }
-        else
-        {
-            JITDUMP("Not enabling conditional escape analysis [%u pseudo-vars]: %s\n", enumeratorLocalCount,
-                    enableConditionalEscape ? "OSR" : "disabled by config");
-        }
-    }
-
-    // When we clone to prevent conditional escape, we'll also create a new local
-    // var that we will track. So we need to leave room for these vars. There can
-    // be as many of these as there are pseudo locals.
-    //
-    m_firstPseudoLocalNum   = localCount + m_maxPseudoLocals; // L + M, per above
-    m_firstPseudoLocalIndex = bvNext + m_maxPseudoLocals;     // N, per above
-    bvNext += 2 * m_maxPseudoLocals;
-
-    // Now set up the BV traits.
-    //
-    m_bvCount      = bvNext;
-    m_bitVecTraits = BitVecTraits(m_bvCount, comp);
-
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
     m_DefinitelyStackPointingPointers = BitVecOps::UninitVal();
     m_ConnGraphAdjacencyMatrix        = nullptr;
-
-    m_StackAllocMaxSize = (unsigned)JitConfig.JitObjectStackAllocationSize();
-
-    // Create the reverse mapping from bvIndex to local var index
-    // (leave room for locals we may allocate)
-    //
-    if (comp->lvaTrackedToVarNumSize < m_firstPseudoLocalNum)
-    {
-        comp->lvaTrackedToVarNumSize = m_firstPseudoLocalNum;
-        comp->lvaTrackedToVarNum     = new (comp->getAllocator(CMK_LvaTable)) unsigned[comp->lvaTrackedToVarNumSize];
-    }
-
-    for (unsigned lclNum = 0; lclNum < localCount; lclNum++)
-    {
-        LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
-
-        if (varDsc->lvTracked)
-        {
-            comp->lvaTrackedToVarNum[varDsc->lvVarIndex] = lclNum;
-        }
-    }
-
-    JITDUMP("%u locals, %u tracked by escape analysis\n", localCount, m_nextLocalIndex);
-
-    if (m_nextLocalIndex > 0)
-    {
-        JITDUMP("\nLocal      var    range [%02u...%02u]\n", 0, localCount);
-        if (m_maxPseudoLocals > 0)
-        {
-            JITDUMP("Enumerator var    range [%02u...%02u]\n", localCount, localCount + m_maxPseudoLocals - 1);
-            JITDUMP("Pseudo     var    range [%02u...%02u]\n", m_firstPseudoLocalNum,
-                    m_firstPseudoLocalNum + m_maxPseudoLocals - 1);
-        }
-
-        JITDUMP("\nLocal      var bv range [%02u...%02u]\n", 0, m_nextLocalIndex - 1);
-        if (m_maxPseudoLocals > 0)
-        {
-            JITDUMP("Enumerator var bv range [%02u...%02u]\n", m_nextLocalIndex,
-                    m_nextLocalIndex + m_maxPseudoLocals - 1);
-            JITDUMP("Pseudo     var bv range [%02u...%02u]\n", m_nextLocalIndex + m_maxPseudoLocals,
-                    m_nextLocalIndex + 2 * m_maxPseudoLocals - 1);
-        }
-    }
+    m_StackAllocMaxSize               = (unsigned)JitConfig.JitObjectStackAllocationSize();
 }
 
 //------------------------------------------------------------------------
@@ -324,6 +168,24 @@ unsigned ObjectAllocator::IndexToLocal(unsigned bvIndex)
 
     return result;
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------------
+// DumpIndex: write a description of a given bv index
+//
+// Arguments:
+//    bvIndex - index to describe
+//
+// Notes:
+//    includes leading space
+//
+void ObjectAllocator::DumpIndex(unsigned bvIndex)
+{
+    const unsigned lclNum     = IndexToLocal(bvIndex);
+    const bool     isLocalVar = (lclNum < m_firstPseudoLocalNum);
+    printf(" %c%02u", isLocalVar ? 'V' : 'P', lclNum);
+}
+#endif
 
 //------------------------------------------------------------------------
 // DoPhase: Run analysis (if object stack allocation is enabled) and then
@@ -457,6 +319,168 @@ void ObjectAllocator::AddConnGraphEdge(unsigned int sourceLclNum, unsigned int t
 }
 
 //------------------------------------------------------------------------
+// PrepareAnalysis: determine how to model the escape analysis problem
+//    with bit vectors.
+//
+void ObjectAllocator::PrepareAnalysis()
+{
+    // Determine how locals map to indicies in the bit vectors / connection graph.
+    //
+    // In "lcl num" space
+    //
+    // We reserve the range [0...L-1] for the initial set of locals.
+    // Here L is the initial lvaCount.
+    //
+    // If conditional escape analysis is enabled, we reserve the range [L...L+M-1]
+    // for locals allocated during the conditional escape analysis expansions,
+    // where M is the maximum number of pseudo-vars.
+    //
+    // We reserve the range [L+M ... L+2M-1] for pseudo locals themselves.
+    //
+    // In "bv" space
+    //
+    // We reserve the range [0...N-1] for the initial set of tracked locals.
+    // Here N <= L is the number of tracked locals, determined below, an each
+    // tracked local has an index assigned in this range.
+    //
+    // If conditional escape analysis is enabled, we reserve the range [N...N+M-1]
+    // for locals allocated during the conditional escape analysis expansions,
+    // where N is the maximum number of pseudo-vars.
+    //
+    // We reserve the range [N+M ... N+2M-1] for pseudo locals themselves.
+    //
+    // LocalToIndex translates from "lcl num" space to "bv" space
+    // IndexToLocal translates from "bv" space space to "lcl num" space
+    //
+    const unsigned localCount = comp->lvaCount;
+    unsigned       bvNext     = 0;
+
+    // Enumerate which locals are going to appear in our connection
+    // graph, and assign them BV indicies.
+    //
+    for (unsigned lclNum = 0; lclNum < localCount; lclNum++)
+    {
+        LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
+
+        if (IsTrackedType(varDsc->TypeGet()))
+        {
+            varDsc->lvTracked  = 1;
+            varDsc->lvVarIndex = (unsigned short)bvNext;
+            bvNext++;
+        }
+        else
+        {
+            varDsc->lvTracked  = 0;
+            varDsc->lvVarIndex = 0;
+        }
+    }
+
+    m_nextLocalIndex = bvNext;
+
+    // If we are going to do any conditional escape analysis, determine
+    // how much extra BV space we'll need.
+    //
+    bool const hasEnumeratorLocals = comp->hasImpEnumeratorGdvLocalMap();
+
+    if (hasEnumeratorLocals)
+    {
+        unsigned const enumeratorLocalCount = comp->getImpEnumeratorGdvLocalMap()->GetCount();
+        assert(enumeratorLocalCount > 0);
+
+        // For now, disable conditional escape analysis with OSR
+        // since the dominance picture is muddled at this point.
+        //
+        // The conditionally escaping allocation sites will likely be in loops anyways.
+        //
+        bool const enableConditionalEscape = JitConfig.JitObjectStackAllocationConditionalEscape() > 0;
+        bool const isOSR                   = comp->opts.IsOSR();
+
+        if (enableConditionalEscape && !isOSR)
+        {
+
+#ifdef DEBUG
+            static ConfigMethodRange JitObjectStackAllocationConditionalEscapeRange;
+            JitObjectStackAllocationConditionalEscapeRange.EnsureInit(
+                JitConfig.JitObjectStackAllocationConditionalEscapeRange());
+            const unsigned hash    = comp->info.compMethodHash();
+            const bool     inRange = JitObjectStackAllocationConditionalEscapeRange.Contains(hash);
+#else
+            const bool inRange = true;
+#endif
+
+            if (inRange)
+            {
+                JITDUMP("Enabling conditional escape analysis [%u pseudo-vars]\n", enumeratorLocalCount);
+                m_maxPseudoLocals = enumeratorLocalCount;
+            }
+            else
+            {
+                JITDUMP("Not enabling conditional escape analysis (disabled by range config)\n");
+            }
+        }
+        else
+        {
+            JITDUMP("Not enabling conditional escape analysis [%u pseudo-vars]: %s\n", enumeratorLocalCount,
+                    enableConditionalEscape ? "OSR" : "disabled by config");
+        }
+    }
+
+    // When we clone to prevent conditional escape, we'll also create a new local
+    // var that we will track. So we need to leave room for these vars. There can
+    // be as many of these as there are pseudo locals.
+    //
+    m_firstPseudoLocalNum   = localCount + m_maxPseudoLocals; // L + M, per above
+    m_firstPseudoLocalIndex = bvNext + m_maxPseudoLocals;     // N, per above
+    bvNext += 2 * m_maxPseudoLocals;
+
+    // Now set up the BV traits.
+    //
+    m_bvCount      = bvNext;
+    m_bitVecTraits = BitVecTraits(m_bvCount, comp);
+
+    // Create the reverse mapping from bvIndex to local var index
+    // (leave room for locals we may allocate)
+    //
+    if (comp->lvaTrackedToVarNumSize < m_firstPseudoLocalNum)
+    {
+        comp->lvaTrackedToVarNumSize = m_firstPseudoLocalNum;
+        comp->lvaTrackedToVarNum     = new (comp->getAllocator(CMK_LvaTable)) unsigned[comp->lvaTrackedToVarNumSize];
+    }
+
+    for (unsigned lclNum = 0; lclNum < localCount; lclNum++)
+    {
+        LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
+
+        if (varDsc->lvTracked)
+        {
+            comp->lvaTrackedToVarNum[varDsc->lvVarIndex] = lclNum;
+        }
+    }
+
+    JITDUMP("%u locals, %u tracked by escape analysis\n", localCount, m_nextLocalIndex);
+
+    if (m_nextLocalIndex > 0)
+    {
+        JITDUMP("\nLocal      var    range [%02u...%02u]\n", 0, localCount);
+        if (m_maxPseudoLocals > 0)
+        {
+            JITDUMP("Enumerator var    range [%02u...%02u]\n", localCount, localCount + m_maxPseudoLocals - 1);
+            JITDUMP("Pseudo     var    range [%02u...%02u]\n", m_firstPseudoLocalNum,
+                    m_firstPseudoLocalNum + m_maxPseudoLocals - 1);
+        }
+
+        JITDUMP("\nLocal      var bv range [%02u...%02u]\n", 0, m_nextLocalIndex - 1);
+        if (m_maxPseudoLocals > 0)
+        {
+            JITDUMP("Enumerator var bv range [%02u...%02u]\n", m_nextLocalIndex,
+                    m_nextLocalIndex + m_maxPseudoLocals - 1);
+            JITDUMP("Pseudo     var bv range [%02u...%02u]\n", m_nextLocalIndex + m_maxPseudoLocals,
+                    m_nextLocalIndex + 2 * m_maxPseudoLocals - 1);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // DoAnalysis: Walk over basic blocks of the method and detect all local
 //             variables that can be allocated on the stack.
 //
@@ -464,6 +488,8 @@ void ObjectAllocator::DoAnalysis()
 {
     assert(m_IsObjectStackAllocationEnabled);
     assert(!m_AnalysisDone);
+
+    PrepareAnalysis();
 
     if (m_bvCount > 0)
     {
@@ -612,24 +638,6 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         }
     }
 }
-
-#ifdef DEBUG
-//------------------------------------------------------------------------------
-// DumpIndex: write a description of a given bv index
-//
-// Arguments:
-//    bvIndex - index to describe
-//
-// Notes:
-//    includes leading space
-//
-void ObjectAllocator::DumpIndex(unsigned bvIndex)
-{
-    const unsigned lclNum     = IndexToLocal(bvIndex);
-    const bool     isLocalVar = (lclNum < m_firstPseudoLocalNum);
-    printf(" %c%02u", isLocalVar ? 'V' : 'P', lclNum);
-}
-#endif
 
 //------------------------------------------------------------------------------
 // ComputeEscapingNodes : Given an initial set of escaping nodes, update it to contain the full set
