@@ -35,6 +35,8 @@ enum {
 
 #define method_name(idx) ((const char*)&method_names + (idx))
 
+static gboolean emit_sri_packedsimd (TransformData *, MonoMethod *, MonoMethodSignature *);
+
 static int
 simd_intrinsic_compare_by_name (const void *key, const void *value)
 {
@@ -82,6 +84,7 @@ static guint16 sri_vector128_methods [] = {
 	SN_EqualsAny,
 	SN_ExtractMostSignificantBits,
 	SN_GreaterThan,
+	SN_GreaterThanOrEqual,
 	SN_LessThan,
 	SN_LessThanOrEqual,
 	SN_Narrow,
@@ -433,6 +436,11 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			cmethod_name += 80;
 		}
 	}
+
+#ifdef HOST_BROWSER
+	if (emit_sri_packedsimd (td, cmethod, csignature))
+		return TRUE;
+#endif
 
 	int id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod_name);
 	if (id == -1)
@@ -919,7 +927,7 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 	MonoClass *vector_klass = mono_class_from_mono_type_internal (arg1);
 	MonoType *arg_type = NULL;
 
-	if (m_class_is_simd_type (vector_klass)) {
+	if (m_class_is_simd_type (vector_klass) && mono_class_is_ginst (vector_klass)) {
 		arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
 	} else if (arg1->type == MONO_TYPE_PTR) {
 		arg_type = m_type_data_get_type_unchecked (arg1);
@@ -1003,15 +1011,21 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 static gboolean
 emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
-	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod->name);
+	const char *cmethod_name = cmethod->name;
+	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod_name);
 	// We don't early-out for an unrecognized method, we will generate an NIY later
 
 	MonoClass *vector_klass = mono_class_from_mono_type_internal (csignature->ret);
 	MonoTypeEnum atype;
 	int vector_size = -1, arg_size, scalar_arg;
+	bool is_packedsimd = strcmp (m_class_get_name (cmethod->klass), "PackedSimd") == 0;
 
 	// NOTE: Linker substitutions (used in AOT) will prevent this from running.
 	if ((id == SN_get_IsSupported) || (id == SN_get_IsHardwareAccelerated)) {
+		if (!is_packedsimd) {
+			// We don't want to emit the IsSupported or IsHardwareAccelerated methods for Vector(128)? here
+			return FALSE;
+		}
 #if HOST_BROWSER
 		interp_add_ins (td, MINT_LDC_I4_1);
 #else
@@ -1021,19 +1035,41 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	}
 
 	get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg);
-
 #if HOST_BROWSER
+	if (!is_packedsimd) {
+		// transform the method name from the Vector(128)? name to the packed simd name
+		// FIXME: This is a hack, but it works for now.
+		id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod_name);
+		if (id == SN_get_IsSupported || id == SN_get_IsHardwareAccelerated) {
+			return FALSE;
+		} else if (id == SN_LessThan) {
+			cmethod_name = "CompareLessThan";
+		} else if (id == SN_LessThanOrEqual) {
+			cmethod_name = "CompareLessThanOrEqual";
+		} else if (id == SN_GreaterThan) {
+			cmethod_name = "CompareGreaterThan";
+		} else if (id == SN_GreaterThanOrEqual) {
+			cmethod_name = "CompareGreaterThanOrEqual";
+		} else if (id == SN_Equals) {
+			cmethod_name = "CompareEqual";
+		}
+	}
 	gint16 simd_opcode = -1;
 	gint16 simd_intrins = -1;
 
-	PackedSimdIntrinsicInfo *info = lookup_packedsimd_intrinsic (cmethod->name, csignature->params[0]);
+	PackedSimdIntrinsicInfo *info = lookup_packedsimd_intrinsic (cmethod_name, csignature->params[0]);
 
 	if (info && info->interp_opcode && info->simd_intrins) {
 		simd_opcode = info->interp_opcode;
 		simd_intrins = info->simd_intrins;
 		// g_print ("%s %d -> %s %d %s\n", info->name, info->arg_type, mono_interp_opname (simd_opcode), simd_intrins, info->intrinsic_name);
 	} else {
-		g_warning ("MONO interpreter: Unimplemented method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
+		if (!is_packedsimd) {
+			// We didn't find a match, but that is expected for Vector(128)?
+			return FALSE;
+		} else {
+			g_warning ("MONO interpreter: Unimplemented method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
+		}
 
 		// If we're missing a packedsimd method but the packedsimd method was AOT'd, we can
 		//  just let the interpreter generate a native call to the AOT method instead of
