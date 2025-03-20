@@ -22,9 +22,7 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-#if NET
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-#endif
     public abstract class MLKem : IDisposable
     {
         private bool _disposed;

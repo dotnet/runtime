@@ -323,6 +323,10 @@
              Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(BuildPqc)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(BuildPqc)' == 'true'">
     <Compile Include="$(CommonPath)System\Experimentals.cs"
              Link="Common\Experimentals.cs" />
