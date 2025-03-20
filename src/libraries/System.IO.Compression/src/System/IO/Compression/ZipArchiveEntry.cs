@@ -609,11 +609,9 @@ namespace System.IO.Compression
                 _archive.ArchiveStream.Write(cdStaticHeader);
                 _archive.ArchiveStream.Write(_storedEntryNameBytes);
 
-                // write extra fields
-                if (zip64ExtraField != null)
-                {
-                    zip64ExtraField.WriteBlock(_archive.ArchiveStream);
-                }
+                // write extra fields, and only write zip64ExtraField if we decided we need it (it's not null)
+                zip64ExtraField?.WriteBlock(_archive.ArchiveStream);
+
                 if (_cdUnknownExtraFields != null)
                 {
                     ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _archive.ArchiveStream);
