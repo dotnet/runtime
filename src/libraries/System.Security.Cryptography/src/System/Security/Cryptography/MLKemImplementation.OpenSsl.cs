@@ -65,31 +65,26 @@ namespace System.Security.Cryptography
 
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
-            ThrowIfDisposed();
             Interop.Crypto.EvpKemDecapsulate(_key, ciphertext, sharedSecret);
         }
 
         protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
         {
-            ThrowIfDisposed();
             Interop.Crypto.EvpKemEncapsulate(_key, ciphertext, sharedSecret);
         }
 
         protected override void ExportPrivateSeedCore(Span<byte> destination)
         {
-            ThrowIfDisposed();
             Interop.Crypto.EvpKemExportPrivateSeed(_key, destination);
         }
 
         protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
-            ThrowIfDisposed();
             Interop.Crypto.EvpKemExportDecapsulationKey(_key, destination);
         }
 
         protected override void ExportEncapsulationKeyCore(Span<byte> destination)
         {
-            ThrowIfDisposed();
             Interop.Crypto.EvpKemExportEncapsulationKey(_key, destination);
         }
 
