@@ -3888,7 +3888,9 @@ namespace System.Diagnostics.Tracing
 // it to mean other aspects of tracing such as these EventSources.
 #if FEATURE_PERFTRACING
             _ = NativeRuntimeEventSource.Log;
+#if !TARGET_BROWSER && !TARGET_WASI
             _ = RuntimeEventSource.Log;
+#endif
 #endif
             // System.Diagnostics.MetricsEventSource allows listening to Meters and indirectly
             // also creates the System.Runtime Meter.

@@ -5,8 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-#pragma warning disable CA1416 // DiagnosticCounter is not supported public API on the browser OS
-
 namespace System.Diagnostics.Tracing
 {
     /// <summary>
@@ -14,6 +12,9 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     [EventSource(Guid = "49592C0F-5A05-516D-AA4B-A64E02026C89", Name = EventSourceName)]
     [EventSourceAutoGenerate]
+#if !ES_BUILD_STANDALONE
+    [UnsupportedOSPlatform("browser")]
+#endif
     internal sealed partial class RuntimeEventSource : EventSource
     {
         internal static readonly Guid EventSourceGuid = new Guid("49592C0F-5A05-516D-AA4B-A64E02026C89");

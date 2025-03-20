@@ -5,11 +5,12 @@ using System.Collections.Generic;
 using System.Runtime.Versioning;
 using System.Threading;
 
-#pragma warning disable CA1416 // DiagnosticCounter is not supported public API on the browser OS
-
 namespace System.Diagnostics.Tracing
 {
-    internal sealed partial class CounterGroup
+#if !ES_BUILD_STANDALONE
+    [UnsupportedOSPlatform("browser")]
+#endif
+    internal sealed class CounterGroup
     {
         private readonly EventSource _eventSource;
         private readonly List<DiagnosticCounter> _counters;
@@ -158,12 +159,27 @@ namespace System.Diagnostics.Tracing
                 _timeStampSinceCollectionStarted = DateTime.UtcNow;
                 _nextPollingTimeStamp = DateTime.UtcNow + new TimeSpan(0, 0, (int)pollingIntervalInSeconds);
 
-                CreatePollingTimer();
+                // Create the polling thread and init all the shared state if needed
+                if (s_pollingThread == null)
+                {
+                    s_pollingThreadSleepEvent = new AutoResetEvent(false);
+                    s_counterGroupEnabledList = new List<CounterGroup>();
+                    s_pollingThread = new Thread(PollForValues)
+                    {
+                        IsBackground = true,
+                        Name = ".NET Counter Poller"
+                    };
+                    s_pollingThread.Start();
+                }
 
                 if (!s_counterGroupEnabledList!.Contains(this))
                 {
                     s_counterGroupEnabledList.Add(this);
                 }
+
+                // notify the polling thread that the polling interval may have changed and the sleep should
+                // be recomputed
+                s_pollingThreadSleepEvent!.Set();
             }
         }
 
@@ -251,21 +267,29 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        private static Thread? s_pollingThread;
+        // Used for sleeping for a certain amount of time while allowing the thread to be woken up
+        private static AutoResetEvent? s_pollingThreadSleepEvent;
+
         private static List<CounterGroup>? s_counterGroupEnabledList;
         private static List<IncrementingPollingCounter> s_needsResetIncrementingPollingCounters = [];
 
-        private static int PollOnce()
+        private static void PollForValues()
         {
+            AutoResetEvent? sleepEvent = null;
+
             // Cache of onTimer callbacks for each CounterGroup.
             // We cache these outside of the scope of s_counterGroupLock because
             // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
             // and result in a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
             var onTimers = new List<CounterGroup>();
             List<IncrementingPollingCounter>? countersToReset = null;
-
+            while (true)
+            {
                 int sleepDurationInMilliseconds = int.MaxValue;
                 lock (s_counterGroupLock)
                 {
+                    sleepEvent = s_pollingThreadSleepEvent;
                     foreach (CounterGroup counterGroup in s_counterGroupEnabledList!)
                     {
                         DateTime now = DateTime.UtcNow;
@@ -292,6 +316,8 @@ namespace System.Diagnostics.Tracing
                     {
                         counter.UpdateMetric();
                     }
+
+                    countersToReset = null;
                 }
 
                 foreach (CounterGroup onTimer in onTimers)
@@ -303,9 +329,10 @@ namespace System.Diagnostics.Tracing
                 {
                     sleepDurationInMilliseconds = -1; // WaitOne uses -1 to mean infinite
                 }
-
-            return sleepDurationInMilliseconds;
+                sleepEvent?.WaitOne(sleepDurationInMilliseconds);
+            }
         }
+
 #endregion // Timer Processing
 
     }
