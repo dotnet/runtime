@@ -1,5 +1,13 @@
 trigger: none
 
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - src/coreclr/jit/lsra*.*
+
 schedules:
 - cron: "0 7 * * *"
   displayName: Daily at 11:00 PM (UTC-8:00)
