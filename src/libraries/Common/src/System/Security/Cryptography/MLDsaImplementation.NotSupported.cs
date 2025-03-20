@@ -29,16 +29,16 @@ namespace System.Security.Cryptography
         internal static partial MLDsa GenerateKey(MLDsaAlgorithm algorithm) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportPublicKey(MLDsa.ParameterSetInfo info, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsa ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportPkcs8PrivateKeyValue(MLDsa.ParameterSetInfo info, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsa ImportPkcs8PrivateKeyValue(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportSecretKey(ParameterSetInfo info, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsa ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportSeed(ParameterSetInfo info, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsa ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
     }
 }
