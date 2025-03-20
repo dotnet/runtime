@@ -90,23 +90,28 @@ int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX* ctx, int pad_mode);
 int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX* ctx, int saltlen);
 int EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int EVP_PKEY_decapsulate(EVP_PKEY_CTX *ctx,
-    unsigned char *unwrapped, size_t *unwrappedlen,
-    const unsigned char *wrapped, size_t wrappedlen);
+                         unsigned char *unwrapped,
+                         size_t *unwrappedlen,
+                         const unsigned char *wrapped,
+                         size_t wrappedlen);
 int EVP_PKEY_decapsulate_init(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[]);
 int EVP_PKEY_encapsulate_init(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[]);
     int EVP_PKEY_encapsulate(EVP_PKEY_CTX *ctx,
                              unsigned char *wrappedkey, size_t *wrappedkeylen,
                              unsigned char *genkey, size_t *genkeylen);
 int EVP_PKEY_fromdata_init(EVP_PKEY_CTX *ctx);
-int EVP_PKEY_fromdata(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey, int selection,
+int EVP_PKEY_fromdata(EVP_PKEY_CTX *ctx,
+                      EVP_PKEY **ppkey,
+                      int selection,
                       OSSL_PARAM params[]);
 int EVP_PKEY_get_base_id(const EVP_PKEY* pkey);
 int EVP_PKEY_get_bits(const EVP_PKEY* pkey);
 int EVP_PKEY_get_bn_param(const EVP_PKEY *pkey, const char *key_name, BIGNUM **bn);
 int EVP_PKEY_get_utf8_string_param(const EVP_PKEY *pkey, const char *key_name, char *str, size_t max_buf_sz, size_t *out_len);
 int EVP_PKEY_get_octet_string_param(const EVP_PKEY *pkey, const char *key_name, unsigned char *buf, size_t max_buf_sz, size_t *out_len);
-EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_pkey(
-    OSSL_LIB_CTX *libctx, EVP_PKEY *pkey, const char *propquery);
+EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_pkey(OSSL_LIB_CTX *libctx,
+                                         EVP_PKEY *pkey,
+                                         const char *propquery);
 
 OSSL_PARAM OSSL_PARAM_construct_end(void);
 OSSL_PARAM OSSL_PARAM_construct_int(const char *key, int *buf);
