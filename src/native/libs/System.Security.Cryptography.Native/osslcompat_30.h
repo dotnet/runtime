@@ -92,7 +92,7 @@ int EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int EVP_PKEY_decapsulate(EVP_PKEY_CTX *ctx,
     unsigned char *unwrapped, size_t *unwrappedlen,
     const unsigned char *wrapped, size_t wrappedlen);
-    int EVP_PKEY_decapsulate_init(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[]);
+int EVP_PKEY_decapsulate_init(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[]);
 int EVP_PKEY_encapsulate_init(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[]);
     int EVP_PKEY_encapsulate(EVP_PKEY_CTX *ctx,
                              unsigned char *wrappedkey, size_t *wrappedkeylen,

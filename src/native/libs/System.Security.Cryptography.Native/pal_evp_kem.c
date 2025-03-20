@@ -24,24 +24,14 @@ static int32_t GetKeyOctetStringParam(const EVP_PKEY* pKey,
         size_t destinationLengthT = Int32ToSizeT(destinationLength);
         size_t outLength = 0;
 
-        int ret = EVP_PKEY_get_octet_string_param(
-            pKey,
-            name,
-            NULL,
-            0,
-            &outLength);
+        int ret = EVP_PKEY_get_octet_string_param(pKey, name, NULL, 0, &outLength);
 
         if (ret != 1)
         {
             return -1;
         }
 
-        ret = EVP_PKEY_get_octet_string_param(
-            pKey,
-            name,
-            (unsigned char*)destination,
-            destinationLengthT,
-            &outLength);
+        ret = EVP_PKEY_get_octet_string_param(pKey, name, (unsigned char*)destination, destinationLengthT, &outLength);
 
         if (ret != 1)
         {
@@ -196,7 +186,8 @@ int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
             goto done;
         }
 
-        if (ciphertextLengthT != Int32ToSizeT(ciphertextLength) || sharedSecretLengthT != Int32ToSizeT(sharedSecretLength))
+        if (ciphertextLengthT != Int32ToSizeT(ciphertextLength) ||
+            sharedSecretLengthT != Int32ToSizeT(sharedSecretLength))
         {
             ret = -1;
         }
@@ -294,7 +285,6 @@ int32_t CryptoNative_EvpKemExportDecapsulationKey(const EVP_PKEY* pKey, uint8_t*
 {
     return GetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_PRIV_KEY, destination, destinationLength);
 }
-
 
 int32_t CryptoNative_EvpKemExportEncapsulationKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
 {
