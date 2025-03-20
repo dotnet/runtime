@@ -174,7 +174,7 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
     CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
 
     pRD->PCTAddr = GetReturnAddressPtr();
-    
+
 #ifdef FEATURE_EH_FUNCLETS
 
     DWORD CallerSP = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
@@ -782,7 +782,7 @@ void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     CONTRACT_END;
 
     pRD->PCTAddr = GetReturnAddressPtr();
-    
+
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
