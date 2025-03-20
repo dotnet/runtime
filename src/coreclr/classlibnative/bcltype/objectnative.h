@@ -25,6 +25,7 @@ class ObjectNative
 {
 public:
     static FCDECL1(INT32, TryGetHashCode, Object* vThisRef);
+    static FCDECL2(FC_BOOL_RET, ContentEquals, Object *pThisRef, Object *pCompareRef);
     static FCDECL1(FC_BOOL_RET, IsLockHeld, Object* pThisUNSAFE);
 };
 
