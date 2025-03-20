@@ -810,6 +810,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
             break;
 
+        case GT_BSWAP16:
+            if (node->gtGetOp1()->OperIs(GT_CAST))
+            {
+                comp->fgSimpleLowerBswap16(BlockRange(), node);
+            }
+            break;
+
         default:
             // Check that we don't have nodes not allowed in HIR here.
             assert((node->DebugOperKind() & DBK_NOTHIR) == 0);

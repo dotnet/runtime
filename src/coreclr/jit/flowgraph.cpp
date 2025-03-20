@@ -2808,6 +2808,58 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
     return false;
 }
 
+//------------------------------------------------------------------------
+// fgSimpleLowerBswap16 : Optimization to remove CAST nodes from operands of small ops that depents on
+// lower bits only (currently only BSWAP16).
+// Example:
+//      BSWAP16(CAST(x)) transforms to BSWAP16(x)
+//
+// Returns:
+//      True or false, representing changes were made.
+//
+// Notes:
+//      This optimization could be done in morph, but it cannot because there are correctness
+//      problems with NOLs (normalized-on-load locals) and how they are handled in VN.
+//      Simple put, you cannot remove a CAST from CAST(LCL_VAR{nol}) in HIR.
+//
+//      Because the optimization happens during rationalization, turning into LIR, it is safe to remove the CAST.
+//
+bool Compiler::fgSimpleLowerBswap16(LIR::Range& range, GenTree* op)
+{
+    assert(op->OperIs(GT_BSWAP16));
+
+    if (opts.OptimizationDisabled())
+        return false;
+
+    // When openrand is a integral cast
+    // When both source and target sizes are at least the operation size
+    bool madeChanges = false;
+
+    if (op->gtGetOp1()->OperIs(GT_CAST))
+    {
+        GenTreeCast* op1 = op->gtGetOp1()->AsCast();
+
+        if (!op1->gtOverflow() && (genTypeSize(op1->CastToType()) >= 2) &&
+            genActualType(op1->CastFromType()) == TYP_INT)
+        {
+            // This cast does not affect the lower 16 bits. It can be removed.
+            op->AsOp()->gtOp1 = op1->CastOp();
+            range.Remove(op1);
+            madeChanges = true;
+        }
+    }
+
+#ifdef DEBUG
+    if (madeChanges)
+    {
+        JITDUMP("Lower - Downcast of Small Op %s:\n", GenTree::OpName(op->OperGet()));
+        DISPTREE(op);
+    }
+#endif // DEBUG
+
+    return madeChanges;
+}
+
 //------------------------------------------------------------------------------
 // fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
 //
