@@ -688,6 +688,9 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 #endif
 
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_MaxVectorTBitWidth,           W("MaxVectorTBitWidth"),        0, "The maximum decimal width, in bits, that Vector<T> is allowed to be. A value less than 128 is treated as the system default.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_PreferredVectorBitWidth,      W("PreferredVectorBitWidth"),   0, "The maximum decimal width, in bits, of fixed-width vectors that may be considered hardware accelerated. A value less than 128 is treated as the system default.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+#endif // defined(TARGET_AMD64) || defined(TARGET_X86)
 
 //
 // Hardware Intrinsic ISAs; keep in sync with jitconfigvalues.h
