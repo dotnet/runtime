@@ -85,6 +85,16 @@ namespace System.Security.Cryptography
         public int CiphertextSizeInBytes { get; }
 
         /// <summary>
+        ///   Gets size of the shared secret for the algorithm, in bytes.
+        /// </summary>
+        /// <value>
+        /// The size of the shared secret for the algorithm, in bytes.
+        /// </value>
+        // Right now every shared secret for ML-KEM is 32 bytes. If or when a different shared secret
+        // size is needed, then it can be provided as input to the private constructor.
+        public int SharedSecretSizeInBytes { get; } = 32;
+
+        /// <summary>
         ///   Compares two <see cref="MLKemAlgorithm" /> objects.
         /// </summary>
         /// <param name="other">

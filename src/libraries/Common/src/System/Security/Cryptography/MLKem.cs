@@ -28,11 +28,6 @@ namespace System.Security.Cryptography
         private bool _disposed;
 
         /// <summary>
-        /// The shared secret size for ML-KEM, in bytes.
-        /// </summary>
-        public const int SharedSecretSizeInBytes = 32; // FIPS 203, Table 3.
-
-        /// <summary>
         /// The private seed size for ML-KEM, in bytes.
         /// </summary>
         public const int PrivateSeedSizeInBytes = 64; // FIPS 203 Algorithm 19. Seed is d || z
@@ -131,10 +126,10 @@ namespace System.Security.Cryptography
                     nameof(ciphertext));
             }
 
-            if (sharedSecret.Length != SharedSecretSizeInBytes)
+            if (sharedSecret.Length != Algorithm.SharedSecretSizeInBytes)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, SharedSecretSizeInBytes),
+                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.SharedSecretSizeInBytes),
                     nameof(sharedSecret));
             }
 
@@ -187,10 +182,10 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_KemInvalidCiphertextLength, nameof(ciphertext));
             }
 
-            if (sharedSecret.Length != SharedSecretSizeInBytes)
+            if (sharedSecret.Length != Algorithm.SharedSecretSizeInBytes)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, SharedSecretSizeInBytes),
+                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.SharedSecretSizeInBytes),
                     nameof(sharedSecret));
             }
 

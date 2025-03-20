@@ -86,23 +86,23 @@ namespace System.Security.Cryptography.Tests
 
             AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Encapsulate(
                 new byte[algorithm.CiphertextSizeInBytes + 1],
-                new byte[MLKem.SharedSecretSizeInBytes]));
+                new byte[algorithm.SharedSecretSizeInBytes]));
 
             AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Encapsulate(
                 new byte[algorithm.CiphertextSizeInBytes - 1],
-                new byte[MLKem.SharedSecretSizeInBytes]));
+                new byte[algorithm.SharedSecretSizeInBytes]));
 
             AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Encapsulate(
                 [],
-                new byte[MLKem.SharedSecretSizeInBytes]));
+                new byte[algorithm.SharedSecretSizeInBytes]));
 
             AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Encapsulate(
                 new byte[algorithm.CiphertextSizeInBytes],
-                new byte[MLKem.SharedSecretSizeInBytes + 1]));
+                new byte[algorithm.SharedSecretSizeInBytes + 1]));
 
             AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Encapsulate(
                 new byte[algorithm.CiphertextSizeInBytes],
-                new byte[MLKem.SharedSecretSizeInBytes - 1]));
+                new byte[algorithm.SharedSecretSizeInBytes - 1]));
 
             AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Encapsulate(
                 new byte[algorithm.CiphertextSizeInBytes],
@@ -117,23 +117,23 @@ namespace System.Security.Cryptography.Tests
 
             AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
                 new byte[algorithm.CiphertextSizeInBytes + 1],
-                new byte[MLKem.SharedSecretSizeInBytes]));
+                new byte[algorithm.SharedSecretSizeInBytes]));
 
             AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
                 new byte[algorithm.CiphertextSizeInBytes - 1],
-                new byte[MLKem.SharedSecretSizeInBytes]));
+                new byte[algorithm.SharedSecretSizeInBytes]));
 
             AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
                 [],
-                new byte[MLKem.SharedSecretSizeInBytes]));
+                new byte[algorithm.SharedSecretSizeInBytes]));
 
             AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Decapsulate(
                 new byte[algorithm.CiphertextSizeInBytes],
-                new byte[MLKem.SharedSecretSizeInBytes + 1]));
+                new byte[algorithm.SharedSecretSizeInBytes + 1]));
 
             AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Decapsulate(
                 new byte[algorithm.CiphertextSizeInBytes],
-                new byte[MLKem.SharedSecretSizeInBytes - 1]));
+                new byte[algorithm.SharedSecretSizeInBytes - 1]));
 
             AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Decapsulate(
                 new byte[algorithm.CiphertextSizeInBytes],
@@ -197,11 +197,11 @@ namespace System.Security.Cryptography.Tests
 
             Assert.Throws<ObjectDisposedException>(() =>  kem.Encapsulate(
                 new byte[MLKemAlgorithm.MLKem512.CiphertextSizeInBytes],
-                new byte[MLKem.SharedSecretSizeInBytes]));
+                new byte[MLKemAlgorithm.MLKem512.SharedSecretSizeInBytes]));
 
             Assert.Throws<ObjectDisposedException>(() =>  kem.Decapsulate(
                 new byte[MLKemAlgorithm.MLKem512.CiphertextSizeInBytes],
-                new byte[MLKem.SharedSecretSizeInBytes]));
+                new byte[MLKemAlgorithm.MLKem512.SharedSecretSizeInBytes]));
 
             Assert.Throws<ObjectDisposedException>(() => kem.ExportPrivateSeed(
                 new byte[MLKem.PrivateSeedSizeInBytes]));
