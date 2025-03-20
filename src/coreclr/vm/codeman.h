@@ -1793,18 +1793,16 @@ public:
     }
 
 protected:
-    template<typename TCodeHeader>
     BOOL GetBoundariesAndVarsWorker(
-        const DebugInfoRequest & request,
+        PTR_BYTE pDebugInfo,
         IN FP_IDS_NEW fpNew, IN void * pNewData,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
 
-    template<typename TCodeHeader>
     BOOL GetRichDebugInfoWorker(
-        const DebugInfoRequest& request,
+        PTR_BYTE pDebugInfo,
         IN FP_IDS_NEW fpNew, IN void* pNewData,
         OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
         OUT ULONG32* pNumInlineTree,

@@ -3913,9 +3913,8 @@ static TCodeHeader * GetCodeHeaderFromDebugInfoRequest(const DebugInfoRequest & 
 //-----------------------------------------------------------------------------
 // Get vars from Jit Store
 //-----------------------------------------------------------------------------
-template<typename TCodeHeader>
 BOOL EECodeGenManager::GetBoundariesAndVarsWorker(
-        const DebugInfoRequest & request,
+        PTR_BYTE pDebugInfo,
         IN FP_IDS_NEW fpNew, IN void * pNewData,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
@@ -3927,11 +3926,6 @@ BOOL EECodeGenManager::GetBoundariesAndVarsWorker(
         GC_NOTRIGGER; // getting vars shouldn't trigger
         SUPPORTS_DAC;
     } CONTRACTL_END;
-
-    TCodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<TCodeHeader>(request);
-    _ASSERTE(pHdr != NULL);
-
-    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
 
     // No header created, which means no jit information is available.
     if (pDebugInfo == NULL)
@@ -3974,12 +3968,16 @@ BOOL EEJitManager::GetBoundariesAndVars(
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    return GetBoundariesAndVarsWorker<CodeHeader>(request, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
+    CodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<CodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
 }
 
-template<typename TCodeHeader>
 BOOL EECodeGenManager::GetRichDebugInfoWorker(
-    const DebugInfoRequest& request,
+    PTR_BYTE pDebugInfo,
     IN FP_IDS_NEW fpNew, IN void* pNewData,
     OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
     OUT ULONG32* pNumInlineTree,
@@ -3996,11 +3994,6 @@ BOOL EECodeGenManager::GetRichDebugInfoWorker(
     {
         return FALSE;
     }
-
-    TCodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<TCodeHeader>(request);
-    _ASSERTE(pHdr != NULL);
-
-    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
 
     // No header created, which means no debug information is available.
     if (pDebugInfo == NULL)
@@ -4029,7 +4022,12 @@ BOOL EEJitManager::GetRichDebugInfo(
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    return GetRichDebugInfoWorker<CodeHeader>(request, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
+    CodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<CodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    return GetRichDebugInfoWorker(pDebugInfo, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -4047,7 +4045,12 @@ BOOL InterpreterJitManager::GetBoundariesAndVars(
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    return GetBoundariesAndVarsWorker<InterpreterCodeHeader>(request, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
+    InterpreterCodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<InterpreterCodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
 }
 
 BOOL InterpreterJitManager::GetRichDebugInfo(
@@ -4064,7 +4067,12 @@ BOOL InterpreterJitManager::GetRichDebugInfo(
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    return GetRichDebugInfoWorker<InterpreterCodeHeader>(request, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
+    InterpreterCodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<InterpreterCodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    return GetRichDebugInfoWorker(pDebugInfo, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
 }
 #endif // FEATURE_INTERPRETER
 
