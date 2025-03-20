@@ -5923,7 +5923,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
         return false;
     }
 
-#if defined(TARGET_X86)
+#ifdef TARGET_X86
     LOG((LF_CORDB,LL_INFO1000, "GetJitInfo for pc = 0x%x (addr of "
         "that value:0x%x)\n", (const BYTE*)(GetControlPC(&info->m_activeFrame.registers)),
         info->m_activeFrame.registers.PCTAddr));
