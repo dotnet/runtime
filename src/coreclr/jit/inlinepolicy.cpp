@@ -911,21 +911,6 @@ int DefaultPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* meth
 
 void DefaultPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
-
-#if defined(DEBUG)
-
-    // Punt if we're inlining and we've reached the acceptance limit.
-    int      limit   = JitConfig.JitInlineLimit();
-    unsigned current = m_RootCompiler->m_inlineStrategy->GetInlineCount();
-
-    if (!m_IsPrejitRoot && (limit >= 0) && (current >= static_cast<unsigned>(limit)))
-    {
-        SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
-        return;
-    }
-
-#endif // defined(DEBUG)
-
     assert(InlDecisionIsCandidate(m_Decision));
     assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
@@ -1133,20 +1118,6 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
     assert(InlDecisionIsCandidate(m_Decision));
     assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
-
-#if defined(DEBUG)
-
-    // Punt if we're inlining and we've reached the acceptance limit.
-    int      limit   = JitConfig.JitInlineLimit();
-    unsigned current = m_RootCompiler->m_inlineStrategy->GetInlineCount();
-
-    if (!m_IsPrejitRoot && (limit >= 0) && (current >= static_cast<unsigned>(limit)))
-    {
-        SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
-        return;
-    }
-
-#endif // defined(DEBUG)
 
     // Budget check.
     const bool overBudget = this->BudgetCheck();
@@ -2400,21 +2371,6 @@ bool DiscretionaryPolicy::PropagateNeverToRuntime() const
 
 void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
-
-#if defined(DEBUG)
-
-    // Punt if we're inlining and we've reached the acceptance limit.
-    int      limit   = JitConfig.JitInlineLimit();
-    unsigned current = m_RootCompiler->m_inlineStrategy->GetInlineCount();
-
-    if (!m_IsPrejitRoot && (limit >= 0) && (current >= static_cast<unsigned>(limit)))
-    {
-        SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
-        return;
-    }
-
-#endif // defined(DEBUG)
-
     // Make additional observations based on the method info
     MethodInfoObservations(methodInfo);
 
