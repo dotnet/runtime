@@ -22,7 +22,7 @@ namespace System.Diagnostics.CodeAnalysis
                     AttributeTargets.Event |
                     AttributeTargets.Interface |
                     AttributeTargets.Delegate, Inherited = false)]
-    #if SYSTEM_PRIVATE_CORELIB
+#if SYSTEM_PRIVATE_CORELIB
     public
 #else
     internal

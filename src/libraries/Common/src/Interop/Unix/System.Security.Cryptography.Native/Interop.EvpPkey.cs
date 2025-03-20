@@ -26,9 +26,9 @@ internal static partial class Interop
             int keyLength,
             [MarshalAs(UnmanagedType.Bool)] bool privateKey);
 
-        internal static SafeEvpPKeyHandle EvpPKeyFromData(string kemName, ReadOnlySpan<byte> key, bool privateKey)
+        internal static SafeEvpPKeyHandle EvpPKeyFromData(string algorithmName, ReadOnlySpan<byte> key, bool privateKey)
         {
-            SafeEvpPKeyHandle handle = CryptoNative_EvpPKeyFromData(kemName, key, key.Length, privateKey);
+            SafeEvpPKeyHandle handle = CryptoNative_EvpPKeyFromData(algorithmName, key, key.Length, privateKey);
 
             if (handle.IsInvalid)
             {

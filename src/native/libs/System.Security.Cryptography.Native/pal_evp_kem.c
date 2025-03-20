@@ -262,6 +262,7 @@ int32_t CryptoNative_EvpKemDecapsulate(EVP_PKEY* pKey,
         if (sharedSecretLengthT != Int32ToSizeT(sharedSecretLength))
         {
             ret = -1;
+            goto done;
         }
 
         ret = 1;
