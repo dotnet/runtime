@@ -4579,6 +4579,46 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
 #endif // DEBUG
 
+instruction getShxaddVariant(int scale, bool useUnsignedVariant)
+{
+    assert((1 <= scale) && (scale <= 3));
+
+    instruction shxaddIns;
+
+    if (useUnsignedVariant)
+    {
+        switch (scale)
+        {
+            case 1:
+                shxaddIns = INS_sh1add_uw;
+                break;
+            case 2:
+                shxaddIns = INS_sh2add_uw;
+                break;
+            case 3:
+                shxaddIns = INS_sh3add_uw;
+                break;
+        }
+    }
+    else
+    {
+
+        switch (scale)
+        {
+            case 1:
+                shxaddIns = INS_sh1add;
+                break;
+            case 2:
+                shxaddIns = INS_sh2add;
+                break;
+            case 3:
+                shxaddIns = INS_sh3add;
+                break;
+        }
+    }
+    return shxaddIns;
+}
+
 // Generate code for a load or store operation with a potentially complex addressing mode
 // This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*sccale + offset]
 //
@@ -4610,6 +4650,12 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         {
             GenTree* index = indir->Index();
 
+            bool useUnsignedShxaddVariant = false;
+            if (index->OperGet() == GT_CAST && ((index->gtFlags & GTF_CAST_DEFER_TO_SHXADD_UW) != 0))
+            {
+                useUnsignedShxaddVariant = true;
+            }
+
             if (offset != 0)
             {
                 regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
@@ -4619,18 +4665,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
                     if (0 < lsl && lsl <= 3)
                     {
-                        switch (lsl)
-                        {
-                            case 1:
-                                emitIns_R_R_R(INS_sh1add, addType, tmpReg, index->GetRegNum(), memBase->GetRegNum());
-                                break;
-                            case 2:
-                                emitIns_R_R_R(INS_sh2add, addType, tmpReg, index->GetRegNum(), memBase->GetRegNum());
-                                break;
-                            case 3:
-                                emitIns_R_R_R(INS_sh3add, addType, tmpReg, index->GetRegNum(), memBase->GetRegNum());
-                                break;
-                        }
+                        instruction shxaddIns = getShxaddVariant(lsl, useUnsignedShxaddVariant);
+                        emitIns_R_R_R(shxaddIns, addType, tmpReg, index->GetRegNum(), memBase->GetRegNum());
                     }
                     else if (lsl > 0)
                     {
@@ -4661,10 +4697,19 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
                     noway_assert(tmpReg != index->GetRegNum());
 
-                    regNumber scaleReg = codeGen->internalRegisters.GetSingle(indir);
                     // Then load/store dataReg from/to [tmpReg + index*scale]
-                    emitIns_R_R_I(INS_slli, addType, scaleReg, index->GetRegNum(), lsl);
-                    emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, scaleReg);
+                    // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+                    if (0 < lsl && lsl <= 3)
+                    {
+                        instruction shxaddIns = getShxaddVariant(lsl, useUnsignedShxaddVariant);
+                        emitIns_R_R_R(shxaddIns, addType, tmpReg, index->GetRegNum(), tmpReg);
+                    }
+                    else
+                    {
+                        regNumber scaleReg = codeGen->internalRegisters.GetSingle(indir);
+                        emitIns_R_R_I(INS_slli, addType, scaleReg, index->GetRegNum(), lsl);
+                        emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, scaleReg);
+                    }
                     emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
                 }
             }
@@ -4733,21 +4778,9 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
                 if (0 < lsl && lsl <= 3)
                 {
-                    switch (lsl)
-                    {
-                        case 1:
-                            emitIns_R_R_R(INS_sh1add, addType, codeGen->rsGetRsvdReg(), index->GetRegNum(),
-                                          memBase->GetRegNum());
-                            break;
-                        case 2:
-                            emitIns_R_R_R(INS_sh2add, addType, codeGen->rsGetRsvdReg(), index->GetRegNum(),
-                                          memBase->GetRegNum());
-                            break;
-                        case 3:
-                            emitIns_R_R_R(INS_sh3add, addType, codeGen->rsGetRsvdReg(), index->GetRegNum(),
-                                          memBase->GetRegNum());
-                            break;
-                    }
+                    instruction shxaddIns = getShxaddVariant(lsl, useUnsignedShxaddVariant);
+                    emitIns_R_R_R(shxaddIns, addType, codeGen->rsGetRsvdReg(), index->GetRegNum(),
+                                  memBase->GetRegNum());
                     emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), 0);
                 }
                 else if (lsl > 0)

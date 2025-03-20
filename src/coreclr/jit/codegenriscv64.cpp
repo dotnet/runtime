@@ -5450,41 +5450,6 @@ void CodeGen::genScaledAdd(
         // target = base + index
         emit->emitIns_R_R_R(ins, attr, targetReg, baseReg, indexReg);
     }
-    // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
-    else if (0 < scale && scale <= 3)
-    {
-        instruction ins;
-        if (attr == EA_4BYTE)
-        {
-            switch (scale)
-            {
-                case 1:
-                    ins = INS_sh1add_uw;
-                    break;
-                case 2:
-                    ins = INS_sh2add_uw;
-                    break;
-                case 3:
-                    ins = INS_sh3add_uw;
-                    break;
-            }
-        }
-        else
-        {
-            switch (scale)
-            {
-                case 1:
-                    ins = INS_sh1add;
-                    break;
-                case 2:
-                    ins = INS_sh2add;
-                    break;
-                case 3:
-                    ins = INS_sh3add;
-            }
-        }
-        emit->emitIns_R_R_R(ins, attr, targetReg, indexReg, baseReg);
-    }
     else
     {
         instruction ins;
@@ -6350,7 +6315,14 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
         genIntCastOverflowCheck(cast, desc, srcReg);
     }
 
-    if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
+    if ((cast->gtFlags & GTF_CAST_DEFER_TO_SHXADD_UW) != 0)
+    {
+        if (srcReg != dstReg)
+        {
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstReg, srcReg, 0);
+        }
+    }
+    else if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
     {
         switch (desc.ExtendKind())
         {
