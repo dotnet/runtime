@@ -1001,8 +1001,7 @@ void emitter::emitIns_R_C(
     id->idSmallCns(offs); // usually is 0.
     id->idInsOpt(INS_OPTS_RC);
     // Load constant with auipc if constant size is 64 bits
-    if ((emitComp->eeIsJitDataOffs(fldHnd) && (EA_SIZE(attr) == EA_8BYTE || EA_SIZE(attr) == EA_PTRSIZE)) ||
-        emitComp->opts.compReloc)
+    if ((emitComp->eeIsJitDataOffs(fldHnd) && (EA_SIZE(attr) == EA_PTRSIZE)) || emitComp->opts.compReloc)
     {
         id->idSetIsDspReloc();
         id->idCodeSize(8);
@@ -1305,22 +1304,22 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     if (((uint64_t)imm >> 63) & 0b1)
     {
         // last one position from MSB
-        y = 63 - __builtin_clzll(~imm) + 1;
+        y = 63 - BitOperations::LeadingZeroCount((uint64_t)~imm) + 1;
     }
     else
     {
         // last zero position from MSB
-        y = 63 - __builtin_clzll(imm) + 1;
+        y = 63 - BitOperations::LeadingZeroCount((uint64_t)imm) + 1;
     }
     if (imm & 0b1)
     {
         // first zero position from LSB
-        x = __builtin_ctzll(~imm);
+        x = BitOperations::TrailingZeroCount((uint64_t)~imm);
     }
     else
     {
         // first one position from LSB
-        x = __builtin_ctzll(imm);
+        x = BitOperations::TrailingZeroCount((uint64_t)imm);
     }
 
     // STEP 2: Determine whether to utilize SRLI or not.
@@ -1353,14 +1352,17 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     int           maxInsCount      = maxTotalInsCount;
     int           srliShiftAmount;
     uint64_t      originalImm = imm;
-    if ((((uint64_t)imm >> 63) & 0b1) == 0 && y - x > 31)
+    bool          cond1       = (y - x) > 31;
+    if ((((uint64_t)imm >> 63) & 0b1) == 0 && cond1)
     {
-        srliShiftAmount  = __builtin_clzll(imm);
+        srliShiftAmount  = BitOperations::LeadingZeroCount((uint64_t)imm);
         uint64_t tempImm = (uint64_t)imm << srliShiftAmount;
-        int      m       = __builtin_clzll(~tempImm);
+        int      m       = BitOperations::LeadingZeroCount(~tempImm);
         int      b       = 64 - m;
-        int      a       = __builtin_ctzll(tempImm);
-        if ((b - a) < 32 || (y - x) - (b - a) >= 11)
+        int      a       = BitOperations::TrailingZeroCount(tempImm);
+        bool     cond2   = (b - a) < 32;
+        bool     cond3   = ((y - x) - (b - a)) >= 11;
+        if (cond2 || cond3)
         {
             imm         = tempImm;
             y           = b;
@@ -1371,15 +1373,15 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     }
 
     assert(y >= x);
-    assert(1 <= y && y <= 63);
-    assert(1 <= x && x <= 63);
+    assert((1 <= y) && (y <= 63));
+    assert((1 <= x) && (x <= 63));
 
     if (y < 32)
     {
         y = 31;
         x = 0;
     }
-    else if (y - x < 31)
+    else if ((y - x) < 31)
     {
         y = x + 31;
     }
@@ -1401,22 +1403,22 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
      * https://github.com/dotnet/runtime/pull/113250#discussion_r1987576070 */
 
     uint32_t offset1        = imm & WordMask(x);
-    uint32_t offset2        = ~(offset1 - 1) & WordMask(x);
+    uint32_t offset2        = (~(offset1 - 1)) & WordMask(x);
     uint32_t offset         = offset1;
     bool     isSubtractMode = false;
 
-    if (high32 == 0x7FFFFFFF && y != 63)
+    if ((high32 == 0x7FFFFFFF) && (y != 63))
     {
         /* Handle corner case: we cannot do subtract mode if high32 == 0x7FFFFFFF
          * Since adding 1 to it will change the sign bit. Instead, shift x and y
          * to the left by one. */
         int      newX       = x + 1;
         uint32_t newOffset1 = imm & WordMask(newX);
-        uint32_t newOffset2 = ~(newOffset1 - 1) & WordMask(newX);
+        uint32_t newOffset2 = (~(newOffset1 - 1)) & WordMask(newX);
         if (newOffset2 < offset1)
         {
             x              = newX;
-            high32         = ((int64_t)imm >> (x)) & WordMask(32);
+            high32         = ((int64_t)imm >> x) & WordMask(32);
             offset2        = newOffset2;
             isSubtractMode = true;
         }
@@ -1450,7 +1452,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     if (upper != 0)
     {
         ins[numberOfInstructions]    = INS_lui;
-        values[numberOfInstructions] = ((upper >> 19) & 0b1) ? upper + 0xFFF00000 : upper;
+        values[numberOfInstructions] = ((upper >> 19) & 0b1) ? (upper + 0xFFF00000) : upper;
         numberOfInstructions += 1;
     }
     if (lower != 0)
@@ -1462,9 +1464,9 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     // STEP 5: Generate instructions to load offset in 11-bits chunks
 
-    int chunkLsbPos = x < 11 ? 0 : x - 11;
-    int shift       = x < 11 ? x : 11;
-    int chunkMask   = x < 11 ? WordMask(x) : WordMask(11);
+    int chunkLsbPos = (x < 11) ? 0 : (x - 11);
+    int shift       = (x < 11) ? x : 11;
+    int chunkMask   = (x < 11) ? WordMask(x) : WordMask(11);
     while (true)
     {
         uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
@@ -1473,7 +1475,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         {
             /* We could move our 11 bit chunk window to the right for as many as the
              * leading zeros.*/
-            int leadingZerosOn11BitsChunk = 11 - (64 - __builtin_clzll(chunk));
+            int leadingZerosOn11BitsChunk = 11 - (32 - BitOperations::LeadingZeroCount(chunk));
             if (leadingZerosOn11BitsChunk > 0)
             {
                 int maxAdditionalShift =
@@ -1506,9 +1508,9 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         {
             break;
         }
-        shift += chunkLsbPos < 11 ? chunkLsbPos : 11;
-        chunkMask = chunkLsbPos < 11 ? chunkMask >> (11 - chunkLsbPos) : WordMask(11);
-        chunkLsbPos -= chunkLsbPos < 11 ? chunkLsbPos : 11;
+        shift += (chunkLsbPos < 11) ? chunkLsbPos : 11;
+        chunkMask = (chunkLsbPos < 11) ? (chunkMask >> (11 - chunkLsbPos)) : WordMask(11);
+        chunkLsbPos -= (chunkLsbPos < 11) ? chunkLsbPos : 11;
     }
     if (shift > 0)
     {
@@ -1526,11 +1528,11 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     {
         for (int i = 0; i < numberOfInstructions; i++)
         {
-            if (i == 0 && ins[0] == INS_lui)
+            if ((i == 0) && (ins[0] == INS_lui))
             {
                 emitIns_R_I(ins[i], size, reg, values[i]);
             }
-            else if (i == 0 && (ins[0] == INS_addiw || ins[0] == INS_addi))
+            else if ((i == 0) && ((ins[0] == INS_addiw) || (ins[0] == INS_addi)))
             {
                 emitIns_R_R_I(ins[i], size, reg, REG_R0, values[i]);
             }
@@ -1538,7 +1540,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             {
                 assert(false && "First instruction must be lui / addiw / addi");
             }
-            else if (ins[i] == INS_addi || ins[i] == INS_addiw || ins[i] == INS_slli)
+            else if ((ins[i] == INS_addi) || (ins[i] == INS_addiw) || (ins[i] == INS_slli))
             {
                 emitIns_R_R_I(ins[i], size, reg, reg, values[i]);
             }
@@ -1552,7 +1554,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             emitIns_R_R_I(INS_srli, size, reg, reg, srliShiftAmount);
         }
     }
-    else if (size == EA_8BYTE || size == EA_PTRSIZE)
+    else if (size == EA_PTRSIZE)
     {
         auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
         emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr), 0);
