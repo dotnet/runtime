@@ -1138,7 +1138,7 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
         _ASSERTE(i <  MAX_PREDECODED_SLOTS);
 
         UINT32 normRegNum = (UINT32) reader.DecodeVarLengthUnsigned(GcInfoEncoding::REGISTER_ENCBASE);
-        UINT32 regNum = GcInfoEncoding::DENORMALIZE_REGISTER(normRegNum);
+        UINT32 regNum = normRegNum;
         GcSlotFlags flags = (GcSlotFlags) reader.Read(2);
 
         m_SlotArray[0].Slot.RegisterNumber = regNum;
@@ -1150,14 +1150,14 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
             if(flags)
             {
                 normRegNum = (UINT32) reader.DecodeVarLengthUnsigned(GcInfoEncoding::REGISTER_ENCBASE);
-                regNum = GcInfoEncoding::DENORMALIZE_REGISTER(normRegNum);
+                regNum = normRegNum;
                 flags = (GcSlotFlags) reader.Read(2);
             }
             else
             {
                 UINT32 normRegDelta = (UINT32) reader.DecodeVarLengthUnsigned(GcInfoEncoding::REGISTER_DELTA_ENCBASE) + 1;
                 normRegNum += normRegDelta;
-                regNum = GcInfoEncoding::DENORMALIZE_REGISTER(normRegNum);
+                regNum = normRegNum;
             }
 
             m_SlotArray[i].Slot.RegisterNumber = regNum;
@@ -1357,7 +1357,7 @@ template <typename GcInfoEncoding> const GcSlotDesc* GcSlotDecoder<GcInfoEncodin
             {
                 // Decode the first register
                 UINT32 normRegNum = (UINT32) m_SlotReader.DecodeVarLengthUnsigned(GcInfoEncoding::REGISTER_ENCBASE);
-                m_pLastSlot->Slot.RegisterNumber = GcInfoEncoding::DENORMALIZE_REGISTER(normRegNum);
+                m_pLastSlot->Slot.RegisterNumber = normRegNum;
                 m_pLastSlot->Flags = (GcSlotFlags) m_SlotReader.Read(2);
             }
             else
@@ -1365,14 +1365,14 @@ template <typename GcInfoEncoding> const GcSlotDesc* GcSlotDecoder<GcInfoEncodin
                 if(m_pLastSlot->Flags)
                 {
                     UINT32 normRegNum = (UINT32) m_SlotReader.DecodeVarLengthUnsigned(GcInfoEncoding::REGISTER_ENCBASE);
-                    m_pLastSlot->Slot.RegisterNumber = GcInfoEncoding::DENORMALIZE_REGISTER(normRegNum);
+                    m_pLastSlot->Slot.RegisterNumber = normRegNum;
                     m_pLastSlot->Flags = (GcSlotFlags) m_SlotReader.Read(2);
                 }
                 else
                 {
                     UINT32 normRegDelta = (UINT32) m_SlotReader.DecodeVarLengthUnsigned(GcInfoEncoding::REGISTER_DELTA_ENCBASE) + 1;
-                    UINT32 normRegNum = normRegDelta + GcInfoEncoding::NORMALIZE_REGISTER(m_pLastSlot->Slot.RegisterNumber);
-                    m_pLastSlot->Slot.RegisterNumber = GcInfoEncoding::DENORMALIZE_REGISTER(normRegNum);
+                    UINT32 normRegNum = normRegDelta + m_pLastSlot->Slot.RegisterNumber;
+                    m_pLastSlot->Slot.RegisterNumber = normRegNum;
                 }
             }
         }

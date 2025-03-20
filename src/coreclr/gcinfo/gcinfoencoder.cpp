@@ -1482,7 +1482,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         _ASSERTE(pSlotDesc->IsRegister());
 
         // Encode slot identification
-        UINT32 currentNormRegNum = GcInfoEncoding::NORMALIZE_REGISTER(pSlotDesc->Slot.RegisterNumber);
+        UINT32 currentNormRegNum = pSlotDesc->Slot.RegisterNumber;
         GCINFO_WRITE_VARL_U(m_Info1, currentNormRegNum, GcInfoEncoding::REGISTER_ENCBASE, RegSlotSize);
         GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, RegSlotSize);
 
@@ -1499,7 +1499,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             while(pSlotDesc->IsDeleted());
             _ASSERTE(pSlotDesc->IsRegister());
 
-            currentNormRegNum = GcInfoEncoding::NORMALIZE_REGISTER(pSlotDesc->Slot.RegisterNumber);
+            currentNormRegNum = pSlotDesc->Slot.RegisterNumber;
 
             if(lastFlags != GC_SLOT_IS_REGISTER)
             {
