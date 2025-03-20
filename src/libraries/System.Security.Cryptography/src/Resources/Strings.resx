@@ -94,7 +94,7 @@
     <value>Destination is too short.</value>
   </data>
   <data name="Argument_DestinationImprecise" xml:space="preserve">
-    <value>Destination must exactly {0} bytes.</value>
+    <value>Destination must be exactly {0} bytes.</value>
   </data>
   <data name="Argument_EmptyString" xml:space="preserve">
     <value>The value cannot be an empty string.</value>
