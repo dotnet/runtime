@@ -844,6 +844,7 @@ internal sealed unsafe partial class SOSDacImpl
             data->metadataSize = readOnlyMetadata.Size;
 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle);
+            data->ThunkHeap = 0; // No longer used. DAC does not set this value
 
             Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
             ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[Constants.FieldNames.ModuleLookupMap.TableData].Offset;
