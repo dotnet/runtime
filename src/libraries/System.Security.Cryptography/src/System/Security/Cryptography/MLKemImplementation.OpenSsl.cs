@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
             Debug.Assert(IsSupported);
             Debug.Assert(source.Length == algorithm.DecapsulationKeySizeInBytes);
             string kemName = MapAlgorithmToName(algorithm);
-            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemImportKey(kemName, source, privateKey: true);
+            SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(kemName, source, privateKey: true);
             return new MLKemImplementation(algorithm, key);
         }
 
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography
             Debug.Assert(IsSupported);
             Debug.Assert(source.Length == algorithm.EncapsulationKeySizeInBytes);
             string kemName = MapAlgorithmToName(algorithm);
-            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemImportKey(kemName, source, privateKey: false);
+            SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(kemName, source, privateKey: false);
             return new MLKemImplementation(algorithm, key);
         }
 

@@ -25,13 +25,6 @@ internal static partial class Interop
             ReadOnlySpan<byte> seed,
             int seedLength);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemImportKey", StringMarshalling = StringMarshalling.Utf8)]
-        private static partial SafeEvpPKeyHandle CryptoNative_EvpKemImportKey(
-            string kemName,
-            ReadOnlySpan<byte> key,
-            int keyLength,
-            [MarshalAs(UnmanagedType.Bool)] bool privateKey);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemExportPrivateSeed")]
         private static partial int CryptoNative_EvpKemExportPrivateSeed(
             SafeEvpPKeyHandle key,
@@ -81,20 +74,6 @@ internal static partial class Interop
             }
 
             SafeEvpPKeyHandle handle = CryptoNative_EvpKemGeneratePkey(kemName, seed, seed.Length);
-
-            if (handle.IsInvalid)
-            {
-                Exception ex = CreateOpenSslCryptographicException();
-                handle.Dispose();
-                throw ex;
-            }
-
-            return handle;
-        }
-
-        internal static SafeEvpPKeyHandle EvpKemImportKey(string kemName, ReadOnlySpan<byte> key, bool privateKey)
-        {
-            SafeEvpPKeyHandle handle = CryptoNative_EvpKemImportKey(kemName, key, key.Length, privateKey);
 
             if (handle.IsInvalid)
             {

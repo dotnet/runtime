@@ -92,68 +92,6 @@ int32_t CryptoNative_EvpKemAvailable(const char* algorithm)
     return 0;
 }
 
-EVP_PKEY* CryptoNative_EvpKemImportKey(const char* kemName, uint8_t* key, int32_t keyLength, int32_t privateKey)
-{
-    assert(kemName);
-    assert(key);
-    assert(keyLength > 0);
-
-#ifdef NEED_OPENSSL_3_0
-    if (API_EXISTS(EVP_PKEY_CTX_new_from_name))
-    {
-        ERR_clear_error();
-        EVP_PKEY_CTX* ctx = NULL;
-        EVP_PKEY* pkey = NULL;
-        ctx = EVP_PKEY_CTX_new_from_name(NULL, kemName, NULL);
-
-        if (ctx == NULL)
-        {
-            goto done;
-        }
-
-        if (EVP_PKEY_fromdata_init(ctx) != 1)
-        {
-            goto done;
-        }
-
-        const char* paramName = privateKey == 0 ? OSSL_PKEY_PARAM_PUB_KEY : OSSL_PKEY_PARAM_PRIV_KEY;
-        int selection = privateKey == 0 ? EVP_PKEY_PUBLIC_KEY : EVP_PKEY_KEYPAIR;
-        size_t keyLengthT = Int32ToSizeT(keyLength);
-
-        OSSL_PARAM params[] =
-        {
-            OSSL_PARAM_construct_octet_string(paramName, (void*)key, keyLengthT),
-            OSSL_PARAM_construct_end(),
-        };
-
-        if (EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1)
-        {
-            if (pkey != NULL)
-            {
-                EVP_PKEY_free(pkey);
-                pkey = NULL;
-            }
-
-            goto done;
-        }
-
-done:
-        if (ctx)
-        {
-            EVP_PKEY_CTX_free(ctx);
-        }
-
-        return pkey;
-    }
-#endif
-
-    (void)kemName;
-    (void)key;
-    (void)keyLength;
-    (void)privateKey;
-    return NULL;
-}
-
 EVP_PKEY* CryptoNative_EvpKemGeneratePkey(const char* kemName, uint8_t* seed, int32_t seedLength)
 {
     assert(kemName);
