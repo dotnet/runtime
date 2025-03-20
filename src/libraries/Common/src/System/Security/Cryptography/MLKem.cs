@@ -28,11 +28,6 @@ namespace System.Security.Cryptography
         private bool _disposed;
 
         /// <summary>
-        /// The private seed size for ML-KEM, in bytes.
-        /// </summary>
-        public const int PrivateSeedSizeInBytes = 64; // FIPS 203 Algorithm 19. Seed is d || z
-
-        /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
         /// </summary>
         /// <value>
@@ -232,10 +227,10 @@ namespace System.Security.Cryptography
         /// </exception>
         public void ExportPrivateSeed(Span<byte> destination)
         {
-            if (destination.Length != PrivateSeedSizeInBytes)
+            if (destination.Length != Algorithm.PrivateSeedSizeInBytes)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, PrivateSeedSizeInBytes),
+                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.PrivateSeedSizeInBytes),
                     nameof(destination));
             }
 
@@ -258,7 +253,8 @@ namespace System.Security.Cryptography
         /// <param name="source">The private seed.</param>
         /// <returns>The imported key.</returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="source"/> has a length that is not <see cref="PrivateSeedSizeInBytes" />.
+        ///   <paramref name="source"/> has a length that is not the
+        ///   <see cref="MLKemAlgorithm.PrivateSeedSizeInBytes" /> from <paramref name="algorithm" />.
         /// </exception>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="algorithm" /> is <see langword="null" />
@@ -274,7 +270,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(algorithm));
             }
 
-            if (source.Length != PrivateSeedSizeInBytes)
+            if (source.Length != algorithm.PrivateSeedSizeInBytes)
             {
                 throw new ArgumentException(SR.Argument_KemInvalidSeedLength, nameof(source));
             }

@@ -20,20 +20,21 @@ namespace System.Security.Cryptography.Tests
         public static void ImportPrivateSeed_NullAlgorithm()
         {
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () =>
-                MLKem.ImportPrivateSeed(null, new byte[MLKem.PrivateSeedSizeInBytes]));
+                MLKem.ImportPrivateSeed(null, new byte[MLKemAlgorithm.MLKem512.PrivateSeedSizeInBytes]));
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
-        public static void ImportPrivateSeed_WrongSize()
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void ImportPrivateSeed_WrongSize(MLKemAlgorithm algorithm)
         {
             AssertExtensions.Throws<ArgumentException>("source", () =>
-                MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem512, new byte[MLKem.PrivateSeedSizeInBytes + 1]));
+                MLKem.ImportPrivateSeed(algorithm, new byte[algorithm.PrivateSeedSizeInBytes + 1]));
 
             AssertExtensions.Throws<ArgumentException>("source", () =>
-                MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem512, new byte[MLKem.PrivateSeedSizeInBytes - 1]));
+                MLKem.ImportPrivateSeed(algorithm, new byte[algorithm.PrivateSeedSizeInBytes - 1]));
 
             AssertExtensions.Throws<ArgumentException>("source", () =>
-                MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem512, []));
+                MLKem.ImportPrivateSeed(algorithm, []));
         }
 
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
@@ -147,10 +148,10 @@ namespace System.Security.Cryptography.Tests
             using MLKem kem = MLKem.GenerateKey(algorithm);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => kem.ExportPrivateSeed(
-                new byte[MLKem.PrivateSeedSizeInBytes + 1]));
+                new byte[algorithm.PrivateSeedSizeInBytes + 1]));
 
             AssertExtensions.Throws<ArgumentException>("destination", () => kem.ExportPrivateSeed(
-                new byte[MLKem.PrivateSeedSizeInBytes - 1]));
+                new byte[algorithm.PrivateSeedSizeInBytes - 1]));
 
             AssertExtensions.Throws<ArgumentException>("destination", () => kem.ExportPrivateSeed(
                 []));
@@ -204,7 +205,7 @@ namespace System.Security.Cryptography.Tests
                 new byte[MLKemAlgorithm.MLKem512.SharedSecretSizeInBytes]));
 
             Assert.Throws<ObjectDisposedException>(() => kem.ExportPrivateSeed(
-                new byte[MLKem.PrivateSeedSizeInBytes]));
+                new byte[MLKemAlgorithm.MLKem512.PrivateSeedSizeInBytes]));
 
             Assert.Throws<ObjectDisposedException>(() => kem.ExportDecapsulationKey(
                 new byte[MLKemAlgorithm.MLKem512.DecapsulationKeySizeInBytes]));

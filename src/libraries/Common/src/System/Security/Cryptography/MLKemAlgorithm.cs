@@ -95,6 +95,16 @@ namespace System.Security.Cryptography
         public int SharedSecretSizeInBytes { get; } = 32;
 
         /// <summary>
+        ///   Gets size of the private seed for the algorithm, in bytes.
+        /// </summary>
+        /// <value>
+        /// The size of the private seed for the algorithm, in bytes.
+        /// </value>
+        // Right now every seed for ML-KEM is 64 bytes. If or when a different seed
+        // size is needed, then it can be provided as input to the private constructor.
+        public int PrivateSeedSizeInBytes { get; } = 64;
+
+        /// <summary>
         ///   Compares two <see cref="MLKemAlgorithm" /> objects.
         /// </summary>
         /// <param name="other">

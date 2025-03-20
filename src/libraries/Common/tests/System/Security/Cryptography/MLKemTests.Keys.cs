@@ -19,14 +19,13 @@ namespace System.Security.Cryptography.Tests
             using MLKem kem = MLKem.GenerateKey(algorithm);
             Assert.Equal(algorithm, kem.Algorithm);
 
-            Span<byte> seed = stackalloc byte[MLKem.PrivateSeedSizeInBytes];
-            seed.Clear();
+            Span<byte> seed = new byte[algorithm.PrivateSeedSizeInBytes];
 
             kem.ExportPrivateSeed(seed);
             Assert.True(seed.ContainsAnyExcept((byte)0));
 
             using MLKem kem2 = MLKem.ImportPrivateSeed(algorithm, seed);
-            Span<byte> seed2 = stackalloc byte[MLKem.PrivateSeedSizeInBytes];
+            Span<byte> seed2 = new byte[algorithm.PrivateSeedSizeInBytes];
             kem2.ExportPrivateSeed(seed2);
             AssertExtensions.SequenceEqual(seed, seed2);
         }
@@ -118,7 +117,7 @@ namespace System.Security.Cryptography.Tests
                 vector.DecapsulationKey.HexToByteArray());
 
             Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed(
-                new byte[MLKem.PrivateSeedSizeInBytes]));
+                new byte[vector.Algorithm.PrivateSeedSizeInBytes]));
         }
 
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
@@ -130,7 +129,7 @@ namespace System.Security.Cryptography.Tests
                 vector.EncapsulationKey.HexToByteArray());
 
             Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed(
-                new byte[MLKem.PrivateSeedSizeInBytes]));
+                new byte[vector.Algorithm.PrivateSeedSizeInBytes]));
         }
 
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]

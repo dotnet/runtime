@@ -1798,7 +1798,6 @@ namespace System.Security.Cryptography
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
     public abstract partial class MLKem : System.IDisposable
     {
-        public const int PrivateSeedSizeInBytes = 64;
         protected MLKem(System.Security.Cryptography.MLKemAlgorithm algorithm) { }
         public System.Security.Cryptography.MLKemAlgorithm Algorithm { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
@@ -1831,6 +1830,7 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.MLKemAlgorithm MLKem512 { get { throw null; } }
         public static System.Security.Cryptography.MLKemAlgorithm MLKem768 { get { throw null; } }
         public string Name { get { throw null; } }
+        public int PrivateSeedSizeInBytes { get { throw null; } }
         public int SharedSecretSizeInBytes { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.Security.Cryptography.MLKemAlgorithm? other) { throw null; }
