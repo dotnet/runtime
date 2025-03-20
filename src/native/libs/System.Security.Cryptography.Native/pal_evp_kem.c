@@ -57,6 +57,7 @@ static int32_t GetKeyOctetStringParam(const EVP_PKEY* pKey,
     }
 #else
     (void)pKey;
+    (void)name;
     (void)destination;
     (void)destinationLength;
 #endif
@@ -260,6 +261,8 @@ done:
     }
 #else
     (void)kem;
+    (void)seed;
+    (void)seedLength;
 #endif
 
     return NULL;
