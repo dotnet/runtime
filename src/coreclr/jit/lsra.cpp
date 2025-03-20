@@ -4320,7 +4320,10 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     // inactive registers available for the rotation.
     regMaskTP inactiveRegs = RBM_NONE;
 #endif // DEBUG
-    regMaskTP       liveRegs = RBM_NONE;
+    SingleTypeRegSet liveRegsLow = RBM_NONE;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    SingleTypeRegSet liveRegsHigh = RBM_NONE;
+#endif
     VarSetOps::Iter iter(compiler, currentLiveVars);
     unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex))
@@ -4333,6 +4336,11 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         Interval*    interval        = getIntervalForLocalVar(varIndex);
         RefPosition* nextRefPosition = interval->getNextRefPosition();
         assert((nextRefPosition != nullptr) || (interval->isWriteThru));
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        SingleTypeRegSet& liveRegsSingleType = (varTypeIsMask(interval->registerType)) ? liveRegsHigh : liveRegsLow;
+#else
+        SingleTypeRegSet& liveRegsSingleType = liveRegsLow;
+#endif
 
         bool leaveOnStack = false;
 
@@ -4360,6 +4368,12 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 targetReg = REG_STK;
             }
 #ifdef DEBUG
+            regMaskTP liveRegs(liveRegsLow
+#ifdef HAS_MORE_THAN_64_REGISTERS
+                               ,
+                               liveRegsHigh
+#endif
+            );
             regNumber newTargetReg = rotateBlockStartLocation(interval, targetReg, (~liveRegs | inactiveRegs));
             if (newTargetReg != targetReg)
             {
@@ -4415,7 +4429,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 assert(targetReg != REG_STK);
                 assert(interval->assignedReg != nullptr && interval->assignedReg->regNum == targetReg &&
                        interval->assignedReg->assignedInterval == interval);
-                liveRegs.AddRegNum(targetReg, interval->registerType);
+                liveRegsSingleType |= getSingleTypeRegMask(targetReg, interval->registerType);
                 continue;
             }
         }
@@ -4445,7 +4459,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 // likely to match other assignments this way.
                 targetReg          = interval->physReg;
                 interval->isActive = true;
-                liveRegs.AddRegNum(targetReg, interval->registerType);
+                liveRegsSingleType |= getSingleTypeRegMask(targetReg, interval->registerType);
                 INDEBUG(inactiveRegs |= genRegMask(targetReg));
                 setVarReg(inVarToRegMap, varIndex, targetReg);
             }
@@ -4457,7 +4471,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         if (targetReg != REG_STK)
         {
             RegRecord* targetRegRecord = getRegisterRecord(targetReg);
-            liveRegs.AddRegNum(targetReg, interval->registerType);
+            liveRegsSingleType |= getSingleTypeRegMask(targetReg, interval->registerType);
             if (!allocationPassComplete)
             {
                 updateNextIntervalRef(targetReg, interval);
@@ -4494,7 +4508,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(targetRegRecord);
 
                     // Use TYP_FLOAT to get the regmask of just the half reg.
-                    liveRegs.RemoveRegNum(anotherHalfRegRec->regNum, TYP_FLOAT);
+                    liveRegsSingleType &= ~(getSingleTypeRegMask(anotherHalfRegRec->regNum, TYP_FLOAT));
                 }
 
 #endif // TARGET_ARM
@@ -4513,11 +4527,14 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     if (!allocationPassComplete)
     {
         resetRegState();
-        setRegsInUse(liveRegs);
+        setLowRegsInUse(liveRegsLow);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        setHighRegsInUse(liveRegsHigh);
+#endif
     }
 
 #ifdef TARGET_ARM
-
+    regMaskTP liveRegs(liveRegsLow);
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
@@ -4579,13 +4596,14 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     }
 #else
 
-    regMaskTP deadCandidates = ~liveRegs;
+    // regMaskTP deadCandidates = ~liveRegs;
 
     // Only focus on actual registers present
-    deadCandidates &= actualRegistersMask;
-    handleDeadCandidates(deadCandidates.getLow(), REG_LOW_BASE, inVarToRegMap);
+    // deadCandidates &= actualRegistersMask;
+    handleDeadCandidates(~liveRegsLow & ((regMaskTP)actualRegistersMask).getLow(), REG_LOW_BASE, inVarToRegMap);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    handleDeadCandidates(deadCandidates.getHigh(), REG_HIGH_BASE, inVarToRegMap);
+    handleDeadCandidates(~liveRegsHigh & ((regMaskTP)actualRegistersMask).getHigh(), REG_HIGH_BASE, inVarToRegMap);
+    // handleDeadCandidates(deadCandidates.getHigh(), REG_HIGH_BASE, inVarToRegMap);
 #endif // HAS_MORE_THAN_64_REGISTERS
 #endif // TARGET_ARM
 }

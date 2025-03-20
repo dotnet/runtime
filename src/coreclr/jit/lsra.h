@@ -1779,6 +1779,16 @@ private:
     {
         m_AvailableRegs &= ~regMask;
     }
+    void setLowRegsInUse(SingleTypeRegSet regs)
+    {
+        m_AvailableRegs.RemoveLowRegset(regs);
+    }
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    void setHighRegsInUse(SingleTypeRegSet regs)
+    {
+        m_AvailableRegs.RemoveHighRegset(regs);
+    }
+#endif
     void setRegInUse(regNumber reg, var_types regType)
     {
         m_AvailableRegs.RemoveRegNum(reg, regType);

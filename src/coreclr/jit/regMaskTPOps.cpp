@@ -220,3 +220,15 @@ void regMaskTP::RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types typ
     low &= ~regsToRemove;
 #endif
 }
+
+void regMaskTP::RemoveLowRegset(SingleTypeRegSet regsToRemove)
+{
+    low &= ~regsToRemove;
+}
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+void regMaskTP::RemoveHighRegset(SingleTypeRegSet regsToRemove)
+{
+    high &= ~regsToRemove;
+}
+#endif

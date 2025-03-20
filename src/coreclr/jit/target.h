@@ -264,16 +264,20 @@ public:
     void RemoveRegNumFromMask(regNumber reg, var_types type);
     bool IsRegNumInMask(regNumber reg, var_types type) const;
 #endif
-    void                       AddGprRegs(SingleTypeRegSet gprRegs DEBUG_ARG(regMaskTP availableIntRegs));
-    void                       AddRegNum(regNumber reg, var_types type);
-    void                       AddRegNumInMask(regNumber reg);
-    void                       AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type);
-    SingleTypeRegSet           GetRegSetForType(var_types type) const;
-    bool                       IsRegNumInMask(regNumber reg) const;
-    bool                       IsRegNumPresent(regNumber reg, var_types type) const;
-    void                       RemoveRegNum(regNumber reg, var_types type);
-    void                       RemoveRegNumFromMask(regNumber reg);
-    void                       RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types type);
+    void             AddGprRegs(SingleTypeRegSet gprRegs DEBUG_ARG(regMaskTP availableIntRegs));
+    void             AddRegNum(regNumber reg, var_types type);
+    void             AddRegNumInMask(regNumber reg);
+    void             AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type);
+    SingleTypeRegSet GetRegSetForType(var_types type) const;
+    bool             IsRegNumInMask(regNumber reg) const;
+    bool             IsRegNumPresent(regNumber reg, var_types type) const;
+    void             RemoveRegNum(regNumber reg, var_types type);
+    void             RemoveRegNumFromMask(regNumber reg);
+    void             RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types type);
+    void             RemoveLowRegset(SingleTypeRegSet regsToRemove);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    void RemoveHighRegset(SingleTypeRegSet regsToRemove);
+#endif
     static constexpr regMaskTP CreateFromRegNum(regNumber reg, regMaskSmall mask)
     {
 #ifdef HAS_MORE_THAN_64_REGISTERS
