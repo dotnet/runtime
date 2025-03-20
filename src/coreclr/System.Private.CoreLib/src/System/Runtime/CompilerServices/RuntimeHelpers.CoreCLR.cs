@@ -282,11 +282,11 @@ namespace System.Runtime.CompilerServices
                 return false;
 
             // Compare the contents
-            return SpanHelpers.SequenceEqual(
-                ref RuntimeHelpers.GetRawData(o1),
-                ref RuntimeHelpers.GetRawData(o2),
-                pMT->GetNumInstanceFieldBytes());
+            return ContentEquals(o1, o2);
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool ContentEquals(object o1, object o2);
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
