@@ -34,6 +34,7 @@ namespace System.Net.Security.Tests
         [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103449", TestPlatforms.Windows)]
         public async Task ClientDisableTlsResume_Succeeds(bool testClient)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
