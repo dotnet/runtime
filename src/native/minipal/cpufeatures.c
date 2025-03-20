@@ -54,15 +54,8 @@
 #if HAVE_HWPROBE_H
 
 #include <asm/hwprobe.h>
-
 #include <asm/unistd.h>
 #include <unistd.h>
-#include <sched.h>
-
-long sys_riscv_hwprobe(struct riscv_hwprobe *pairs, size_t pair_count, size_t cpusetsize, cpu_set_t *cpus, unsigned int flags)
-{
-    return syscall(__NR_riscv_hwprobe, pairs, pair_count, cpusetsize, cpus, flags);
-}
 
 #endif // HAVE_HWPROBE_H
 
@@ -555,7 +548,7 @@ int minipal_getcpufeatures(void)
         {RISCV_HWPROBE_KEY_IMA_EXT_0, 0}
     };
 
-    sys_riscv_hwprobe(pairs, 1, 0, NULL, 0);
+    syscall(__NR_riscv_hwprobe, pairs, 1, 0, NULL, 0);
 
     // Our baseline support is for RV64GC (see #73437)
     assert(pairs[0].value & RISCV_HWPROBE_IMA_FD);
