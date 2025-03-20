@@ -4,9 +4,8 @@ resources:
   repositories:
     - repository: diagnostics
       type: github
-      name: steveisok/diagnostics
+      name: dotnet/diagnostics
       endpoint: public
-      ref: refs/heads/live-runtime-option
 
 variables:
   - template: /eng/pipelines/common/variables.yml
