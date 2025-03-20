@@ -266,7 +266,7 @@ namespace System.Net.Http
                         break;
 
                     case AuthenticationType.Basic:
-                        if (CredentialCache.DefaultCredentials == credentials) 
+                        if (CredentialCache.DefaultCredentials == credentials)
                         {
                             // The DefaultCredentials applies only to NTLM, negotiate, and Kerberos-based authentication.
                             break;
