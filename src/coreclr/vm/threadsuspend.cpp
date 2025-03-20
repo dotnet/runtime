@@ -4782,7 +4782,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
 #endif
                         }
-#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+#elif defined(TARGET_X86)
+                        // FIXME: This is the one place where PCTAddr would be useful
+                        EECodeInfo codeInfo(pRDT->ControlPC);
+                        pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT)- codeInfo.GetCodeManager()->GetStackParameterSize(&codeInfo) - sizeof(void*));
+#elif defined(TARGET_AMD64)
                         pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
 #else // TARGET_X86 || TARGET_AMD64
                         PORTABILITY_ASSERT("Platform NYI");
