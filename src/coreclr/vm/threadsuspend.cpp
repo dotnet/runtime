@@ -3719,7 +3719,7 @@ int RedirectedThrowControlExceptionFilter(
 // add lots of arbitrary code here.
 void
 ThrowControlForThread(
-#ifdef FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_X86)
         FaultingExceptionFrame *pfef
 #endif // FEATURE_EH_FUNCLETS
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
@@ -3767,12 +3767,12 @@ ThrowControlForThread(
         pThread->SetThrowControlForThread(Thread::InducedThreadStop);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_X86)
     ((Frame*)pfef)->Init(FrameIdentifier::FaultingExceptionFrame);
-#else // FEATURE_EH_FUNCLETS
+#else // FEATURE_EH_FUNCLETS && !TARGET_X86
     FaultingExceptionFrame fef;
     FaultingExceptionFrame *pfef = &fef;
-#endif // FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_FUNCLETS && !TARGET_X86
     pfef->InitAndLink(pThread->m_OSContext);
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
