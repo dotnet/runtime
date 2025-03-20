@@ -534,6 +534,8 @@ void CodeGen::inst_Mov(var_types dstType,
 
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip, flags);
+#elif defined(TARGET_ARM64)
+    GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip, size == EA_SCALABLE ? INS_OPTS_SCALABLE_D : INS_OPTS_NONE);
 #else
     GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
 #endif
@@ -1911,6 +1913,12 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         return INS_sve_ldr;
 #endif
     }
+#ifdef TARGET_ARM64
+    else if (srcType == TYP_SIMDVL)
+    {
+        return INS_sve_ldr;
+    }
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(srcType));
@@ -1999,6 +2007,12 @@ instruction CodeGen::ins_Copy(var_types dstType)
         return INS_sve_mov;
 #endif
     }
+#ifdef TARGET_ARM64
+    else if (dstType == TYP_SIMDVL)
+    {
+        return INS_sve_mov;
+    }
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
@@ -2120,6 +2134,12 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return INS_sve_mov;
 #endif
     }
+#ifdef TARGET_ARM64
+    else if (dstType == TYP_SIMDVL)
+    {
+        return INS_sve_mov;
+    }
+#endif
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
@@ -2231,6 +2251,12 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         return INS_sve_str;
 #endif
     }
+#ifdef TARGET_ARM64
+    else if (dstType == TYP_SIMDVL)
+    {
+        return INS_sve_str;
+    }
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));

@@ -2005,7 +2005,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
 #if defined(TARGET_ARM64)
-            if ((simdSize != 8) && (simdSize != 16))
+            if ((simdSize != 8) && (simdSize != 16) && (simdSize != compVectorTLength))
 #elif defined(TARGET_XARCH)
             if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
 #endif // TARGET_*

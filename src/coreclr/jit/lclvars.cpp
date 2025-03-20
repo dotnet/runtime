@@ -3108,6 +3108,9 @@ void Compiler::lvaSortByRefCount()
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
+#ifdef TARGET_ARM64
+                case TYP_SIMDVL:
+#endif
 #ifdef TARGET_XARCH
                 case TYP_SIMD32:
                 case TYP_SIMD64:
