@@ -869,6 +869,10 @@ void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFr
 
 static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCallerSp)
 {
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS) && defined(FEATURE_EH_FUNCLETS)
+    PopSEHRecords((void*)targetSp);
+#endif
+
     Frame* pFrame = pThread->GetFrame();
     while (pFrame < targetSp)
     {
@@ -876,7 +880,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
         pFrame->Pop(pThread);
         pFrame = pThread->GetFrame();
     }
-
+    
     // Check if the pFrame is an active InlinedCallFrame inside of the target frame. It needs to be popped or inactivated depending
     // on the target architecture / ready to run
     if ((pFrame < targetCallerSp) && InlinedCallFrame::FrameHasActiveCall(pFrame))
@@ -889,6 +893,16 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
         // JIT_PInvokeEnd helper will be skipped, we need to unlink the ICF here. If the executing method
         // has another pinvoke, it will re-link the ICF again when the JIT_PInvokeBegin helper is called.
         TADDR returnAddress = pInlinedCallFrame->m_pCallerReturnAddress;
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS) && defined(FEATURE_EH_FUNCLETS)
+        // On win-x86 with funclets we always generate P/Invoke helpers, even in
+        // the IL stub and non-R2R.
+        pFrame->ExceptionUnwind();
+        pFrame->Pop(pThread);
+        // Pop the SEH frame
+        PEXCEPTION_REGISTRATION_RECORD currentContext = GetCurrentSEHRecord();
+        ASSERT(currentContext == &pInlinedCallFrame->m_ExceptionRecord);
+        SetCurrentSEHRecord(currentContext->Next);
+#else
 #ifdef USE_PER_FRAME_PINVOKE_INIT
         // If we're setting up the frame for each P/Invoke for the given platform,
         // then we do this for all P/Invokes except ones in IL stubs.
@@ -908,6 +922,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
         {
             pInlinedCallFrame->Reset();
         }
+#endif
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
@@ -968,7 +983,17 @@ EXCEPTION_HANDLER_IMPL(ProcessCLRExceptionNew)
 
 #ifdef TARGET_X86
         CallRtlUnwind(pEstablisherFrame, NULL, pExceptionRecord, 0);
-        // on x86 at least, RtlUnwind always returns
+        // On x86 RtlUnwind always returns but we are left with the CONTEXT
+        // set before the unwind. At least for P/Invokes we need to recover
+        // back into the managed context for consistency.
+        Frame* pFrame = pThread->GetFrame();
+        if (InlinedCallFrame::FrameHasActiveCall(pFrame))
+        {
+            REGDISPLAY tmpRd = {};
+            FillRegDisplay(&tmpRd, pContext);
+            pFrame->UpdateRegDisplay(&tmpRd, true);
+            UpdateContextFromRegDisp(&tmpRd, pContext);
+        }
 #else        
         ClrUnwindEx(pExceptionRecord,
                     (UINT_PTR)pThread,
@@ -7724,8 +7749,6 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
 
 #ifdef USE_FUNCLET_CALL_HELPER
-        FixContext(pvRegDisplay->pCurrentContext);
-
         // Invoke the catch funclet.
         // Since the actual caller of the funclet is the assembly helper, pass the reference
         // to the CallerStackFrame instance so that it can be updated.
@@ -7735,6 +7758,8 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
                                    CastHandlerFn(pfnHandler),
                                    GetFirstNonVolatileRegisterAddress(pvRegDisplay->pCurrentContext),
                                    pFuncletCallerSP);
+
+        FixContext(pvRegDisplay->pCurrentContext);
 #else
         dwResumePC = pfnHandler(establisherFrame, OBJECTREFToObject(throwable));
 #endif
