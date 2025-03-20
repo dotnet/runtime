@@ -94,9 +94,6 @@ namespace System.Runtime
             RhWaitForPendingFinalizers(allowReentrantWait ? 1 : 0);
         }
 
-        [LibraryImport(RuntimeLibrary)]
-        internal static partial void RhInitializeFinalizerThread();
-
         // Get maximum GC generation number.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetMaxGcGeneration")]

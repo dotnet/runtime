@@ -294,10 +294,12 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             gcGenAnalysisState = GcGenAnalysisState::Disabled;
             if (gcGenAnalysisTrace)
             {
+#ifdef FEATURE_PERFTRACING
                 EventPipeAdapter::Disable(gcGenAnalysisEventPipeSessionId);
 #ifdef GEN_ANALYSIS_STRESS
                 GenAnalysis::EnableGenerationalAwareSession();
-#endif
+#endif //GEN_ANALYSIS_STRESS
+#endif //FEATURE_PERFTRACING
             }
 
             // Writing an empty file to indicate completion
@@ -377,6 +379,20 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     ASSERT(hEventFinalizer->IsValid());
 
     LOG((LF_GC, LL_INFO10, "Finalizer thread starting...\n"));
+
+#ifdef TARGET_WINDOWS
+#ifdef FEATURE_COMINTEROP
+    // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
+    // termination callback.
+    ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    g_fComStarted = true;
+#endif
+
+    InitFlsSlot();
+
+    // handshake with EE initialization, as now we can attach Thread objects to native threads.
+    hEventFinalizerDone->Set();
+#endif
 
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();
 
@@ -487,6 +503,15 @@ void FinalizerThread::SignalFinalizationDone(int observedFullGcCount)
 
     g_fullGcCountSeenByFinalization = observedFullGcCount;
     hEventFinalizerDone->Set();
+}
+
+void FinalizerThread::WaitForFinalizerThreadStart()
+{
+    // this should be only called during EE startup
+    _ASSERTE(!g_fEEStarted);
+
+    hEventFinalizerDone->Wait(INFINITE,FALSE);
+    hEventFinalizerDone->Reset();
 }
 
 // Wait for the finalizer thread to complete one pass.

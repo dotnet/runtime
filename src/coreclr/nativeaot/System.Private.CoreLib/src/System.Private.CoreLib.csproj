@@ -119,9 +119,7 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\GenericMethodDescriptor.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\RuntimeFieldHandleInfo.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\RuntimeMethodHandleInfo.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\RuntimeSignature.cs" />
+    <Compile Include="Internal\Runtime\CompilerServices\MethodNameAndSignature.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\OpenMethodResolver.cs" />
     <Compile Include="Internal\Runtime\TypeLoaderExceptionHelper.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperience.cs" />
@@ -201,7 +199,6 @@
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\ThunkPool.cs" />
-    <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
@@ -213,7 +210,6 @@
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\TrackerObjectManager.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveCMarshal.NativeAot.cs" Condition="'$(FeatureObjCMarshal)' == 'true'" />
-    <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\Intrinsics\X86\X86Base.NativeAot.cs" Condition="'$(SupportsX86Intrinsics)' == 'true'" />
     <Compile Include="System\Runtime\JitInfo.NativeAot.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.NativeAot.cs" />
@@ -356,9 +352,6 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs">
       <Link>Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs</Link>
-    </Compile>
-    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\CanonTypeKind.cs">
-      <Link>Internal\Runtime\CanonTypeKind.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\System\Runtime\RhFailFastReason.cs">
       <Link>System\Runtime\RhFailFastReason.cs</Link>

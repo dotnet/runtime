@@ -90,24 +90,26 @@ class EECodeInfo;
 
 enum StubCodeBlockKind : int
 {
-    STUB_CODE_BLOCK_UNKNOWN,
-    STUB_CODE_BLOCK_JUMPSTUB,
-    STUB_CODE_BLOCK_PRECODE,
-    STUB_CODE_BLOCK_DYNAMICHELPER,
-    STUB_CODE_BLOCK_STUBPRECODE,
-    STUB_CODE_BLOCK_FIXUPPRECODE,
-    STUB_CODE_BLOCK_VSD_DISPATCH_STUB,
-    STUB_CODE_BLOCK_VSD_RESOLVE_STUB,
-    STUB_CODE_BLOCK_VSD_LOOKUP_STUB,
-    STUB_CODE_BLOCK_VSD_VTABLE_STUB,
+    STUB_CODE_BLOCK_UNKNOWN = 0,
+    STUB_CODE_BLOCK_JUMPSTUB = 1,
+    UNUSED = 2,
+    STUB_CODE_BLOCK_DYNAMICHELPER = 3,
+    STUB_CODE_BLOCK_STUBPRECODE = 4,
+    STUB_CODE_BLOCK_FIXUPPRECODE = 5,
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    STUB_CODE_BLOCK_VSD_DISPATCH_STUB = 6,
+    STUB_CODE_BLOCK_VSD_RESOLVE_STUB = 7,
+    STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 8,
+    STUB_CODE_BLOCK_VSD_VTABLE_STUB = 9,
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholders returned by code:GetStubCodeBlockKind
-    STUB_CODE_BLOCK_NOCODE,
-    STUB_CODE_BLOCK_MANAGED,
-    STUB_CODE_BLOCK_STUBLINK,
+    STUB_CODE_BLOCK_NOCODE = 0x10,
+    STUB_CODE_BLOCK_MANAGED = 0x11,
+    STUB_CODE_BLOCK_STUBLINK = 0x12,
     // Placeholdes used by ReadyToRun images
-    STUB_CODE_BLOCK_METHOD_CALL_THUNK,
+    STUB_CODE_BLOCK_METHOD_CALL_THUNK = 0x13,
 };
 
 //-----------------------------------------------------------------------------
@@ -2562,6 +2564,10 @@ public:
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
 #endif // TARGET_X86
+
+#if defined(TARGET_WASM)
+ULONG       GetFixedStackSize();
+#endif
 
 #if defined(TARGET_AMD64)
     BOOL        HasFrameRegister();

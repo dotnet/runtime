@@ -902,38 +902,14 @@ HCIMPL1(StringObject*, FramedAllocateString, DWORD stringLength)
 HCIMPLEND
 
 /*********************************************************************/
-OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
+STRINGREF* ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
-
     Module* module = GetModule(scopeHnd);
     return module->ResolveStringRef(metaTok, ppPinnedString);
 }
-
-/*********************************************************************/
-HCIMPL2(Object *, JIT_StrCns, unsigned rid, CORINFO_MODULE_HANDLE scopeHnd)
-{
-    FCALL_CONTRACT;
-
-    OBJECTHANDLE hndStr = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    // Retrieve the handle to the CLR string object.
-    hndStr = ConstructStringLiteral(scopeHnd, RidToToken(rid, mdtString));
-    HELPER_METHOD_FRAME_END();
-
-    // Don't use ObjectFromHandle; this isn't a real handle
-    return *(Object**)hndStr;
-}
-HCIMPLEND
-
 
 //========================================================================
 //
@@ -1826,8 +1802,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     {
         Thread *pThread = GetThread();
 
-        FrameWithCookie<SoftwareExceptionFrame> exceptionFrame;
-        *(&exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie();
+        SoftwareExceptionFrame exceptionFrame;
         RtlCaptureContext(exceptionFrame.GetContext());
         exceptionFrame.InitAndLink(pThread);
 
@@ -1917,8 +1892,7 @@ HCIMPL0(void, IL_Rethrow)
     {
         Thread *pThread = GetThread();
 
-        FrameWithCookie<SoftwareExceptionFrame> exceptionFrame;
-        *(&exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie();
+        SoftwareExceptionFrame exceptionFrame;
         RtlCaptureContext(exceptionFrame.GetContext());
         exceptionFrame.InitAndLink(pThread);
 
@@ -2470,7 +2444,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
         Thread::ObjectRefFlush(CURRENT_THREAD);
     #endif
 
-        FrameWithCookie<DynamicHelperFrame> frame(pTransitionBlock, 0);
+        DynamicHelperFrame frame(pTransitionBlock, 0);
         DynamicHelperFrame * pFrame = &frame;
 
         pFrame->Push(CURRENT_THREAD);
@@ -2556,7 +2530,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-    FrameWithCookie<DynamicHelperFrame> frame(pTransitionBlock, 0);
+    DynamicHelperFrame frame(pTransitionBlock, 0);
     DynamicHelperFrame * pFrame = &frame;
 
     pFrame->Push(CURRENT_THREAD);
@@ -3381,7 +3355,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     MethodDesc* pMD = GetMethod(handle);
     if (pMD->IsILStub() && secretArg != NULL)
     {
-        pMD = ((UMEntryThunk*)secretArg)->GetMethod();
+        pMD = ((UMEntryThunkData*)secretArg)->m_pMD;
     }
     frame->pMD = pMD;
 
@@ -3407,14 +3381,14 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? (UMEntryThunk*)secretArg : (UMEntryThunk*)NULL);
+            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk : (UMEntryThunk*)NULL);
         }
     }
     else
     {
         // If we're in an IL stub, we want to trace the address of the target method,
         // not the next instruction in the stub.
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? (UMEntryThunk*)secretArg  : (UMEntryThunk*)NULL);
+        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk  : (UMEntryThunk*)NULL);
     }
 
 #ifndef FEATURE_EH_FUNCLETS

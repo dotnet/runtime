@@ -547,7 +547,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 if (be9 is not null)
                     allowedParallelism = be9.RequestCores(allowedParallelism);
             }
-            catch(NotImplementedException)
+            catch (NotImplementedException)
             {
                 // RequestCores is not implemented in TaskHostFactory
                 be9 = null;
@@ -1165,14 +1165,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     }}
                     }
 
-                    {{profilers.Join(writer.NewLine, profiler =>
-                    $$$""""
+                    {{profilers.Join(writer.NewLine, p => {
+                        var profiler = p.Split(':')[0];
+                    return $$$""""
                     void mono_profiler_init_{{{profiler}}} (const char *desc);
                     EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_{{{profiler}}} (const char *desc)
                     {
                         mono_profiler_init_{{{profiler}}} (desc);
                     }
-                    """")
+                    """";})
                     }}
 
                     {{parsedAotMode switch
