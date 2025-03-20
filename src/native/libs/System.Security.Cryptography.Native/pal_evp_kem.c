@@ -79,11 +79,6 @@ int32_t CryptoNative_EvpKemAvailable(const char* algorithm)
             EVP_KEM_free(kem);
             return 1;
         }
-        else
-        {
-            unsigned long error = ERR_peek_error();
-            return ERR_GET_REASON(error) == ERR_R_UNSUPPORTED ? 0 : -1;
-        }
     }
 #else
     (void)algorithm;

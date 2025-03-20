@@ -35,14 +35,12 @@ internal static partial class Interop
             {
                 const int Available = 1;
                 const int NotAvailable = 0;
-                const int Error = -1;
 
                 int ret = CryptoNative_EvpKemAvailable(algorithm);
                 return ret switch
                 {
                     Available => algorithm,
                     NotAvailable => null,
-                    Error => throw CreateOpenSslCryptographicException(),
                     int other => throw Fail(other),
                 };
 
