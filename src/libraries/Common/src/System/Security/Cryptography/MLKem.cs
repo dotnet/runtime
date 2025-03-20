@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   <para>An error occurred during encapsulation.</para>
         ///   <para> -or - </para>
-        ///   <para><paramref cref="ciphertext"/> overlaps with <paramref cref="sharedSecret"/>.</para>
+        ///   <para><paramref name="ciphertext"/> overlaps with <paramref name="sharedSecret"/>.</para>
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <para><paramref name="ciphertext" /> is not the correct size.</para>
