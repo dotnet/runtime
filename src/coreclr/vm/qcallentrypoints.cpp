@@ -318,7 +318,6 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_AllocateNewArray)
     DllImportEntry(GCInterface_GetTotalMemory)
     DllImportEntry(GCInterface_Collect)
-    DllImportEntry(GCInterface_SuppressFinalize)
     DllImportEntry(GCInterface_ReRegisterForFinalize)
     DllImportEntry(GCInterface_GetNextFinalizableObject)
     DllImportEntry(GCInterface_WaitForPendingFinalizers)

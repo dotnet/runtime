@@ -1098,14 +1098,21 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment)
 **Arguments: Object of interest
 **Exceptions: None
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_SuppressFinalize(QCall::ObjectHandleOnStack pObj)
+FCIMPL1(void, GCInterface::SuppressFinalize, Object *obj)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    FCALL_CONTRACT;
 
     // Checked by the caller
-    _ASSERTE(pObj.Get()->GetMethodTable()->HasFinalizer());
-    GCHeapUtilities::GetGCHeap()->SetFinalizationRun(OBJECTREFToObject(pObj.Get()));
+    _ASSERTE(obj != NULL);
+
+    if (!obj->GetMethodTable ()->HasFinalizer())
+        return;
+
+    GCHeapUtilities::GetGCHeap()->SetFinalizationRun(obj);
+    FC_GC_POLL();
 }
+FCIMPLEND
+
 
 /*============================ReRegisterForFinalize==============================
 **Action: Indicate that an object's finalizer should be run by the system.
