@@ -112,13 +112,13 @@
     <MicrosoftNETCoreILAsmVersion>10.0.0-preview.3.25152.4</MicrosoftNETCoreILAsmVersion>
   <!-- Maintenance-Packages dependencies -->
     <MicrosoftBclHashCodeVersion>6.0.0</MicrosoftBclHashCodeVersion>
-    <SystemBuffersVersion>4.6.0</SystemBuffersVersion>
+    <SystemBuffersVersion>4.6.1</SystemBuffersVersion>
     <SystemDataSqlClientVersion>4.9.0</SystemDataSqlClientVersion>
-    <SystemMemoryVersion>4.6.1</SystemMemoryVersion>
-    <SystemNumericsVectorsVersion>4.6.0</SystemNumericsVectorsVersion>
+    <SystemMemoryVersion>4.6.2</SystemMemoryVersion>
+    <SystemNumericsVectorsVersion>4.6.1</SystemNumericsVectorsVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.1.1</SystemRuntimeCompilerServicesUnsafeVersion>
-    <SystemThreadingTasksExtensionsVersion>4.6.1</SystemThreadingTasksExtensionsVersion>
-    <SystemValueTupleVersion>4.6.0</SystemValueTupleVersion>
+    <SystemThreadingTasksExtensionsVersion>4.6.2</SystemThreadingTasksExtensionsVersion>
+    <SystemValueTupleVersion>4.6.1</SystemValueTupleVersion>
     <!-- Libraries dependencies -->
     <MicrosoftBclAsyncInterfacesVersion>6.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftWin32RegistryVersion>5.0.0</MicrosoftWin32RegistryVersion>
