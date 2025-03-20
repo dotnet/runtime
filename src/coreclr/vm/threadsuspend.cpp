@@ -4783,9 +4783,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
 #endif
                         }
 #elif defined(TARGET_X86)
-                        // FIXME: This is the one place where PCTAddr would be useful
-                        EECodeInfo codeInfo(pRDT->ControlPC);
-                        pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT)- codeInfo.GetCodeManager()->GetStackParameterSize(&codeInfo) - sizeof(void*));
+                        pES->m_ppvRetAddrPtr = (void **) pRDT->PCTAddr;
 #elif defined(TARGET_AMD64)
                         pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
 #else // TARGET_X86 || TARGET_AMD64

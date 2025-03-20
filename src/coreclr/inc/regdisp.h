@@ -87,10 +87,6 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
     DWORD * pEax;
 
     DWORD * pEbp;
-
-    TADDR   PCTAddr;
-#else
-    TADDR   __dummy__;
 #endif // !FEATURE_EH_FUNCLETS
 
 #ifndef FEATURE_EH_FUNCLETS
@@ -121,6 +117,8 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
     REG_METHODS(Ebp)
 
 #undef REG_METHODS
+
+    TADDR   PCTAddr;
 };
 
 inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
@@ -140,9 +138,7 @@ inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display) {
 
 inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 {
-#ifndef FEATURE_EH_FUNCLETS
     display->PCTAddr = addr;
-#endif
     display->ControlPC = *PTR_PCODE(addr);
 }
 
@@ -161,6 +157,8 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
 
 #ifdef FEATURE_EH_FUNCLETS
+    // TODO: This may be wrong. Should we use PCTAddr now that it
+    // is valid?
     _ASSERTE(GetRegdisplaySP(display) == GetSP(display->pCurrentContext));
     return GetRegdisplaySP(display);
 #else

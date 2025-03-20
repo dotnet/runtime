@@ -173,14 +173,16 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
 
     CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
 
+    pRD->PCTAddr = GetReturnAddressPtr();
+    
 #ifdef FEATURE_EH_FUNCLETS
 
-    DWORD CallerSP = (DWORD)(GetReturnAddressPtr() + sizeof(TADDR) + cbStackPop);
+    DWORD CallerSP = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;
 
-    pRD->pCurrentContext->Eip = *PTR_PCODE(GetReturnAddressPtr());
+    pRD->pCurrentContext->Eip = *PTR_PCODE(pRD->PCTAddr);
     pRD->pCurrentContext->Esp = CallerSP;
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, regs);
@@ -197,7 +199,6 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
     pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
 
@@ -237,6 +238,7 @@ void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
 
         EnsureInit(pUnwoundState);
 
+        pRD->PCTAddr = dac_cast<TADDR>(pUnwoundState->pRetAddr());
         pRD->pCurrentContext->Eip = pRD->ControlPC = pUnwoundState->GetRetAddr();
         pRD->pCurrentContext->Esp = pRD->SP        = pUnwoundState->esp();
 
@@ -256,6 +258,7 @@ void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
     }
 #endif // DACCESS_COMPILE
 
+    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
     pRD->pCurrentContext->Eip = pRD->ControlPC = m_MachState.GetRetAddr();
     pRD->pCurrentContext->Esp = pRD->SP = (DWORD) m_MachState.esp();
 
@@ -473,6 +476,8 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     }
     CONTRACT_END;
 
+    pRD->PCTAddr = GetReturnAddressPtr();
+
 #ifdef FEATURE_EH_FUNCLETS
 
     memcpy(pRD->pCurrentContext, &m_ctx, sizeof(CONTEXT));
@@ -506,7 +511,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    pRD->PCTAddr = GetReturnAddressPtr();
     pRD->SP = m_Esp;
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
 
@@ -560,15 +564,15 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #endif
 
     /* The return address is just above the "ESP" */
-    TADDR PCTAddr = PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this,
-                                          m_pCallerReturnAddress);
+    pRD->PCTAddr = PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this,
+                                         m_pCallerReturnAddress);
 
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    pRD->pCurrentContext->Eip = *PTR_PCODE(PCTAddr);
+    pRD->pCurrentContext->Eip = *PTR_PCODE(pRD->PCTAddr);
     pRD->pCurrentContext->Esp = (DWORD) dac_cast<TADDR>(m_pCallSiteSP);
     pRD->pCurrentContext->Ebp = (DWORD) m_pCalleeSavedFP;
 
@@ -589,8 +593,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     pRD->pEbp = (DWORD*) &m_pCalleeSavedFP;
 
-    pRD->PCTAddr = PCTAddr;
-    pRD->ControlPC = *PTR_PCODE(PCTAddr);
+    pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
     /* Now we need to pop off the outgoing arguments */
     pRD->SP  = (DWORD) dac_cast<TADDR>(m_pCallSiteSP) + stackArgSize;
 
@@ -621,6 +624,8 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
         SUPPORTS_DAC;
     }
     CONTRACT_END;
+
+    pRD->PCTAddr = dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Eip);
 
 #ifdef FEATURE_EH_FUNCLETS
 
@@ -676,7 +681,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->pEbx = &pUnwoundContext->Ebx;
     pRD->pEbp = &pUnwoundContext->Ebp;
 
-    pRD->PCTAddr = dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Eip);
     pRD->ControlPC = pUnwoundContext->Eip;
 
     pRD->SP  = m_Regs->Esp;
@@ -699,15 +703,15 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     }
     CONTRACTL_END;
 
-    TADDR PCTAddr = dac_cast<TADDR>(m_Args) + offsetof(HijackArgs, Eip);
+    pRD->PCTAddr = dac_cast<TADDR>(m_Args) + offsetof(HijackArgs, Eip);
 
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    pRD->pCurrentContext->Eip = *PTR_PCODE(PCTAddr);
-    pRD->pCurrentContext->Esp = (DWORD)(PCTAddr + sizeof(TADDR));
+    pRD->pCurrentContext->Eip = *PTR_PCODE(pRD->PCTAddr);
+    pRD->pCurrentContext->Esp = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
 
 #define RESTORE_REG(reg) { pRD->pCurrentContext->reg = m_Args->reg; pRD->pCurrentContextPointers->reg = &m_Args->reg; }
 #define CALLEE_SAVED_REGISTER(reg) RESTORE_REG(reg)
@@ -736,9 +740,8 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 #undef ARGUMENT_AND_SCRATCH_REGISTER
 #undef RESTORE_REG
 
-    pRD->PCTAddr = PCTAddr;
-    pRD->ControlPC = *PTR_PCODE(PCTAddr);
-    pRD->SP  = (DWORD)(PCTAddr + sizeof(TADDR));
+    pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
+    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
 
 #endif // FEATURE_EH_FUNCLETS
 
@@ -778,13 +781,15 @@ void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     }
     CONTRACT_END;
 
+    pRD->PCTAddr = GetReturnAddressPtr();
+    
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    pRD->pCurrentContext->Eip = *PTR_PCODE(GetReturnAddressPtr());
-    pRD->pCurrentContext->Esp = (DWORD)(GetReturnAddressPtr() + sizeof(TADDR));
+    pRD->pCurrentContext->Eip = *PTR_PCODE(pRD->PCTAddr);
+    pRD->pCurrentContext->Esp = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, &m_regs);
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
@@ -800,7 +805,6 @@ void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
     pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
 
