@@ -116,11 +116,13 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetMaxGeneration();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _CollectionCount(int generation, int getSpecialGCCount);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetSegmentSize")]
+        [SuppressGCTransition]
+        internal static partial ulong GetSegmentSize();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern ulong GetSegmentSize();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_CollectionCount")]
+        [SuppressGCTransition]
+        private static partial int CollectionCountInternal(int generation, int getSpecialGCCount);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetLastGCPercentTimeInGC();
@@ -161,11 +163,12 @@ namespace System
         public static int GetGeneration(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            return GetGenerationInternal(obj);
+            return GetGenerationInternal(ObjectHandleOnStack.Create(ref obj));
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetGenerationInternal(object obj);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetGeneration")]
+        [SuppressGCTransition]
+        private static partial int GetGenerationInternal(ObjectHandleOnStack obj);
 
         // Forces a collection of all generations from 0 through Generation.
         //
@@ -244,7 +247,7 @@ namespace System
         public static int CollectionCount(int generation)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(generation);
-            return _CollectionCount(generation, 0);
+            return CollectionCountInternal(generation, 0);
         }
 
         // This method DOES NOT DO ANYTHING in and of itself.  It's used to

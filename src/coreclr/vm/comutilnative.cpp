@@ -725,28 +725,25 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
     return result;
 }
 
-/*================================GetGenerationInternal=================================
-**Action: Returns the generation in which args->obj is found.
-**Returns: The generation in which args->obj is found.
-**Arguments: args->obj -- The object to locate.
+/*================================GetGeneration=================================
+**Action: Returns the generation in which object is found.
+**Returns: The generation in which object is found.
 ==============================================================================*/
-FCIMPL1(int, GCInterface::GetGenerationInternal, Object* objUNSAFE)
+extern "C" int QCALLTYPE GCInterface_GetGeneration(QCall::ObjectHandleOnStack pObjRef)
 {
-    FCALL_CONTRACT;
-    _ASSERTE(objUNSAFE != NULL);
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
-    FC_GC_POLL_RET();
-    return result;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    _ASSERTE(pObjRef.Get() != NULL);
+    return (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(OBJECTREFToObject(pObjRef.Get()));
 }
-FCIMPLEND
 
 /*================================GetSegmentSize========-=======================
 **Action: Returns the maximum GC heap segment size
 **Returns: The maximum segment size of either the normal heap or the large object heap, whichever is bigger
 ==============================================================================*/
-FCIMPL0(UINT64, GCInterface::GetSegmentSize)
+extern "C" UINT64 QCALLTYPE GCInterface_GetSegmentSize()
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
     IGCHeap * pGC = GCHeapUtilities::GetGCHeap();
     size_t segment_size = pGC->GetValidSegmentSize(false);
@@ -755,30 +752,24 @@ FCIMPL0(UINT64, GCInterface::GetSegmentSize)
     if (segment_size < large_segment_size)
         segment_size = large_segment_size;
 
-    FC_GC_POLL_RET();
-    return (UINT64) segment_size;
+    return (UINT64)segment_size;
 }
-FCIMPLEND
 
 /*================================CollectionCount=================================
 **Action: Returns the number of collections for this generation since the beginning of the life of the process
 **Returns: The collection count.
-**Arguments: args->generation -- The generation
-**Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
 ==============================================================================*/
-FCIMPL2(int, GCInterface::CollectionCount, INT32 generation, INT32 getSpecialGCCount)
+extern "C" int QCALLTYPE GCInterface_CollectionCount(INT32 generation, INT32 getSpecialGCCount)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
     //We've already checked this in GC.cs, so we'll just assert it here.
     _ASSERTE(generation >= 0);
 
     //We don't need to check the top end because the GC will take care of that.
     int result = (INT32)GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
-    FC_GC_POLL_RET();
     return result;
 }
-FCIMPLEND
 
 extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC)
 {
