@@ -87,6 +87,7 @@ internal sealed class FrameIterator
             case FrameType.CallCountingHelperFrame:
             case FrameType.ExternalMethodFrame:
             case FrameType.DynamicHelperFrame:
+                // FrameMethodFrame is the base type for all transition Frames
                 Data.FramedMethodFrame framedMethodFrame = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(CurrentFrame.Address);
                 GetFrameHandler(context).HandleTransitionFrame(framedMethodFrame);
                 return;

@@ -69,7 +69,7 @@ public class ContextHolder<[DynamicallyAccessedMembers(DynamicallyAccessedMember
     {
         value = default;
         if (typeof(T).GetField(fieldName) is not FieldInfo field) return false;
-        if (field.GetValue(Context) is not object fieldValue) return false;
+        object? fieldValue = field.GetValue(Context);
         if (fieldValue is ulong ul && target.PointerSize == sizeof(ulong))
         {
             value = new(ul);
@@ -85,12 +85,7 @@ public class ContextHolder<[DynamicallyAccessedMembers(DynamicallyAccessedMember
 
     public bool Equals(ContextHolder<T>? other)
     {
-        if (other is null)
-        {
-            return false;
-        }
-
-        if (GetType() != other.GetType())
+        if (GetType() != other?.GetType())
         {
             return false;
         }
