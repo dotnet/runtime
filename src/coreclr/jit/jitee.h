@@ -44,10 +44,6 @@ public:
         JIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
 
-#if defined(TARGET_XARCH)
-        JIT_FLAG_VECTOR512_THROTTLING    = 31, // On Xarch, 512-bit vector usage may incur CPU frequency throttling
-#endif
-
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,
         // something needs to change.
@@ -145,10 +141,6 @@ public:
 #if defined(TARGET_ARM)
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_RELATIVE_CODE_RELOCS, JIT_FLAG_RELATIVE_CODE_RELOCS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI, JIT_FLAG_SOFTFP_ABI);
-#endif // TARGET_ARM
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING, JIT_FLAG_VECTOR512_THROTTLING);
 #endif // TARGET_ARM
 
 #undef FLAGS_EQUAL

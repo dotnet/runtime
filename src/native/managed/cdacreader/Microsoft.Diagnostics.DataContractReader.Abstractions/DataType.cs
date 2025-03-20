@@ -57,6 +57,7 @@ public enum DataType
     PrecodeMachineDescriptor,
     StubPrecodeData,
     FixupPrecodeData,
+    ThisPtrRetBufPrecodeData,
     Array,
     SyncBlock,
     SyncTableEntry,
