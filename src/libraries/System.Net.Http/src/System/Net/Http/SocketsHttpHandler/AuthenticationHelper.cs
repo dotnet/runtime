@@ -271,7 +271,7 @@ namespace System.Net.Http
                             // The DefaultCredentials applies only to NTLM, negotiate, and Kerberos-based authentication.
                             break;
                         }
-                        
+
                         if (preAuthCredential != null)
                         {
                             if (NetEventSource.Log.IsEnabled())
