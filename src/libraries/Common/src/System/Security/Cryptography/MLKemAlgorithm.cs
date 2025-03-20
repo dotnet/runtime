@@ -11,7 +11,9 @@ namespace System.Security.Cryptography
     /// </summary>
     /// <seealso cref="MLKem" />
     [DebuggerDisplay("{Name,nq}")]
+#if NET
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+#endif
     public sealed class MLKemAlgorithm : IEquatable<MLKemAlgorithm>
     {
         private MLKemAlgorithm(
