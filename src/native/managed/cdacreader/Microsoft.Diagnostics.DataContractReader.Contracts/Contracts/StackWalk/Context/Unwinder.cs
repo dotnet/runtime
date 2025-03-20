@@ -104,10 +104,7 @@ internal static unsafe partial class Unwinder
     [UnmanagedCallersOnly]
     private static unsafe int ReadFromTarget(ulong address, void* pBuffer, int bufferSize, void* context)
     {
-        if (GCHandle.FromIntPtr((IntPtr)context).Target is not CallbackContext callbackContext)
-        {
-            return -1;
-        }
+        CallbackContext callbackContext = (CallbackContext)GCHandle.FromIntPtr((IntPtr)context).Target!;
         Span<byte> span = new Span<byte>(pBuffer, bufferSize);
         try
         {
@@ -127,10 +124,7 @@ internal static unsafe partial class Unwinder
     [UnmanagedCallersOnly]
     private static unsafe int GetAllocatedBuffer(int bufferSize, void** ppBuffer, void* context)
     {
-        if (GCHandle.FromIntPtr((IntPtr)context).Target is not CallbackContext callbackContext)
-        {
-            return -1;
-        }
+        CallbackContext callbackContext = (CallbackContext)GCHandle.FromIntPtr((IntPtr)context).Target!;
         *ppBuffer = NativeMemory.Alloc((nuint)bufferSize);
         callbackContext.AllocatedRegions.Add((IntPtr)(*ppBuffer));
         return 0;
@@ -145,10 +139,7 @@ internal static unsafe partial class Unwinder
         if ((nuint)pUnwindInfoBase != 0) *(nuint*)pUnwindInfoBase = 0;
         if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = 0;
 
-        if (GCHandle.FromIntPtr((IntPtr)context).Target is not CallbackContext callbackContext)
-        {
-            return;
-        }
+        CallbackContext callbackContext = (CallbackContext)GCHandle.FromIntPtr((IntPtr)context).Target!;
 
         IExecutionManager eman = callbackContext.Target.Contracts.ExecutionManager;
         try
