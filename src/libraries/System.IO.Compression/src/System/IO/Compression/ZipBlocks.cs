@@ -4,12 +4,12 @@
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Compression
 {
     // All blocks.TryReadBlock do a check to see if signature is correct. Generic extra field is slightly different
     // all of the TryReadBlocks will throw if there are not enough bytes in the stream
-
     internal sealed partial class ZipGenericExtraField
     {
         private const int SizeOfHeader = FieldLengths.Tag + FieldLengths.Size;
@@ -21,14 +21,7 @@ namespace System.IO.Compression
         public ushort Tag => _tag;
         // returns size of data, not of the entire block
         public ushort Size => _size;
-        public byte[] Data
-        {
-            get
-            {
-                _data ??= [];
-                return _data;
-            }
-        }
+        public byte[] Data => _data ??= [];
 
         public void WriteBlock(Stream stream)
         {
@@ -633,11 +626,12 @@ namespace System.IO.Compression
 
         // if saveExtraFieldsAndComments is false, FileComment and ExtraFields will be null
         // in either case, the zip64 extra field info will be incorporated into other fields
-        public static bool TryReadBlock(ReadOnlySpan<byte> buffer, Stream furtherReads, bool saveExtraFieldsAndComments, out int bytesRead, out ZipCentralDirectoryFileHeader header)
+        public static bool TryReadBlock(ReadOnlySpan<byte> buffer, Stream furtherReads, bool saveExtraFieldsAndComments, out int bytesRead, [NotNullWhen(returnValue: true)] out ZipCentralDirectoryFileHeader? header)
         {
+            header = null;
+
             const int StackAllocationThreshold = 512;
 
-            header = new();
             bytesRead = 0;
 
             // the buffer will always be large enough for at least the constant section to be verified
@@ -648,26 +642,25 @@ namespace System.IO.Compression
                 return false;
             }
 
-            header.VersionMadeBySpecification = buffer[FieldLocations.VersionMadeBySpecification];
-            header.VersionMadeByCompatibility = buffer[FieldLocations.VersionMadeByCompatibility];
-            header.VersionNeededToExtract = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.VersionNeededToExtract..]);
-            header.GeneralPurposeBitFlag = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.GeneralPurposeBitFlags..]);
-            header.CompressionMethod = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.CompressionMethod..]);
-            header.LastModified = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.LastModified..]);
-            header.Crc32 = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.Crc32..]);
+            header = new()
+            {
+                VersionMadeBySpecification = buffer[FieldLocations.VersionMadeBySpecification],
+                VersionMadeByCompatibility = buffer[FieldLocations.VersionMadeByCompatibility],
+                VersionNeededToExtract = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.VersionNeededToExtract..]),
+                GeneralPurposeBitFlag = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.GeneralPurposeBitFlags..]),
+                CompressionMethod = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.CompressionMethod..]),
+                LastModified = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.LastModified..]),
+                Crc32 = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.Crc32..]),
+                FilenameLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.FilenameLength..]),
+                ExtraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.ExtraFieldLength..]),
+                FileCommentLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.FileCommentLength..]),
+                InternalFileAttributes = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.InternalFileAttributes..]),
+                ExternalFileAttributes = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.ExternalFileAttributes..])
+            };
 
             uint compressedSizeSmall = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.CompressedSize..]);
             uint uncompressedSizeSmall = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.UncompressedSize..]);
-
-            header.FilenameLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.FilenameLength..]);
-            header.ExtraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.ExtraFieldLength..]);
-            header.FileCommentLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.FileCommentLength..]);
-
             ushort diskNumberStartSmall = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.DiskNumberStart..]);
-
-            header.InternalFileAttributes = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.InternalFileAttributes..]);
-            header.ExternalFileAttributes = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.ExternalFileAttributes..]);
-
             uint relativeOffsetOfLocalHeaderSmall = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.RelativeOffsetOfLocalHeader..]);
 
             // Assemble the dynamic header in a separate buffer. We can't guarantee that it's all in the input buffer,
@@ -777,14 +770,7 @@ namespace System.IO.Compression
         public uint SizeOfCentralDirectory;
         public uint OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber;
         private byte[]? _archiveComment;
-        public byte[] ArchiveComment
-        {
-            get
-            {
-                _archiveComment ??= [];
-                return _archiveComment;
-            }
-        }
+        public byte[] ArchiveComment => _archiveComment ??= [];
 
         public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
         {
