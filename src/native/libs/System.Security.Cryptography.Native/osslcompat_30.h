@@ -66,6 +66,10 @@ EVP_KDF_CTX *EVP_KDF_CTX_new(EVP_KDF *kdf);
 void EVP_KDF_CTX_free(EVP_KDF_CTX *ctx);
 int EVP_KDF_derive(EVP_KDF_CTX *ctx, unsigned char *key, size_t keylen, const OSSL_PARAM params[]);
 
+EVP_KEM *EVP_KEM_fetch(OSSL_LIB_CTX *ctx, const char *algorithm, const char *properties);
+void EVP_KEM_free(EVP_KEM *kem);
+const char *EVP_KEM_get0_name(const EVP_KEM *kem);
+
 int EVP_MAC_CTX_set_params(EVP_MAC_CTX *ctx, const OSSL_PARAM params[]);
 EVP_MAC_CTX *EVP_MAC_CTX_new(EVP_MAC *mac);
 void EVP_MAC_CTX_free(EVP_MAC_CTX *ctx);
@@ -78,11 +82,25 @@ void EVP_MAC_free(EVP_MAC *mac);
 
 EVP_MD* EVP_MD_fetch(OSSL_LIB_CTX *ctx, const char *algorithm, const char *properties);
 int EVP_MD_get_size(const EVP_MD* md);
+EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_name(OSSL_LIB_CTX *libctx, const char *name, const char *propquery);
+EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_pkey(OSSL_LIB_CTX *libctx, EVP_PKEY *pkey, const char *propquery);
+int EVP_PKEY_CTX_set_params(EVP_PKEY_CTX *ctx, const OSSL_PARAM *params);
 int EVP_PKEY_CTX_set_rsa_keygen_bits(EVP_PKEY_CTX* ctx, int bits);
 int EVP_PKEY_CTX_set_rsa_oaep_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX* ctx, int pad_mode);
 int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX* ctx, int saltlen);
 int EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
+int EVP_PKEY_decapsulate(EVP_PKEY_CTX *ctx,
+    unsigned char *unwrapped, size_t *unwrappedlen,
+    const unsigned char *wrapped, size_t wrappedlen);
+    int EVP_PKEY_decapsulate_init(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[]);
+int EVP_PKEY_encapsulate_init(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[]);
+    int EVP_PKEY_encapsulate(EVP_PKEY_CTX *ctx,
+                             unsigned char *wrappedkey, size_t *wrappedkeylen,
+                             unsigned char *genkey, size_t *genkeylen);
+int EVP_PKEY_fromdata_init(EVP_PKEY_CTX *ctx);
+int EVP_PKEY_fromdata(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey, int selection,
+                      OSSL_PARAM params[]);
 int EVP_PKEY_get_base_id(const EVP_PKEY* pkey);
 int EVP_PKEY_get_bits(const EVP_PKEY* pkey);
 int EVP_PKEY_get_bn_param(const EVP_PKEY *pkey, const char *key_name, BIGNUM **bn);
