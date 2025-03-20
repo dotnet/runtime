@@ -894,14 +894,15 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
         // has another pinvoke, it will re-link the ICF again when the JIT_PInvokeBegin helper is called.
         TADDR returnAddress = pInlinedCallFrame->m_pCallerReturnAddress;
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS) && defined(FEATURE_EH_FUNCLETS)
+        // Pop the SEH frame
+        PEXCEPTION_REGISTRATION_RECORD currentContext = GetCurrentSEHRecord();
+        _ASSERTE(currentContext == &pInlinedCallFrame->m_ExceptionRecord);
+        SetCurrentSEHRecord(currentContext->Next);
+
         // On win-x86 with funclets we always generate P/Invoke helpers, even in
         // the IL stub and non-R2R.
         pFrame->ExceptionUnwind();
         pFrame->Pop(pThread);
-        // Pop the SEH frame
-        PEXCEPTION_REGISTRATION_RECORD currentContext = GetCurrentSEHRecord();
-        ASSERT(currentContext == &pInlinedCallFrame->m_ExceptionRecord);
-        SetCurrentSEHRecord(currentContext->Next);
 #else
 #ifdef USE_PER_FRAME_PINVOKE_INIT
         // If we're setting up the frame for each P/Invoke for the given platform,
