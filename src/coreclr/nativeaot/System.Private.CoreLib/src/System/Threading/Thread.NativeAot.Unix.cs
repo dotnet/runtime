@@ -94,14 +94,14 @@ namespace System.Threading
             // This also avoids OOM after creating the thread.
             _stopped = new ManualResetEvent(false);
 
-            int stackSize = _startHelper!._maxStackSize;
+            nint stackSize = _startHelper!._maxStackSize;
 
             if (stackSize <= 0)
             {
-                stackSize = GetDefaultStackSize();
+                stackSize = RuntimeImports.RhGetDefaultStackSize();
             }
 
-            if (!Interop.Sys.CreateThread((IntPtr)stackSize, &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle)))
+            if (!Interop.Sys.CreateThread(stackSize, &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle)))
             {
                 return false;
             }

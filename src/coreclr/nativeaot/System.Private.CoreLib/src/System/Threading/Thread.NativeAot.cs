@@ -482,27 +482,6 @@ namespace System.Threading
             }
         }
 
-        internal static int GetDefaultStackSize()
-        {
-            // Keep the same arbitrary minimum and maximum from the coreclr\vm layer.
-            // The max was 0x80000000 (2G).
-            // This is checked by the value being parsed into an int32.
-            const uint minStack = 0x10000;     // 64K
-
-            int sizeFromConfig = AppContextConfigHelper.GetInt32ComPlusOrDotNetConfig(
-                "System.Threading.DefaultStackSize",
-                "Threading_DefaultStackSize",
-                0,
-                false);
-
-            if (sizeFromConfig >= minStack)
-            {
-                return sizeFromConfig;
-            }
-
-            return 0;
-        }
-
         internal static void IncrementRunningForeground()
         {
             Interlocked.Increment(ref s_foregroundRunningCount);

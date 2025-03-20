@@ -674,18 +674,11 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
     int st = pthread_attr_init(&attrs);
     ASSERT(st == 0);
     
-    // Keep the same arbitrary minimum and maximum from the coreclr\vm layer.
-    const size_t minStack = 0x10000;     // 64K
-    const size_t maxStack = 0x80000000;  //  2G
-
-    uint64_t stackSize;
-    if (g_pRhConfig->ReadConfigValue("Threading_DefaultStackSize", "System.Threading.DefaultStackSize", &stackSize))
+    size_t stacksize = GetDefaultStackSizeSetting();
+    if (stacksize != 0)
     {
-        if (stacksize < maxStack && stacksize >= minStack)
-        {
-            st = pthread_attr_setstacksize(&attrs, (size_t)stacksize);
-            ASSERT(st == 0);
-        }
+        st = pthread_attr_setstacksize(&attrs, stacksize);
+        ASSERT(st == 0);
     }
 
     static const int NormalPriority = 0;

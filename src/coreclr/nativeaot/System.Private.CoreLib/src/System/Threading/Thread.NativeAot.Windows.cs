@@ -180,7 +180,7 @@ namespace System.Threading
 
             if (stackSize <= 0)
             {
-                stackSize = GetDefaultStackSize();
+                stackSize = (int)RuntimeImports.RhGetDefaultStackSize();
             }
 
             if ((0 < stackSize) && (stackSize < AllocationGranularity))

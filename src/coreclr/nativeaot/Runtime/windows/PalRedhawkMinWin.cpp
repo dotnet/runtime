@@ -871,20 +871,7 @@ static pfnSetThreadDescription g_pfnSetThreadDescription = SET_THREAD_DESCRIPTIO
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
 {
-    // Keep the same arbitrary minimum and maximum from the coreclr\vm layer.
-    const size_t minStack = 0x10000;     // 64K
-    const size_t maxStack = 0x80000000;  //  2G
-
-    uint64_t stacksize = 0;
-
-    uint64_t uiStacksize;
-    if (g_pRhConfig->ReadConfigValue("Threading_DefaultStackSize", "System.Threading.DefaultStackSize", &uiStacksize))
-    {
-        if (uiStacksize < maxStack || uiStacksize >= minStack)
-        {
-            stacksize = uiStacksize;
-        }
-    }
+    DWORD stacksize = (DWORD)GetDefaultStackSizeSetting();
 
     HANDLE hThread = CreateThread(
         NULL,
