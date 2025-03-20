@@ -491,10 +491,8 @@ namespace System.IO.Compression
             Debug.Assert(_fileComment.Length <= ushort.MaxValue);
 
             // decide if we need the Zip64 extra field:
-            Zip64ExtraField zip64ExtraField = new();
+            Zip64ExtraField? zip64ExtraField = null;
             uint compressedSizeTruncated, uncompressedSizeTruncated, offsetOfLocalHeaderTruncated;
-
-            bool zip64Needed = false;
 
             if (AreSizesTooLarge
 #if DEBUG_FORCE_ZIP64
@@ -502,13 +500,15 @@ namespace System.IO.Compression
 #endif
                 )
             {
-                zip64Needed = true;
                 compressedSizeTruncated = ZipHelper.Mask32Bit;
                 uncompressedSizeTruncated = ZipHelper.Mask32Bit;
 
                 // If we have one of the sizes, the other must go in there as speced for LH, but not necessarily for CH, but we do it anyways
-                zip64ExtraField.CompressedSize = _compressedSize;
-                zip64ExtraField.UncompressedSize = _uncompressedSize;
+                zip64ExtraField = new()
+                {
+                    CompressedSize = _compressedSize,
+                    UncompressedSize = _uncompressedSize
+                };
             }
             else
             {
@@ -523,27 +523,32 @@ namespace System.IO.Compression
 #endif
                 )
             {
-                zip64Needed = true;
                 offsetOfLocalHeaderTruncated = ZipHelper.Mask32Bit;
 
                 // If we have one of the sizes, the other must go in there as speced for LH, but not necessarily for CH, but we do it anyways
-                zip64ExtraField.LocalHeaderOffset = _offsetOfLocalHeader;
+                zip64ExtraField = new()
+                {
+                    LocalHeaderOffset = _offsetOfLocalHeader
+                };
             }
             else
             {
                 offsetOfLocalHeaderTruncated = (uint)_offsetOfLocalHeader;
             }
 
-            if (zip64Needed)
+            if (zip64ExtraField != null)
+            {
                 VersionToExtractAtLeast(ZipVersionNeededValues.Zip64);
+            }
+
 
             // determine if we can fit zip64 extra field and original extra fields all in
-            int bigExtraFieldLength = (zip64Needed ? zip64ExtraField.TotalSize : 0)
+            int bigExtraFieldLength = (zip64ExtraField != null ? zip64ExtraField.TotalSize : 0)
                                       + (_cdUnknownExtraFields != null ? ZipGenericExtraField.TotalSize(_cdUnknownExtraFields) : 0);
             ushort extraFieldLength;
             if (bigExtraFieldLength > ushort.MaxValue)
             {
-                extraFieldLength = (ushort)(zip64Needed ? zip64ExtraField.TotalSize : 0);
+                extraFieldLength = (ushort)(zip64ExtraField != null ? zip64ExtraField.TotalSize : 0);
                 _cdUnknownExtraFields = null;
             }
             else
@@ -555,7 +560,7 @@ namespace System.IO.Compression
             {
                 long centralDirectoryHeaderLength = ZipCentralDirectoryFileHeader.FieldLocations.DynamicData
                     + _storedEntryNameBytes.Length
-                    + (zip64Needed ? zip64ExtraField.TotalSize : 0)
+                    + (zip64ExtraField != null ? zip64ExtraField.TotalSize : 0)
                     + (_cdUnknownExtraFields != null ? ZipGenericExtraField.TotalSize(_cdUnknownExtraFields) : 0)
                     + _fileComment.Length;
 
@@ -605,13 +610,19 @@ namespace System.IO.Compression
                 _archive.ArchiveStream.Write(_storedEntryNameBytes);
 
                 // write extra fields
-                if (zip64Needed)
+                if (zip64ExtraField != null)
+                {
                     zip64ExtraField.WriteBlock(_archive.ArchiveStream);
+                }
                 if (_cdUnknownExtraFields != null)
+                {
                     ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _archive.ArchiveStream);
+                }
 
                 if (_fileComment.Length > 0)
+                {
                     _archive.ArchiveStream.Write(_fileComment);
+                }
             }
         }
 
