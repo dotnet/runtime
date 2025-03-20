@@ -174,11 +174,14 @@ public:
     static FCDECL1(void,    SetLOHCompactionMode, int newLOHCompactionyMode);
     static FCDECL2(FC_BOOL_RET, RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage);
     static FCDECL0(FC_BOOL_RET, CancelFullGCNotification);
+    static FCDECL1(int,     GetGenerationInternal, Object* objUNSAFE);
+    static FCDECL0(UINT64,  GetSegmentSize);
     static FCDECL0(int,     GetLastGCPercentTimeInGC);
     static FCDECL1(UINT64,  GetGenerationSize, int gen);
 
     static FCDECL0(int,     GetMaxGeneration);
     static FCDECL1(void,    KeepAlive, Object *obj);
+    static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
 
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
     static FCDECL0(INT64,    GetTotalAllocatedBytesApproximate);
@@ -222,12 +225,6 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void *segmentHandl
 extern "C" int QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeout);
 
 extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeout);
-
-extern "C" int QCALLTYPE GCInterface_GetGeneration(QCall::ObjectHandleOnStack pObjRef);
-
-extern "C" UINT64 QCALLTYPE GCInterface_GetSegmentSize();
-
-extern "C" int QCALLTYPE GCInterface_CollectionCount(INT32 generation, INT32 getSpecialGCCount);
 
 extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC);
 
