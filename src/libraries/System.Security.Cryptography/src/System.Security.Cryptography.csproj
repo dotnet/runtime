@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -397,6 +397,12 @@
              Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
              Link="Common\System\Security\Cryptography\RsaPaddingProcessor.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsa.cs"
+             Link="Common\System\Security\Cryptography\SlhDsa.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\SlhDsaAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.cs"
+             Link="Common\System\Security\Cryptography\SlhDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdf.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdf.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationBase.cs"
@@ -426,7 +432,7 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12Info.cs"
              Link="Common\System\Security\Cryptography\Pkcs\Pkcs12Info.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12IntegrityMode.cs"
-             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12IntegrityMode.cs"/>
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12IntegrityMode.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12KeyBag.cs"
              Link="Common\System\Security\Cryptography\Pkcs\Pkcs12KeyBag.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12SafeBag.cs"
@@ -765,6 +771,8 @@
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.NotSupported.cs"
              Link="Common\System\Security\Cryptography\MLDsaImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.NotSupported.cs" />
@@ -951,6 +959,8 @@
              Link="Common\System\Security\Cryptography\MLDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAOpenSsl.cs"
              Link="Common\System\Security\Cryptography\RSAOpenSsl.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.OpenSsl.cs"
+             Link="Common\System\Security\Cryptography\SlhDsaImplementation.OpenSsl.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="$(CommonPath)System\Text\UrlBase64Encoding.cs"
@@ -1123,6 +1133,8 @@
              Link="Common\System\Security\Cryptography\MLDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAAndroid.cs"
              Link="Common\System\Security\Cryptography\RSAAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.OpenSsl.cs" />
@@ -1254,6 +1266,8 @@
              Link="Common\System\Security\Cryptography\MLDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SecKeyPair.cs"
@@ -1814,6 +1828,8 @@
              Link="Common\System\Security\Cryptography\RSACng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSACng.SignVerify.cs"
              Link="Common\System\Security\Cryptography\RSACng.SignVerify.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.Windows.cs"
+             Link="Common\System\Security\Cryptography\SlhDsaImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
