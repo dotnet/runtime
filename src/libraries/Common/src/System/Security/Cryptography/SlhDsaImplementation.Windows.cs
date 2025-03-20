@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
         private SlhDsaImplementation(/* CngKey key, */ SlhDsaAlgorithm algorithm) : base(algorithm) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa GenerateKeyCore(SlhDsaAlgorithm info) =>
+        internal static partial SlhDsa GenerateKeyCore(SlhDsaAlgorithm algorithm) =>
             throw new PlatformNotSupportedException();
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>

@@ -8,15 +8,14 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class SlhDsaImplementation : SlhDsa
     {
-        internal static partial bool SupportsAny() => true;
+        internal static partial bool SupportsAny() => false;
 
         // TODO: Define this in terms of OpenSSL
         private SlhDsaImplementation(/* SafeEvpPKeyHandle handle, */ SlhDsaAlgorithm algorithm) : base(algorithm) =>
-            GC.KeepAlive(this);
+            throw new PlatformNotSupportedException();
 
-
-        internal static partial SlhDsa GenerateImpl(SlhDsaAlgorithm algorithm) =>
-            new SlhDsaImplementation(algorithm);
+        internal static partial SlhDsa GenerateKeyCore(SlhDsaAlgorithm algorithm) =>
+            throw new PlatformNotSupportedException();
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             throw new PlatformNotSupportedException();
