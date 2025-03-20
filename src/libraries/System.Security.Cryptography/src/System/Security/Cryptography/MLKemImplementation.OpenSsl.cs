@@ -21,18 +21,17 @@ namespace System.Security.Cryptography
         internal static MLKem GenerateKeyImpl(MLKemAlgorithm algorithm)
         {
             Debug.Assert(IsSupported);
-            SafeEvpKemHandle handle = MapAlgorithmToHandle(algorithm); // Shared handle, do not dispose.
-            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(handle);
+            string kemName = MapAlgorithmToName(algorithm);
+            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(kemName);
             return new MLKemImplementation(algorithm, key);
         }
-
 
         internal static MLKem ImportPrivateSeedImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(IsSupported);
             Debug.Assert(source.Length == PrivateSeedSizeInBytes);
-            SafeEvpKemHandle handle = MapAlgorithmToHandle(algorithm); // Shared handle, do not dispose.
-            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(handle, source);
+            string kemName = MapAlgorithmToName(algorithm);
+            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(kemName, source);
             return new MLKemImplementation(algorithm, key);
         }
 
@@ -40,8 +39,8 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(IsSupported);
             Debug.Assert(source.Length == algorithm.DecapsulationKeySizeInBytes);
-            SafeEvpKemHandle handle = MapAlgorithmToHandle(algorithm); // Shared handle, do not dispose.
-            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemImportKey(handle, source, privateKey: true);
+            string kemName = MapAlgorithmToName(algorithm);
+            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemImportKey(kemName, source, privateKey: true);
             return new MLKemImplementation(algorithm, key);
         }
 
@@ -49,8 +48,8 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(IsSupported);
             Debug.Assert(source.Length == algorithm.EncapsulationKeySizeInBytes);
-            SafeEvpKemHandle handle = MapAlgorithmToHandle(algorithm); // Shared handle, do not dispose.
-            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemImportKey(handle, source, privateKey: false);
+            string kemName = MapAlgorithmToName(algorithm);
+            SafeEvpPKeyHandle key = Interop.Crypto.EvpKemImportKey(kemName, source, privateKey: false);
             return new MLKemImplementation(algorithm, key);
         }
 
@@ -94,30 +93,30 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpKemExportEncapsulationKey(_key, destination);
         }
 
-        private static SafeEvpKemHandle MapAlgorithmToHandle(MLKemAlgorithm algorithm)
+        private static string MapAlgorithmToName(MLKemAlgorithm algorithm)
         {
-            SafeEvpKemHandle? handle = null;
+            string? name = null;
 
             if (algorithm == MLKemAlgorithm.MLKem512)
             {
-                handle = Interop.Crypto.EvpKemAlgs.MlKem512;
+                name = Interop.Crypto.EvpKemAlgs.MlKem512;
             }
             else if (algorithm == MLKemAlgorithm.MLKem768)
             {
-                handle = Interop.Crypto.EvpKemAlgs.MlKem768;
+                name = Interop.Crypto.EvpKemAlgs.MlKem768;
             }
             else if (algorithm == MLKemAlgorithm.MLKem1024)
             {
-                handle = Interop.Crypto.EvpKemAlgs.MlKem1024;
+                name = Interop.Crypto.EvpKemAlgs.MlKem1024;
             }
 
-            if (handle is null)
+            if (name is null)
             {
                 Debug.Fail("Unhandled ML-KEM algorithm or ML-KEM is not available.");
                 throw new CryptographicException();
             }
 
-            return handle;
+            return name;
         }
     }
 }

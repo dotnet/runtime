@@ -11,9 +11,6 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemFree")]
-        internal static partial void EvpKemFree(IntPtr kem);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemDecapsulate")]
         private static partial int CryptoNative_EvpKemDecapsulate(
             SafeEvpPKeyHandle kem,
@@ -22,15 +19,15 @@ internal static partial class Interop
             Span<byte> sharedSecret,
             int sharedSecretLength);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGeneratePkey")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGeneratePkey", StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_EvpKemGeneratePkey(
-            SafeEvpKemHandle kem,
+            string kemName,
             ReadOnlySpan<byte> seed,
             int seedLength);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemImportKey")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemImportKey", StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_EvpKemImportKey(
-            SafeEvpKemHandle kem,
+            string kemName,
             ReadOnlySpan<byte> key,
             int keyLength,
             [MarshalAs(UnmanagedType.Bool)] bool privateKey);
@@ -61,9 +58,9 @@ internal static partial class Interop
             Span<byte> sharedSecret,
             int sharedSecretLength);
 
-        internal static SafeEvpPKeyHandle EvpKemGeneratePkey(SafeEvpKemHandle kem)
+        internal static SafeEvpPKeyHandle EvpKemGeneratePkey(string kemName)
         {
-            SafeEvpPKeyHandle handle = CryptoNative_EvpKemGeneratePkey(kem, ReadOnlySpan<byte>.Empty, 0);
+            SafeEvpPKeyHandle handle = CryptoNative_EvpKemGeneratePkey(kemName, ReadOnlySpan<byte>.Empty, 0);
 
             if (handle.IsInvalid)
             {
@@ -75,7 +72,7 @@ internal static partial class Interop
             return handle;
         }
 
-        internal static SafeEvpPKeyHandle EvpKemGeneratePkey(SafeEvpKemHandle kem, ReadOnlySpan<byte> seed)
+        internal static SafeEvpPKeyHandle EvpKemGeneratePkey(string kemName, ReadOnlySpan<byte> seed)
         {
             if (seed.IsEmpty)
             {
@@ -83,7 +80,7 @@ internal static partial class Interop
                 throw new CryptographicException();
             }
 
-            SafeEvpPKeyHandle handle = CryptoNative_EvpKemGeneratePkey(kem, seed, seed.Length);
+            SafeEvpPKeyHandle handle = CryptoNative_EvpKemGeneratePkey(kemName, seed, seed.Length);
 
             if (handle.IsInvalid)
             {
@@ -95,9 +92,9 @@ internal static partial class Interop
             return handle;
         }
 
-        internal static SafeEvpPKeyHandle EvpKemImportKey(SafeEvpKemHandle kem, ReadOnlySpan<byte> key, bool privateKey)
+        internal static SafeEvpPKeyHandle EvpKemImportKey(string kemName, ReadOnlySpan<byte> key, bool privateKey)
         {
-            SafeEvpPKeyHandle handle = CryptoNative_EvpKemImportKey(kem, key, key.Length, privateKey);
+            SafeEvpPKeyHandle handle = CryptoNative_EvpKemImportKey(kemName, key, key.Length, privateKey);
 
             if (handle.IsInvalid)
             {

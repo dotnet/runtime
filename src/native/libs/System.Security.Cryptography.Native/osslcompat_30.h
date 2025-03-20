@@ -68,7 +68,6 @@ int EVP_KDF_derive(EVP_KDF_CTX *ctx, unsigned char *key, size_t keylen, const OS
 
 EVP_KEM *EVP_KEM_fetch(OSSL_LIB_CTX *ctx, const char *algorithm, const char *properties);
 void EVP_KEM_free(EVP_KEM *kem);
-const char *EVP_KEM_get0_name(const EVP_KEM *kem);
 
 int EVP_MAC_CTX_set_params(EVP_MAC_CTX *ctx, const OSSL_PARAM params[]);
 EVP_MAC_CTX *EVP_MAC_CTX_new(EVP_MAC *mac);

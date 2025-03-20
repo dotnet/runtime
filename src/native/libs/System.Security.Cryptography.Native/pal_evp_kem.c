@@ -65,65 +65,36 @@ static int32_t GetKeyOctetStringParam(const EVP_PKEY* pKey,
     return 0;
 }
 
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-void CryptoNative_EvpKemFree(EVP_KEM* kem)
+int32_t CryptoNative_EvpKemAvailable(const char* algorithm)
 {
-#ifdef NEED_OPENSSL_3_0
-    if (API_EXISTS(EVP_KEM_free))
-    {
-        // No error queue impact
-        EVP_KEM_free(kem);
-        return;
-    }
-#else
-    (void)kem;
-#endif
-
-    assert(0 && "Inconsistent EVP_KEM API availability.");
-}
-#pragma clang diagnostic pop
-
-
-EVP_KEM* CryptoNative_EvpKemFetch(const char* algorithm, int32_t* haveFeature)
-{
-    assert(haveFeature);
-
 #ifdef NEED_OPENSSL_3_0
     if (API_EXISTS(EVP_KEM_fetch))
     {
+        assert(API_EXISTS(EVP_KEM_free));
         ERR_clear_error();
         EVP_KEM* kem = EVP_KEM_fetch(NULL, algorithm, NULL);
 
         if (kem)
         {
-            *haveFeature = 1;
-            return kem;
+            EVP_KEM_free(kem);
+            return 1;
         }
         else
         {
             unsigned long error = ERR_peek_error();
-
-            // If the fetch failed because the algorithm is unsupported, then set
-            // haveFeature to 0. Otherwise, assume the algorithm exists and the
-            // fetch failed for another reason, and set haveFeature to 1.
-            *haveFeature = ERR_GET_REASON(error) == ERR_R_UNSUPPORTED ? 0 : 1;
-            return NULL;
+            return ERR_GET_REASON(error) == ERR_R_UNSUPPORTED ? 0 : -1;
         }
     }
 #else
     (void)algorithm;
-    (void)haveFeature;
 #endif
 
-    *haveFeature = 0;
-    return NULL;
+    return 0;
 }
 
-EVP_PKEY* CryptoNative_EvpKemImportKey(const EVP_KEM* kem, uint8_t* key, int32_t keyLength, int32_t privateKey)
+EVP_PKEY* CryptoNative_EvpKemImportKey(const char* kemName, uint8_t* key, int32_t keyLength, int32_t privateKey)
 {
-    assert(kem);
+    assert(kemName);
     assert(key);
     assert(keyLength > 0);
 
@@ -131,16 +102,9 @@ EVP_PKEY* CryptoNative_EvpKemImportKey(const EVP_KEM* kem, uint8_t* key, int32_t
     if (API_EXISTS(EVP_PKEY_CTX_new_from_name))
     {
         ERR_clear_error();
-        const char* name = EVP_KEM_get0_name(kem);
-
-        if (name == NULL)
-        {
-            return NULL;
-        }
-
         EVP_PKEY_CTX* ctx = NULL;
         EVP_PKEY* pkey = NULL;
-        ctx = EVP_PKEY_CTX_new_from_name(NULL, name, NULL);
+        ctx = EVP_PKEY_CTX_new_from_name(NULL, kemName, NULL);
 
         if (ctx == NULL)
         {
@@ -183,38 +147,31 @@ done:
     }
 #endif
 
-    (void)kem;
+    (void)kemName;
     (void)key;
     (void)keyLength;
     (void)privateKey;
     return NULL;
 }
 
-EVP_PKEY* CryptoNative_EvpKemGeneratePkey(const EVP_KEM* kem, uint8_t* seed, int32_t seedLength)
+EVP_PKEY* CryptoNative_EvpKemGeneratePkey(const char* kemName, uint8_t* seed, int32_t seedLength)
 {
-    assert(kem);
+    assert(kemName);
     assert((seed == NULL) == (seedLength == 0));
 
 #ifdef NEED_OPENSSL_3_0
     if (API_EXISTS(EVP_PKEY_CTX_new_from_name))
     {
         assert(
-            API_EXISTS(EVP_KEM_get0_name) &&
             API_EXISTS(OSSL_PARAM_construct_octet_string) &&
             API_EXISTS(OSSL_PARAM_construct_end) &&
             API_EXISTS(EVP_PKEY_CTX_set_params));
 
         ERR_clear_error();
-        const char* name = EVP_KEM_get0_name(kem);
-
-        if (name == NULL)
-        {
-            return NULL;
-        }
 
         EVP_PKEY_CTX* ctx = NULL;
         EVP_PKEY* key = NULL;
-        ctx = EVP_PKEY_CTX_new_from_name(NULL, name, NULL);
+        ctx = EVP_PKEY_CTX_new_from_name(NULL, kemName, NULL);
 
         if (ctx == NULL)
         {
@@ -260,7 +217,7 @@ done:
         return key;
     }
 #else
-    (void)kem;
+    (void)kemName;
     (void)seed;
     (void)seedLength;
 #endif

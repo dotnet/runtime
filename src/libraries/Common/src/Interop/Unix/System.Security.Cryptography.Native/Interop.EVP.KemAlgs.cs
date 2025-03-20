@@ -12,9 +12,9 @@ internal static partial class Interop
     {
         internal static partial class EvpKemAlgs
         {
-            internal static SafeEvpKemHandle? MlKem512 { get; }
-            internal static SafeEvpKemHandle? MlKem768 { get; }
-            internal static SafeEvpKemHandle? MlKem1024 { get; }
+            internal static string? MlKem512 { get; }
+            internal static string? MlKem768 { get; }
+            internal static string? MlKem1024 { get; }
 
             static EvpKemAlgs()
             {
@@ -23,32 +23,34 @@ internal static partial class Interop
                 // Do not use property initializers for these because we need to ensure CryptoInitializer.Initialize
                 // is called first. Property initializers happen before cctors, so instead set the property after the
                 // initializer is run.
-                MlKem512 = EvpKemFetch(MLKemAlgorithm.MLKem512.Name);
-                MlKem768 = EvpKemFetch(MLKemAlgorithm.MLKem768.Name);
-                MlKem1024 = EvpKemFetch(MLKemAlgorithm.MLKem1024.Name);
+                MlKem512 = EvpKemAvailable(MLKemAlgorithm.MLKem512.Name);
+                MlKem768 = EvpKemAvailable(MLKemAlgorithm.MLKem768.Name);
+                MlKem1024 = EvpKemAvailable(MLKemAlgorithm.MLKem1024.Name);
             }
 
-            [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemFetch", StringMarshalling = StringMarshalling.Utf8)]
-            private static partial SafeEvpKemHandle CryptoNative_EvpKemFetch(string algorithm, out int haveFeature);
+            [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemAvailable", StringMarshalling = StringMarshalling.Utf8)]
+            private static partial int CryptoNative_EvpKemAvailable(string algorithm);
 
-            private static SafeEvpKemHandle? EvpKemFetch(string algorithm)
+            private static string? EvpKemAvailable(string algorithm)
             {
-                SafeEvpKemHandle kem = CryptoNative_EvpKemFetch(algorithm, out int haveFeature);
+                const int Available = 1;
+                const int NotAvailable = 0;
+                const int Error = -1;
 
-                if (haveFeature == 0)
+                int ret = CryptoNative_EvpKemAvailable(algorithm);
+                return ret switch
                 {
-                    Debug.Assert(kem.IsInvalid);
-                    kem.Dispose();
-                    return null;
-                }
+                    Available => algorithm,
+                    NotAvailable => null,
+                    Error => throw CreateOpenSslCryptographicException(),
+                    int other => throw Fail(other),
+                };
 
-                if (kem.IsInvalid)
+                static CryptographicException Fail(int result)
                 {
-                    kem.Dispose();
-                    throw CreateOpenSslCryptographicException();
+                    Debug.Fail($"Unexpected result {result} from {nameof(CryptoNative_EvpKemAvailable)}");
+                    return new CryptographicException();
                 }
-
-                return kem;
             }
         }
     }
