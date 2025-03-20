@@ -3979,6 +3979,10 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 		}
 		interface_count *= mult;
 		g_assert (itf_idx == interface_count);
+
+		if (klass->element_class->enumtype) {
+			interface_count /= 2;
+		}
 	} else if (mono_class_is_ginst (klass)) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
