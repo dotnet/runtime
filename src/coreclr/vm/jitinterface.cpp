@@ -12466,10 +12466,15 @@ void CEEJitInfo::getEHinfo(
     {
         GetMethod(ftn)->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
     }
+    else if (ftn == CORINFO_METHOD_HANDLE(m_pMethodBeingCompiled))
+    {
+        getEHinfoHelper(ftn, EHnumber, clause, m_ILHeader);
+    }
     else
     {
-        _ASSERTE(ftn == CORINFO_METHOD_HANDLE(m_pMethodBeingCompiled));  // For now only support if the method being jitted
-        getEHinfoHelper(ftn, EHnumber, clause, m_ILHeader);
+        MethodDesc* method = GetMethod(ftn);
+        COR_ILMETHOD_DECODER header(method->GetILHeader(), method->GetMDImport(), NULL);
+        getEHinfoHelper(ftn, EHnumber, clause, &header);
     }
 
     EE_TO_JIT_TRANSITION();
