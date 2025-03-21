@@ -1176,7 +1176,10 @@ _ThePreStub@0 proc public
 
     mov         esi, esp
 
+    cmp         [esi + 24], CallDescrWorkerInternalReturnAddress
+    je          SkipSEHPush
     PUSH_CLR_EXCEPTION_HANDLER
+SkipSEHPush:
 
     ; EAX contains MethodDesc* from the precode. Push it here as argument
     ; for PreStubWorker
@@ -1186,7 +1189,10 @@ _ThePreStub@0 proc public
 
     call        _PreStubWorker@8
 
+    cmp         [esi + 24], CallDescrWorkerInternalReturnAddress
+    je          SkipSEHPop
     POP_CLR_EXCEPTION_HANDLER
+SkipSEHPop:
 
     ; eax now contains replacement stub. PreStubWorker will never return
     ; NULL (it throws an exception if stub creation fails.)
