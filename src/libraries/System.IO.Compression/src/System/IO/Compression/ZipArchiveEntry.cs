@@ -917,8 +917,7 @@ namespace System.IO.Compression
             Debug.Assert(_storedEntryNameBytes.Length <= ushort.MaxValue);
 
             // decide if we need the Zip64 extra field:
-            Zip64ExtraField zip64ExtraField = new();
-            bool zip64Used = false;
+            Zip64ExtraField? zip64ExtraField = null;
             uint compressedSizeTruncated, uncompressedSizeTruncated;
 
             // save offset
@@ -941,7 +940,6 @@ namespace System.IO.Compression
                 if (_archive.Mode == ZipArchiveMode.Create && _archive.ArchiveStream.CanSeek == false)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
-                    zip64Used = false;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
                     // the crc should not have been set if we are in create mode, but clear it just to be sure
@@ -957,19 +955,20 @@ namespace System.IO.Compression
 #endif
                         )
                     {
-                        zip64Used = true;
                         compressedSizeTruncated = ZipHelper.Mask32Bit;
                         uncompressedSizeTruncated = ZipHelper.Mask32Bit;
 
                         // prepare Zip64 extra field object. If we have one of the sizes, the other must go in there
-                        zip64ExtraField.CompressedSize = _compressedSize;
-                        zip64ExtraField.UncompressedSize = _uncompressedSize;
+                        zip64ExtraField = new()
+                        {
+                            CompressedSize = _compressedSize,
+                            UncompressedSize = _uncompressedSize,
+                        };
 
                         VersionToExtractAtLeast(ZipVersionNeededValues.Zip64);
                     }
                     else
                     {
-                        zip64Used = false;
                         compressedSizeTruncated = (uint)_compressedSize;
                         uncompressedSizeTruncated = (uint)_uncompressedSize;
                     }
@@ -980,12 +979,12 @@ namespace System.IO.Compression
             _offsetOfLocalHeader = _archive.ArchiveStream.Position;
 
             // calculate extra field. if zip64 stuff + original extraField aren't going to fit, dump the original extraField, because this is more important
-            int bigExtraFieldLength = (zip64Used ? zip64ExtraField.TotalSize : 0)
+            int bigExtraFieldLength = (zip64ExtraField != null ? zip64ExtraField.TotalSize : 0)
                                       + (_lhUnknownExtraFields != null ? ZipGenericExtraField.TotalSize(_lhUnknownExtraFields) : 0);
             ushort extraFieldLength;
             if (bigExtraFieldLength > ushort.MaxValue)
             {
-                extraFieldLength = (ushort)(zip64Used ? zip64ExtraField.TotalSize : 0);
+                extraFieldLength = (ushort)(zip64ExtraField != null ? zip64ExtraField.TotalSize : 0);
                 _lhUnknownExtraFields = null;
             }
             else
@@ -999,7 +998,7 @@ namespace System.IO.Compression
             {
                 _archive.ArchiveStream.Seek(ZipLocalFileHeader.SizeOfLocalHeader + _storedEntryNameBytes.Length, SeekOrigin.Current);
 
-                if (zip64Used)
+                if (zip64ExtraField != null)
                 {
                     _archive.ArchiveStream.Seek(zip64ExtraField.TotalSize, SeekOrigin.Current);
                 }
@@ -1027,13 +1026,14 @@ namespace System.IO.Compression
 
                 _archive.ArchiveStream.Write(_storedEntryNameBytes);
 
-                if (zip64Used)
-                    zip64ExtraField.WriteBlock(_archive.ArchiveStream);
+                // Only when handling zip64
+                zip64ExtraField?.WriteBlock(_archive.ArchiveStream);
+
                 if (_lhUnknownExtraFields != null)
                     ZipGenericExtraField.WriteAllBlocks(_lhUnknownExtraFields, _archive.ArchiveStream);
             }
 
-            return zip64Used;
+            return zip64ExtraField != null;
         }
 
         private void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
