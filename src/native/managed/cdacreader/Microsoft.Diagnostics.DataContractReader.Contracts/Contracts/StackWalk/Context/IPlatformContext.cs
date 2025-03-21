@@ -11,5 +11,6 @@ public interface IPlatformContext
     public TargetPointer StackPointer { get; set; }
     public TargetPointer InstructionPointer { get; set; }
     public TargetPointer FramePointer { get; set; }
+
     public abstract void Unwind(Target target);
 }

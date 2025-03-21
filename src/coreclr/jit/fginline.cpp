@@ -1035,6 +1035,19 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     // Don't expect any surprises here.
     assert(result->IsCandidate());
 
+#if defined(DEBUG)
+    // Fail if we're inlining and we've reached the acceptance limit.
+    //
+    int      limit   = JitConfig.JitInlineLimit();
+    unsigned current = m_inlineStrategy->GetInlineCount();
+
+    if ((limit >= 0) && (current >= static_cast<unsigned>(limit)))
+    {
+        result->NoteFatal(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
+        return;
+    }
+#endif // defined(DEBUG)
+
     if (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
     {
         // For now, attributing this to call site, though it's really
@@ -1165,7 +1178,7 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
         return;
     }
 
-    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate", false);
+    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate", true);
     InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
 
     // Try and recover the reason left behind when the jit decided
@@ -1568,13 +1581,179 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         //
         bottomBlock->RemoveFlags(BBF_DONT_REMOVE);
 
+        // If the inlinee has EH, merge the EH tables, and figure out how much of
+        // a shift we need to make in the inlinee blocks EH indicies.
+        //
+        unsigned const inlineeRegionCount = InlineeCompiler->compHndBBtabCount;
+        const bool     inlineeHasEH       = inlineeRegionCount > 0;
+        unsigned       inlineeIndexShift  = 0;
+
+        if (inlineeHasEH)
+        {
+            // If the call site also has EH, we need to insert the inlinee clauses
+            // so they are a child of the call site's innermost enclosing region.
+            // Figure out what this is.
+            //
+            bool           inTryRegion     = false;
+            unsigned const enclosingRegion = ehGetMostNestedRegionIndex(iciBlock, &inTryRegion);
+
+            // We will insert the inlinee clauses in bulk before this index.
+            //
+            unsigned insertBeforeIndex = 0;
+
+            if (enclosingRegion == 0)
+            {
+                // The call site is not in an EH region, so we can put the inlinee EH clauses
+                // at the end of root method's the EH table.
+                //
+                // For example, if the root method already has EH#0, and the inlinee has 2 regions
+                //
+                //   enclosingRegion   will be 0
+                //   inlineeIndexShift will be 1
+                //   insertBeforeIndex will be 1
+                //
+                //   inlinee eh0 -> eh1
+                //   inlinee eh1 -> eh2
+                //
+                //   root eh0 -> eh0
+                //
+                inlineeIndexShift = compHndBBtabCount;
+                insertBeforeIndex = compHndBBtabCount;
+            }
+            else
+            {
+                // The call site is in an EH region, so we can put the inlinee EH clauses
+                // just before the enclosing region
+                //
+                // Note enclosingRegion is region index + 1. So EH#0 will be represented by 1 here.
+                //
+                // For example, if the enclosing EH regions are try#2 and hnd#3, and the inlinee has 2 eh clauses
+                //
+                //   enclosingRegion   will be 3  (try2 + 1)
+                //   inlineeIndexShift will be 2
+                //   insertBeforeIndex will be 2
+                //
+                //   inlinee eh0 -> eh2
+                //   inlinee eh1 -> eh3
+                //
+                //   root eh0 -> eh0
+                //   root eh1 -> eh1
+                //
+                //   root eh2 -> eh4
+                //   root eh3 -> eh5
+                //
+                inlineeIndexShift = enclosingRegion - 1;
+                insertBeforeIndex = enclosingRegion - 1;
+            }
+
+            JITDUMP(
+                "Inlinee has EH. In root method, inlinee's %u EH region indices will shift by %u and become EH#%02u ... EH#%02u (%p)\n",
+                inlineeRegionCount, inlineeIndexShift, insertBeforeIndex, insertBeforeIndex + inlineeRegionCount - 1,
+                &inlineeIndexShift);
+
+            if (enclosingRegion != 0)
+            {
+                JITDUMP("Inlinee is nested within current %s EH#%02u (which will become EH#%02u)\n",
+                        inTryRegion ? "try" : "hnd", enclosingRegion - 1, enclosingRegion - 1 + inlineeRegionCount);
+            }
+            else
+            {
+                JITDUMP("Inlinee is not nested inside any EH region\n");
+            }
+
+            // Grow the EH table.
+            //
+            // TODO: verify earlier that this won't fail...
+            //
+            EHblkDsc* const outermostEbd =
+                fgTryAddEHTableEntries(insertBeforeIndex, inlineeRegionCount, /* deferAdding */ false);
+            assert(outermostEbd != nullptr);
+
+            // fgTryAddEHTableEntries has adjusted the indices of all root method blocks and EH clauses
+            // to accommodate the new entries. No other changes to those are needed.
+            //
+            // We just need to add in and fix up the new entries from the inlinee.
+            //
+            // Fetch the new enclosing try/handler table indicies.
+            //
+            const unsigned enclosingTryIndex =
+                iciBlock->hasTryIndex() ? iciBlock->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+            const unsigned enclosingHndIndex =
+                iciBlock->hasHndIndex() ? iciBlock->getHndIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+
+            // Copy over the EH table entries from inlinee->root and adjust their enclosing indicies.
+            //
+            for (unsigned XTnum = 0; XTnum < inlineeRegionCount; XTnum++)
+            {
+                unsigned newXTnum      = XTnum + inlineeIndexShift;
+                compHndBBtab[newXTnum] = InlineeCompiler->compHndBBtab[XTnum];
+                EHblkDsc* const ebd    = &compHndBBtab[newXTnum];
+
+                if (ebd->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    ebd->ebdEnclosingTryIndex += (unsigned short)inlineeIndexShift;
+                }
+                else
+                {
+                    ebd->ebdEnclosingTryIndex = (unsigned short)enclosingTryIndex;
+                }
+
+                if (ebd->ebdEnclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    ebd->ebdEnclosingHndIndex += (unsigned short)inlineeIndexShift;
+                }
+                else
+                {
+                    ebd->ebdEnclosingHndIndex = (unsigned short)enclosingHndIndex;
+                }
+            }
+        }
+
+        // Fetch the new enclosing try/handler indicies for blocks.
+        // Note these are represented differently than the EH table indices.
+        //
+        const unsigned blockEnclosingTryIndex = iciBlock->hasTryIndex() ? iciBlock->getTryIndex() + 1 : 0;
+        const unsigned blockEnclosingHndIndex = iciBlock->hasHndIndex() ? iciBlock->getHndIndex() + 1 : 0;
+
         // Set the try and handler index and fix the jump types of inlinee's blocks.
         //
         for (BasicBlock* const block : InlineeCompiler->Blocks())
         {
-            noway_assert(!block->hasTryIndex());
-            noway_assert(!block->hasHndIndex());
-            block->copyEHRegion(iciBlock);
+            if (block->hasTryIndex())
+            {
+                JITDUMP("Inlinee " FMT_BB " has old try index %u, shift %u, new try index %u\n", block->bbNum,
+                        (unsigned)block->bbTryIndex, inlineeIndexShift,
+                        (unsigned)(block->bbTryIndex + inlineeIndexShift));
+                block->bbTryIndex += (unsigned short)inlineeIndexShift;
+            }
+            else
+            {
+                block->bbTryIndex = (unsigned short)blockEnclosingTryIndex;
+            }
+
+            if (block->hasHndIndex())
+            {
+                block->bbHndIndex += (unsigned short)inlineeIndexShift;
+            }
+            else
+            {
+                block->bbHndIndex = (unsigned short)blockEnclosingHndIndex;
+            }
+
+            // Sanity checks
+            //
+            if (iciBlock->hasTryIndex())
+            {
+                assert(block->hasTryIndex());
+                assert(block->getTryIndex() <= iciBlock->getTryIndex());
+            }
+
+            if (iciBlock->hasHndIndex())
+            {
+                assert(block->hasHndIndex());
+                assert(block->getHndIndex() <= iciBlock->getHndIndex());
+            }
+
             block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT);
 
             // Update block nums appropriately
@@ -1762,9 +1941,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
     // If the call site is not in a try and the callee has a throw,
     // we may introduce inconsistency.
-    //
-    // Technically we should check if the callee has a throw not in a try, but since
-    // we can't inline methods with EH yet we don't see those.
     //
     if (InlineeCompiler->fgThrowCount > 0)
     {

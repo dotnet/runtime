@@ -20772,22 +20772,31 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_movd:
-        case INS_movq: // only MOVQ xmm, xmm is different (emitted by Sse2.MoveScalar, should use MOVDQU instead)
+        case INS_movq:
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
-                // movd   r32, xmm   or  xmm, r32
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = PERFSCORE_LATENCY_3C;
+                if (isFloatReg(id->idReg1()) && isFloatReg(id->idReg2()))
+                {
+                    // movq   xmm, xmm
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                }
+                else
+                {
+                    // movd   r32/64, xmm   or  xmm, r32/64
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                }
             }
             else if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
-                // movd   xmm, m32
+                // ins   xmm, m32/64
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency += PERFSCORE_LATENCY_2C;
             }
             else
             {
-                // movd   m32, xmm
+                // ins   m32/64, xmm
                 assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency += PERFSCORE_LATENCY_2C;

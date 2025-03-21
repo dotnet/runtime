@@ -65,9 +65,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             contextStruct.FillFromBuffer(contextBuf);
             localContextStruct.FillFromBuffer(localContextBuf);
 
-            Debug.Assert(contextStruct.InstructionPointer == localContextStruct.InstructionPointer, $"cDAC IP: {contextStruct.InstructionPointer:x}, DAC IP: {localContextStruct.InstructionPointer:x}");
-            Debug.Assert(contextStruct.StackPointer == localContextStruct.StackPointer, $"cDAC SP: {contextStruct.StackPointer:x}, DAC SP: {localContextStruct.StackPointer:x}");
-            Debug.Assert(contextStruct.FramePointer == localContextStruct.FramePointer, $"cDAC FP: {contextStruct.FramePointer:x}, DAC FP: {localContextStruct.FramePointer:x}");
+            Debug.Assert(contextStruct.Equals(localContextStruct));
         }
 #endif
 

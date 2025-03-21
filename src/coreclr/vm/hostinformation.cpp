@@ -40,18 +40,3 @@ bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)
 
     return lenActual > 0 && lenActual <= len;
 }
-
-bool HostInformation::HasExternalProbe()
-{
-    return s_hostContract != nullptr && s_hostContract->external_assembly_probe != nullptr;
-}
-
-bool HostInformation::ExternalAssemblyProbe(_In_ const SString& path, _Out_ void** data, _Out_ int64_t* size)
-{
-    if (!HasExternalProbe())
-        return false;
-
-    StackSString utf8Path;
-    utf8Path.SetAndConvertToUTF8(path.GetUnicode());
-    return s_hostContract->external_assembly_probe(utf8Path.GetUTF8(), data, size);
-}

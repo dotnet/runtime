@@ -25,6 +25,7 @@
 #include "customassemblybinder.h"
 #endif // !defined(DACCESS_COMPILE)
 
+#include "bundle.h"
 #include <assemblybinderutil.h>
 
 namespace BINDER_SPACE
