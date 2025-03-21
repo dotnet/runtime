@@ -961,11 +961,15 @@ GoCallVarargWorker:
     ; save pMD
     push        eax
 
+    PUSH_CLR_EXCEPTION_HANDLER
+
     push        eax                     ; pMD
     push        dword ptr [esi + 4*7]   ; pVaSigCookie
     push        esi                     ; pTransitionBlock
 
     call        _VarargPInvokeStubWorker@12
+
+    POP_CLR_EXCEPTION_HANDLER
 
     ; restore pMD
     pop     eax
@@ -1004,11 +1008,15 @@ GoCallCalliWorker:
     ; save target
     push        eax
 
+    PUSH_CLR_EXCEPTION_HANDLER
+
     push        eax                         ; unmanaged target
     push        ebx                         ; pVaSigCookie (first stack argument)
     push        esi                         ; pTransitionBlock
 
     call        _GenericPInvokeCalliStubWorker@12
+
+    POP_CLR_EXCEPTION_HANDLER
 
     ; restore target
     pop     eax
