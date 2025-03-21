@@ -47,7 +47,7 @@ namespace System.DirectoryServices
             {
                 if (_innerList == null)
                 {
-                    _innerList = new ArrayList();
+                    var eagerList = new ArrayList();
                     var enumerator = new ResultsEnumerator(
                         this,
                         _rootEntry.GetUsername(),
@@ -55,7 +55,9 @@ namespace System.DirectoryServices
                         _rootEntry.AuthenticationType);
 
                     while (enumerator.MoveNext())
-                        _innerList.Add(enumerator.Current);
+                        eagerList.Add(enumerator.Current);
+
+                    _innerList = eagerList;
                 }
 
                 return _innerList;
@@ -188,12 +190,10 @@ namespace System.DirectoryServices
 
         public IEnumerator GetEnumerator()
         {
-            // Two ResultsEnumerators can't exist at the same time over the
-            // same object. Need to get a new handle, which means re-querying.
-            return new ResultsEnumerator(this,
-                                                       _rootEntry.GetUsername(),
-                                                       _rootEntry.GetPassword(),
-                                                       _rootEntry.AuthenticationType);
+            if (_innerList != null)
+                return new AlreadyReadResultsEnumerator(_innerList);
+            else
+                return new ResultsEnumerator(this, _rootEntry.GetUsername(), _rootEntry.GetPassword(), _rootEntry.AuthenticationType);
         }
 
         public bool Contains(SearchResult result) => InnerList.Contains(result);
@@ -212,6 +212,49 @@ namespace System.DirectoryServices
         void ICollection.CopyTo(Array array, int index)
         {
             InnerList.CopyTo(array, index);
+        }
+
+        /// <devdoc>
+        /// Supports a simple type-specific wrapper for the underlying cached list
+        /// </devdoc>
+        private sealed class AlreadyReadResultsEnumerator : IEnumerator
+        {
+            private readonly IEnumerator _innerEnumerator;
+
+            internal AlreadyReadResultsEnumerator(ArrayList innerList)
+            {
+                _innerEnumerator = innerList.GetEnumerator();
+            }
+
+            /// <devdoc>
+            /// Gets the current element in the collection.
+            /// </devdoc>
+            public SearchResult Current
+            {
+                get
+                {
+                    return (SearchResult)(_innerEnumerator.Current);
+                }
+            }
+
+            /// <devdoc>
+            /// Advances the enumerator to the next element of the collection
+            /// and returns a Boolean value indicating whether a valid element is available.
+            /// </devdoc>
+            public bool MoveNext()
+            {
+                return _innerEnumerator.MoveNext();
+            }
+
+            /// <devdoc>
+            /// Resets the enumerator back to its initial position before the first element in the collection.
+            /// </devdoc>
+            public void Reset()
+            {
+                _innerEnumerator.Reset();
+            }
+
+            object IEnumerator.Current => Current;
         }
 
         /// <devdoc>
@@ -310,6 +353,7 @@ namespace System.DirectoryServices
                     return false;
 
                 _currentResult = null;
+
                 if (!_initialized)
                 {
                     int hr = _results.SearchObject.GetFirstRow(_results.Handle);
