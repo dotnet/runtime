@@ -257,6 +257,8 @@ int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
 #if !HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
 #undef HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
 #define HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT 1
+EVP_SIGNATURE *EVP_SIGNATURE_fetch(OSSL_LIB_CTX *ctx, const char *algorithm, const char *properties);
+void EVP_SIGNATURE_free(EVP_SIGNATURE *signature);
 int EVP_PKEY_sign_message_init(EVP_PKEY_CTX *ctx, EVP_SIGNATURE *algo, const OSSL_PARAM params[]);
 int EVP_PKEY_verify_message_init(EVP_PKEY_CTX *ctx, EVP_SIGNATURE *algo, const OSSL_PARAM params[]);
 const char *EVP_PKEY_get0_type_name(const EVP_PKEY *key);
