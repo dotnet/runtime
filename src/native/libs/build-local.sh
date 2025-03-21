@@ -21,7 +21,7 @@ if [ -n "$EMBED_ICU_DATA_PATH" ]; then
     cat <<EOF > "$header"
 #ifndef EMBEDDED_ICU_DATA
 #define EMBEDDED_ICU_DATA
-unsigned char icu_data[] __attribute__((aligned(16))) = {
+static unsigned char icu_data[] __attribute__((aligned(16))) = {
 $(od -An -vtx1 "$EMBED_ICU_DATA_PATH" | tr -d ' \n' | sed 's/\(..\)/0x\1, /g')
 };
 #endif // EMBEDDED_ICU_DATA
