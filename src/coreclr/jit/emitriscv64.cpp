@@ -3880,13 +3880,13 @@ void emitter::emitDispInsName(
                     switch (opcode3)
                     {
                         case 0x2: // SH1ADD.UW
-                            printf("sh1add.uw           %s, %s, %s\n", rd, rs1, rs2);
+                            printf("sh1add.uw      %s, %s, %s\n", rd, rs1, rs2);
                             return;
                         case 0x4: // SH2ADD.UW
-                            printf("sh2add.uw           %s, %s, %s\n", rd, rs1, rs2);
+                            printf("sh2add.uw      %s, %s, %s\n", rd, rs1, rs2);
                             return;
                         case 0x6: // SH3ADD.UW
-                            printf("sh3add.uw           %s, %s, %s\n", rd, rs1, rs2);
+                            printf("sh3add.uw      %s, %s, %s\n", rd, rs1, rs2);
                             return;
                     }
                     return;
