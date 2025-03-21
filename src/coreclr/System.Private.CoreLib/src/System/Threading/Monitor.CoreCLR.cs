@@ -32,7 +32,7 @@ namespace System.Threading
         =========================================================================*/
         public static void Enter(object obj)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(obj, null);
 
             if (!TryEnter_FastPath(obj))
             {
@@ -52,7 +52,8 @@ namespace System.Threading
         }
 
         // These must match the values in syncblk.h
-        private enum LeaveHelperAction {
+        private enum LeaveHelperAction
+        {
             None = 0,
             Signal = 1,
             Yield = 2,
@@ -111,7 +112,7 @@ namespace System.Threading
             if (lockTaken)
                 ThrowLockTakenException();
 
-            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(obj, null);
 
             if (!TryEnter_FastPath(obj))
             {
@@ -150,7 +151,7 @@ namespace System.Threading
         =========================================================================*/
         public static void Exit(object obj)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(obj, null);
 
             LeaveHelperAction exitBehavior = Exit_FastPath(obj);
 
@@ -163,7 +164,7 @@ namespace System.Threading
         // Used to implement synchronized methods on non Windows-X86 architectures
         internal static void ExitIfLockTaken(object obj, ref bool lockTaken)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(obj, null);
 
             if (lockTaken)
             {
@@ -189,7 +190,7 @@ namespace System.Threading
         =========================================================================*/
         public static bool TryEnter(object obj)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(obj, null);
 
             EnterHelperResult tryEnterResult = TryEnter_FastPath_WithTimeout(obj, 0);
             if (tryEnterResult == EnterHelperResult.Entered)
@@ -233,7 +234,7 @@ namespace System.Threading
             if (lockTaken)
                 ThrowLockTakenException();
 
-            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(obj, null);
 
             TryEnter_Timeout_WithLockTaken(obj, 0, ref lockTaken);
         }
@@ -248,7 +249,7 @@ namespace System.Threading
         =========================================================================*/
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(obj, null);
 
             if (millisecondsTimeout >= -1)
             {
@@ -273,7 +274,7 @@ namespace System.Threading
             if (lockTaken)
                 ThrowLockTakenException();
 
-            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(obj, null);
 
             TryEnter_Timeout_WithLockTaken(obj, millisecondsTimeout, ref lockTaken);
         }
