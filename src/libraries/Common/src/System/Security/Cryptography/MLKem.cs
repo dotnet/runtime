@@ -501,17 +501,42 @@ namespace System.Security.Cryptography
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             if (algorithm is null)
-            {
                 throw new ArgumentNullException(nameof(algorithm));
-            }
 
             if (source.Length != algorithm.DecapsulationKeySizeInBytes)
-            {
                 throw new ArgumentException(SR.Argument_KemInvalidDecapsulationKeyLength, nameof(source));
-            }
 
             ThrowIfNotSupported();
             return MLKemImplementation.ImportDecapsulationKeyImpl(algorithm, source);
+        }
+
+        /// <summary>
+        /// Imports an ML-KEM key from a decapsulation key.
+        /// </summary>
+        /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
+        /// <param name="source">The decapsulation key.</param>
+        /// <returns>The imported key.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports MK-KEM.
+        /// </exception>
+        public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, byte[] source)
+        {
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            return ImportDecapsulationKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -536,17 +561,42 @@ namespace System.Security.Cryptography
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             if (algorithm is null)
-            {
                 throw new ArgumentNullException(nameof(algorithm));
-            }
 
             if (source.Length != algorithm.EncapsulationKeySizeInBytes)
-            {
                 throw new ArgumentException(SR.Argument_KemInvalidEncapsulationKeyLength, nameof(source));
-            }
 
             ThrowIfNotSupported();
             return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, source);
+        }
+
+        /// <summary>
+        /// Imports an ML-KEM key from a encapsulation key.
+        /// </summary>
+        /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
+        /// <param name="source">The encapsulation key.</param>
+        /// <returns>The imported key.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports MK-KEM.
+        /// </exception>
+        public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, byte[] source)
+        {
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            return ImportEncapsulationKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -578,6 +628,26 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Exports the decapsulation key.
+        /// </summary>
+        /// <returns>
+        ///   The decapsulation key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>The current instance cannot export a decapsulation key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while importing the key.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] ExportDecapsulationKey()
+        {
+            ThrowIfDisposed();
+            byte[] decapsulationKey = new byte[Algorithm.DecapsulationKeySizeInBytes];
+            ExportDecapsulationKeyCore(decapsulationKey);
+            return decapsulationKey;
+        }
+
+        /// <summary>
         ///   When overridden in a derived class, exports the decapsulation key into the provided buffer.
         /// </summary>
         /// <param name="destination">
@@ -594,6 +664,9 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is the incorrect length to receive the encapsulation key.
         /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred exporting the encapsulation key.
+        /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void ExportEncapsulationKey(Span<byte> destination)
         {
@@ -606,6 +679,24 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
             ExportEncapsulationKeyCore(destination);
+        }
+
+        /// <summary>
+        ///   Exports the encapsulation key.
+        /// </summary>
+        /// <returns>
+        ///   The encapsulation key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred exporting the encapsulation key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] ExportEncapsulationKey()
+        {
+            ThrowIfDisposed();
+            byte[] encapsulationKey = new byte[Algorithm.EncapsulationKeySizeInBytes];
+            ExportEncapsulationKeyCore(encapsulationKey);
+            return encapsulationKey;
         }
 
         /// <summary>

@@ -70,9 +70,16 @@ namespace System.Security.Cryptography.Tests
                 MLKem.ImportDecapsulationKey(null, new byte[MLKemAlgorithm.MLKem512.DecapsulationKeySizeInBytes]));
         }
 
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void ImportDecapsulationKey_NullSource()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", static () =>
+                MLKem.ImportDecapsulationKey(MLKemAlgorithm.MLKem512, null));
+        }
+
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemAlgorithms))]
-        public static void ImportDecapsulationKey_WrongSize(MLKemAlgorithm algorithm)
+        public static void ImportDecapsulationKey_WrongSize_Array(MLKemAlgorithm algorithm)
         {
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 MLKem.ImportDecapsulationKey(algorithm, new byte[algorithm.DecapsulationKeySizeInBytes + 1]));
@@ -81,7 +88,23 @@ namespace System.Security.Cryptography.Tests
                 MLKem.ImportDecapsulationKey(algorithm, new byte[algorithm.DecapsulationKeySizeInBytes - 1]));
 
             AssertExtensions.Throws<ArgumentException>("source", () =>
-                MLKem.ImportDecapsulationKey(algorithm, []));
+                MLKem.ImportDecapsulationKey(algorithm, Array.Empty<byte>()));
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void ImportDecapsulationKey_WrongSize_Span(MLKemAlgorithm algorithm)
+        {
+            byte[] destination = new byte[algorithm.DecapsulationKeySizeInBytes + 1];
+
+            AssertExtensions.Throws<ArgumentException>("source", () =>
+                MLKem.ImportDecapsulationKey(algorithm, destination.AsSpan()));
+
+            AssertExtensions.Throws<ArgumentException>("source", () =>
+                MLKem.ImportDecapsulationKey(algorithm, destination.AsSpan(0..^2)));
+
+            AssertExtensions.Throws<ArgumentException>("source", () =>
+                MLKem.ImportDecapsulationKey(algorithm, ReadOnlySpan<byte>.Empty));
         }
 
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
@@ -91,9 +114,16 @@ namespace System.Security.Cryptography.Tests
                 MLKem.ImportEncapsulationKey(null, new byte[MLKemAlgorithm.MLKem512.EncapsulationKeySizeInBytes]));
         }
 
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void ImportEncapsulationKey_NullSource()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", static () =>
+                MLKem.ImportEncapsulationKey(MLKemAlgorithm.MLKem512, null));
+        }
+
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemAlgorithms))]
-        public static void ImportEncapsulationKey_WrongSize(MLKemAlgorithm algorithm)
+        public static void ImportEncapsulationKey_WrongSize_Array(MLKemAlgorithm algorithm)
         {
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 MLKem.ImportEncapsulationKey(algorithm, new byte[algorithm.EncapsulationKeySizeInBytes + 1]));
@@ -103,6 +133,22 @@ namespace System.Security.Cryptography.Tests
 
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 MLKem.ImportEncapsulationKey(algorithm, []));
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void ImportEncapsulationKey_WrongSize_Span(MLKemAlgorithm algorithm)
+        {
+            byte[] destination = new byte[algorithm.EncapsulationKeySizeInBytes + 1];
+
+            AssertExtensions.Throws<ArgumentException>("source", () =>
+                MLKem.ImportEncapsulationKey(algorithm, destination.AsSpan()));
+
+            AssertExtensions.Throws<ArgumentException>("source", () =>
+                MLKem.ImportEncapsulationKey(algorithm, destination.AsSpan(0..^2)));
+
+            AssertExtensions.Throws<ArgumentException>("source", () =>
+                MLKem.ImportEncapsulationKey(algorithm, ReadOnlySpan<byte>.Empty));
         }
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
@@ -310,8 +356,12 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => kem.ExportDecapsulationKey(
                 new byte[MLKemAlgorithm.MLKem512.DecapsulationKeySizeInBytes]));
 
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportDecapsulationKey());
+
             Assert.Throws<ObjectDisposedException>(() => kem.ExportEncapsulationKey(
                 new byte[MLKemAlgorithm.MLKem512.EncapsulationKeySizeInBytes]));
+
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportEncapsulationKey());
         }
     }
 }
