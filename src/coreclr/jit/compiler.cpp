@@ -6229,8 +6229,20 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
 #elif defined(TARGET_RISCV64)
 
-        instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Zba);
+        if (JitConfig.EnableHWIntrinsic() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
+        }
+
+        if (JitConfig.EnableRiscV64Zba() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Zba);
+        }
+
+        if (JitConfig.EnableRiscV64Zbb() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
+        }
 
 #endif
 
