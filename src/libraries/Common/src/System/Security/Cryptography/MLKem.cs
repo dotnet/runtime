@@ -138,6 +138,84 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Creates an encapsulation ciphertext and shared secret, writing them into the provided buffers.
+        /// </summary>
+        /// <param name="ciphertext">
+        ///   The buffer to receive the ciphertext.
+        /// </param>
+        /// <param name="sharedSecret">
+        ///   The buffer to receive the shared secret.
+        /// </param>
+        /// <param name="ciphertextWritten">
+        ///   When this method returns, the total number of bytes written into <paramref name="ciphertext"/>.
+        /// </param>
+        /// <param name="sharedSecretWritten">
+        ///   When this method returns, the total number of bytes written into <paramref name="sharedSecret"/>.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   <para>An error occurred during encapsulation.</para>
+        ///   <para>-or -</para>
+        ///   <para><paramref name="ciphertext"/> overlaps with <paramref name="sharedSecret"/>.</para>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="ciphertext" /> is too small to hold the ciphertext.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="sharedSecret" /> is too small to hold the shared secret.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public void Encapsulate(
+            Span<byte> ciphertext,
+            Span<byte> sharedSecret,
+            out int ciphertextWritten,
+            out int sharedSecretWritten)
+        {
+            if (ciphertext.Length < Algorithm.CiphertextSizeInBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(ciphertext));
+
+            if (sharedSecret.Length < Algorithm.SharedSecretSizeInBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(sharedSecret));
+
+            Span<byte> ciphertextExact = ciphertext.Slice(0, Algorithm.CiphertextSizeInBytes);
+            Span<byte> sharedSecretExact = sharedSecret.Slice(0, Algorithm.SharedSecretSizeInBytes);
+
+            if (ciphertextExact.Overlaps(sharedSecretExact))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
+            }
+
+            ThrowIfDisposed();
+            EncapsulateCore(ciphertextExact, sharedSecretExact);
+            ciphertextWritten = ciphertextExact.Length;
+            sharedSecretWritten = sharedSecretExact.Length;
+        }
+
+        /// <summary>
+        ///   Creates an encapsulation ciphertext and shared secret.
+        /// </summary>
+        /// <param name="sharedSecret">
+        ///   When this method returns, the shared secret.
+        /// </param>
+        /// <returns>
+        ///   The ciphertext.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>An error occurred during encapsulation.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] Encapsulate(out byte[] sharedSecret)
+        {
+            ThrowIfDisposed();
+
+            byte[] ciphertext = new byte[Algorithm.CiphertextSizeInBytes];
+            byte[] localSharedSecret = new byte[Algorithm.SharedSecretSizeInBytes];
+
+            EncapsulateCore(ciphertext, localSharedSecret);
+
+            sharedSecret = localSharedSecret;
+            return ciphertext;
+        }
+
+        /// <summary>
         ///   When overridden in a derived class, creates an encapsulation ciphertext and shared secret, writing them
         ///   into the provided buffers.
         /// </summary>
@@ -186,6 +264,76 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
             DecapsulateCore(ciphertext, sharedSecret);
+        }
+
+        /// <summary>
+        ///   Decapsulates a shared secret from a provided ciphertext.
+        /// </summary>
+        /// <param name="ciphertext">
+        ///   The ciphertext.
+        /// </param>
+        /// <param name="sharedSecret">
+        ///   The buffer to receive the shared secret.
+        /// </param>
+        /// <param name="sharedSecretWritten">
+        ///   When this method returns, the total number of bytes written into <paramref name="sharedSecret"/>.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during decapsulation.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="ciphertext" /> is not the correct size.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="sharedSecret" /> is too small to hold the shared secret.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public void Decapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret, out int sharedSecretWritten)
+        {
+            if (ciphertext.Length != Algorithm.CiphertextSizeInBytes)
+                throw new ArgumentException(SR.Argument_KemInvalidCiphertextLength, nameof(ciphertext));
+
+            if (sharedSecret.Length < Algorithm.SharedSecretSizeInBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(sharedSecret));
+
+            ThrowIfDisposed();
+
+            Span<byte> sharedSecretExact = sharedSecret.Slice(0, Algorithm.SharedSecretSizeInBytes);
+            DecapsulateCore(ciphertext, sharedSecretExact);
+            sharedSecretWritten = sharedSecretExact.Length;
+        }
+
+        /// <summary>
+        ///   Decapsulates a shared secret from a provided ciphertext.
+        /// </summary>
+        /// <param name="ciphertext">
+        ///   The ciphertext.
+        /// </param>
+        /// <returns>
+        ///   The shared secret.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during decapsulation.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="ciphertext" /> is not the correct size.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="ciphertext" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] Decapsulate(byte[] ciphertext)
+        {
+            if (ciphertext is null)
+                throw new ArgumentNullException(nameof(ciphertext));
+
+            if (ciphertext.Length != Algorithm.CiphertextSizeInBytes)
+                throw new ArgumentException(SR.Argument_KemInvalidCiphertextLength, nameof(ciphertext));
+
+            ThrowIfDisposed();
+
+            byte[] sharedSecret = new byte[Algorithm.SharedSecretSizeInBytes];
+            DecapsulateCore(ciphertext, sharedSecret);
+            return sharedSecret;
         }
 
         /// <summary>

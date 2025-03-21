@@ -112,6 +112,25 @@ namespace System.Security.Cryptography.Tests
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemAlgorithms))]
+        public static void Encapsulate_DestinationTooSmall(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.GenerateKey(algorithm);
+
+            AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Encapsulate(
+                new byte[algorithm.CiphertextSizeInBytes - 1],
+                new byte[algorithm.SharedSecretSizeInBytes],
+                out _,
+                out _));
+
+            AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Encapsulate(
+                new byte[algorithm.CiphertextSizeInBytes],
+                new byte[algorithm.SharedSecretSizeInBytes - 1],
+                out _,
+                out _));
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
         public static void Decapsulate_WrongSize(MLKemAlgorithm algorithm)
         {
             using MLKem kem = MLKem.GenerateKey(algorithm);
@@ -128,6 +147,22 @@ namespace System.Security.Cryptography.Tests
                 [],
                 new byte[algorithm.SharedSecretSizeInBytes]));
 
+            AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
+                new byte[algorithm.CiphertextSizeInBytes - 1],
+                new byte[algorithm.SharedSecretSizeInBytes],
+                out _));
+
+            AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
+                new byte[algorithm.CiphertextSizeInBytes + 1],
+                new byte[algorithm.SharedSecretSizeInBytes],
+                out _));
+
+            AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
+                new byte[algorithm.CiphertextSizeInBytes - 1]));
+
+            AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
+                new byte[algorithm.CiphertextSizeInBytes + 1]));
+
             AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Decapsulate(
                 new byte[algorithm.CiphertextSizeInBytes],
                 new byte[algorithm.SharedSecretSizeInBytes + 1]));
@@ -139,6 +174,26 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Decapsulate(
                 new byte[algorithm.CiphertextSizeInBytes],
                 []));
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Decapsulate_DestinationTooSmall(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.GenerateKey(algorithm);
+
+            AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Decapsulate(
+                new byte[algorithm.CiphertextSizeInBytes],
+                new byte[algorithm.SharedSecretSizeInBytes - 1],
+                out _));
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Decapsulate_NullArg(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.GenerateKey(algorithm);
+            AssertExtensions.Throws<ArgumentNullException>("ciphertext", () => kem.Decapsulate(null));
         }
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
