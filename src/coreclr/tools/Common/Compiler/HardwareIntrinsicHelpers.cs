@@ -352,7 +352,6 @@ namespace ILCompiler
             {
                 return instructionSet switch
                 {
-
                     // Baseline ISAs - they're always available
                     InstructionSet.RiscV64_RiscV64Base => 0,
 
