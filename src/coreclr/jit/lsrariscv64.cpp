@@ -816,16 +816,29 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
             index                = lea->Index();
             cns                  = lea->Offset();
 
+            DWORD scale;
+            BitScanForward(&scale, lea->gtScale);
+
+            assert(lea->Base() != nullptr);
+
             // On RISCV64 we may need a single internal register
             // (when both conditions are true then we still only need a single internal register)
-            if ((index != nullptr) && (cns != 0))
+            if (index != nullptr)
             {
-                // RISCV64 does not support both Index and offset so we need an internal register
+                // We need a temporary register to store base + index
                 buildInternalIntRegisterDefForNode(indirTree);
             }
             else if (!emitter::isValidSimm12(cns))
             {
                 // This offset can't be contained in the ldr/str instruction, so we need an internal register
+                buildInternalIntRegisterDefForNode(indirTree);
+            }
+
+            // If the offset can't be contained in the ldr/str instruction, and we cannot use SH(X)ADD instruction,
+            // we need an additional register to store the scaled index.
+            // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+            if (!emitter::isValidSimm12(cns) && (index != nullptr) && scale > 3)
+            {
                 buildInternalIntRegisterDefForNode(indirTree);
             }
         }

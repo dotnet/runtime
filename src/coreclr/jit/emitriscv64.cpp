@@ -4704,11 +4704,15 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                         instruction shxaddIns = getShxaddVariant(lsl, useUnsignedShxaddVariant);
                         emitIns_R_R_R(shxaddIns, addType, tmpReg, index->GetRegNum(), tmpReg);
                     }
-                    else
+                    else if (lsl > 0)
                     {
                         regNumber scaleReg = codeGen->internalRegisters.GetSingle(indir);
                         emitIns_R_R_I(INS_slli, addType, scaleReg, index->GetRegNum(), lsl);
                         emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, scaleReg);
+                    }
+                    else
+                    {
+                        emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), index->GetRegNum());
                     }
                     emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
                 }
