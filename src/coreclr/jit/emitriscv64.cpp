@@ -1000,15 +1000,18 @@ void emitter::emitIns_R_C(
 
     id->idSmallCns(offs); // usually is 0.
     id->idInsOpt(INS_OPTS_RC);
-    // Load constant with auipc if constant size is 64 bits
-    if ((emitComp->eeIsJitDataOffs(fldHnd) && (EA_SIZE(attr) == EA_PTRSIZE)) || emitComp->opts.compReloc)
+
+    if (emitComp->compCurBB != nullptr && emitComp->fgIsBlockCold(emitComp->compCurBB))
     {
-        id->idSetIsDspReloc();
-        id->idCodeSize(8);
+        // Loading constant from cold section might be arbitrarily far,
+        // use emitOutputInstr_OptsRcNoPcRel
+        id->idCodeSize(24);
     }
     else
     {
-        id->idCodeSize(24);
+        // Loading constant from hot section can use auipc,
+        // use emitOutputInstr_OptsRcPcRel
+        id->idCodeSize(8);
     }
 
     if (EA_IS_GCREF(attr))
@@ -3256,14 +3259,14 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     *ins                 = id->idIns();
     const regNumber reg1 = id->idReg1();
 
-    if (id->idIsReloc())
+    if (id->idCodeSize() == 8)
     {
-        return emitOutputInstr_OptsRcReloc(dst, ins, offset, reg1);
+        return emitOutputInstr_OptsRcPcRel(dst, ins, offset, reg1);
     }
-    return emitOutputInstr_OptsRcNoReloc(dst, ins, offset, reg1);
+    return emitOutputInstr_OptsRcNoPcRel(dst, ins, offset, reg1);
 }
 
-BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsRcPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
     const ssize_t immediate = (emitConsBlock - dst) + offset;
     assert((immediate > 0) && ((immediate & 0x03) == 0));
@@ -3281,7 +3284,7 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsRcNoPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
     const ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) + offset;
     assertCodeLength(static_cast<size_t>(immediate), 48); // RISC-V Linux Kernel SV48
