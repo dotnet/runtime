@@ -150,7 +150,7 @@ inline const SString& PEAssembly::GetPath()
     }
     CONTRACTL_END;
 
-    if (IsReflectionEmit() || m_PEImage->IsInBundle() || m_PEImage->IsExternalData())
+    if (IsReflectionEmit() || m_PEImage->IsInBundle ())
     {
         return SString::Empty();
     }

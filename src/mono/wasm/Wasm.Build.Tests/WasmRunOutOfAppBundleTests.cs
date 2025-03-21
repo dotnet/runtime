@@ -38,8 +38,6 @@ public class WasmRunOutOfAppBundleTests : WasmTemplateTestsBase
             File.WriteAllText(indexHtmlPath, html);
         }
 
-        UpdateBootJsInHtmlFile(indexHtmlPath);
-
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",

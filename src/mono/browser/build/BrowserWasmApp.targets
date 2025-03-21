@@ -59,7 +59,17 @@
     <_WasmDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">-msimd128</_WasmDefaultFlags>
 
     <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.native.wasm</_WasmOutputFileName>
+
+    <WasmEnableStreamingResponse Condition="'$(WasmEnableStreamingResponse)' == ''">true</WasmEnableStreamingResponse>
   </PropertyGroup>
+
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Net.Http.WasmEnableStreamingResponse"
+                                        Condition="'$(WasmEnableStreamingResponse)' != ''"
+                                        Value="$(WasmEnableStreamingResponse)"
+                                        Trim="true" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Allow running/debugging from VS -->
@@ -130,6 +140,9 @@
       <_WasmPThreadPoolInitialSize Condition="'$(_WasmPThreadPoolInitialSize)' == ''">-1</_WasmPThreadPoolInitialSize>
       <_WasmPThreadPoolUnusedSize Condition="'$(_WasmPThreadPoolUnusedSize)' == ''">-1</_WasmPThreadPoolUnusedSize>
       <_WasmIsPublishing Condition="'$(_WasmIsPublishing)' == '' and '$(_IsPublishing)' != ''">$(_IsPublishing)</_WasmIsPublishing>
+      
+      <_WasmAppBuilderBootConfigFileName>$(WasmBootConfigFileName)</_WasmAppBuilderBootConfigFileName>
+      <_WasmAppBuilderBootConfigFileName Condition="'$(_WasmAppBuilderBootConfigFileName)' == ''">dotnet.boot.js</_WasmAppBuilderBootConfigFileName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -141,6 +154,7 @@
     <RemoveDir Directories="$(WasmAppDir)" />
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
+      ConfigFileName="$(_WasmAppBuilderBootConfigFileName)"
       Assemblies="@(_WasmAssembliesInternal)"
       MainAssemblyName="$(WasmMainAssemblyFileName)"
       HostConfigs="@(HostConfig)"
