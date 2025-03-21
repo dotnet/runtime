@@ -279,6 +279,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => kem.ExportPrivateSeed(
                 new byte[MLKemAlgorithm.MLKem512.PrivateSeedSizeInBytes]));
 
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportPrivateSeed());
+
             Assert.Throws<ObjectDisposedException>(() => kem.ExportDecapsulationKey(
                 new byte[MLKemAlgorithm.MLKem512.DecapsulationKeySizeInBytes]));
 
