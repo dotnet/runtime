@@ -20,9 +20,9 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
         [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static SymmetricAlgorithm? Create(string algName) =>
-            CryptoConfigForwarder.CreateFromName<SymmetricAlgorithm>(algName);
+            CryptoConfig.CreateFromName<SymmetricAlgorithm>(algName);
 
         public virtual int FeedbackSize
         {

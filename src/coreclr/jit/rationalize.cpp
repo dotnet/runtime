@@ -341,11 +341,19 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
     switch (intrinsicId)
     {
         case NI_Vector128_Shuffle:
+        case NI_Vector128_ShuffleNative:
+        case NI_Vector128_ShuffleNativeFallback:
 #if defined(TARGET_XARCH)
         case NI_Vector256_Shuffle:
+        case NI_Vector256_ShuffleNative:
+        case NI_Vector256_ShuffleNativeFallback:
         case NI_Vector512_Shuffle:
+        case NI_Vector512_ShuffleNative:
+        case NI_Vector512_ShuffleNativeFallback:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Shuffle:
+        case NI_Vector64_ShuffleNative:
+        case NI_Vector64_ShuffleNativeFallback:
 #endif
         {
             assert(operandCount == 2);
@@ -354,14 +362,26 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 #else
             assert((simdSize == 8) || (simdSize == 16));
 #endif
+            assert(((*use)->gtFlags & GTF_REVERSE_OPS) == 0); // gtNewSimdShuffleNode with reverse ops is not supported
 
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
 
-            if (op2->IsCnsVec() && comp->IsValidForShuffle(op2->AsVecCon(), simdSize, simdBaseType))
+            bool isShuffleNative = intrinsicId != NI_Vector128_Shuffle;
+#if defined(TARGET_XARCH)
+            isShuffleNative =
+                isShuffleNative && (intrinsicId != NI_Vector256_Shuffle) && (intrinsicId != NI_Vector512_Shuffle);
+#elif defined(TARGET_ARM64)
+            isShuffleNative = isShuffleNative && (intrinsicId != NI_Vector64_Shuffle);
+#endif
+
+            // Check if the required intrinsics to emit are available.
+            if (!comp->IsValidForShuffle(op2, simdSize, simdBaseType, nullptr, isShuffleNative))
             {
-                result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
+                break;
             }
+
+            result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             break;
         }
 
@@ -787,6 +807,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             if (node->AsCast()->CastOp()->OperIsSimple())
             {
                 comp->fgSimpleLowerCastOfSmpOp(BlockRange(), node->AsCast());
+            }
+            break;
+
+        case GT_BSWAP16:
+            if (node->gtGetOp1()->OperIs(GT_CAST))
+            {
+                comp->fgSimpleLowerBswap16(BlockRange(), node);
             }
             break;
 

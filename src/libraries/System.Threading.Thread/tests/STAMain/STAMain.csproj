@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <!-- To be consistent between net472 and others we override the SDK behavior which defaults to .dll -->
-    <TargetExt>.exe</TargetExt>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="STAMain.cs" />
   </ItemGroup>
+
 </Project>

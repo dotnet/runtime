@@ -133,6 +133,7 @@ INLINE_OBSERVATION(CANT_CLASS_INIT,           bool,   "can't class init",       
 INLINE_OBSERVATION(COMPILATION_ERROR,         bool,   "compilation error",                    FATAL,       CALLSITE)
 INLINE_OBSERVATION(COMPILATION_FAILURE,       bool,   "failed to compile",                    FATAL,       CALLSITE)
 INLINE_OBSERVATION(EXPLICIT_TAIL_PREFIX,      bool,   "explicit tail prefix",                 FATAL,       CALLSITE)
+INLINE_OBSERVATION(EH_TABLE_FULL,             bool,   "callee has eh, eh table is full",      FATAL,       CALLSITE)
 INLINE_OBSERVATION(GENERIC_DICTIONARY_LOOKUP, bool,   "runtime dictionary lookup",            FATAL,       CALLSITE)
 INLINE_OBSERVATION(HAS_CALL_VIA_LDVIRTFTN,    bool,   "call via ldvirtftn",                   FATAL,       CALLSITE)
 INLINE_OBSERVATION(HAS_COMPLEX_HANDLE,        bool,   "complex handle access",                FATAL,       CALLSITE)

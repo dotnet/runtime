@@ -82,9 +82,6 @@
     <AspNetCoreAppCurrentVersion>10.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
-    <NetFrameworkMinimum>net462</NetFrameworkMinimum>
-    <NetFrameworkCurrent>net48</NetFrameworkCurrent>
-    <NetFrameworkToolCurrent>net472</NetFrameworkToolCurrent>
     <!-- Don't build for NETFramework during source-build. -->
     <NetFrameworkMinimum Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />

@@ -239,6 +239,10 @@ typedef uint64_t regMaskSmall;
 #define HAS_MORE_THAN_64_REGISTERS 1
 #endif // TARGET_ARM64
 
+#define REG_LOW_BASE 0
+#ifdef HAS_MORE_THAN_64_REGISTERS
+#define REG_HIGH_BASE 64
+#endif
 // TODO: Rename regMaskSmall as RegSet64 (at least for 64-bit)
 typedef regMaskSmall    SingleTypeRegSet;
 inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);

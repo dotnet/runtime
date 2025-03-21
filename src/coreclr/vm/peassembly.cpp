@@ -850,7 +850,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
 #ifndef DACCESS_COMPILE
 
 // Supports implementation of the legacy Assembly.CodeBase property.
-// Returns false if the assembly was loaded via reflection emit or from a probe extension, true otherwise
+// Returns false if the assembly was loaded from a bundle, true otherwise
 BOOL PEAssembly::GetCodeBase(SString &result)
 {
     CONTRACTL
@@ -864,7 +864,7 @@ BOOL PEAssembly::GetCodeBase(SString &result)
     CONTRACTL_END;
 
     PEImage* ilImage = GetPEImage();
-    if (ilImage != NULL && !ilImage->IsInBundle() && !ilImage->IsExternalData())
+    if (ilImage != NULL && !ilImage->IsInBundle())
     {
         // All other cases use the file path.
         result.Set(ilImage->GetPath());

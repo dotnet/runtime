@@ -19,6 +19,175 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitstd/algorithm.h"
 
 //------------------------------------------------------------------------
+// ObjectAllocator: construct the object allocator object
+//
+// Arguments:
+//    comp - compiler instance
+//
+// Notes:
+//    Runs only if Compiler::optMethodFlags has flag OMF_HAS_NEWOBJ set.
+//
+//    Builds a connection graph where nodes mostly represent local vars,
+//    showing how locals can assign values to one another.
+//
+//    The graph also includes a few absract node types: a node representing
+//    an unknow source of values, and (pseudo local) nodes representing
+//    assignments that only happen under particular conditions.
+//
+ObjectAllocator::ObjectAllocator(Compiler* comp)
+    : Phase(comp, PHASE_ALLOCATE_OBJECTS)
+    , m_IsObjectStackAllocationEnabled(false)
+    , m_AnalysisDone(false)
+    , m_bvCount(0)
+    , m_bitVecTraits(BitVecTraits(comp->lvaCount, comp))
+    , m_HeapLocalToStackLocalMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_EnumeratorLocalToPseudoLocalMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_CloneMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_nextLocalIndex(0)
+    , m_firstPseudoLocalNum(BAD_VAR_NUM)
+    , m_firstPseudoLocalIndex(BAD_VAR_NUM)
+    , m_numPseudoLocals(0)
+    , m_maxPseudoLocals(0)
+    , m_regionsToClone(0)
+{
+    m_EscapingPointers                = BitVecOps::UninitVal();
+    m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
+    m_DefinitelyStackPointingPointers = BitVecOps::UninitVal();
+    m_ConnGraphAdjacencyMatrix        = nullptr;
+    m_StackAllocMaxSize               = (unsigned)JitConfig.JitObjectStackAllocationSize();
+}
+
+//------------------------------------------------------------------------
+// IsTrackedType: see if this type is being tracked by escape analysis
+//
+// Arguments:
+//    type - type of interest
+//
+// Returns:
+//    true if so
+//
+bool ObjectAllocator::IsTrackedType(var_types type)
+{
+    const bool isTrackableScalar = (type == TYP_REF) || (genActualType(type) == TYP_I_IMPL) || (type == TYP_BYREF);
+    return isTrackableScalar;
+}
+
+//------------------------------------------------------------------------
+// IsTrackedLocal: see if this local is being tracked by escape analysis
+//
+// Arguments:
+//    lclNum - local of interest
+//
+// Returns:
+//    true if so
+//
+bool ObjectAllocator::IsTrackedLocal(unsigned lclNum)
+{
+    assert(lclNum < comp->lvaCount);
+    LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
+    return varDsc->lvTracked;
+}
+
+//------------------------------------------------------------------------
+// HasIndex: see if a given local has a tracking index
+//
+// Arguments:
+//    lclNum -- local to query
+//
+// Returns:
+//    true if so
+//
+bool ObjectAllocator::HasIndex(unsigned lclNum)
+{
+    if (lclNum < comp->lvaCount)
+    {
+        LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
+        return varDsc->lvTracked;
+    }
+
+    if ((lclNum >= m_firstPseudoLocalNum) && (lclNum < m_bvCount))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// LocalToIndex: get the bit vector index for a local or pseudo-local
+//
+// Arguments:
+//    lclNum -- local var num or pseudo local var num
+//
+// Returns:
+//    bvIndex to use
+//
+unsigned ObjectAllocator::LocalToIndex(unsigned lclNum)
+{
+    unsigned result = BAD_VAR_NUM;
+
+    if (lclNum < comp->lvaCount)
+    {
+        assert(IsTrackedLocal(lclNum));
+        LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
+        result                  = varDsc->lvVarIndex;
+    }
+    else
+    {
+        result = m_firstPseudoLocalIndex + (lclNum - m_firstPseudoLocalNum);
+    }
+
+    assert(result < m_bvCount);
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// IndexToLocal: get the local num for a bv index
+//
+// Arguments:
+//    bvIndex -- bit vector index
+//
+// Returns:
+//    local num
+//
+unsigned ObjectAllocator::IndexToLocal(unsigned bvIndex)
+{
+    assert(bvIndex < m_bvCount);
+    unsigned result = BAD_VAR_NUM;
+
+    if (bvIndex < m_firstPseudoLocalIndex)
+    {
+        result = comp->lvaTrackedToVarNum[bvIndex];
+        assert(IsTrackedLocal(result));
+    }
+    else
+    {
+        result = m_firstPseudoLocalNum + (bvIndex - m_firstPseudoLocalIndex);
+    }
+
+    return result;
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------------
+// DumpIndex: write a description of a given bv index
+//
+// Arguments:
+//    bvIndex - index to describe
+//
+// Notes:
+//    includes leading space
+//
+void ObjectAllocator::DumpIndex(unsigned bvIndex)
+{
+    const unsigned lclNum     = IndexToLocal(bvIndex);
+    const bool     isLocalVar = (lclNum < m_firstPseudoLocalNum);
+    printf(" %c%02u", isLocalVar ? 'V' : 'P', lclNum);
+}
+#endif
+
+//------------------------------------------------------------------------
 // DoPhase: Run analysis (if object stack allocation is enabled) and then
 //          morph each GT_ALLOCOBJ node either into an allocation helper
 //          call or stack allocation.
@@ -101,7 +270,8 @@ PhaseStatus ObjectAllocator::DoPhase()
 
 void ObjectAllocator::MarkLclVarAsEscaping(unsigned int lclNum)
 {
-    BitVecOps::AddElemD(&m_bitVecTraits, m_EscapingPointers, lclNum);
+    const unsigned bvIndex = LocalToIndex(lclNum);
+    BitVecOps::AddElemD(&m_bitVecTraits, m_EscapingPointers, bvIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -114,7 +284,8 @@ void ObjectAllocator::MarkLclVarAsEscaping(unsigned int lclNum)
 
 void ObjectAllocator::MarkLclVarAsPossiblyStackPointing(unsigned int lclNum)
 {
-    BitVecOps::AddElemD(&m_bitVecTraits, m_PossiblyStackPointingPointers, lclNum);
+    const unsigned bvIndex = LocalToIndex(lclNum);
+    BitVecOps::AddElemD(&m_bitVecTraits, m_PossiblyStackPointingPointers, bvIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -127,7 +298,9 @@ void ObjectAllocator::MarkLclVarAsPossiblyStackPointing(unsigned int lclNum)
 
 void ObjectAllocator::MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum)
 {
-    BitVecOps::AddElemD(&m_bitVecTraits, m_DefinitelyStackPointingPointers, lclNum);
+    const unsigned bvIndex = LocalToIndex(lclNum);
+    JITDUMP("Marking V%02u (0x%02x) as definitely stack-pointing\n", lclNum, bvIndex);
+    BitVecOps::AddElemD(&m_bitVecTraits, m_DefinitelyStackPointingPointers, bvIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -140,23 +313,188 @@ void ObjectAllocator::MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum)
 
 void ObjectAllocator::AddConnGraphEdge(unsigned int sourceLclNum, unsigned int targetLclNum)
 {
-    BitVecOps::AddElemD(&m_bitVecTraits, m_ConnGraphAdjacencyMatrix[sourceLclNum], targetLclNum);
+    const unsigned sourceBvIndex = LocalToIndex(sourceLclNum);
+    const unsigned targetBvIndex = LocalToIndex(targetLclNum);
+    BitVecOps::AddElemD(&m_bitVecTraits, m_ConnGraphAdjacencyMatrix[sourceBvIndex], targetBvIndex);
+}
+
+//------------------------------------------------------------------------
+// PrepareAnalysis: determine how to model the escape analysis problem
+//    with bit vectors.
+//
+void ObjectAllocator::PrepareAnalysis()
+{
+    // Determine how locals map to indicies in the bit vectors / connection graph.
+    //
+    // In "lcl num" space
+    //
+    // We reserve the range [0...L-1] for the initial set of locals.
+    // Here L is the initial lvaCount.
+    //
+    // If conditional escape analysis is enabled, we reserve the range [L...L+M-1]
+    // for locals allocated during the conditional escape analysis expansions,
+    // where M is the maximum number of pseudo-vars.
+    //
+    // We reserve the range [L+M ... L+2M-1] for pseudo locals themselves.
+    //
+    // In "bv" space
+    //
+    // We reserve the range [0...N-1] for the initial set of tracked locals.
+    // Here N <= L is the number of tracked locals, determined below, an each
+    // tracked local has an index assigned in this range.
+    //
+    // If conditional escape analysis is enabled, we reserve the range [N...N+M-1]
+    // for locals allocated during the conditional escape analysis expansions,
+    // where N is the maximum number of pseudo-vars.
+    //
+    // We reserve the range [N+M ... N+2M-1] for pseudo locals themselves.
+    //
+    // LocalToIndex translates from "lcl num" space to "bv" space
+    // IndexToLocal translates from "bv" space space to "lcl num" space
+    //
+    const unsigned localCount = comp->lvaCount;
+    unsigned       bvNext     = 0;
+
+    // Enumerate which locals are going to appear in our connection
+    // graph, and assign them BV indicies.
+    //
+    for (unsigned lclNum = 0; lclNum < localCount; lclNum++)
+    {
+        LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
+
+        if (IsTrackedType(varDsc->TypeGet()))
+        {
+            varDsc->lvTracked  = 1;
+            varDsc->lvVarIndex = (unsigned short)bvNext;
+            bvNext++;
+        }
+        else
+        {
+            varDsc->lvTracked  = 0;
+            varDsc->lvVarIndex = 0;
+        }
+    }
+
+    m_nextLocalIndex = bvNext;
+
+    // If we are going to do any conditional escape analysis, determine
+    // how much extra BV space we'll need.
+    //
+    bool const hasEnumeratorLocals = comp->hasImpEnumeratorGdvLocalMap();
+
+    if (hasEnumeratorLocals)
+    {
+        unsigned const enumeratorLocalCount = comp->getImpEnumeratorGdvLocalMap()->GetCount();
+        assert(enumeratorLocalCount > 0);
+
+        // For now, disable conditional escape analysis with OSR
+        // since the dominance picture is muddled at this point.
+        //
+        // The conditionally escaping allocation sites will likely be in loops anyways.
+        //
+        bool const enableConditionalEscape = JitConfig.JitObjectStackAllocationConditionalEscape() > 0;
+        bool const isOSR                   = comp->opts.IsOSR();
+
+        if (enableConditionalEscape && !isOSR)
+        {
+
+#ifdef DEBUG
+            static ConfigMethodRange JitObjectStackAllocationConditionalEscapeRange;
+            JitObjectStackAllocationConditionalEscapeRange.EnsureInit(
+                JitConfig.JitObjectStackAllocationConditionalEscapeRange());
+            const unsigned hash    = comp->info.compMethodHash();
+            const bool     inRange = JitObjectStackAllocationConditionalEscapeRange.Contains(hash);
+#else
+            const bool inRange = true;
+#endif
+
+            if (inRange)
+            {
+                JITDUMP("Enabling conditional escape analysis [%u pseudo-vars]\n", enumeratorLocalCount);
+                m_maxPseudoLocals = enumeratorLocalCount;
+            }
+            else
+            {
+                JITDUMP("Not enabling conditional escape analysis (disabled by range config)\n");
+            }
+        }
+        else
+        {
+            JITDUMP("Not enabling conditional escape analysis [%u pseudo-vars]: %s\n", enumeratorLocalCount,
+                    enableConditionalEscape ? "OSR" : "disabled by config");
+        }
+    }
+
+    // When we clone to prevent conditional escape, we'll also create a new local
+    // var that we will track. So we need to leave room for these vars. There can
+    // be as many of these as there are pseudo locals.
+    //
+    m_firstPseudoLocalNum   = localCount + m_maxPseudoLocals; // L + M, per above
+    m_firstPseudoLocalIndex = bvNext + m_maxPseudoLocals;     // N, per above
+    bvNext += 2 * m_maxPseudoLocals;
+
+    // Now set up the BV traits.
+    //
+    m_bvCount      = bvNext;
+    m_bitVecTraits = BitVecTraits(m_bvCount, comp);
+
+    // Create the reverse mapping from bvIndex to local var index
+    // (leave room for locals we may allocate)
+    //
+    if (comp->lvaTrackedToVarNumSize < m_firstPseudoLocalNum)
+    {
+        comp->lvaTrackedToVarNumSize = m_firstPseudoLocalNum;
+        comp->lvaTrackedToVarNum     = new (comp->getAllocator(CMK_LvaTable)) unsigned[comp->lvaTrackedToVarNumSize];
+    }
+
+    for (unsigned lclNum = 0; lclNum < localCount; lclNum++)
+    {
+        LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
+
+        if (varDsc->lvTracked)
+        {
+            comp->lvaTrackedToVarNum[varDsc->lvVarIndex] = lclNum;
+        }
+    }
+
+    JITDUMP("%u locals, %u tracked by escape analysis\n", localCount, m_nextLocalIndex);
+
+    if (m_nextLocalIndex > 0)
+    {
+        JITDUMP("\nLocal      var    range [%02u...%02u]\n", 0, localCount);
+        if (m_maxPseudoLocals > 0)
+        {
+            JITDUMP("Enumerator var    range [%02u...%02u]\n", localCount, localCount + m_maxPseudoLocals - 1);
+            JITDUMP("Pseudo     var    range [%02u...%02u]\n", m_firstPseudoLocalNum,
+                    m_firstPseudoLocalNum + m_maxPseudoLocals - 1);
+        }
+
+        JITDUMP("\nLocal      var bv range [%02u...%02u]\n", 0, m_nextLocalIndex - 1);
+        if (m_maxPseudoLocals > 0)
+        {
+            JITDUMP("Enumerator var bv range [%02u...%02u]\n", m_nextLocalIndex,
+                    m_nextLocalIndex + m_maxPseudoLocals - 1);
+            JITDUMP("Pseudo     var bv range [%02u...%02u]\n", m_nextLocalIndex + m_maxPseudoLocals,
+                    m_nextLocalIndex + 2 * m_maxPseudoLocals - 1);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
 // DoAnalysis: Walk over basic blocks of the method and detect all local
 //             variables that can be allocated on the stack.
-
+//
 void ObjectAllocator::DoAnalysis()
 {
     assert(m_IsObjectStackAllocationEnabled);
     assert(!m_AnalysisDone);
 
-    if (comp->lvaCount > 0)
+    PrepareAnalysis();
+
+    if (m_bvCount > 0)
     {
-        m_EscapingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
-        m_ConnGraphAdjacencyMatrix =
-            new (comp->getAllocator(CMK_ObjectAllocator)) BitSetShortLongRep[comp->lvaCount + m_maxPseudoLocals + 1];
+        m_EscapingPointers         = BitVecOps::MakeEmpty(&m_bitVecTraits);
+        m_ConnGraphAdjacencyMatrix = new (comp->getAllocator(CMK_ObjectAllocator)) BitSetShortLongRep[m_bvCount];
 
         // If we are doing conditional escape analysis, we also need to compute dominance.
         //
@@ -263,28 +601,24 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
     for (unsigned int lclNum = 0; lclNum < comp->lvaCount; ++lclNum)
     {
-        var_types type = comp->lvaTable[lclNum].TypeGet();
-
-        if (type == TYP_REF || genActualType(type) == TYP_I_IMPL || type == TYP_BYREF)
+        if (!IsTrackedLocal(lclNum))
         {
-            m_ConnGraphAdjacencyMatrix[lclNum] = BitVecOps::MakeEmpty(&m_bitVecTraits);
-
-            if (comp->lvaTable[lclNum].IsAddressExposed())
-            {
-                JITDUMP("   V%02u is address exposed\n", lclNum);
-                MarkLclVarAsEscaping(lclNum);
-            }
+            continue;
         }
-        else
+
+        const unsigned bvIndex              = LocalToIndex(lclNum);
+        m_ConnGraphAdjacencyMatrix[bvIndex] = BitVecOps::MakeEmpty(&m_bitVecTraits);
+
+        if (comp->lvaTable[lclNum].IsAddressExposed())
         {
-            // Variable that may not point to objects will not participate in our analysis.
-            m_ConnGraphAdjacencyMatrix[lclNum] = BitVecOps::UninitVal();
+            JITDUMP("   V%02u is address exposed\n", lclNum);
+            MarkLclVarAsEscaping(lclNum);
         }
     }
 
     for (unsigned int p = 0; p < m_maxPseudoLocals; p++)
     {
-        m_ConnGraphAdjacencyMatrix[p + comp->lvaCount] = BitVecOps::MakeEmpty(&m_bitVecTraits);
+        m_ConnGraphAdjacencyMatrix[p + m_firstPseudoLocalIndex] = BitVecOps::MakeEmpty(&m_bitVecTraits);
     }
 
     // We should have computed the DFS tree already.
@@ -321,29 +655,29 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
         JITDUMP("\nComputing escape closure\n\n");
         bool               doOneMoreIteration = true;
         BitSetShortLongRep newEscapingNodes   = BitVecOps::UninitVal();
-        unsigned int       lclNum;
+        unsigned int       lclIndex;
 
         while (doOneMoreIteration)
         {
             BitVecOps::Iter iterator(bitVecTraits, escapingNodesToProcess);
             doOneMoreIteration = false;
 
-            while (iterator.NextElem(&lclNum))
+            while (iterator.NextElem(&lclIndex))
             {
-                if (m_ConnGraphAdjacencyMatrix[lclNum] != nullptr)
+                if (m_ConnGraphAdjacencyMatrix[lclIndex] != nullptr)
                 {
                     doOneMoreIteration = true;
 
                     // newEscapingNodes         = adjacentNodes[lclNum]
-                    BitVecOps::Assign(bitVecTraits, newEscapingNodes, m_ConnGraphAdjacencyMatrix[lclNum]);
+                    BitVecOps::Assign(bitVecTraits, newEscapingNodes, m_ConnGraphAdjacencyMatrix[lclIndex]);
                     // newEscapingNodes         = newEscapingNodes \ escapingNodes
                     BitVecOps::DiffD(bitVecTraits, newEscapingNodes, escapingNodes);
                     // escapingNodesToProcess   = escapingNodesToProcess U newEscapingNodes
                     BitVecOps::UnionD(bitVecTraits, escapingNodesToProcess, newEscapingNodes);
                     // escapingNodes = escapingNodes U newEscapingNodes
                     BitVecOps::UnionD(bitVecTraits, escapingNodes, newEscapingNodes);
-                    // escapingNodesToProcess   = escapingNodesToProcess \ { lclNum }
-                    BitVecOps::RemoveElemD(bitVecTraits, escapingNodesToProcess, lclNum);
+                    // escapingNodesToProcess   = escapingNodesToProcess \ { lclIndex }
+                    BitVecOps::RemoveElemD(bitVecTraits, escapingNodesToProcess, lclIndex);
 
 #ifdef DEBUG
                     // Print the first witness to new escapes.
@@ -351,12 +685,13 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
                     if (!BitVecOps::IsEmpty(bitVecTraits, newEscapingNodes))
                     {
                         BitVecOps::Iter iterator(bitVecTraits, newEscapingNodes);
-                        unsigned int    newLclNum;
-                        while (iterator.NextElem(&newLclNum))
+                        unsigned int    newLclIndex;
+                        while (iterator.NextElem(&newLclIndex))
                         {
-                            // Note P's never are sources of assignments...
-                            JITDUMP("%c%02u causes V%02u to escape\n", lclNum >= comp->lvaCount ? 'P' : 'V', lclNum,
-                                    newLclNum);
+                            JITDUMPEXEC(DumpIndex(lclIndex));
+                            JITDUMP(" causes ");
+                            JITDUMPEXEC(DumpIndex(newLclIndex));
+                            JITDUMP(" to escape\n");
                         }
                     }
 #endif
@@ -395,70 +730,203 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
         changed = false;
         for (unsigned int lclNum = 0; lclNum < comp->lvaCount; ++lclNum)
         {
-            LclVarDsc* lclVarDsc = comp->lvaGetDesc(lclNum);
-            var_types  type      = lclVarDsc->TypeGet();
-
-            if (type == TYP_REF || type == TYP_I_IMPL || type == TYP_BYREF)
+            if (!IsTrackedLocal(lclNum))
             {
-                if (!MayLclVarPointToStack(lclNum) &&
-                    !BitVecOps::IsEmptyIntersection(bitVecTraits, m_PossiblyStackPointingPointers,
-                                                    m_ConnGraphAdjacencyMatrix[lclNum]))
+                continue;
+            }
+
+            const unsigned lclIndex = LocalToIndex(lclNum);
+
+            if (!MayLclVarPointToStack(lclNum) &&
+                !BitVecOps::IsEmptyIntersection(bitVecTraits, m_PossiblyStackPointingPointers,
+                                                m_ConnGraphAdjacencyMatrix[lclIndex]))
+            {
+                // We discovered a new pointer that may point to the stack.
+                MarkLclVarAsPossiblyStackPointing(lclNum);
+
+                // Check if this pointer always points to the stack.
+                // For OSR the reference may be pointing at the heap-allocated Tier0 version.
+                //
+                LclVarDsc* lclVarDsc = comp->lvaGetDesc(lclNum);
+
+                if ((lclVarDsc->lvSingleDef == 1) && !comp->opts.IsOSR())
                 {
-                    // We discovered a new pointer that may point to the stack.
-                    MarkLclVarAsPossiblyStackPointing(lclNum);
-
-                    // Check if this pointer always points to the stack.
-                    // For OSR the reference may be pointing at the heap-allocated Tier0 version.
-                    //
-                    if ((lclVarDsc->lvSingleDef == 1) && !comp->opts.IsOSR())
+                    // Check if we know what is assigned to this pointer.
+                    unsigned bitCount = BitVecOps::Count(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclIndex]);
+                    assert(bitCount <= 1);
+                    if (bitCount == 1)
                     {
-                        // Check if we know what is assigned to this pointer.
-                        unsigned bitCount = BitVecOps::Count(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
-                        assert(bitCount <= 1);
-                        if (bitCount == 1)
+                        BitVecOps::Iter iter(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclIndex]);
+                        unsigned        rhsLclIndex = 0;
+                        iter.NextElem(&rhsLclIndex);
+                        unsigned rhsLclNum = IndexToLocal(rhsLclIndex);
+                        if (DoesLclVarPointToStack(rhsLclNum))
                         {
-                            BitVecOps::Iter iter(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
-                            unsigned        rhsLclNum = 0;
-                            iter.NextElem(&rhsLclNum);
-
-                            if (DoesLclVarPointToStack(rhsLclNum))
-                            {
-                                // The only store to lclNum local is the definitely-stack-pointing
-                                // rhsLclNum local so lclNum local is also definitely-stack-pointing.
-                                MarkLclVarAsDefinitelyStackPointing(lclNum);
-                            }
+                            // The only store to lclNum local is the definitely-stack-pointing
+                            // rhsLclNum local so lclNum local is also definitely-stack-pointing.
+                            MarkLclVarAsDefinitelyStackPointing(lclNum);
                         }
                     }
-                    changed = true;
+                }
+                changed = true;
+            }
+        }
+    }
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("Definitely stack-pointing locals:");
+        {
+            BitVecOps::Iter iter(bitVecTraits, m_DefinitelyStackPointingPointers);
+            unsigned        lclIndex = 0;
+            while (iter.NextElem(&lclIndex))
+            {
+                DumpIndex(lclIndex);
+            }
+            printf("\n");
+        }
+
+        printf("Possibly stack-pointing locals:");
+        {
+            BitVecOps::Iter iter(bitVecTraits, m_PossiblyStackPointingPointers);
+            unsigned        lclIndex = 0;
+            while (iter.NextElem(&lclIndex))
+            {
+                if (!BitVecOps::IsMember(bitVecTraits, m_DefinitelyStackPointingPointers, lclIndex))
+                {
+                    DumpIndex(lclIndex);
                 }
             }
+            printf("\n");
         }
     }
+#endif
+}
 
-    JITDUMP("Definitely stack-pointing locals:");
+//------------------------------------------------------------------------
+// CanAllocateLclVarOnStack: Returns true iff local variable can be
+//                           allocated on the stack.
+//
+// Arguments:
+//    lclNum   - Local variable number
+//    clsHnd   - Class/struct handle of the variable class
+//    allocType - Type of allocation (newobj or newarr)
+//    length    - Length of the array (for newarr)
+//    blockSize - [out, optional] exact size of the object
+//    reason   - [out, required] if result is false, reason why
+//    preliminaryCheck - if true, allow checking before analysis is done
+//                 (for things that inherently disqualify the local)
+//
+// Return Value:
+//    Returns true iff local variable can be allocated on the stack.
+//
+bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
+                                               CORINFO_CLASS_HANDLE clsHnd,
+                                               ObjectAllocationType allocType,
+                                               ssize_t              length,
+                                               unsigned int*        blockSize,
+                                               const char**         reason,
+                                               bool                 preliminaryCheck)
+{
+    assert(preliminaryCheck || m_AnalysisDone);
+
+    bool enableBoxedValueClasses = true;
+    bool enableRefClasses        = true;
+    bool enableArrays            = true;
+    *reason                      = "[ok]";
+
+#ifdef DEBUG
+    enableBoxedValueClasses = (JitConfig.JitObjectStackAllocationBoxedValueClass() != 0);
+    enableRefClasses        = (JitConfig.JitObjectStackAllocationRefClass() != 0);
+    enableArrays            = (JitConfig.JitObjectStackAllocationArray() != 0);
+#endif
+
+    unsigned classSize = 0;
+
+    if (allocType == OAT_NEWARR)
     {
-        BitVecOps::Iter iter(bitVecTraits, m_DefinitelyStackPointingPointers);
-        unsigned        lclNum = 0;
-        while (iter.NextElem(&lclNum))
+        if (!enableArrays)
         {
-            JITDUMP(" V%02u", lclNum);
+            *reason = "[disabled by config]";
+            return false;
         }
-        JITDUMP("\n");
-    }
 
-    JITDUMP("Possibly stack-pointing locals:");
-    {
-        BitVecOps::Iter iter(bitVecTraits, m_PossiblyStackPointingPointers);
-        unsigned        lclNum = 0;
-        while (iter.NextElem(&lclNum))
+        if ((length < 0) || (length > CORINFO_Array_MaxLength))
         {
-            if (!BitVecOps::IsMember(bitVecTraits, m_DefinitelyStackPointingPointers, lclNum))
+            *reason = "[invalid array length]";
+            return false;
+        }
+
+        ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
+        classSize                 = layout->GetSize();
+    }
+    else if (allocType == OAT_NEWOBJ)
+    {
+        if (comp->info.compCompHnd->isValueClass(clsHnd))
+        {
+            if (!enableBoxedValueClasses)
             {
-                JITDUMP(" V%02u", lclNum);
+                *reason = "[disabled by config]";
+                return false;
             }
+
+            if (comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd) == NO_CLASS_HANDLE)
+            {
+                *reason = "[no boxed type available]";
+                return false;
+            }
+
+            classSize = comp->info.compCompHnd->getClassSize(clsHnd);
         }
-        JITDUMP("\n");
+        else
+        {
+            if (!enableRefClasses)
+            {
+                *reason = "[disabled by config]";
+                return false;
+            }
+
+            if (!comp->info.compCompHnd->canAllocateOnStack(clsHnd))
+            {
+                *reason = "[runtime disallows]";
+                return false;
+            }
+
+            classSize = comp->info.compCompHnd->getHeapClassSize(clsHnd);
+        }
     }
+    else
+    {
+        assert(!"Unexpected allocation type");
+        return false;
+    }
+
+    if (classSize > m_StackAllocMaxSize)
+    {
+        *reason = "[too large]";
+        return false;
+    }
+
+    if (preliminaryCheck)
+    {
+        return true;
+    }
+
+    const bool escapes = CanLclVarEscape(lclNum);
+
+    if (escapes)
+    {
+        *reason = "[escapes]";
+        return false;
+    }
+
+    if (blockSize != nullptr)
+    {
+        *blockSize = classSize;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -1351,8 +1819,7 @@ void ObjectAllocator::RewriteUses()
             unsigned int       newLclNum = BAD_VAR_NUM;
             LclVarDsc*         lclVarDsc = m_compiler->lvaGetDesc(lclNum);
 
-            if ((lclNum < BitVecTraits::GetSize(&m_allocator->m_bitVecTraits)) &&
-                m_allocator->MayLclVarPointToStack(lclNum))
+            if (m_allocator->MayLclVarPointToStack(lclNum))
             {
                 // Analysis does not handle indirect access to pointer locals.
                 assert(tree->OperIsScalarLocal());
@@ -1539,7 +2006,7 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
 
     for (unsigned p = 0; p < m_numPseudoLocals; p++)
     {
-        unsigned const pseudoLocal = p + comp->lvaCount;
+        unsigned const pseudoLocal = p + m_firstPseudoLocalNum;
         bool           canClone    = true;
         CloneInfo*     info        = nullptr;
 
@@ -1553,8 +2020,9 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
             break;
         }
 
-        unsigned lclNum                 = BAD_VAR_NUM;
-        BitVec   pseudoLocalAdjacencies = m_ConnGraphAdjacencyMatrix[pseudoLocal];
+        // See what locals were "assigned" to the pseudo local.
+        //
+        BitVec pseudoLocalAdjacencies = m_ConnGraphAdjacencyMatrix[LocalToIndex(pseudoLocal)];
 
         // If we found an allocation but didn't find any conditionally escaping uses, then cloning is of no use
         //
@@ -1568,14 +2036,15 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
         // Check if each conditionally escaping local escapes on its own; if so cloning is of no use
         //
         BitVecOps::Iter iterator(bitVecTraits, pseudoLocalAdjacencies);
-        while (canClone && iterator.NextElem(&lclNum))
+        unsigned        lclNumIndex = BAD_VAR_NUM;
+        while (canClone && iterator.NextElem(&lclNumIndex))
         {
-            if (BitVecOps::IsMember(bitVecTraits, escapingNodes, lclNum))
+            if (BitVecOps::IsMember(bitVecTraits, escapingNodes, lclNumIndex))
             {
                 // The enumerator var or a related var had escaping uses somewhere in the method,
                 // not under a failing GDV or any GDV.
                 //
-                JITDUMP("   V%02u escapes independently of P%02u\n", lclNum, pseudoLocal);
+                JITDUMP("   V%02u escapes independently of P%02u\n", IndexToLocal(lclNumIndex), pseudoLocal);
                 canClone = false;
                 break;
             }
@@ -1583,11 +2052,11 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
 
         // Also check the alloc temps
         //
-        if (info->m_allocTemps != nullptr)
+        if (canClone && (info->m_allocTemps != nullptr))
         {
             for (unsigned v : *(info->m_allocTemps))
             {
-                if (BitVecOps::IsMember(bitVecTraits, escapingNodes, v))
+                if (BitVecOps::IsMember(bitVecTraits, escapingNodes, LocalToIndex(v)))
                 {
                     JITDUMP("   alloc temp V%02u escapes independently of P%02u\n", v, pseudoLocal)
                     canClone = false;
@@ -1601,7 +2070,7 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
             // We may be able to clone and specialize the enumerator uses to ensure
             // that the allocated enumerator does not escape.
             //
-            JITDUMP("   P%02u is guarding the escape of V%02u\n", pseudoLocal, lclNum);
+            JITDUMP("   P%02u is guarding the escape of V%02u\n", pseudoLocal, info->m_local);
             if (info->m_allocTemps != nullptr)
             {
                 JITDUMP("   along with ");
@@ -1650,7 +2119,7 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
         {
             JITDUMP("   not optimizing, so will mark P%02u as escaping\n", pseudoLocal);
             MarkLclVarAsEscaping(pseudoLocal);
-            BitVecOps::AddElemD(bitVecTraits, escapingNodesToProcess, pseudoLocal);
+            BitVecOps::AddElemD(bitVecTraits, escapingNodesToProcess, LocalToIndex(pseudoLocal));
             newEscapes = true;
         }
     }
@@ -1669,7 +2138,7 @@ unsigned ObjectAllocator::NewPseudoLocal()
     unsigned result = BAD_VAR_NUM;
     if (m_numPseudoLocals < m_maxPseudoLocals)
     {
-        result = comp->lvaCount + m_numPseudoLocals;
+        result = m_firstPseudoLocalNum + m_numPseudoLocals;
         m_numPseudoLocals++;
     }
     return result;
@@ -2937,9 +3406,21 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
 
     // Type for now as TYP_REF; this will get rewritten later during RewriteUses
     //
-    comp->lvaTable[newEnumeratorLocal].lvType      = TYP_REF;
-    comp->lvaTable[newEnumeratorLocal].lvSingleDef = 1;
+    LclVarDsc* const newEnumeratorDsc = comp->lvaGetDesc(newEnumeratorLocal);
+
+    newEnumeratorDsc->lvType      = TYP_REF;
+    newEnumeratorDsc->lvSingleDef = 1;
     comp->lvaSetClass(newEnumeratorLocal, info->m_type, /* isExact */ true);
+
+    newEnumeratorDsc->lvTracked  = 1;
+    newEnumeratorDsc->lvVarIndex = (unsigned short)m_nextLocalIndex; // grr
+    assert(newEnumeratorDsc->lvVarIndex < comp->lvaTrackedToVarNumSize);
+    comp->lvaTrackedToVarNum[newEnumeratorDsc->lvVarIndex] = newEnumeratorLocal;
+    m_nextLocalIndex++;
+    assert(m_maxPseudoLocals > 0);
+    assert(newEnumeratorDsc->lvVarIndex < m_firstPseudoLocalIndex);
+
+    JITDUMP("Tracking V%02u via 0x%02x\n", newEnumeratorLocal, newEnumeratorDsc->lvVarIndex);
 
     class ReplaceVisitor final : public GenTreeVisitor<ReplaceVisitor>
     {

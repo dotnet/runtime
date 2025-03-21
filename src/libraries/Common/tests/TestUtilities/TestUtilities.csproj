@@ -1,14 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppMinimum);$(NetFrameworkCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- For some reason, xunit.core.props isn't excluded in VS and sets this to true. -->
     <IsTestProject>false</IsTestProject>
-    <!--
-      This assembly is referenced from rid agnostic configurations therefore we can't make it RID specific
-      and instead use runtime checks.
-    -->
-    <TargetFrameworks>$(NetCoreAppMinimum);$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)ILLink.Substitutions.AggressiveTrimming.xml"
                       LogicalName="ILLink.Substitutions.xml"
@@ -50,6 +47,7 @@
 
     <Compile Include="TestEventListener.cs" />
   </ItemGroup>
+
   <!-- Windows imports -->
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs"
@@ -84,6 +82,7 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
              Link="Common\System\IO\PathInternal.Windows.cs" />
   </ItemGroup>
+
   <!-- Unix imports -->
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
@@ -97,6 +96,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
   </ItemGroup>
+
   <!-- Android imports -->
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
@@ -104,16 +104,20 @@
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Use the arcade fork of xunit.assert for AOT-compat -->
     <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
   </ItemGroup>
+
 </Project>

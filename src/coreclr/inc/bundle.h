@@ -18,29 +18,31 @@ class Bundle;
 struct BundleFileLocation
 {
     INT64 Size;
+    void* DataStart;
     INT64 Offset;
-    INT64 UncompressedSize;
+    INT64 UncompresedSize;
 
     BundleFileLocation()
     {
         LIMITED_METHOD_CONTRACT;
 
         Size = 0;
+        DataStart = nullptr;
         Offset = 0;
-        UncompressedSize = 0;
+        UncompresedSize = 0;
     }
 
     static BundleFileLocation Invalid() { LIMITED_METHOD_CONTRACT; return BundleFileLocation(); }
 
     const SString &Path() const;
 
-    bool IsValid() const { LIMITED_METHOD_CONTRACT; return Offset != 0; }
+    bool IsValid() const { LIMITED_METHOD_CONTRACT; return DataStart != nullptr || Offset != 0; }
 };
 
 class Bundle
 {
 public:
-    Bundle(LPCSTR bundlePath, BundleProbeFn *probe);
+    Bundle(LPCSTR bundlePath, BundleProbeFn *probe, ExternalAssemblyProbeFn* externalAssemblyProbe = nullptr);
     BundleFileLocation Probe(const SString& path, bool pathIsBundleRelative = false) const;
 
     const SString &Path() const { LIMITED_METHOD_CONTRACT; return m_path; }
@@ -51,8 +53,9 @@ public:
     static BundleFileLocation ProbeAppBundle(const SString& path, bool pathIsBundleRelative = false);
 
 private:
-    SString m_path; // The path to single-file executable
+    SString m_path; // The path to single-file executable or package name/id on Android
     BundleProbeFn *m_probe;
+    ExternalAssemblyProbeFn *m_externalAssemblyProbe;
 
     SString m_basePath; // The prefix to denote a path within the bundle
     COUNT_T m_basePathLength;

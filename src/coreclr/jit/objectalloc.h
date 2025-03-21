@@ -125,6 +125,7 @@ class ObjectAllocator final : public Phase
     // Data members
     bool         m_IsObjectStackAllocationEnabled;
     bool         m_AnalysisDone;
+    unsigned     m_bvCount;
     BitVecTraits m_bitVecTraits;
     BitVec       m_EscapingPointers;
     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
@@ -138,8 +139,11 @@ class ObjectAllocator final : public Phase
     // Info for conditionally-escaping locals
     LocalToLocalMap m_EnumeratorLocalToPseudoLocalMap;
     CloneMap        m_CloneMap;
-    unsigned        m_maxPseudoLocals;
+    unsigned        m_nextLocalIndex;
+    unsigned        m_firstPseudoLocalNum;
+    unsigned        m_firstPseudoLocalIndex;
     unsigned        m_numPseudoLocals;
+    unsigned        m_maxPseudoLocals;
     unsigned        m_regionsToClone;
 
     //===============================================================================
@@ -160,11 +164,17 @@ protected:
     virtual PhaseStatus DoPhase() override;
 
 private:
+    bool         IsTrackedType(var_types type);
+    bool         IsTrackedLocal(unsigned lclNum);
+    bool         HasIndex(unsigned lclNum);
+    unsigned     LocalToIndex(unsigned lclNum);
+    unsigned     IndexToLocal(unsigned bvIndex);
     bool         CanLclVarEscape(unsigned int lclNum);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
     bool         MayLclVarPointToStack(unsigned int lclNum);
     bool         DoesLclVarPointToStack(unsigned int lclNum);
+    void         PrepareAnalysis();
     void         DoAnalysis();
     void         MarkLclVarAsEscaping(unsigned int lclNum);
     void         MarkEscapingVarsAndBuildConnGraph();
@@ -212,79 +222,11 @@ private:
     void CloneAndSpecialize();
 
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
-};
-
-//===============================================================================
-
-inline ObjectAllocator::ObjectAllocator(Compiler* comp)
-    : Phase(comp, PHASE_ALLOCATE_OBJECTS)
-    , m_IsObjectStackAllocationEnabled(false)
-    , m_AnalysisDone(false)
-    , m_bitVecTraits(BitVecTraits(comp->lvaCount, comp))
-    , m_HeapLocalToStackLocalMap(comp->getAllocator(CMK_ObjectAllocator))
-    , m_EnumeratorLocalToPseudoLocalMap(comp->getAllocator(CMK_ObjectAllocator))
-    , m_CloneMap(comp->getAllocator(CMK_ObjectAllocator))
-    , m_maxPseudoLocals(0)
-    , m_numPseudoLocals(0)
-    , m_regionsToClone(0)
-
-{
-    // If we are going to do any conditional escape analysis, allocate
-    // extra BV space for the "pseudo" locals we'll need.
-    //
-    // For now, disable conditional escape analysis with OSR
-    // since the dominance picture is muddled at this point.
-    //
-    // The conditionally escaping allocation sites will likely be in loops anyways.
-    //
-    bool const hasEnumeratorLocals = comp->hasImpEnumeratorGdvLocalMap();
-
-    if (hasEnumeratorLocals)
-    {
-        unsigned const enumeratorLocalCount = comp->getImpEnumeratorGdvLocalMap()->GetCount();
-        assert(enumeratorLocalCount > 0);
-
-        bool const enableConditionalEscape = JitConfig.JitObjectStackAllocationConditionalEscape() > 0;
-        bool const isOSR                   = comp->opts.IsOSR();
-
-        if (enableConditionalEscape && !isOSR)
-        {
 
 #ifdef DEBUG
-            static ConfigMethodRange JitObjectStackAllocationConditionalEscapeRange;
-            JitObjectStackAllocationConditionalEscapeRange.EnsureInit(
-                JitConfig.JitObjectStackAllocationConditionalEscapeRange());
-            const unsigned hash    = comp->info.compMethodHash();
-            const bool     inRange = JitObjectStackAllocationConditionalEscapeRange.Contains(hash);
-#else
-            const bool inRange = true;
+    void DumpIndex(unsigned bvIndex);
 #endif
-
-            if (inRange)
-            {
-                m_maxPseudoLocals = enumeratorLocalCount;
-                m_bitVecTraits    = BitVecTraits(comp->lvaCount + enumeratorLocalCount + 1, comp);
-                JITDUMP("Enabling conditional escape analysis [%u pseudo-vars]\n", enumeratorLocalCount);
-            }
-            else
-            {
-                JITDUMP("Not enabling conditional escape analysis (disabled by range config)\n");
-            }
-        }
-        else
-        {
-            JITDUMP("Not enabling conditional escape analysis [%u pseudo-vars]: %s\n", enumeratorLocalCount,
-                    enableConditionalEscape ? "OSR" : "disabled by config");
-        }
-    }
-
-    m_EscapingPointers                = BitVecOps::UninitVal();
-    m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
-    m_DefinitelyStackPointingPointers = BitVecOps::UninitVal();
-    m_ConnGraphAdjacencyMatrix        = nullptr;
-
-    m_StackAllocMaxSize = (unsigned)JitConfig.JitObjectStackAllocationSize();
-}
+};
 
 //------------------------------------------------------------------------
 // IsObjectStackAllocationEnabled: Returns true iff object stack allocation is enabled
@@ -306,131 +248,6 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 }
 
 //------------------------------------------------------------------------
-// CanAllocateLclVarOnStack: Returns true iff local variable can be
-//                           allocated on the stack.
-//
-// Arguments:
-//    lclNum   - Local variable number
-//    clsHnd   - Class/struct handle of the variable class
-//    allocType - Type of allocation (newobj or newarr)
-//    length    - Length of the array (for newarr)
-//    blockSize - [out, optional] exact size of the object
-//    reason   - [out, required] if result is false, reason why
-//    preliminaryCheck - if true, allow checking before analysis is done
-//                 (for things that inherently disqualify the local)
-//
-// Return Value:
-//    Returns true iff local variable can be allocated on the stack.
-//
-inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
-                                                      CORINFO_CLASS_HANDLE clsHnd,
-                                                      ObjectAllocationType allocType,
-                                                      ssize_t              length,
-                                                      unsigned int*        blockSize,
-                                                      const char**         reason,
-                                                      bool                 preliminaryCheck)
-{
-    assert(preliminaryCheck || m_AnalysisDone);
-
-    bool enableBoxedValueClasses = true;
-    bool enableRefClasses        = true;
-    bool enableArrays            = true;
-    *reason                      = "[ok]";
-
-#ifdef DEBUG
-    enableBoxedValueClasses = (JitConfig.JitObjectStackAllocationBoxedValueClass() != 0);
-    enableRefClasses        = (JitConfig.JitObjectStackAllocationRefClass() != 0);
-    enableArrays            = (JitConfig.JitObjectStackAllocationArray() != 0);
-#endif
-
-    unsigned classSize = 0;
-
-    if (allocType == OAT_NEWARR)
-    {
-        if (!enableArrays)
-        {
-            *reason = "[disabled by config]";
-            return false;
-        }
-
-        if ((length < 0) || (length > CORINFO_Array_MaxLength))
-        {
-            *reason = "[invalid array length]";
-            return false;
-        }
-
-        ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
-        classSize                 = layout->GetSize();
-    }
-    else if (allocType == OAT_NEWOBJ)
-    {
-        if (comp->info.compCompHnd->isValueClass(clsHnd))
-        {
-            if (!enableBoxedValueClasses)
-            {
-                *reason = "[disabled by config]";
-                return false;
-            }
-
-            if (comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd) == NO_CLASS_HANDLE)
-            {
-                *reason = "[no boxed type available]";
-                return false;
-            }
-
-            classSize = comp->info.compCompHnd->getClassSize(clsHnd);
-        }
-        else
-        {
-            if (!enableRefClasses)
-            {
-                *reason = "[disabled by config]";
-                return false;
-            }
-
-            if (!comp->info.compCompHnd->canAllocateOnStack(clsHnd))
-            {
-                *reason = "[runtime disallows]";
-                return false;
-            }
-
-            classSize = comp->info.compCompHnd->getHeapClassSize(clsHnd);
-        }
-    }
-    else
-    {
-        assert(!"Unexpected allocation type");
-        return false;
-    }
-
-    if (classSize > m_StackAllocMaxSize)
-    {
-        *reason = "[too large]";
-        return false;
-    }
-
-    if (preliminaryCheck)
-    {
-        return true;
-    }
-
-    const bool escapes = CanLclVarEscape(lclNum);
-
-    if (escapes)
-    {
-        *reason = "[escapes]";
-        return false;
-    }
-
-    if (blockSize != nullptr)
-    {
-        *blockSize = classSize;
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------
 // CanLclVarEscape:          Returns true iff local variable can
 //                           potentially escape from the method
 //
@@ -442,7 +259,13 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
 
 inline bool ObjectAllocator::CanLclVarEscape(unsigned int lclNum)
 {
-    return BitVecOps::IsMember(&m_bitVecTraits, m_EscapingPointers, lclNum);
+    if (!HasIndex(lclNum))
+    {
+        return true;
+    }
+
+    const unsigned bvIndex = LocalToIndex(lclNum);
+    return BitVecOps::IsMember(&m_bitVecTraits, m_EscapingPointers, bvIndex);
 }
 
 //------------------------------------------------------------------------
@@ -458,7 +281,14 @@ inline bool ObjectAllocator::CanLclVarEscape(unsigned int lclNum)
 inline bool ObjectAllocator::MayLclVarPointToStack(unsigned int lclNum)
 {
     assert(m_AnalysisDone);
-    return BitVecOps::IsMember(&m_bitVecTraits, m_PossiblyStackPointingPointers, lclNum);
+
+    if (!HasIndex(lclNum))
+    {
+        return false;
+    }
+
+    const unsigned bvIndex = LocalToIndex(lclNum);
+    return BitVecOps::IsMember(&m_bitVecTraits, m_PossiblyStackPointingPointers, bvIndex);
 }
 
 //------------------------------------------------------------------------
@@ -475,7 +305,14 @@ inline bool ObjectAllocator::MayLclVarPointToStack(unsigned int lclNum)
 inline bool ObjectAllocator::DoesLclVarPointToStack(unsigned int lclNum)
 {
     assert(m_AnalysisDone);
-    return BitVecOps::IsMember(&m_bitVecTraits, m_DefinitelyStackPointingPointers, lclNum);
+
+    if (!HasIndex(lclNum))
+    {
+        return false;
+    }
+
+    const unsigned bvIndex = LocalToIndex(lclNum);
+    return BitVecOps::IsMember(&m_bitVecTraits, m_DefinitelyStackPointingPointers, bvIndex);
 }
 
 //===============================================================================

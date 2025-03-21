@@ -132,6 +132,30 @@ c_static_assert(EVP_KDF_HKDF_MODE_EXTRACT_ONLY == 1);
 c_static_assert(EVP_KDF_HKDF_MODE_EXPAND_ONLY == 2);
 #endif
 
+#ifndef OSSL_PKEY_PARAM_ML_KEM_SEED
+#define OSSL_PKEY_PARAM_ML_KEM_SEED   "seed"
+#endif
+
+#ifndef OSSL_PKEY_PARAM_PUB_KEY
+#define OSSL_PKEY_PARAM_PUB_KEY "pub"
+#endif
+
+#ifndef OSSL_PKEY_PARAM_PRIV_KEY
+#define OSSL_PKEY_PARAM_PRIV_KEY "priv"
+#endif
+
+#ifndef EVP_PKEY_KEYPAIR
+#define EVP_PKEY_KEYPAIR 135
+#else
+c_static_assert(EVP_PKEY_KEYPAIR == 135);
+#endif
+
+#ifndef EVP_PKEY_PUBLIC_KEY
+#define EVP_PKEY_PUBLIC_KEY 134
+#else
+c_static_assert(EVP_PKEY_PUBLIC_KEY == 134);
+#endif
+
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include "apibridge_30_rev.h"
 #endif
@@ -450,6 +474,8 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_KDF_derive) \
     LIGHTUP_FUNCTION(EVP_KDF_fetch) \
     LIGHTUP_FUNCTION(EVP_KDF_free) \
+    LIGHTUP_FUNCTION(EVP_KEM_fetch) \
+    LIGHTUP_FUNCTION(EVP_KEM_free) \
     LIGHTUP_FUNCTION(EVP_MAC_fetch) \
     LIGHTUP_FUNCTION(EVP_MAC_final) \
     LIGHTUP_FUNCTION(EVP_MAC_free) \
@@ -474,23 +500,32 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_PKEY_CTX_get0_pkey) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new_id) \
+    LIGHTUP_FUNCTION(EVP_PKEY_CTX_new_from_name) \
     LIGHTUP_FUNCTION(EVP_PKEY_CTX_new_from_pkey) \
+    LIGHTUP_FUNCTION(EVP_PKEY_CTX_set_params) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_keygen_bits) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_oaep_md) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_padding) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_pss_saltlen) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_signature_md) \
     FALLBACK_FUNCTION(EVP_PKEY_check) \
+    LIGHTUP_FUNCTION(EVP_PKEY_decapsulate) \
+    LIGHTUP_FUNCTION(EVP_PKEY_decapsulate_init) \
     REQUIRED_FUNCTION(EVP_PKEY_decrypt) \
     REQUIRED_FUNCTION(EVP_PKEY_decrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_set_peer) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive) \
+    LIGHTUP_FUNCTION(EVP_PKEY_encapsulate) \
+    LIGHTUP_FUNCTION(EVP_PKEY_encapsulate_init) \
     REQUIRED_FUNCTION(EVP_PKEY_encrypt) \
     REQUIRED_FUNCTION(EVP_PKEY_encrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
+    LIGHTUP_FUNCTION(EVP_PKEY_fromdata) \
+    LIGHTUP_FUNCTION(EVP_PKEY_fromdata_init) \
     RENAMED_FUNCTION(EVP_PKEY_get_base_id, EVP_PKEY_base_id) \
     RENAMED_FUNCTION(EVP_PKEY_get_bits, EVP_PKEY_bits) \
+    LIGHTUP_FUNCTION(EVP_PKEY_get_octet_string_param) \
     FALLBACK_FUNCTION(EVP_PKEY_get0_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_EC_KEY) \
@@ -1006,6 +1041,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_KDF_derive EVP_KDF_derive_ptr
 #define EVP_KDF_fetch EVP_KDF_fetch_ptr
 #define EVP_KDF_free EVP_KDF_free_ptr
+#define EVP_KEM_fetch EVP_KEM_fetch_ptr
+#define EVP_KEM_free EVP_KEM_free_ptr
 #define EVP_MAC_fetch EVP_MAC_fetch_ptr
 #define EVP_MAC_final EVP_MAC_final_ptr
 #define EVP_MAC_free EVP_MAC_free_ptr
@@ -1029,22 +1066,30 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_CTX_get0_pkey EVP_PKEY_CTX_get0_pkey_ptr
 #define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
 #define EVP_PKEY_CTX_new_id EVP_PKEY_CTX_new_id_ptr
+#define EVP_PKEY_CTX_set_params EVP_PKEY_CTX_set_params_ptr
 #define EVP_PKEY_CTX_set_rsa_keygen_bits EVP_PKEY_CTX_set_rsa_keygen_bits_ptr
 #define EVP_PKEY_CTX_set_rsa_oaep_md EVP_PKEY_CTX_set_rsa_oaep_md_ptr
 #define EVP_PKEY_CTX_set_rsa_padding EVP_PKEY_CTX_set_rsa_padding_ptr
 #define EVP_PKEY_CTX_set_rsa_pss_saltlen EVP_PKEY_CTX_set_rsa_pss_saltlen_ptr
 #define EVP_PKEY_CTX_set_signature_md EVP_PKEY_CTX_set_signature_md_ptr
 #define EVP_PKEY_check EVP_PKEY_check_ptr
+#define EVP_PKEY_decapsulate EVP_PKEY_decapsulate_ptr
+#define EVP_PKEY_decapsulate_init EVP_PKEY_decapsulate_init_ptr
 #define EVP_PKEY_decrypt_init EVP_PKEY_decrypt_init_ptr
 #define EVP_PKEY_decrypt EVP_PKEY_decrypt_ptr
 #define EVP_PKEY_derive_set_peer EVP_PKEY_derive_set_peer_ptr
 #define EVP_PKEY_derive_init EVP_PKEY_derive_init_ptr
 #define EVP_PKEY_derive EVP_PKEY_derive_ptr
+#define EVP_PKEY_encapsulate EVP_PKEY_encapsulate_ptr
+#define EVP_PKEY_encapsulate_init EVP_PKEY_encapsulate_init_ptr
 #define EVP_PKEY_encrypt_init EVP_PKEY_encrypt_init_ptr
 #define EVP_PKEY_encrypt EVP_PKEY_encrypt_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
+#define EVP_PKEY_fromdata EVP_PKEY_fromdata_ptr
+#define EVP_PKEY_fromdata_init EVP_PKEY_fromdata_init_ptr
 #define EVP_PKEY_get_base_id EVP_PKEY_get_base_id_ptr
 #define EVP_PKEY_get_bits EVP_PKEY_get_bits_ptr
+#define EVP_PKEY_get_octet_string_param EVP_PKEY_get_octet_string_param_ptr
 #define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
@@ -1052,6 +1097,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_keygen EVP_PKEY_keygen_ptr
 #define EVP_PKEY_keygen_init EVP_PKEY_keygen_init_ptr
 #define EVP_PKEY_new EVP_PKEY_new_ptr
+#define EVP_PKEY_CTX_new_from_name EVP_PKEY_CTX_new_from_name_ptr
 #define EVP_PKEY_CTX_new_from_pkey EVP_PKEY_CTX_new_from_pkey_ptr
 #define EVP_PKEY_public_check EVP_PKEY_public_check_ptr
 #define EVP_PKEY_set1_DSA EVP_PKEY_set1_DSA_ptr

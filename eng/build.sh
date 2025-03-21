@@ -66,7 +66,7 @@ usage()
 
   echo "Libraries settings:"
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net10.0 or net48."
+  echo "  --framework (-f)           Build framework: net10.0 or net481."
   echo "                             [Default: net10.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."

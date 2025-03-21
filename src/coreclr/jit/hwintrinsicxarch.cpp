@@ -3520,37 +3520,62 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Shuffle:
         case NI_Vector256_Shuffle:
         case NI_Vector512_Shuffle:
+        case NI_Vector128_ShuffleNative:
+        case NI_Vector256_ShuffleNative:
+        case NI_Vector512_ShuffleNative:
+        case NI_Vector128_ShuffleNativeFallback:
+        case NI_Vector256_ShuffleNativeFallback:
+        case NI_Vector512_ShuffleNativeFallback:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
 
+            // The Native variants are non-deterministic on xarch
+            bool isShuffleNative = (intrinsic != NI_Vector128_Shuffle) && (intrinsic != NI_Vector256_Shuffle) &&
+                                   (intrinsic != NI_Vector512_Shuffle);
+            if (isShuffleNative && BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsCnsVec() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
+            // Check if the required intrinsics are available to emit now (validForShuffle). If we have variable
+            // indices that might become possible to emit later (due to them becoming constant), this will be
+            // indicated in canBecomeValidForShuffle; otherwise, it's just the same as validForShuffle.
+            bool canBecomeValidForShuffle = false;
+            bool validForShuffle =
+                IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle, isShuffleNative);
+
+            // If it isn't valid for shuffle (and can't become valid later), then give up now.
+            if (!canBecomeValidForShuffle)
+            {
+                return nullptr;
+            }
+
+            // If the indices might become constant later, then we don't emit for now, delay until later.
+            if ((!validForShuffle) || (!indices->IsCnsVec()))
             {
                 assert(sig->numArgs == 2);
 
-                if (!opts.OptimizationEnabled())
+                if (opts.OptimizationEnabled())
                 {
                     // Only enable late stage rewriting if optimizations are enabled
                     // as we won't otherwise encounter a constant at the later point
-                    return nullptr;
+                    op2 = impSIMDPopStack();
+                    op1 = impSIMDPopStack();
+
+                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+                    retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+                    break;
                 }
-
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
-
-                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
-                break;
             }
 
             if (sig->numArgs == 2)
             {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
+                op2     = impSIMDPopStack();
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             }
             break;
         }

@@ -36,7 +36,7 @@ inline const SString& PEImage::GetPathToLoad()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return IsInBundle() ? m_probeExtensionResult.BundleLocation.Path() : m_path;
+    return IsInBundle() ? m_bundleFileLocation.Path() : m_path;
 }
 
 inline void* PEImage::GetExternalData(INT64* size)
@@ -44,57 +44,35 @@ inline void* PEImage::GetExternalData(INT64* size)
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(size != nullptr);
-    if (!IsExternalData())
-    {
-        *size = 0;
-        return nullptr;
-    }
 
-    *size = m_probeExtensionResult.ExternalData.Size;
-    return m_probeExtensionResult.ExternalData.Data;
+    *size = m_bundleFileLocation.Size;
+    return m_bundleFileLocation.DataStart;
 }
 
 inline INT64 PEImage::GetOffset() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    return IsInBundle() ? m_probeExtensionResult.BundleLocation.Offset : 0;
+    return m_bundleFileLocation.Offset;
 }
 
 inline BOOL PEImage::IsInBundle() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    return m_probeExtensionResult.Type == ProbeExtensionResult::Type::Bundle;
-}
-
-inline BOOL PEImage::IsExternalData() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_probeExtensionResult.Type == ProbeExtensionResult::Type::External;
+    return m_bundleFileLocation.IsValid();
 }
 
 inline INT64 PEImage::GetSize() const
 {
-    if (IsInBundle())
-        return m_probeExtensionResult.BundleLocation.Size;
-
-    if (IsExternalData())
-        return m_probeExtensionResult.ExternalData.Size;
-
-    // Size is not specified
-    return 0;
+    LIMITED_METHOD_CONTRACT;
+    return m_bundleFileLocation.Size;
 }
 
-inline BOOL PEImage::IsCompressed(INT64* uncompressedSize) const
+inline INT64 PEImage::GetUncompressedSize() const
 {
     LIMITED_METHOD_CONTRACT;
-
-    if (uncompressedSize != NULL)
-        *uncompressedSize = IsInBundle() ? m_probeExtensionResult.BundleLocation.UncompressedSize : 0;
-
-    return IsInBundle() && m_probeExtensionResult.BundleLocation.UncompressedSize != 0;
+    return m_bundleFileLocation.UncompresedSize;
 }
 
 inline void PEImage::SetModuleFileNameHintForDAC()
@@ -130,7 +108,7 @@ inline const SString &PEImage::GetModuleFileNameHintForDAC()
 inline BOOL PEImage::IsFile()
 {
     WRAPPER_NO_CONTRACT;
-    return !IsExternalData() && !GetPathToLoad().IsEmpty();
+    return m_bundleFileLocation.DataStart == nullptr && !GetPathToLoad().IsEmpty();
 }
 
 //
@@ -303,7 +281,7 @@ inline CHECK PEImage::CheckFormat()
     CHECK_OK;
 }
 
-inline void  PEImage::Init(ProbeExtensionResult probeExtensionResult)
+inline void  PEImage::Init(BundleFileLocation bundleFileLocation)
 {
     CONTRACTL
     {
@@ -314,14 +292,14 @@ inline void  PEImage::Init(ProbeExtensionResult probeExtensionResult)
     CONTRACTL_END;
 
     m_pathHash = m_path.HashCaseInsensitive();
-    m_probeExtensionResult = probeExtensionResult;
+    m_bundleFileLocation = bundleFileLocation;
     SetModuleFileNameHintForDAC();
 }
 #ifndef DACCESS_COMPILE
 
 
 /*static*/
-inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle, BOOL isExternalData)
+inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle)
 {
     CONTRACTL
     {
@@ -329,32 +307,31 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle, BOOL isEx
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pPath));
-        PRECONDITION(!(isInBundle && isExternalData));
         PRECONDITION(s_hashLock.OwnedByCurrentThread());
     }
     CONTRACTL_END;
 
     int CaseHashHelper(const WCHAR *buffer, COUNT_T count);
 
-    PEImageLocator locator(pPath, isInBundle, isExternalData);
+    PEImageLocator locator(pPath, isInBundle);
     DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) u16_strlen(pPath));
     return (PEImage *) s_Images->LookupValue(dwHash, &locator);
 }
 
 /* static */
-inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags /* = MDInternalImport_Default */, ProbeExtensionResult probeExtensionResult /* = ProbeExtensionResult::Invalid() */)
+inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags /* = MDInternalImport_Default */, BundleFileLocation bundleFileLocation /* = BundleFileLocation::Invalid() */)
 {
     BOOL forbidCache = (flags & MDInternalImport_NoCache);
     if (forbidCache)
     {
         PEImageHolder pImage(new PEImage{pPath});
-        pImage->Init(probeExtensionResult);
+        pImage->Init(bundleFileLocation);
         return dac_cast<PTR_PEImage>(pImage.Extract());
     }
 
     CrstHolder holder(&s_hashLock);
 
-    PEImage* found = FindByPath(pPath, probeExtensionResult.Type == ProbeExtensionResult::Type::Bundle, probeExtensionResult.Type == ProbeExtensionResult::Type::External);
+    PEImage* found = FindByPath(pPath, bundleFileLocation.IsValid());
     if (found == (PEImage*) INVALIDENTRY)
     {
         // We did not find the entry in the Cache, and we've been asked to only use the cache.
@@ -364,7 +341,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
         }
 
         PEImageHolder pImage(new PEImage{pPath});
-        pImage->Init(probeExtensionResult);
+        pImage->Init(bundleFileLocation);
 
         pImage->AddToHashMap();
         return dac_cast<PTR_PEImage>(pImage.Extract());

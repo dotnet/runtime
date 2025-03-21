@@ -3856,9 +3856,36 @@ void LinearScan::processKills(RefPosition* killRefPosition)
     RefPosition* nextKill = killRefPosition->nextRefPosition;
 
     regMaskTP killedRegs = killRefPosition->getKilledRegisters();
-    while (killedRegs.IsNonEmpty())
+
+    freeKilledRegs(killRefPosition, killedRegs.getLow(), nextKill, REG_LOW_BASE);
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    freeKilledRegs(killRefPosition, killedRegs.getHigh(), nextKill, REG_HIGH_BASE);
+#endif
+
+    regsBusyUntilKill &= ~killRefPosition->getKilledRegisters();
+    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE,
+                                    killRefPosition->getKilledRegisters()));
+}
+
+//------------------------------------------------------------------------
+// freeKilledRegs: Handle  registers that are being killed.
+//
+// Arguments:
+//   killRefPosition - The RefPosition for the kill
+//   killedRegs - Registers to kill
+//   nextKill - The RefPosition for next kill
+//   regBase - `0` or `64` based on the `killedRegs` being processed
+//
+void LinearScan::freeKilledRegs(RefPosition*     killRefPosition,
+                                SingleTypeRegSet killedRegs,
+                                RefPosition*     nextKill,
+                                int              regBase)
+{
+
+    while (killedRegs != RBM_NONE)
     {
-        regNumber  killedReg        = genFirstRegNumFromMaskAndToggle(killedRegs);
+        regNumber  killedReg        = (regNumber)(genFirstRegNumFromMaskAndToggle(killedRegs) + regBase);
         RegRecord* regRecord        = getRegisterRecord(killedReg);
         Interval*  assignedInterval = regRecord->assignedInterval;
         if (assignedInterval != nullptr)
@@ -3874,10 +3901,6 @@ void LinearScan::processKills(RefPosition* killRefPosition)
                                          : regRecord->recentRefPosition->nextRefPosition;
         updateNextFixedRef(regRecord, regNextRefPos, nextKill);
     }
-
-    regsBusyUntilKill &= ~killRefPosition->getKilledRegisters();
-    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE,
-                                    killRefPosition->getKilledRegisters()));
 }
 
 //------------------------------------------------------------------------
@@ -4555,14 +4578,34 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         }
     }
 #else
+
     regMaskTP deadCandidates = ~liveRegs;
 
     // Only focus on actual registers present
     deadCandidates &= actualRegistersMask;
+    handleDeadCandidates(deadCandidates.getLow(), REG_LOW_BASE, inVarToRegMap);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    handleDeadCandidates(deadCandidates.getHigh(), REG_HIGH_BASE, inVarToRegMap);
+#endif // HAS_MORE_THAN_64_REGISTERS
+#endif // TARGET_ARM
+}
 
-    while (deadCandidates.IsNonEmpty())
+//------------------------------------------------------------------------
+// handleDeadCandidates: Handle registers that are assigned to local variables.
+//
+// Arguments:
+//    deadCandidates - mask of registers.
+//    regBase - base register number.
+//    inVarToRegMap - variable to register map.
+//
+// Return Value:
+//    None
+//
+void LinearScan::handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBase, VarToRegMap inVarToRegMap)
+{
+    while (deadCandidates != RBM_NONE)
     {
-        regNumber  reg           = genFirstRegNumFromMaskAndToggle(deadCandidates);
+        regNumber  reg           = (regNumber)(genFirstRegNumFromMaskAndToggle(deadCandidates) + regBase);
         RegRecord* physRegRecord = getRegisterRecord(reg);
 
         makeRegAvailable(reg, physRegRecord->registerType);
@@ -4592,7 +4635,6 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
             }
         }
     }
-#endif // TARGET_ARM
 }
 
 //------------------------------------------------------------------------
@@ -4745,6 +4787,22 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
 // LinearScan::freeRegisters: Free the registers in 'regsToFree'
 //
 // Arguments:
+//    regsToFree         - the mask of registers to free, separated into low and high parts.
+//    regBase            - `0` or `64` depending on if the registers to be freed are in the lower or higher bank.
+//
+void LinearScan::freeRegistersSingleType(SingleTypeRegSet regsToFree, int regBase)
+{
+    while (regsToFree != RBM_NONE)
+    {
+        regNumber  nextReg   = (regNumber)(genFirstRegNumFromMaskAndToggle(regsToFree) + regBase);
+        RegRecord* regRecord = getRegisterRecord(nextReg);
+        freeRegister(regRecord);
+    }
+}
+//------------------------------------------------------------------------
+// LinearScan::freeRegisters: Free the registers in 'regsToFree'
+//
+// Arguments:
 //    regsToFree         - the mask of registers to free
 //
 void LinearScan::freeRegisters(regMaskTP regsToFree)
@@ -4756,20 +4814,26 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FREE_REGS));
     makeRegsAvailable(regsToFree);
+#ifdef TARGET_ARM
     while (regsToFree.IsNonEmpty())
     {
         regNumber nextReg = genFirstRegNumFromMaskAndToggle(regsToFree);
 
         RegRecord* regRecord = getRegisterRecord(nextReg);
-#ifdef TARGET_ARM
         if (regRecord->assignedInterval != nullptr && (regRecord->assignedInterval->registerType == TYP_DOUBLE))
         {
             assert(genIsValidDoubleReg(nextReg));
             regsToFree.RemoveRegNumFromMask(regNumber(nextReg + 1));
         }
-#endif
         freeRegister(regRecord);
     }
+#else
+    freeRegistersSingleType(regsToFree.getLow(), REG_LOW_BASE);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    freeRegistersSingleType(regsToFree.getHigh(), REG_HIGH_BASE);
+#endif
+
+#endif
 }
 
 //------------------------------------------------------------------------

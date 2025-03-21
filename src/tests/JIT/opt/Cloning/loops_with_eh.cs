@@ -1242,7 +1242,6 @@ public class LoopsWithEH
         return sum;
     }
 
-    // [Fact]
     public static int Test_TFLITFiTF() => Sum_TFLITFiTF(data, n) - 131;
 
     public static int Sum_TFLITFiTF(int[] data, int n)
