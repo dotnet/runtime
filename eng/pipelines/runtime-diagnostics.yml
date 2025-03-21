@@ -70,3 +70,16 @@ extends:
                   artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
                   unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
                   displayName: 'Runtime Build Artifacts'
+            postBuildSteps:
+            - task: PublishTestResults@2
+              inputs:
+                testResultsFormat: xUnit
+                testResultsFiles: '**/*.xml'
+                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
+                testRunTitle: 'Tests $(_PhaseName)'
+                failTaskOnFailedTests: true
+                publishRunAttachments: true
+                mergeTestResults: true
+                buildConfiguration: $(_BuildConfig)
+              continueOnError: true
+              condition: always()
