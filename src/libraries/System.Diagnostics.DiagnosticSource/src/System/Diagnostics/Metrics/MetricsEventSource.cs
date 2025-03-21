@@ -173,7 +173,7 @@ namespace System.Diagnostics.Metrics
                         string? meterTelemetrySchemaUrl)
         {
             WriteEvent(7, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl ?? "");
         }
 
         // Sent when we stop monitoring the value of a instrument, either because new session filter arguments changed subscriptions
@@ -198,7 +198,7 @@ namespace System.Diagnostics.Metrics
                         string? meterTelemetrySchemaUrl)
         {
             WriteEvent(8, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl ?? "");
         }
 
         [Event(9, Keywords = Keywords.TimeSeriesValues | Keywords.Messages | Keywords.InstrumentPublishing)]
@@ -233,7 +233,7 @@ namespace System.Diagnostics.Metrics
                         string? meterTelemetrySchemaUrl)
         {
             WriteEvent(11, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl ?? "");
         }
 
         [Event(12, Keywords = Keywords.TimeSeriesValues)]
@@ -338,16 +338,16 @@ namespace System.Diagnostics.Metrics
             {
                 try
                 {
-#if OS_ISBROWSER_SUPPORT
-                    if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+#if OS_ISWASI_SUPPORT
+                    if (OperatingSystem.IsWasi())
                     {
                         // AggregationManager uses a dedicated thread to avoid losing data for apps experiencing threadpool starvation
-                        // and browser doesn't support Thread.Start()
+                        // and wasi doesn't support Thread.Start()
                         //
-                        // This limitation shouldn't really matter because browser also doesn't support out-of-proc EventSource communication
+                        // This limitation shouldn't really matter because wasi also doesn't support out-of-proc EventSource communication
                         // which is the intended scenario for this EventSource. If it matters in the future AggregationManager can be
-                        // modified to have some other fallback path that works for browser.
-                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on browser and wasi");
+                        // modified to have some other fallback path that works for wasi.
+                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on wasi");
                         return;
                     }
 #endif
@@ -661,7 +661,6 @@ namespace System.Diagnostics.Metrics
 
             private static readonly char[] s_instrumentSeparators = new char[] { '\r', '\n', ',', ';' };
 
-            [UnsupportedOSPlatform("browser")]
             private void ParseSpecs(string? metricsSpecs)
             {
                 if (metricsSpecs == null)
