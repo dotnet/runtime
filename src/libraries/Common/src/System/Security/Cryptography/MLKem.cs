@@ -137,10 +137,10 @@ namespace System.Security.Cryptography
         /// <param name="sharedSecret">
         ///   The buffer to receive the shared secret.
         /// </param>
-        /// <param name="ciphertextWritten">
+        /// <param name="ciphertextBytesWritten">
         ///   When this method returns, the total number of bytes written into <paramref name="ciphertext"/>.
         /// </param>
-        /// <param name="sharedSecretWritten">
+        /// <param name="sharedSecretBytesWritten">
         ///   When this method returns, the total number of bytes written into <paramref name="sharedSecret"/>.
         /// </param>
         /// <exception cref="CryptographicException">
@@ -157,8 +157,8 @@ namespace System.Security.Cryptography
         public void Encapsulate(
             Span<byte> ciphertext,
             Span<byte> sharedSecret,
-            out int ciphertextWritten,
-            out int sharedSecretWritten)
+            out int ciphertextBytesWritten,
+            out int sharedSecretBytesWritten)
         {
             if (ciphertext.Length < Algorithm.CiphertextSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(ciphertext));
@@ -176,8 +176,8 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
             EncapsulateCore(ciphertextExact, sharedSecretExact);
-            ciphertextWritten = ciphertextExact.Length;
-            sharedSecretWritten = sharedSecretExact.Length;
+            ciphertextBytesWritten = ciphertextExact.Length;
+            sharedSecretBytesWritten = sharedSecretExact.Length;
         }
 
         /// <summary>
@@ -266,7 +266,7 @@ namespace System.Security.Cryptography
         /// <param name="sharedSecret">
         ///   The buffer to receive the shared secret.
         /// </param>
-        /// <param name="sharedSecretWritten">
+        /// <param name="sharedSecretBytesWritten">
         ///   When this method returns, the total number of bytes written into <paramref name="sharedSecret"/>.
         /// </param>
         /// <exception cref="CryptographicException">
@@ -278,7 +278,7 @@ namespace System.Security.Cryptography
         ///   <para><paramref name="sharedSecret" /> is too small to hold the shared secret.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void Decapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret, out int sharedSecretWritten)
+        public void Decapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret, out int sharedSecretBytesWritten)
         {
             if (ciphertext.Length != Algorithm.CiphertextSizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidCiphertextLength, nameof(ciphertext));
@@ -290,7 +290,7 @@ namespace System.Security.Cryptography
 
             Span<byte> sharedSecretExact = sharedSecret.Slice(0, Algorithm.SharedSecretSizeInBytes);
             DecapsulateCore(ciphertext, sharedSecretExact);
-            sharedSecretWritten = sharedSecretExact.Length;
+            sharedSecretBytesWritten = sharedSecretExact.Length;
         }
 
         /// <summary>
