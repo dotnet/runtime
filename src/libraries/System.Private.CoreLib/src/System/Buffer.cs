@@ -127,21 +127,21 @@ namespace System
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe void _Memmove(ref byte dest, ref byte src, nuint len)
+        internal static unsafe void Memmove(ref byte dest, ref byte src, nuint len)
         {
             fixed (byte* pDest = &dest)
             fixed (byte* pSrc = &src)
-                __Memmove(pDest, pSrc, len);
+                MemmoveInternal(pDest, pSrc, len);
         }
 
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe void _ZeroMemory(ref byte b, nuint byteLength)
+        internal static unsafe void ZeroMemory(ref byte b, nuint byteLength)
         {
             fixed (byte* bytePointer = &b)
             {
-                __ZeroMemory(bytePointer, byteLength);
+                ZeroMemoryInternal(bytePointer, byteLength);
             }
         }
 
@@ -169,7 +169,7 @@ namespace System
             }
         }
 
-        // The maximum block size to for __BulkMoveWithWriteBarrier FCall. This is required to avoid GC starvation.
+        // The maximum block size to for BulkMoveWithWriteBarrierInternal FCall. This is required to avoid GC starvation.
 #if DEBUG // Stress the mechanism in debug builds
         private const uint BulkMoveWithWriteBarrierChunk = 0x400;
 #else
@@ -180,18 +180,18 @@ namespace System
         {
             if (byteCount <= BulkMoveWithWriteBarrierChunk)
             {
-                __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+                BulkMoveWithWriteBarrierInternal(ref destination, ref source, byteCount);
                 Thread.FastPollGC();
             }
             else
             {
-                _BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+                BulkMoveWithWriteBarrierBatch(ref destination, ref source, byteCount);
             }
         }
 
         // Non-inlinable wrapper around the loop for copying large blocks in chunks
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void _BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
+        private static void BulkMoveWithWriteBarrierBatch(ref byte destination, ref byte source, nuint byteCount)
         {
             Debug.Assert(byteCount > BulkMoveWithWriteBarrierChunk);
 
@@ -205,7 +205,7 @@ namespace System
                 do
                 {
                     byteCount -= BulkMoveWithWriteBarrierChunk;
-                    __BulkMoveWithWriteBarrier(ref destination, ref source, BulkMoveWithWriteBarrierChunk);
+                    BulkMoveWithWriteBarrierInternal(ref destination, ref source, BulkMoveWithWriteBarrierChunk);
                     Thread.FastPollGC();
                     destination = ref Unsafe.AddByteOffset(ref destination, BulkMoveWithWriteBarrierChunk);
                     source = ref Unsafe.AddByteOffset(ref source, BulkMoveWithWriteBarrierChunk);
@@ -218,12 +218,12 @@ namespace System
                 do
                 {
                     byteCount -= BulkMoveWithWriteBarrierChunk;
-                    __BulkMoveWithWriteBarrier(ref Unsafe.AddByteOffset(ref destination, byteCount), ref Unsafe.AddByteOffset(ref source, byteCount), BulkMoveWithWriteBarrierChunk);
+                    BulkMoveWithWriteBarrierInternal(ref Unsafe.AddByteOffset(ref destination, byteCount), ref Unsafe.AddByteOffset(ref source, byteCount), BulkMoveWithWriteBarrierChunk);
                     Thread.FastPollGC();
                 }
                 while (byteCount > BulkMoveWithWriteBarrierChunk);
             }
-            __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+            BulkMoveWithWriteBarrierInternal(ref destination, ref source, byteCount);
             Thread.FastPollGC();
         }
 

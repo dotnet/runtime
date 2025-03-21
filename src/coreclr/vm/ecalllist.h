@@ -250,7 +250,7 @@ FCFuncStart(gArrayFuncs)
 FCFuncEnd()
 
 FCFuncStart(gBufferFuncs)
-    FCFuncElement("__BulkMoveWithWriteBarrier", Buffer::BulkMoveWithWriteBarrier)
+    FCFuncElement("BulkMoveWithWriteBarrierInternal", Buffer::BulkMoveWithWriteBarrier)
 FCFuncEnd()
 
 FCFuncStart(gGCFrameRegistration)
