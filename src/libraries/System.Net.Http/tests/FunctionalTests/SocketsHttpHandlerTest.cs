@@ -1310,11 +1310,10 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(
                 async url =>
                 {
-                    var handler = new SocketsHttpHandler();
-                    handler.Credentials = CredentialCache.DefaultCredentials;
-
+                    using (var handler = new SocketsHttpHandler())
                     using (var invoker = new HttpMessageInvoker(handler))
                     {
+                        handler.Credentials = CredentialCache.DefaultCredentials;
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
                         var response = await invoker.SendAsync(request, CancellationToken.None);
                         Assert.Equal(401, response.StatusCode);
