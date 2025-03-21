@@ -2151,7 +2151,7 @@ HRESULT ProfToEEInterfaceImpl::GetTokenAndMetaDataFromFunction(
     if (ppOut)
     {
         Module * pMod = pMD->GetModule();
-        hr = pMod->GetReadablePublicMetaDataInterface(ofRead, riid, (LPVOID *) ppOut);
+        hr = pMod->GetReadablePublicMetaDataInterface(ofRead, riid, /* openForWriting */ true, (LPVOID *) ppOut);
     }
 
     return hr;
@@ -4174,7 +4174,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
     if ((dwOpenFlags & ofWrite) == 0)
     {
         // Readable interface
-        return pModule->GetReadablePublicMetaDataInterface(dwOpenFlags, riid, (LPVOID *) ppOut);
+        return pModule->GetReadablePublicMetaDataInterface(dwOpenFlags, riid, /* openForWriting */ true, (LPVOID *) ppOut);
     }
 
     // Writeable interface
