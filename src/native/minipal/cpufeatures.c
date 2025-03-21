@@ -548,20 +548,21 @@ int minipal_getcpufeatures(void)
         {RISCV_HWPROBE_KEY_IMA_EXT_0, 0}
     };
 
-    syscall(__NR_riscv_hwprobe, pairs, 1, 0, NULL, 0);
-
-    // Our baseline support is for RV64GC (see #73437)
-    assert(pairs[0].value & RISCV_HWPROBE_IMA_FD);
-    assert(pairs[0].value & RISCV_HWPROBE_IMA_C);
-
-    if (pairs[0].value & RISCV_HWPROBE_EXT_ZBA)
+    if (syscall(__NR_riscv_hwprobe, pairs, 1, 0, NULL, 0) == 0)
     {
-        result |= RiscV64IntrinsicConstants_Zba;
-    }
+        // Our baseline support is for RV64GC (see #73437)
+        assert(pairs[0].value & RISCV_HWPROBE_IMA_FD);
+        assert(pairs[0].value & RISCV_HWPROBE_IMA_C);
 
-    if (pairs[0].value & RISCV_HWPROBE_EXT_ZBB)
-    {
-        result |= RiscV64IntrinsicConstants_Zbb;
+        if (pairs[0].value & RISCV_HWPROBE_EXT_ZBA)
+        {
+            result |= RiscV64IntrinsicConstants_Zba;
+        }
+
+        if (pairs[0].value & RISCV_HWPROBE_EXT_ZBB)
+        {
+            result |= RiscV64IntrinsicConstants_Zbb;
+        }
     }
 
 #endif // HAVE_HWPROBE_H
