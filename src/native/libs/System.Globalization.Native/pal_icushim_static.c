@@ -218,6 +218,7 @@ int32_t GlobalizationNative_LoadICU(void)
 
 #if defined(EMBEDDED_ICU_DATA_HEADER)
 #include EMBEDDED_ICU_DATA_HEADER
+
     if (!load_icu_data(icu_data))
     {
         return 0;
