@@ -21,11 +21,21 @@ namespace System.Security.Cryptography.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () =>
                 MLKem.ImportPrivateSeed(null, new byte[MLKemAlgorithm.MLKem512.PrivateSeedSizeInBytes]));
+
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () =>
+                MLKem.ImportPrivateSeed(null, new ReadOnlySpan<byte>(new byte[MLKemAlgorithm.MLKem512.PrivateSeedSizeInBytes])));
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void ImportPrivateSeed_NullSource()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", static () =>
+                MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem512, null));
         }
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemAlgorithms))]
-        public static void ImportPrivateSeed_WrongSize(MLKemAlgorithm algorithm)
+        public static void ImportPrivateSeed_WrongSize_Array(MLKemAlgorithm algorithm)
         {
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 MLKem.ImportPrivateSeed(algorithm, new byte[algorithm.PrivateSeedSizeInBytes + 1]));
@@ -34,7 +44,23 @@ namespace System.Security.Cryptography.Tests
                 MLKem.ImportPrivateSeed(algorithm, new byte[algorithm.PrivateSeedSizeInBytes - 1]));
 
             AssertExtensions.Throws<ArgumentException>("source", () =>
-                MLKem.ImportPrivateSeed(algorithm, []));
+                MLKem.ImportPrivateSeed(algorithm, Array.Empty<byte>()));
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void ImportPrivateSeed_WrongSize_Span(MLKemAlgorithm algorithm)
+        {
+            byte[] seed = new byte[algorithm.PrivateSeedSizeInBytes + 1];
+
+            AssertExtensions.Throws<ArgumentException>("source", () =>
+                MLKem.ImportPrivateSeed(algorithm, seed.AsSpan()));
+
+            AssertExtensions.Throws<ArgumentException>("source", () =>
+                MLKem.ImportPrivateSeed(algorithm, seed.AsSpan(0..^2)));
+
+            AssertExtensions.Throws<ArgumentException>("source", () =>
+                MLKem.ImportPrivateSeed(algorithm, ReadOnlySpan<byte>.Empty));
         }
 
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]

@@ -440,17 +440,21 @@ namespace System.Security.Cryptography
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             if (algorithm is null)
-            {
                 throw new ArgumentNullException(nameof(algorithm));
-            }
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
-            {
                 throw new ArgumentException(SR.Argument_KemInvalidSeedLength, nameof(source));
-            }
 
             ThrowIfNotSupported();
             return MLKemImplementation.ImportPrivateSeedImpl(algorithm, source);
+        }
+
+        public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, byte[] source)
+        {
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            return ImportPrivateSeed(algorithm, new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>

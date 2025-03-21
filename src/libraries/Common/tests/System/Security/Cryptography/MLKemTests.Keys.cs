@@ -34,21 +34,36 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(seed2, allocatedSeed2.AsSpan());
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
-        public static void Generate_NistVectors()
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void Generate_NistVectors(bool useSpan)
         {
             foreach (MLKemGenerateTestVector vector in MLKemGenerateTestVectors)
             {
-                using MLKem kem = MLKem.ImportPrivateSeed(vector.Algorithm, vector.Seed.HexToByteArray());
-                Assert.Equal(vector.Algorithm, kem.Algorithm);
+                MLKem kem;
 
-                byte[] decapsKey = new byte[vector.Algorithm.DecapsulationKeySizeInBytes];
-                kem.ExportDecapsulationKey(decapsKey);
-                AssertExtensions.SequenceEqual(vector.DecapsulationKey.HexToByteArray(), decapsKey);
+                if (useSpan)
+                {
+                    kem = MLKem.ImportPrivateSeed(vector.Algorithm, new ReadOnlySpan<byte>(vector.Seed.HexToByteArray()));
+                }
+                else
+                {
+                    kem = MLKem.ImportPrivateSeed(vector.Algorithm, vector.Seed.HexToByteArray());
+                }
 
-                byte[] encapsKey = new byte[vector.Algorithm.EncapsulationKeySizeInBytes];
-                kem.ExportEncapsulationKey(encapsKey);
-                AssertExtensions.SequenceEqual(vector.EncapsulationKey.HexToByteArray(), encapsKey);
+                using (kem)
+                {
+                    Assert.Equal(vector.Algorithm, kem.Algorithm);
+
+                    byte[] decapsKey = new byte[vector.Algorithm.DecapsulationKeySizeInBytes];
+                    kem.ExportDecapsulationKey(decapsKey);
+                    AssertExtensions.SequenceEqual(vector.DecapsulationKey.HexToByteArray(), decapsKey);
+
+                    byte[] encapsKey = new byte[vector.Algorithm.EncapsulationKeySizeInBytes];
+                    kem.ExportEncapsulationKey(encapsKey);
+                    AssertExtensions.SequenceEqual(vector.EncapsulationKey.HexToByteArray(), encapsKey);
+                }
             }
         }
 
@@ -57,6 +72,17 @@ namespace System.Security.Cryptography.Tests
         public static void Generate_NotSupported(MLKemAlgorithm algorithm)
         {
             Assert.Throws<PlatformNotSupportedException>(() => MLKem.GenerateKey(algorithm));
+        }
+
+        [ConditionalTheory(nameof(IsNotSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void ImportPrivateSeed_NotSupported(MLKemAlgorithm algorithm)
+        {
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                MLKem.ImportPrivateSeed(algorithm, new byte[algorithm.PrivateSeedSizeInBytes]));
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                MLKem.ImportPrivateSeed(algorithm, new ReadOnlySpan<byte>(new byte[algorithm.PrivateSeedSizeInBytes])));
         }
 
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
