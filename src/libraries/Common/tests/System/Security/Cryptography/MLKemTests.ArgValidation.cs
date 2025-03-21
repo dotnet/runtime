@@ -255,9 +255,26 @@ namespace System.Security.Cryptography.Tests
                 new byte[MLKemAlgorithm.MLKem512.CiphertextSizeInBytes],
                 new byte[MLKemAlgorithm.MLKem512.SharedSecretSizeInBytes]));
 
+            Assert.Throws<ObjectDisposedException>(() =>  kem.Encapsulate(
+                new byte[MLKemAlgorithm.MLKem512.CiphertextSizeInBytes],
+                new byte[MLKemAlgorithm.MLKem512.SharedSecretSizeInBytes],
+                out _,
+                out _));
+
+            Assert.Throws<ObjectDisposedException>(() =>  kem.Encapsulate(
+                out _));
+
             Assert.Throws<ObjectDisposedException>(() =>  kem.Decapsulate(
                 new byte[MLKemAlgorithm.MLKem512.CiphertextSizeInBytes],
                 new byte[MLKemAlgorithm.MLKem512.SharedSecretSizeInBytes]));
+
+            Assert.Throws<ObjectDisposedException>(() =>  kem.Decapsulate(
+                new byte[MLKemAlgorithm.MLKem512.CiphertextSizeInBytes],
+                new byte[MLKemAlgorithm.MLKem512.SharedSecretSizeInBytes],
+                out _));
+
+            Assert.Throws<ObjectDisposedException>(() =>  kem.Decapsulate(
+                new byte[MLKemAlgorithm.MLKem512.CiphertextSizeInBytes]));
 
             Assert.Throws<ObjectDisposedException>(() => kem.ExportPrivateSeed(
                 new byte[MLKemAlgorithm.MLKem512.PrivateSeedSizeInBytes]));
