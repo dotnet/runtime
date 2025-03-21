@@ -285,6 +285,8 @@ private:
 
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
 
+    CORINFO_METHOD_HANDLE ResolveMethodToken(uint32_t token);
+
     void* AllocMethodData(size_t numBytes);
     // FIXME Mempool allocation currently leaks. We need to add an allocator and then
     // free all memory when method is finished compilling.

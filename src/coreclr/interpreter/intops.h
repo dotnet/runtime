@@ -44,6 +44,11 @@ int CEEOpcodeSize(const uint8_t *ip, const uint8_t *codeEnd);
 #define INTOP_LDNULL INTOP_LDC_I4_0
 #endif
 
+static inline bool InterpOpIsEmitNop(int32_t opcode)
+{
+    return opcode >= INTOP_NOP;
+}
+
 static inline bool InterpOpIsUncondBranch(int32_t opcode)
 {
     return opcode == INTOP_BR;

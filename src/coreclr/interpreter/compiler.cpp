@@ -672,6 +672,9 @@ void InterpCompiler::EmitCode()
         m_pCBB = bb;
         for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
         {
+            if (InterpOpIsEmitNop(ins->opcode))
+                continue;
+
             ip = EmitCodeIns(ip, ins, &relocs);
         }
     }
@@ -1370,9 +1373,8 @@ bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SI
     return false;
 }
 
-void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall)
+CORINFO_METHOD_HANDLE InterpCompiler::ResolveMethodToken(uint32_t token)
 {
-    uint32_t token = getU4LittleEndian(m_ip + 1);
     CORINFO_RESOLVED_TOKEN resolvedToken;
 
     resolvedToken.tokenScope = m_compScopeHnd;
@@ -1381,7 +1383,14 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
     resolvedToken.tokenType = CORINFO_TOKENKIND_Method;
     m_compHnd->resolveToken(&resolvedToken);
 
-    CORINFO_METHOD_HANDLE targetMethod = resolvedToken.hMethod;
+    return resolvedToken.hMethod;
+}
+
+void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall)
+{
+    uint32_t token = getU4LittleEndian(m_ip + 1);
+
+    CORINFO_METHOD_HANDLE targetMethod = ResolveMethodToken(token);
 
     CORINFO_SIG_INFO targetSignature;
     m_compHnd->getMethodSig(targetMethod, &targetSignature);
@@ -2216,7 +2225,77 @@ retry_emit:
                 readonly = false;
                 tailcall = false;
                 break;
+            case CEE_NEWOBJ:
+            {
+                CORINFO_METHOD_HANDLE ctorMethod;
+                CORINFO_SIG_INFO ctorSignature;
+                CORINFO_CLASS_HANDLE ctorClass;
+                m_ip++;
+                ctorMethod = ResolveMethodToken(getU4LittleEndian(m_ip));
+                m_ip += 4;
 
+                m_compHnd->getMethodSig(ctorMethod, &ctorSignature);
+                ctorClass = m_compHnd->getMethodClass(ctorMethod);
+                int32_t numArgs = ctorSignature.numArgs;
+
+                // TODO Special case array ctor / string ctor
+                m_pStackPointer -= numArgs;
+
+                // Allocate callArgs for the call, this + numArgs + terminator
+                int32_t *callArgs = (int32_t*) AllocMemPool((numArgs + 2) * sizeof(int32_t));
+                for (int i = 0; i < numArgs; i++)
+                    callArgs[i + 1] = m_pStackPointer[i].var;
+                callArgs[numArgs + 1] = -1;
+
+                // Push the return value and `this` argument to the ctor
+                InterpType retType = GetInterpType(m_compHnd->asCorInfoType(ctorClass));
+                int32_t vtsize = 0;
+                if (retType == InterpTypeVT)
+                {
+                    vtsize = m_compHnd->getClassSize(ctorClass);
+                    PushTypeVT(ctorClass, vtsize);
+                    PushInterpType(InterpTypeByRef, NULL);
+                }
+                else
+                {
+                    PushInterpType(retType, ctorClass);
+                    PushInterpType(retType, ctorClass);
+                }
+                int32_t dVar = m_pStackPointer[-2].var;
+                int32_t thisVar = m_pStackPointer[-1].var;
+                // Consider this arg as being defined, although newobj defines it
+                AddIns(INTOP_DEF);
+                m_pLastIns->SetDVar(thisVar);
+                callArgs[0] = thisVar;
+
+                if (retType == InterpTypeVT)
+                {
+                    AddIns(INTOP_NEWOBJ_VT);
+                    m_pLastIns->data[1] = (int32_t)ALIGN_UP_TO(vtsize, INTERP_STACK_SLOT_SIZE);
+                }
+                else
+                {
+                    AddIns(INTOP_NEWOBJ);
+                    m_pLastIns->data[1] = GetDataItemIndex(ctorClass);
+                }
+                m_pLastIns->data[0] = GetMethodDataItemIndex(ctorMethod);
+                m_pLastIns->SetSVar(CALL_ARGS_SVAR);
+                m_pLastIns->SetDVar(dVar);
+
+                m_pLastIns->flags |= INTERP_INST_FLAG_CALL;
+                m_pLastIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof(InterpCallInfo));
+                m_pLastIns->info.pCallInfo->pCallArgs = callArgs;
+
+                // Pop this, the result of the newobj still remains on the stack
+                m_pStackPointer--;
+                break;
+            }
+            case CEE_POP:
+                CHECK_STACK(1);
+                AddIns(INTOP_NOP);
+                m_pStackPointer--;
+                m_ip++;
+                break;
             case CEE_PREFIX1:
                 m_ip++;
                 switch (*m_ip + 256)

@@ -42,7 +42,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
     stack = pFrame->pStack;
 
-    int32_t returnOffset, callArgsOffset;
+    int32_t returnOffset, callArgsOffset, methodSlot;
 
 MAIN_LOOP:
     while (true)
@@ -694,11 +694,14 @@ MAIN_LOOP:
 
             case INTOP_CALL:
             {
-                size_t targetMethod = (size_t)pMethod->pDataItems[ip[3]];
                 returnOffset = ip[1];
                 callArgsOffset = ip[2];
-                const int32_t *targetIp;
+                methodSlot = ip[3];
 
+                ip += 4;
+CALL_INTERP_SLOT:
+                const int32_t *targetIp;
+                size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
                 if (targetMethod & INTERP_METHOD_DESC_TAG)
                 {
                     // First execution of this call. Ensure target method is compiled and
@@ -718,7 +721,7 @@ MAIN_LOOP:
                         pMD->PrepareInitialCode(CallerGCMode::Coop);
                         code = pMD->GetNativeCode();
                     }
-                    pMethod->pDataItems[ip[3]] = (void*)code;
+                    pMethod->pDataItems[methodSlot] = (void*)code;
                     targetIp = (const int32_t*)code;
                 }
                 else
@@ -729,8 +732,8 @@ MAIN_LOOP:
                     targetIp = (const int32_t*)targetMethod;
                 }
 
-                // Save current execution state once we return from called method
-                pFrame->ip = ip + 4;
+                // Save current execution state for when we return from called method
+                pFrame->ip = ip;
 
                 // Allocate child frame.
                 {
@@ -752,6 +755,39 @@ MAIN_LOOP:
                 ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
                 pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                 break;
+            }
+            case INTOP_NEWOBJ:
+            {
+                returnOffset = ip[1];
+                callArgsOffset = ip[2];
+                methodSlot = ip[3];
+
+                OBJECTREF objRef = AllocateObject((MethodTable*)pMethod->pDataItems[ip[4]]);
+
+                // This is return value
+                LOCAL_VAR(returnOffset, OBJECTREF) = objRef;
+                // Set `this` arg for ctor call
+                LOCAL_VAR (callArgsOffset, OBJECTREF) = objRef;
+                ip += 5;
+
+                goto CALL_INTERP_SLOT;
+            }
+            case INTOP_NEWOBJ_VT:
+            {
+                returnOffset = ip[1];
+                callArgsOffset = ip[2];
+                methodSlot = ip[3];
+
+                int32_t vtSize = ip[4];
+                void *vtThis = stack + returnOffset;
+
+                // clear the valuetype
+                memset(vtThis, 0, vtSize);
+                // pass the address of the valuetype
+                LOCAL_VAR(callArgsOffset, void*) = vtThis;
+
+                ip += 5;
+                goto CALL_INTERP_SLOT;
             }
             case INTOP_FAILFAST:
                 assert(0);

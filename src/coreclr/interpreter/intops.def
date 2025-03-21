@@ -6,7 +6,6 @@
 // are stored in uint32_t slots in the instruction stream for simplicity. In the future
 // we should add compact opcodes where all data is in uint16_t slots.
 
-OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)
 OPDEF(INTOP_RET, "ret", 2, 0, 1, InterpOpNoArgs)
 OPDEF(INTOP_RET_VT, "ret.vt", 3, 0, 1, InterpOpInt)
 OPDEF(INTOP_RET_VOID, "ret.void", 1, 0, 0, InterpOpNoArgs)
@@ -193,5 +192,11 @@ OPDEF(INTOP_CLT_UN_R8, "clt.un.r8", 4, 1, 2, InterpOpNoArgs)
 
 // Calls
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodToken)
+OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodToken)
+OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodToken)
 
 OPDEF(INTOP_FAILFAST, "failfast", 1, 0, 0, InterpOpNoArgs)
+
+// All instructions after this point are IROPS, instructions that are not emitted/executed
+OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_DEF, "def", 2, 1, 0, InterpOpNoArgs)
