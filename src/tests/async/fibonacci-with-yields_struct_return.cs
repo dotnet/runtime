@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#define WITH_OBJECT
+
 using System;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Xunit;
 
-public class Async2FibonacciWithoutYields
+public class Async2FibonacceWithYields
 {
     const int iterations = 3;
-    const bool doYields = false;
 
     [Fact]
     public static void Test()
@@ -22,33 +23,41 @@ public class Async2FibonacciWithoutYields
         System.Console.WriteLine("allocated: " + allocated);
     }
 
+    public struct MyInt
+    {
+        public int i;
+#if WITH_OBJECT
+        public object dummy;
+#else
+        IntPtr dummy;
+#endif
+        public MyInt(int i) => this.i = i;
+    }
+
     public static async2 Task AsyncEntry()
     {
         for (int i = 0; i < iterations; i++)
         {
             var sw = Stopwatch.StartNew();
-            int result = await Fib(25);
+            MyInt result = await Fib(new MyInt(25));
             sw.Stop();
 
-            Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result}");
+            Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result.i}");
         }
     }
 
-    static async2 Task<int> Fib(int i)
+    static async2 Task<MyInt> Fib(MyInt n)
     {
+        int i = n.i;
         if (i <= 1)
         {
-            if (doYields)
-            {
-                await Task.Yield();
-            }
-
-            return 1;
+            await Task.Yield();
+            return new MyInt(1);
         }
 
-        int i1 = await Fib(i - 1);
-        int i2 = await Fib(i - 2);
+        int i1 = (await Fib(new MyInt(i - 1))).i;
+        int i2 = (await Fib(new MyInt(i - 2))).i;
 
-        return i1 + i2;
+        return new MyInt(i1 + i2);
     }
 }

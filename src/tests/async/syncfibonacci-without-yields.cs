@@ -2,47 +2,49 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-﻿using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using Xunit;
 
-public class SyncFibonacciWithoutYields
+public class SyncFibonacci
 {
-    const uint Threshold = 1_000;
+    const int iterations = 3;
+    const bool doYields = false;
 
     public static int Main()
     {
-        for (int i = 0; i < 10; i++)
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            uint result = A(100_000_000);
-            Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result}");
-        }
+        long allocated = GC.GetTotalAllocatedBytes(precise: true);
+
+        Entry();
+
+        allocated = GC.GetTotalAllocatedBytes(precise: true) - allocated;
+        System.Console.WriteLine("allocated: " + allocated);
 
         return 100;
     }
 
-    static uint A(uint n)
+    public static void Entry()
     {
-        uint result = n;
-        for (uint i = 0; i < n; i++)
-            result = B(result);
-        return result;
+        for (int i = 0; i < iterations; i++)
+        {
+            var sw = Stopwatch.StartNew();
+            int result = Fib(25);
+            sw.Stop();
+
+            Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result}");
+        }
     }
 
-    static uint B(uint n)
+    static int Fib(int i)
     {
-        uint result = n;
+        if (i <= 1)
+        {
+            return 1;
+        }
 
-        result = result * 1_999_999_981;
+        int i1 = Fib(i - 1);
+        int i2 = Fib(i - 2);
 
-        result = result * 1_999_999_981;
-
-        result = result * 1_999_999_981;
-
-        return result;
+        return i1 + i2;
     }
 }

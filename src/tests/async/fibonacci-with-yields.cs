@@ -6,59 +6,49 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using Xunit;
 
-public class Async2FibonacceWithYields
+public class Async2FibonacciWithYields
 {
-    const uint Threshold = 1_000;
-    static bool done;
-    const int iterations = 1;
+    const int iterations = 3;
+    const bool doYields = true;
 
     [Fact]
     public static void Test()
     {
-        AsyncEntry().Wait();
+        long allocated = GC.GetTotalAllocatedBytes(precise: true);
+
+        AsyncEntry().GetAwaiter().GetResult();
+
+        allocated = GC.GetTotalAllocatedBytes(precise: true) - allocated;
+        System.Console.WriteLine("allocated: " + allocated);
     }
 
-    public static async Task AsyncEntry()
+    public static async2 Task AsyncEntry()
     {
-        for (int i = 0; i < iterations && !done; i++)
+        for (int i = 0; i < iterations; i++)
         {
-            var sw = new Stopwatch();
-            sw.Start();
-            uint result = await A(100_000_000);
+            var sw = Stopwatch.StartNew();
+            int result = await Fib(25);
+            sw.Stop();
+
             Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result}");
         }
     }
 
-    static async2 Task<uint> A(uint n)
+    static async2 Task<int> Fib(int i)
     {
-        uint result = n;
-        for (uint i = 0; i < n && !done; i++)
-            result = await B(result);
-        return result;
-    }
-
-    static async2 Task<uint> B(uint n)
-    {
-        uint result = n;
-
-        result = result * 1_999_999_981;
-        if (result < Threshold)
+        if (i <= 1)
         {
-            await Task.Yield();
+            if (doYields)
+            {
+                await Task.Yield();
+            }
+
+            return 1;
         }
 
-        result = result * 1_999_999_981;
-        if (result < Threshold)
-        {
-            await Task.Yield();
-        }
+        int i1 = await Fib(i - 1);
+        int i2 = await Fib(i - 2);
 
-        result = result * 1_999_999_981;
-        if (result < Threshold)
-        {
-            await Task.Yield();
-        }
-
-        return result;
+        return i1 + i2;
     }
 }
