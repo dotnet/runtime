@@ -449,6 +449,28 @@ namespace System.Security.Cryptography
             return MLKemImplementation.ImportPrivateSeedImpl(algorithm, source);
         }
 
+        /// <summary>
+        /// Imports an ML-KEM key from its private seed value.
+        /// </summary>
+        /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
+        /// <param name="source">The private seed.</param>
+        /// <returns>The imported key.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source"/> has a length that is not the
+        ///   <see cref="MLKemAlgorithm.PrivateSeedSizeInBytes" /> from <paramref name="algorithm" />.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports MK-KEM.
+        /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, byte[] source)
         {
             if (source is null)
