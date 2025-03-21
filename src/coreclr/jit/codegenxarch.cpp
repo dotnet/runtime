@@ -5685,6 +5685,13 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             // These intrinsics are "ins reg/mem, xmm"
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
                             attr = emitActualTypeSize(baseType);
+#if defined(TARGET_X86)
+                            if (varTypeIsLong(baseType))
+                            {
+                                ins  = INS_movq;
+                                attr = EA_8BYTE;
+                            }
+#endif // TARGET_X86
                             break;
                         }
 

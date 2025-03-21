@@ -18,6 +18,9 @@
 UINT64 LoaderAllocator::cLoaderAllocatorsCreated = 1;
 
 LoaderAllocator::LoaderAllocator(bool collectible) :
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+    m_dynamicHelpersRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     m_stubPrecodeRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
     m_fixupPrecodeRangeList(STUB_CODE_BLOCK_FIXUPPRECODE, collectible)
 {
@@ -30,7 +33,9 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pStubHeap = NULL;
     m_pExecutableHeap = NULL;
 #ifdef FEATURE_READYTORUN
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
     m_pDynamicHelpersHeap = NULL;
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
     m_pFuncPtrStubs = NULL;
     m_hLoaderAllocatorObjectHandle = (OBJECTHANDLE)NULL;
@@ -1204,6 +1209,20 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
                                                                            StubPrecode::GenerateCodePage,
                                                                            StubPrecode::CodeSize);
 
+#if defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
+    if (IsCollectible())
+    {
+        m_pDynamicHelpersStubHeap = m_pNewStubPrecodeHeap;
+    }
+    m_pDynamicHelpersStubHeap = new (&m_DynamicHelpersHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
+                                                                               2 * GetStubCodePageSize(),
+                                                                               &m_dynamicHelpersRangeList,
+                                                                               UnlockedLoaderHeap::HeapKind::Interleaved,
+                                                                               false /* fUnlocked */,
+                                                                               StubPrecode::GenerateCodePage,
+                                                                               StubPrecode::CodeSize);
+#endif // defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
+
     m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
                                                                        2 * GetStubCodePageSize(),
                                                                        &m_fixupPrecodeRangeList,
@@ -1237,6 +1256,8 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 
 
 #ifdef FEATURE_READYTORUN
+
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 PTR_CodeFragmentHeap LoaderAllocator::GetDynamicHelpersHeap()
 {
     CONTRACTL {
@@ -1252,6 +1273,7 @@ PTR_CodeFragmentHeap LoaderAllocator::GetDynamicHelpersHeap()
     }
     return m_pDynamicHelpersHeap;
 }
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
 
 FuncPtrStubs * LoaderAllocator::GetFuncPtrStubs()
@@ -1392,19 +1414,30 @@ void LoaderAllocator::Terminate()
         m_pFixupPrecodeHeap = NULL;
     }
 
+    #ifdef FEATURE_READYTORUN
+    #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+        if (m_pDynamicHelpersStubHeap != NULL)
+        {
+            if (m_pDynamicHelpersStubHeap != m_pNewStubPrecodeHeap)
+            {
+                m_pDynamicHelpersStubHeap->~LoaderHeap();
+            }
+            m_pDynamicHelpersStubHeap = NULL;
+        }
+    #else
+        if (m_pDynamicHelpersHeap != NULL)
+        {
+            delete m_pDynamicHelpersHeap;
+            m_pDynamicHelpersHeap = NULL;
+        }
+    #endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    #endif
+
     if (m_pNewStubPrecodeHeap != NULL)
     {
         m_pNewStubPrecodeHeap->~LoaderHeap();
         m_pNewStubPrecodeHeap = NULL;
     }
-
-#ifdef FEATURE_READYTORUN
-    if (m_pDynamicHelpersHeap != NULL)
-    {
-        delete m_pDynamicHelpersHeap;
-        m_pDynamicHelpersHeap = NULL;
-    }
-#endif
 
     if (m_pFuncPtrStubs != NULL)
     {
@@ -1466,10 +1499,17 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_pExecutableHeap->EnumMemoryRegions(flags);
     }
 #ifdef FEATURE_READYTORUN
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    if (m_pDynamicHelpersStubHeap.IsValid() && m_pDynamicHelpersStubHeap != m_pNewStubPrecodeHeap)
+    {
+        m_pDynamicHelpersStubHeap->EnumMemoryRegions(flags);
+    }
+#else
     if (m_pDynamicHelpersHeap.IsValid())
     {
         m_pDynamicHelpersHeap->EnumMemoryRegions(flags);
     }
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
     if (m_pFixupPrecodeHeap.IsValid())
     {

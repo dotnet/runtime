@@ -844,7 +844,6 @@ internal sealed unsafe partial class SOSDacImpl
             data->metadataSize = readOnlyMetadata.Size;
 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle);
-            data->ThunkHeap = contract.GetThunkHeap(handle);
 
             Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
             ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[Constants.FieldNames.ModuleLookupMap.TableData].Offset;
@@ -861,6 +860,7 @@ internal sealed unsafe partial class SOSDacImpl
             data->dwModuleID = 0;
             data->dwBaseClassIndex = 0;
             data->dwModuleIndex = 0;
+            data->ThunkHeap = 0;
         }
         catch (global::System.Exception e)
         {

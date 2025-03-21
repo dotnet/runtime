@@ -3671,6 +3671,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Span_get_Item:
             case NI_System_ReadOnlySpan_get_Item:
             {
+                optMethodFlags |= OMF_HAS_ARRAYREF;
+
                 // Have index, stack pointer-to Span<T> s on the stack. Expand to:
                 //
                 // For Span<T>
@@ -7763,6 +7765,25 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
+    if (inlineCandidateInfo->methInfo.EHcount > 0)
+    {
+        // We cannot inline methods with EH into filter clauses, even if marked as aggressive inline
+        //
+        if (bbInFilterBBRange(compCurBB))
+        {
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
+            return;
+        }
+
+        // Do not inline pinvoke stubs with EH.
+        //
+        if ((methAttr & CORINFO_FLG_PINVOKE) != 0)
+        {
+            inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_EH);
+            return;
+        }
+    }
+
     // The old value should be null OR this call should be a guarded devirtualization candidate.
     assert(call->IsGuardedDevirtualizationCandidate() || (call->GetSingleInlineCandidateInfo() == nullptr));
 
@@ -10588,7 +10609,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         {
             namespaceName += 1;
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             if (strcmp(namespaceName, "Buffers.Binary") == 0)
             {
                 if (strcmp(className, "BinaryPrimitives") == 0)
