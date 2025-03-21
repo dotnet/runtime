@@ -101,10 +101,10 @@
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
         <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">-DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
-        <_MonoWasmMTCMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs $(_MonoWasmMTCMakeArgs)</_MonoWasmMTCMakeArgs>
+        <_MonoWasmMTCMakeArgs Condition="'$(_MonoWasmMTCMakeArgs)' != ''"> -cmakeargs $(_MonoWasmMTCMakeArgs)</_MonoWasmMTCMakeArgs>
         <_VendoredCMakePrefixPath> -cmakeargs "-DCMAKE_PREFIX_PATH=$(VendoredLibraryRootPath.TrimEnd('\\'))"</_VendoredCMakePrefixPath>
         <_CMakeArgs>$(_MonoWasmMTCMakeArgs)$(_VendoredCMakePrefixPath)</_CMakeArgs>
-        <_BuildNativeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoWasmMTCMakeArgs)' != ''">$(_BuildNativeArgs) $(_CMakeArgs)</_BuildNativeArgs>
+        <_BuildNativeArgs Condition="'$(CMakeArgs)' != ''">$(_BuildNativeArgs) $(_CMakeArgs)</_BuildNativeArgs>
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
     <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
