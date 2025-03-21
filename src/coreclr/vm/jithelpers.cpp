@@ -1811,24 +1811,6 @@ HCIMPLEND
 /*************************************************************/
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-static void TransitionBlockToContext(TransitionBlock* transitionBlock, T_CONTEXT *pContext)
-{
-    //#define ARGUMENT_REGISTER(reg) pContext->reg = transitionBlock->m_argumentRegisters.reg;
-    //ENUM_ARGUMENT_REGISTERS();
-    //#undef ARGUMENT_REGISTER
-    pContext->Ecx = transitionBlock->m_argumentRegisters.ECX;
-    pContext->Edx = transitionBlock->m_argumentRegisters.EDX;
-
-    #define CALLEE_SAVED_REGISTER(reg) pContext->reg = transitionBlock->m_calleeSavedRegisters.reg;
-    ENUM_CALLEE_SAVED_REGISTERS();
-    #undef CALLEE_SAVED_REGISTER
-
-    pContext->Esp = (UINT_PTR)(transitionBlock + 1);
-    pContext->Eip = transitionBlock->m_ReturnAddress;
-}
-#endif
-
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
 EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
 #else
@@ -1851,11 +1833,11 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
         SoftwareExceptionFrame exceptionFrame;
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-        TransitionBlockToContext(transitionBlock, exceptionFrame.GetContext());
+        exceptionFrame.InitAndLink(transitionBlock, pThread);
 #else
         ClrCaptureContext(exceptionFrame.GetContext());
-#endif
         exceptionFrame.InitAndLink(pThread);
+#endif
 
         FC_CAN_TRIGGER_GC();
 
@@ -1950,11 +1932,11 @@ HCIMPL0(void, IL_Rethrow)
 
         SoftwareExceptionFrame exceptionFrame;
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-        TransitionBlockToContext(transitionBlock, exceptionFrame.GetContext());
+        exceptionFrame.InitAndLink(transitionBlock, pThread);
 #else
         ClrCaptureContext(exceptionFrame.GetContext());
-#endif
         exceptionFrame.InitAndLink(pThread);
+#endif
 
         ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 

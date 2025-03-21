@@ -463,11 +463,15 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
         pAbortContext = GetThread()->GetAbortContext();
     }
 
-#ifndef TARGET_UNIX
-#define HANDLE_NULL_CONTEXT_POINTER _ASSERTE(false)
-#else // TARGET_UNIX
+    // Windows/x86 doesn't have unwinding mechanism for native code. RtlUnwind in
+    // ProcessCLRException leaves us with the original exception context. Thus we
+    // rely solely on our frames and managed code unwinding. This also means that
+    // if we pass through InlinedCallFrame we end up with empty context pointers.
+#if defined(TARGET_UNIX) || defined(TARGET_X86)
 #define HANDLE_NULL_CONTEXT_POINTER
-#endif // TARGET_UNIX
+#else // TARGET_UNIX || TARGET_X86
+#define HANDLE_NULL_CONTEXT_POINTER _ASSERTE(false)
+#endif // TARGET_UNIX || TARGET_X86
 
 #define UPDATEREG(reg)                                                                      \
     do {                                                                                    \
