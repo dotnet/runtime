@@ -781,8 +781,9 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
+int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount)
 {
+    assert(pDstCount != nullptr);
     NYI_RISCV64("-----unimplemented on RISCV64 yet----");
     return 0;
 }

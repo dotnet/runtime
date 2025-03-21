@@ -436,10 +436,12 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
+#ifdef FEATURE_SIMD
     GenTree* LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
     GenTree* LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
+#endif // FEATURE_SIMD
 #if defined(TARGET_XARCH)
     void     LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
@@ -458,10 +460,12 @@ private:
     bool TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
     void StoreFFRValue(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
+#ifdef FEATURE_SIMD
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
                                                  GenTree*    op1,
                                                  CorInfoType simdBaseJitType,
                                                  unsigned    simdSize);
+#endif // FEATURE_SIMD
 #endif // FEATURE_HW_INTRINSICS
 
     // Utility functions

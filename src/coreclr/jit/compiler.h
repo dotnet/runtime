@@ -3077,9 +3077,7 @@ public:
 
 #ifdef FEATURE_SIMD
     void SetOpLclRelatedToSIMDIntrinsic(GenTree* op);
-#endif
 
-#ifdef FEATURE_HW_INTRINSICS
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
                                                  NamedIntrinsic hwIntrinsicID,
                                                  CorInfoType    simdBaseJitType,
@@ -3418,6 +3416,7 @@ public:
                                     GenTree*    op2,
                                     CorInfoType simdBaseJitType,
                                     unsigned    simdSize);
+#endif // FEATURE_SIMD
 
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
@@ -3435,7 +3434,6 @@ public:
     GenTreeFieldList* gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount);
     GenTreeFieldList* gtConvertParamOpToFieldList(GenTree* op, unsigned fieldCount, CORINFO_CLASS_HANDLE clsHnd);
 #endif
-#endif // FEATURE_HW_INTRINSICS
 
     GenTree* gtNewMemoryBarrier(BarrierKind barrierKind);
 
@@ -4677,12 +4675,13 @@ protected:
                                         bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
+#ifdef FEATURE_SIMD
     bool IsValidForShuffle(GenTree* indices,
                            unsigned simdSize,
                            var_types simdBaseType,
                            bool* canBecomeValid,
                            bool isShuffleNative) const;
-
+#endif
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
                             CORINFO_CLASS_HANDLE  clsHnd,
                             CORINFO_METHOD_HANDLE method,

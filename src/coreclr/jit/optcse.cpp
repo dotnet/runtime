@@ -1866,11 +1866,15 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
                 case HW_Category_Scalar:
                 case HW_Category_Helper:
                     break;
+#elif defined(TARGET_RISCV64)
+                case HW_Category_Scalar:
+                    break;
 #endif
-
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
                 case HW_Category_MemoryLoad:
                 case HW_Category_MemoryStore:
                 case HW_Category_Special:
+#endif // TARGET_XARCH || TARGET_ARM64
                 default:
                     return false;
             }

@@ -69,6 +69,8 @@ function(create_standalone_jit)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_MASKED_HW_INTRINSICS)
+  elseif (TARGETDETAILS_ARCH STREQUAL "riscv64")
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
   endif ()
 endfunction()
 
@@ -76,6 +78,8 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TAR
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_SIMD>)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_HW_INTRINSICS>)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_MASKED_HW_INTRINSICS>)
+elseif (CLR_CMAKE_TARGET_ARCH_RISCV64)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_HW_INTRINSICS>)
 endif ()
 
 # JIT_BUILD disables certain PAL_TRY debugging features
@@ -274,6 +278,8 @@ set( JIT_RISCV64_SOURCES
   lsrariscv64.cpp
   targetriscv64.cpp
   unwindriscv64.cpp
+  hwintrinsicriscv64.cpp
+  hwintrinsiccodegenriscv64.cpp
 )
 
 # We include the headers here for better experience in IDEs.

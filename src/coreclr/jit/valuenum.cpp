@@ -7371,6 +7371,7 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
 }
 
 #ifdef FEATURE_HW_INTRINSICS
+#ifdef FEATURE_SIMD
 simd8_t GetConstantSimd8(ValueNumStore* vns, var_types baseType, ValueNum argVN)
 {
     assert(vns->IsVNConstant(argVN));
@@ -7777,6 +7778,7 @@ ValueNum EvaluateSimdCvtVectorToMask(ValueNumStore* vns, var_types simdType, var
 
     return vns->VNForSimdMaskCon(result);
 }
+#endif // FEATURE_SIMD
 
 ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                                                 VNFunc              func,
@@ -7793,6 +7795,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
         bool       isScalar = false;
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
+#ifdef FEATURE_SIMD
         if (oper != GT_NONE)
         {
             if (varTypeIsMask(type))
@@ -7814,9 +7817,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
             var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
             return EvaluateSimdCvtVectorToMask(this, simdType, baseType, arg0VN);
         }
+#endif // FEATURE_SIMD
 
         switch (ni)
         {
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
 #ifdef TARGET_ARM64
             case NI_ArmBase_LeadingZeroCount:
 #else
@@ -7830,6 +7835,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
                 return VNForIntCon(static_cast<int32_t>(result));
             }
+#endif // TARGET_ARM64 || TARGET_XARCH
 
 #ifdef TARGET_ARM64
             case NI_ArmBase_Arm64_LeadingZeroCount:
@@ -7841,7 +7847,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
                 return VNForIntCon(static_cast<int32_t>(result));
             }
-#else
+#elif defined(TARGET_XARCH)
             case NI_LZCNT_X64_LeadingZeroCount:
             {
                 assert(varTypeIsLong(type));
@@ -8063,7 +8069,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForSimd16Con(result);
             }
 #endif // TARGET_XARCH
-
+#ifdef FEATURE_SIMD
             case NI_Vector128_AsVector3:
             {
                 simd12_t result = {};
@@ -8109,7 +8115,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
             {
                 return EvaluateSimdGetElement(this, TypeOfVN(arg0VN), baseType, arg0VN, 0);
             }
-
+#endif // FEATURE_SIMD
             default:
                 break;
         }
@@ -8155,11 +8161,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
         bool       isScalar = false;
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
+#ifdef FEATURE_SIMD
         if (oper != GT_NONE)
         {
             // We shouldn't find AND_NOT, OR_NOT or XOR_NOT nodes since it should only be produced in lowering
             assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
-
             if (varTypeIsMask(type))
             {
                 if (varTypeIsMask(TypeOfVN(arg0VN)))
@@ -8294,6 +8300,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             default:
                 break;
         }
+#endif // FEATURE_SIMD
     }
     else if (cnsVN != NoVN)
     {
@@ -8320,6 +8327,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     // Handle `x + NaN == NaN` and `NaN + x == NaN`
                     // This is safe for all floats since we do not fault for sNaN
 
+#ifdef FEATURE_SIMD
                     if (VNIsVectorNaN(type, baseType, cnsVN))
                     {
                         return cnsVN;
@@ -8331,8 +8339,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     {
                         return argVN;
                     }
-
-                    // We cannot handle `x + 0 == x` or `0 + x == x` since `-0 + 0 == 0`
+#endif // FEATURE_SIMD
+       // We cannot handle `x + 0 == x` or `0 + x == x` since `-0 + 0 == 0`
                     break;
                 }
 
@@ -8368,6 +8376,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
             case GT_DIV:
             {
+#ifdef FEATURE_SIMD
                 if (varTypeIsFloating(baseType))
                 {
                     // Handle `x / NaN == NaN` and `NaN / x == NaN`
@@ -8378,16 +8387,19 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                         return cnsVN;
                     }
                 }
+#endif // FEATURE_SIMD
 
                 // Handle `x / 1 == x`.
                 // This is safe for all floats since we do not fault for sNaN
                 ValueNum oneVN;
 
+#ifdef FEATURE_SIMD
                 if (varTypeIsSIMD(TypeOfVN(arg1VN)))
                 {
                     oneVN = VNOneForSimdType(type, baseType);
                 }
                 else
+#endif // FEATURE_SIMD
                 {
                     oneVN = VNOneForType(baseType);
                 }
@@ -8399,6 +8411,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 break;
             }
 
+#ifdef FEATURE_SIMD
             case GT_EQ:
             {
                 if (varTypeIsFloating(baseType))
@@ -8505,6 +8518,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 }
                 break;
             }
+#endif // FEATURE_SIMD
 
             case GT_MUL:
             {
@@ -8523,25 +8537,26 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 {
                     // Handle `x * NaN == NaN` and `NaN * x == NaN`
                     // This is safe for all floats since we do not fault for sNaN
-
+#ifdef FEATURE_SIMD
                     if (VNIsVectorNaN(type, baseType, cnsVN))
                     {
                         return cnsVN;
                     }
-
-                    // We cannot handle `x *  0 ==  0` or ` 0 * x ==  0` since `-0 *  0 == -0`
-                    // We cannot handle `x * -0 == -0` or `-0 * x == -0` since `-0 * -0 ==  0`
+#endif // FEATURE_SIMD
+       // We cannot handle `x *  0 ==  0` or ` 0 * x ==  0` since `-0 *  0 == -0`
+       // We cannot handle `x * -0 == -0` or `-0 * x == -0` since `-0 * -0 ==  0`
                 }
 
                 // Handle `x * 1 == x` and `1 * x == x`
                 // This is safe for all floats since we do not fault for sNaN
                 ValueNum oneVN;
-
+#ifdef FEATURE_SIMD
                 if (varTypeIsSIMD(TypeOfVN(cnsVN)))
                 {
                     oneVN = VNOneForSimdType(type, baseType);
                 }
                 else
+#endif // FEATURE_SIMD
                 {
                     oneVN = VNOneForType(baseType);
                 }
@@ -8553,6 +8568,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 break;
             }
 
+#ifdef FEATURE_SIMD
             case GT_NE:
             {
                 var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
@@ -8567,6 +8583,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 }
                 break;
             }
+#endif // FEATURE_SIMD
 
             case GT_OR:
             {
@@ -8610,6 +8627,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
             case GT_SUB:
             {
+#ifdef FEATURE_SIMD
                 if (varTypeIsFloating(baseType))
                 {
                     // Handle `x - NaN == NaN` and `NaN - x == NaN`
@@ -8622,6 +8640,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
                     // We cannot handle `x - -0 == x` since `-0 - -0 == 0`
                 }
+#endif // FEATURE_SIMD
 
                 // Handle `x - 0 == x`
                 ValueNum zeroVN = VNZeroForType(type);
@@ -8734,7 +8753,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 break;
             }
 #endif
-
+#ifdef FEATURE_SIMD
             case NI_Vector128_op_Equality:
 #if defined(TARGET_ARM64)
             case NI_Vector64_op_Equality:
@@ -8776,7 +8795,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 }
                 break;
             }
-
+#endif // FEATURE_SIMD
             default:
             {
                 break;
@@ -8858,7 +8877,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             default:
                 break;
         }
-
+#ifdef FEATURE_SIMD
         switch (ni)
         {
             case NI_Vector128_op_Equality:
@@ -8900,11 +8919,13 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 break;
             }
         }
+#endif // FEATURE_SIMD
     }
 
     return VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
 }
 
+#ifdef FEATURE_SIMD
 ValueNum EvaluateSimdWithElementFloating(
     ValueNumStore* vns, var_types simdType, var_types baseType, ValueNum arg0VN, int32_t arg1, double arg2)
 {
@@ -9012,11 +9033,13 @@ ValueNum EvaluateSimdWithElementIntegral(
         }
     }
 }
+#endif // FEATURE_SIMD
 
 ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
     GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN, ValueNum resultTypeVN)
 {
-    var_types      type     = tree->TypeGet();
+    var_types type = tree->TypeGet();
+#ifdef FEATURE_SIMD
     var_types      baseType = tree->GetSimdBaseType();
     NamedIntrinsic ni       = tree->GetHWIntrinsicId();
 
@@ -9124,6 +9147,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
             break;
         }
     }
+#endif // FEATURE_SIMD
 
     return VNForFunc(type, func, arg0VN, arg1VN, arg2VN, resultTypeVN);
 }
@@ -12932,8 +12956,8 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair = ValueNumPair();
 
+#ifdef FEATURE_SIMD
     const size_t opCount = tree->GetOperandCount();
-
     if ((opCount > 3) || ((JitConfig.JitDisableSimdVN() & 2) == 2) ||
         HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
     {
@@ -13041,6 +13065,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
         }
     }
+#endif // FEATURE_SIMD
 
     // Some intrinsics should always be unique
     bool makeUnique = false;

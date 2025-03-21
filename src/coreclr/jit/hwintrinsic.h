@@ -67,6 +67,32 @@ enum HWIntrinsicCategory : uint8_t
     // - have to be addressed specially
     HW_Category_Special
 };
+#elif defined(TARGET_RISCV64)
+enum HWIntrinsicCategory : uint8_t
+{
+    // Most of the Arm64 intrinsic fall into SIMD category:
+    // - vector or scalar intrinsics that operate on one-or-many SIMD registers
+    // HW_Category_SIMD,
+
+    // Scalar intrinsics operate on general purpose registers (e.g. cls, clz, rbit)
+    HW_Category_Scalar,
+
+    // // Memory access intrinsics
+    // HW_Category_MemoryLoad,
+    // HW_Category_MemoryStore,
+
+    // // These are Arm64 that share some features in a given category (e.g. immediate operand value range)
+    // HW_Category_ShiftLeftByImmediate,
+    // HW_Category_ShiftRightByImmediate,
+
+    // // Helper intrinsics
+    // // - do not directly correspond to a instruction, such as Vector64.AllBitsSet
+    // HW_Category_Helper,
+
+    // // Special intrinsics
+    // // - have to be addressed specially
+    // HW_Category_Special
+};
 #else
 #error Unsupported platform
 #endif
@@ -232,6 +258,67 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic is a reduce operation.
     HW_Flag_ReduceOperation = 0x2000000,
+
+#elif defined(TARGET_RISCV64)
+    // // The intrinsic has an immediate operand
+    // // - the value can be (and should be) encoded in a corresponding instruction when the operand value is constant
+    // HW_Flag_HasImmediateOperand = 0x400,
+
+    // // The intrinsic has read/modify/write semantics in multiple-operands form.
+    // HW_Flag_HasRMWSemantics = 0x800,
+
+    // // The intrinsic operates on the lower part of a SIMD register
+    // // - the upper part of the source registers are ignored
+    // // - the upper part of the destination register is zeroed
+    // HW_Flag_SIMDScalar = 0x1000,
+
+    // // The intrinsic supports some sort of containment analysis
+    // HW_Flag_SupportsContainment = 0x2000,
+
+    // // The intrinsic needs consecutive registers
+    // HW_Flag_NeedsConsecutiveRegisters = 0x4000,
+
+    // // The intrinsic uses scalable registers
+    // HW_Flag_Scalable = 0x8000,
+
+    // // Returns Per-Element Mask
+    // // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
+    // // this output can be used as a per-element mask
+    // HW_Flag_ReturnsPerElementMask = 0x10000,
+
+    // // The intrinsic uses a mask in arg1 to select elements present in the result
+    // HW_Flag_ExplicitMaskedOperation = 0x20000,
+
+    // // The intrinsic uses a mask in arg1 (either explicitly, embedded or optionally embedded) to select elements
+    // present
+    // // in the result, and must use a low register.
+    // HW_Flag_LowMaskedOperation = 0x40000,
+
+    // // The intrinsic can optionally use a mask in arg1 to select elements present in the result, which is not present
+    // in
+    // // the API call
+    // HW_Flag_OptionalEmbeddedMaskedOperation = 0x80000,
+
+    // // The intrinsic uses a mask in arg1 to select elements present in the result, which is not present in the API
+    // call HW_Flag_EmbeddedMaskedOperation = 0x100000,
+
+    // // The intrinsic comes in both vector and scalar variants. During the import stage if the basetype is scalar,
+    // // then the intrinsic should be switched to a scalar only version.
+    // HW_Flag_HasScalarInputVariant = 0x200000,
+
+    // // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low vector
+    // register. HW_Flag_LowVectorOperation = 0x400000,
+
+    // // The intrinsic uses a mask in arg1 to select elements present in the result, which zeros inactive elements
+    // // (instead of merging).
+    // HW_Flag_ZeroingMaskedOperation = 0x800000,
+
+    // // The intrinsic has an overload where the base type is extracted from a ValueTuple of SIMD types
+    // // (HW_Flag_BaseTypeFrom{First, Second}Arg must also be set to denote the position of the ValueTuple)
+    // HW_Flag_BaseTypeFromValueTupleArg = 0x1000000,
+
+    // // The intrinsic is a reduce operation.
+    // HW_Flag_ReduceOperation = 0x2000000,
 
 #else
 #error Unsupported platform
@@ -529,14 +616,17 @@ struct HWIntrinsicInfo
     static CORINFO_InstructionSet lookupIsa(const char* className,
                                             const char* innerEnclosingClassName,
                                             const char* outerEnclosingClassName);
-
+#ifdef FEATURE_SIMD
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
+#endif
 
 #if defined(TARGET_XARCH)
     static int lookupImmUpperBound(NamedIntrinsic intrinsic);
 #elif defined(TARGET_ARM64)
     static void lookupImmBounds(
         NamedIntrinsic intrinsic, int simdSize, var_types baseType, int immNumber, int* lowerBound, int* upperBound);
+#elif defined(TARGET_RISCV64)
+    // No HW intrinsics with immediates for now
 #else
 #error Unsupported platform
 #endif
@@ -674,7 +764,7 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
 #if defined(TARGET_XARCH)
         return (flags & HW_Flag_MaybeCommutative) != 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         return false;
 #else
 #error Unsupported platform
@@ -694,6 +784,8 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_NoContainment) == 0;
 #elif defined(TARGET_ARM64)
         return (flags & HW_Flag_SupportsContainment) != 0;
+#elif defined(TARGET_RISCV64)
+        return false;
 #else
 #error Unsupported platform
 #endif
@@ -704,6 +796,8 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (flags & HW_Flag_ReturnsPerElementMask) != 0;
+#elif defined(TARGET_RISCV64)
+        return false;
 #else
 #error Unsupported platform
 #endif
@@ -800,6 +894,8 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_NoRMWSemantics) == 0;
 #elif defined(TARGET_ARM64)
         return (flags & HW_Flag_HasRMWSemantics) != 0;
+#elif defined(TARGET_RISCV64)
+        return false;
 #else
 #error Unsupported platform
 #endif
@@ -927,6 +1023,7 @@ struct HWIntrinsicInfo
     {
         switch (id)
         {
+#ifdef FEATURE_SIMD
 #if defined(TARGET_ARM64)
             case NI_Vector64_Create:
 #endif // TARGET_ARM64
@@ -936,6 +1033,7 @@ struct HWIntrinsicInfo
             case NI_Vector512_Create:
 #endif // TARGET_XARCH
                 return true;
+#endif // FEATURE_SIMD
             default:
                 return false;
         }
@@ -945,6 +1043,7 @@ struct HWIntrinsicInfo
     {
         switch (id)
         {
+#ifdef FEATURE_SIMD
 #if defined(TARGET_ARM64)
             case NI_Vector64_CreateScalar:
 #endif // TARGET_ARM64
@@ -954,6 +1053,7 @@ struct HWIntrinsicInfo
             case NI_Vector512_CreateScalar:
 #endif // TARGET_XARCH
                 return true;
+#endif // FEATURE_SIMD
             default:
                 return false;
         }
@@ -963,6 +1063,7 @@ struct HWIntrinsicInfo
     {
         switch (id)
         {
+#ifdef FEATURE_SIMD
 #if defined(TARGET_ARM64)
             case NI_Vector64_CreateScalarUnsafe:
 #endif // TARGET_ARM64
@@ -972,6 +1073,7 @@ struct HWIntrinsicInfo
             case NI_Vector512_CreateScalarUnsafe:
 #endif // TARGET_XARCH
                 return true;
+#endif // FEATURE_SIMD
             default:
                 return false;
         }
@@ -981,6 +1083,7 @@ struct HWIntrinsicInfo
     {
         switch (id)
         {
+#ifdef FEATURE_SIMD
 #if defined(TARGET_ARM64)
             case NI_Vector64_GetElement:
 #endif // TARGET_ARM64
@@ -990,6 +1093,7 @@ struct HWIntrinsicInfo
             case NI_Vector512_GetElement:
 #endif // TARGET_XARCH
                 return true;
+#endif // FEATURE_SIMD
             default:
                 return false;
         }
@@ -999,6 +1103,7 @@ struct HWIntrinsicInfo
     {
         switch (id)
         {
+#ifdef FEATURE_SIMD
 #if defined(TARGET_ARM64)
             case NI_Vector64_ToScalar:
 #endif // TARGET_ARM64
@@ -1008,6 +1113,7 @@ struct HWIntrinsicInfo
             case NI_Vector512_ToScalar:
 #endif // TARGET_XARCH
                 return true;
+#endif // FEATURE_SIMD
             default:
                 return false;
         }
