@@ -32,12 +32,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- TODO: Link libraries on non-windows platforms. -->
-    <!-- https://github.com/dotnet/runtime/issues/112416 -->
-    <DirectPInvoke Include="unwinder_cdac_amd64" Condition="'$(TargetsWindows)' == 'true' and '$(TargetArchitecture)' == 'x64'"/>
+    <DirectPInvoke Include="unwinder_cdac_amd64" />
+    <DirectPInvoke Include="unwinder_cdac_arm64" />
+
+    <!-- unwinder_cdac_base is supported on all platforms -->
+    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\unwinder_cdac_base.lib" Condition="'$(TargetsWindows)' == 'true'"/>
+    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\libunwinder_cdac_base.a" Condition="'$(TargetsWindows)' != 'true'" />
+
+    <!-- amd64 and arm64 are supported on windows x64, or on their native platform -->
     <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\unwinder_cdac_amd64.lib" Condition="'$(TargetsWindows)' == 'true' and '$(TargetArchitecture)' == 'x64'" />
-    <DirectPInvoke Include="unwinder_cdac_arm64" Condition="'$(TargetsWindows)' == 'true' and '$(TargetArchitecture)' == 'x64'"/>
-    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\unwinder_cdac_arm64.lib" Condition="'$(TargetsWindows)' == 'true' and '$(TargetArchitecture)' == 'x64'" />
+    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\unwinder_cdac_arm64.lib" Condition="'$(TargetsWindows)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')" />
+
+    <!-- non-windows, load only the platform native unwinders -->
+    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\libunwinder_cdac_amd64.a" Condition="'$(TargetsWindows)' != 'true' and '$(TargetArchitecture)' == 'x64'" />
+    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\libunwinder_cdac_arm64.a" Condition="'$(TargetsWindows)' != 'true' and '$(TargetArchitecture)' == 'arm64'" />
   </ItemGroup>
 
   <ItemGroup>
