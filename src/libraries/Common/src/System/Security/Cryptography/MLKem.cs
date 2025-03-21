@@ -3,8 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-
-#pragma warning disable CA1510, CA1513
+using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography
 {
@@ -54,11 +53,7 @@ namespace System.Security.Cryptography
         /// </exception>
         protected MLKem(MLKemAlgorithm algorithm)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
-
+            ThrowIfNull(algorithm);
             Algorithm = algorithm;
         }
 
@@ -83,11 +78,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
-
+            ThrowIfNull(algorithm);
             ThrowIfNotSupported();
             return MLKemImplementation.GenerateKeyImpl(algorithm);
         }
@@ -323,8 +314,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] Decapsulate(byte[] ciphertext)
         {
-            if (ciphertext is null)
-                throw new ArgumentNullException(nameof(ciphertext));
+            ThrowIfNull(ciphertext);
 
             if (ciphertext.Length != Algorithm.CiphertextSizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidCiphertextLength, nameof(ciphertext));
@@ -355,10 +345,15 @@ namespace System.Security.Cryptography
         /// </summary>
         protected void ThrowIfDisposed()
         {
+#if NET
+            ObjectDisposedException.ThrowIf(_disposed, typeof(MLKem));
+#else
             if (_disposed)
             {
-                throw new ObjectDisposedException(nameof(MLKem));
+                throw new ObjectDisposedException(typeof(MLKem).FullName);
             }
+#endif
+
         }
 
         /// <summary>
@@ -439,8 +434,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            if (algorithm is null)
-                throw new ArgumentNullException(nameof(algorithm));
+            ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidSeedLength, nameof(source));
@@ -473,8 +467,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, byte[] source)
         {
-            if (source is null)
-                throw new ArgumentNullException(nameof(source));
+            ThrowIfNull(source);
 
             return ImportPrivateSeed(algorithm, new ReadOnlySpan<byte>(source));
         }
@@ -500,8 +493,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            if (algorithm is null)
-                throw new ArgumentNullException(nameof(algorithm));
+            ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.DecapsulationKeySizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidDecapsulationKeyLength, nameof(source));
@@ -533,9 +525,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
-            if (source is null)
-                throw new ArgumentNullException(nameof(source));
-
+            ThrowIfNull(source);
             return ImportDecapsulationKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
@@ -560,8 +550,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            if (algorithm is null)
-                throw new ArgumentNullException(nameof(algorithm));
+            ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.EncapsulationKeySizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidEncapsulationKeyLength, nameof(source));
@@ -593,8 +582,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
-            if (source is null)
-                throw new ArgumentNullException(nameof(source));
+            ThrowIfNull(source);
 
             return ImportEncapsulationKey(algorithm, new ReadOnlySpan<byte>(source));
         }
@@ -738,6 +726,20 @@ namespace System.Security.Cryptography
             {
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
             }
+        }
+
+        private static void ThrowIfNull(
+            [NotNull] object? argument,
+            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        {
+#if NET
+            ArgumentNullException.ThrowIfNull(argument, paramName);
+#else
+            if (argument is null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+#endif
         }
     }
 }
