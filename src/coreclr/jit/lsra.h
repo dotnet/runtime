@@ -1791,6 +1791,10 @@ private:
     {
         m_AvailableRegs.AddRegNum(reg, regType);
     }
+    void makeRegAvailable(SingleTypeRegSet regs, var_types regType)
+    {
+        m_AvailableRegs.AddRegsetForType(regs, regType);
+    }
 
     void clearAllNextIntervalRef();
     void clearNextIntervalRef(regNumber reg, var_types regType);
