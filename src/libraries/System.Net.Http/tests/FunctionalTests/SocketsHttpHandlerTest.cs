@@ -1316,7 +1316,7 @@ namespace System.Net.Http.Functional.Tests
                         handler.Credentials = CredentialCache.DefaultCredentials;
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
                         var response = await invoker.SendAsync(request, CancellationToken.None);
-                        Assert.Equal(401, response.StatusCode);
+                        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
                     }
                 },
                 async server =>
