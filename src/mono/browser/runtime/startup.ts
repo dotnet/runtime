@@ -540,6 +540,7 @@ export async function start_runtime () {
 
         if (runtimeHelpers.emscriptenBuildOptions.enablePerfTracing) {
             const diagnosticPorts = "DOTNET_DiagnosticPorts";
+            // connect JS client by default
             const jsReady = "js://ready";
             if (!environmentVariables[diagnosticPorts]) {
                 environmentVariables[diagnosticPorts] = jsReady;

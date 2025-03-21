@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\DefaultBrowserSample.targets" />
+  <PropertyGroup>
+    <WasmPerfTracing>true</WasmPerfTracing>
+    <WasmPerfInstrumentation>true</WasmPerfInstrumentation>
+    <MetricsSupport>true</MetricsSupport>
+    <EventSourceSupport>true</EventSourceSupport>
+    <!--
+    <WasmEnableWebcil>false</WasmEnableWebcil>
+    <DiagnosticPorts>ws://127.0.0.1:8088/diagnostics</DiagnosticPorts>
+    -->
+  </PropertyGroup>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
+  </ItemGroup>
+</Project>
