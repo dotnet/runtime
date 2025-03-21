@@ -102,14 +102,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override LayoutInt MetadataOffset
-        {
-            get
-            {
-                return _fieldDef.MetadataOffset;
-            }
-        }
-
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _fieldDef.HasCustomAttribute(attributeNamespace, attributeName);

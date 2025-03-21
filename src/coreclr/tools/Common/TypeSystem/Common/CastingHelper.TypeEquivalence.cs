@@ -202,6 +202,15 @@ namespace Internal.TypeSystem
                     return false;
                 }
 
+                bool explicitLayout = false;
+                if (!enumMode)
+                {
+                    if (!CompareTypeLayout(type1, type2, out explicitLayout))
+                    {
+                        return false;
+                    }
+                }
+
                 // Compare field types for equivalence
                 var fields1 = type1.GetFields().GetEnumerator();
                 var fields2 = type2.GetFields().GetEnumerator();
@@ -249,20 +258,22 @@ namespace Internal.TypeSystem
                     {
                         return false;
                     }
-                }
 
-                // At this point we know that the set of fields is the same, and have the same types
-                if (!enumMode)
-                {
-                    if (!CompareTypeLayout(type1, type2))
+                    // If we are in explicit layout mode, we need to compare the offsets
+                    if (explicitLayout)
                     {
-                        return false;
+                        if (field1.MetadataOffset != field2.MetadataOffset)
+                        {
+                            return false;
+                        }
                     }
                 }
+
                 return true;
 
-                static bool CompareTypeLayout(MetadataType type1, MetadataType type2)
+                static bool CompareTypeLayout(MetadataType type1, MetadataType type2, out bool explicitLayout)
                 {
+                    explicitLayout = false;
                     // Types must either be Sequential or Explicit layout
                     if (type1.IsSequentialLayout != type2.IsSequentialLayout)
                     {
@@ -279,7 +290,7 @@ namespace Internal.TypeSystem
                         return false;
                     }
 
-                    bool explicitLayout = type1.IsExplicitLayout;
+                    explicitLayout = type1.IsExplicitLayout;
 
                     // they must have the same charset
                     if (type1.PInvokeStringFormat != type2.PInvokeStringFormat)
@@ -292,41 +303,6 @@ namespace Internal.TypeSystem
                     if ((layoutMetadata1.PackingSize != layoutMetadata2.PackingSize) ||
                         (layoutMetadata1.Size != layoutMetadata2.Size))
                         return false;
-
-                    if (explicitLayout)
-                    {
-                        IEnumerator<FieldDesc> fieldEnumerator1 = type1.GetFields().GetEnumerator();
-                        IEnumerator<FieldDesc> fieldEnumerator2 = type2.GetFields().GetEnumerator();
-
-                        // Without using LINQ, check that fieldEnumerator1 and fieldEnumerator2 have the same number of instance fields
-                        // with offsets and that the offsets are the same
-
-                        while (fieldEnumerator1.MoveNext() && fieldEnumerator2.MoveNext())
-                        {
-                            bool hasNextField1 = true;
-                            while (fieldEnumerator1.Current.IsStatic)
-                            {
-                                hasNextField1 = fieldEnumerator1.MoveNext();
-                            }
-
-                            bool hasNextField2 = true;
-                            while (fieldEnumerator1.Current.IsStatic)
-                            {
-                                hasNextField2 = fieldEnumerator1.MoveNext();
-                            }
-
-                            if (!hasNextField1 && !hasNextField2)
-                                break;
-                            else if (!hasNextField1 || !hasNextField2)
-                                return false;
-
-                            FieldDesc field1 = fieldEnumerator1.Current;
-                            FieldDesc field2 = fieldEnumerator2.Current;
-
-                            if (field1.MetadataOffset != field2.MetadataOffset)
-                                return false;
-                        }
-                    }
 
                     return true;
                 }
