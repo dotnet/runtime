@@ -882,6 +882,132 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                         // Sve_Arm64
 #elif defined (TARGET_RISCV64)
 // TODO: s/NONE/RiscVBase
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
     { FIRST_NI_NONE, LAST_NI_NONE },
 #else
 #error Unsupported platform
@@ -905,6 +1031,8 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
         assert((info.simdSize == 8) || (info.simdSize == 16));
 #elif defined(TARGET_XARCH)
         assert((info.simdSize == 16) || (info.simdSize == 32) || (info.simdSize == 64));
+#elif defined(TARGET_RISCV64)
+        unreached(); // no SIMD intrinsics yet
 #else
         unreached();
 #endif
@@ -915,6 +1043,8 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
         // We should only have an expected number of arguments
 #if defined(TARGET_ARM64) || defined(TARGET_XARCH)
         assert((info.numArgs >= 0) && (info.numArgs <= 5));
+#elif defined(TARGET_RISCV64)
+        assert((info.numArgs >= 1) && (info.numArgs <= 3));
 #else
         unreached();
 #endif
@@ -935,6 +1065,11 @@ static void ValidateHWIntrinsicIsaRange(CORINFO_InstructionSet isa, const HWIntr
     assert(isaRange.LastId != NI_Illegal);
 
     // Both entries should belong to the expected ISA
+    if (HWIntrinsicInfo::lookupIsa(isaRange.FirstId) != isa)
+    {
+        printf("HWIntrinsicInfo::lookupIsa(isaRange.FirstId):%i == isa:%i\n",
+               HWIntrinsicInfo::lookupIsa(isaRange.FirstId), isa);
+    }
     assert(HWIntrinsicInfo::lookupIsa(isaRange.FirstId) == isa);
     assert(HWIntrinsicInfo::lookupIsa(isaRange.LastId) == isa);
 
