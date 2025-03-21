@@ -699,7 +699,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(false)]
         public unsafe void InstanceBasedFunctionPointer(bool useExplicitThis)
         {
-            Func<MyClassWithGuidProperty, IntPtr, Guid> generatedMethodToCall = GenerateDynamicMethod(useExplicitThis);
+            Func<object, IntPtr, Guid> generatedMethodToCall = GenerateDynamicMethod(useExplicitThis);
 
             // Call the property getter through the dynamic method.
             IntPtr fn = typeof(MyClassWithGuidProperty).GetProperty(nameof(MyClassWithGuidProperty.MyGuid))!.GetGetMethod().MethodHandle.GetFunctionPointer();
@@ -707,12 +707,12 @@ namespace System.Reflection.Emit.Tests
             MyClassWithGuidProperty obj = new(guid);
             Assert.Equal(guid, generatedMethodToCall(obj, fn));
 
-            static Func<MyClassWithGuidProperty, IntPtr, Guid> GenerateDynamicMethod(bool useExplicitThis)
+            static Func<object, IntPtr, Guid> GenerateDynamicMethod(bool useExplicitThis)
             {
                 DynamicMethod dynamicMethod = new DynamicMethod(
                     "GetGuid",
                     returnType: typeof(Guid),
-                    parameterTypes: [typeof(MyClassWithGuidProperty), typeof(IntPtr)],
+                    parameterTypes: [typeof(object), typeof(IntPtr)],
                     typeof(object).Module,
                     skipVisibility: false);
 
@@ -723,7 +723,7 @@ namespace System.Reflection.Emit.Tests
                 if (useExplicitThis)
                 {
                     il.EmitCalli(OpCodes.Calli, CallingConventions.HasThis | CallingConventions.ExplicitThis,
-                        returnType: typeof(Guid), parameterTypes: [typeof(MyClassWithGuidProperty)], null);
+                        returnType: typeof(Guid), parameterTypes: [typeof(object)], null);
                 }
                 else
                 {
@@ -733,7 +733,7 @@ namespace System.Reflection.Emit.Tests
 
                 il.Emit(OpCodes.Ret);
 
-                return dynamicMethod.CreateDelegate<Func<MyClassWithGuidProperty, IntPtr, Guid>>();
+                return dynamicMethod.CreateDelegate<Func<object, IntPtr, Guid>>();
             }
         }
 

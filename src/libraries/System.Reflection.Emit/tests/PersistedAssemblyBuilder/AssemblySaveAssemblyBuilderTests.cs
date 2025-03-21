@@ -321,7 +321,7 @@ namespace System.Reflection.Emit.Tests
                 Assert.NotNull(generatedType);
                 MethodInfo generatedMethod = generatedType.GetMethod("GetGuid")!;
                 Assert.NotNull(generatedMethod);
-                var generatedMethodToCall = generatedMethod.CreateDelegate<Func<MyClassWithGuidProperty, IntPtr, Guid>>();
+                var generatedMethodToCall = generatedMethod.CreateDelegate<Func<object, IntPtr, Guid>>();
 
                 // Call the property getter through the generated method.
                 IntPtr fn = typeof(MyClassWithGuidProperty).GetProperty(nameof(MyClassWithGuidProperty.MyGuid))!.GetGetMethod().MethodHandle.GetFunctionPointer();
@@ -346,7 +346,7 @@ namespace System.Reflection.Emit.Tests
                     "GetGuid",
                     MethodAttributes.Public | MethodAttributes.Static,
                     typeof(Guid),
-                    [typeof(MyClassWithGuidProperty), typeof(IntPtr)]);
+                    [typeof(object), typeof(IntPtr)]);
 
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_0); // this
@@ -355,7 +355,7 @@ namespace System.Reflection.Emit.Tests
                 if (useExplicitThis)
                 {
                     il.EmitCalli(OpCodes.Calli, CallingConventions.HasThis | CallingConventions.ExplicitThis,
-                        returnType: typeof(Guid), parameterTypes: [typeof(MyClassWithGuidProperty)], null);
+                        returnType: typeof(Guid), parameterTypes: [typeof(object)], null);
                 }
                 else
                 {
