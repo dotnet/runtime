@@ -29,6 +29,9 @@
 Volatile<bool> PerfMap::s_enabled = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
+bool PerfMap::s_GroupStubsOfSameType = false;
+bool PerfMap::s_IndividualAllocationStubReporting = false;
+
 unsigned PerfMap::s_StubsMapped = 0;
 CrstStatic PerfMap::s_csPerfMap;
 
@@ -57,6 +60,18 @@ const char * PerfMap::InternalConstructPath()
     return TEMP_DIRECTORY_PATH;
 }
 
+void PerfMap::InitializeConfiguration()
+{
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapShowOptimizationTiers) != 0)
+    {
+        s_ShowOptimizationTiers = true;
+    }
+
+    DWORD granularity = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapStubGranularity);
+    s_GroupStubsOfSameType = (granularity & 1) != 1;
+    s_IndividualAllocationStubReporting = (granularity & 2) != 0;
+}
+
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
 {
     LIMITED_METHOD_CONTRACT;
@@ -81,10 +96,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 PAL_IgnoreProfileSignal(signalNum);
             }
 
-            if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapShowOptimizationTiers) != 0)
-            {
-                s_ShowOptimizationTiers = true;
-            }
+            InitializeConfiguration();
 
             int currentPid = GetCurrentProcessId();
             s_Current->OpenFileForPid(currentPid, basePath);
@@ -95,10 +107,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
         {
             PAL_PerfJitDump_Start(basePath);
 
-            if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapShowOptimizationTiers) != 0)
-            {
-                s_ShowOptimizationTiers = true;
-            }
+            InitializeConfiguration();
 
             s_enabled = true;
         }
@@ -379,11 +388,16 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 }
 
 // Log a set of stub to the map.
-void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize)
+void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, bool individualAllocation)
 {
     LIMITED_METHOD_CONTRACT;
 
     if (!s_enabled)
+    {
+        return;
+    }
+
+    if (individualAllocation != s_IndividualAllocationStubReporting)
     {
         return;
     }
@@ -402,7 +416,14 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
 
         SString name;
         // Build the map file line.
-        name.Printf("stub<%d> %s<%s>", ++(s_StubsMapped), stubType, stubOwner);
+        if (s_GroupStubsOfSameType)
+        {
+            name.Printf("stub %s<%s>", stubType, stubOwner);
+        }
+        else
+        {
+            name.Printf("stub<%d> %s<%s>", ++(s_StubsMapped), stubType, stubOwner);
+        }
         SString line;
         line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
 
@@ -434,4 +455,12 @@ void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, CHAR * pszSig, u
     pPEAssembly->GetMVID(&mvid);
     minipal_guid_as_string(mvid, pszSig, nSigSize);
 }
+
+void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
+{
+    WRAPPER_NO_CONTRACT;
+
+    PerfMap::LogStubs(__FUNCTION__, GetStubCodeBlockKindString(kind), (PCODE)start, size, false);
+}
+
 #endif // FEATURE_PERFMAP && !DACCESS_COMPILE

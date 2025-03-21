@@ -1995,6 +1995,11 @@ PCODE CreateDynamicHelperPrecode(LoaderAllocator *pAllocator, AllocMemTracker *p
     size_t size = sizeof(StubPrecode);
     StubPrecode *pPrecode = (StubPrecode *)pamTracker->Track(pAllocator->GetDynamicHelpersStubHeap()->AllocAlignedMem(size, 1));
     pPrecode->Init(pPrecode, DynamicHelperArg, pAllocator, PRECODE_DYNAMIC_HELPERS, DynamicHelper);
+
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pPrecode, size, true);
+#endif
+
     return ((Precode*)pPrecode)->GetEntryPoint();
 }
 
