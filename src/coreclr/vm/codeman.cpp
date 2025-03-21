@@ -1649,7 +1649,8 @@ enum JIT_LOAD_JIT_ID
 {
     JIT_LOAD_MAIN = 500,    // The "main" JIT. Normally, this is named "clrjit.dll". Start at a number that is somewhat uncommon (i.e., not zero or 1) to help distinguish from garbage, in process dumps.
     // 501 is JIT_LOAD_LEGACY on some platforms; please do not reuse this value.
-    JIT_LOAD_ALTJIT = 502   // An "altjit". By default, named something like "clrjit_<targetos>_<target_arch>_<host_arch>.dll". Used both internally, as well as externally for JIT CTP builds.
+    JIT_LOAD_ALTJIT = 502,   // An "altjit". By default, named something like "clrjit_<targetos>_<target_arch>_<host_arch>.dll". Used both internally, as well as externally for JIT CTP builds.
+    JIT_LOAD_INTERPRETER = 503 // The interpreter compilation phase. Named "clrinterpreter.dll".
 };
 
 enum JIT_LOAD_STATUS
@@ -3676,14 +3677,14 @@ BOOL InterpreterJitManager::LoadInterpreter()
 {
     STANDARD_VM_CONTRACT;
 
-    // If the JIT is already loaded, don't take the lock.
+    // If the interpreter is already loaded, don't take the lock.
     if (IsInterpreterLoaded())
         return TRUE;
 
     // Use m_interpreterLoadCritSec to ensure that the interpreter is loaded on one thread only
     CrstHolder chRead(&m_interpreterLoadCritSec);
 
-    // Did someone load the JIT before we got the lock?
+    // Did someone load the interpreter before we got the lock?
     if (IsInterpreterLoaded())
         return TRUE;
 
@@ -3692,7 +3693,7 @@ BOOL InterpreterJitManager::LoadInterpreter()
     ICorJitCompiler* newInterpreter = NULL;
     m_interpreter = NULL;
 
-    g_interpreterLoadData.jld_id = JIT_LOAD_MAIN;
+    g_interpreterLoadData.jld_id = JIT_LOAD_INTERPRETER;
     LPWSTR interpreterPath = NULL;
 #ifdef _DEBUG
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InterpreterPath, &interpreterPath));

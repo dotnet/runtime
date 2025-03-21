@@ -296,13 +296,6 @@ public:
         SUPPORTS_DAC;
         return pRealCodeHeader->phdrMDesc;
     }
-#if defined(FEATURE_GDBJIT)
-    VOID* GetCalledMethods()
-    {
-        SUPPORTS_DAC;
-        return pRealCodeHeader->pCalledMethods;
-    }
-#endif
     TADDR GetCodeStartAddress()
     {
         SUPPORTS_DAC;
@@ -2659,6 +2652,7 @@ public:
     virtual DWORD GetCodeType()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        // Interpreter-TODO: consider adding some extra flag for the interpreter
         return (miManaged | miIL);
     }
 
@@ -2923,7 +2917,6 @@ inline InterpreterCodeHeader * InterpreterJitManager::GetCodeHeaderFromStartAddr
 {
     LIMITED_METHOD_DAC_CONTRACT;
     _ASSERTE(methodStartAddress != (TADDR)NULL);
-    ARM_ONLY(_ASSERTE((methodStartAddress & THUMB_CODE) == 0));
     return dac_cast<PTR_InterpreterCodeHeader>(methodStartAddress - sizeof(InterpreterCodeHeader));
 }
 

@@ -702,11 +702,11 @@ protected:
     template<class TCodeHeader>
     void NibbleMapSet();
 
-    virtual void getEHinfo(
-                            CORINFO_METHOD_HANDLE ftn,              /* IN  */
-                            unsigned      EHnumber,                 /* IN */
-                            CORINFO_EH_CLAUSE* clause               /* OUT */
-                          ) override final;
+    void getEHinfo(
+                    CORINFO_METHOD_HANDLE ftn,              /* IN  */
+                    unsigned      EHnumber,                 /* IN */
+                    CORINFO_EH_CLAUSE* clause               /* OUT */
+                  ) override final;
 
     void setEHinfoWorker(
                           EE_ILEXCEPTION* pEHInfo,
@@ -769,8 +769,8 @@ public:
 
     void allocMem (AllocMemArgs *pArgs) override;
     void * allocGCInfo(size_t  size) override;
-    virtual void setEHcount (unsigned cEH) override;
-    virtual void setEHinfo (
+    void setEHcount (unsigned cEH) override;
+    void setEHinfo (
         unsigned      EHnumber,
         const CORINFO_EH_CLAUSE* clause
        ) override;
@@ -873,7 +873,7 @@ public:
         return m_fJumpStubOverflow;
     }
 
-    virtual BOOL JitAgain() override
+    BOOL JitAgain() override
     {
         LIMITED_METHOD_CONTRACT;
         return m_fJumpStubOverflow;
@@ -891,7 +891,7 @@ public:
         m_reserveForJumpStubs = value;
     }
 
-    virtual PatchpointInfo* GetPatchpointInfo() override
+    PatchpointInfo* GetPatchpointInfo() override
     {
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         return m_pPatchpointInfoFromJit;
@@ -901,7 +901,7 @@ public:
     }
 
 #else
-    virtual BOOL JitAgain() override
+    BOOL JitAgain() override
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
@@ -1074,8 +1074,8 @@ public:
 
     void allocMem(AllocMemArgs *pArgs) override;
     void * allocGCInfo(size_t  size) override;
-    virtual void setEHcount (unsigned cEH) override;
-    virtual void setEHinfo (
+    void setEHcount (unsigned cEH) override;
+    void setEHinfo (
         unsigned      EHnumber,
         const CORINFO_EH_CLAUSE* clause
        ) override;
