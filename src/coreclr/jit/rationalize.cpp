@@ -721,9 +721,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         case GT_GCPOLL:
         {
             // GCPOLL is essentially a no-op, we used it as a hint for fgCreateGCPoll
-            node->gtBashToNop();
+            node->gtBashToNOP();
             return Compiler::WALK_CONTINUE;
-            break;
         }
 
         case GT_COMMA:
