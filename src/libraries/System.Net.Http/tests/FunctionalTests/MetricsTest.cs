@@ -34,6 +34,7 @@ namespace System.Net.Http.Functional.Tests
             }
             else
             {
+                Assert.True(tags.Any(t => t.Key == name), $"Tag {name} not found in tags.");
                 object? actualValue = tags.Single(t => t.Key == name).Value;
                 Assert.Equal(value, (T)actualValue);
             }
@@ -936,7 +937,7 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJSOrFirefox))]
         public async Task RequestDuration_EnrichmentHandler_ContentLengthError_Recorded()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
