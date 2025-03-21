@@ -153,14 +153,16 @@ inline var_types HfaTypeFromElemKind(CorInfoHFAElemType kind)
         case CORINFO_HFA_ELEM_DOUBLE:
             return TYP_DOUBLE;
 #ifdef FEATURE_SIMD
-#ifdef TARGET_ARM64
-        case CORINFO_HFA_ELEM_VECTOR_VL:
-            return TYP_SIMDVL;
-#endif
         case CORINFO_HFA_ELEM_VECTOR64:
             return TYP_SIMD8;
         case CORINFO_HFA_ELEM_VECTOR128:
             return TYP_SIMD16;
+#ifdef TARGET_ARM64
+        case CORINFO_HFA_ELEM_VECTOR256:
+            return TYP_SIMD32;
+        case CORINFO_HFA_ELEM_VECTOR512:
+            return TYP_SIMD64;
+#endif // TARGET_ARM64
 #endif
         case CORINFO_HFA_ELEM_NONE:
             return TYP_UNDEF;
@@ -178,14 +180,16 @@ inline CorInfoHFAElemType HfaElemKindFromType(var_types type)
         case TYP_DOUBLE:
             return CORINFO_HFA_ELEM_DOUBLE;
 #ifdef FEATURE_SIMD
-#ifdef TARGET_ARM64
-        case TYP_SIMDVL:
-            return CORINFO_HFA_ELEM_VECTOR_VL;
-#endif
         case TYP_SIMD8:
             return CORINFO_HFA_ELEM_VECTOR64;
         case TYP_SIMD16:
             return CORINFO_HFA_ELEM_VECTOR128;
+#ifdef TARGET_ARM64
+        case TYP_SIMD32:
+            return CORINFO_HFA_ELEM_VECTOR256;
+        case TYP_SIMD64:
+            return CORINFO_HFA_ELEM_VECTOR512;
+#endif
 #endif
         case TYP_UNDEF:
             return CORINFO_HFA_ELEM_NONE;
@@ -8223,7 +8227,7 @@ public:
         assert(type != TYP_STRUCT);
         // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
         // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
-        return ((type == TYP_SIMD16) || (type == TYP_SIMD12) || (type == TYP_SIMDVL) || (type == TYP_SIMD32) || (type == TYP_SIMD64));
+        return ((type == TYP_SIMD16) || (type == TYP_SIMD12) || (type == TYP_SIMD32) || (type == TYP_SIMD64));
     }
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #error("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE")
@@ -9382,12 +9386,6 @@ public:
         {
             simdType = TYP_SIMD16;
         }
-#if defined(TARGET_ARM64)
-        else if (size == compVectorTLength)
-        {
-            simdType = TYP_SIMDVL;
-        }
-#endif // TARGET_ARM64
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         else if (size == 32)
         {

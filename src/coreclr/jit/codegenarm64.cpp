@@ -5423,7 +5423,7 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
     regNumber tgtReg = node->GetRegNum();
 #ifdef TARGET_ARM64
     // TODO-VL: Write a helper to do this check for LclVars*, GenTree*, etc.
-    if (op1->TypeIs(TYP_SIMDVL))
+    if (varTypeIsSIMDVL(op1->TypeGet()))
     {
         // Until we custom ABI for SVE, we will just store entire contents of Z* registers
         // on stack. If we don't do it, we will need multiple free registers to save the
@@ -5489,7 +5489,7 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
     assert((varSize == 16) || (varSize == Compiler::compVectorTLength));
 
     regNumber srcReg = node->GetRegNum();
-    assert((srcReg != REG_NA) || (node->TypeIs(TYP_SIMDVL)));
+    assert((srcReg != REG_NA) || (varTypeIsSIMDVL(node->TypeGet())));
 
     regNumber lclVarReg = genConsumeReg(lclNode);
     assert(lclVarReg != REG_NA);
@@ -5503,7 +5503,7 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
 
 #ifdef TARGET_ARM64
         // TODO-VL: Write a helper to do this check for LclVars*, GenTree*, etc.
-        if (TypeGet(op1) == TYP_SIMDVL)
+        if (varTypeIsSIMDVL(op1->TypeGet()))
         {
             // Until we custom ABI for SVE, we will just store entire contents of Z* registers
             // on stack. If we don't do it, we will need multiple free registers to save the

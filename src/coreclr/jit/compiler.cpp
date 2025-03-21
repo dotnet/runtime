@@ -493,10 +493,10 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
 #if defined(TARGET_ARM64)
     Compiler::compVectorTLength = 32; // TODO-VL: This should come from runtime itself
-    genTypeSizes[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength;
-    emitTypeSizes[TYP_SIMDVL]     = (unsigned short)Compiler::compVectorTLength;
-    emitTypeActSz[TYP_SIMDVL]     = EA_SCALABLE;
-    genTypeStSzs[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength / sizeof(int);
+    //genTypeSizes[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength;
+    //emitTypeSizes[TYP_SIMDVL]     = (unsigned short)Compiler::compVectorTLength;
+    //emitTypeActSz[TYP_SIMDVL]     = EA_SCALABLE;
+    //genTypeStSzs[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength / sizeof(int);
 #endif // TARGET_ARM64
 }
 
@@ -687,7 +687,7 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
         if (structSize == compVectorTLength)
         {
             var_types hfaType = GetHfaType(clsHnd);
-            return hfaType == TYP_SIMDVL ? TYP_SIMDVL : TYP_UNKNOWN;
+            return varTypeIsSIMDVL(hfaType) ? hfaType : TYP_UNKNOWN;
         }
 #endif
     }
@@ -918,7 +918,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     if (canReturnInRegister && (useType == TYP_UNKNOWN) &&
     ((structSize <= MAX_PASS_SINGLEREG_BYTES)
 #ifdef TARGET_ARM64
-        || ((GetHfaType(clsHnd) == TYP_SIMDVL) && (structSize == compVectorTLength)))
+         || ((varTypeIsSIMDVL(GetHfaType(clsHnd))) && (structSize == compVectorTLength)))
 #endif
         )
     {

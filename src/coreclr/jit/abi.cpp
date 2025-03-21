@@ -123,14 +123,16 @@ var_types ABIPassingSegment::GetRegisterType() const
 #ifdef FEATURE_SIMD
             case 16:
                 return TYP_SIMD16;
-#endif
-            default:
 #ifdef TARGET_ARM64
-                if (Size == Compiler::compVectorTLength)
-                {
-                    return TYP_SIMDVL;
-                }
-#endif
+            case 32:
+                assert(Size == Compiler::compVectorTLength);
+                return TYP_SIMD32;
+            case 64:
+                assert(Size == Compiler::compVectorTLength);
+                return TYP_SIMD64;
+#endif // TARGET_ARM64
+#endif // FEATURE_SIMD
+            default:
                 assert(!"Unexpected size for floating point register");
                 return TYP_UNDEF;
         }
