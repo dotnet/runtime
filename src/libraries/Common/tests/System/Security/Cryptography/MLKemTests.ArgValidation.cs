@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Tests
                 MLKem.ImportPrivateSeed(algorithm, seed.AsSpan()));
 
             AssertExtensions.Throws<ArgumentException>("source", () =>
-                MLKem.ImportPrivateSeed(algorithm, seed.AsSpan(0..^2)));
+                MLKem.ImportPrivateSeed(algorithm, seed.AsSpan(0, seed.Length - 2)));
 
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 MLKem.ImportPrivateSeed(algorithm, ReadOnlySpan<byte>.Empty));
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.Tests
                 MLKem.ImportDecapsulationKey(algorithm, destination.AsSpan()));
 
             AssertExtensions.Throws<ArgumentException>("source", () =>
-                MLKem.ImportDecapsulationKey(algorithm, destination.AsSpan(0..^2)));
+                MLKem.ImportDecapsulationKey(algorithm, destination.AsSpan(0, destination.Length - 2)));
 
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 MLKem.ImportDecapsulationKey(algorithm, ReadOnlySpan<byte>.Empty));
@@ -145,7 +145,7 @@ namespace System.Security.Cryptography.Tests
                 MLKem.ImportEncapsulationKey(algorithm, destination.AsSpan()));
 
             AssertExtensions.Throws<ArgumentException>("source", () =>
-                MLKem.ImportEncapsulationKey(algorithm, destination.AsSpan(0..^2)));
+                MLKem.ImportEncapsulationKey(algorithm, destination.AsSpan(0, destination.Length - 2)));
 
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 MLKem.ImportEncapsulationKey(algorithm, ReadOnlySpan<byte>.Empty));
