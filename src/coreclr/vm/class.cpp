@@ -1788,10 +1788,18 @@ CorInfoHFAElemType MethodTable::GetHFAType()
             {
                 return CORINFO_HFA_ELEM_VECTOR128;
             }
+            else if (vectorSize == 32)
+            {
+                return CORINFO_HFA_ELEM_VECTOR256;
+            }
+            else if (vectorSize == 64)
+            {
+                return CORINFO_HFA_ELEM_VECTOR512;
+            }
             else
             {
-                assert ((vectorSize % 16) == 0);
-                return CORINFO_HFA_ELEM_VECTOR_VL;
+                assert ("Invalid vectorSize");
+                return CORINFO_HFA_ELEM_VECTOR128;
             }
         }
 
@@ -1905,10 +1913,20 @@ EEClass::CheckForHFA()
                     {
                         fieldHFAType = CORINFO_HFA_ELEM_VECTOR128;
                     }
+#ifdef TARGET_ARM64                    
+                    else if (thisElemSize == 32)
+                    {
+                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR256;
+                    }
+                    else if (thisElemSize == 64)
+                    {
+                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR512;
+                    }
+#endif // TARGET_ARM64
                     else
                     {
-                        assert ((thisElemSize % 16) == 0);
-                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR_VL;
+                        assert ("Invalid element size %u", thisElemSize);
+                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR128;
                     }
                 }
                 else
@@ -1980,9 +1998,12 @@ EEClass::CheckForHFA()
     case CORINFO_HFA_ELEM_VECTOR128:
         elemSize = 16;
         break;
-    case CORINFO_HFA_ELEM_VECTOR_VL:
-        elemSize = g_sve_length; //TODO-VL: Need to cache it
+    case CORINFO_HFA_ELEM_VECTOR256:
+        elemSize = 32;
         break;
+    case CORINFO_HFA_ELEM_VECTOR512:
+        elemSize = 64;
+        break;        
 #endif
     default:
         // ELEMENT_TYPE_END

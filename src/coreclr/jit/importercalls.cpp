@@ -10653,38 +10653,45 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                             uint32_t size = getVectorTByteLength();
                             assert((size == 16) || (size == 32) || (size == 64));
+                            bool useAgnosticVL = false;
+#ifdef TARGET_ARM64
+                            useAgnosticVL = compExactlyDependsOn(InstructionSet_Sve_Arm64) && (size > 16);
+#endif
 
                             const char* lookupClassName = className;
 
-                            switch (size)
+                            if (!useAgnosticVL)
                             {
-                                case 16:
+                                switch (size)
                                 {
-                                    lookupClassName = isVectorT ? "Vector128`1" : "Vector128";
-                                    break;
-                                }
+                                    case 16:
+                                    {
+                                        lookupClassName = isVectorT ? "Vector128`1" : "Vector128";
+                                        break;
+                                    }
 
-                                case 32:
-                                {
-                                    lookupClassName = isVectorT ? "Vector256`1" : "Vector256";
-                                    break;
-                                }
+                                    case 32:
+                                    {
+                                        lookupClassName = isVectorT ? "Vector256`1" : "Vector256";
+                                        break;
+                                    }
 
-                                case 64:
-                                {
-                                    lookupClassName = isVectorT ? "Vector512`1" : "Vector512";
-                                    break;
-                                }
+                                    case 64:
+                                    {
+                                        lookupClassName = isVectorT ? "Vector512`1" : "Vector512";
+                                        break;
+                                    }
 
-                                default:
-                                {
-                                    unreached();
+                                    default:
+                                    {
+                                        unreached();
+                                    }
                                 }
                             }
 
                             const char* lookupMethodName = methodName;
 
-                            if ((strncmp(methodName, "As", 2) == 0) && (methodName[2] != '\0'))
+                            if (!useAgnosticVL && ((strncmp(methodName, "As", 2) == 0) && (methodName[2] != '\0')))
                             {
                                 if (strncmp(methodName + 2, "Vector", 6) == 0)
                                 {

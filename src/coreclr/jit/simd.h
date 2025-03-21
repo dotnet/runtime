@@ -359,6 +359,8 @@ static_assert_no_msg(sizeof(simdmask_t) == 8);
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 typedef simd64_t simd_t;
+#else
+typedef simd16_t simd_t;
 #endif
 
 inline bool IsUnaryBitwiseOperation(genTreeOps oper)

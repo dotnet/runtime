@@ -866,6 +866,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                         // Sha1_Arm64
     { NI_Illegal, NI_Illegal },                         // Sha256_Arm64
     { NI_Illegal, NI_Illegal },                         // Sve_Arm64
+    { FIRST_NI_Vector, LAST_NI_Vector },
 #else
 #error Unsupported platform
 #endif

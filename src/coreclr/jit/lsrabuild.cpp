@@ -1525,7 +1525,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
                 varInterval->isPartiallySpilled = true;
                 pos->skipSaveRestore            = blockAlwaysReturn;
                 pos->liveVarUpperSave           = VarSetOps::IsMember(compiler, liveLargeVectors, varIndex);
-                pos->regOptional = forceRegOptional;
+                pos->regOptional                = forceRegOptional;
             }
         }
     }
