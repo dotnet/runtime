@@ -375,6 +375,7 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void ExportPrivateSeed(Span<byte> destination)
         {
             if (destination.Length != Algorithm.PrivateSeedSizeInBytes)
@@ -386,6 +387,26 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
             ExportPrivateSeedCore(destination);
+        }
+
+        /// <summary>
+        ///   Exports the private seed.
+        /// </summary>
+        /// <returns>
+        ///   The private seed.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>The current instance cannot export a seed.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] ExportPrivateSeed()
+        {
+            ThrowIfDisposed();
+            byte[] seed = new byte[Algorithm.PrivateSeedSizeInBytes];
+            ExportPrivateSeedCore(seed);
+            return seed;
         }
 
         /// <summary>
