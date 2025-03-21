@@ -721,8 +721,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         case GT_GCPOLL:
         {
             // GCPOLL is essentially a no-op, we used it as a hint for fgCreateGCPoll
-            BlockRange().Delete(comp, m_block, node);
-            node = comp->gtNewNothingNode();
+            node->gtBashToNop();
+            return Compiler::WALK_CONTINUE;
             break;
         }
 

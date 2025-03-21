@@ -342,7 +342,6 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 
                 // These do not need conditional execution.
                 case GT_NOP:
-                case GT_GCPOLL:
                     break;
 
                 // Cannot optimise this block.
