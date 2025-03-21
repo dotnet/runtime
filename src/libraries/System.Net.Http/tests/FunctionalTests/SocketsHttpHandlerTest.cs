@@ -1304,7 +1304,7 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        public void SocketsHttpHandler_UseDefaultCredentials_OneRequestOnlyWhen401()
+        public async Task SocketsHttpHandler_UseDefaultCredentials_OneRequestOnlyWhen401()
         {
             var requestCount = 0;
             await LoopbackServer.CreateClientAndServerAsync(
