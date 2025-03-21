@@ -178,8 +178,10 @@ namespace System.Security.Cryptography.Tests
                 new byte[algorithm.SharedSecretSizeInBytes - 1]));
 
             AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Encapsulate(
-                new byte[algorithm.CiphertextSizeInBytes],
-                []));
+                new byte[algorithm.SharedSecretSizeInBytes + 1]));
+
+            AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Encapsulate(
+                new byte[algorithm.SharedSecretSizeInBytes - 1]));
         }
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
@@ -335,6 +337,9 @@ namespace System.Security.Cryptography.Tests
 
             Assert.Throws<ObjectDisposedException>(() =>  kem.Encapsulate(
                 out _));
+
+            Assert.Throws<ObjectDisposedException>(() =>  kem.Encapsulate(
+                new byte[MLKemAlgorithm.MLKem512.SharedSecretSizeInBytes]));
 
             Assert.Throws<ObjectDisposedException>(() =>  kem.Decapsulate(
                 new byte[MLKemAlgorithm.MLKem512.CiphertextSizeInBytes],

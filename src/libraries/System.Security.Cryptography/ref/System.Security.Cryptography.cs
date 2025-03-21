@@ -1808,6 +1808,7 @@ namespace System.Security.Cryptography
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public byte[] Encapsulate(out byte[] sharedSecret) { throw null; }
+        public byte[] Encapsulate(System.Span<byte> sharedSecret) { throw null; }
         public void Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
         public void Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret, out int ciphertextBytesWritten, out int sharedSecretBytesWritten) { throw null; }
         protected abstract void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret);

@@ -207,6 +207,38 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Creates an encapsulation ciphertext and shared secret, writing the shared secret into a buffer.
+        /// </summary>
+        /// <param name="sharedSecret">
+        ///   When this method returns, the shared secret.
+        /// </param>
+        /// <returns>
+        ///   The ciphertext.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="sharedSecret" /> is not the correct size.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>An error occurred during encapsulation.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] Encapsulate(Span<byte> sharedSecret)
+        {
+            ThrowIfDisposed();
+
+            if (sharedSecret.Length != Algorithm.SharedSecretSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.SharedSecretSizeInBytes),
+                    nameof(sharedSecret));
+            }
+
+            byte[] ciphertext = new byte[Algorithm.CiphertextSizeInBytes];
+            EncapsulateCore(ciphertext, sharedSecret);
+            return ciphertext;
+        }
+
+        /// <summary>
         ///   When overridden in a derived class, creates an encapsulation ciphertext and shared secret, writing them
         ///   into the provided buffers.
         /// </summary>
