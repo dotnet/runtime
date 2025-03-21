@@ -16,6 +16,7 @@
     <_targetRidPlatformIndex>$(TargetRid.LastIndexOf('-'))</_targetRidPlatformIndex>
     <TargetArch>$(TargetRid.Substring($(_targetRidPlatformIndex)).TrimStart('-'))</TargetArch>
     <TargetOS>$(TargetRid.Substring(0, $(_targetRidPlatformIndex)))</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == 'win'">windows</TargetOS>
 
     <_hostRidPlatformIndex>$(_hostRid.LastIndexOf('-'))</_hostRidPlatformIndex>
     <_hostArch>$(_hostRid.Substring($(_hostRidPlatformIndex)).TrimStart('-'))</_hostArch>
