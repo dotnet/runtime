@@ -700,7 +700,7 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_PreferredVectorBitWidth,      W("PreferredV
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         0, "Allows Base+ hardware intrinsics to be disabled")
 #else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         1, "Allows Base+ hardware intrinsics to be disabled")
-#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAES,                    W("EnableAES"),                 1, "Allows AES+ hardware intrinsics to be disabled")
