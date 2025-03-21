@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { GlobalObjects } from "../types/internal";
+import type { GlobalObjects, MonoMethod } from "../types/internal";
 import type { CharPtr, VoidPtr } from "../types/emscripten";
 
-import { diagnosticHelpers, setRuntimeGlobalsImpl } from "./globals";
+import { diagnosticHelpers, runtimeHelpers, setRuntimeGlobalsImpl } from "./globals";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export function setRuntimeGlobals (globalObjects: GlobalObjects): void {
