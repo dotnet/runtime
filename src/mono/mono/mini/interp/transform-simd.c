@@ -1014,8 +1014,21 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	const char *cmethod_name = cmethod->name;
 	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod_name);
 	// We don't early-out for an unrecognized method, we will generate an NIY later
+	MonoClass *vector_klass;
 
-	MonoClass *vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+	bool is_packedsimd = strcmp (m_class_get_name (cmethod->klass), "PackedSimd") == 0;
+	if (is_packedsimd) {
+		vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+	} else {
+		if (csignature->ret->type == MONO_TYPE_GENERICINST) {
+			vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+		} else if (csignature->param_count && csignature->params [0]->type == MONO_TYPE_GENERICINST) {
+			vector_klass = mono_class_from_mono_type_internal (csignature->params [0]);
+		} else {
+			return FALSE;
+		}
+	}
+
 	MonoTypeEnum atype;
 	int vector_size = -1, arg_size, scalar_arg;
 	bool is_packedsimd = strcmp (m_class_get_name (cmethod->klass), "PackedSimd") == 0;
