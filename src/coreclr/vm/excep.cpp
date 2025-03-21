@@ -4756,8 +4756,6 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 #pragma code_seg(pop, uef)
 #endif // !TARGET_UNIX
 
-void PrintStackTraceToStdout();
-
 static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
@@ -4788,17 +4786,17 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
             wcsncpy_s(buf, buf_size, SZ_UNHANDLED_EXCEPTION, SZ_UNHANDLED_EXCEPTION_CHARLEN);
         }
 
-        PrintToStdErrW(buf);
-        PrintToStdErrA(" ");
+        SString message(buf);
+        SString exceptionMessage = GetExceptionMessageWrapper(pThread, throwable);
 
-        SString message = GetExceptionMessageWrapper(pThread, throwable);
-
-        if (!message.IsEmpty())
+        message.Append(W(" "));
+        if (!exceptionMessage.IsEmpty())
         {
-            PrintToStdErrW(message);
+            message.Append(exceptionMessage);
         }
+        message.Append(W("\n"));
 
-        PrintToStdErrA("\n");
+        PrintToStdErrW(message.GetUnicode());
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
         // Send the log to Windows Event Log
@@ -5005,10 +5003,13 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
             EX_CATCH
             {
                 LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
-                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf, buf_size);
-                PrintToStdErrA("\n   ");
+
+                _ASSERTE(buf_size > 6);
+                wcscpy_s(buf, buf_size, W("\n   "));
+                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
+                wcscat_s(buf, buf_size, W("\n"));
+
                 PrintToStdErrW(buf);
-                PrintToStdErrA("\n");
             }
             EX_END_CATCH(SwallowAllExceptions);
         }
