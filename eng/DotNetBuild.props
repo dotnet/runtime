@@ -1,6 +1,6 @@
 <!-- When altering this file, include @dotnet/product-construction as a reviewer. -->
 
-<Project>
+<Project TreatAsLocalProperty="TargetOS;TargetRid">
 
   <PropertyGroup>
     <GitHubRepositoryName>runtime</GitHubRepositoryName>
