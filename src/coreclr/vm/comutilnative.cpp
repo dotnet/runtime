@@ -554,13 +554,14 @@ extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length)
     memmove(dst, src, length);
 }
 
-extern "C" void QCALLTYPE Buffer_BulkMoveWithWriteBarrier(void *dst, void *src, size_t length)
+FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    FCALL_CONTRACT;
 
-    if (dst != src && length != 0)
-        InlinedMemmoveGCRefsHelper(dst, src, length);
+    if (dst != src && byteCount != 0)
+        InlinedMemmoveGCRefsHelper(dst, src, byteCount);
 }
+FCIMPLEND
 
 //
 // GCInterface

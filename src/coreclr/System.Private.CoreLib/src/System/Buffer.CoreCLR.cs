@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System
 {
@@ -16,9 +15,8 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
         private static unsafe partial void __Memmove(byte* dest, byte* src, nuint len);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_BulkMoveWithWriteBarrier")]
-        [SuppressGCTransition]
-        private static partial void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
 
         // Used by ilmarshalers.cpp
         internal static unsafe void Memcpy(byte* dest, byte* src, int len)

@@ -12276,6 +12276,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             // These do not represent values.
             case GT_NO_OP:
             case GT_NOP:
+            case GT_GCPOLL:
             case GT_JMP:   // Control flow
             case GT_LABEL: // Control flow
 #if defined(FEATURE_EH_WINDOWS_X86)

@@ -2670,6 +2670,7 @@ AGAIN:
             case GT_NOP:
             case GT_LABEL:
             case GT_SWIFT_ERROR:
+            case GT_GCPOLL:
                 return true;
 
             default:
@@ -5239,6 +5240,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 break;
 
             case GT_NOP:
+            case GT_GCPOLL:
                 level  = 0;
                 costEx = 0;
                 costSz = 0;
@@ -6584,6 +6586,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_IL_OFFSET:
         case GT_NOP:
         case GT_SWIFT_ERROR:
+        case GT_GCPOLL:
             return false;
 
         // Standard unary operators
@@ -6912,6 +6915,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_CALL:
             return true;
 
+        case GT_GCPOLL:
         case GT_KEEPALIVE:
             return true;
 
@@ -7243,6 +7247,7 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_MEMORYBARRIER:
         case GT_KEEPALIVE:
         case GT_SWIFT_ERROR:
+        case GT_GCPOLL:
             return true;
 
         case GT_CALL:
@@ -9430,6 +9435,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_NOP:
             case GT_LABEL:
             case GT_SWIFT_ERROR:
+            case GT_GCPOLL:
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
 
@@ -10201,6 +10207,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_IL_OFFSET:
         case GT_NOP:
         case GT_SWIFT_ERROR:
+        case GT_GCPOLL:
             m_state = -1;
             return;
 
@@ -12349,6 +12356,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_PINVOKE_PROLOG:
         case GT_JMPTABLE:
         case GT_SWIFT_ERROR:
+        case GT_GCPOLL:
             break;
 
         case GT_RET_EXPR:
