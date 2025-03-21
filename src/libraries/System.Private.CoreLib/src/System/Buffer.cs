@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System
 {
@@ -178,9 +179,14 @@ namespace System
         internal static void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
         {
             if (byteCount <= BulkMoveWithWriteBarrierChunk)
+            {
                 __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+                Thread.FastPollGC();
+            }
             else
+            {
                 _BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+            }
         }
 
         // Non-inlinable wrapper around the loop for copying large blocks in chunks
@@ -200,6 +206,7 @@ namespace System
                 {
                     byteCount -= BulkMoveWithWriteBarrierChunk;
                     __BulkMoveWithWriteBarrier(ref destination, ref source, BulkMoveWithWriteBarrierChunk);
+                    Thread.FastPollGC();
                     destination = ref Unsafe.AddByteOffset(ref destination, BulkMoveWithWriteBarrierChunk);
                     source = ref Unsafe.AddByteOffset(ref source, BulkMoveWithWriteBarrierChunk);
                 }
@@ -212,10 +219,12 @@ namespace System
                 {
                     byteCount -= BulkMoveWithWriteBarrierChunk;
                     __BulkMoveWithWriteBarrier(ref Unsafe.AddByteOffset(ref destination, byteCount), ref Unsafe.AddByteOffset(ref source, byteCount), BulkMoveWithWriteBarrierChunk);
+                    Thread.FastPollGC();
                 }
                 while (byteCount > BulkMoveWithWriteBarrierChunk);
             }
             __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+            Thread.FastPollGC();
         }
 
 #endif // !MONO

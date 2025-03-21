@@ -718,6 +718,14 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
             break;
 
+        case GT_GCPOLL:
+        {
+            // GCPOLL is essentially a no-op, we used it as a hint for fgCreateGCPoll
+            BlockRange().Delete(comp, m_block, node);
+            node = comp->gtNewNothingNode();
+            break;
+        }
+
         case GT_COMMA:
         {
             GenTree*           op1         = node->gtGetOp1();

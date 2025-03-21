@@ -1908,6 +1908,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_COLON:
         case GT_QMARK:
         case GT_NOP:
+        case GT_GCPOLL:
         case GT_RETURN:
             return false; // Currently the only special nodes that we hit
                           // that we know that we don't want to CSE
