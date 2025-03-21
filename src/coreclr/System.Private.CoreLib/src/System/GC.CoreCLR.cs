@@ -347,17 +347,16 @@ namespace System
         // Indicates that the system should not call the Finalize() method on
         // an object that would normally require this call.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _SuppressFinalize(object o);
+        private static extern void SuppressFinalizeInternal(object o);
 
         public static unsafe void SuppressFinalize(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            if (RuntimeHelpers.GetMethodTable(obj)->HasFinalizer)
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+            if (pMT->HasFinalizer)
             {
-                // SuppressFinalize is a no-op if the object doesn't have a finalizer.
-                // We don't need to call _SuppressFinalize in that case.
-                _SuppressFinalize(obj);
+                SuppressFinalizeInternal(obj);
             }
         }
 
