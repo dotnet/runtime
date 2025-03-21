@@ -1302,6 +1302,36 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public void SocketsHttpHandler_UseDefaultCredentials_OneRequestOnlyWhen401()
+        {
+            var requestCount = 0;
+            await LoopbackServer.CreateClientAndServerAsync(
+                async url =>
+                {
+                    var handler = new SocketsHttpHandler();
+                    handler.Credentials = CredentialCache.DefaultCredentials;
+
+                    using (var invoker = new HttpMessageInvoker(handler))
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        var response = await invoker.SendAsync(request, CancellationToken.None);
+                        Assert.Equal(401, response.StatusCode);
+                    }
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        requestCount++;
+                        await connection.ReadRequestHeaderAsync();
+                        await connection.WriteStringAsync("HTTP/1.1 401 Unauthorized\r\n\r\n");
+                    });
+                });
+
+            Assert.Equal(1, requestCount);
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
