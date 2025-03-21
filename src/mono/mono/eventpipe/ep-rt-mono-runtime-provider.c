@@ -1340,7 +1340,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 }
 
 static void
-method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
+sample_current_thread_stack_trace ()
 {
 	MonoThreadInfo *thread_info = mono_thread_info_current ();
 	SampleProfileStackWalkData stack_walk_data;
@@ -1348,7 +1348,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 	THREAD_INFO_TYPE adapter = { { 0 } };
 
 	data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
-	data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&ctx->context);
+	data->thread_ip = 0;
 	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
 	data->stack_walk_data.stack_contents = &data->stack_contents;
 	data->stack_walk_data.top_frame = true;
@@ -1357,7 +1357,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 	data->stack_walk_data.runtime_invoke_frame = false;
 	ep_stack_contents_reset (&data->stack_contents);
 
-	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, &ctx->context, MONO_UNWIND_NONE, &stack_walk_data);
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, NULL, MONO_UNWIND_NONE, &stack_walk_data);
 	if (data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && (data->stack_walk_data.safe_point_frame || data->stack_walk_data.runtime_invoke_frame)) {
 		data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
 	}
@@ -1376,13 +1376,108 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 	}
 }
 
+static double desired_sample_interval_ms;
+
+static double last_sample_time;
+static int prev_skips_per_period;
+static int skips_per_period;
+static int sample_skip_counter;
+
+#ifdef HOST_BROWSER
+double mono_wasm_profiler_now ();
+static double profiler_now ()
+{
+	return mono_wasm_profiler_now ();
+}
+#else
+#error "Not implemented"
+#endif
+
+static bool should_record_sample ()
+{
+	if (sample_skip_counter < skips_per_period) {
+		return FALSE;
+	}
+
+	// timer resolution in non-isolated contexts: 100 microseconds (decimal number)
+	double now = profiler_now ();
+	double ms_since_last_sample = now - last_sample_time;
+
+	if (desired_sample_interval_ms > 0 && last_sample_time != 0) {
+		// recalculate ideal number of skips per period
+		double skips_per_ms = ((double)sample_skip_counter) / ms_since_last_sample;
+		double newskips_per_period = (skips_per_ms * ((double)desired_sample_interval_ms));
+		skips_per_period = ((newskips_per_period + ((double)sample_skip_counter) + ((double)prev_skips_per_period)) / 3);
+		prev_skips_per_period = sample_skip_counter;
+	} else {
+		skips_per_period = 0;
+	}
+	last_sample_time = now;
+	sample_skip_counter = 0;
+
+	return TRUE;
+}
+
+static void
+method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
+{
+	if (should_record_sample ()) {
+		sample_current_thread_stack_trace ();
+	}
+}
+
+static void
+method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
+{
+	if (should_record_sample ()) {
+		sample_current_thread_stack_trace ();
+	}
+}
+
+static void
+method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
+{
+	if (should_record_sample ()) {
+		sample_current_thread_stack_trace ();
+	}
+}
+
+static void
+method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
+{
+	if (should_record_sample ()) {
+		sample_current_thread_stack_trace ();
+	}
+}
+
+static void
+tail_call (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
+{
+	if (should_record_sample ()) {
+		sample_current_thread_stack_trace ();
+	}
+}
+
+#ifdef HOST_BROWSER
+int mono_wasm_instrument_method ();
+
 static MonoProfilerCallInstrumentationFlags
 method_filter (MonoProfiler *prof, MonoMethod *method)
 {
-	// TODO add more instrumentation, something like MINT_SDB_SEQ_POINT
-	return MONO_PROFILER_CALL_INSTRUMENTATION_ENTER;
+	if (!mono_wasm_instrument_method (method)){
+		return MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
+	}
+
+	return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
+			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
+			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
+			MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL |
+			MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
 }
 
+#else
+#error "Not implemented"
+#endif
 
 void
 ep_rt_mono_sampling_provider_component_init (void)
@@ -1404,17 +1499,33 @@ ep_rt_mono_sampling_provider_component_fini (void)
 void
 ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
+	desired_sample_interval_ms = 5;// ms
+
 	current_sampling_event = sampling_event;
 	current_sampling_thread = ep_rt_thread_get_handle ();
 	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
+
+	last_sample_time = 0;
+	prev_skips_per_period = 1;
+	skips_per_period = 1;
+	sample_skip_counter = 1;
+
+	mono_profiler_set_method_samplepoint_callback (_ep_rt_mono_sampling_profiler_provider, method_samplepoint);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, method_enter);
+	mono_profiler_set_method_leave_callback (_ep_rt_mono_sampling_profiler_provider, method_leave);
+	mono_profiler_set_method_tail_call_callback (_ep_rt_mono_sampling_profiler_provider, tail_call);
+	mono_profiler_set_method_exception_leave_callback (_ep_rt_mono_sampling_profiler_provider, method_exc_leave);
 }
 
 void
 ep_rt_mono_sample_profiler_disabled (void)
 {
 	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
+	mono_profiler_set_method_samplepoint_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+	mono_profiler_set_method_leave_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+	mono_profiler_set_method_tail_call_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+	mono_profiler_set_method_exception_leave_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
 }
 
 #endif // PERFTRACING_DISABLE_THREADS

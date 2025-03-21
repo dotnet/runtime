@@ -641,7 +641,9 @@ disable_holding_lock (
 		// been emitted.
 		ep_session_write_sequence_point_unbuffered (session);
 
+#ifndef PERFTRACING_DISABLE_THREADS
 		ep_session_free (session);
+#endif // PERFTRACING_DISABLE_THREADS
 
 		// Providers can't be deleted during tracing because they may be needed when serializing the file.
 		// Allow delete deferred providers to accumulate to mitigate potential use-after-free should
