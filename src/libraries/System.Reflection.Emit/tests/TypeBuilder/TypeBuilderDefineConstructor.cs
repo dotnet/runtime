@@ -27,7 +27,7 @@ namespace System.Reflection.Emit.Tests
 
             // Ignores any CallingConventions, sets to CallingConventions.Standard
             yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.Any };
-            yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.ExplicitThis };
+            yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.ExplicitThis | CallingConventions.HasThis };
             yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.HasThis };
             yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.Standard };
             yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.VarArgs };

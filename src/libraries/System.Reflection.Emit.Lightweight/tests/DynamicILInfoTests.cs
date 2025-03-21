@@ -695,7 +695,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [InlineData(true)] // todo: this is failing
+        [InlineData(true)]
         [InlineData(false)]
         public unsafe void InstanceBasedFunctionPointer(bool useExplicitThis)
         {
@@ -733,7 +733,7 @@ namespace System.Reflection.Emit.Tests
 
                 il.Emit(OpCodes.Ret);
 
-                return (Func<MyClassWithGuidProperty, IntPtr, Guid>)dynamicMethod.CreateDelegate(typeof(Func<MyClassWithGuidProperty, IntPtr, Guid>));
+                return dynamicMethod.CreateDelegate<Func<MyClassWithGuidProperty, IntPtr, Guid>>();
             }
         }
 

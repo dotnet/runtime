@@ -304,7 +304,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [InlineData(true)] // todo: this is failing
+        [InlineData(true)] 
         [InlineData(false)]
         public unsafe void AssemblyWithInstanceBasedFunctionPointer(bool useExplicitThis)
         {
@@ -321,7 +321,7 @@ namespace System.Reflection.Emit.Tests
                 Assert.NotNull(generatedType);
                 MethodInfo generatedMethod = generatedType.GetMethod("GetGuid")!;
                 Assert.NotNull(generatedMethod);
-                Func<MyClassWithGuidProperty, IntPtr, Guid> generatedMethodToCall = generatedMethod.CreateDelegate<Func<MyClassWithGuidProperty, IntPtr, Guid>>();
+                var generatedMethodToCall = generatedMethod.CreateDelegate<Func<MyClassWithGuidProperty, IntPtr, Guid>>();
 
                 // Call the property getter through the generated method.
                 IntPtr fn = typeof(MyClassWithGuidProperty).GetProperty(nameof(MyClassWithGuidProperty.MyGuid))!.GetGetMethod().MethodHandle.GetFunctionPointer();
@@ -348,7 +348,6 @@ namespace System.Reflection.Emit.Tests
                     typeof(Guid),
                     [typeof(MyClassWithGuidProperty), typeof(IntPtr)]);
 
-
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_0); // this
                 il.Emit(OpCodes.Ldarg_1); // fn
@@ -365,9 +364,7 @@ namespace System.Reflection.Emit.Tests
                 }
 
                 il.Emit(OpCodes.Ret);
-
                 typeBuilder.CreateType();
-
                 MetadataBuilder metadataBuilder = ab.GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder _);
                 ManagedPEBuilder peBuilder = new ManagedPEBuilder(PEHeaderBuilder.CreateLibraryHeader(), new MetadataRootBuilder(metadataBuilder), ilStream);
                 BlobBuilder blob = new BlobBuilder();
