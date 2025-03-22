@@ -1544,7 +1544,7 @@ namespace System.Net
                 {
                     return false;
                 }
-                curRange = string.Empty;
+                curRange += ",";
             }
             curRange += from.ToString();
             if (to != null)
