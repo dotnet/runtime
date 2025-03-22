@@ -4,20 +4,10 @@
 #include <assert.h>
 #include "pal_evp_pkey.h"
 #include "pal_utilities.h"
-#include "pal_atomic.h"
 
 #ifdef NEED_OPENSSL_3_0
 c_static_assert(OSSL_STORE_INFO_PKEY == 4);
 c_static_assert(OSSL_STORE_INFO_PUBKEY == 3);
-
-struct EvpPKeyExtraHandle_st
-{
-    atomic_int refCount;
-    OSSL_LIB_CTX* libCtx;
-    OSSL_PROVIDER* prov;
-};
-
-typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
 
 #pragma clang diagnostic push
 // There's no way to specify explicit memory ordering for increment/decrement with C atomics.
@@ -836,4 +826,52 @@ done:
     (void)keyLength;
     (void)privateKey;
     return NULL;
+}
+
+int32_t EvpPKeyGetKeyOctetStringParam(const EVP_PKEY* pKey,
+                                      const char* name,
+                                      uint8_t* destination,
+                                      int32_t destinationLength)
+{
+    assert(pKey);
+    assert(destination);
+    assert(name);
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_get_octet_string_param))
+    {
+        ERR_clear_error();
+
+        size_t destinationLengthT = Int32ToSizeT(destinationLength);
+        size_t outLength = 0;
+
+        int ret = EVP_PKEY_get_octet_string_param(pKey, name, NULL, 0, &outLength);
+
+        if (ret != 1)
+        {
+            return -1;
+        }
+
+        ret = EVP_PKEY_get_octet_string_param(pKey, name, (unsigned char*)destination, destinationLengthT, &outLength);
+
+        if (ret != 1)
+        {
+            return 0;
+        }
+
+        if (outLength != destinationLengthT)
+        {
+            return -2;
+        }
+
+        return 1;
+    }
+#else
+    (void)pKey;
+    (void)name;
+    (void)destination;
+    (void)destinationLength;
+#endif
+
+    return 0;
 }
