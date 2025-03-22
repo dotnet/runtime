@@ -188,12 +188,15 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_BlazorWebAssemblyStartupMemoryCache>$(BlazorWebAssemblyStartupMemoryCache)</_BlazorWebAssemblyStartupMemoryCache>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
+      <!-- true = wasm assets will have hard fingerprint; false = wasm assets won't have even soft fingerprint -->
       <_WasmFingerprintAssets>$(WasmFingerprintAssets)</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == '' and '$(_TargetingNET90OrLater)' == 'true'">true</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == ''">false</_WasmFingerprintAssets>
+      <!-- true = dotnet.js will have hard fingerprint; false = dotnet.js will have soft fingerprint -->
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(WriteImportMapToHtml)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
+      <!-- true = boot config will have hard fingerprint; false = boot config will have soft fingerprint -->
       <_WasmFingerprintBootConfig>$(WasmFingerprintBootConfig)</_WasmFingerprintBootConfig>
       <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">$(WriteImportMapToHtml)</_WasmFingerprintBootConfig>
       <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">false</_WasmFingerprintBootConfig>
@@ -401,12 +404,13 @@ Copyright (c) .NET Foundation. All rights reserved.
         Include="$(_WasmBuildBootJsonPath)"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
 
-      <_WasmBuildBootConfigFingerprintPatterns Include="WasmBootConfigFiles" Pattern="*%(_WasmBuildBootConfigCandidate.Extension)" Expression="#[.{fingerprint}]!" />
+      <_WasmBuildBootConfigFingerprintPatterns Include="WasmBootConfigFiles" Pattern="*%(_WasmBuildBootConfigCandidate.Extension)" Expression="#[.{fingerprint}]!" Condition="'$(_WasmFingerprintBootConfig)' == 'true'" />
+      <_WasmBuildBootConfigFingerprintPatterns Include="WasmBootConfigFiles" Pattern="*%(_WasmBuildBootConfigCandidate.Extension)" Expression="#[.{fingerprint}]?" Condition="'$(_WasmFingerprintBootConfig)' != 'true'" />
     </ItemGroup>
 
     <DefineStaticWebAssets
       CandidateAssets="@(_WasmBuildBootConfigCandidate)"
-      FingerprintCandidates="$(_WasmFingerprintBootConfig)"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(_WasmBuildBootConfigFingerprintPatterns)"
       SourceId="$(PackageId)"
       SourceType="Computed"
@@ -598,12 +602,13 @@ Copyright (c) .NET Foundation. All rights reserved.
         Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
 
-      <_WasmPublishBootConfigFingerprintPatterns Include="WasmBootConfigFiles" Pattern="*%(_WasmPublishBootConfigCandidate.Extension)" Expression="#[.{fingerprint}]!" />
+      <_WasmPublishBootConfigFingerprintPatterns Include="WasmBootConfigFiles" Pattern="*%(_WasmPublishBootConfigCandidate.Extension)" Expression="#[.{fingerprint}]!" Condition="'$(_WasmFingerprintBootConfig)' == 'true'" />
+      <_WasmPublishBootConfigFingerprintPatterns Include="WasmBootConfigFiles" Pattern="*%(_WasmPublishBootConfigCandidate.Extension)" Expression="#[.{fingerprint}]?" Condition="'$(_WasmFingerprintBootConfig)' != 'true'" />
     </ItemGroup>
 
     <DefineStaticWebAssets
       CandidateAssets="@(_WasmPublishBootConfigCandidate)"
-      FingerprintCandidates="$(_WasmFingerprintBootConfig)"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(_WasmPublishBootConfigFingerprintPatterns)"
       SourceId="$(PackageId)"
       SourceType="Computed"
