@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -78,6 +79,22 @@ namespace Internal.Runtime.CompilerHelpers
             void* callee)   // Type handle
         {
             ThrowClassAccessExceptionInternal(caller, callee);
+        }
+
+        // DivideByZero exception for being tail-called with 64bit int parameters (which have an effect on ABI on 32bit platforms)
+        [DoesNotReturn]
+        [DebuggerHidden]
+        internal static long ThrowDivideByZeroExceptionLong(long divisor, long dividend)
+        {
+            throw new DivideByZeroException();
+        }
+
+        // OverflowException for being tail-called with 64bit int parameters (which have an effect on ABI on 32bit platforms)
+        [DoesNotReturn]
+        [DebuggerHidden]
+        internal static long ThrowOverflowExceptionLong(long divisor, long dividend)
+        {
+            throw new OverflowException();
         }
     }
 }
