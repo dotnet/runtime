@@ -1086,7 +1086,7 @@ size_t EECodeManager::GetResumeSp( PCONTEXT  pContext )
 #endif // TARGET_X86
 #endif // FEATURE_EH_FUNCLETS
 
-#ifndef FEATURE_EH_FUNCLETS
+#ifdef TARGET_X86
 
 /*****************************************************************************
  *
@@ -1109,7 +1109,6 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-#ifdef TARGET_X86
     bool updateAllRegs = flags & UpdateAllRegs;
 
     // Address where the method has been interrupted
@@ -1138,22 +1137,31 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
 
     info->isSpeculativeStackWalk = ((flags & SpeculativeStackwalk) != 0);
 
-    return UnwindStackFrameX86(pContext,
-                               PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
-                               curOffs,
-                               info,
-                               table,
-                               IN_EH_FUNCLETS_COMMA(PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)))
-                               IN_EH_FUNCLETS_COMMA(pCodeInfo->IsFunclet())
-                               updateAllRegs);
-#else // TARGET_X86
-    PORTABILITY_ASSERT("EECodeManager::UnwindStackFrame");
-    return false;
-#endif // _TARGET_???_
+    if (!UnwindStackFrameX86(pContext,
+                             PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
+                             curOffs,
+                             info,
+                             table,
+                             IN_EH_FUNCLETS_COMMA(PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)))
+                             IN_EH_FUNCLETS_COMMA(pCodeInfo->IsFunclet())
+                             updateAllRegs))
+    {
+        return false;
+    }
+
+#ifdef FEATURE_EH_FUNCLETS
+    pContext->pCurrentContext->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
+    pContext->pCurrentContext->Esp = pContext->SP;
+    pContext->pCurrentContext->Eip = pContext->ControlPC;
+    pContext->IsCallerContextValid = FALSE;
+    pContext->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+#endif
+
+    return true;
 }
 
 /*****************************************************************************/
-#else // !FEATURE_EH_FUNCLETS
+#else // !TARGET_X86
 /*****************************************************************************/
 
 bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
@@ -1181,7 +1189,7 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
 }
 
 /*****************************************************************************/
-#endif // FEATURE_EH_FUNCLETS
+#endif // TARGET_X86
 
 /*****************************************************************************/
 

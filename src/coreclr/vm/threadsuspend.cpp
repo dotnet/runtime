@@ -3719,7 +3719,7 @@ int RedirectedThrowControlExceptionFilter(
 // add lots of arbitrary code here.
 void
 ThrowControlForThread(
-#ifdef FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_X86)
         FaultingExceptionFrame *pfef
 #endif // FEATURE_EH_FUNCLETS
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
@@ -3756,21 +3756,23 @@ ThrowControlForThread(
             {
                 _ASSERTE(!"Should not reach here");
             }
+#elif defined(TARGET_X86)
+            _ASSERTE(!"NYI");
 #else // FEATURE_EH_FUNCLETS
             __asan_handle_no_return();
             RtlRestoreContext(pThread->m_OSContext, NULL);
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_FUNCLETS
             _ASSERTE(!"Should not reach here");
         }
         pThread->SetThrowControlForThread(Thread::InducedThreadStop);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_X86)
     ((Frame*)pfef)->Init(FrameIdentifier::FaultingExceptionFrame);
-#else // FEATURE_EH_FUNCLETS
+#else // FEATURE_EH_FUNCLETS && !TARGET_X86
     FaultingExceptionFrame fef;
     FaultingExceptionFrame *pfef = &fef;
-#endif // FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_FUNCLETS && !TARGET_X86
     pfef->InitAndLink(pThread->m_OSContext);
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
@@ -4780,7 +4782,9 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
 #endif
                         }
-#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+#elif defined(TARGET_X86)
+                        pES->m_ppvRetAddrPtr = (void **) pRDT->PCTAddr;
+#elif defined(TARGET_AMD64)
                         pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
 #else // TARGET_X86 || TARGET_AMD64
                         PORTABILITY_ASSERT("Platform NYI");
@@ -4819,7 +4823,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     }
     else
     {
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
+#ifdef TARGET_X86
         // Second pass, looking for the address of the return address so we can
         // hijack:
 

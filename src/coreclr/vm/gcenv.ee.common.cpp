@@ -54,11 +54,11 @@ bool FindFirstInterruptiblePointStateCB(
     return false;
 }
 
+#ifdef USE_GC_INFO_DECODER
 // Find the first interruptible point in the range [offs .. endOffs) (the beginning of the range is inclusive,
 // the end is exclusive). Return -1 if no such point exists.
 unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
 {
-#ifdef USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
     GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
 
@@ -70,11 +70,8 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
     gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
 
     return state.returnOffs;
-#else
-    PORTABILITY_ASSERT("FindFirstInterruptiblePoint");
-    return -1;
-#endif // USE_GC_INFO_DECODER
 }
+#endif // USE_GC_INFO_DECODER
 
 #endif // FEATURE_EH_FUNCLETS
 
@@ -306,7 +303,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
 
             unsigned flags = pCF->GetCodeManagerFlags();
 
-    #ifdef TARGET_X86
+    #if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM EIP = %p &EIP = %p\n",
                 pMD, GetControlPC(pCF->GetRegisterSet()), pCF->GetRegisterSet()->PCTAddr);
     #else

@@ -2494,7 +2494,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
-VOID DECLSPEC_NORETURN PropagateExceptionThroughNativeFrames(Object *exceptionObj)
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj)
 {
     CONTRACTL
     {
@@ -11548,6 +11548,40 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 }
 
 #ifndef DACCESS_COMPILE
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+
+void SoftwareExceptionFrame::Init(TransitionBlock *pTransitionBlock)
+{
+    WRAPPER_NO_CONTRACT;
+
+    m_Context.Ecx = pTransitionBlock->m_argumentRegisters.ECX;
+    m_Context.Edx = pTransitionBlock->m_argumentRegisters.EDX;
+    m_ContextPointers.Ecx = &m_Context.Ecx;
+    m_ContextPointers.Edx = &m_Context.Edx;
+
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg; \
+    m_ContextPointers.reg = &m_Context.reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    m_Context.Esp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Eip = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+
+    _ASSERTE(ExecutionManager::IsManagedCode(pTransitionBlock->m_ReturnAddress));
+}
+
+void SoftwareExceptionFrame::InitAndLink(TransitionBlock *pTransitionBlock, Thread *pThread)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Init(pTransitionBlock);
+    Push(pThread);
+}
+
+#else
+
 //
 // Init a new frame
 //
@@ -11559,16 +11593,16 @@ void SoftwareExceptionFrame::Init()
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-#ifndef TARGET_UNIX
+#ifdef TARGET_WINDOWS
     Thread::VirtualUnwindCallFrame(&m_Context, &m_ContextPointers);
-#else // !TARGET_UNIX
+#else // !TARGET_WINDOWS
     BOOL success = PAL_VirtualUnwind(&m_Context, &m_ContextPointers);
     if (!success)
     {
         _ASSERTE(!"SoftwareExceptionFrame::Init failed");
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
-#endif // !TARGET_UNIX
+#endif // !TARGET_WINDOWS
 
 #define CALLEE_SAVED_REGISTER(regname) if (m_ContextPointers.regname == NULL) m_ContextPointers.regname = &m_Context.regname;
     ENUM_CALLEE_SAVED_REGISTERS();
@@ -11587,9 +11621,9 @@ void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
     WRAPPER_NO_CONTRACT;
 
     Init();
-
     Push(pThread);
 }
 
+#endif // TARGET_X86 && TARGET_WINDOWS
 #endif // DACCESS_COMPILE
 #endif // FEATURE_EH_FUNCLETS

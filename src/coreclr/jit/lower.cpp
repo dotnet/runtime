@@ -5943,7 +5943,7 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(comp->info.compUnmanagedCallCountWithGCTransition);
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
-    if (comp->opts.ShouldUsePInvokeHelpers())
+    if (!comp->info.compPublishStubParam && comp->opts.ShouldUsePInvokeHelpers())
     {
         return;
     }
@@ -5970,6 +5970,13 @@ void Lowering::InsertPInvokeMethodProlog()
                                                     callFrameInfo.offsetOfSecretStubArg, value);
         firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
         DISPTREERANGE(firstBlockRange, store);
+    }
+
+    // Bail out for the win-x86 case of generating stub parameter along with
+    // P/Invoke helper calls. No other platforms use this at the moment.
+    if (comp->opts.ShouldUsePInvokeHelpers())
+    {
+        return;
     }
 
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:

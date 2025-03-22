@@ -16,11 +16,9 @@
 // Accessing it will result in AV.
 #define INVALID_RESUME_ADDRESS 0x000000000000bad0
 
-EXTERN_C EXCEPTION_DISPOSITION
-ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord,
-                    IN     PVOID                 pEstablisherFrame,
-                    IN OUT PT_CONTEXT            pContextRecord,
-                    IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
+#ifndef DACCESS_COMPILE
+EXCEPTION_HANDLER_DECL(ProcessCLRException);
+#endif
 
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL);
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable);

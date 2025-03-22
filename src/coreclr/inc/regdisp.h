@@ -4,6 +4,7 @@
 #ifndef __REGDISP_H
 #define __REGDISP_H
 
+#include <clrnt.h>
 
 #ifdef DEBUG_REGDISPLAY
 class Thread;
@@ -156,6 +157,8 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
 
 #ifdef FEATURE_EH_FUNCLETS
+    // TODO: This may be wrong. Should we use PCTAddr now that it
+    // is valid?
     _ASSERTE(GetRegdisplaySP(display) == GetSP(display->pCurrentContext));
     return GetRegdisplaySP(display);
 #else
