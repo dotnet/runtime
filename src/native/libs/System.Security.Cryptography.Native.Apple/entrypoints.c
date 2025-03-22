@@ -137,6 +137,16 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_X509StoreRemoveCertificate)
     DllImportEntry(AppleCryptoNative_Pbkdf2)
     DllImportEntry(AppleCryptoNative_X509GetSubjectSummary)
+    DllImportEntry(AppleCryptoNative_NwInit)
+    DllImportEntry(AppleCryptoNative_NwCreateContext)
+    DllImportEntry(AppleCryptoNative_NwSendToConnection)
+    DllImportEntry(AppleCryptoNative_NwReadFromConnection)
+    DllImportEntry(AppleCryptoNative_NwProcessInputData)
+    DllImportEntry(AppleCryptoNative_NwSetTlsOptions)
+    DllImportEntry(AppleCryptoNative_NwStartTlsHandshake)
+    DllImportEntry(AppleCryptoNative_NwGetConnectionInfo)
+    DllImportEntry(AppleCryptoNative_NwCopyCertChain)
+    DllImportEntry(AppleCryptoNative_NwCancelConnection)
 };
 
 EXTERN_C const void* CryptoAppleResolveDllImport(const char* name);

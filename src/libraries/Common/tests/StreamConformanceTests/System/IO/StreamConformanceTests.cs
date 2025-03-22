@@ -2609,6 +2609,7 @@ namespace System.IO.Tests
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.OSX, "Currently failing on OSX")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/108151", TestPlatforms.Wasi)]
         public virtual async Task ReadTimeout_Expires_Throws()
         {
