@@ -4544,6 +4544,31 @@ struct ExecutionState
     ExecutionState() : m_FirstPass(TRUE) {LIMITED_METHOD_CONTRACT;  }
 };
 
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+static inline void* PacSignPtr(void* ptr)
+{
+
+    __asm__ volatile (".arch_extension pauth\n"
+                      "paciza %0"
+                      : "+r" (ptr)
+                      :
+                      : "memory"                // Memory is affected, prevent reordering
+                      );
+    return ptr;
+}
+
+static inline void* PacStripPtr(void* ptr)
+{
+    __asm__ volatile (".arch_extension pauth\n"
+                      "xpaci %0"
+                      : "+r" (ptr)
+                      :
+                      : "memory"                // Memory is affected, prevent reordering
+                      );
+    return ptr;
+}
+#endif // TARGET_ARM64 && __GNUC__
+
 // Client is responsible for suspending the thread before calling
 void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
 {
@@ -4601,6 +4626,9 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
 
     // Remember the place that the return would have gone
     m_pvHJRetAddr = *esb->m_ppvRetAddrPtr;
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+    m_pvHJRetAddr = PacStripPtr(m_pvHJRetAddr);
+#endif // TARGET_ARM64 && __GNUC__
 
     IS_VALID_CODE_PTR((FARPROC) (TADDR)m_pvHJRetAddr);
     // TODO [DAVBR]: For the full fix for VsWhidbey 450273, the below
@@ -4613,6 +4641,10 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
     m_HijackedFunction = esb->m_pFD;
 
     // Bash the stack to return to one of our stubs
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+    pvHijackAddr = PacSignPtr(pvHijackAddr);
+#endif // TARGET_ARM64 && __GNUC__
+
     *esb->m_ppvRetAddrPtr = pvHijackAddr;
     SetThreadState(TS_Hijacked);
 }
@@ -4642,6 +4674,9 @@ void Thread::UnhijackThread()
         STRESS_LOG2(LF_SYNC, LL_INFO100, "Unhijacking return address 0x%p for thread %p\n", m_pvHJRetAddr, this);
         // restore the return address and clear the flag
         *m_ppvHJRetAddrPtr = m_pvHJRetAddr;
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+        *m_ppvHJRetAddrPtr = PacSignPtr(*m_ppvHJRetAddrPtr);
+#endif // TARGET_ARM64 && __GNUC__
         ResetThreadState(TS_Hijacked);
 
         // But don't touch m_pvHJRetAddr.  We may need that to resume a thread that
