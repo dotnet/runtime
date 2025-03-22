@@ -6315,7 +6315,14 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
         genIntCastOverflowCheck(cast, desc, srcReg);
     }
 
-    if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
+    if ((cast->gtFlags & GTF_CAST_DEFER_TO_SHXADD_UW) != 0)
+    {
+        if (srcReg != dstReg)
+        {
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstReg, srcReg, 0);
+        }
+    }
+    else if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
     {
         switch (desc.ExtendKind())
         {

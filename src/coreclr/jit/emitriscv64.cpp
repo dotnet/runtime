@@ -824,7 +824,8 @@ void emitter::emitIns_R_R_R(
     if ((INS_add <= ins && ins <= INS_and) || (INS_mul <= ins && ins <= INS_remuw) ||
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
-        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d))
+        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
+        (INS_sh1add <= ins && ins <= INS_slli_uw))
     {
 #ifdef DEBUG
         switch (ins)
@@ -913,6 +914,15 @@ void emitter::emitIns_R_R_R(
             case INS_amominu_d:
             case INS_amomaxu_w:
             case INS_amomaxu_d:
+
+            case INS_sh1add:
+            case INS_sh2add:
+            case INS_sh3add:
+            case INS_add_uw:
+            case INS_sh1add_uw:
+            case INS_sh2add_uw:
+            case INS_sh3add_uw:
+            case INS_slli_uw:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
@@ -3667,6 +3677,11 @@ void emitter::emitDispInsName(
                     {
                         printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5 BITS for SHAMT in RISCV64
                     }
+                    // SLLI.UW's instruction code's upper 6 bits have to be equal to 0x2
+                    else if (((imm12 >> 6) & 0x3f) == 0x2)
+                    {
+                        printf("slli.uw        %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
+                    }
                     else
                     {
                         emitDispIllegalInstruction(code);
@@ -3782,6 +3797,20 @@ void emitter::emitDispInsName(
                             return emitDispIllegalInstruction(code);
                     }
                     return;
+                case 0b0010000:
+                    switch (opcode3)
+                    {
+                        case 0x2: // SH1ADD
+                            printf("sh1add         %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x4: // SH2ADD
+                            printf("sh2add         %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x6: // SH3ADD
+                            printf("sh3add         %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                    }
+                    return;
                 default:
                     return emitDispIllegalInstruction(code);
             }
@@ -3845,6 +3874,20 @@ void emitter::emitDispInsName(
                             return;
                         default:
                             return emitDispIllegalInstruction(code);
+                    }
+                    return;
+                case 0b0010000:
+                    switch (opcode3)
+                    {
+                        case 0x2: // SH1ADD.UW
+                            printf("sh1add.uw      %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x4: // SH2ADD.UW
+                            printf("sh2add.uw      %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x6: // SH3ADD.UW
+                            printf("sh3add.uw      %s, %s, %s\n", rd, rs1, rs2);
+                            return;
                     }
                     return;
                 default:
@@ -4536,6 +4579,46 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
 #endif // DEBUG
 
+instruction getShxaddVariant(int scale, bool useUnsignedVariant)
+{
+    assert((1 <= scale) && (scale <= 3));
+
+    instruction shxaddIns;
+
+    if (useUnsignedVariant)
+    {
+        switch (scale)
+        {
+            case 1:
+                shxaddIns = INS_sh1add_uw;
+                break;
+            case 2:
+                shxaddIns = INS_sh2add_uw;
+                break;
+            case 3:
+                shxaddIns = INS_sh3add_uw;
+                break;
+        }
+    }
+    else
+    {
+
+        switch (scale)
+        {
+            case 1:
+                shxaddIns = INS_sh1add;
+                break;
+            case 2:
+                shxaddIns = INS_sh2add;
+                break;
+            case 3:
+                shxaddIns = INS_sh3add;
+                break;
+        }
+    }
+    return shxaddIns;
+}
+
 // Generate code for a load or store operation with a potentially complex addressing mode
 // This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*sccale + offset]
 //
@@ -4567,13 +4650,25 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         {
             GenTree* index = indir->Index();
 
+            bool useUnsignedShxaddVariant = false;
+            if (index->OperGet() == GT_CAST && ((index->gtFlags & GTF_CAST_DEFER_TO_SHXADD_UW) != 0))
+            {
+                useUnsignedShxaddVariant = true;
+            }
+
             if (offset != 0)
             {
                 regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 if (isValidSimm12(offset))
                 {
-                    if (lsl > 0)
+                    // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+                    if (0 < lsl && lsl <= 3)
+                    {
+                        instruction shxaddIns = getShxaddVariant(lsl, useUnsignedShxaddVariant);
+                        emitIns_R_R_R(shxaddIns, addType, tmpReg, index->GetRegNum(), memBase->GetRegNum());
+                    }
+                    else if (lsl > 0)
                     {
                         // Generate code to set tmpReg = base + index*scale
                         emitIns_R_R_I(INS_slli, addType, tmpReg, index->GetRegNum(), lsl);
@@ -4602,10 +4697,23 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
                     noway_assert(tmpReg != index->GetRegNum());
 
-                    regNumber scaleReg = codeGen->internalRegisters.GetSingle(indir);
                     // Then load/store dataReg from/to [tmpReg + index*scale]
-                    emitIns_R_R_I(INS_slli, addType, scaleReg, index->GetRegNum(), lsl);
-                    emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, scaleReg);
+                    // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+                    if (0 < lsl && lsl <= 3)
+                    {
+                        instruction shxaddIns = getShxaddVariant(lsl, useUnsignedShxaddVariant);
+                        emitIns_R_R_R(shxaddIns, addType, tmpReg, index->GetRegNum(), tmpReg);
+                    }
+                    else if (lsl > 0)
+                    {
+                        regNumber scaleReg = codeGen->internalRegisters.GetSingle(indir);
+                        emitIns_R_R_I(INS_slli, addType, scaleReg, index->GetRegNum(), lsl);
+                        emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, scaleReg);
+                    }
+                    else
+                    {
+                        emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), index->GetRegNum());
+                    }
                     emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
                 }
             }
@@ -4671,7 +4779,15 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                         NO_WAY("illegal ins within emitInsLoadStoreOp!");
                 }
 
-                if (lsl > 0)
+                // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+                if (0 < lsl && lsl <= 3)
+                {
+                    instruction shxaddIns = getShxaddVariant(lsl, useUnsignedShxaddVariant);
+                    emitIns_R_R_R(shxaddIns, addType, codeGen->rsGetRsvdReg(), index->GetRegNum(),
+                                  memBase->GetRegNum());
+                    emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), 0);
+                }
+                else if (lsl > 0)
                 {
                     // Then load/store dataReg from/to [memBase + index*scale]
                     emitIns_R_R_I(INS_slli, emitActualTypeSize(index->TypeGet()), codeGen->rsGetRsvdReg(),

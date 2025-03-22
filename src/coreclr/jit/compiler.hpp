@@ -253,6 +253,17 @@ inline bool jitIsScaleIndexMul(size_t val, unsigned naturalMul)
     }
 #elif defined(TARGET_ARM64)
     return val == naturalMul;
+#elif defined(TARGET_RISCV64)
+    switch (val)
+    {
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+            return true;
+        default:
+            return false;
+    }
 #else
     return false;
 #endif
