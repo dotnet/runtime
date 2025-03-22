@@ -20,8 +20,8 @@ struct Replacement
     unsigned  Offset;
     var_types AccessType;
     unsigned  LclNum = BAD_VAR_NUM;
-    // Is the replacement local (given by LclNum) fresher than the value in the struct local?
-    bool NeedsWriteBack = true;
+    // Index of this replacement into write-back bit vector.
+    unsigned  VarIndex = UINT_MAX;
     // Is the value in the struct local fresher than the replacement local?
     // Note that the invariant is that this is always false at the entrance to
     // a basic block, i.e. all predecessors would have read the replacement
@@ -242,11 +242,16 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     Promotion*         m_promotion;
     AggregateInfoMap&  m_aggregates;
     PromotionLiveness* m_liveness;
-    bool               m_madeChanges         = false;
-    unsigned           m_numPendingReadBacks = 0;
-    bool               m_mayHaveForwardSub   = false;
-    Statement*         m_currentStmt         = nullptr;
-    BasicBlock*        m_currentBlock        = nullptr;
+    LoopDefinitions*   m_loopDefs;
+    bool               m_madeChanges                = false;
+    unsigned           m_numPendingReadBacks        = 0;
+    bool               m_mayHaveForwardSub          = false;
+    Statement*         m_currentStmt                = nullptr;
+    BasicBlock*        m_currentBlock               = nullptr;
+
+    BitVecTraits       m_replacementTraits;
+    BitVec*            m_writeBacksNeededOut        = nullptr;
+    BitVec             m_writeBacksNeeded;
 
 public:
     enum
@@ -256,13 +261,7 @@ public:
         ComputeStack      = true,
     };
 
-    ReplaceVisitor(Promotion* prom, AggregateInfoMap& aggregates, PromotionLiveness* liveness)
-        : GenTreeVisitor(prom->m_compiler)
-        , m_promotion(prom)
-        , m_aggregates(aggregates)
-        , m_liveness(liveness)
-    {
-    }
+    ReplaceVisitor(Promotion* prom, AggregateInfoMap& aggregates, PromotionLiveness* liveness, LoopDefinitions* loopDefs);
 
     bool MadeChanges()
     {
@@ -281,6 +280,7 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
+    bool NeedsWriteBack(Replacement& rep);
     void SetNeedsWriteBack(Replacement& rep);
     void ClearNeedsWriteBack(Replacement& rep);
     void SetNeedsReadBack(Replacement& rep);

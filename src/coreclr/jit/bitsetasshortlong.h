@@ -45,6 +45,7 @@ private:
     static bool               TryAddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
     static void               RemoveElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
     static void               ClearDLong(Env env, BitSetShortLongRep& bs);
+    static void               FillDLong(Env env, BitSetShortLongRep& bs);
     static BitSetShortLongRep MakeUninitArrayBits(Env env);
     static BitSetShortLongRep MakeEmptyArrayBits(Env env);
     static BitSetShortLongRep MakeFullArrayBits(Env env);
@@ -133,6 +134,19 @@ public:
         {
             assert(bs != UninitVal());
             ClearDLong(env, bs);
+        }
+    }
+
+    static void FillD(Env env, BitSetShortLongRep& bs)
+    {
+        if (IsShort(env))
+        {
+            bs = (BitSetShortLongRep)size_t(-1);
+        }
+        else
+        {
+            assert(bs != UninitVal());
+            FillDLong(env, bs);
         }
     }
 
@@ -862,6 +876,20 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
     for (unsigned i = 0; i < len; i++)
     {
         bs[i] = 0;
+    }
+}
+
+template <typename Env, typename BitSetTraits>
+void BitSetOps</*BitSetType*/ BitSetShortLongRep,
+               /*Brand*/ BSShortLong,
+               /*Env*/ Env,
+               /*BitSetTraits*/ BitSetTraits>::FillDLong(Env env, BitSetShortLongRep& bs)
+{
+    assert(!IsShort(env));
+    unsigned len = BitSetTraits::GetArrSize(env);
+    for (unsigned i = 0; i < len; i++)
+    {
+        bs[i] = size_t(-1);
     }
 }
 
