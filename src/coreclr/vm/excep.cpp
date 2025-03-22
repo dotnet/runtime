@@ -6780,15 +6780,15 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                 // the subsequent logic here sees a managed fault.
                 //
                 // On 64-bit, some additional work is required..
-#ifdef FEATURE_EH_FUNCLETS
                 pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
+#ifdef FEATURE_EH_FUNCLETS
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
 #endif // defined(FEATURE_EH_FUNCLETS)
             }
             else if (AdjustContextForVirtualStub(pExceptionRecord, pContext))
             {
-#ifdef FEATURE_EH_FUNCLETS
                 pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
+#ifdef FEATURE_EH_FUNCLETS
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
 #endif
             }
@@ -7119,9 +7119,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING
     //
 
-#ifdef FEATURE_EH_FUNCLETS
     pExceptionInfo->ContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
-#endif // FEATURE_EH_FUNCLETS
 
     // WARNING
     //
