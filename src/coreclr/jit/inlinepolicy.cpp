@@ -182,7 +182,16 @@ void LegalPolicy::SetFailure(InlineObservation obs)
             break;
         case InlineDecision::UNDECIDED:
         case InlineDecision::CANDIDATE:
-            m_Decision    = InlineDecision::FAILURE;
+        case InlineDecision::FAILLATER:
+            if (obs == InlineObservation::CALLSITE_NOT_PROFITABLE_INLINE ||
+                obs == InlineObservation::CALLSITE_OVER_BUDGET)
+            {
+                m_Decision = InlineDecision::FAILLATER;
+            }
+            else
+            {
+                m_Decision = InlineDecision::FAILURE;
+            }
             m_Observation = obs;
             break;
         default:
@@ -211,7 +220,15 @@ void LegalPolicy::SetNever(InlineObservation obs)
             break;
         case InlineDecision::UNDECIDED:
         case InlineDecision::CANDIDATE:
-            m_Decision    = InlineDecision::NEVER;
+        case InlineDecision::FAILLATER:
+            if (obs == InlineObservation::CALLEE_NOT_PROFITABLE_INLINE)
+            {
+                m_Decision = InlineDecision::FAILLATER;
+            }
+            else
+            {
+                m_Decision = InlineDecision::NEVER;
+            }
             m_Observation = obs;
             break;
         default:
