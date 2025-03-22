@@ -7091,7 +7091,7 @@ protected:
 
     OptInvertCountTreeInfoType optInvertCountTreeInfo(GenTree* tree);
 
-    bool optInvertWhileLoop(BasicBlock* block);
+    bool optTryInvertWhileLoop(FlowGraphNaturalLoop* loop);
     bool optIfConvert(BasicBlock* block);
 
 private:

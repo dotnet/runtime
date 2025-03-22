@@ -2664,9 +2664,10 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 #endif // DEBUG
 
+    // Computing the duplication cost may have triggered node reordering, so return true to indicate we modified IR
     if (costIsTooHigh)
     {
-        return false;
+        return true;
     }
 
     /* Looks good - duplicate the conditional block */
@@ -2680,12 +2681,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     {
         // Clone/substitute the expression.
         Statement* stmt = gtCloneStmt(curStmt);
-
-        // cloneExpr doesn't handle everything.
-        if (stmt == nullptr)
-        {
-            return false;
-        }
+        assert(stmt != nullptr);
 
         if (fgNodeThreading == NodeThreading::AllTrees)
         {
@@ -2716,9 +2712,10 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     condTree = condTree->gtGetOp1();
 
     // This condTree has to be a RelOp comparison.
-    if (condTree->OperIsCompare() == false)
+    // If not, return true since we created new nodes.
+    if (!condTree->OperIsCompare())
     {
-        return false;
+        return true;
     }
 
     // Join the two linked lists.

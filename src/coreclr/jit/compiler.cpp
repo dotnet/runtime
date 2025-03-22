@@ -4638,10 +4638,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
-        // Invert loops
-        //
-        DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
-
         // Run some flow graph optimizations (but don't reorder)
         //
         DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
@@ -4659,6 +4655,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Discover and classify natural loops (e.g. mark iterative loops as such).
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
+
+        // Invert loops
+        //
+        DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
 
         // Scale block weights and mark run rarely blocks.
         //
