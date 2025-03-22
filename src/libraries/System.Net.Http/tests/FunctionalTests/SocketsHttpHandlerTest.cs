@@ -1304,7 +1304,6 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop]
         [Fact]
         public async Task SocketsHttpHandler_UseDefaultCredentials_OneRequestOnlyForBasicAuth()
         {
@@ -1330,7 +1329,7 @@ namespace System.Net.Http.Functional.Tests
                     // Only one request should be sent.
                     await IgnoreExceptions(async () => 
                     {
-                        await server.HandleRequestAsync(HttpStatusCode.Unauthorized, responseHeader).WaitAsync(TestHelper.PassingTestTimeout);
+                        await server.HandleRequestAsync(HttpStatusCode.Unauthorized, responseHeader).WaitAsync(TimeSpan.FromSeconds(10));
                         requestCount++;
                     });
                 }
@@ -3598,7 +3597,7 @@ namespace System.Net.Http.Functional.Tests
                 await using GenericLoopbackConnection connection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStreamWrapper, options);
                 await connection.InitializeConnectionAsync();
 
-                HttpRequestData requestData = await connection.HandleRequestAsync(content: "foo").WaitAsync(TestHelper.PassingTestTimeoutMilliseconds);
+                HttpRequestData requestData = await connection.HandleRequestAsync(content: "foo").WaitAsyn(TestHelper.PassingTestTimeoutMilliseconds);
                 Assert.Equal("/foo", requestData.Path);
             });
 
