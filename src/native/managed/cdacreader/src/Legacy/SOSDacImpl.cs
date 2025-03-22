@@ -145,7 +145,54 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetFieldDescData(ulong fieldDesc, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetFieldDescData(fieldDesc, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFrameName(ulong vtable, uint count, char* frameName, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetFrameName(vtable, count, frameName, pNeeded) : HResults.E_NOTIMPL;
+    {
+        if (vtable == 0)
+        {
+            return HResults.E_INVALIDARG;
+        }
+
+        int hr = HResults.S_OK;
+        try
+        {
+            IStackWalk stackWalk = _target.Contracts.StackWalk;
+            string name = stackWalk.GetFrameName(new(vtable));
+
+            if (string.IsNullOrEmpty(name))
+            {
+                hr = HResults.E_INVALIDARG;
+            }
+            else
+            {
+                OutputBufferHelpers.CopyStringToBuffer(frameName, count, pNeeded, name);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            char[] nameLocal = new char[count];
+            uint neededLocal;
+            int hrLocal;
+            fixed (char* ptr = nameLocal)
+            {
+                hrLocal = _legacyImpl.GetFrameName(vtable, count, ptr, &neededLocal);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+                Debug.Assert(frameName == null || new ReadOnlySpan<char>(nameLocal, 0, (int)neededLocal).SequenceEqual(new string(frameName)),
+                    $"cDAC: {new string(frameName)}, DAC: {new string(nameLocal, 0, (int)neededLocal)}");
+            }
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetGCHeapData(void* data)
         => _legacyImpl is not null ? _legacyImpl.GetGCHeapData(data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetGCHeapDetails(ulong heap, void* details)
