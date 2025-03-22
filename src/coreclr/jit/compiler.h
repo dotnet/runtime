@@ -9876,7 +9876,7 @@ public:
     //
     bool canUseApxEncoding() const
     {
-        return compOpportunisticallyDependsOn(InstructionSet_APX);
+        return compOpportunisticallyDependsOn(InstructionSet_APX) || (JitConfig.JitBypassAPXCheck() != 0);
     }
 
 private:
