@@ -2443,6 +2443,15 @@ void LinearScan::buildIntervals()
             // assert(block->isRunRarely());
         }
 
+#ifdef TARGET_X86
+        // On x86 w/ varargs CodeGen::genFnProlog trashs eax register which happens
+        // to be the hidden stub parameter, so mark it as killed here.
+        if ((block == compiler->fgFirstBB) && compiler->info.compIsVarArgs)
+        {
+            addKillForRegs(RBM_EAX, currentLoc + 1);
+        }
+#endif
+
         // For Swift calls there can be an arbitrary amount of codegen related
         // to homing of decomposed struct parameters passed on stack. We cannot
         // do that in the prolog. We handle registers in the prolog and the
