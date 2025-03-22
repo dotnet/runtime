@@ -7296,7 +7296,7 @@ struct GenTreeVecCon : public GenTree
         // buffer will cause determinism issues with the compiler.
         memset(&gtSimdVal, 0, sizeof(gtSimdVal));
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         assert(sizeof(simd_t) == sizeof(simd64_t));
 #else
         assert(sizeof(simd_t) == sizeof(simd16_t));

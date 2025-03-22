@@ -8164,7 +8164,7 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
 {
     unsigned cnsSize  = 32;
@@ -8193,7 +8193,7 @@ CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 CORINFO_FIELD_HANDLE emitter::emitSimdMaskConst(simdmask_t constValue)
