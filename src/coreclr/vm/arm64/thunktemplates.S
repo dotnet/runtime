@@ -19,7 +19,7 @@
         br  x11
         ldr x12, DATA_SLOT(FixupPrecode, MethodDesc)
         ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk)
-        br  x11        
+        br  x11
     LEAF_END_MARKED FixupPrecodeCode\STUB_PAGE_SIZE
 
     LEAF_ENTRY CallCountingStubCode\STUB_PAGE_SIZE
