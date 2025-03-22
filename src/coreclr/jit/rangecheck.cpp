@@ -1050,42 +1050,32 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 //     This represents what BitOperations.Log2/int.Log2/long.Log2 would do.
 //
 // Arguments:
-//     comp - the compiler instance
-//     vn   - the value number to analyze
+//     vnStore    - the value number store
+//     vn         - the value number to analyze
 //     upperBound - if not null, will be set to the upper bound of the log2 pattern (31 or 63)
 //
 // Return value:
 //     true if the value number is a log2 pattern, false otherwise.
 //
-static bool IsLog2(Compiler* comp, ValueNum vn, int* upperBound = nullptr)
+static bool IsLog2(ValueNumStore* vnStore, ValueNum vn, int* upperBound = nullptr)
 {
-    VNFuncApp funcApp;
-
     // First, look for "X ^ 31" or "X ^ 63" patterns...
-    int xorBy;
-    if (comp->vnStore->GetVNFunc(vn, &funcApp) && (funcApp.m_func == VNF_XOR) &&
-        comp->vnStore->IsVNIntegralConstant(funcApp.m_args[1], &xorBy) && ((xorBy == 31) || (xorBy == 63)))
+    int      xorBy;
+    ValueNum op1, op2;
+    if (vnStore->IsBinFunc(vn, VNF_XOR, &op1, &op2) && vnStore->IsVNIntegralConstant(op2, &xorBy) &&
+        ((xorBy == 31) || (xorBy == 63)))
     {
         // ...where that X has to be either LZCNT32 (in case of ^ 31) or LZCNT64 (in case of ^ 63)
 
         // Drop any integer cast if any, we're dealing with [0..63] range, any integer cast is redundant.
-        ValueNum  lzcntVN = funcApp.m_args[0];
-        VNFuncApp castFuncApp;
-        if (comp->vnStore->GetVNFunc(lzcntVN, &castFuncApp) && (castFuncApp.m_func == VNF_Cast) &&
-            varTypeIsIntegral(comp->vnStore->TypeOfVN(lzcntVN)))
-        {
-            lzcntVN = castFuncApp.m_args[0];
-        }
+        vnStore->IsBinFunc(op1, VNF_Cast, &op1);
 
-        VNFunc    lzcnFunc = (xorBy == 31) ? VNF_HWI_LZCNT_LeadingZeroCount : VNF_HWI_LZCNT_X64_LeadingZeroCount;
-        VNFuncApp lzcntFuncApp;
-        if (comp->vnStore->GetVNFunc(lzcntVN, &lzcntFuncApp) && (lzcntFuncApp.m_func == lzcnFunc))
+        VNFunc lzcnFunc = (xorBy == 31) ? VNF_HWI_LZCNT_LeadingZeroCount : VNF_HWI_LZCNT_X64_LeadingZeroCount;
+        if (vnStore->IsBinFunc(op1, lzcnFunc, &op1))
         {
             // Last, check if the argument of the LZCNT32/LZCNT64 is "OR(..., 1)".
-            int       orBy;
-            VNFuncApp orFuncApp;
-            if (comp->vnStore->GetVNFunc(lzcntFuncApp.m_args[0], &orFuncApp) && (orFuncApp.m_func == VNF_OR) &&
-                comp->vnStore->IsVNIntegralConstant(orFuncApp.m_args[1], &orBy) && orBy == 1)
+            int orBy;
+            if (vnStore->IsBinFunc(op1, VNF_OR, &op1, &op2) && vnStore->IsVNIntegralConstant(op2, &orBy) && (orBy == 1))
             {
                 if (upperBound != nullptr)
                 {
@@ -1106,9 +1096,8 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     // For XOR we only care about Log2 pattern for now
     if (binop->OperIs(GT_XOR))
     {
-        ValueNum xorVN = m_pCompiler->vnStore->VNConservativeNormalValue(binop->gtVNPair);
-        int      upperBound;
-        if (IsLog2(m_pCompiler, xorVN, &upperBound))
+        int upperBound;
+        if (IsLog2(m_pCompiler->vnStore, m_pCompiler->vnStore->VNConservativeNormalValue(binop->gtVNPair), &upperBound))
         {
             assert(upperBound > 0);
             return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, upperBound));
@@ -1577,7 +1566,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
         overflows = false;
     }
     else if (expr->OperIs(GT_XOR) &&
-             IsLog2(m_pCompiler, m_pCompiler->vnStore->VNConservativeNormalValue(expr->gtVNPair)))
+             IsLog2(m_pCompiler->vnStore, m_pCompiler->vnStore->VNConservativeNormalValue(expr->gtVNPair)))
     {
         // For XOR we only care about Log2 pattern for now, which never overflows.
         overflows = false;

@@ -9829,6 +9829,37 @@ bool ValueNumStore::GetVNFunc(ValueNum vn, VNFuncApp* funcApp)
     return false;
 }
 
+//----------------------------------------------------------------------------------
+// IsBinFunc: A specialized version of GetVNFunc that checks if the given ValueNum
+//     is the given VNFunc with arity 2. If so, it returns the two operands.
+//
+// Arguments:
+//    vn   - The ValueNum to check.
+//    func - The VNFunc to check for.
+//    op1  - The first operand (if not null).
+//    op2  - The second operand (if not null).
+//
+// Return Value:
+//    true if the ValueNum is the given VNFunc with arity 2, false otherwise.
+//
+bool ValueNumStore::IsBinFunc(ValueNum vn, VNFunc func, ValueNum* op1, ValueNum* op2)
+{
+    VNFuncApp funcApp;
+    if (GetVNFunc(vn, &funcApp) && (funcApp.m_func == func) && (funcApp.m_arity == 2))
+    {
+        if (op1 != nullptr)
+        {
+            *op1 = funcApp.m_args[0];
+        }
+        if (op2 != nullptr)
+        {
+            *op2 = funcApp.m_args[1];
+        }
+        return true;
+    }
+    return false;
+}
+
 bool ValueNumStore::VNIsValid(ValueNum vn)
 {
     ChunkNum cn = GetChunkNum(vn);
