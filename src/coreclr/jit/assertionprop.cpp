@@ -1136,14 +1136,10 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
     }
     //
     // Are we trying to make a non-null assertion?
+    // (note we now do this for all indirs, regardless of address type)
     //
     else if (op2 == nullptr)
     {
-        if (!varTypeIsGC(op1))
-        {
-            return NO_ASSERTION_INDEX; // Don't make an assertion
-        }
-
         // Must be an OAK_NOT_EQUAL assertion
         assert(assertionKind == OAK_NOT_EQUAL);
 
@@ -1238,14 +1234,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL assertion
                     //
                     if ((assertionKind != OAK_EQUAL) && (assertionKind != OAK_NOT_EQUAL))
-                    {
-                        goto DONE_ASSERTION; // Don't make an assertion
-                    }
-
-                    // If the LclVar is a TYP_LONG then we only make
-                    // assertions where op2 is also TYP_LONG
-                    //
-                    if ((lclVar->TypeGet() == TYP_LONG) && (op2->TypeGet() != TYP_LONG))
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
