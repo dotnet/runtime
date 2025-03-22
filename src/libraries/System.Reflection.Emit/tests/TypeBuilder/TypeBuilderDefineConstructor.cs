@@ -148,8 +148,7 @@ namespace System.Reflection.Emit.Tests
 
             constructor.GetILGenerator().Emit(OpCodes.Ret);
 
-            // Dynamic types do not support ExplicitThis for constructors; a constructor however can be called
-            // as a method with the first parameter being the uninitialized object.
+            // ExplicitThis is not valid on definitions; it is only used when calling.
             Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
         }
 

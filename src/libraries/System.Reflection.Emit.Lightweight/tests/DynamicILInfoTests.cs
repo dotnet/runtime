@@ -695,6 +695,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/113789", TestRuntimes.Mono)]
         [InlineData(true)]
         [InlineData(false)]
         public unsafe void InstanceBasedFunctionPointer(bool useExplicitThis)
@@ -712,7 +713,11 @@ namespace System.Reflection.Emit.Tests
                 DynamicMethod dynamicMethod = new DynamicMethod(
                     "GetGuid",
                     returnType: typeof(Guid),
+
+                    // In this test, we use typeof(object) for the "this" pointer to ensure the IL could be re-used for other
+                    // reference types, but normally this would be the appropriate type such as typeof(MyClassWithGuidProperty).
                     parameterTypes: [typeof(object), typeof(IntPtr)],
+
                     typeof(object).Module,
                     skipVisibility: false);
 

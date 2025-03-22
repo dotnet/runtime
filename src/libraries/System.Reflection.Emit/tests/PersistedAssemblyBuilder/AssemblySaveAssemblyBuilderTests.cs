@@ -304,6 +304,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/113789", TestRuntimes.Mono)]
         [InlineData(true)] 
         [InlineData(false)]
         public unsafe void AssemblyWithInstanceBasedFunctionPointer(bool useExplicitThis)
@@ -345,8 +346,11 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder methodBuilder = typeBuilder.DefineMethod(
                     "GetGuid",
                     MethodAttributes.Public | MethodAttributes.Static,
-                    typeof(Guid),
-                    [typeof(object), typeof(IntPtr)]);
+                    returnType: typeof(Guid),
+
+                    // In this test, we use typeof(object) for the "this" pointer to ensure the IL could be re-used for other
+                    // reference types, but normally this would be the appropriate type such as typeof(MyClassWithGuidProperty).
+                    parameterTypes: [typeof(object), typeof(IntPtr)]); 
 
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_0); // this
