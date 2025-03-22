@@ -1342,6 +1342,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     }
 
                     assertion.op2.kind   = O2K_LCLVAR_COPY;
+                    assertion.op2.vn     = optConservativeNormalVN(op2);
                     assertion.op2.lclNum = lclNum2;
 
                     // Ok everything has been set and the assertion looks good
