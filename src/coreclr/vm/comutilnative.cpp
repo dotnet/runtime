@@ -1101,6 +1101,7 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment)
 FCIMPL1(void, GCInterface::SuppressFinalize, Object *obj)
 {
     FCALL_CONTRACT;
+
     _ASSERTE(obj->GetMethodTable ()->HasFinalizer());
     GCHeapUtilities::GetGCHeap()->SetFinalizationRun(obj);
 }
