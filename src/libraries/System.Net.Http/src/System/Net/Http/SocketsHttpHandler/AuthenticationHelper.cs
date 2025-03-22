@@ -250,7 +250,7 @@ namespace System.Net.Http
                             // The DefaultCredentials applies only to NTLM, negotiate, and Kerberos-based authentication.
                             break;
                         }
-                        
+
                         var digestResponse = new DigestResponse(challenge.ChallengeData);
                         if (await TrySetDigestAuthToken(request, challenge.Credential, digestResponse, isProxyAuth).ConfigureAwait(false))
                         {

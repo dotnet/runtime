@@ -1299,15 +1299,17 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
 
+        [OuterLoop]
         [Fact]
         public async Task SocketsHttpHandler_UseDefaultCredentials_OneRequestOnlyWhen401()
         {
             var requestCount = 0;
-            await LoopbackServer.CreateClientAndServerAsync(
+            await LoopbackServerFactory.CreateClientAndServerAsync(
                 async url =>
                 {
                     using (var handler = new SocketsHttpHandler())
@@ -1321,13 +1323,18 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    await server.AcceptConnectionAsync(async connection =>
+                    var responseHeader = new[] { new HttpHeaderData("WWW-Authenticate", "Basic realm=\"Test Realm\"") };
+                    await server.HandleRequestAsync(HttpStatusCode.Unauthorized, responseHeader);
+                    requestCount++;
+
+                    // Only one request should be sent.
+                    await IgnoreExceptions(async () => 
                     {
+                        await server.HandleRequestAsync(HttpStatusCode.Unauthorized, responseHeader).WaitAsync(TestHelper.PassingTestTimeout);
                         requestCount++;
-                        await connection.ReadRequestHeaderAsync();
-                        await connection.WriteStringAsync("HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Basic realm=\"Test Realm\"\r\n\r\n");
                     });
-                });
+                }
+            );
 
             Assert.Equal(1, requestCount);
         }
