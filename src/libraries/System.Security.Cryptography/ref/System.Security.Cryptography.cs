@@ -1801,21 +1801,32 @@ namespace System.Security.Cryptography
         protected MLKem(System.Security.Cryptography.MLKemAlgorithm algorithm) { }
         public System.Security.Cryptography.MLKemAlgorithm Algorithm { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
+        public byte[] Decapsulate(byte[] ciphertext) { throw null; }
         public void Decapsulate(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        public void Decapsulate(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret, out int sharedSecretBytesWritten) { throw null; }
         protected abstract void DecapsulateCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public byte[] Encapsulate(out byte[] sharedSecret) { throw null; }
+        public byte[] Encapsulate(System.Span<byte> sharedSecret) { throw null; }
         public void Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        public void Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret, out int ciphertextBytesWritten, out int sharedSecretBytesWritten) { throw null; }
         protected abstract void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret);
+        public byte[] ExportDecapsulationKey() { throw null; }
         public void ExportDecapsulationKey(System.Span<byte> destination) { }
         protected abstract void ExportDecapsulationKeyCore(System.Span<byte> destination);
+        public byte[] ExportEncapsulationKey() { throw null; }
         public void ExportEncapsulationKey(System.Span<byte> destination) { }
         protected abstract void ExportEncapsulationKeyCore(System.Span<byte> destination);
+        public byte[] ExportPrivateSeed() { throw null; }
         public void ExportPrivateSeed(System.Span<byte> destination) { }
         protected abstract void ExportPrivateSeedCore(System.Span<byte> destination);
         public static System.Security.Cryptography.MLKem GenerateKey(System.Security.Cryptography.MLKemAlgorithm algorithm) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportDecapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportDecapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportEncapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportEncapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         protected void ThrowIfDisposed() { }
     }
