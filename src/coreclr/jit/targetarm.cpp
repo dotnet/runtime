@@ -203,4 +203,95 @@ ABIPassingInformation Arm32Classifier::ClassifyFloat(Compiler* comp, var_types t
     }
 }
 
+//-----------------------------------------------------------------------------
+// Arm32ReturnClassifier::Arm32ReturnClassifier:
+//   Construct a classifier for arm32 return values.
+//
+// Parameters:
+//   info - Classifier information
+//
+Arm32ReturnClassifier::Arm32ReturnClassifier(const ReturnClassifierInfo& info)
+    : m_info(info)
+{
+}
+
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify how a value is returned in the arm32 ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The return type
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//
+// Returns:
+//   Classification information for the return value.
+//
+ABIReturningInformation Arm32ReturnClassifier::Classify(Compiler* comp, var_types type, ClassLayout* structLayout)
+{
+    switch (type)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_REF:
+        case TYP_BYREF:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_R0, 0, genTypeSize(type)));
+        case TYP_LONG:
+            return ABIReturningInformation::FromSegments(comp, ABIReturningSegment(REG_R0, 0, 4),
+                                                         ABIReturningSegment(REG_R1, 4, 8));
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            if (comp->opts.compUseSoftFP)
+            {
+                if (type == TYP_FLOAT)
+                {
+                    return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_R0, 0, 4));
+                }
+                else
+                {
+                    return ABIReturningInformation::InRetBuffer();
+                }
+            }
+            else
+            {
+                return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_F0, 0, genTypeSize(type)));
+            }
+        default:
+            break;
+    }
+
+    assert(varTypeIsStruct(type));
+
+    var_types hfaType = comp->GetHfaType(structLayout->GetClassHandle());
+    if (hfaType != TYP_UNDEF)
+    {
+        unsigned elemSize = genTypeSize(hfaType);
+        unsigned slots    = structLayout->GetSize() / elemSize;
+        if (slots > 4)
+        {
+            return ABIReturningInformation::InRetBuffer();
+        }
+
+        ABIReturningInformation info(comp, slots);
+        for (unsigned i = 0; i < slots; i++)
+        {
+            info.Segment(i) =
+                ABIReturningSegment((regNumber)((int)REG_F0 + i * (elemSize / 4)), i * elemSize, elemSize);
+        }
+
+        return info;
+    }
+
+    if (structLayout->GetSize() <= 4)
+    {
+        return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_R0, 0, structLayout->GetSize()));
+    }
+
+    return ABIReturningInformation::InRetBuffer();
+}
+
 #endif // TARGET_ARM
