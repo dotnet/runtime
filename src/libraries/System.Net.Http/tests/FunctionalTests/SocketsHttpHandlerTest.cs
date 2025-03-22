@@ -3597,7 +3597,7 @@ namespace System.Net.Http.Functional.Tests
                 await using GenericLoopbackConnection connection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStreamWrapper, options);
                 await connection.InitializeConnectionAsync();
 
-                HttpRequestData requestData = await connection.HandleRequestAsync(content: "foo").WaitAsyn(TestHelper.PassingTestTimeoutMilliseconds);
+                HttpRequestData requestData = await connection.HandleRequestAsync(content: "foo").WaitAsync(TestHelper.PassingTestTimeoutMilliseconds);
                 Assert.Equal("/foo", requestData.Path);
             });
 
