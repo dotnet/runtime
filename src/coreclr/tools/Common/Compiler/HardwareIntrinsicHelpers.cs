@@ -48,6 +48,9 @@ namespace ILCompiler
                 case TargetArchitecture.ARM64:
                     Arm64IntrinsicConstants.AddToBuilder(builder, flags);
                     break;
+                case TargetArchitecture.RiscV64:
+                    RiscV64IntrinsicConstants.AddToBuilder(builder, flags);
+                    break;
                 default:
                     Debug.Fail("Probably unimplemented");
                     break;
@@ -327,6 +330,36 @@ namespace ILCompiler
                     InstructionSet.ARM64_VectorT128 => AdvSimd,
 
                     _ => throw new NotSupportedException(((InstructionSet_ARM64)instructionSet).ToString())
+                };
+            }
+        }
+
+        // Keep these enumerations in sync with cpufeatures.h in the minipal.
+        private static class RiscV64IntrinsicConstants
+        {
+            public const int Zba = 0x0001;
+            public const int Zbb = 0x0002;
+
+            public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
+            {
+                if ((flags & Zba) != 0)
+                    builder.AddSupportedInstructionSet("zba");
+                if ((flags & Zbb) != 0)
+                    builder.AddSupportedInstructionSet("zbb");
+            }
+
+            public static int FromInstructionSet(InstructionSet instructionSet)
+            {
+                return instructionSet switch
+                {
+                    // Baseline ISAs - they're always available
+                    InstructionSet.RiscV64_RiscV64Base => 0,
+
+                    // Optional ISAs - only available via opt-in or opportunistic light-up
+                    InstructionSet.RiscV64_Zba => Zba,
+                    InstructionSet.RiscV64_Zbb => Zbb,
+
+                    _ => throw new NotSupportedException(((InstructionSet_RiscV64)instructionSet).ToString())
                 };
             }
         }
