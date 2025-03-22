@@ -28,7 +28,6 @@ class FCallMethodDesc;
 class FieldDesc;
 class NDirect;
 class MethodDescChunk;
-struct LayoutRawFieldInfo;
 class InstantiatedMethodDesc;
 class DictionaryLayout;
 class Dictionary;
