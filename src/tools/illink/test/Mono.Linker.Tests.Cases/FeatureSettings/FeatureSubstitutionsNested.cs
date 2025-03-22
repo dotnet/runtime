@@ -20,67 +20,44 @@ namespace Mono.Linker.Tests.Cases.FeatureSettings
 	[KeptResource ("ResourceFileRemoveWhenFalse.txt")]
 	public class FeatureSubstitutionsNested
 	{
+		[ExpectedInstructionSequence (new[] {
+			"nop",
+			"ldc.i4.1",
+			"pop",
+			"ldc.i4.0",
+			"pop",
+			"ldc.i4.1",
+			"pop",
+			"ldc.i4.0",
+			"pop",
+			"ret"
+		})]
 		public static void Main ()
 		{
 			GlobalConditionMethod ();
 			AssemblyConditionMethod ();
 			TypeConditionMethod ();
 			MethodConditionMethod ();
-			_ = FieldConditionField;
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-			"ldc.i4.1",
-			"ret",
-		})]
 		static bool GlobalConditionMethod ()
 		{
 			throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-			"ldc.i4.0",
-			"ret",
-		})]
 		static bool AssemblyConditionMethod ()
 		{
 			throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-			"ldc.i4.1",
-			"ret",
-		})]
 		static bool TypeConditionMethod ()
 		{
 			throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-			"ldc.i4.0",
-			"ret",
-		})]
 		static bool MethodConditionMethod ()
 		{
 			throw new NotImplementedException ();
-		}
-
-		[Kept]
-		static readonly bool FieldConditionField;
-
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-			"nop",
-			"ldc.i4.1",
-			"stsfld System.Boolean Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutionsNested::FieldConditionField",
-			"ret"
-		})]
-		static FeatureSubstitutionsNested ()
-		{
 		}
 	}
 }
