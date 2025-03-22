@@ -1325,7 +1325,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         requestCount++;
                         await connection.ReadRequestHeaderAsync();
-                        await connection.WriteStringAsync("HTTP/1.1 401 Unauthorized\r\n\r\n");
+                        await connection.WriteStringAsync("HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Basic realm=\"Test Realm\"\r\n\r\n");
                     });
                 });
 
