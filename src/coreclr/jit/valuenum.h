@@ -1409,7 +1409,36 @@ public:
     bool GetVNFunc(ValueNum vn, VNFuncApp* funcApp);
 
     // Returns "true" iff "vn" is a function application of the form "func(op1, op2)".
-    bool IsBinFunc(ValueNum vn, VNFunc func, ValueNum* op1 = nullptr, ValueNum* op2 = nullptr);
+    bool IsVNBinFunc(ValueNum vn, VNFunc func, ValueNum* op1 = nullptr, ValueNum* op2 = nullptr);
+
+    // Returns "true" iff "vn" is a function application of the form "func(op, cns)"
+    // the cns can be on the left side if the function is commutative.
+    template <typename T>
+    bool IsVNBinFuncWithIntCon(ValueNum vn, VNFunc func, ValueNum* op, T* cns)
+    {
+        T        opCns;
+        ValueNum op1, op2;
+        if (IsVNBinFunc(vn, func, &op1, &op2))
+        {
+            if (IsVNIntegralConstant(op2, &opCns))
+            {
+                if (op != nullptr)
+                    *op = op1;
+                if (cns != nullptr)
+                    *cns = opCns;
+                return true;
+            }
+            else if (VNFuncIsCommutative(func) && IsVNIntegralConstant(op1, &opCns))
+            {
+                if (op != nullptr)
+                    *op = op2;
+                if (cns != nullptr)
+                    *cns = opCns;
+                return true;
+            }
+        }
+        return false;
+    }
 
     // Returns "true" iff "vn" is a valid value number -- one that has been previously returned.
     bool VNIsValid(ValueNum vn);

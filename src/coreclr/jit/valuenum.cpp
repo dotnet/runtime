@@ -9830,7 +9830,7 @@ bool ValueNumStore::GetVNFunc(ValueNum vn, VNFuncApp* funcApp)
 }
 
 //----------------------------------------------------------------------------------
-// IsBinFunc: A specialized version of GetVNFunc that checks if the given ValueNum
+// IsVNBinFunc: A specialized version of GetVNFunc that checks if the given ValueNum
 //     is the given VNFunc with arity 2. If so, it returns the two operands.
 //
 // Arguments:
@@ -9840,9 +9840,9 @@ bool ValueNumStore::GetVNFunc(ValueNum vn, VNFuncApp* funcApp)
 //    op2  - The second operand (if not null).
 //
 // Return Value:
-//    true if the ValueNum is the given VNFunc with arity 2, false otherwise.
+//    true if the given vn is the given VNFunc with two operands.
 //
-bool ValueNumStore::IsBinFunc(ValueNum vn, VNFunc func, ValueNum* op1, ValueNum* op2)
+bool ValueNumStore::IsVNBinFunc(ValueNum vn, VNFunc func, ValueNum* op1, ValueNum* op2)
 {
     VNFuncApp funcApp;
     if (GetVNFunc(vn, &funcApp) && (funcApp.m_func == func) && (funcApp.m_arity == 2))

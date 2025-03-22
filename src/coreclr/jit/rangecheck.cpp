@@ -1045,9 +1045,8 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 }
 
 //------------------------------------------------------------------------
-// IsLog2: Determine if the value number is a log2 pattern, which is
-//     XOR(LZCNT32(OR(x, 1), 31) or XOR(LZCNT64(OR(x, 1), 63)).
-//     This represents what BitOperations.Log2/int.Log2/long.Log2 would do.
+// IsLog2Pattern: Determine if the value number is a log2 pattern, which is
+//     "XOR(LZCNT32(OR(X, 1), 31)" or "XOR(LZCNT64(OR(X, 1), 63))".
 //
 // Arguments:
 //     vnStore    - the value number store
@@ -1057,38 +1056,28 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 // Return value:
 //     true if the value number is a log2 pattern, false otherwise.
 //
-static bool IsLog2(ValueNumStore* vnStore, ValueNum vn, int* upperBound = nullptr)
+static bool IsLog2Pattern(ValueNumStore* vnStore, ValueNum vn, int* upperBound = nullptr)
 {
 #if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
-    // First, look for "X ^ 31" or "X ^ 63" patterns...
     int      xorBy;
-    ValueNum op1, op2;
-    if (vnStore->IsBinFunc(vn, VNF_XOR, &op1, &op2) && vnStore->IsVNIntegralConstant(op2, &xorBy) &&
-        ((xorBy == 31) || (xorBy == 63)))
+    ValueNum op;
+    if (vnStore->IsVNBinFuncWithIntCon(vn, VNF_XOR, &op, &xorBy) && ((xorBy == 31) || (xorBy == 63)))
     {
-        // ...where that X has to be either LZCNT32 (in case of ^ 31) or LZCNT64 (in case of ^ 63)
-
         // Drop any integer cast if any, we're dealing with [0..63] range, any integer cast is redundant.
-        vnStore->IsBinFunc(op1, VNF_Cast, &op1);
+        vnStore->IsVNBinFunc(op, VNF_Cast, &op);
 
-        VNFunc lzcnFunc;
 #ifdef TARGET_XARCH
-        lzcnFunc = (xorBy == 31) ? VNF_HWI_LZCNT_LeadingZeroCount : VNF_HWI_LZCNT_X64_LeadingZeroCount;
+        VNFunc lzcntFunc = (xorBy == 31) ? VNF_HWI_LZCNT_LeadingZeroCount : VNF_HWI_LZCNT_X64_LeadingZeroCount;
 #else
-        lzcnFunc = (xorBy == 31) ? VNF_HWI_ArmBase_LeadingZeroCount : VNF_HWI_ArmBase_Arm64_LeadingZeroCount;
+        VNFunc lzcntFunc = (xorBy == 31) ? VNF_HWI_ArmBase_LeadingZeroCount : VNF_HWI_ArmBase_Arm64_LeadingZeroCount;
 #endif
-        if (vnStore->IsBinFunc(op1, lzcnFunc, &op1))
+        int orBy;
+        if (vnStore->IsVNBinFunc(op, lzcntFunc, &op) && vnStore->IsVNBinFuncWithIntCon(op, VNF_OR, &op, &orBy) &&
+            (orBy == 1))
         {
-            // Last, check if the argument of the LZCNT32/LZCNT64 is "OR(..., 1)".
-            int orBy;
-            if (vnStore->IsBinFunc(op1, VNF_OR, &op1, &op2) && vnStore->IsVNIntegralConstant(op2, &orBy) && (orBy == 1))
-            {
-                if (upperBound != nullptr)
-                {
-                    *upperBound = xorBy;
-                }
-                return true;
-            }
+            if (upperBound != nullptr)
+                *upperBound = xorBy;
+            return true;
         }
     }
 #endif
@@ -1104,7 +1093,8 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     if (binop->OperIs(GT_XOR))
     {
         int upperBound;
-        if (IsLog2(m_pCompiler->vnStore, m_pCompiler->vnStore->VNConservativeNormalValue(binop->gtVNPair), &upperBound))
+        if (IsLog2Pattern(m_pCompiler->vnStore, m_pCompiler->vnStore->VNConservativeNormalValue(binop->gtVNPair),
+                          &upperBound))
         {
             assert(upperBound > 0);
             return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, upperBound));
@@ -1573,7 +1563,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
         overflows = false;
     }
     else if (expr->OperIs(GT_XOR) &&
-             IsLog2(m_pCompiler->vnStore, m_pCompiler->vnStore->VNConservativeNormalValue(expr->gtVNPair)))
+             IsLog2Pattern(m_pCompiler->vnStore, m_pCompiler->vnStore->VNConservativeNormalValue(expr->gtVNPair)))
     {
         // For XOR we only care about Log2 pattern for now, which never overflows.
         overflows = false;
