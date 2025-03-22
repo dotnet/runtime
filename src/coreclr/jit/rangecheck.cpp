@@ -1059,6 +1059,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 //
 static bool IsLog2(ValueNumStore* vnStore, ValueNum vn, int* upperBound = nullptr)
 {
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
     // First, look for "X ^ 31" or "X ^ 63" patterns...
     int      xorBy;
     ValueNum op1, op2;
@@ -1070,7 +1071,12 @@ static bool IsLog2(ValueNumStore* vnStore, ValueNum vn, int* upperBound = nullpt
         // Drop any integer cast if any, we're dealing with [0..63] range, any integer cast is redundant.
         vnStore->IsBinFunc(op1, VNF_Cast, &op1);
 
-        VNFunc lzcnFunc = (xorBy == 31) ? VNF_HWI_LZCNT_LeadingZeroCount : VNF_HWI_LZCNT_X64_LeadingZeroCount;
+        VNFunc lzcnFunc;
+#ifdef TARGET_XARCH
+        lzcnFunc = (xorBy == 31) ? VNF_HWI_LZCNT_LeadingZeroCount : VNF_HWI_LZCNT_X64_LeadingZeroCount;
+#else
+        lzcnFunc = (xorBy == 31) ? VNF_HWI_ArmBase_LeadingZeroCount : VNF_HWI_ArmBase_Arm64_LeadingZeroCount;
+#endif
         if (vnStore->IsBinFunc(op1, lzcnFunc, &op1))
         {
             // Last, check if the argument of the LZCNT32/LZCNT64 is "OR(..., 1)".
@@ -1085,6 +1091,7 @@ static bool IsLog2(ValueNumStore* vnStore, ValueNum vn, int* upperBound = nullpt
             }
         }
     }
+#endif
     return false;
 }
 
