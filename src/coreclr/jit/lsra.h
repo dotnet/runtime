@@ -1196,10 +1196,16 @@ private:
     void spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition));
 
     void             processKills(RefPosition* killRefPosition);
-    FORCEINLINE void freeKilledRegs(RefPosition*     killRefPosition,
+    FORCEINLINE void freeKilledRegsLow(RefPosition*     killRefPosition,
                                     SingleTypeRegSet killedRegs,
                                     RefPosition*     nextKill,
                                     int              regBase);
+    #ifdef HAS_MORE_THAN_64_REGISTERS
+    FORCEINLINE void freeKilledRegsHigh(RefPosition*     killRefPosition,
+                                    SingleTypeRegSet killedRegs,
+                                    RefPosition*     nextKill,
+                                    int              regBase);
+    #endif
     void             spillGCRefs(RefPosition* killRefPosition);
 
     /*****************************************************************************
@@ -1791,6 +1797,10 @@ private:
     {
         m_AvailableRegs.AddRegNum(reg, regType);
     }
+    void makeRegAvailable(SingleTypeRegSet regs, var_types regType)
+    {
+        m_AvailableRegs.AddRegsetForType(regs, regType);
+    }
 
     void clearAllNextIntervalRef();
     void clearNextIntervalRef(regNumber reg, var_types regType);
@@ -1822,9 +1832,13 @@ private:
     }
     SingleTypeRegSet getMatchingConstants(SingleTypeRegSet mask, Interval* currentInterval, RefPosition* refPosition);
 
-    regMaskTP    fixedRegs;
+    SingleTypeRegSet    fixedRegsLow;
     LsraLocation nextFixedRef[REG_COUNT];
-    void         updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+    void         updateNextFixedRefLow(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+SingleTypeRegSet    fixedRegsHigh;
+    void         updateNextFixedRefHigh(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+#endif
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
     {
         LsraLocation loc = nextFixedRef[regNum];
@@ -2489,6 +2503,10 @@ public:
             SingleTypeRegSet registerAssignment;
         };
         regMaskTP killedRegisters;
+        /*SingleTypeRegSet killedRegistersLow;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        SingleTypeRegSet killedRegistersHigh;
+#endif*/
     };
     unsigned int bbNum;
 
@@ -2671,11 +2689,26 @@ public:
         return referent->registerType;
     }
 
+ /*   SingleTypeRegSet getKilledRegistersLow()
+    {
+        assert(refType == RefTypeKill);
+        return killedRegistersLow;
+    }
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    SingleTypeRegSet getKilledRegistersHigh()
+    {
+        assert(refType == RefTypeKill);
+        return killedRegistersHigh;
+    }
+#endif*/
+
+//#ifdef DEBUG
     regMaskTP getKilledRegisters()
     {
         assert(refType == RefTypeKill);
         return killedRegisters;
     }
+//#endif
 
     // Returns true if it is a reference on a GenTree node.
     bool IsActualRef()
