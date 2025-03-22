@@ -4891,7 +4891,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             return;
         }
     }
-    else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+    else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && !tree->gtSetFlags())
     {
         // Emit shlx, sarx, shrx if BMI2 is available instead of mov+shl, mov+sar, mov+shr.
         switch (tree->OperGet())
