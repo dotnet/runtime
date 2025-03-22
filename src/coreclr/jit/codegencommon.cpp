@@ -3391,7 +3391,10 @@ void CodeGen::genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber s
     {
         RegNode* sourceRegNode = graph->GetOrAdd(sourceReg);
         RegNode* destRegNode   = graph->GetOrAdd(varDsc->GetRegNum());
-        graph->AddEdge(sourceRegNode, destRegNode, TYP_I_IMPL, 0);
+        if (sourceRegNode != destRegNode)
+        {
+            graph->AddEdge(sourceRegNode, destRegNode, TYP_I_IMPL, 0);
+        }
     }
 }
 
