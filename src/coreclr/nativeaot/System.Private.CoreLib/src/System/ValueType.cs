@@ -127,11 +127,11 @@ namespace System
 
                 if (fieldType->ElementType == EETypeElementType.Single)
                 {
-                    hashCode.Add(Unsafe.As<byte, float>(ref fieldData));
+                    hashCode.Add(Unsafe.ReadUnaligned<float>(ref fieldData));
                 }
                 else if (fieldType->ElementType == EETypeElementType.Double)
                 {
-                    hashCode.Add(Unsafe.As<byte, double>(ref fieldData));
+                    hashCode.Add(Unsafe.ReadUnaligned<double>(ref fieldData));
                 }
                 else if (fieldType->IsPrimitive)
                 {
@@ -159,7 +159,7 @@ namespace System
                 }
                 else
                 {
-                    object fieldValue = Unsafe.As<byte, object>(ref fieldData);
+                    object fieldValue = Unsafe.ReadUnaligned<object>(ref fieldData);
                     if (fieldValue != null)
                     {
                         hashCode.Add(fieldValue);
