@@ -1044,10 +1044,77 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     }
 }
 
+//------------------------------------------------------------------------
+// IsLog2: Determine if the value number is a log2 pattern, which is
+//     XOR(LZCNT32(OR(x, 1), 31) or XOR(LZCNT64(OR(x, 1), 63)).
+//     This represents what BitOperations.Log2/int.Log2/long.Log2 would do.
+//
+// Arguments:
+//     comp - the compiler instance
+//     vn   - the value number to analyze
+//     upperBound - if not null, will be set to the upper bound of the log2 pattern (31 or 63)
+//
+// Return value:
+//     true if the value number is a log2 pattern, false otherwise.
+//
+static bool IsLog2(Compiler* comp, ValueNum vn, int* upperBound = nullptr)
+{
+    VNFuncApp funcApp;
+
+    // First, look for "X ^ 31" or "X ^ 63" patterns...
+    int xorBy;
+    if (comp->vnStore->GetVNFunc(vn, &funcApp) && (funcApp.m_func == VNF_XOR) &&
+        comp->vnStore->IsVNIntegralConstant(funcApp.m_args[1], &xorBy) && ((xorBy == 31) || (xorBy == 63)))
+    {
+        // ...where that X has to be either LZCNT32 (in case of ^ 31) or LZCNT64 (in case of ^ 63)
+
+        // Drop any integer cast if any, we're dealing with [0..63] range, any integer cast is redundant.
+        ValueNum  lzcntVN = funcApp.m_args[0];
+        VNFuncApp castFuncApp;
+        if (comp->vnStore->GetVNFunc(lzcntVN, &castFuncApp) && (castFuncApp.m_func == VNF_Cast) &&
+            varTypeIsIntegral(comp->vnStore->TypeOfVN(lzcntVN)))
+        {
+            lzcntVN = castFuncApp.m_args[0];
+        }
+
+        VNFunc    lzcnFunc = (xorBy == 31) ? VNF_HWI_LZCNT_LeadingZeroCount : VNF_HWI_LZCNT_X64_LeadingZeroCount;
+        VNFuncApp lzcntFuncApp;
+        if (comp->vnStore->GetVNFunc(lzcntVN, &lzcntFuncApp) && (lzcntFuncApp.m_func == lzcnFunc))
+        {
+            // Last, check if the argument of the LZCNT32/LZCNT64 is "OR(..., 1)".
+            int       orBy;
+            VNFuncApp orFuncApp;
+            if (comp->vnStore->GetVNFunc(lzcntFuncApp.m_args[0], &orFuncApp) && (orFuncApp.m_func == VNF_OR) &&
+                comp->vnStore->IsVNIntegralConstant(orFuncApp.m_args[1], &orBy) && orBy == 1)
+            {
+                if (upperBound != nullptr)
+                {
+                    *upperBound = xorBy;
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 // Compute the range for a binary operation.
 Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
 {
-    assert(binop->OperIs(GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
+    assert(binop->OperIs(GT_ADD, GT_XOR, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
+
+    // For XOR we only care about Log2 pattern for now
+    if (binop->OperIs(GT_XOR))
+    {
+        ValueNum xorVN = m_pCompiler->vnStore->VNConservativeNormalValue(binop->gtVNPair);
+        int      upperBound;
+        if (IsLog2(m_pCompiler, xorVN, &upperBound))
+        {
+            assert(upperBound > 0);
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, upperBound));
+        }
+        return Range(Limit(Limit::keUnknown));
+    }
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
@@ -1509,6 +1576,12 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     {
         overflows = false;
     }
+    else if (expr->OperIs(GT_XOR) &&
+             IsLog2(m_pCompiler, m_pCompiler->vnStore->VNConservativeNormalValue(expr->gtVNPair)))
+    {
+        // For XOR we only care about Log2 pattern for now, which never overflows.
+        overflows = false;
+    }
     // Walk through phi arguments to check if phi arguments involve arithmetic that overflows.
     else if (expr->OperIs(GT_PHI))
     {
@@ -1596,7 +1669,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // compute the range for binary operation
-    else if (expr->OperIs(GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
+    else if (expr->OperIs(GT_XOR, GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }

@@ -2766,6 +2766,12 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         {
             std::swap(arg0VN, arg1VN);
         }
+
+        // Try to keep constants on the right side.
+        if (IsVNConstant(arg0VN) && !IsVNConstant(arg1VN))
+        {
+            std::swap(arg0VN, arg1VN);
+        }
     }
 
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN') ?
