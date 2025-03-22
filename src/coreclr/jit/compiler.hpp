@@ -4408,6 +4408,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_IL_OFFSET:
         case GT_NOP:
         case GT_SWIFT_ERROR:
+        case GT_GCPOLL:
             return;
 
         // Unary operators with an optional operand

@@ -492,7 +492,7 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
-        private static partial void ThreadNative_PollGC();
+        private static partial void PollGCInternal();
 
         // GC Suspension is done by simply dropping into native code via p/invoke, and we reuse the p/invoke
         // mechanism for suspension. On all architectures we should have the actual stub used for the check be implemented
@@ -502,8 +502,11 @@ namespace System.Threading
             NativeThreadState catchAtSafePoint = ((NativeThreadClass*)Thread.DirectOnThreadLocalData.pNativeThread)->m_State & NativeThreadState.TS_CatchAtSafePoint;
             if (catchAtSafePoint != NativeThreadState.None)
             {
-                ThreadNative_PollGC();
+                PollGCWorker();
             }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void PollGCWorker() => PollGCInternal();
         }
 
         [StructLayout(LayoutKind.Sequential)]

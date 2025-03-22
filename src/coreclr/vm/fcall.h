@@ -59,9 +59,6 @@
 // to do the poll at the end.   If somewhere in the middle is the best
 // place you can do that too with HELPER_METHOD_POLL()
 
-// You don't need to erect a helper method frame to do a poll.  FC_GC_POLL
-// can do this (remember all your GC refs will be trashed).
-
 // Finally if your method is VERY small, you can get away without a poll,
 // you have to use FC_GC_POLL_NOT_NEEDED to mark this.
 // Use sparingly!
@@ -800,35 +797,6 @@ LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWST
     // Very short routines, or routines that are guaranteed to force GC or EH
     // don't need to poll the GC.  USE VERY SPARINGLY!!!
 #define FC_GC_POLL_NOT_NEEDED()    INCONTRACT(__fCallCheck.SetNotNeeded())
-
-Object* FC_GCPoll(void* me, Object* objToProtect = NULL);
-
-#define FC_GC_POLL_EX(ret)                                  \
-    {                                                       \
-        INCONTRACT(Thread::TriggersGC(GetThread());)        \
-        INCONTRACT(__fCallCheck.SetDidPoll();)              \
-        if (g_TrapReturningThreads)    \
-        {                                                   \
-            if (FC_GCPoll(__me))                            \
-                return ret;                                 \
-            while (0 == FC_NO_TAILCALL) { }; /* side effect the compile can't remove */  \
-        }                                                   \
-    }
-
-#define FC_GC_POLL()        FC_GC_POLL_EX(;)
-#define FC_GC_POLL_RET()    FC_GC_POLL_EX(0)
-
-#define FC_GC_POLL_AND_RETURN_OBJREF(obj)                   \
-    {                                                       \
-        INCONTRACT(__fCallCheck.SetDidPoll();)              \
-        Object* __temp = OBJECTREFToObject(obj);            \
-        if (g_TrapReturningThreads)    \
-        {                                                   \
-            __temp = FC_GCPoll(__me, __temp);               \
-            while (0 == FC_NO_TAILCALL) { }; /* side effect the compile can't remove */  \
-        }                                                   \
-        return __temp;                                      \
-    }
 
 #if defined(ENABLE_CONTRACTS)
 #define FC_CAN_TRIGGER_GC()         FCallGCCanTrigger::Enter()

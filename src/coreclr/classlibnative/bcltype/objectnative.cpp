@@ -83,8 +83,6 @@ FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCom
         pCompareRef->GetData(),
         pThisMT->GetNumInstanceFieldBytes()) == 0;
 
-    FC_GC_POLL_RET();
-
     FC_RETURN_BOOL(ret);
 }
 FCIMPLEND
