@@ -93,6 +93,7 @@ static size_t streaming_loop_tick(EventPipeSession *const session) {
 	bool ok;
 	if (!ep_session_get_streaming_enabled (session)){
 		session->streaming_thread = NULL;
+		ep_session_free (session);
 		return 1; // done
 	}
 	EP_GCX_PREEMP_ENTER
