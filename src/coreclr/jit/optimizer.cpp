@@ -49,6 +49,21 @@ PhaseStatus Compiler::optSetBlockWeights()
     {
         // Leave breadcrumb for loop alignment
         fgHasLoops = m_dfsTree->HasCycle();
+
+        // Ensure unreachable handler regions have cold weights.
+        // TODO: Rely on profile synthesis to do this.
+        for (EHblkDsc* const HBtab : EHClauses(this))
+        {
+            BasicBlock* const entryBlock = HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg;
+            if (entryBlock->bbPreds == nullptr)
+            {
+                for (BasicBlock* const block : Blocks(entryBlock, HBtab->ebdHndLast))
+                {
+                    block->bbSetRunRarely();
+                }
+            }
+        }
+
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
