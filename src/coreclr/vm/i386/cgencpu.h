@@ -30,9 +30,6 @@ class FramedMethodFrame;
 class Module;
 class ComCallMethodDesc;
 
-// CPU-dependent functions
-Stub * GenerateInitPInvokeFrameHelper();
-
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
 #define COMMETHOD_PREPAD                        8   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)

@@ -66,7 +66,6 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 
 
 void InitJITHelpers1();
-void InitJITHelpers2();
 
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
@@ -1158,10 +1157,8 @@ FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 
-#ifdef HOST_64BIT
 class InlinedCallFrame;
-Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
-#endif
+EXTERN_C Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
 
 #ifdef _DEBUG
 extern LONG g_JitCount;
