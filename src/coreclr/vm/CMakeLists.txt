@@ -293,6 +293,7 @@ set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     appdomainnative.cpp
     assemblynative.cpp
+    assemblyprobeextension.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
@@ -390,6 +391,7 @@ set(VM_HEADERS_WKS
     ../inc/jithelpers.h
     appdomainnative.hpp
     assemblynative.hpp
+    ../inc/assemblyprobeextension.h
     assemblyspec.hpp
     assemblyspecbase.h
     baseassemblyspec.h
