@@ -1306,7 +1306,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [Fact]
-        public async Task SocketsHttpHandler_UseDefaultCredentials_OneRequestOnlyWhen401()
+        public async Task SocketsHttpHandler_UseDefaultCredentials_OneRequestOnlyForBasicAuth()
         {
             var requestCount = 0;
             await LoopbackServerFactory.CreateClientAndServerAsync(
