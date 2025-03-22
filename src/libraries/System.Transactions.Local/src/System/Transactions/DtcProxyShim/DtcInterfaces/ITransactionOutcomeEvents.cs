@@ -22,7 +22,7 @@ internal interface ITransactionOutcomeEvents
         int hresult);
 
     void HeuristicDecision(
-        OletxTransactionHeuristic dwDecision,
+        Interop.Xolehlp.OletxTransactionHeuristic dwDecision,
         IntPtr pboidReason,
         int hresult);
 
