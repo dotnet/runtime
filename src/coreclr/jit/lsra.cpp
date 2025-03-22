@@ -275,14 +275,14 @@ SingleTypeRegSet LinearScan::lowSIMDRegs()
 #endif
 }
 
-void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill)
+void LinearScan::updateNextFixedRefLow(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill)
 {
     LsraLocation nextLocation = nextRefPosition == nullptr ? MaxLocation : nextRefPosition->nodeLocation;
 
     RefPosition* kill = nextKill;
     while ((kill != nullptr) && (kill->nodeLocation < nextLocation))
     {
-        if (kill->killedRegisters.IsRegNumInMask(regRecord->regNum))
+        if ((kill->killedRegisters.getLow() & genSingleTypeRegMask(regRecord->regNum)) != RBM_NONE)
         {
             nextLocation = kill->nodeLocation;
             break;
@@ -293,15 +293,45 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPo
 
     if (nextLocation == MaxLocation)
     {
-        fixedRegs.RemoveRegNumFromMask(regRecord->regNum);
+        fixedRegsLow &= ~genSingleTypeRegMask(regRecord->regNum);
     }
     else
     {
-        fixedRegs.AddRegNumInMask(regRecord->regNum);
+        fixedRegsLow |= genSingleTypeRegMask(regRecord->regNum);
     }
 
     nextFixedRef[regRecord->regNum] = nextLocation;
 }
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+void LinearScan::updateNextFixedRefHigh(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill)
+{
+    LsraLocation nextLocation = nextRefPosition == nullptr ? MaxLocation : nextRefPosition->nodeLocation;
+
+    RefPosition* kill = nextKill;
+    while ((kill != nullptr) && (kill->nodeLocation < nextLocation))
+    {
+        if ((kill->killedRegisters.getHigh() & genSingleTypeRegMask((regNumber)(regRecord->regNum - REG_HIGH_BASE))) != RBM_NONE)
+        {
+            nextLocation = kill->nodeLocation;
+            break;
+        }
+
+        kill = kill->nextRefPosition;
+    }
+
+    if (nextLocation == MaxLocation)
+    {
+        fixedRegsHigh &= ~genSingleTypeRegMask((regNumber)(regRecord->regNum - REG_HIGH_BASE));
+    }
+    else
+    {
+        fixedRegsHigh |= genSingleTypeRegMask((regNumber)(regRecord->regNum - REG_HIGH_BASE));
+    }
+
+    nextFixedRef[regRecord->regNum] = nextLocation;
+}
+#endif
 
 SingleTypeRegSet LinearScan::getMatchingConstants(SingleTypeRegSet mask,
                                                   Interval*        currentInterval,
@@ -3858,10 +3888,10 @@ void LinearScan::processKills(RefPosition* killRefPosition)
 
     regMaskTP killedRegs = killRefPosition->getKilledRegisters();
 
-    freeKilledRegs(killRefPosition, killedRegs.getLow(), nextKill, REG_LOW_BASE);
+    freeKilledRegsLow(killRefPosition, killedRegs.getLow(), nextKill, REG_LOW_BASE);
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    freeKilledRegs(killRefPosition, killedRegs.getHigh(), nextKill, REG_HIGH_BASE);
+    freeKilledRegsHigh(killRefPosition, killedRegs.getHigh(), nextKill, REG_HIGH_BASE);
 #endif
 
     regsBusyUntilKill &= ~killRefPosition->getKilledRegisters();
@@ -3878,7 +3908,7 @@ void LinearScan::processKills(RefPosition* killRefPosition)
 //   nextKill - The RefPosition for next kill
 //   regBase - `0` or `64` based on the `killedRegs` being processed
 //
-void LinearScan::freeKilledRegs(RefPosition*     killRefPosition,
+void LinearScan::freeKilledRegsLow(RefPosition*     killRefPosition,
                                 SingleTypeRegSet killedRegs,
                                 RefPosition*     nextKill,
                                 int              regBase)
@@ -3900,9 +3930,46 @@ void LinearScan::freeKilledRegs(RefPosition*     killRefPosition,
         RefPosition* regNextRefPos = regRecord->recentRefPosition == nullptr
                                          ? regRecord->firstRefPosition
                                          : regRecord->recentRefPosition->nextRefPosition;
-        updateNextFixedRef(regRecord, regNextRefPos, nextKill);
+        updateNextFixedRefLow(regRecord, regNextRefPos, nextKill);
     }
 }
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+//------------------------------------------------------------------------
+// freeKilledRegs: Handle  registers that are being killed.
+//
+// Arguments:
+//   killRefPosition - The RefPosition for the kill
+//   killedRegs - Registers to kill
+//   nextKill - The RefPosition for next kill
+//   regBase - `0` or `64` based on the `killedRegs` being processed
+//
+void LinearScan::freeKilledRegsHigh(RefPosition*     killRefPosition,
+    SingleTypeRegSet killedRegs,
+    RefPosition*     nextKill,
+    int              regBase)
+{
+
+while (killedRegs != RBM_NONE)
+{
+regNumber  killedReg        = (regNumber)(genFirstRegNumFromMaskAndToggle(killedRegs) + regBase);
+RegRecord* regRecord        = getRegisterRecord(killedReg);
+Interval*  assignedInterval = regRecord->assignedInterval;
+if (assignedInterval != nullptr)
+{
+unassignPhysReg(regRecord, assignedInterval->recentRefPosition);
+clearConstantReg(regRecord->regNum, assignedInterval->registerType);
+makeRegAvailable(regRecord->regNum, assignedInterval->registerType);
+}
+
+assert((nextFixedRef[killedReg] == killRefPosition->nodeLocation) || (killedReg >= AVAILABLE_REG_COUNT));
+RefPosition* regNextRefPos = regRecord->recentRefPosition == nullptr
+             ? regRecord->firstRefPosition
+             : regRecord->recentRefPosition->nextRefPosition;
+updateNextFixedRefHigh(regRecord, regNextRefPos, nextKill);
+}
+}
+#endif
 
 //------------------------------------------------------------------------
 // spillGCRefs: Spill any GC-type intervals that are currently in registers.
@@ -4859,11 +4926,31 @@ void LinearScan::allocateRegistersMinimal()
     clearAllNextIntervalRef();
     clearAllSpillCost();
 
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    regNumber reg = REG_FIRST;
+    for (; reg < get_REG_INT_LAST(); reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
-        updateNextFixedRef(physRegRecord, physRegRecord->firstRefPosition, killHead);
+        updateNextFixedRefLow(physRegRecord, physRegRecord->firstRefPosition, killHead);
+        assert(physRegRecord->assignedInterval == nullptr);
+    }
+
+    for (/*regNumber reg = REG_FP_FIRST*/; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    {
+        RegRecord* physRegRecord         = getRegisterRecord(reg);
+        physRegRecord->recentRefPosition = nullptr;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        if (reg < 64)
+        {
+            updateNextFixedRefLow(physRegRecord, physRegRecord->firstRefPosition, killHead);
+        }
+        else
+        {
+            updateNextFixedRefHigh(physRegRecord, physRegRecord->firstRefPosition, killHead);
+        }
+#else
+    updateNextFixedRefLow(physRegRecord, physRegRecord->firstRefPosition, killHead);
+#endif
         assert(physRegRecord->assignedInterval == nullptr);
     }
 
@@ -5082,7 +5169,18 @@ void LinearScan::allocateRegistersMinimal()
             RegRecord* regRecord        = currentRefPosition.getReg();
             Interval*  assignedInterval = regRecord->assignedInterval;
 
-            updateNextFixedRef(regRecord, currentRefPosition.nextRefPosition, nextKill);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+            if (regRecord->regNum < 64)
+            {
+                updateNextFixedRefLow(regRecord, currentRefPosition.nextRefPosition, nextKill);
+            }
+            else
+            {
+                updateNextFixedRefHigh(regRecord, currentRefPosition.nextRefPosition, nextKill);
+            }
+#else
+            updateNextFixedRefLow(regRecord, currentRefPosition.nextRefPosition, nextKill);
+#endif
 
             // This is a FixedReg. Disassociate any inactive constant interval from this register.
             if (assignedInterval != nullptr && !assignedInterval->isActive && assignedInterval->isConstant)
@@ -5523,11 +5621,52 @@ void LinearScan::allocateRegisters()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     resetRegState();
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    ////for (regNumber reg = REG_FIRST; reg < get_REG_INT_LAST(); reg = REG_NEXT(reg))
+    regNumber reg = REG_FIRST;
+    for (; reg < get_REG_INT_LAST(); reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
-        updateNextFixedRef(physRegRecord, physRegRecord->firstRefPosition, killHead);
+        updateNextFixedRefLow(physRegRecord, physRegRecord->firstRefPosition, killHead);
+
+        // Is this an incoming arg register? (Note that we don't, currently, consider reassigning
+        // an incoming arg register as having spill cost.)
+        Interval* interval = physRegRecord->assignedInterval;
+        if (interval != nullptr)
+        {
+#ifdef TARGET_ARM
+            if ((interval->registerType != TYP_DOUBLE) || genIsValidDoubleReg(reg))
+#endif // TARGET_ARM
+            {
+                updateNextIntervalRef(reg, interval);
+                updateSpillCost(reg, interval);
+                setRegInUse(reg, interval->registerType);
+                INDEBUG(registersToDump.AddRegNum(reg, interval->registerType));
+            }
+        }
+        else
+        {
+            clearNextIntervalRef(reg, physRegRecord->registerType);
+            clearSpillCost(reg, physRegRecord->registerType);
+        }
+    }
+
+    for (/*regNumber reg = REG_FP_FIRST*/; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    {
+        RegRecord* physRegRecord         = getRegisterRecord(reg);
+        physRegRecord->recentRefPosition = nullptr;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        if (reg < 64)
+        {
+            updateNextFixedRefLow(physRegRecord, physRegRecord->firstRefPosition, killHead);
+        }
+        else
+        {
+            updateNextFixedRefHigh(physRegRecord, physRegRecord->firstRefPosition, killHead);
+        }
+#else
+        updateNextFixedRefLow(physRegRecord, physRegRecord->firstRefPosition, killHead);
+#endif
 
         // Is this an incoming arg register? (Note that we don't, currently, consider reassigning
         // an incoming arg register as having spill cost.)
@@ -5795,8 +5934,18 @@ void LinearScan::allocateRegisters()
         {
             RegRecord* regRecord        = currentRefPosition.getReg();
             Interval*  assignedInterval = regRecord->assignedInterval;
-
-            updateNextFixedRef(regRecord, currentRefPosition.nextRefPosition, nextKill);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+            if (regRecord->regNum < 64)
+            {
+                updateNextFixedRefLow(regRecord, currentRefPosition.nextRefPosition, nextKill);
+            }
+            else
+            {
+                updateNextFixedRefHigh(regRecord, currentRefPosition.nextRefPosition, nextKill);
+            }
+#else
+            updateNextFixedRefLow(regRecord, currentRefPosition.nextRefPosition, nextKill);
+#endif
 
             // This is a FixedReg. Disassociate any inactive constant interval from this register.
             if (assignedInterval != nullptr && !assignedInterval->isActive && assignedInterval->isConstant)
@@ -13594,14 +13743,29 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         // Also eliminate as busy any register with a conflicting fixed reference at this or
         // the next location.
         // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-        SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
+        SingleTypeRegSet checkConflictMask = candidates;
+        int regBase = REG_LOW_BASE;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        if (!varTypeIsMask(regType))
+        {
+            checkConflictMask &= linearScan->fixedRegsLow;
+        }
+        else
+        {
+            regBase = REG_HIGH_BASE;
+            checkConflictMask &= linearScan->fixedRegsHigh;
+        }
+ #else
+        checkConflictMask &= linearScan->fixedRegsLow;
+#endif
         while (checkConflictMask != RBM_NONE)
         {
-            regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask, regType);
-            SingleTypeRegSet checkConflictBit = genSingleTypeRegMask(checkConflictReg);
+            //regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask, regType);
+            regNumber        checkConflictRegSingle = (regNumber)BitOperations::BitScanForward(checkConflictMask);
+            SingleTypeRegSet checkConflictBit = genSingleTypeRegMask(checkConflictRegSingle);
             checkConflictMask ^= checkConflictBit;
 
-            LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
+            LsraLocation checkConflictLocation = linearScan->nextFixedRef[(regNumber)(checkConflictRegSingle + regBase)];
 
             if ((checkConflictLocation == refPosition->nodeLocation) ||
                 (refPosition->delayRegFree && (checkConflictLocation == (refPosition->nodeLocation + 1))))
@@ -13913,14 +14077,30 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
     // Also eliminate as busy any register with a conflicting fixed reference at this or
     // the next location.
     // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-    SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
+    //SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
+    SingleTypeRegSet checkConflictMask = candidates;
+    int regBase = REG_LOW_BASE;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    if (!varTypeIsMask(regType))
+    {
+        checkConflictMask &= linearScan->fixedRegsLow;
+    }
+    else
+    {
+        regBase = REG_HIGH_BASE;
+        checkConflictMask &= linearScan->fixedRegsHigh;
+    }
+ #else
+    checkConflictMask &= linearScan->fixedRegsLow;
+#endif
     while (checkConflictMask != RBM_NONE)
     {
-        regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask, regType);
-        SingleTypeRegSet checkConflictBit = genSingleTypeRegMask(checkConflictReg);
+        //regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask, regType);
+        regNumber        checkConflictRegSingle = (regNumber)BitOperations::BitScanForward(checkConflictMask);
+        SingleTypeRegSet checkConflictBit = genSingleTypeRegMask(checkConflictRegSingle);
         checkConflictMask ^= checkConflictBit;
 
-        LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
+        LsraLocation checkConflictLocation = linearScan->nextFixedRef[(regNumber)(checkConflictRegSingle + regBase)];
 
         if ((checkConflictLocation == refPosition->nodeLocation) ||
             (refPosition->delayRegFree && (checkConflictLocation == (refPosition->nodeLocation + 1))))
