@@ -1061,7 +1061,8 @@ static bool IsLog2Pattern(ValueNumStore* vnStore, ValueNum vn, int* upperBound =
 #if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
     int      xorBy;
     ValueNum op;
-    if (vnStore->IsVNBinFuncWithIntCon(vn, VNF_XOR, &op, &xorBy) && ((xorBy == 31) || (xorBy == 63)))
+    // First, see if it's "X ^ 31" or "X ^ 63".
+    if (vnStore->IsVNBinFuncWithConst(vn, VNF_XOR, &op, &xorBy) && ((xorBy == 31) || (xorBy == 63)))
     {
         // Drop any integer cast if any, we're dealing with [0..63] range, any integer cast is redundant.
         vnStore->IsVNBinFunc(op, VNF_Cast, &op);
@@ -1071,8 +1072,9 @@ static bool IsLog2Pattern(ValueNumStore* vnStore, ValueNum vn, int* upperBound =
 #else
         VNFunc lzcntFunc = (xorBy == 31) ? VNF_HWI_ArmBase_LeadingZeroCount : VNF_HWI_ArmBase_Arm64_LeadingZeroCount;
 #endif
+        // Next, see if it's "LZCNT32(X | 1)" or "LZCNT64(X | 1)".
         int orBy;
-        if (vnStore->IsVNBinFunc(op, lzcntFunc, &op) && vnStore->IsVNBinFuncWithIntCon(op, VNF_OR, &op, &orBy) &&
+        if (vnStore->IsVNBinFunc(op, lzcntFunc, &op) && vnStore->IsVNBinFuncWithConst(op, VNF_OR, &op, &orBy) &&
             (orBy == 1))
         {
             if (upperBound != nullptr)

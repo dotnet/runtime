@@ -1414,7 +1414,7 @@ public:
     // Returns "true" iff "vn" is a function application of the form "func(op, cns)"
     // the cns can be on the left side if the function is commutative.
     template <typename T>
-    bool IsVNBinFuncWithIntCon(ValueNum vn, VNFunc func, ValueNum* op, T* cns)
+    bool IsVNBinFuncWithConst(ValueNum vn, VNFunc func, ValueNum* op, T* cns)
     {
         T        opCns;
         ValueNum op1, op2;
