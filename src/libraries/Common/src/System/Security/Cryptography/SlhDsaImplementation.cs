@@ -10,10 +10,11 @@ namespace System.Security.Cryptography
     internal sealed partial class SlhDsaImplementation : SlhDsa
     {
         internal static partial bool SupportsAny();
-        internal static partial SlhDsa GenerateKeyCore(SlhDsaAlgorithm info);
-        internal static partial SlhDsa ImportPublicKey(SlhDsaAlgorithm info, ReadOnlySpan<byte> source);
-        internal static partial SlhDsa ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm info, ReadOnlySpan<byte> source);
-        internal static partial SlhDsa ImportSecretKey(SlhDsaAlgorithm info, ReadOnlySpan<byte> source);
-        internal static partial SlhDsa ImportSeed(SlhDsaAlgorithm info, ReadOnlySpan<byte> source);
+
+        internal static partial SlhDsa GenerateKeyCore(SlhDsaAlgorithm algorithm);
+        internal static partial SlhDsa ImportPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+        internal static partial SlhDsa ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+        internal static partial SlhDsa ImportSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+        internal static partial SlhDsa ImportSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
     }
 }
