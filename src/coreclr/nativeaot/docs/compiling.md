@@ -74,6 +74,10 @@ You can use this feature by adding the `StaticICULinking` property to your proje
 ```xml
 <PropertyGroup>
   <StaticICULinking>true</StaticICULinking>
+
+  <!-- Optional: Embed ICU data. Update path to match your ICU version and variant:
+       l(arge), b(ig endian), s(mall) or full. -->
+  <EmbedIcuDataPath>/usr/share/icu/74.2/icudt74l.dat</EmbedIcuDataPath>
 </PropertyGroup>
 ```
 
