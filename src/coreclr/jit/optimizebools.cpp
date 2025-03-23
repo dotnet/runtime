@@ -1591,11 +1591,11 @@ PhaseStatus Compiler::optOptimizeBools()
         for (BasicBlock* b1 = fgFirstBB; b1 != nullptr; b1 = retry ? b1 : b1->Next())
         {
             retry = false;
-            if (b1->KindIs(BBJ_COND) && fgFoldCondToReturnBlock(b1))
+            /*if (b1->KindIs(BBJ_COND) && fgFoldCondToReturnBlock(b1))
             {
                 change = true;
                 numCond++;
-            }
+            }*/
 
             // We're only interested in conditional jumps here
 
