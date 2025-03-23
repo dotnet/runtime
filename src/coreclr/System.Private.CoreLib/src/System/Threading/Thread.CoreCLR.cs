@@ -491,6 +491,9 @@ namespace System.Threading
             }
         }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool CatchAtSafePoint();
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
         private static partial void PollGCInternal();
 
@@ -499,8 +502,7 @@ namespace System.Threading
         // as a small assembly stub which checks the global g_TrapReturningThreads flag and tail-call to this helper
         private static unsafe void PollGC()
         {
-            NativeThreadState catchAtSafePoint = ((NativeThreadClass*)Thread.DirectOnThreadLocalData.pNativeThread)->m_State & NativeThreadState.TS_CatchAtSafePoint;
-            if (catchAtSafePoint != NativeThreadState.None)
+            if (CatchAtSafePoint())
             {
                 PollGCWorker();
             }

@@ -238,6 +238,7 @@ FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
+    FCFuncElement("CatchAtSafePoint", ThreadNative::CatchAtSafePoint)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 
