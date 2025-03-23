@@ -1060,7 +1060,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 
     if (store->OperIs(GT_STORE_LCL_VAR) && src->IsMultiRegNode())
     {
-        lvaGetDesc(store->AsLclVar())->lvIsMultiRegRet = true;
+        lvaGetDesc(store->AsLclVar())->SetIsMultiRegDest();
     }
 
     return store;
@@ -3861,7 +3861,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 int simdWidth = getSIMDTypeSizeInBytes(fieldClsHnd);
                 if ((simdWidth > 0) && IsBaselineSimdIsaSupported())
                 {
-                    assert((totalSize <= 32) && (totalSize <= MaxStructSize));
+                    assert((totalSize <= 64) && (totalSize <= MaxStructSize));
                     var_types simdType = getSIMDTypeForSize(simdWidth);
 
                     bool hwAccelerated = true;
@@ -4747,12 +4747,15 @@ void Compiler::impImportLeaveEHRegions(BasicBlock* block)
             }
 #endif
 
-            unsigned finallyNesting = compHndBBtab[XTnum].ebdHandlerNestingLevel;
-            assert(finallyNesting <= compHndBBtabCount);
+            // We now record the EH region ID on GT_END_LFIN instead of the finally nesting depth,
+            // as the later can change as we optimize the code.
+            //
+            unsigned const ehID = compHndBBtab[XTnum].ebdID;
+            assert(ehID <= impInlineRoot()->compEHID);
 
-            GenTree* endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, finallyNesting);
-            endLFinStmt      = gtNewStmt(endLFin);
-            endCatches       = NULL;
+            GenTree* const endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, ehID);
+            endLFinStmt            = gtNewStmt(endLFin);
+            endCatches             = NULL;
 
             encFinallies++;
         }
@@ -6974,9 +6977,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_ENDFINALLY:
 
-                if (compIsForInlining())
+                if (compIsForInlining() && !opts.compInlineMethodsWithEH)
                 {
-                    assert(!"Shouldn't have exception handlers in the inliner!");
+                    assert(!"Shouldn't have exception handlers in the inlinee!");
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_ENDFINALLY);
                     return;
                 }
@@ -6998,9 +7001,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_ENDFILTER:
 
-                if (compIsForInlining())
+                if (compIsForInlining() && !opts.compInlineMethodsWithEH)
                 {
-                    assert(!"Shouldn't have exception handlers in the inliner!");
+                    assert(!"Shouldn't have exception handlers in the inlinee!");
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_ENDFILTER);
                     return;
                 }
@@ -7572,7 +7575,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             LEAVE:
 
-                if (compIsForInlining())
+                if (compIsForInlining() && !opts.compInlineMethodsWithEH)
                 {
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_LEAVE);
                     return;
@@ -11004,8 +11007,7 @@ GenTree* Compiler::impStoreMultiRegValueToVar(GenTree*                    op,
 
     LclVarDsc* varDsc = lvaGetDesc(tmpNum);
 
-    // Set "lvIsMultiRegRet" to block promotion under "!lvaEnregMultiRegVars".
-    varDsc->lvIsMultiRegRet = true;
+    varDsc->SetIsMultiRegDest();
 
     GenTreeLclVar* ret = gtNewLclvNode(tmpNum, varDsc->lvType);
 
@@ -11482,7 +11484,7 @@ inline void Compiler::impReimportMarkBlock(BasicBlock* block)
 void Compiler::impVerifyEHBlock(BasicBlock* block)
 {
     assert(block->hasTryIndex());
-    assert(!compIsForInlining());
+    assert(!compIsForInlining() || opts.compInlineMethodsWithEH);
 
     unsigned  tryIndex = block->getTryIndex();
     EHblkDsc* HBtab    = ehGetDsc(tryIndex);
@@ -12553,9 +12555,8 @@ void Compiler::impImport()
 
     // If the method had EH, we may be missing some pred edges
     // (notably those from BBJ_EHFINALLYRET blocks). Add them.
-    // Only needed for the root method, since inlinees can't have EH.
     //
-    if (!compIsForInlining() && (info.compXcptnsCount > 0))
+    if (info.compXcptnsCount > 0)
     {
         impFixPredLists();
         JITDUMP("\nAfter impImport() added blocks for try,catch,finally");
@@ -12963,7 +12964,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 //
 // Arguments:
 //   fncHandle -- inline candidate method
-//   methInfo -- method info from VN
+//   methInfo -- method info from VM
 //   forceInline -- true if method is marked with AggressiveInlining
 //   inlineResult -- ongoing inline evaluation
 //
@@ -12977,10 +12978,13 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE fncHandle,
     // We shouldn't have made up our minds yet...
     assert(!inlineResult->IsDecided());
 
-    if (methInfo->EHcount)
+    if (methInfo->EHcount > 0)
     {
-        inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_EH);
-        return;
+        if (!opts.compInlineMethodsWithEH)
+        {
+            inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_EH);
+            return;
+        }
     }
 
     if ((methInfo->ILCode == nullptr) || (codeSize == 0))

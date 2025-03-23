@@ -257,13 +257,6 @@ add_executable_clr(paltests
   filemapping_memmgt/VirtualProtect/test6/VirtualProtect.cpp
   filemapping_memmgt/VirtualProtect/test7/VirtualProtect.cpp
   filemapping_memmgt/VirtualQuery/test1/VirtualQuery.cpp
-  file_io/CopyFileA/test1/CopyFileA.cpp
-  file_io/CopyFileA/test2/test2.cpp
-  file_io/CopyFileA/test3/test3.cpp
-  file_io/CopyFileA/test4/test4.cpp
-  file_io/CopyFileW/test1/CopyFileW.cpp
-  file_io/CopyFileW/test2/test2.cpp
-  file_io/CopyFileW/test3/test3.cpp
   file_io/CreateFileA/test1/CreateFileA.cpp
   file_io/CreateFileW/test1/CreateFileW.cpp
   file_io/errorpathnotfound/test1/test1.cpp
@@ -289,12 +282,6 @@ add_executable_clr(paltests
   file_io/GetStdHandle/test2/GetStdHandle.cpp
   file_io/GetSystemTime/test1/test.cpp
   file_io/GetSystemTimeAsFileTime/test1/GetSystemTimeAsFileTime.cpp
-  file_io/GetTempFileNameA/test1/GetTempFileNameA.cpp
-  file_io/GetTempFileNameA/test2/GetTempFileNameA.cpp
-  file_io/GetTempFileNameA/test3/gettempfilenamea.cpp
-  file_io/GetTempFileNameW/test1/GetTempFileNameW.cpp
-  file_io/GetTempFileNameW/test2/GetTempFileNameW.cpp
-  file_io/GetTempFileNameW/test3/gettempfilenamew.cpp
   file_io/gettemppatha/test1/gettemppatha.cpp
   file_io/GetTempPathW/test1/GetTempPathW.cpp
   file_io/ReadFile/test1/ReadFile.cpp
@@ -402,7 +389,6 @@ add_executable_clr(paltests
   miscellaneous/SetEnvironmentVariableW/test3/test3.cpp
   miscellaneous/SetEnvironmentVariableW/test4/test4.cpp
   miscellaneous/SetLastError/test1/test.cpp
-# pal_specific/PAL_GetUserTempDirectoryW/test1/PAL_GetUserTempDirectoryW.cpp
   pal_specific/PAL_Initialize_Terminate/test1/PAL_Initialize_Terminate.cpp
   pal_specific/PAL_Initialize_Terminate/test2/pal_initialize_twice.cpp
 #  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test1/PAL_RegisterLibraryW_UnregisterLibraryW.cpp
@@ -523,3 +509,7 @@ target_link_libraries(paltests
 install (TARGETS paltests DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
 add_dependencies(paltests_install paltests)
 install (PROGRAMS runpaltests.sh runpaltestshelix.sh DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
+
+if(CLR_CMAKE_HOST_BROWSER)
+  install(FILES wasm/index.html paltestlist.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR} COMPONENT paltests EXCLUDE_FROM_ALL)
+endif(CLR_CMAKE_HOST_BROWSER)

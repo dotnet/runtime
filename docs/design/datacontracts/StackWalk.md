@@ -41,11 +41,25 @@ This contract depends on the following descriptors:
 | `InlinedCallFrame` | `CalleeSavedFP` | FP saved in Frame |
 | `SoftwareExceptionFrame` | `TargetContext` | Context object saved in Frame |
 | `SoftwareExceptionFrame` | `ReturnAddress` | Return address saved in Frame |
+| `FramedMethodFrame` | `TransitionBlockPtr` | Pointer to Frame's TransitionBlock |
+| `TransitionBlock` | `ReturnAddress` | Return address associated with the TransitionBlock |
+| `TransitionBlock` | `CalleeSavedRegisters` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
+| `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
+| `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
+| `DebuggerEval` | `EvalDuringException` | Flag used in processing FuncEvalFrame |
+| `ResumableFrame` | `TargetContextPtr` | Pointer to the Frame's Target Context |
+| `FaultingExceptionFrame` | `TargetContext` | Frame's Target Context |
+| `HijackFrame` | `ReturnAddress` | Frame's stored instruction pointer |
+| `HijackFrame` | `HijackArgsPtr` | Pointer to the Frame's stored HijackArgs |
+| `HijackArgs` (amd64) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
+| `HijackArgs` (amd64 Windows) | `Rsp` | Saved stack pointer |
+| `HijackArgs` (arm64) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
+| `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| For each FrameType `<frameType>`, `<frameType>##Identifier` | FrameIdentifier enum value | Identifier used to determine concrete type of Frames |
+| For each FrameType `<frameType>`, `<frameType>##Identifier` | `FrameIdentifier` enum value | Identifier used to determine concrete type of Frames |
 
 Contracts used:
 | Contract Name |
@@ -214,6 +228,71 @@ private static void bar()
     // Capture stack trace while in here
 }
 ```
+
+### Capital 'F' Frame Handling
+
+Capital 'F' Frame's store context data in a number of different ways. Of the couple dozen Frame types defined in `src/coreclr/vm/frames.h` several do not store any context data or update the context, signified by `NeedsUpdateRegDisplay_Impl() == false`. Of that Frames that do update the context, several share implementations of `UpdateRegDisplay_Impl` through inheritance. This leaves us with 9 distinct mechanisms to update the context that will be detailed below. Each mechanism is referred to using the Frame class that implements the mechanism and may be used by subclasses.
+
+Most of the handlers are implemented in `BaseFrameHandler`. Platform specific components are implemented/overridden in `<arch>FrameHandler`.
+
+#### InlinedCallFrame
+
+InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
+
+#### SoftwareExceptionFrame
+
+SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all ABI specified (platform specific) callee-saved registers are copied from the stored context to the working context.
+
+#### TransitionFrame
+
+TransitionFrames hold a pointer to a `TransitionBlock`. The TransitionBlock holds a return address along with a `CalleeSavedRegisters` struct which has values for all ABI specified callee-saved registers. The SP can be found using the address of the TransitionBlock. Since the TransitionBlock will be the lowest element on the stack, the SP is the address of the TransitionBlock + sizeof(TransitionBlock).
+
+When updating the context from a TransitionFrame, the IP, SP, and all ABI specified callee-saved registers are copied over.
+
+The following Frame types also use this mechanism:
+* FramedMethodFrame
+* CLRToCOMMethodFrame
+* PInvokeCallIFrame
+* PrestubMethodFrame
+* StubDispatchFrame
+* CallCountingHelperFrame
+* ExternalMethodFrame
+* DynamicHelperFrame
+
+#### FuncEvalFrame
+
+FuncEvalFrames hold a pointer to a `DebuggerEval`. The DebuggerEval holds a full context which is completely copied over to the working context when updating.
+
+#### ResumableFrame
+
+ResumableFrames hold a pointer to a context object (Note this is different from SoftwareExceptionFrames which hold the context directly). The entire context object is copied over to the working context when updating.
+
+RedirectedThreadFrames also use this mechanism.
+
+#### FaultingExceptionFrame
+
+FaultingExceptionFrames have two different implementations. One for Windows x86 and another for all other builds (with funclets).
+
+Given the cDAC does not yet support Windows x86, this version is not supported.
+
+The other version stores a context struct. To update the working context, the entire stored context is copied over. In addition the `ContextFlags` are updated to ensure the `CONTEXT_XSTATE` bit is not set given the debug version of the contexts can not store extended state. This bit is architecture specific.
+
+#### HijackFrame
+
+HijackFrames carry a IP (ReturnAddress) and a pointer to `HijackArgs`. All platforms update the IP and use the platform specific HijackArgs to update further registers. The following details currently implemented platforms.
+
+* x64 - On x64, HijackArgs contains a CalleeSavedRegister struct. The saved registers values contained in the struct are copied over to the working context.
+    * Windows - On Windows, HijackArgs also contains the SP value directly which is copied over to the working context.
+    * Non-Windows - On OS's other than Windows, HijackArgs does not contain an SP value. Instead since the HijackArgs struct lives on the stack, the SP is `&hijackArgs + sizeof(HijackArgs)`. This value is also copied over.
+* arm64 - Unlike on x64, on arm64 HijackArgs contains a list of register values instead of the CalleeSavedRegister struct. These values are copied over to the working context. The SP is fetched using the same technique as on x64 non-Windows where `SP = &hijackArgs + sizeof(HijackArgs)` and is copied over to the working context.
+
+#### TailCallFrame
+
+TailCallFrames are only used on Windows x86 which is not yet supported in the cDAC and therefore not implemented.
+
+#### HelperMethodFrame
+
+HelperMethodFrames are on the way to being removed. They are not currently supported in the cDAC.
 
 ### APIs
 

@@ -260,6 +260,7 @@ CONFIG_DWORD_INFO(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExcep
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_LegacyExceptionHandling, W("LegacyExceptionHandling"), 0, "Enable legacy exception handling.");
+CONFIG_DWORD_INFO(INTERNAL_LogStackOverflowExit, W("LogStackOverflowExit"), 0, "Temporary flag to log stack overflow exit process")
 
 ///
 /// Garbage collector
@@ -323,6 +324,12 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJit, W("AltJit"), "Enables AltJit and sele
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitOs, W("AltJitOS"), "Sets target OS for AltJit or uses native one by default. Only applicable for ARM/AMR64 at the moment.")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitExcludeAssemblies, W("AltJitExcludeAssemblies"), "Do not use AltJit on this semicolon-delimited list of assemblies.")
 #endif // defined(ALLOW_SXS_JIT)
+
+#ifdef FEATURE_INTERPRETER
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_InterpreterName, W("InterpreterName"), "Primary interpreter to use")
+CONFIG_STRING_INFO(INTERNAL_InterpreterPath, W("InterpreterPath"), "Full path to the interpreter to use")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_Interpreter, W("Interpreter"), "Enables Interpreter and selectively limits it to the specified methods.")
+#endif // FEATURE_INTERPRETER
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitHostMaxSlabCache, W("JitHostMaxSlabCache"), 0x1000000, "Sets jit host max slab cache size, 16MB default")
 
@@ -581,6 +588,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_VirtualCallStubLogging, W("VirtualCallStubLogg
 CONFIG_DWORD_INFO(INTERNAL_VirtualCallStubMissCount, W("VirtualCallStubMissCount"), 100, "Used only when STUB_LOGGING is defined, which by default is not.")
 CONFIG_DWORD_INFO(INTERNAL_VirtualCallStubResetCacheCounter, W("VirtualCallStubResetCacheCounter"), 0, "Used only when STUB_LOGGING is defined, which by default is not.")
 CONFIG_DWORD_INFO(INTERNAL_VirtualCallStubResetCacheIncr, W("VirtualCallStubResetCacheIncr"), 0, "Used only when STUB_LOGGING is defined, which by default is not.")
+CONFIG_DWORD_INFO(INTERNAL_UseCachedInterfaceDispatch, W("UseCachedInterfaceDispatch"), 0, "If cached interface dispatch is compiled in, use that instead of virtual stub dispatch")
 
 ///
 /// Watson
@@ -686,6 +694,9 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 #endif
 
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_MaxVectorTBitWidth,           W("MaxVectorTBitWidth"),        0, "The maximum decimal width, in bits, that Vector<T> is allowed to be. A value less than 128 is treated as the system default.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_PreferredVectorBitWidth,      W("PreferredVectorBitWidth"),   0, "The maximum decimal width, in bits, of fixed-width vectors that may be considered hardware accelerated. A value less than 128 is treated as the system default.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+#endif // defined(TARGET_AMD64) || defined(TARGET_X86)
 
 //
 // Hardware Intrinsic ISAs; keep in sync with jitconfigvalues.h
