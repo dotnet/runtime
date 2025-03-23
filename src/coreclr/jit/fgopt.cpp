@@ -4420,7 +4420,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                 modified = true;
                 bNext    = block->Next();
             }
-            // Remove empty blocks
+
             if (block->KindIs(BBJ_ALWAYS))
             {
                 bDest = block->GetTarget();
