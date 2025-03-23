@@ -1044,48 +1044,6 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     }
 }
 
-//------------------------------------------------------------------------
-// IsLog2Pattern: Determine if the value number is a log2 pattern, which is
-//     "XOR(LZCNT32(OR(X, 1), 31)" or "XOR(LZCNT64(OR(X, 1), 63))".
-//
-// Arguments:
-//     vnStore    - the value number store
-//     vn         - the value number to analyze
-//     upperBound - if not null, will be set to the upper bound of the log2 pattern (31 or 63)
-//
-// Return value:
-//     true if the value number is a log2 pattern, false otherwise.
-//
-static bool IsLog2Pattern(ValueNumStore* vnStore, ValueNum vn, int* upperBound = nullptr)
-{
-#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
-    int      xorBy;
-    ValueNum op;
-    // First, see if it's "X ^ 31" or "X ^ 63".
-    if (vnStore->IsVNBinFuncWithConst(vn, VNF_XOR, &op, &xorBy) && ((xorBy == 31) || (xorBy == 63)))
-    {
-        // Drop any integer cast if any, we're dealing with [0..63] range, any integer cast is redundant.
-        vnStore->IsVNBinFunc(op, VNF_Cast, &op);
-
-#ifdef TARGET_XARCH
-        VNFunc lzcntFunc = (xorBy == 31) ? VNF_HWI_LZCNT_LeadingZeroCount : VNF_HWI_LZCNT_X64_LeadingZeroCount;
-#else
-        VNFunc lzcntFunc = (xorBy == 31) ? VNF_HWI_ArmBase_LeadingZeroCount : VNF_HWI_ArmBase_Arm64_LeadingZeroCount;
-#endif
-        // Next, see if it's "LZCNT32(X | 1)" or "LZCNT64(X | 1)".
-        int orBy;
-        if (vnStore->IsVNBinFunc(op, lzcntFunc, &op) && vnStore->IsVNBinFuncWithConst(op, VNF_OR, &op, &orBy) &&
-            (orBy == 1))
-        {
-            if (upperBound != nullptr)
-                *upperBound = xorBy;
-            return true;
-        }
-    }
-#endif
-    return false;
-}
-
 // Compute the range for a binary operation.
 Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
 {
@@ -1095,8 +1053,8 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     if (binop->OperIs(GT_XOR))
     {
         int upperBound;
-        if (IsLog2Pattern(m_pCompiler->vnStore, m_pCompiler->vnStore->VNConservativeNormalValue(binop->gtVNPair),
-                          &upperBound))
+        if (m_pCompiler->vnStore->IsVNLog2(m_pCompiler->vnStore->VNConservativeNormalValue(binop->gtVNPair),
+                                           &upperBound))
         {
             assert(upperBound > 0);
             return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, upperBound));
@@ -1526,6 +1484,8 @@ bool RangeCheck::DoesOverflow(BasicBlock* block, GenTree* expr, const Range& ran
 
 bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range)
 {
+    ValueNumStore* vnStore = m_pCompiler->vnStore;
+
     JITDUMP("Does overflow [%06d]?\n", Compiler::dspTreeID(expr));
     GetSearchPath()->Set(expr, block, SearchPath::Overwrite);
 
@@ -1536,7 +1496,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
         overflows = true;
     }
     // If the definition chain resolves to a constant, it doesn't overflow.
-    else if (m_pCompiler->vnStore->IsVNConstant(expr->gtVNPair.GetConservative()))
+    else if (vnStore->IsVNConstant(expr->gtVNPair.GetConservative()))
     {
         overflows = false;
     }
@@ -1564,8 +1524,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     {
         overflows = false;
     }
-    else if (expr->OperIs(GT_XOR) &&
-             IsLog2Pattern(m_pCompiler->vnStore, m_pCompiler->vnStore->VNConservativeNormalValue(expr->gtVNPair)))
+    else if (expr->OperIs(GT_XOR) && vnStore->IsVNLog2(m_pCompiler->vnStore->VNConservativeNormalValue(expr->gtVNPair)))
     {
         // For XOR we only care about Log2 pattern for now, which never overflows.
         overflows = false;

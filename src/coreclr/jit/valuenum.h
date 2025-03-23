@@ -1055,6 +1055,9 @@ public:
     // Returns true if the VN represents a node that is never negative.
     bool IsVNNeverNegative(ValueNum vn);
 
+    // Returns true if the VN represents BitOperations.Log2 pattern
+    bool IsVNLog2(ValueNum vn, int* upperBound = nullptr);
+
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
 
     // Returns true if the VN is known or likely to appear as the conservative value number
