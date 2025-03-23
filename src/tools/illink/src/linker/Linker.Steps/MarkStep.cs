@@ -1196,20 +1196,27 @@ namespace Mono.Linker.Steps
 
 		protected void MarkCustomAttributeProperty (CustomAttributeNamedArgument namedArgument, TypeDefinition attribute, ICustomAttribute ca, in DependencyInfo reason, MessageOrigin origin)
 		{
-			PropertyDefinition? property = GetProperty (attribute, namedArgument.Name);
-			if (property != null) {
-				try {
-					MarkMethod (property.SetMethod, reason, origin);
-				} catch (Exception ex) {
-					throw new Exception ($"Exception occurred when reading property {property.FullName} of type {property.DeclaringType.FullName} with SetMethod {property.SetMethod}", ex);
+			TypeDefinition? type = attribute;
+			MethodDefinition? method = null;
+			while (type is not null) {
+				PropertyDefinition? property = type.Properties.FirstOrDefault (p => p.Name == namedArgument.Name);
+
+				if (property?.SetMethod is not null) {
+					method = property.SetMethod;
+					break;
 				}
+
+				type = Context.TryResolve (type.BaseType);
 			}
 
-			MarkCustomAttributeArgument (namedArgument.Argument, ca, origin);
+			if (method is not null) {
+				MarkMethod (method, reason, origin);
+				MarkCustomAttributeArgument (namedArgument.Argument, ca, origin);
 
-			if (property != null && Annotations.FlowAnnotations.RequiresDataFlowAnalysis (property.SetMethod)) {
-				var scanner = new AttributeDataFlow (Context, this, origin);
-				scanner.ProcessAttributeDataflow (property.SetMethod, new List<CustomAttributeArgument> { namedArgument.Argument });
+				if (Annotations.FlowAnnotations.RequiresDataFlowAnalysis (method)) {
+					var scanner = new AttributeDataFlow (Context, this, origin);
+					scanner.ProcessAttributeDataflow (method, new List<CustomAttributeArgument> { namedArgument.Argument });
+				}
 			}
 		}
 
