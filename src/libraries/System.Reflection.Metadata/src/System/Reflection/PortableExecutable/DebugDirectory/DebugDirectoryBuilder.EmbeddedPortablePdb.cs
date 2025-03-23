@@ -47,8 +47,7 @@ namespace System.Reflection.PortableExecutable
             builder.WriteInt32(debugMetadata.Count);
 
             // compressed data:
-            var compressed = new MemoryStream();
-            using (var deflate = new DeflateStream(compressed, CompressionLevel.Optimal, leaveOpen: true))
+            using (var deflate = new DeflateStream(new BlobBuilderStream(builder), CompressionLevel.Optimal))
             {
                 foreach (var blob in debugMetadata.GetBlobs())
                 {
@@ -57,10 +56,28 @@ namespace System.Reflection.PortableExecutable
                 }
             }
 
-            builder.WriteBytes(compressed.GetBuffer(), 0, (int)compressed.Length);
-
             return builder.Count - start;
         }
 
+        /// <summary>
+        /// Provides a <see cref="Stream"/> interface to write to a <see cref="BlobBuilder"/>.
+        /// </summary>
+        /// <param name="builder">The blob builder to write data to.</param>
+        private sealed class BlobBuilderStream(BlobBuilder builder) : Stream
+        {
+            public override bool CanRead => false;
+            public override bool CanSeek => false;
+            public override bool CanWrite => true;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override void Flush() { }
+            public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => builder.WriteBytes(buffer, offset, count);
+#if NET
+            public override void Write(ReadOnlySpan<byte> buffer) => builder.WriteBytes(buffer);
+#endif
+        }
     }
 }
