@@ -1353,21 +1353,30 @@ bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SI
     const char *className = NULL;
     const char *namespaceName = NULL;
     const char *methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
-    int32_t opcode = -1;
 
     if (namespaceName && !strcmp(namespaceName, "System"))
     {
         if (className && !strcmp(className, "Environment"))
         {
             if (methodName && !strcmp(methodName, "FailFast"))
-                opcode = INTOP_FAILFAST; // to be removed, not really an intrisic
+            {
+                AddIns(INTOP_FAILFAST); // to be removed, not really an intrisic
+                m_pStackPointer--;
+                return true;
+            }
         }
-    }
-
-    if (opcode != -1)
-    {
-        AddIns(opcode);
-        return true;
+        else if (className && !strcmp(className, "Object"))
+        {
+            // This is needed at this moment because we don't have support for interop
+            // with compiled code, but it might make sense in the future for this to remain
+            // in order to avoid redundant interp to jit transition.
+            if (methodName && !strcmp(methodName, ".ctor"))
+            {
+                AddIns(INTOP_NOP);
+                m_pStackPointer--;
+                return true;
+            }
+        }
     }
 
     return false;
