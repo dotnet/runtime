@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Reflection.Runtime.BindingFlagSupport;
 using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
@@ -240,9 +241,39 @@ namespace System.Reflection.Runtime.PropertyInfos
                 {
                     getter = GetPropertyMethod(PropertyMethodSemantics.Getter);
 
-                    if (getter == null)
-                        getter = RuntimeDummyMethodInfo.Instance;
+                    if (getter is null)
+                    {
+                        if (Setter is not null && Setter.IsVirtual)
+                        {
+                            Type? baseType = DeclaringType.BaseType;
 
+                            while (getter is null && baseType is not null)
+                            {
+                                foreach (PropertyInfo basePropertyInfo in PropertyPolicies.Instance.GetDeclaredMembers(baseType))
+                                {
+                                    if (basePropertyInfo.Name == Name)
+                                    {
+                                        if (basePropertyInfo is RuntimePropertyInfo baseRuntimePropertyInfo)
+                                        {
+                                            getter = baseRuntimePropertyInfo.GetPropertyMethod(PropertyMethodSemantics.Getter);
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (getter is not null)
+                                {
+                                    break;
+                                }
+                                else
+                                {
+                                    baseType = baseType.BaseType;
+                                }
+                            }
+                        }
+                    }
+
+                    getter ??= RuntimeDummyMethodInfo.Instance;
                     _lazyGetter = getter;
                 }
 
@@ -255,13 +286,43 @@ namespace System.Reflection.Runtime.PropertyInfos
             get
             {
                 RuntimeNamedMethodInfo setter = _lazySetter;
-                if (setter == null)
+                if (setter is null)
                 {
                     setter = GetPropertyMethod(PropertyMethodSemantics.Setter);
 
-                    if (setter == null)
-                        setter = RuntimeDummyMethodInfo.Instance;
+                    if (setter is null)
+                    {
+                        if (Getter is not null && Getter.IsVirtual)
+                        {
+                            Type? baseType = DeclaringType.BaseType;
 
+                            while (setter is null && baseType is not null)
+                            {
+                                foreach (PropertyInfo basePropertyInfo in PropertyPolicies.Instance.GetDeclaredMembers(baseType))
+                                {
+                                    if (basePropertyInfo.Name == Name)
+                                    {
+                                        if (basePropertyInfo is RuntimePropertyInfo baseRuntimePropertyInfo)
+                                        {
+                                            setter = baseRuntimePropertyInfo.GetPropertyMethod(PropertyMethodSemantics.Setter);
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (setter is not null)
+                                {
+                                    break;
+                                }
+                                else
+                                {
+                                    baseType = baseType.BaseType;
+                                }
+                            }
+                        }
+                    }
+
+                    setter ??= RuntimeDummyMethodInfo.Instance;
                     _lazySetter = setter;
                 }
 

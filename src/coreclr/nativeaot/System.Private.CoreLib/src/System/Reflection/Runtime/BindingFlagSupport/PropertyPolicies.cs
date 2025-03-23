@@ -86,7 +86,9 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         public sealed override bool OkToIgnoreAmbiguity(PropertyInfo m1, PropertyInfo m2)
         {
-            return false;
+            return m1.PropertyType == m2.PropertyType
+                && ((m1.GetMethod is null && m2.GetMethod is null) || ((m1.GetMethod is not null && m2.GetMethod is not null) && DefaultBinder.CompareMethodSig(m1.GetMethod, m2.GetMethod)))
+                && ((m1.SetMethod is null && m2.SetMethod is null) || ((m1.SetMethod is not null && m2.SetMethod is not null) && DefaultBinder.CompareMethodSig(m1.SetMethod, m2.SetMethod)));
         }
 
         private static MethodInfo? GetAccessorMethod(PropertyInfo property)
