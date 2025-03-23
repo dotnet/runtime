@@ -133,7 +133,7 @@ namespace System
             if (dstElementType == srcElementType)
             {
                 // Rebox the value if the EETypeElementTypes match
-                dstObject = RuntimeImports.RhBox(dstEEType, ref srcObject.GetRawData());
+                dstObject = RuntimeExports.RhBox(dstEEType, ref srcObject.GetRawData());
             }
             else
             {
@@ -409,11 +409,8 @@ namespace System
         }
 
         internal static ArgumentException CreateChangeTypeArgumentException(MethodTable* srcEEType, MethodTable* dstEEType, bool destinationIsByRef = false)
-            => CreateChangeTypeArgumentException(srcEEType, Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType)), destinationIsByRef);
-
-        internal static ArgumentException CreateChangeTypeArgumentException(MethodTable* srcEEType, Type dstType, bool destinationIsByRef = false)
         {
-            object? destinationTypeName = dstType;
+            object? destinationTypeName = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType));
             if (destinationIsByRef)
                 destinationTypeName += "&";
             return new ArgumentException(SR.Format(SR.Arg_ObjObjEx, Type.GetTypeFromHandle(new RuntimeTypeHandle(srcEEType)), destinationTypeName));

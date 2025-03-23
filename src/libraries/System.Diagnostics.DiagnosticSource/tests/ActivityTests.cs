@@ -1416,7 +1416,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ActivityCurrentFlowsWithAsyncSimple()
         {
             Activity activity = new Activity("activity").Start();
@@ -1433,7 +1433,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ActivityCurrentFlowsWithAsyncComplex()
         {
             Activity originalActivity = Activity.Current;
@@ -1472,7 +1472,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current could be set
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ActivityCurrentSet()
         {
             Activity activity = new Activity("activity");

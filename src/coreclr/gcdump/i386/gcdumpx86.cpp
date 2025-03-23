@@ -8,9 +8,9 @@
 #ifdef TARGET_X86
 /*****************************************************************************/
 
-#ifndef TARGET_UNIX
+#if !defined(TARGET_UNIX) && !defined(SOS_INCLUDE)
 #include "utilcode.h"           // For _ASSERTE()
-#endif //!TARGET_UNIX
+#endif
 #include "gcdump.h"
 
 
@@ -834,10 +834,7 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
 
                     if (callPndTab)
                     {
-#if defined(_DEBUG) && !defined(STRIKE)
-                // note: _ASSERTE is a no-op for strike
                         PTR_CBYTE offsStart = table;
-#endif
                         gcPrintf(" argOffs(%d) =", callPndTabCnt);
                         for (unsigned i=0; i < callPndTabCnt; i++)
                         {

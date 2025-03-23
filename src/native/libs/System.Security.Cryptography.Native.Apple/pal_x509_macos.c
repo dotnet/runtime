@@ -391,7 +391,7 @@ int32_t AppleCryptoNative_X509CopyWithPrivateKey(SecCertificateRef cert,
     SecKeychainItemRef itemCopy = NULL;
 
     // This only happens with an ephemeral key, so the keychain we're adding it to is temporary.
-    if (status == errSecNoSuchKeychain)
+    if (status == errSecNoSuchKeychain || status == errSecInvalidItemRef)
     {
         status = AddKeyToKeychain(privateKey, targetKeychain, NULL);
     }

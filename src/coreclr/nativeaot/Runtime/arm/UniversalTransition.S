@@ -125,10 +125,6 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
 
 GLOBAL_LABEL ReturnFrom\FunctionName
 
-        // We cannot make the label public as that tricks DIA stackwalker into thinking
-        // it's the beginning of a method. For this reason we export an auxiliary variable
-        // holding the address instead.
-
         // Move the result (the target address) to r12 so it doesn't get overridden when we restore the
         // argument registers. Additionally make sure the thumb2 bit is set.
         orr	         r12, r0, #1

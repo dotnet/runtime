@@ -75,7 +75,7 @@ namespace Tracing.Tests.Common
     }
 
     // This event source is used by the test infra to
-    // to insure that providers have finished being enabled
+    // to ensure that providers have finished being enabled
     // for the session being observed. Since the client API
     // returns the pipe for reading _before_ it finishes
     // enabling the providers to write to that session,
@@ -344,7 +344,7 @@ namespace Tracing.Tests.Common
         // the process that created them, so we don't need to check on that platform.
         static public bool EnsureCleanEnvironment()
         {
-            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
             {
                 Func<(IEnumerable<IGrouping<int,FileInfo>>, List<int>)> getPidsAndSockets = () =>
                 {

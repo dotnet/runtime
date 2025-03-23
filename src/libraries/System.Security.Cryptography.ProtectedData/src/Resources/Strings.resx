@@ -63,4 +63,7 @@
   <data name="PlatformNotSupported_CryptographyProtectedData" xml:space="preserve">
     <value>Windows Data Protection API (DPAPI) is not supported on this platform.</value>
   </data>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
+  </data>
 </root>

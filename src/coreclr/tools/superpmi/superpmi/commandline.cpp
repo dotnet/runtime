@@ -175,7 +175,7 @@ void CommandLine::DumpHelp(const char* program)
     printf("     ; if there are any failures, record their MC numbers in the file fail.mcl\n");
 }
 
-bool CommandLine::ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
+bool CommandLine::ParseJitOption(const char* optionString, char** key, char** value)
 {
     char tempKey[1024];
 
@@ -193,12 +193,12 @@ bool CommandLine::ParseJitOption(const char* optionString, WCHAR** key, WCHAR** 
     const char* tempVal = &optionString[i + 1];
 
     const unsigned keyLen = i;
-    WCHAR*       keyBuf = new WCHAR[keyLen + 1];
-    MultiByteToWideChar(CP_UTF8, 0, tempKey, keyLen + 1, keyBuf, keyLen + 1);
+    char*          keyBuf = new char[keyLen + 1];
+    strcpy_s(keyBuf, keyLen + 1, tempKey);
 
     const unsigned valLen = (unsigned)strlen(tempVal);
-    WCHAR*       valBuf = new WCHAR[valLen + 1];
-    MultiByteToWideChar(CP_UTF8, 0, tempVal, valLen + 1, valBuf, valLen + 1);
+    char*          valBuf = new char[valLen + 1];
+    strcpy_s(valBuf, valLen + 1, tempVal);
 
     *key   = keyBuf;
     *value = valBuf;
@@ -912,8 +912,8 @@ bool CommandLine::AddJitOption(int&  currArgument,
         targetjitOptions = *pJitOptions;
     }
 
-    WCHAR* key;
-    WCHAR* value;
+    char* key;
+    char* value;
     if ((currArgument >= argc) || !ParseJitOption(argv[currArgument], &key, &value))
     {
         DumpHelp(argv[0]);
@@ -921,9 +921,9 @@ bool CommandLine::AddJitOption(int&  currArgument,
     }
 
     DWORD keyIndex =
-        (DWORD)targetjitOptions->AddBuffer((unsigned char*)key, sizeof(WCHAR) * ((unsigned int)u16_strlen(key) + 1));
+        (DWORD)targetjitOptions->AddBuffer((unsigned char*)key, sizeof(char) * ((unsigned int)strlen(key) + 1));
     DWORD valueIndex =
-        (DWORD)targetjitOptions->AddBuffer((unsigned char*)value, sizeof(WCHAR) * ((unsigned int)u16_strlen(value) + 1));
+        (DWORD)targetjitOptions->AddBuffer((unsigned char*)value, sizeof(char) * ((unsigned int)strlen(value) + 1));
     targetjitOptions->Add(keyIndex, valueIndex);
 
     delete[] key;

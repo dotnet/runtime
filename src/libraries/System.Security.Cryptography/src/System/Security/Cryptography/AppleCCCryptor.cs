@@ -17,14 +17,14 @@ namespace System.Security.Cryptography
 
         private readonly Interop.AppleCrypto.PAL_SymmetricAlgorithm _algorithm;
         private readonly CipherMode _cipherMode;
-        private readonly byte[] _key;
+        private readonly FixedMemoryKeyBox _key;
         private readonly int _feedbackSizeInBytes;
 
         public AppleCCCryptor(
             Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
             CipherMode cipherMode,
             int blockSizeInBytes,
-            byte[] key,
+            ReadOnlySpan<byte> key,
             byte[]? iv,
             bool encrypting,
             int feedbackSizeInBytes,
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography
 
             _algorithm = algorithm;
             _cipherMode = cipherMode;
-            _key = key;
+            _key = new FixedMemoryKeyBox(key);
             _feedbackSizeInBytes = feedbackSizeInBytes;
 
             OpenCryptor();
@@ -50,6 +50,7 @@ namespace System.Security.Cryptography
             {
                 _cryptor?.Dispose();
                 _cryptor = null!;
+                _key?.Dispose();
             }
 
             base.Dispose(disposing);
@@ -73,15 +74,18 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(_cryptor))]
         private unsafe void OpenCryptor()
         {
-            _cryptor = new AppleCCCryptorLite(
-                _algorithm,
-                _cipherMode,
-                BlockSizeInBytes,
-                _key,
-                IV,
-                _encrypting,
-                _feedbackSizeInBytes,
-                PaddingSizeInBytes);
+            _cryptor = _key.UseKey(
+                this,
+                static (instance, key) =>
+                    new AppleCCCryptorLite(
+                        instance._algorithm,
+                        instance._cipherMode,
+                        instance.BlockSizeInBytes,
+                        key,
+                        instance.IV,
+                        instance._encrypting,
+                        instance._feedbackSizeInBytes,
+                        instance.PaddingSizeInBytes));
         }
 
         private unsafe void Reset()

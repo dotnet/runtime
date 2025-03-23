@@ -18,10 +18,7 @@ trigger:
     - LICENSE.TXT
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
-    - eng/pipelines/coreclr/perf*yml
-    - eng/pipelines/coreclr/templates/build-perf*
-    - eng/pipelines/coreclr/templates/perf-job.yml
-    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/pipelines/performance/*
     - eng/testing/performance/*
 
 schedules:

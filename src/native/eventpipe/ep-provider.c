@@ -421,7 +421,7 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 		if (j < filter_data_len)
 			buffer_size = j + 1;
 
-		ep_event_filter_desc_init (&event_filter_desc, (uint64_t)buffer, buffer_size, 0);
+		ep_event_filter_desc_init (&event_filter_desc, (uint64_t)buffer, buffer_size, /* EventFilterType.StringKeyValueEncoding */ 0);
 		is_event_filter_desc_init = true;
 	}
 

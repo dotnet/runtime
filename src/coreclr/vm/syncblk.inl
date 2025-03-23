@@ -478,13 +478,13 @@ FORCEINLINE bool AwareLock::TryEnterHelper(Thread* pCurThread)
 
     if (m_lockState.InterlockedTryLock())
     {
-        m_HoldingThread = pCurThread;
+        m_HoldingThreadId = pCurThread->GetThreadId();
         m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
         m_Recursion = 1;
         return true;
     }
 
-    if (GetOwningThread() == pCurThread) /* monitor is held, but it could be a recursive case */
+    if (GetHoldingThreadId() == pCurThread->GetThreadId()) /* monitor is held, but it could be a recursive case */
     {
         m_Recursion++;
         return true;
@@ -504,7 +504,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterBeforeSpinLoopHelper
 
     // Check the recursive case once before the spin loop. If it's not the recursive case in the beginning, it will not
     // be in the future, so the spin loop can avoid checking the recursive case.
-    if (!state.IsLocked() || GetOwningThread() != pCurThread)
+    if (!state.IsLocked() || GetHoldingThreadId() != pCurThread->GetThreadId())
     {
         if (m_lockState.InterlockedTrySetShouldNotPreemptWaitersIfNecessary(this, state))
         {
@@ -524,7 +524,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterBeforeSpinLoopHelper
         }
 
         // Lock was acquired and the spinner was not registered
-        m_HoldingThread = pCurThread;
+        m_HoldingThreadId = pCurThread->GetThreadId();
         m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
         m_Recursion = 1;
         return EnterHelperResult_Entered;
@@ -556,7 +556,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterInsideSpinLoopHelper
     }
 
     // Lock was acquired and spinner was unregistered
-    m_HoldingThread = pCurThread;
+    m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
     return EnterHelperResult_Entered;
@@ -579,7 +579,7 @@ FORCEINLINE bool AwareLock::TryEnterAfterSpinLoopHelper(Thread *pCurThread)
     }
 
     // Spinner was unregistered and the lock was acquired
-    m_HoldingThread = pCurThread;
+    m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
     return true;
@@ -683,7 +683,7 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
         MODE_ANY;
     } CONTRACTL_END;
 
-    if (m_HoldingThread != pCurThread)
+    if (m_HoldingThreadId != pCurThread->GetThreadId())
         return AwareLock::LeaveHelperAction_Error;
 
     _ASSERTE(m_lockState.VolatileLoadWithoutBarrier().IsLocked());
@@ -698,7 +698,7 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
 
     if (--m_Recursion == 0)
     {
-        m_HoldingThread = NULL;
+        m_HoldingThreadId = 0;
         m_HoldingOSThreadId = 0;
 
         // Clear lock bit and determine whether we must signal a waiter to wake

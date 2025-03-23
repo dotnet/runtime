@@ -1450,18 +1450,21 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Null(meter1.Version);
                 Assert.Null(meter1.Tags);
                 Assert.Null(meter1.Scope);
+                Assert.Null(meter1.TelemetrySchemaUrl);
 
                 using Meter meter2 = new Meter("TestMeterCreationWithOptions2", "2.0", new TagList() { { "Key1", "Value1" } });
                 Assert.Equal("TestMeterCreationWithOptions2", meter2.Name);
                 Assert.Equal("2.0", meter2.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key1", "Value1") }, meter2.Tags);
                 Assert.Null(meter2.Scope);
+                Assert.Null(meter2.TelemetrySchemaUrl);
 
                 using Meter meter3 = new Meter("TestMeterCreationWithOptions3", "3.0", new TagList() { { "Key3", "Value3" } }, "Scope");
                 Assert.Equal("TestMeterCreationWithOptions3", meter3.Name);
                 Assert.Equal("3.0", meter3.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key3", "Value3") }, meter3.Tags);
                 Assert.Equal("Scope", meter3.Scope);
+                Assert.Null(meter3.TelemetrySchemaUrl);
 
                 Assert.Throws<ArgumentNullException>(() => new MeterOptions(null!));
                 Assert.Throws<ArgumentNullException>(() => new MeterOptions("Something").Name = null!);
@@ -1471,30 +1474,35 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Null(meter4.Version);
                 Assert.Null(meter4.Tags);
                 Assert.Null(meter4.Scope);
+                Assert.Null(meter4.TelemetrySchemaUrl);
 
                 using Meter meter5 = new Meter(new MeterOptions("TestMeterCreationWithOptions5") { Version = "5.0" });
                 Assert.Equal("TestMeterCreationWithOptions5", meter5.Name);
                 Assert.Equal("5.0", meter5.Version);
                 Assert.Null(meter5.Tags);
                 Assert.Null(meter5.Scope);
+                Assert.Null(meter5.TelemetrySchemaUrl);
 
                 using Meter meter6 = new Meter(new MeterOptions("TestMeterCreationWithOptions6") { Tags = new TagList() { { "Key6", "Value6"} } });
                 Assert.Equal("TestMeterCreationWithOptions6", meter6.Name);
                 Assert.Null(meter6.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key6", "Value6") }, meter6.Tags);
                 Assert.Null(meter5.Scope);
+                Assert.Null(meter6.TelemetrySchemaUrl);
 
                 using Meter meter7 = new Meter(new MeterOptions("TestMeterCreationWithOptions7") { Scope = "Scope7" });
                 Assert.Equal("TestMeterCreationWithOptions7", meter7.Name);
                 Assert.Null(meter7.Version);
                 Assert.Null(meter7.Tags);
                 Assert.Equal("Scope7", meter7.Scope);
+                Assert.Null(meter7.TelemetrySchemaUrl);
 
                 using Meter meter8 = new Meter(new MeterOptions("TestMeterCreationWithOptions8") { Version = "8.0", Tags = new TagList() { { "Key8", "Value8" } }, Scope = "Scope8" });
                 Assert.Equal("TestMeterCreationWithOptions8", meter8.Name);
                 Assert.Equal("8.0", meter8.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key8", "Value8") }, meter8.Tags);
                 Assert.Equal("Scope8", meter8.Scope);
+                Assert.Null(meter8.TelemetrySchemaUrl);
 
                 // Test tags sorting order
                 TagList l = new TagList() { { "f", "a" }, { "d", "b" }, { "w", "b" }, { "h", new object() }, { "N", null }, { "a", "b" }, { "a", null } };
@@ -1505,6 +1513,18 @@ namespace System.Diagnostics.Metrics.Tests
                 {
                     Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
                 }
+
+                using Meter meter10 = new Meter(new MeterOptions("TestMeterCreationWithOptions10") { Version = "10.0", Tags = l, Scope = "Scope10", TelemetrySchemaUrl = "https://example.com" });
+                insArray = meter10.Tags.ToArray();
+                Assert.Equal(l.Count, insArray.Length);
+                for (int i = 0; i < insArray.Length - 1; i++)
+                {
+                    Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
+                }
+                Assert.Equal("https://example.com", meter10.TelemetrySchemaUrl);
+                Assert.Equal("10.0", meter10.Version);
+                Assert.Equal("Scope10", meter10.Scope);
+                Assert.Equal("TestMeterCreationWithOptions10", meter10.Name);
             }).Dispose();
         }
 

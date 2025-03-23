@@ -59,7 +59,7 @@ namespace System.Net
         private void ResolutionFailed() => WriteEvent(ResolutionFailedEventId);
 
         [NonEvent]
-        public static bool AnyDiagnosticsEnabled() => Log.IsEnabled() || NameResolutionMetrics.IsEnabled() || NameResolutionActivity.IsTracingEnabled();
+        public static bool AnyDiagnosticsEnabled() => !OperatingSystem.IsWasi() && (Log.IsEnabled() || NameResolutionMetrics.IsEnabled() || NameResolutionActivity.IsTracingEnabled());
 
         [NonEvent]
         public NameResolutionActivity BeforeResolution(object hostNameOrAddress, long startingTimestamp = 0)
@@ -91,6 +91,8 @@ namespace System.Net
         [NonEvent]
         public void AfterResolution(object hostNameOrAddress, in NameResolutionActivity activity, object? answer, Exception? exception = null)
         {
+            if (OperatingSystem.IsWasi()) return;
+
             if (!activity.Stop(answer, exception, out TimeSpan duration))
             {
                 // We stopped the System.Diagnostics.Activity at this point and neither metrics nor EventSource is enabled.

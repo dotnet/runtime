@@ -11,6 +11,8 @@
 #include <ex.h>
 #include <contract.h>
 
+#include <minipal/debugger.h>
+
 #ifdef _DEBUG
 size_t CHECK::s_cLeakedBytes = 0;
 size_t CHECK::s_cNumFailures = 0;
@@ -119,7 +121,7 @@ void CHECK::Trigger(LPCSTR reason)
             pMessage->AppendASCII((m_message != (LPCSTR)1) ? m_message : "<runtime check failure>");
 
 #if _DEBUG
-        pMessage->AppendASCII("FAILED: ");
+        pMessage->AppendASCII("\nFAILED: ");
         pMessage->AppendASCII(m_condition);
 #endif
 
@@ -189,7 +191,7 @@ void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
 #endif
 
 #if defined(_DEBUG_IMPL)
-    if (IsInAssert() && IsDebuggerPresent())
+    if (IsInAssert() && minipal_is_native_debugger_present())
     {
         DebugBreak();
     }

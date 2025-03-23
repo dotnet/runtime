@@ -19,19 +19,30 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        public void NoOpRebuildForNativeBuilds(BuildArgs buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
+        public async void NoOpRebuildForNativeBuilds(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
-            buildArgs = buildArgs with { ProjectName = $"rebuild_noop_{buildArgs.Config}" };
-            (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink: nativeRelink, invariant: invariant, buildArgs, id);
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_noop");
+            BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, nativeRelink, invariant);
 
-            var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: true);
-            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
+            var originalStat = StatFiles(pathsDict);
 
-            Rebuild(nativeRelink, invariant, buildArgs, id);
-            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            Rebuild(info, config, aot, nativeRelink, invariant);
+            var newStat = StatFiles(pathsDict);
 
-            _provider.CompareStat(originalStat, newStat, pathsDict.Values);
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            CompareStat(originalStat, newStat, pathsDict);
+            await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun"));
+        }
+
+        [Fact]
+        public void NativeRelinkFailsWithInvariant()
+        {
+            Configuration config = Configuration.Release;
+            string extraArgs = "-p:_WasmDevel=true -p:WasmBuildNative=false -p:InvariantGlobalization=true";
+            ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.WasmBasicTestApp, "relink_fails");
+            var options = new PublishOptions(ExpectSuccess: false, AOT: true, ExtraMSBuildArgs: extraArgs);
+            PublishProject(info, config, options);
+            Assert.Contains("WasmBuildNative is required because InvariantGlobalization=true, but WasmBuildNative is already set to 'false'", _testOutput.ToString());
         }
     }
 }

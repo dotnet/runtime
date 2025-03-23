@@ -2717,8 +2717,7 @@ interface ICorProfilerInfo : IUnknown
      * TO WORK, GetEventMask2 PROVIDES MORE FUNCTIONALITY.
      *
      * The code profiler calls GetEventMask to obtain the current event
-     * categories for which it is to receive event notifications from the COM+
-     * Runtime.
+     * categories for which it is to receive event notifications from the CLR
      */
     HRESULT GetEventMask(
                 [out] DWORD *pdwEvents);
@@ -3168,7 +3167,7 @@ interface ICorProfilerInfo2 : ICorProfilerInfo
      * When a COR_PRF_FRAME_INFO from any other source is passed, or
      * when 0 is passed as the frameInfo argument, exact ClassID and type
      * arguments cannot always be determined.  The value returned in pClassId
-     * may be NULL and some type args will come back as System.Object.
+     * may not be exact and some type args will come back as System.Object.
      *
      */
     HRESULT GetFunctionInfo2(

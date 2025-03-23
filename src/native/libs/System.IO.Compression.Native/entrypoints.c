@@ -22,6 +22,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(BrotliEncoderCreateInstance)
     DllImportEntry(BrotliEncoderDestroyInstance)
     DllImportEntry(BrotliEncoderHasMoreOutput)
+    DllImportEntry(BrotliEncoderMaxCompressedSize)
     DllImportEntry(BrotliEncoderSetParameter)
     DllImportEntry(CompressionNative_Crc32)
     DllImportEntry(CompressionNative_Deflate)

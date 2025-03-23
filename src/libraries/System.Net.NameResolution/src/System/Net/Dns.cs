@@ -7,6 +7,8 @@ using System.Globalization;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net
 {
@@ -37,6 +39,8 @@ namespace System.Net
 
         public static IPHostEntry GetHostEntry(IPAddress address)
         {
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ArgumentNullException.ThrowIfNull(address);
 
             if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
@@ -68,7 +72,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
-            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
+            if (NameResolutionPal.SupportsGetNameInfo && IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
                 if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
                 {
@@ -147,6 +151,8 @@ namespace System.Net
 
         public static Task<IPHostEntry> GetHostEntryAsync(IPAddress address)
         {
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ArgumentNullException.ThrowIfNull(address);
 
             if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
@@ -156,6 +162,8 @@ namespace System.Net
             }
 
             return RunAsync(static (s, activity) => {
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
                 IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified, activity);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
                 return ipHostEntry;
@@ -170,6 +178,8 @@ namespace System.Net
 
         public static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult)
         {
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ArgumentNullException.ThrowIfNull(asyncResult);
 
             return TaskToAsyncResult.End<IPHostEntry>(asyncResult);
@@ -244,6 +254,8 @@ namespace System.Net
 
         public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult)
         {
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ArgumentNullException.ThrowIfNull(asyncResult);
 
             return TaskToAsyncResult.End<IPAddress[]>(asyncResult);
@@ -269,6 +281,8 @@ namespace System.Net
         [Obsolete("EndGetHostByName has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult)
         {
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ArgumentNullException.ThrowIfNull(asyncResult);
 
             return TaskToAsyncResult.End<IPHostEntry>(asyncResult);
@@ -277,6 +291,8 @@ namespace System.Net
         [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByAddress(string address)
         {
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ArgumentNullException.ThrowIfNull(address);
 
             IPHostEntry ipHostEntry = GetHostEntryCore(IPAddress.Parse(address), AddressFamily.Unspecified);
@@ -288,6 +304,8 @@ namespace System.Net
         [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByAddress(IPAddress address)
         {
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ArgumentNullException.ThrowIfNull(address);
 
             IPHostEntry ipHostEntry = GetHostEntryCore(address, AddressFamily.Unspecified);
@@ -303,7 +321,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
-            if (IPAddress.TryParse(hostName, out IPAddress? address) &&
+            if (NameResolutionPal.SupportsGetNameInfo && IPAddress.TryParse(hostName, out IPAddress? address) &&
                 (address.AddressFamily != AddressFamily.InterNetworkV6 || SocketProtocolSupportPal.OSSupportsIPv6))
             {
                 try
@@ -332,6 +350,8 @@ namespace System.Net
         [Obsolete("EndResolve has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndResolve(IAsyncResult asyncResult)
         {
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             IPHostEntry ipHostEntry;
 
             try
@@ -367,9 +387,44 @@ namespace System.Net
         private static IPAddress[] GetHostAddressesCore(string hostName, AddressFamily addressFamily, NameResolutionActivity? activityOrDefault = default) =>
             (IPAddress[])GetHostEntryOrAddressesCore(hostName, justAddresses: true, addressFamily, activityOrDefault);
 
+        private static bool ValidateAddressFamily(ref AddressFamily addressFamily, string hostName, bool justAddresses, [NotNullWhen(false)] out object? resultOnFailure)
+        {
+            if (!SocketProtocolSupportPal.OSSupportsIPv6)
+            {
+                if (addressFamily == AddressFamily.InterNetworkV6)
+                {
+                    // The caller requested IPv6, but the OS doesn't support it; return an empty result.
+                    IPAddress[] addresses = Array.Empty<IPAddress>();
+                    resultOnFailure = justAddresses ? (object)
+                        addresses :
+                        new IPHostEntry
+                        {
+                            AddressList = addresses,
+                            HostName = hostName,
+                            Aliases = Array.Empty<string>()
+                        };
+                    return false;
+                }
+                else if (addressFamily == AddressFamily.Unspecified)
+                {
+                    // Narrow the query to IPv4.
+                    addressFamily = AddressFamily.InterNetwork;
+                }
+            }
+
+            resultOnFailure = null;
+            return true;
+        }
+
         private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses, AddressFamily addressFamily, NameResolutionActivity? activityOrDefault = default)
         {
             ValidateHostName(hostName);
+
+            if (!ValidateAddressFamily(ref addressFamily, hostName, justAddresses, out object? resultOnFailure))
+            {
+                Debug.Assert(!activityOrDefault.HasValue);
+                return resultOnFailure;
+            }
 
             // NameResolutionActivity may have already been set if we're being called from RunAsync.
             NameResolutionActivity activity = activityOrDefault ?? NameResolutionTelemetry.Log.BeforeResolution(hostName);
@@ -414,6 +469,8 @@ namespace System.Net
         // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
         private static object GetHostEntryOrAddressesCore(IPAddress address, bool justAddresses, AddressFamily addressFamily, NameResolutionActivity? activityOrDefault = default)
         {
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             // Try to get the data for the host from its address.
             // We need to call getnameinfo first, because getaddrinfo w/ the ipaddress string
             // will only return that address and not the full list.
@@ -441,6 +498,11 @@ namespace System.Net
             }
 
             NameResolutionTelemetry.Log.AfterResolution(address, activity, answer: name);
+
+            if (!ValidateAddressFamily(ref addressFamily, name, justAddresses, out object? resultOnFailure))
+            {
+                return resultOnFailure;
+            }
 
             // Do the forward lookup to get the IPs for that host name
             activity = NameResolutionTelemetry.Log.BeforeResolution(name);
@@ -497,10 +559,17 @@ namespace System.Net
                     Task.FromCanceled<IPHostEntry>(cancellationToken);
             }
 
+            if (!ValidateAddressFamily(ref family, hostName, justAddresses, out object? resultOnFailure))
+            {
+                return justAddresses ? (Task)
+                    Task.FromResult((IPAddress[])resultOnFailure) :
+                    Task.FromResult((IPHostEntry)resultOnFailure);
+            }
+
             object asyncState;
 
             // See if it's an IP Address.
-            if (IPAddress.TryParse(hostName, out IPAddress? ipAddress))
+            if (NameResolutionPal.SupportsGetNameInfo && IPAddress.TryParse(hostName, out IPAddress? ipAddress))
             {
                 if (throwOnIIPAny && (ipAddress.Equals(IPAddress.Any) || ipAddress.Equals(IPAddress.IPv6Any)))
                 {

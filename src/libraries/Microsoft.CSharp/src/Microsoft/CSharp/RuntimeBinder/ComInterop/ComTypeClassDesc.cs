@@ -10,20 +10,19 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
+    [RequiresUnreferencedCode(Binder.TrimmerWarning)]
     internal sealed class ComTypeClassDesc : ComTypeDesc, IDynamicMetaObjectProvider
     {
         private LinkedList<string> _itfs; // implemented interfaces
         private LinkedList<string> _sourceItfs; // source interfaces supported by this coclass
         private Type _typeObj;
 
-        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public object CreateInstance()
         {
             _typeObj ??= Type.GetTypeFromCLSID(Guid);
             return Activator.CreateInstance(Type.GetTypeFromCLSID(Guid));
         }
 
-        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal ComTypeClassDesc(ComTypes.ITypeInfo typeInfo, ComTypeLibDesc typeLibDesc) :
             base(typeInfo, typeLibDesc)
         {
@@ -67,8 +66,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         #region IDynamicMetaObjectProvider Members
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public DynamicMetaObject GetMetaObject(Expression parameter)
         {
             return new ComClassMetaObject(parameter, this);

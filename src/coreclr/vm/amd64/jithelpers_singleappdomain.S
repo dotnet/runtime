@@ -19,8 +19,10 @@ LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 .balign 16
 CallHelper:
-        // Tail call JIT_GetSharedNonGCStaticBase_Helper
-        jmp     C_FUNC(JIT_GetDynamicNonGCStaticBase_Portable)
+        // Tail call managed GetSharedNonGCStaticBase helper
+        mov     rdi, [rdi + OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+        PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, r10
+        jmp     [r10]
 LEAF_END_MARKED JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
@@ -32,7 +34,9 @@ LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
 .balign 16
 CallHelper1:
-        // Tail call Jit_GetSharedGCStaticBase_Helper
-        jmp     C_FUNC(JIT_GetDynamicGCStaticBase_Portable)
+        // Tail call managed GetSharedGCStaticBase helper
+        mov     rdi, [rdi + OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+        PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, r10
+        jmp     [r10]
 LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 

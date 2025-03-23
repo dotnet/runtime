@@ -966,15 +966,20 @@ namespace System.Text.Unicode
                                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
                                 AdvSimd.Store(pOutputBuffer, lower);
                             }
-                            else
+                            else if (Sse41.IsSupported)
                             {
-                                if (!Sse41.TestZ(utf16Data, nonAsciiUtf16DataMask))
+                                if ((utf16Data & nonAsciiUtf16DataMask) != Vector128<short>.Zero)
                                 {
                                     goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
                                 }
 
                                 // narrow and write
                                 Sse2.StoreScalar((ulong*)pOutputBuffer /* unaligned */, Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt64());
+                            }
+                            else
+                            {
+                                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                                ThrowHelper.ThrowUnreachableException();
                             }
 
                             pInputBuffer += 8;
@@ -1000,9 +1005,14 @@ namespace System.Text.Unicode
                                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
                                 AdvSimd.StoreSelectedScalar((uint*)pOutputBuffer, lower.AsUInt32(), 0);
                             }
-                            else
+                            else if (Sse2.IsSupported)
                             {
                                 Unsafe.WriteUnaligned(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            }
+                            else
+                            {
+                                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                                ThrowHelper.ThrowUnreachableException();
                             }
 
                             pInputBuffer += 4;
@@ -1038,9 +1048,14 @@ namespace System.Text.Unicode
                                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
                                 AdvSimd.StoreSelectedScalar((uint*)pOutputBuffer, lower.AsUInt32(), 0);
                             }
-                            else
+                            else if (Sse2.IsSupported)
                             {
                                 Unsafe.WriteUnaligned(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            }
+                            else
+                            {
+                                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                                ThrowHelper.ThrowUnreachableException();
                             }
                             pInputBuffer += 4;
                             pOutputBuffer += 4;

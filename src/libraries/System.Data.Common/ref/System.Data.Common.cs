@@ -563,18 +563,24 @@ namespace System.Data
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         protected void GetSerializationData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public string GetXml() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public string GetXmlSchema() { throw null; }
         public bool HasChanges() { throw null; }
         public bool HasChanges(System.Data.DataRowState rowStates) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void InferXmlSchema(System.IO.Stream? stream, string[]? nsArray) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void InferXmlSchema(System.IO.TextReader? reader, string[]? nsArray) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void InferXmlSchema(string fileName, string[]? nsArray) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void InferXmlSchema(System.Xml.XmlReader? reader, string[]? nsArray) { }
         protected virtual void InitializeDerivedDataSet() { }
@@ -596,30 +602,43 @@ namespace System.Data
         protected virtual void OnRemoveRelation(System.Data.DataRelation relation) { }
         protected internal virtual void OnRemoveTable(System.Data.DataTable table) { }
         protected internal void RaisePropertyChanging(string name) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.Stream? stream) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.Stream? stream, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.TextReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.TextReader? reader, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(string fileName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(string fileName, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.Xml.XmlReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.Xml.XmlReader? reader, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.TextReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.Xml.XmlReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         protected virtual void ReadXmlSerializable(System.Xml.XmlReader reader) { }
         public virtual void RejectChanges() { }
@@ -630,36 +649,52 @@ namespace System.Data
         System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream, System.Converter<System.Type, string> multipleTargetConverter) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer, System.Converter<System.Type, string> multipleTargetConverter) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName, System.Converter<System.Type, string> multipleTargetConverter) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer, System.Converter<System.Type, string> multipleTargetConverter) { }
     }
@@ -689,6 +724,7 @@ namespace System.Data
     {
         protected internal bool fInitInProgress;
         public DataTable() { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -770,6 +806,7 @@ namespace System.Data
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected virtual System.Type GetRowType() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         protected virtual System.Xml.Schema.XmlSchema? GetSchema() { throw null; }
         public void ImportRow(System.Data.DataRow? row) { }
@@ -798,22 +835,31 @@ namespace System.Data
         protected virtual void OnTableCleared(System.Data.DataTableClearEventArgs e) { }
         protected virtual void OnTableClearing(System.Data.DataTableClearEventArgs e) { }
         protected virtual void OnTableNewRow(System.Data.DataTableNewRowEventArgs e) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.Stream? stream) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.TextReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(string fileName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.Xml.XmlReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.TextReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.Xml.XmlReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         protected virtual void ReadXmlSerializable(System.Xml.XmlReader? reader) { }
         public void RejectChanges() { }
@@ -830,52 +876,76 @@ namespace System.Data
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
         public override string ToString() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer, bool writeHierarchy) { }
     }
@@ -1711,6 +1781,7 @@ namespace System.Data
     public abstract partial class TypedTableBase<T> : System.Data.DataTable, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable where T : System.Data.DataRow
     {
         protected TypedTableBase() { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -3812,12 +3883,12 @@ namespace System.Data.SqlTypes
 }
 namespace System.Xml
 {
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
     [System.ObsoleteAttribute("XmlDataDocument has been deprecated and is not supported.")]
     public partial class XmlDataDocument : System.Xml.XmlDocument
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("XmlDataDocument is used for serialization and deserialization. Members from serialized types may be trimmed if not referenced directly.")]
         public XmlDataDocument() { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("XmlDataDocument is used for serialization and deserialization. Members from serialized types may be trimmed if not referenced directly.")]
         public XmlDataDocument(System.Data.DataSet dataset) { }
         public System.Data.DataSet DataSet { get { throw null; } }
         public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }

@@ -1,4 +1,4 @@
-#include "../../zbuild.h"
+#include "zbuild.h"
 #include <stdio.h>
 
 #ifdef HAVE_SYS_SDT_H
@@ -24,17 +24,7 @@
 #define DFLTCC_RIBM 0
 #endif
 
-/*
-   Parameter Block for Query Available Functions.
- */
 #define static_assert(c, msg) __attribute__((unused)) static char static_assert_failed_ ## msg[c ? 1 : -1]
-
-struct dfltcc_qaf_param {
-    char fns[16];
-    char reserved1[8];
-    char fmts[2];
-    char reserved2[6];
-};
 
 #define DFLTCC_SIZEOF_QAF 32
 static_assert(sizeof(struct dfltcc_qaf_param) == DFLTCC_SIZEOF_QAF, qaf);
@@ -74,59 +64,10 @@ static inline int is_dfltcc_enabled(void) {
 
 #define DFLTCC_FMT0 0
 
-/*
-   Parameter Block for Generate Dynamic-Huffman Table, Compress and Expand.
- */
 #define CVT_CRC32 0
 #define CVT_ADLER32 1
 #define HTT_FIXED 0
 #define HTT_DYNAMIC 1
-
-struct dfltcc_param_v0 {
-    uint16_t pbvn;                     /* Parameter-Block-Version Number */
-    uint8_t mvn;                       /* Model-Version Number */
-    uint8_t ribm;                      /* Reserved for IBM use */
-    uint32_t reserved32 : 31;
-    uint32_t cf : 1;                   /* Continuation Flag */
-    uint8_t reserved64[8];
-    uint32_t nt : 1;                   /* New Task */
-    uint32_t reserved129 : 1;
-    uint32_t cvt : 1;                  /* Check Value Type */
-    uint32_t reserved131 : 1;
-    uint32_t htt : 1;                  /* Huffman-Table Type */
-    uint32_t bcf : 1;                  /* Block-Continuation Flag */
-    uint32_t bcc : 1;                  /* Block Closing Control */
-    uint32_t bhf : 1;                  /* Block Header Final */
-    uint32_t reserved136 : 1;
-    uint32_t reserved137 : 1;
-    uint32_t dhtgc : 1;                /* DHT Generation Control */
-    uint32_t reserved139 : 5;
-    uint32_t reserved144 : 5;
-    uint32_t sbb : 3;                  /* Sub-Byte Boundary */
-    uint8_t oesc;                      /* Operation-Ending-Supplemental Code */
-    uint32_t reserved160 : 12;
-    uint32_t ifs : 4;                  /* Incomplete-Function Status */
-    uint16_t ifl;                      /* Incomplete-Function Length */
-    uint8_t reserved192[8];
-    uint8_t reserved256[8];
-    uint8_t reserved320[4];
-    uint16_t hl;                       /* History Length */
-    uint32_t reserved368 : 1;
-    uint16_t ho : 15;                  /* History Offset */
-    uint32_t cv;                       /* Check Value */
-    uint32_t eobs : 15;                /* End-of-block Symbol */
-    uint32_t reserved431: 1;
-    uint8_t eobl : 4;                  /* End-of-block Length */
-    uint32_t reserved436 : 12;
-    uint32_t reserved448 : 4;
-    uint16_t cdhtl : 12;               /* Compressed-Dynamic-Huffman Table
-                                          Length */
-    uint8_t reserved464[6];
-    uint8_t cdht[288];                 /* Compressed-Dynamic-Huffman Table */
-    uint8_t reserved[24];
-    uint8_t ribm2[8];                  /* Reserved for IBM use */
-    uint8_t csb[1152];                 /* Continuation-State Buffer */
-};
 
 #define DFLTCC_SIZEOF_GDHT_V0 384
 #define DFLTCC_SIZEOF_CMPR_XPND_V0 1536
@@ -159,8 +100,30 @@ typedef enum {
 #define DFLTCC_XPND 4
 #define HBT_CIRCULAR (1 << 7)
 #define DFLTCC_FN_MASK ((1 << 7) - 1)
-#define HB_BITS 15
-#define HB_SIZE (1 << HB_BITS)
+
+/* Return lengths of high (starting at param->ho) and low (starting at 0) fragments of the circular history buffer. */
+static inline void get_history_lengths(struct dfltcc_param_v0 *param, size_t *hl_high, size_t *hl_low) {
+    *hl_high = MIN(param->hl, HB_SIZE - param->ho);
+    *hl_low = param->hl - *hl_high;
+}
+
+/* Notify instrumentation about an upcoming read/write access to the circular history buffer. */
+static inline void instrument_read_write_hist(struct dfltcc_param_v0 *param, void *hist) {
+    size_t hl_high, hl_low;
+
+    get_history_lengths(param, &hl_high, &hl_low);
+    instrument_read_write(hist + param->ho, hl_high);
+    instrument_read_write(hist, hl_low);
+}
+
+/* Notify MSan about a completed write to the circular history buffer. */
+static inline void msan_unpoison_hist(struct dfltcc_param_v0 *param, void *hist) {
+    size_t hl_high, hl_low;
+
+    get_history_lengths(param, &hl_high, &hl_low);
+    __msan_unpoison(hist + param->ho, hl_high);
+    __msan_unpoison(hist, hl_low);
+}
 
 static inline dfltcc_cc dfltcc(int fn, void *param,
                                unsigned char **op1, size_t *len1,
@@ -170,14 +133,33 @@ static inline dfltcc_cc dfltcc(int fn, void *param,
     size_t t3 = len1 ? *len1 : 0;
     z_const unsigned char *t4 = op2 ? *op2 : NULL;
     size_t t5 = len2 ? *len2 : 0;
-    Z_REGISTER int r0 __asm__("r0") = fn;
-    Z_REGISTER void *r1 __asm__("r1") = param;
-    Z_REGISTER unsigned char *r2 __asm__("r2") = t2;
-    Z_REGISTER size_t r3 __asm__("r3") = t3;
-    Z_REGISTER z_const unsigned char *r4 __asm__("r4") = t4;
-    Z_REGISTER size_t r5 __asm__("r5") = t5;
+    Z_REGISTER int r0 __asm__("r0");
+    Z_REGISTER void *r1 __asm__("r1");
+    Z_REGISTER unsigned char *r2 __asm__("r2");
+    Z_REGISTER size_t r3 __asm__("r3");
+    Z_REGISTER z_const unsigned char *r4 __asm__("r4");
+    Z_REGISTER size_t r5 __asm__("r5");
     int cc;
 
+    /* Insert pre-instrumentation for DFLTCC. */
+    switch (fn & DFLTCC_FN_MASK) {
+    case DFLTCC_QAF:
+        instrument_write(param, DFLTCC_SIZEOF_QAF);
+        break;
+    case DFLTCC_GDHT:
+        instrument_read_write(param, DFLTCC_SIZEOF_GDHT_V0);
+        instrument_read(t4, t5);
+        break;
+    case DFLTCC_CMPR:
+    case DFLTCC_XPND:
+        instrument_read_write(param, DFLTCC_SIZEOF_CMPR_XPND_V0);
+        instrument_read(t4, t5);
+        instrument_write(t2, t3);
+        instrument_read_write_hist(param, hist);
+        break;
+    }
+
+    r0 = fn; r1 = param; r2 = t2; r3 = t3; r4 = t4; r5 = t5;
     __asm__ volatile(
 #ifdef HAVE_SYS_SDT_H
                      STAP_PROBE_ASM(zlib, dfltcc_entry, STAP_PROBE_ASM_TEMPLATE(5))
@@ -201,6 +183,7 @@ static inline dfltcc_cc dfltcc(int fn, void *param,
                      : "cc", "memory");
     t2 = r2; t3 = r3; t4 = r4; t5 = r5;
 
+    /* Insert post-instrumentation for DFLTCC. */
     switch (fn & DFLTCC_FN_MASK) {
     case DFLTCC_QAF:
         __msan_unpoison(param, DFLTCC_SIZEOF_QAF);
@@ -211,10 +194,12 @@ static inline dfltcc_cc dfltcc(int fn, void *param,
     case DFLTCC_CMPR:
         __msan_unpoison(param, DFLTCC_SIZEOF_CMPR_XPND_V0);
         __msan_unpoison(orig_t2, t2 - orig_t2 + (((struct dfltcc_param_v0 *)param)->sbb == 0 ? 0 : 1));
+        msan_unpoison_hist(param, hist);
         break;
     case DFLTCC_XPND:
         __msan_unpoison(param, DFLTCC_SIZEOF_CMPR_XPND_V0);
         __msan_unpoison(orig_t2, t2 - orig_t2);
+        msan_unpoison_hist(param, hist);
         break;
     }
 
@@ -229,22 +214,7 @@ static inline dfltcc_cc dfltcc(int fn, void *param,
     return (cc >> 28) & 3;
 }
 
-/*
-   Extension of inflate_state and deflate_state. Must be doubleword-aligned.
-*/
-struct dfltcc_state {
-    struct dfltcc_param_v0 param;      /* Parameter block. */
-    struct dfltcc_qaf_param af;        /* Available functions. */
-    char msg[64];                      /* Buffer for strm->msg */
-};
-
 #define ALIGN_UP(p, size) (__typeof__(p))(((uintptr_t)(p) + ((size) - 1)) & ~((size) - 1))
-
-#define GET_DFLTCC_STATE(state) ((struct dfltcc_state *)((char *)(state) + ALIGN_UP(sizeof(*state), 8)))
-
-static inline void *dfltcc_alloc_state(PREFIX3(streamp) strm, uInt size, uInt extension_size) {
-    return ZALLOC(strm, 1, ALIGN_UP(size, 8) + extension_size);
-}
 
 static inline void dfltcc_reset_state(struct dfltcc_state *dfltcc_state) {
     /* Initialize available functions */
@@ -297,12 +267,9 @@ static inline void append_history(struct dfltcc_param_v0 *param, unsigned char *
 
 static inline void get_history(struct dfltcc_param_v0 *param, const unsigned char *history,
                                unsigned char *buf) {
-    if (param->ho + param->hl <= HB_SIZE)
-        /* Circular history buffer does not wrap - copy one chunk */
-        memcpy(buf, history + param->ho, param->hl);
-    else {
-        /* Circular history buffer wraps - copy two chunks */
-        memcpy(buf, history + param->ho, HB_SIZE - param->ho);
-        memcpy(buf + HB_SIZE - param->ho, history, param->ho + param->hl - HB_SIZE);
-    }
+    size_t hl_high, hl_low;
+
+    get_history_lengths(param, &hl_high, &hl_low);
+    memcpy(buf, history + param->ho, hl_high);
+    memcpy(buf + hl_high, history, hl_low);
 }

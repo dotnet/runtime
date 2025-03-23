@@ -126,23 +126,6 @@ inline OBJECTHANDLE CreateRefcountedHandle(IGCHandleStore* store, OBJECTREF obje
     return CreateHandleCommon(store, object, HNDTYPE_REFCOUNTED);
 }
 
-inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object)
-{
-    return CreateHandleCommon(store, object, HNDTYPE_SIZEDREF);
-}
-
-inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object, int heapToAffinitizeTo)
-{
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_SIZEDREF, heapToAffinitizeTo);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    DiagHandleCreated(hnd, object);
-    return hnd;
-}
-
 inline OBJECTHANDLE CreateDependentHandle(IGCHandleStore* store, OBJECTREF primary, OBJECTREF secondary)
 {
     OBJECTHANDLE hnd = store->CreateDependentHandle(OBJECTREFToObject(primary), OBJECTREFToObject(secondary));

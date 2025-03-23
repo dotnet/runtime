@@ -225,15 +225,7 @@ namespace System
         /// </summary>
         /// <param name="stream">Stream containing the data.</param>
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
-        public static BinaryData FromStream(Stream stream)
-        {
-            if (stream is null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
-            return FromStreamAsync(stream, async: false).GetAwaiter().GetResult();
-        }
+        public static BinaryData FromStream(Stream stream) => FromStream(stream, mediaType: null);
 
         /// <summary>
         /// Creates a <see cref="BinaryData"/> instance from the specified stream
@@ -251,7 +243,7 @@ namespace System
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            return FromStreamAsync(stream, async: false, mediaType).GetAwaiter().GetResult();
+            return FromStreamAsync(stream, useAsync: false, mediaType).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -262,14 +254,7 @@ namespace System
         /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
         public static Task<BinaryData> FromStreamAsync(Stream stream, CancellationToken cancellationToken = default)
-        {
-            if (stream is null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
-            return FromStreamAsync(stream, async: true, cancellationToken: cancellationToken);
-        }
+            => FromStreamAsync(stream, mediaType: null, cancellationToken);
 
         /// <summary>
         /// Creates a <see cref="BinaryData"/> instance from the specified stream
@@ -289,10 +274,10 @@ namespace System
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            return FromStreamAsync(stream, async: true, mediaType, cancellationToken);
+            return FromStreamAsync(stream, useAsync: true, mediaType, cancellationToken);
         }
 
-        private static async Task<BinaryData> FromStreamAsync(Stream stream, bool async,
+        private static async Task<BinaryData> FromStreamAsync(Stream stream, bool useAsync,
             string? mediaType = default, CancellationToken cancellationToken = default)
         {
             const int CopyToBufferSize = 81920;  // the default used by Stream.CopyToAsync
@@ -318,7 +303,7 @@ namespace System
 
             using (memoryStream)
             {
-                if (async)
+                if (useAsync)
                 {
                     await stream.CopyToAsync(memoryStream, bufferSize, cancellationToken).ConfigureAwait(false);
                 }
@@ -327,6 +312,72 @@ namespace System
                     stream.CopyTo(memoryStream, bufferSize);
                 }
                 return new BinaryData(memoryStream.GetBuffer().AsMemory(0, (int)memoryStream.Position), mediaType);
+            }
+        }
+
+        /// <summary>
+        /// Creates a <see cref="BinaryData"/> instance from the specified file.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <returns>A value representing all of the data from the file.</returns>
+        public static BinaryData FromFile(string path) => FromFile(path, mediaType: null);
+
+        /// <summary>
+        /// Creates a <see cref="BinaryData"/> instance from the specified file
+        /// and sets <see cref="MediaType"/> to <see pref="mediaType"/> value.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="mediaType">MIME type of this data, e.g. <see cref="MediaTypeNames.Application.Octet"/>.</param>
+        /// <returns>A value representing all of the data from the file.</returns>
+        /// <seealso cref="MediaTypeNames"/>
+        public static BinaryData FromFile(string path, string? mediaType)
+        {
+            if (path is null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            return new BinaryData(File.ReadAllBytes(path), mediaType);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="BinaryData"/> instance from the specified file.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
+        /// <returns>A value representing all of the data from the file.</returns>
+        public static Task<BinaryData> FromFileAsync(string path, CancellationToken cancellationToken = default)
+            => FromFileAsync(path, mediaType: null, cancellationToken);
+
+        /// <summary>
+        /// Creates a <see cref="BinaryData"/> instance from the specified file
+        /// and sets <see cref="MediaType"/> to <see pref="mediaType"/> value.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="mediaType">MIME type of this data, e.g. <see cref="MediaTypeNames.Application.Octet"/>.</param>
+        /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
+        /// <returns>A value representing all of the data from the file.</returns>
+        /// <seealso cref="MediaTypeNames"/>
+        public static Task<BinaryData> FromFileAsync(string path, string? mediaType,
+            CancellationToken cancellationToken = default)
+        {
+            if (path is null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            return Core();
+
+            async Task<BinaryData> Core()
+            {
+#if NET
+                return new BinaryData(
+                    await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false),
+                    mediaType);
+#else
+                using FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1, useAsync: true);
+                return await FromStreamAsync(fileStream, mediaType, cancellationToken).ConfigureAwait(false);
+#endif
             }
         }
 

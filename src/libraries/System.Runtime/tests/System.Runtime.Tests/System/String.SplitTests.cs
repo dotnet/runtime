@@ -730,9 +730,11 @@ namespace System.Tests
             {
                 Assert.True(enumerator.MoveNext());
                 Assert.Equal(item, source[enumerator.Current].ToString());
+                Assert.Equal(source.ToString(), enumerator.Source.ToString());
             }
 
             Assert.False(enumerator.MoveNext());
+            Assert.Equal(source.ToString(), enumerator.Source.ToString());
         }
     }
 }

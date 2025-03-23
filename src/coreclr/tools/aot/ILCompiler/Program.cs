@@ -58,7 +58,15 @@ namespace ILCompiler
 
             var libraryInitializers = new LibraryInitializers(context, assembliesWithInitializers);
 
-            return libraryInitializers.LibraryInitializerMethods;
+            IReadOnlyCollection<MethodDesc> result = libraryInitializers.LibraryInitializerMethods;
+
+            if (Get(_command.InstrumentReachability))
+            {
+                List<MethodDesc> instrumentedResult = new List<MethodDesc>(result);
+                instrumentedResult.Add(ReachabilityInstrumentationProvider.CreateInitializerMethod(context));
+                result = instrumentedResult;
+            }
+            return result;
         }
 
         public int Run()
@@ -273,15 +281,19 @@ namespace ILCompiler
                     compilationRoots.Add(new Win32ResourcesRootProvider(module));
                 }
 
-                foreach (var unmanagedEntryPointsAssembly in Get(_command.UnmanagedEntryPointsAssemblies))
+                foreach (var unmanagedEntryPointsAssemblyValue in Get(_command.UnmanagedEntryPointsAssemblies))
                 {
+                    const string hiddenSuffix = ",HIDDEN";
+                    bool hidden = unmanagedEntryPointsAssemblyValue.EndsWith(hiddenSuffix, StringComparison.Ordinal);
+                    string unmanagedEntryPointsAssembly = hidden ? unmanagedEntryPointsAssemblyValue[..^hiddenSuffix.Length] : unmanagedEntryPointsAssemblyValue;
+
                     if (typeSystemContext.InputFilePaths.ContainsKey(unmanagedEntryPointsAssembly))
                     {
                         // Skip adding UnmanagedEntryPointsRootProvider for modules that have been already registered as an input module
                         continue;
                     }
                     EcmaModule module = typeSystemContext.GetModuleForSimpleName(unmanagedEntryPointsAssembly);
-                    compilationRoots.Add(new UnmanagedEntryPointsRootProvider(module));
+                    compilationRoots.Add(new UnmanagedEntryPointsRootProvider(module, hidden));
                 }
 
                 foreach (var rdXmlFilePath in Get(_command.RdXmlFilePaths))
@@ -377,11 +389,16 @@ namespace ILCompiler
                         logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
             }
 
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
+
+            if (Get(_command.UseReachability) is string reachabilityInstrumentationFileName)
+            {
+                ilProvider = new ReachabilityInstrumentationFilter(reachabilityInstrumentationFileName, ilProvider);
+            }
+
             SubstitutionProvider substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
             ILProvider unsubstitutedILProvider = ilProvider;
             ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
-
-            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(unsubstitutedILProvider, logger);
 
             var stackTracePolicy = Get(_command.EmitStackTraceData) ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
@@ -499,7 +516,7 @@ namespace ILCompiler
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
 
-                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager);
+                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager);
 
                 // Use a more precise IL provider that uses whole program analysis for dead branch elimination
                 builder.UseILProvider(ilProvider);
@@ -548,6 +565,14 @@ namespace ILCompiler
                 }
             }
 
+            if (Get(_command.InstrumentReachability))
+            {
+                ReachabilityInstrumentationProvider reachabilityProvider = new ReachabilityInstrumentationProvider(ilProvider);
+                ilProvider = reachabilityProvider;
+                builder.UseILProvider(ilProvider);
+                compilationRoots.Add(reachabilityProvider);
+            }
+
             string ilDump = Get(_command.IlDump);
             DebugInformationProvider debugInfoProvider = Get(_command.EnableDebugInfo) ?
                 (ilDump == null ? new DebugInformationProvider() : new ILAssemblyGeneratingMethodDebugInfoProvider(ilDump, new EcmaOnlyDebugInformationProvider())) :
@@ -581,6 +606,7 @@ namespace ILCompiler
 
             string mapFileName = Get(_command.MapFileName);
             string mstatFileName = Get(_command.MstatFileName);
+            string sourceLinkFileName = Get(_command.SourceLinkFileName);
 
             List<ObjectDumper> dumpers = new List<ObjectDumper>();
 
@@ -589,6 +615,9 @@ namespace ILCompiler
 
             if (mstatFileName != null)
                 dumpers.Add(new MstatObjectDumper(mstatFileName, typeSystemContext));
+
+            if (sourceLinkFileName != null)
+                dumpers.Add(new SourceLinkWriter(sourceLinkFileName));
 
             CompilationResults compilationResults = compilation.Compile(outputFilePath, ObjectDumper.Compose(dumpers));
             string exportsFile = Get(_command.ExportsFile);
@@ -600,7 +629,7 @@ namespace ILCompiler
                 {
                     foreach (var compilationRoot in compilationRoots)
                     {
-                        if (compilationRoot is UnmanagedEntryPointsRootProvider provider)
+                        if (compilationRoot is UnmanagedEntryPointsRootProvider provider && !provider.Hidden)
                             defFileWriter.AddExportedMethods(provider.ExportedMethods);
                     }
                 }
@@ -762,7 +791,8 @@ namespace ILCompiler
                 .UseVersion()
                 .UseExtendedHelp(ILCompilerRootCommand.GetExtendedHelp))
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                EnableDefaultExceptionHandler = false,
             }.Invoke(args);
     }
 }

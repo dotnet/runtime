@@ -7,8 +7,8 @@ using System.Runtime.Versioning;
 namespace System.Runtime.CompilerServices
 {
     [NonVersionable]
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct StackAllocatedBox<T>
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    internal struct StackAllocatedBox<T>
     {
         // These fields are only accessed from jitted code
         private IntPtr _pMethodTable;

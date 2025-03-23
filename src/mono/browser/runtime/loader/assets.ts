@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { PThreadPtrNull, type AssetEntryInternal, type PThreadWorker, type PromiseAndController } from "../types/internal";
-import { GlobalizationMode, type AssetBehaviors, type AssetEntry, type LoadingResource, type ResourceList, type SingleAssetBehaviors as SingleAssetBehaviors, type WebAssemblyBootResourceType } from "../types";
+import { BootModule, type AssetBehaviors, type AssetEntry, type LoadingResource, type ResourceList, type SingleAssetBehaviors as SingleAssetBehaviors, type WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug, mono_log_warn } from "./logging";
@@ -29,10 +29,10 @@ const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,
-    "js-module-globalization": true,
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
+    "js-module-diagnostics": true,
 };
 
 const jsModulesAssetTypes: {
@@ -72,8 +72,7 @@ const skipBufferByAssetTypes: {
     [k: string]: boolean
 } = {
     "dotnetwasm": true,
-    "symbols": true,
-    "segmentation-rules": true,
+    "symbols": true
 };
 
 // these assets are instantiated differently than the main flow
@@ -82,8 +81,7 @@ const skipInstantiateByAssetTypes: {
 } = {
     ...jsModulesAssetTypes,
     "dotnetwasm": true,
-    "symbols": true,
-    "segmentation-rules": true,
+    "symbols": true
 };
 
 // load again for each worker
@@ -91,7 +89,6 @@ const loadIntoWorker: {
     [k: string]: boolean
 } = {
     "symbols": true,
-    "segmentation-rules": true,
 };
 
 export function shouldLoadIcuAsset (asset: AssetEntryInternal): boolean {
@@ -123,16 +120,10 @@ function set_single_asset (asset: AssetEntryInternal) {
     }
 }
 
-function get_single_asset (behavior: SingleAssetBehaviors): AssetEntryInternal {
+export function try_resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal|undefined {
     mono_assert(singleAssetTypes[behavior], `Unknown single asset behavior ${behavior}`);
     const asset = singleAssets.get(behavior);
-    mono_assert(asset, `Single asset for ${behavior} not found`);
-    return asset;
-}
-
-export function resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal {
-    const asset = get_single_asset(behavior);
-    if (!asset.resolvedUrl) {
+    if (asset && !asset.resolvedUrl) {
         asset.resolvedUrl = loaderHelpers.locateFile(asset.name);
 
         if (jsRuntimeModulesAssetTypes[asset.behavior]) {
@@ -148,6 +139,12 @@ export function resolve_single_asset_path (behavior: SingleAssetBehaviors): Asse
             throw new Error(`Unknown single asset behavior ${behavior}`);
         }
     }
+    return asset;
+}
+
+export function resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal {
+    const asset = try_resolve_single_asset_path(behavior);
+    mono_assert(asset, `Single asset for ${behavior} not found`);
     return asset;
 }
 
@@ -222,9 +219,6 @@ export async function mono_download_assets (): Promise<void> {
                 } else {
                     if (asset.behavior === "symbols") {
                         await runtimeHelpers.instantiate_symbols_asset(asset);
-                        cleanupAsset(asset);
-                    } else if (asset.behavior === "segmentation-rules") {
-                        await runtimeHelpers.instantiate_segmentation_rules_asset(asset);
                         cleanupAsset(asset);
                     }
 
@@ -310,11 +304,11 @@ export function prepareAssets () {
         convert_single_asset(assetsToLoad, resources.wasmNative, "dotnetwasm");
         convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
+        if (resources.jsModuleDiagnostics) {
+            convert_single_asset(modulesAssets, resources.jsModuleDiagnostics, "js-module-diagnostics");
+        }
         if (WasmEnableThreads) {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
-        }
-        if (config.globalizationMode == GlobalizationMode.Hybrid) {
-            convert_single_asset(modulesAssets, resources.jsModuleGlobalization, "js-module-globalization");
         }
 
         const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {
@@ -375,12 +369,12 @@ export function prepareAssets () {
         if (config.loadAllSatelliteResources && resources.satelliteResources) {
             for (const culture in resources.satelliteResources) {
                 for (const name in resources.satelliteResources[culture]) {
-                    assetsToLoad.push({
+                    addAsset({
                         name,
                         hash: resources.satelliteResources[culture][name],
                         behavior: "resource",
                         culture
-                    });
+                    }, !resources.coreAssembly);
                 }
             }
         }
@@ -420,12 +414,6 @@ export function prepareAssets () {
                         hash: resources.icu[name],
                         behavior: "icu",
                         loadRemote: true
-                    });
-                } else if (name.startsWith("segmentation-rules") && name.endsWith(".json")) {
-                    assetsToLoad.push({
-                        name,
-                        hash: resources.icu[name],
-                        behavior: "segmentation-rules",
                     });
                 }
             }
@@ -737,7 +725,7 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
         const customLoadResult = invokeLoadBootResource(asset);
         if (customLoadResult instanceof Promise) {
             // They are supplying an entire custom response, so just use that
-            return customLoadResult;
+            return customLoadResult as Promise<Response>;
         } else if (typeof customLoadResult === "string") {
             url = customLoadResult;
         }
@@ -778,7 +766,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "js-module-threads": "dotnetjs"
 };
 
-function invokeLoadBootResource (asset: AssetEntryInternal): string | Promise<Response> | null | undefined {
+function invokeLoadBootResource (asset: AssetEntryInternal): string | Promise<Response> | Promise<BootModule> | null | undefined {
     if (loaderHelpers.loadBootResource) {
         const requestHash = asset.hash ?? "";
         const url = asset.resolvedUrl!;
@@ -844,6 +832,7 @@ export async function streamingCompileWasm () {
         loaderHelpers.wasmCompilePromise.promise_control.reject(err);
     }
 }
+
 export function preloadWorkers () {
     if (!WasmEnableThreads) return;
     const jsModuleWorker = resolve_single_asset_path("js-module-threads");

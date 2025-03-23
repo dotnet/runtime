@@ -280,15 +280,13 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
 
 #ifdef _DEBUG
     // Stress debug mode by increasing size by only 1 slot for the first 10 slots.
-    DWORD newSize = pCurrentDictLayout->m_numSlots > 10 ? (DWORD)pCurrentDictLayout->m_numSlots * 2 : pCurrentDictLayout->m_numSlots + 1;
-    if (!FitsIn<WORD>(newSize))
+    DWORD newSize = pCurrentDictLayout->m_numSlots > 10 ? ((DWORD)pCurrentDictLayout->m_numSlots) * 2 : pCurrentDictLayout->m_numSlots + 1;
+#else
+    DWORD newSize = ((DWORD)pCurrentDictLayout->m_numSlots) * 2;
+#endif
+    if (!FitsIn<WORD>(newSize + static_cast<WORD>(numGenericArgs)))
         return NULL;
     DictionaryLayout* pNewDictionaryLayout = Allocate((WORD)newSize, pAllocator, NULL);
-#else
-    if (!FitsIn<WORD>((DWORD)pCurrentDictLayout->m_numSlots * 2))
-        return NULL;
-    DictionaryLayout* pNewDictionaryLayout = Allocate(pCurrentDictLayout->m_numSlots * 2, pAllocator, NULL);
-#endif
 
     pNewDictionaryLayout->m_numInitialSlots = pCurrentDictLayout->m_numInitialSlots;
 
@@ -1043,7 +1041,8 @@ Dictionary::PopulateEntry(
 
             if (fRequiresDispatchStub)
             {
-                // Generate a dispatch stub and store it in the dictionary.
+                LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
+                // Generate a dispatch stub and gather a slot.
                 //
                 // We generate an indirection so we don't have to write to the dictionary
                 // when we do updates, and to simplify stub indirect callsites.  Stubs stored in
@@ -1055,20 +1054,12 @@ Dictionary::PopulateEntry(
                 // dictionary entry to the  caller, still using "call [eax]", and then the
                 // stub dispatch mechanism can update the dictitonary itself and we don't
                 // need an indirection.
-                LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
-
-                VirtualCallStubManager * pMgr = pDictLoaderAllocator->GetVirtualCallStubManager();
-
+                //
                 // We indirect through a cell so that updates can take place atomically.
                 // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
-                // are allocated in the domain of the dicitonary.
-                //
-                // In the case of overflow (where there is no dictionary, just a global hash table) then
-                // the entry will be placed in the overflow hash table (JitGenericHandleCache).  This
-                // is partitioned according to domain, i.e. is scraped each time an AppDomain gets unloaded.
-                PCODE addr = pMgr->GetCallStub(ownerType, methodSlot);
+                // are allocated in the domain of the dictionary.
 
-                result = (CORINFO_GENERIC_HANDLE)pMgr->GenerateStubIndirection(addr);
+                result = (CORINFO_GENERIC_HANDLE)GenerateDispatchStubCellEntrySlot(pDictLoaderAllocator, ownerType, methodSlot, NULL);
                 break;
             }
 
@@ -1284,6 +1275,8 @@ Dictionary::PopulateEntry(
 
         MemoryBarrier();
 
+        _ASSERTE(slotIndex != 0); // Technically this assert is invalid, but it will only happen if growing the dictionary layout attempts to grow beyond the capacity
+                                  // of a 16 bit unsigned integer. This is highly unlikely to happen in practice, but possible, and will result in extremely degraded performance.
         if (slotIndex != 0)
         {
             Dictionary* pDictionary;

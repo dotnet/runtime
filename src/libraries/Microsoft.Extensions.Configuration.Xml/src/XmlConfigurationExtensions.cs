@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="path">Path relative to the base path stored in
         /// <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.</param>
-        /// <param name="optional">Whether the file is optional.</param>
+        /// <param name="optional"><see langword="true"/> if the file is optional.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         [RequiresDynamicCode(XmlDocumentDecryptor.RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(XmlDocumentDecryptor.RequiresUnreferencedCodeMessage)]
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="path">Path relative to the base path stored in
         /// <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.</param>
-        /// <param name="optional">Whether the file is optional.</param>
+        /// <param name="optional"><see langword="true"/> if the file is optional.</param>
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         [RequiresDynamicCode(XmlDocumentDecryptor.RequiresDynamicCodeMessage)]
@@ -60,13 +60,13 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Adds a XML configuration source to <paramref name="builder"/>.
+        /// Adds an XML configuration source to <paramref name="builder"/>.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="provider">The <see cref="IFileProvider"/> to use to access the file.</param>
         /// <param name="path">Path relative to the base path stored in
         /// <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.</param>
-        /// <param name="optional">Whether the file is optional.</param>
+        /// <param name="optional"><see langword="true"/> if the file is optional.</param>
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         [RequiresDynamicCode(XmlDocumentDecryptor.RequiresDynamicCodeMessage)]
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Adds a XML configuration source to <paramref name="builder"/>.
+        /// Adds an XML configuration source to <paramref name="builder"/>.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="configureSource">Configures the source.</param>
@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Configuration
             => builder.Add(configureSource);
 
         /// <summary>
-        /// Adds a XML configuration source to <paramref name="builder"/>.
+        /// Adds an XML configuration source to <paramref name="builder"/>.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="stream">The <see cref="Stream"/> to read the XML configuration data from.</param>

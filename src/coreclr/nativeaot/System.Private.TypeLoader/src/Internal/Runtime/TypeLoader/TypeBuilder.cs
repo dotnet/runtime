@@ -296,11 +296,11 @@ namespace Internal.Runtime.TypeLoader
 
             InstantiatedMethod nonTemplateMethod = method;
 
-            // Templates are always non-unboxing stubs
-            if (method.UnboxingStub)
+            // Templates are always unboxing stubs for valuetype instance methods
+            if (!method.UnboxingStub && method.OwningType.IsValueType && !TypeLoaderEnvironment.IsStaticMethodSignature(method.NameAndSignature))
             {
-                // Strip unboxing stub, note the first parameter which is false
-                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(false, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
+                // Make it an unboxing stub, note the first parameter which is true
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
             }
 
             uint nativeLayoutInfoToken;
@@ -311,16 +311,16 @@ namespace Internal.Runtime.TypeLoader
                 throw new MissingTemplateException();
             }
 
-            // We might have a mismatch between unboxing/non-unboxing variants so only remember it for static methods
-            if (TypeLoaderEnvironment.IsStaticMethodSignature(templateMethod.NameAndSignature)
-                && templateMethod.FunctionPointer != IntPtr.Zero)
+            if (templateMethod.FunctionPointer != IntPtr.Zero)
             {
                 nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer);
-            }
 
-            // Ensure that if this method is non-shareable from a normal canonical perspective, then
-            // its template MUST be a universal canonical template method
-            Debug.Assert(!method.IsNonSharableMethod || (method.IsNonSharableMethod && templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal)));
+                // Compensate for the template being an unboxing stub
+                if (nonTemplateMethod != method)
+                {
+                    method.SetFunctionPointer(TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(templateMethod.FunctionPointer, templateMethod.OwningType.RuntimeTypeHandle));
+                }
+            }
 
             NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
 
@@ -344,7 +344,7 @@ namespace Internal.Runtime.TypeLoader
                         break;
 
                     default:
-                        Debug.Fail("Unexpected BagElementKind for generic method with name " + method.NameAndSignature.Name + "! Only BagElementKind.DictionaryLayout should appear.");
+                        Debug.Fail("Unexpected BagElementKind for generic method with name " + method.NameAndSignature.GetName() + "! Only BagElementKind.DictionaryLayout should appear.");
                         throw new BadImageFormatException();
                 }
             }
@@ -356,12 +356,6 @@ namespace Internal.Runtime.TypeLoader
         internal void ParseNativeLayoutInfo(TypeBuilderState state, TypeDesc type)
         {
             TypeLoaderLogger.WriteLine("Parsing NativeLayoutInfo for type " + type.ToString() + " ...");
-
-            bool isTemplateUniversalCanon = false;
-            if (state.TemplateType != null)
-            {
-                isTemplateUniversalCanon = state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal);
-            }
 
             if (state.TemplateType == null)
             {
@@ -423,15 +417,8 @@ namespace Internal.Runtime.TypeLoader
                         state.ThreadStaticDesc = context.GetGCStaticInfo(typeInfoParser.GetUnsigned());
                         break;
 
-                    case BagElementKind.FieldLayout:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.FieldLayout");
-                        typeInfoParser.SkipInteger(); // Handled in type layout algorithm
-                        break;
-
                     case BagElementKind.DictionaryLayout:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.DictionaryLayout");
-                        Debug.Assert(!isTemplateUniversalCanon, "Universal template nativelayout do not have DictionaryLayout");
-
                         Debug.Assert(state.Dictionary == null);
                         if (!state.TemplateType.RetrieveRuntimeTypeHandleIfPossible())
                         {

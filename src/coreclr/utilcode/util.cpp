@@ -1166,7 +1166,7 @@ void ConfigMethodSet::init(const CLRConfig::ConfigStringInfo & info)
 }
 
 /**************************************************************************/
-bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig)
+bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, int argCount)
 {
     CONTRACTL
     {
@@ -1178,7 +1178,7 @@ bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGN
 
     if (m_list.IsEmpty())
         return false;
-    return(m_list.IsInList(methodName, className, sig));
+    return(m_list.IsInList(methodName, className, argCount));
 }
 
 /**************************************************************************/
@@ -1509,25 +1509,6 @@ void MethodNamesListBase::Destroy()
         pName = pName->next;
         delete curName;
     }
-}
-
-/**************************************************************/
-bool MethodNamesListBase::IsInList(LPCUTF8 methName, LPCUTF8 clsName, PCCOR_SIGNATURE sig)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    int numArgs = -1;
-    if (sig != NULL)
-    {
-        sig++;      // Skip calling convention
-        numArgs = CorSigUncompressData(sig);
-    }
-
-    return IsInList(methName, clsName, numArgs);
 }
 
 /**************************************************************/
@@ -2359,7 +2340,7 @@ void PutLoongArch64JIR(UINT32 * pCode, INT64 imm38)
 
     UINT32 pcInstr = *pCode;
 
-    _ASSERTE(pcInstr == 0x1e00000e); // Must be pcaddu18i R14, 0
+    _ASSERTE(pcInstr == 0x1e000010); // Must be pcaddu18i t4, 0
 
     INT64 relOff = imm38 & 0x20000;
     INT64 imm = imm38 + relOff;
@@ -2668,7 +2649,7 @@ namespace Com
         {
             STANDARD_VM_CONTRACT;
 
-            WCHAR wszClsid[GUID_STR_BUFFER_LEN];
+            WCHAR wszClsid[MINIPAL_GUID_BUFFER_LEN];
             if (GuidToLPWSTR(rclsid, wszClsid) == 0)
                 return E_UNEXPECTED;
 

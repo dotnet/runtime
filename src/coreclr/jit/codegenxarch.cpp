@@ -96,37 +96,6 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-#ifdef JIT32_GCENCODER
-    if (!pushReg)
-    {
-        // Make sure that EAX is reported as live GC-ref so that any GC that kicks in while
-        // executing GS cookie check will not collect the object pointed to by EAX.
-        if (compiler->compMethodReturnsRetBufAddr())
-        {
-            // This is for returning in an implicit RetBuf.
-            // If the address of the buffer is returned in REG_INTRET, mark the content of INTRET as ByRef.
-
-            // In case the return is in an implicit RetBuf, the native return type should be a struct
-            assert(varTypeIsStruct(compiler->info.compRetNativeType));
-
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
-        }
-        else
-        {
-            ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
-            const unsigned regCount    = retTypeDesc.GetReturnRegCount();
-
-            for (unsigned i = 0; i < regCount; ++i)
-            {
-                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
-                                       retTypeDesc.GetReturnRegType(i));
-            }
-        }
-    }
-#else
-    assert(GetEmitter()->emitGCDisabled());
-#endif
-
     regNumber regGSCheck;
     regMaskTP regMaskGSCheck = RBM_NONE;
 
@@ -310,7 +279,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
         unsigned filterEndOffsetSlotOffs;
-        filterEndOffsetSlotOffs = (unsigned)(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
+        filterEndOffsetSlotOffs =
+            (unsigned)(compiler->lvaLclStackHomeSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
 
         unsigned curNestingSlotOffs;
         curNestingSlotOffs = (unsigned)(filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE));
@@ -433,12 +403,13 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             else
             {
                 // For section constant, the immediate will be relocatable
-                GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+                GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm,
+                                          INS_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
             }
         }
         else
         {
-            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
     }
     regSet.verifyRegUsed(reg);
@@ -724,27 +695,23 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         }
         break;
 
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
         {
-#if defined(FEATURE_SIMD)
             GenTreeVecCon* vecCon = tree->AsVecCon();
             genSetRegToConst(vecCon->GetRegNum(), targetType, &vecCon->gtSimdVal);
-#else
-            unreached();
-#endif
             break;
         }
+#endif // FEATURE_SIMD
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
         {
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
             GenTreeMskCon* mskCon = tree->AsMskCon();
             genSetRegToConst(mskCon->GetRegNum(), targetType, &mskCon->gtSimdMaskVal);
-#else
-            unreached();
-#endif
             break;
         }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         default:
             unreached();
@@ -773,12 +740,10 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     {
         GenTree* operand = tree->gtGetOp1();
         assert(operand->isUsedFromReg());
-        regNumber operandReg = genConsumeReg(operand);
+        regNumber   operandReg = genConsumeReg(operand);
+        instruction ins        = genGetInsForOper(tree->OperGet(), targetType);
 
-        inst_Mov(targetType, targetReg, operandReg, /* canSkip */ true);
-
-        instruction ins = genGetInsForOper(tree->OperGet(), targetType);
-        inst_RV(ins, targetReg, targetType);
+        GetEmitter()->emitIns_BASE_R_R(ins, emitActualTypeSize(tree), targetReg, operandReg);
     }
 
     genProduceReg(tree);
@@ -1098,6 +1063,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
 
+    bool eligibleForNDD = false;
+
     // Commutative operations can mark op1 as contained or reg-optional to generate "op reg, memop/immed"
     if (!op1->isUsedFromReg())
     {
@@ -1193,31 +1160,57 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // reg3 = reg3 op reg2
     else
     {
-        var_types op1Type = op1->TypeGet();
-        inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
-        regSet.verifyRegUsed(targetReg);
-        gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
-        dst = treeNode;
-        src = op2;
+        // when reg3 != reg1 && reg3 != reg2, and NDD is available, we can use APX-EVEX.ND to optimize the codegen.
+        eligibleForNDD = emit->DoJitUseApxNDD(ins);
+        if (!eligibleForNDD)
+        {
+            var_types op1Type = op1->TypeGet();
+            inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
+            regSet.verifyRegUsed(targetReg);
+            gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
+            dst = treeNode;
+            src = op2;
+        }
+        else
+        {
+            dst = op1;
+            src = op2;
+        }
     }
 
+    // we can assume all the floating instructions are processed and returned above.
+    assert(!varTypeIsFloating(treeNode));
+
     // try to use an inc or dec
-    if (oper == GT_ADD && !varTypeIsFloating(treeNode) && src->isContainedIntOrIImmed() && !treeNode->gtOverflowEx())
+    if (oper == GT_ADD && src->isContainedIntOrIImmed() && !treeNode->gtOverflowEx())
     {
         if (src->IsIntegralConst(1))
         {
-            emit->emitIns_R(INS_inc, emitTypeSize(treeNode), targetReg);
+            emit->emitIns_BASE_R_R(INS_inc, emitTypeSize(treeNode), targetReg, dst->GetRegNum());
             genProduceReg(treeNode);
             return;
         }
         else if (src->IsIntegralConst(-1))
         {
-            emit->emitIns_R(INS_dec, emitTypeSize(treeNode), targetReg);
+            emit->emitIns_BASE_R_R(INS_dec, emitTypeSize(treeNode), targetReg, dst->GetRegNum());
             genProduceReg(treeNode);
             return;
         }
     }
-    regNumber r = emit->emitInsBinary(ins, emitTypeSize(treeNode), dst, src);
+
+    regNumber r = REG_NA;
+    if (eligibleForNDD)
+    {
+        // operands should be already formatted above
+        assert(dst->isUsedFromReg());
+        assert(op1reg != targetReg);
+        assert(op2reg != targetReg);
+        r = emit->emitIns_BASE_R_R_RM(ins, emitTypeSize(treeNode), targetReg, treeNode, dst, src);
+    }
+    else
+    {
+        r = emit->emitInsBinary(ins, emitTypeSize(treeNode), dst, src);
+    }
     noway_assert(r == targetReg);
 
     if (treeNode->gtOverflowEx())
@@ -1330,10 +1323,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
         }
         assert(regOp->isUsedFromReg());
 
-        // Setup targetReg when neither of the source operands was a matching register
-        inst_Mov(targetType, mulTargetReg, regOp->GetRegNum(), /* canSkip */ true);
-
-        emit->emitInsBinary(ins, size, treeNode, rmOp);
+        emit->emitIns_BASE_R_R_RM(ins, size, mulTargetReg, treeNode, regOp, rmOp);
 
         // Move the result to the desired register, if necessary
         if (ins == INS_mulEAX)
@@ -1363,7 +1353,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 //    src         - The source of the return
 //    retTypeDesc - The return type descriptor.
 //
-void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
+void CodeGen::genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc)
 {
     assert(varTypeIsSIMD(src));
     assert(src->isUsedFromReg());
@@ -1810,6 +1800,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 
     // emit the call to the EE-helper that stops for GC (or other reasons)
     regNumber tmpReg = internalRegisters.GetSingle(tree, RBM_ALLINT);
+
     assert(genIsValidIntReg(tmpReg));
 
     genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN, tmpReg);
@@ -1906,8 +1897,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             FALLTHROUGH;
 
         case GT_CNS_DBL:
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;
@@ -2144,8 +2139,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_MEMORYBARRIER:
         {
-            CodeGen::BarrierKind barrierKind =
-                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+            BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD
+                    ? BARRIER_LOAD_ONLY
+                    : (treeNode->gtFlags & GTF_MEMORYBARRIER_STORE ? BARRIER_STORE_ONLY : BARRIER_FULL);
 
             instGen_MemoryBarrier(barrierKind);
             break;
@@ -2203,27 +2200,36 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
+        {
+            // Find the eh table entry via the eh ID
+            //
+            unsigned const ehID = (unsigned)treeNode->AsVal()->gtVal1;
+            assert(ehID < compiler->compEHID);
+            assert(compiler->m_EHIDtoEHblkDsc != nullptr);
+
+            EHblkDsc* HBtab = nullptr;
+            bool      found = compiler->m_EHIDtoEHblkDsc->Lookup(ehID, &HBtab);
+            assert(found);
+            assert(HBtab != nullptr);
 
             // Have to clear the ShadowSP of the nesting level which encloses the finally. Generates:
             //     mov dword ptr [ebp-0xC], 0  // for some slot of the ShadowSP local var
-
-            size_t finallyNesting;
-            finallyNesting = treeNode->AsVal()->gtVal1;
-            noway_assert(treeNode->AsVal()->gtVal1 < compiler->compHndBBtabCount);
+            //
+            const size_t finallyNesting = HBtab->ebdHandlerNestingLevel;
             noway_assert(finallyNesting < compiler->compHndBBtabCount);
 
             // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
             unsigned filterEndOffsetSlotOffs;
-            PREFIX_ASSUME(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) > TARGET_POINTER_SIZE); // below doesn't
-                                                                                                      // underflow.
+            assert(compiler->lvaLclStackHomeSize(compiler->lvaShadowSPslotsVar) > TARGET_POINTER_SIZE);
             filterEndOffsetSlotOffs =
-                (unsigned)(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
+                (unsigned)(compiler->lvaLclStackHomeSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
 
             size_t curNestingSlotOffs;
             curNestingSlotOffs = filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE);
             GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, (unsigned)curNestingSlotOffs,
                                       0);
             break;
+        }
 #endif // FEATURE_EH_WINDOWS_X86
 
         case GT_PINVOKE_PROLOG:
@@ -3489,7 +3495,6 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     }
 }
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
 // Generate code for a load from some address + offset
 //   base: tree node which can be either a local or an indir
 //   offset: distance from the "base" location from which to load
@@ -3506,7 +3511,6 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
         GetEmitter()->emitIns_R_AR(ins, size, dst, base->AsIndir()->Addr()->GetRegNum(), offset);
     }
 }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 //----------------------------------------------------------------------------------
 // genCodeForCpBlkUnroll - Generate unrolled block copy code.
@@ -3794,7 +3798,6 @@ void CodeGen::genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode)
     instGen(INS_r_movsb);
 }
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------
 // CodeGen::genMove8IfNeeded: Conditionally move 8 bytes of a struct to the argument area
 //
@@ -4217,13 +4220,14 @@ void CodeGen::genClearStackVec3ArgUpperBits()
         {
             // Assume that for x64 linux, an argument is fully in registers
             // or fully on stack.
-            regNumber argReg = varDsc->GetOtherArgReg();
+            const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
+            assert((abiInfo.NumSegments == 2) && !abiInfo.HasAnyStackSegment());
+            regNumber argReg = abiInfo.Segment(1).GetRegister();
             genSimd12UpperClear(argReg);
         }
     }
 }
 #endif // defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 //
 // genCodeForCpObj - Generate code for CpObj nodes to copy structs that have interleaved
@@ -4247,8 +4251,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     GenTree*  dstAddr     = cpObjNode->Addr();
     GenTree*  source      = cpObjNode->Data();
     var_types srcAddrType = TYP_BYREF;
-    bool      dstOnStack =
-        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+    bool      dstOnStack  = cpObjNode->IsAddressNotOnHeap(compiler);
 
     // If the GenTree node has data about GC pointers, this means we're dealing
     // with CpObj, so this requires special logic.
@@ -4436,23 +4439,24 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
         if (imm == 1)
         {
             // inc [addr]
-            GetEmitter()->emitIns_AR(INS_inc, size, addr->GetRegNum(), 0);
+            GetEmitter()->emitIns_AR(INS_inc, size, addr->GetRegNum(), 0, INS_OPTS_EVEX_NoApxPromotion);
         }
         else if (imm == -1)
         {
             // dec [addr]
-            GetEmitter()->emitIns_AR(INS_dec, size, addr->GetRegNum(), 0);
+            GetEmitter()->emitIns_AR(INS_dec, size, addr->GetRegNum(), 0, INS_OPTS_EVEX_NoApxPromotion);
         }
         else
         {
             // add [addr], imm
-            GetEmitter()->emitIns_I_AR(INS_add, size, imm, addr->GetRegNum(), 0);
+            GetEmitter()->emitIns_I_AR(INS_add, size, imm, addr->GetRegNum(), 0, INS_OPTS_EVEX_NoApxPromotion);
         }
     }
     else
     {
         // add [addr], data
-        GetEmitter()->emitIns_AR_R(INS_add, size, data->GetRegNum(), addr->GetRegNum(), 0);
+        GetEmitter()->emitIns_AR_R(INS_add, size, data->GetRegNum(), addr->GetRegNum(), 0,
+                                   INS_OPTS_EVEX_NoApxPromotion);
     }
 }
 
@@ -4489,7 +4493,8 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
             //    or/and  dword ptr [addrReg], val
             //
             instGen(INS_lock);
-            GetEmitter()->emitIns_AR_R(ins, size, data->GetRegNum(), addr->GetRegNum(), 0);
+            GetEmitter()->emitIns_AR_R(ins, size, data->GetRegNum(), addr->GetRegNum(), 0,
+                                       INS_OPTS_EVEX_NoApxPromotion);
         }
         else
         {
@@ -4803,17 +4808,16 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 //    tree - the bit shift node (that specifies the type of bit shift to perform).
 //
 // Assumptions:
-//    a) All GenTrees are register allocated.
-//    b) The shift-by-amount in tree->AsOp()->gtOp2 is either a contained constant or
-//       it's a register-allocated expression. If it is in a register that is
-//       not RCX, it will be moved to RCX (so RCX better not be in use!).
+//    The shift-by-amount in tree->AsOp()->gtOp2 is either a contained constant or it's a
+//    register-allocated expression. If not using BMI2 instructions and op2 is in a register
+//    that is not RCX, it will be moved to RCX (so RCX better not be in use!).
 //
 void CodeGen::genCodeForShift(GenTree* tree)
 {
     // Only the non-RMW case here.
     assert(tree->OperIsShiftOrRotate());
-    assert(tree->AsOp()->gtOp1->isUsedFromReg());
     assert(tree->GetRegNum() != REG_NA);
+    assert(tree->AsOp()->gtOp1->isUsedFromReg() || compiler->compIsaSupportedDebugOnly(InstructionSet_BMI2));
 
     genConsumeOperands(tree->AsOp());
 
@@ -4824,12 +4828,13 @@ void CodeGen::genCodeForShift(GenTree* tree)
     regNumber operandReg = operand->GetRegNum();
 
     GenTree* shiftBy = tree->gtGetOp2();
+    emitAttr size    = emitTypeSize(tree);
 
     if (shiftBy->isContainedIntOrIImmed())
     {
-        emitAttr size = emitTypeSize(tree);
+        assert(tree->OperIsRotate() || (operandReg != REG_NA));
 
-        bool mightOptimizeLsh = tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags();
+        bool mightOptimizeLsh = tree->OperIs(GT_LSH) && !tree->gtSetFlags();
 
         // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
         if (mightOptimizeLsh && shiftBy->IsIntegralConst(1))
@@ -4843,14 +4848,14 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), operandReg, operandReg, 1, 0);
             }
         }
-        // Optimize "X<<2" to "lea [reg*4]" - we only do this when the dst and src registers are different since it will
-        // remove a 'mov'.
+        // Optimize "X<<2" to "lea [reg*4]"
+        // We only do this when the dst and src registers are different since it will remove a 'mov'.
         else if (mightOptimizeLsh && shiftBy->IsIntegralConst(2) && tree->GetRegNum() != operandReg)
         {
             GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), REG_NA, operandReg, 4, 0);
         }
-        // Optimize "X<<3" to "lea [reg*8]" - we only do this when the dst and src registers are different since it will
-        // remove a 'mov'.
+        // Optimize "X<<3" to "lea [reg*8]"
+        // We only do this when the dst and src registers are different since it will remove a 'mov'.
         else if (mightOptimizeLsh && shiftBy->IsIntegralConst(3) && tree->GetRegNum() != operandReg)
         {
             GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), REG_NA, operandReg, 8, 0);
@@ -4859,54 +4864,54 @@ void CodeGen::genCodeForShift(GenTree* tree)
         {
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
 
-#if defined(TARGET_64BIT)
-            // Try to emit rorx if BMI2 is available instead of mov+rol
-            // it makes sense only for 64bit integers
-            if ((genActualType(targetType) == TYP_LONG) && (tree->GetRegNum() != operandReg) &&
-                compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_ROL, GT_ROR) &&
-                (shiftByValue > 0) && (shiftByValue < 64))
+            if (tree->OperIsRotate() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
             {
-                const int value = tree->OperIs(GT_ROL) ? (64 - shiftByValue) : shiftByValue;
-                GetEmitter()->emitIns_R_R_I(INS_rorx, size, tree->GetRegNum(), operandReg, value);
-                genProduceReg(tree);
-                return;
+                // If we have a contained source operand, we must emit rorx.
+                // We may also use rorx for 64bit values when a mov would otherwise be required,
+                // because rorx is smaller than mov+rol/ror when REX prefix is included.
+
+                if ((operandReg == REG_NA) || ((varTypeIsLong(targetType) && (tree->GetRegNum() != operandReg))))
+                {
+                    // There is no 'rolx', so for rol, we use rorx with the shift value adjusted.
+                    if (tree->OperIs(GT_ROL))
+                    {
+                        shiftByValue &= (size * BITS_PER_BYTE - 1);
+                        shiftByValue = (size * BITS_PER_BYTE - shiftByValue);
+                    }
+
+                    inst_RV_TT_IV(INS_rorx, size, tree->GetRegNum(), operand, shiftByValue, INS_OPTS_NONE);
+                    genProduceReg(tree);
+                    return;
+                }
             }
-#endif
-            // First, move the operand to the destination register and
-            // later on perform the shift in-place.
-            // (LSRA will try to avoid this situation through preferencing.)
-            inst_Mov(targetType, tree->GetRegNum(), operandReg, /* canSkip */ true);
-            inst_RV_SH(ins, size, tree->GetRegNum(), shiftByValue);
+
+            ins = genMapShiftInsToShiftByConstantIns(ins, shiftByValue);
+            GetEmitter()->emitIns_BASE_R_R_I(ins, emitTypeSize(tree), tree->GetRegNum(), operandReg, shiftByValue);
+            genProduceReg(tree);
+            return;
         }
     }
-#if defined(TARGET_64BIT)
     else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
     {
-        // Try to emit shlx, sarx, shrx if BMI2 is available instead of mov+shl, mov+sar, mov+shr.
+        // Emit shlx, sarx, shrx if BMI2 is available instead of mov+shl, mov+sar, mov+shr.
         switch (tree->OperGet())
         {
             case GT_LSH:
                 ins = INS_shlx;
                 break;
-
             case GT_RSH:
                 ins = INS_sarx;
                 break;
-
             case GT_RSZ:
                 ins = INS_shrx;
                 break;
-
             default:
                 unreached();
         }
 
-        regNumber shiftByReg = shiftBy->GetRegNum();
-        emitAttr  size       = emitTypeSize(tree);
-        // The order of operandReg and shiftByReg are swapped to follow shlx, sarx and shrx encoding spec.
-        GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), shiftByReg, operandReg);
+        // The order of operand and shiftBy are swapped to follow shlx, sarx and shrx encoding spec.
+        inst_RV_RV_TT(ins, size, tree->GetRegNum(), shiftBy->GetRegNum(), operand, /*isRMW*/ false, INS_OPTS_NONE);
     }
-#endif
     else
     {
         // We must have the number of bits to shift stored in ECX, since we constrained this node to
@@ -4917,8 +4922,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         // The operand to be shifted must not be in ECX
         noway_assert(operandReg != REG_RCX);
 
-        inst_Mov(targetType, tree->GetRegNum(), operandReg, /* canSkip */ true);
-        inst_RV(ins, tree->GetRegNum(), targetType);
+        GetEmitter()->emitIns_BASE_R_R(ins, emitTypeSize(tree), tree->GetRegNum(), operandReg);
     }
 
     genProduceReg(tree);
@@ -5681,6 +5685,13 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             // These intrinsics are "ins reg/mem, xmm"
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
                             attr = emitActualTypeSize(baseType);
+#if defined(TARGET_X86)
+                            if (varTypeIsLong(baseType))
+                            {
+                                ins  = INS_movq;
+                                attr = EA_8BYTE;
+                            }
+#endif // TARGET_X86
                             break;
                         }
 
@@ -5983,7 +5994,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
     genCallPlaceRegArgs(call);
 
-#if defined(TARGET_X86) || defined(UNIX_AMD64_ABI)
+#if defined(TARGET_X86)
     // The call will pop its arguments.
     // for each putarg_stk:
     target_ssize_t stackArgBytes = 0;
@@ -5997,14 +6008,12 @@ void CodeGen::genCall(GenTreeCall* call)
             stackArgBytes += argSize;
 
 #ifdef DEBUG
-            assert(argSize == arg.AbiInfo.ByteSize);
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
+            assert(argSize == arg.AbiInfo.StackBytesConsumed());
             if (source->TypeIs(TYP_STRUCT) && !source->OperIs(GT_FIELD_LIST))
             {
                 unsigned loadSize = source->GetLayout(compiler)->GetSize();
                 assert(argSize == roundUp(loadSize, TARGET_POINTER_SIZE));
             }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 #endif // DEBUG
         }
     }
@@ -6196,7 +6205,6 @@ void CodeGen::genCall(GenTreeCall* call)
             switch (helperNum)
             {
                 case CORINFO_HELP_MON_ENTER:
-                case CORINFO_HELP_MON_ENTER_STATIC:
                     noway_assert(compiler->syncStartEmitCookie == nullptr);
                     compiler->syncStartEmitCookie =
                         GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
@@ -6204,7 +6212,6 @@ void CodeGen::genCall(GenTreeCall* call)
                     noway_assert(compiler->syncStartEmitCookie != nullptr);
                     break;
                 case CORINFO_HELP_MON_EXIT:
-                case CORINFO_HELP_MON_EXIT_STATIC:
                     noway_assert(compiler->syncEndEmitCookie == nullptr);
                     compiler->syncEndEmitCookie =
                         GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
@@ -6559,9 +6566,8 @@ void CodeGen::genJmpPlaceVarArgs()
     for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
-        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
         {
-            const ABIPassingSegment& segment = abiInfo.Segment(i);
             if (segment.IsPassedOnStack())
             {
                 continue;
@@ -7243,18 +7249,22 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
     assert(varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
     genConsumeOperands(treeNode->AsOp());
-    if (srcType == dstType && (op1->isUsedFromReg() && (targetReg == op1->GetRegNum())))
+    if (srcType == dstType)
     {
-        // source and destinations types are the same and also reside in the same register.
-        // we just need to consume and produce the reg in this case.
-        ;
+        if (op1->isUsedFromReg())
+        {
+            GetEmitter()->emitIns_Mov(INS_movaps, EA_16BYTE, targetReg, op1->GetRegNum(), /* canSkip */ true);
+        }
+        else
+        {
+            inst_RV_TT(ins_Move_Extend(dstType, /* srcInReg */ false), emitTypeSize(dstType), targetReg, op1);
+        }
     }
     else
     {
-        instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(dstType));
+        instruction ins = ins_FloatConv(dstType, srcType);
 
-        // integral to floating-point conversions all have RMW semantics if VEX support
-        // is not available
+        // floating-point conversions all have RMW semantics if VEX support is not available
 
         bool isRMW = !compiler->canUseVexEncoding();
         inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
@@ -7280,7 +7290,7 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 void CodeGen::genIntToFloatCast(GenTree* treeNode)
 {
     // int type --> float/double conversions are always non-overflow ones
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -7295,13 +7305,8 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 #endif
 
     var_types dstType = treeNode->CastToType();
-    var_types srcType = op1->TypeGet();
+    var_types srcType = genActualType(op1->TypeGet());
     assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
-
-#if !defined(TARGET_64BIT)
-    // We expect morph to replace long to float/double casts with helper calls
-    noway_assert(!varTypeIsLong(srcType));
-#endif // !defined(TARGET_64BIT)
 
     // Since xarch emitter doesn't handle reporting gc-info correctly while casting away gc-ness we
     // ensure srcType of a cast is non gc-type.  Codegen should never see BYREF as source type except
@@ -7311,70 +7316,37 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // operation.
     if (srcType == TYP_BYREF)
     {
-        noway_assert(op1->OperGet() == GT_LCL_ADDR);
+        noway_assert(op1->OperIs(GT_LCL_ADDR));
         srcType = TYP_I_IMPL;
     }
 
-    // force the srcType to unsigned if GT_UNSIGNED flag is set
-    if (treeNode->gtFlags & GTF_UNSIGNED)
-    {
-        srcType = varTypeToUnsigned(srcType);
-    }
-
-    noway_assert(!varTypeIsGC(srcType));
-
-    // We should never be seeing srcType whose size is not sizeof(int) nor sizeof(long).
-    // For conversions from byte/sbyte/int16/uint16 to float/double, we would expect
-    // either the front-end or lowering phase to have generated two levels of cast.
-    // The first one is for widening smaller int type to int32 and the second one is
-    // to the float/double.
-    emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
-    noway_assert((srcSize == EA_ATTR(genTypeSize(TYP_INT))) || (srcSize == EA_ATTR(genTypeSize(TYP_LONG))));
-
-    // Also we don't expect to see uint32 -> float/double and uint64 -> float conversions
-    // here since they should have been lowered appropriately.
-    noway_assert(srcType != TYP_UINT);
-    assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT) || compiler->canUseEvexEncodingDebugOnly());
-
-    if ((srcType == TYP_ULONG) && varTypeIsFloating(dstType) && compiler->canUseEvexEncoding())
-    {
-        assert(compiler->canUseEvexEncodingDebugOnly());
-        genConsumeOperands(treeNode->AsOp());
-        instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(srcType));
-        GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
-        genProduceReg(treeNode);
-        return;
-    }
-
-    // To convert int to a float/double, cvtsi2ss/sd SSE2 instruction is used
+    // To convert integral type to floating, the cvt[u]si2ss/sd instruction is used
     // which does a partial write to lower 4/8 bytes of xmm register keeping the other
-    // upper bytes unmodified.  If "cvtsi2ss/sd xmmReg, r32/r64" occurs inside a loop,
+    // upper bytes unmodified.  If "cvt[u]si2ss/sd xmmReg, r32/r64" occurs inside a loop,
     // the partial write could introduce a false dependency and could cause a stall
     // if there are further uses of xmmReg. We have such a case occurring with a
     // customer reported version of SpectralNorm benchmark, resulting in 2x perf
     // regression.  To avoid false dependency, we emit "xorps xmmReg, xmmReg" before
-    // cvtsi2ss/sd instruction.
+    // cvt[u]si2ss/sd instruction.
 
     genConsumeOperands(treeNode->AsOp());
-    GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, treeNode->GetRegNum(), treeNode->GetRegNum(),
-                                     treeNode->GetRegNum(), INS_OPTS_NONE);
+    GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
 
-    // Note that here we need to specify srcType that will determine
-    // the size of source reg/mem operand and rex.w prefix.
-    instruction ins = ins_FloatConv(dstType, TYP_INT, emitTypeSize(srcType));
-
-    // integral to floating-point conversions all have RMW semantics if VEX support
-    // is not available
-
-    const bool isRMW = !compiler->canUseVexEncoding();
-
-    // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
-    // will interpret ULONG value as LONG.  Hence we need to adjust the
-    // result if sign-bit of srcType is set.
-    if (srcType == TYP_ULONG)
+    // force the srcType to unsigned if GT_UNSIGNED flag is set
+    if (treeNode->IsUnsigned())
     {
-        assert(dstType == TYP_DOUBLE);
+        srcType = varTypeToUnsigned(srcType);
+    }
+
+    if (srcType == TYP_ULONG && !compiler->canUseEvexEncoding())
+    {
         assert(op1->isUsedFromReg());
+
+        // If we don't have the EVEX unsigned conversion instructions, use the signed
+        // long -> float/double conversion instruction instead and fix up the result.
+
+        instruction convIns = ins_FloatConv(dstType, TYP_LONG);
+        instruction addIns  = (dstType == TYP_FLOAT) ? INS_addss : INS_addsd;
 
         // The following LONG->DOUBLE cast machinery is based on clang's implementation
         // with "-ffp-model=strict" flag:
@@ -7402,15 +7374,23 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         GetEmitter()->emitIns_R_R(INS_or, EA_8BYTE, tmpReg2, tmpReg1);
         GetEmitter()->emitIns_R_R(INS_test, EA_8BYTE, argReg, argReg);
         GetEmitter()->emitIns_R_R(INS_cmovns, EA_8BYTE, tmpReg2, argReg);
-        GetEmitter()->emitIns_R_R(ins, EA_8BYTE, targetReg, tmpReg2);
+        GetEmitter()->emitIns_R_R(convIns, EA_8BYTE, targetReg, tmpReg2);
 
         BasicBlock* label = genCreateTempLabel();
         inst_JMP(EJ_jns, label);
-        GetEmitter()->emitIns_R_R(INS_addsd, EA_8BYTE, targetReg, targetReg);
+        GetEmitter()->emitIns_R_R(addIns, EA_ATTR(genTypeSize(dstType)), targetReg, targetReg);
         genDefineTempLabel(label);
     }
     else
     {
+        assert(varTypeIsIntOrI(srcType) || compiler->canUseEvexEncodingDebugOnly());
+
+        instruction ins = ins_FloatConv(dstType, srcType);
+
+        // integral to floating-point conversions all have RMW semantics if VEX support
+        // is not available
+
+        const bool isRMW = !compiler->canUseVexEncoding();
         inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
     }
     genProduceReg(treeNode);
@@ -7436,7 +7416,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 {
     // we don't expect to see overflow detecting float/double --> int type conversions here
     // as they should have been converted into helper calls by front-end.
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -7463,7 +7443,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     noway_assert((dstSize == EA_ATTR(genTypeSize(TYP_INT))) || (dstSize == EA_ATTR(genTypeSize(TYP_LONG))));
 
     // We shouldn't be seeing uint64 here as it should have been converted
-    // into a helper call by either front-end or lowering phase, unless we have AVX512F
+    // into a helper call by either front-end or lowering phase, unless we have AVX512F/AVX10.x
     // accelerated conversions.
     assert(!varTypeIsUnsigned(dstType) || (dstSize != EA_ATTR(genTypeSize(TYP_LONG))) ||
            compiler->canUseEvexEncodingDebugOnly());
@@ -7479,7 +7459,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     // Note that we need to specify dstType here so that it will determine
     // the size of destination integer register and also the rex.w prefix.
     genConsumeOperands(treeNode->AsOp());
-    instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(srcType));
+    instruction ins = ins_FloatConv(dstType, srcType);
     GetEmitter()->emitInsBinary(ins, emitTypeSize(dstType), treeNode, op1);
     genProduceReg(treeNode);
 }
@@ -7951,25 +7931,6 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTree* treeNode)
     {
         // See the note in the function header re: finding the first stack passed argument.
         baseVarNum = getFirstArgWithStackSlot();
-        assert(baseVarNum != BAD_VAR_NUM);
-
-#ifdef DEBUG
-        // This must be a fast tail call.
-        assert(treeNode->AsPutArgStk()->gtCall->AsCall()->IsFastTailCall());
-
-        // Since it is a fast tail call, the existence of first incoming arg is guaranteed
-        // because fast tail call requires that in-coming arg area of caller is >= out-going
-        // arg area required for tail call.
-        LclVarDsc* varDsc = compiler->lvaGetDesc(baseVarNum);
-        assert(varDsc != nullptr);
-
-#ifdef UNIX_AMD64_ABI
-        assert(!varDsc->lvIsRegArg && varDsc->GetArgReg() == REG_STK);
-#else  // !UNIX_AMD64_ABI
-       // On Windows this assert is always true. The first argument will always be in REG_ARG_0 or REG_FLTARG_0.
-        assert(varDsc->lvIsRegArg && (varDsc->GetArgReg() == REG_ARG_0 || varDsc->GetArgReg() == REG_FLTARG_0));
-#endif // !UNIX_AMD64_ABI
-#endif // !DEBUG
     }
     else
     {
@@ -8240,12 +8201,15 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             unsigned pushSize = genTypeSize(genActualType(fieldType));
             assert((pushSize % 4) == 0);
             adjustment -= pushSize;
+
+            // If there is padding before this argument, zero it out.
+            assert((adjustment % TARGET_POINTER_SIZE) == 0);
             while (adjustment != 0)
             {
-                inst_IV(INS_push, 0);
-                currentOffset -= pushSize;
-                AddStackLevel(pushSize);
-                adjustment -= pushSize;
+                inst_IV(INS_push, 0); // Push TARGET_POINTER_SIZE bytes of zeros.
+                currentOffset -= TARGET_POINTER_SIZE;
+                AddStackLevel(TARGET_POINTER_SIZE);
+                adjustment -= TARGET_POINTER_SIZE;
             }
 
             m_pushStkArg = true;
@@ -8414,8 +8378,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
     {
         unsigned baseVarNum = getBaseVarForPutArgStk(putArgStk);
 
-#ifdef UNIX_AMD64_ABI
-
         if (data->OperIs(GT_FIELD_LIST))
         {
             genPutArgStkFieldList(putArgStk, baseVarNum);
@@ -8429,7 +8391,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
             m_stkArgVarNum = BAD_VAR_NUM;
             return;
         }
-#endif // UNIX_AMD64_ABI
 
         noway_assert(targetType != TYP_STRUCT);
 
@@ -8441,7 +8402,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 #ifdef DEBUG
         CallArg* callArg = putArgStk->gtCall->gtArgs.FindByNode(putArgStk);
         assert(callArg != nullptr);
-        assert(argOffset == callArg->AbiInfo.ByteOffset);
+        assert(callArg->AbiInfo.HasExactlyOneStackSegment());
+        assert(argOffset == callArg->AbiInfo.Segment(0).GetStackOffset());
 #endif
 
         if (data->isContainedIntOrIImmed())
@@ -8531,7 +8493,6 @@ void CodeGen::genPushReg(var_types type, regNumber srcReg)
 }
 #endif // TARGET_X86
 
-#if defined(FEATURE_PUT_STRUCT_ARG_STK)
 // genStoreRegToStackArg: Store a register value into the stack argument area
 //
 // Arguments:
@@ -8671,7 +8632,6 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
             unreached();
     }
 }
-#endif // defined(FEATURE_PUT_STRUCT_ARG_STK)
 
 /*****************************************************************************
  *
@@ -8881,7 +8841,7 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
     // let's save the values anyway for debugging purposes
     compiler->compInfoBlkAddr = gcInfoEncoder->Emit();
-    compiler->compInfoBlkSize = 0; // not exposed by the GCEncoder interface
+    compiler->compInfoBlkSize = gcInfoEncoder->GetEncodedGCInfoSize();
 }
 #endif // !JIT32_GCENCODER
 
@@ -9051,6 +9011,586 @@ void CodeGen::genAmd64EmitterUnitTestsSse2()
     GetEmitter()->emitIns_R_R_R(INS_cvtsd2ss, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
 }
 
+/*****************************************************************************
+ * Unit tests for the APX instructions.
+ */
+
+void CodeGen::genAmd64EmitterUnitTestsApx()
+{
+    emitter* theEmitter = GetEmitter();
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // This test suite needs REX2 enabled.
+    if (!theEmitter->UseRex2Encoding() && !theEmitter->emitComp->DoJitStressRex2Encoding())
+    {
+        return;
+    }
+
+    theEmitter->emitIns_R_R(INS_add, EA_1BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_add, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_add, EA_8BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_or, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_adc, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_sbb, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_and, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_sub, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_xor, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_cmp, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_test, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_bsf, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_bsr, EA_4BYTE, REG_EAX, REG_ECX);
+
+    theEmitter->emitIns_R_R(INS_cmovo, EA_4BYTE, REG_EAX, REG_ECX);
+
+    theEmitter->emitIns_Mov(INS_mov, EA_4BYTE, REG_EAX, REG_ECX, false);
+    theEmitter->emitIns_Mov(INS_movsx, EA_2BYTE, REG_EAX, REG_ECX, false);
+    theEmitter->emitIns_Mov(INS_movzx, EA_2BYTE, REG_EAX, REG_ECX, false);
+
+    theEmitter->emitIns_R_R(INS_popcnt, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_lzcnt, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_tzcnt, EA_4BYTE, REG_EAX, REG_ECX);
+
+    theEmitter->emitIns_R_I(INS_add, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_add, EA_2BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_or, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_adc, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_sbb, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_and, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_sub, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_xor, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_cmp, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_test, EA_4BYTE, REG_EAX, 0x05);
+
+    theEmitter->emitIns_R_I(INS_mov, EA_4BYTE, REG_EAX, 0xE0);
+
+    // JIT tend to compress imm64 to imm32 if higher half is all-zero, make sure this test checks the path for imm64.
+    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_RAX, 0xFFFF000000000000);
+
+    // shf reg, cl
+    theEmitter->emitIns_R(INS_rol, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_ror, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_rcl, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_rcr, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_shl, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_shr, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_sar, EA_4BYTE, REG_EAX);
+
+    // shf reg, 1
+    theEmitter->emitIns_R(INS_rol_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_ror_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_rcl_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_rcr_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_shl_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_shr_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_sar_1, EA_4BYTE, REG_EAX);
+
+    // shf reg, imm8
+    theEmitter->emitIns_R_I(INS_shl_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_shr_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_sar_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_rol_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_ror_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_rcl_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_rcr_N, EA_4BYTE, REG_ECX, 0x05);
+
+    theEmitter->emitIns_R(INS_neg, EA_2BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_not, EA_2BYTE, REG_EAX);
+
+    theEmitter->emitIns_R_AR(INS_lea, EA_4BYTE, REG_ECX, REG_EAX, 4);
+
+    theEmitter->emitIns_R_AR(INS_mov, EA_1BYTE, REG_ECX, REG_EAX, 4);
+    theEmitter->emitIns_R_AR(INS_mov, EA_2BYTE, REG_ECX, REG_EAX, 4);
+    theEmitter->emitIns_R_AR(INS_mov, EA_4BYTE, REG_ECX, REG_EAX, 4);
+    theEmitter->emitIns_R_AR(INS_mov, EA_8BYTE, REG_ECX, REG_EAX, 4);
+
+    theEmitter->emitIns_R_AR(INS_add, EA_1BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_add, EA_2BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_add, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_add, EA_8BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_or, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_adc, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_sbb, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_and, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_sub, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_xor, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_cmp, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_test, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_bsf, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_bsr, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_popcnt, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_lzcnt, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_tzcnt, EA_4BYTE, REG_EAX, REG_ECX, 4);
+
+    theEmitter->emitIns_AR_R(INS_add, EA_1BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_add, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_add, EA_8BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_or, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_adc, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_sbb, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_and, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_sub, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_xor, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_cmp, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_test, EA_4BYTE, REG_EAX, REG_ECX, 4);
+
+    theEmitter->emitIns_R_AR(INS_movsx, EA_2BYTE, REG_ECX, REG_EAX, 4);
+    theEmitter->emitIns_R_AR(INS_movzx, EA_2BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_cmovo, EA_4BYTE, REG_EAX, REG_ECX, 4);
+
+    theEmitter->emitIns_AR_R(INS_xadd, EA_4BYTE, REG_EAX, REG_EDX, 2);
+
+    theEmitter->emitIns_R_R_I(INS_shld, EA_4BYTE, REG_EAX, REG_ECX, 5);
+    theEmitter->emitIns_R_R_I(INS_shrd, EA_2BYTE, REG_EAX, REG_ECX, 5);
+
+    theEmitter->emitIns_AR_R(INS_cmpxchg, EA_2BYTE, REG_EAX, REG_EDX, 2);
+
+    theEmitter->emitIns_R(INS_seto, EA_1BYTE, REG_EDX);
+
+    theEmitter->emitIns_R(INS_bswap, EA_8BYTE, REG_EDX);
+
+    // INS_bt only has reg-to-reg form.
+    theEmitter->emitIns_R_R(INS_bt, EA_2BYTE, REG_EAX, REG_EDX);
+
+    theEmitter->emitIns_R(INS_idiv, EA_8BYTE, REG_EDX);
+
+    theEmitter->emitIns_R_R(INS_xchg, EA_8BYTE, REG_EAX, REG_EDX);
+
+    theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_EDX);
+    theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_EDX);
+
+    GenTreePhysReg physReg(REG_EDX);
+    physReg.SetRegNum(REG_EDX);
+    GenTreeIndir load = indirForm(TYP_INT, &physReg);
+
+    theEmitter->emitIns_R_A(INS_add, EA_1BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_add, EA_2BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_add, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_add, EA_8BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_or, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_adc, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_sbb, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_and, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_sub, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_xor, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_cmp, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_test, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_bsf, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_bsr, EA_4BYTE, REG_EAX, &load);
+
+    // Note:
+    // All the tests below rely on the runtime status of the stack this unit tests attaching to,
+    // it might fail due to stack value unavailable/mismatch, since these tests are mainly for
+    // encoding correctness check, this kind of failures may be considered as not harmful.
+
+    theEmitter->emitIns_R_S(INS_add, EA_1BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_2BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_8BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_or, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_adc, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_sbb, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_and, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_sub, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_xor, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_cmp, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_test, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_S_R(INS_xadd, EA_2BYTE, REG_EAX, 0, 0);
+
+    theEmitter->emitIns_S_I(INS_shl_N, EA_4BYTE, 0, 0, 4);
+    theEmitter->emitIns_S(INS_shl_1, EA_4BYTE, 0, 4);
+
+    theEmitter->emitIns_R_S(INS_movsx, EA_2BYTE, REG_ECX, 0, 0);
+    theEmitter->emitIns_R_S(INS_movzx, EA_2BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_cmovo, EA_4BYTE, REG_EAX, 0, 0);
+
+    theEmitter->emitIns_R(INS_pop, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_push, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_pop_hide, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_push_hide, EA_PTRSIZE, REG_EAX);
+
+    theEmitter->emitIns_S(INS_pop, EA_PTRSIZE, 0, 0);
+    theEmitter->emitIns_I(INS_push, EA_PTRSIZE, 50);
+
+    theEmitter->emitIns_R(INS_inc, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_AR(INS_inc, EA_2BYTE, REG_EAX, 2);
+    theEmitter->emitIns_S(INS_inc, EA_2BYTE, 0, 0);
+    theEmitter->emitIns_R(INS_dec, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_AR(INS_dec, EA_2BYTE, REG_EAX, 2);
+    theEmitter->emitIns_S(INS_dec, EA_2BYTE, 0, 0);
+
+    theEmitter->emitIns_S(INS_neg, EA_2BYTE, 0, 0);
+    theEmitter->emitIns_S(INS_not, EA_2BYTE, 0, 0);
+
+    // APX-EVEX
+
+    theEmitter->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_R(INS_sub, EA_2BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_R(INS_or, EA_2BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_R(INS_and, EA_2BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_R(INS_xor, EA_1BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R_I(INS_or, EA_2BYTE, REG_R10, REG_EAX, 10565, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_I(INS_or, EA_8BYTE, REG_R10, REG_EAX, 10, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_S(INS_or, EA_8BYTE, REG_R10, REG_EAX, 0, 1, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R(INS_neg, EA_2BYTE, REG_R10, REG_ECX, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R(INS_shl, EA_2BYTE, REG_R11, REG_EAX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R(INS_shl_1, EA_2BYTE, REG_R11, REG_EAX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_I(INS_shl_N, EA_2BYTE, REG_R11, REG_ECX, 7, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_I(INS_shl_N, EA_2BYTE, REG_R11, REG_ECX, 7, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_I(INS_rcr_N, EA_2BYTE, REG_R11, REG_ECX, 7, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_I(INS_rcl_N, EA_2BYTE, REG_R11, REG_ECX, 7, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R(INS_inc, EA_2BYTE, REG_R11, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R(INS_dec, EA_2BYTE, REG_R11, REG_ECX, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R_R(INS_cmovo, EA_4BYTE, REG_R12, REG_R11, REG_EAX, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R_R(INS_imul, EA_4BYTE, REG_R12, REG_R11, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_S(INS_imul, EA_4BYTE, REG_R12, REG_R11, 0, 1, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R(INS_add, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_sub, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_and, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_or, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_xor, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_inc, EA_4BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_dec, EA_4BYTE, REG_R12, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_I(INS_add, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_sub, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_and, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_or, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_xor, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_S(INS_add, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_sub, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_and, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_or, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_xor, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R(INS_neg, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_shl, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_shl_1, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_shl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_shl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_rcr_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_rcl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_R(INS_imul, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_imul, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_I(INS_imul_15, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R(INS_imulEAX, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_idiv, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_R(INS_tzcnt_apx, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_lzcnt_apx, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_popcnt_apx, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_S(INS_tzcnt_apx, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_lzcnt_apx, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_popcnt_apx, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_R_R(INS_add, EA_2BYTE, REG_R12, REG_R13, REG_R11,
+                              (insOpts)(INS_OPTS_EVEX_nf | INS_OPTS_EVEX_nd));
+
+    theEmitter->emitIns_R_R_R(INS_andn, EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R_R(INS_bextr, EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_R(INS_blsi, EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_blsmsk, EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_blsr, EA_8BYTE, REG_R11, 0, 1);
+
+    theEmitter->emitIns_AR(INS_inc, EA_4BYTE, REG_EAX, 0, INS_OPTS_EVEX_NoApxPromotion);
+
+    theEmitter->emitIns_BASE_R_R(INS_inc, EA_4BYTE, REG_R11, REG_R12);
+    theEmitter->emitIns_BASE_R_R_I(INS_add, EA_4BYTE, REG_R11, REG_R12, 5);
+
+    // testing for EGPR encodings.
+    GenTreePhysReg eGPR(REG_R16);
+    eGPR.SetRegNum(REG_R16);
+    GenTreeIndir loadGPR = indirForm(TYP_SIMD32, &eGPR);
+
+    // // SIMD instructions
+    // // In most of the cases, EGPR will only be used as BASE/INDEX registers in SIMD instructions.
+    theEmitter->emitIns_R_R_A(INS_addps, EA_32BYTE, REG_XMM16, REG_XMM16, &loadGPR);
+
+    // // Legacy instructions
+    theEmitter->emitIns_R_ARX(INS_add, EA_4BYTE, REG_R16, REG_R17, REG_R18, 1, 0);
+
+    theEmitter->emitIns_AR_R(INS_movnti, EA_8BYTE, REG_R17, REG_R16, 10);
+    theEmitter->emitIns_R_R_R(INS_andn, EA_8BYTE, REG_R17, REG_R16, REG_R18);
+
+    theEmitter->emitIns_Mov(INS_kmovb_gpr, EA_4BYTE, REG_R16, REG_K0, false);
+    theEmitter->emitIns_Mov(INS_kmovb_msk, EA_4BYTE, REG_K5, REG_K0, false);
+    theEmitter->emitIns_Mov(INS_kmovw_gpr, EA_4BYTE, REG_R16, REG_K0, false);
+    theEmitter->emitIns_Mov(INS_kmovw_msk, EA_4BYTE, REG_K5, REG_K0, false);
+    theEmitter->emitIns_Mov(INS_kmovd_gpr, EA_4BYTE, REG_R16, REG_K0, false);
+    theEmitter->emitIns_Mov(INS_kmovd_msk, EA_4BYTE, REG_K5, REG_K0, false);
+    theEmitter->emitIns_Mov(INS_kmovq_gpr, EA_8BYTE, REG_R16, REG_K0, false);
+    theEmitter->emitIns_Mov(INS_kmovq_msk, EA_8BYTE, REG_K5, REG_K0, false);
+
+    theEmitter->emitIns_R_R(INS_crc32_apx, EA_1BYTE, REG_R16, REG_R17);
+    theEmitter->emitIns_R_R(INS_crc32_apx, EA_2BYTE, REG_R16, REG_R17);
+    theEmitter->emitIns_R_R(INS_crc32_apx, EA_8BYTE, REG_R16, REG_R17);
+    theEmitter->emitIns_R_A(INS_crc32_apx, EA_8BYTE, REG_R18, &loadGPR);
+    theEmitter->emitIns_R_S(INS_crc32_apx, EA_8BYTE, REG_R18, 0, 0);
+
+    // Note that BZHI has a reversed src operands due to special handling at import.
+    theEmitter->emitIns_R_R_R(INS_bzhi, EA_4BYTE, REG_R16, REG_R18, REG_R17);
+    theEmitter->emitIns_R_R_R(INS_bzhi, EA_8BYTE, REG_R16, REG_R18, REG_R17);
+    theEmitter->emitIns_R_R_R(INS_mulx, EA_4BYTE, REG_R16, REG_R18, REG_R17);
+    theEmitter->emitIns_R_R_R(INS_mulx, EA_8BYTE, REG_R16, REG_R18, REG_R17);
+    theEmitter->emitIns_R_R_R(INS_pdep, EA_4BYTE, REG_R16, REG_R18, REG_R17);
+    theEmitter->emitIns_R_R_R(INS_pdep, EA_8BYTE, REG_R16, REG_R18, REG_R17);
+    theEmitter->emitIns_R_R_R(INS_pext, EA_4BYTE, REG_R16, REG_R18, REG_R17);
+    theEmitter->emitIns_R_R_R(INS_pext, EA_8BYTE, REG_R16, REG_R18, REG_R17);
+
+    theEmitter->emitIns_Mov(INS_movd, EA_4BYTE, REG_R16, REG_XMM0, false);
+    theEmitter->emitIns_Mov(INS_movd, EA_4BYTE, REG_R16, REG_XMM16, false);
+    theEmitter->emitIns_Mov(INS_movq, EA_8BYTE, REG_R16, REG_XMM0, false);
+    theEmitter->emitIns_Mov(INS_movq, EA_8BYTE, REG_R16, REG_XMM16, false);
+}
+
+void CodeGen::genAmd64EmitterUnitTestsAvx10v2()
+{
+    // All the Avx10.2 instructions are evex and evex only has one size.
+    // Also, there is no specialized handling for XMM0 vs XMM9 vs XMM16
+
+    emitter* theEmitter = GetEmitter();
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // This test suite needs AVX10.2 enabled.
+    if (!theEmitter->emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2))
+    {
+        return;
+    }
+
+    // packed conversion instructions
+    theEmitter->emitIns_R_R(INS_vcvttps2dqs, EA_16BYTE, REG_XMM0, REG_XMM1);   // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2dqs, EA_16BYTE, REG_XMM9, REG_XMM10);  // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2dqs, EA_16BYTE, REG_XMM15, REG_XMM16); // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2dqs, EA_32BYTE, REG_XMM0, REG_XMM1);   // ymm
+    theEmitter->emitIns_R_R(INS_vcvttps2dqs, EA_64BYTE, REG_XMM0, REG_XMM1);   // zmm
+
+    theEmitter->emitIns_R_R(INS_vcvttps2udqs, EA_16BYTE, REG_XMM0, REG_XMM1);   // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2udqs, EA_16BYTE, REG_XMM9, REG_XMM10);  // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2udqs, EA_16BYTE, REG_XMM15, REG_XMM16); // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2udqs, EA_32BYTE, REG_XMM0, REG_XMM1);   // ymm
+    theEmitter->emitIns_R_R(INS_vcvttps2udqs, EA_64BYTE, REG_XMM0, REG_XMM1);   // zmm
+
+    theEmitter->emitIns_R_R(INS_vcvttpd2qqs, EA_16BYTE, REG_XMM0, REG_XMM1);   // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2qqs, EA_16BYTE, REG_XMM9, REG_XMM10);  // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2qqs, EA_16BYTE, REG_XMM15, REG_XMM16); // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2qqs, EA_32BYTE, REG_XMM0, REG_XMM1);   // ymm
+    theEmitter->emitIns_R_R(INS_vcvttpd2qqs, EA_64BYTE, REG_XMM0, REG_XMM1);   // zmm
+
+    theEmitter->emitIns_R_R(INS_vcvttpd2uqqs, EA_16BYTE, REG_XMM0, REG_XMM1);   // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2uqqs, EA_16BYTE, REG_XMM9, REG_XMM10);  // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2uqqs, EA_16BYTE, REG_XMM15, REG_XMM16); // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2uqqs, EA_32BYTE, REG_XMM0, REG_XMM1);   // ymm
+    theEmitter->emitIns_R_R(INS_vcvttpd2uqqs, EA_64BYTE, REG_XMM0, REG_XMM1);   // zmm
+
+    // scalar conversion instructions
+    theEmitter->emitIns_R_R(INS_vcvttsd2sis32, EA_4BYTE, REG_EAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttsd2sis64, EA_8BYTE, REG_RAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttsd2usis32, EA_4BYTE, REG_EAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttsd2usis64, EA_8BYTE, REG_RAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttss2sis32, EA_4BYTE, REG_EAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttss2sis64, EA_8BYTE, REG_RAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttss2usis32, EA_4BYTE, REG_EAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttss2usis64, EA_8BYTE, REG_RAX, REG_XMM0);
+
+    // minmax instruction
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxss, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxss, EA_16BYTE, REG_XMM8, REG_XMM9, REG_XMM10, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxss, EA_16BYTE, REG_XMM14, REG_XMM15, REG_XMM16, 0);
+
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxsd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxsd, EA_16BYTE, REG_XMM9, REG_XMM10, REG_XMM11, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxsd, EA_16BYTE, REG_XMM16, REG_XMM17, REG_XMM18, 0);
+
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxps, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxpd, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+
+    // VCVT[,T]PS2I[,U]BS
+    theEmitter->emitIns_R_R(INS_vcvtps2ibs, EA_16BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2ibs, EA_32BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2ibs, EA_32BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_er_ru);
+    theEmitter->emitIns_R_R(INS_vcvtps2ibs, EA_64BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2ibs, EA_64BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_er_ru);
+
+    theEmitter->emitIns_R_R(INS_vcvtps2iubs, EA_16BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2iubs, EA_32BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2iubs, EA_32BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_er_rz);
+    theEmitter->emitIns_R_R(INS_vcvtps2iubs, EA_64BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2iubs, EA_64BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_er_rz);
+
+    theEmitter->emitIns_R_R(INS_vcvttps2ibs, EA_16BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvttps2ibs, EA_32BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvttps2ibs, EA_32BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_eb_er_rd);
+    theEmitter->emitIns_R_R(INS_vcvttps2ibs, EA_64BYTE, REG_XMM0, REG_XMM1);
+
+    theEmitter->emitIns_R_R(INS_vcvttps2iubs, EA_16BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvttps2iubs, EA_32BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvttps2iubs, EA_32BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_er_ru);
+    theEmitter->emitIns_R_R(INS_vcvttps2iubs, EA_64BYTE, REG_XMM0, REG_XMM1);
+
+    // VPDPW[SU,US,UU]D[,S]
+    theEmitter->emitIns_R_R_R(INS_vpdpwsud, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwsud, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwsud, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwsuds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwsuds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwsuds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    theEmitter->emitIns_R_R_R(INS_vpdpwusd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwusd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwusd, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwusds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwusds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwusds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    theEmitter->emitIns_R_R_R(INS_vpdpwuud, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwuud, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwuud, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwuuds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwuuds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwuuds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    // VPDPB[SU,UU,SS]D[,S]
+    theEmitter->emitIns_R_R_R(INS_vpdpbssd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbssd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbssd, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbssds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbssds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbssds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    theEmitter->emitIns_R_R_R(INS_vpdpbsud, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbsud, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbsud, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbsuds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbsuds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbsuds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    theEmitter->emitIns_R_R_R(INS_vpdpbuud, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbuud, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbuud, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbuuds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbuuds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbuuds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    // VMPSADBW
+    theEmitter->emitIns_R_R_R_I(INS_vmpsadbw, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0); // zmm
+
+    // VCOMXSD
+    theEmitter->emitIns_R_R(INS_vcomxsd, EA_16BYTE, REG_XMM0, REG_XMM1);
+
+    // VCOMXSS
+    theEmitter->emitIns_R_R(INS_vcomxss, EA_16BYTE, REG_XMM0, REG_XMM1);
+
+    // VUCOMXSD
+    theEmitter->emitIns_R_R(INS_vucomxsd, EA_16BYTE, REG_XMM0, REG_XMM1);
+
+    // VUCOMXSS
+    theEmitter->emitIns_R_R(INS_vucomxss, EA_16BYTE, REG_XMM0, REG_XMM1);
+
+    // VMOVD
+    theEmitter->emitIns_R_R(INS_vmovd, EA_16BYTE, REG_XMM0, REG_XMM1);
+
+    // VMOVW
+    theEmitter->emitIns_R_R(INS_vmovw, EA_16BYTE, REG_XMM0, REG_XMM1);
+}
+
+/*****************************************************************************
+ * Unit tests for the CCMP instructions.
+ */
+
+void CodeGen::genAmd64EmitterUnitTestsCCMP()
+{
+    emitter* theEmitter = GetEmitter();
+    genDefineTempLabel(genCreateTempLabel());
+
+    // ============
+    // Test RR form
+    // ============
+
+    // Test all sizes
+    theEmitter->emitIns_R_R(INS_ccmpe, EA_4BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_R(INS_ccmpe, EA_8BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_R(INS_ccmpe, EA_2BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_R(INS_ccmpe, EA_1BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
+
+    // Test all CC codes
+    for (uint32_t ins = INS_FIRST_CCMP_INSTRUCTION + 1; ins < INS_LAST_CCMP_INSTRUCTION; ins++)
+    {
+        theEmitter->emitIns_R_R((instruction)ins, EA_4BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
+    }
+
+    // Test all dfv
+    for (int i = 0; i < 16; i++)
+    {
+        theEmitter->emitIns_R_R(INS_ccmpe, EA_4BYTE, REG_RAX, REG_RCX, (insOpts)(i << INS_OPTS_EVEX_dfv_byte_offset));
+    }
+
+    // ============
+    // Test RS form
+    // ============
+
+    // Test all sizes
+    theEmitter->emitIns_R_S(INS_ccmpe, EA_4BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_S(INS_ccmpe, EA_8BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_S(INS_ccmpe, EA_2BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_S(INS_ccmpe, EA_1BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+
+    // Test all CC codes
+    for (uint32_t ins = INS_FIRST_CCMP_INSTRUCTION + 1; ins < INS_LAST_CCMP_INSTRUCTION; ins++)
+    {
+        theEmitter->emitIns_R_S((instruction)ins, EA_4BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    }
+
+    // Test all dfv
+    for (int i = 0; i < 16; i++)
+    {
+        theEmitter->emitIns_R_S(INS_ccmpe, EA_4BYTE, REG_RAX, 0, 0, (insOpts)(i << INS_OPTS_EVEX_dfv_byte_offset));
+    }
+
+    // ============
+    // Test RI form (test small and large sizes and constants)
+    // ============
+
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_4BYTE, REG_RAX, 123, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_4BYTE, REG_RAX, 270, INS_OPTS_EVEX_dfv_cf);
+
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_8BYTE, REG_RAX, 123, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_8BYTE, REG_RAX, 270, INS_OPTS_EVEX_dfv_cf);
+
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_2BYTE, REG_RAX, 123, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_2BYTE, REG_RAX, 270, INS_OPTS_EVEX_dfv_cf);
+
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_1BYTE, REG_RAX, 123, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_1BYTE, REG_RAX, 270, INS_OPTS_EVEX_dfv_cf);
+
+    // ============
+    // Test RC form
+    // ============
+
+    CORINFO_FIELD_HANDLE hnd = theEmitter->emitFltOrDblConst(1.0f, EA_4BYTE);
+    theEmitter->emitIns_R_C(INS_ccmpe, EA_4BYTE, REG_RAX, hnd, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_C(INS_ccmpe, EA_4BYTE, REG_RAX, hnd, 4, INS_OPTS_EVEX_dfv_cf);
+}
+
 #endif // defined(DEBUG) && defined(TARGET_AMD64)
 
 #ifdef PROFILING_SUPPORTED
@@ -9117,9 +9657,6 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER,
                       0,           // argSize. Again, we have to lie about it
                       EA_UNKNOWN); // retSize
-
-    // Check that we have place for the push.
-    assert(compiler->fgGetPtrArgCntMax() >= 1);
 
 #if defined(UNIX_X86_ABI)
     // Restoring alignment manually. This is similar to CodeGen::genRemoveAlignmentAfterCall
@@ -9199,9 +9736,6 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #endif
     genEmitHelperCall(helper, argSize, EA_UNKNOWN /* retSize */);
 
-    // Check that we have place for the push.
-    assert(compiler->fgGetPtrArgCntMax() >= 1);
-
 #if defined(UNIX_X86_ABI)
     // Restoring alignment manually. This is similar to CodeGen::genRemoveAlignmentAfterCall
     GetEmitter()->emitIns_R_I(INS_add, EA_4BYTE, REG_SPBASE, 0x10);
@@ -9238,7 +9772,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 
-#if !defined(UNIX_AMD64_ABI)
+#if defined(WINDOWS_AMD64_ABI)
 
     unsigned   varNum;
     LclVarDsc* varDsc;
@@ -9260,13 +9794,15 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         {
             noway_assert(varDsc->lvIsParam);
 
-            if (!varDsc->lvIsRegArg)
+            const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
+            if (!abiInfo.HasExactlyOneRegisterSegment())
             {
+                assert(!abiInfo.HasAnyRegisterSegment());
                 continue;
             }
 
             var_types storeType = varDsc->GetRegisterType();
-            regNumber argReg    = varDsc->GetArgReg();
+            regNumber argReg    = abiInfo.Segment(0).GetRegister();
 
             instruction store_ins = ins_Store(storeType);
 
@@ -9321,13 +9857,16 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     {
         noway_assert(varDsc->lvIsParam);
 
-        if (!varDsc->lvIsRegArg)
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
+
+        if (!abiInfo.HasExactlyOneRegisterSegment())
         {
+            assert(!abiInfo.HasAnyRegisterSegment());
             continue;
         }
 
         var_types loadType = varDsc->GetRegisterType();
-        regNumber argReg   = varDsc->GetArgReg();
+        regNumber argReg   = abiInfo.Segment(0).GetRegister();
 
         instruction load_ins = ins_Load(loadType);
 
@@ -9566,7 +10105,7 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
 
     // Now the rest of the Tier0 callee saves.
     //
-    for (regNumber reg = REG_INT_LAST; tier0IntCalleeSaves != RBM_NONE; reg = REG_PREV(reg))
+    for (regNumber reg = get_REG_INT_LAST(); tier0IntCalleeSaves != RBM_NONE; reg = REG_PREV(reg))
     {
         regMaskTP regBit = genRegMask(reg);
 
@@ -9657,7 +10196,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
 
     // The OSR method must use MOVs to save additional callee saves.
     //
-    for (regNumber reg = REG_INT_LAST; osrAdditionalIntCalleeSaves != RBM_NONE; reg = REG_PREV(reg))
+    for (regNumber reg = get_REG_INT_LAST(); osrAdditionalIntCalleeSaves != RBM_NONE; reg = REG_PREV(reg))
     {
         regMaskTP regBit = genRegMask(reg);
 
@@ -9722,7 +10261,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     // Push backwards so we match the order we will pop them in the epilog
     // and all the other code that expects it to be in this order.
-    for (regNumber reg = REG_INT_LAST; rsPushRegs != RBM_NONE; reg = REG_PREV(reg))
+    for (regNumber reg = get_REG_INT_LAST(); rsPushRegs != RBM_NONE; reg = REG_PREV(reg))
     {
         regMaskTP regBit = genRegMask(reg);
 
@@ -10263,10 +10802,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
         if (fCalleePop)
         {
-            noway_assert(compiler->compArgSize >= intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
-            stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
-
-            noway_assert(compiler->compArgSize < 0x10000); // "ret" only has 2 byte operand
+            stkArgSize = compiler->lvaParameterStackSize;
+            noway_assert(stkArgSize < 0x10000); // "ret" only has 2 byte operand
         }
 
 #ifdef UNIX_X86_ABI
@@ -11075,7 +11612,7 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 // instGen_MemoryBarrier: Emit a MemoryBarrier instruction
 //
 // Arguments:
-//     barrierKind - kind of barrier to emit (Load-only is no-op on xarch)
+//     barrierKind - kind of barrier to emit (Load-only and Store-only are no-ops on xarch)
 //
 // Notes:
 //     All MemoryBarriers instructions can be removed by DOTNET_JitNoMemoryBarriers=1
@@ -11093,7 +11630,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     if (barrierKind == BARRIER_FULL)
     {
         instGen(INS_lock);
-        GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
+        GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0, INS_OPTS_EVEX_NoApxPromotion);
     }
 }
 

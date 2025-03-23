@@ -210,7 +210,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // Modules
     [PreserveSig]
-    int GetModule(ulong addr, /*IXCLRDataModule*/ void** mod);
+    int GetModule(ulong addr, out IXCLRDataModule? mod);
     [PreserveSig]
     int GetModuleData(ulong moduleAddr, DacpModuleData* data);
     [PreserveSig]
@@ -443,8 +443,157 @@ internal unsafe partial interface ISOSDacInterface2
 }
 
 [GeneratedComInterface]
+[Guid("B08C5CDC-FD8A-49C5-AB38-5FEEF35235B4")]
+internal unsafe partial interface ISOSDacInterface3
+{
+    [PreserveSig]
+    int GetGCInterestingInfoData(ulong interestingInfoAddr, /*struct DacpGCInterestingInfoData*/ void* data);
+    [PreserveSig]
+    int GetGCInterestingInfoStaticData(/*struct DacpGCInterestingInfoData*/ void* data);
+    [PreserveSig]
+    int GetGCGlobalMechanisms(nuint* globalMechanisms);
+};
+
+[GeneratedComInterface]
+[Guid("74B9D34C-A612-4B07-93DD-5462178FCE11")]
+internal unsafe partial interface ISOSDacInterface4
+{
+    [PreserveSig]
+    int GetClrNotification([In, Out, MarshalUsing(CountElementName = nameof(count))] ulong[] arguments, int count, int* pNeeded);
+};
+
+[GeneratedComInterface]
+[Guid("127d6abe-6c86-4e48-8e7b-220781c58101")]
+internal unsafe partial interface ISOSDacInterface5
+{
+    [PreserveSig]
+    int GetTieredVersions(ulong methodDesc, int rejitId, /*struct DacpTieredVersionData*/void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs);
+};
+
+[GeneratedComInterface]
+[Guid("11206399-4B66-4EDB-98EA-85654E59AD45")]
+internal unsafe partial interface ISOSDacInterface6
+{
+    [PreserveSig]
+    int GetMethodTableCollectibleData(ulong mt, /*struct DacpMethodTableCollectibleData*/ void* data);
+};
+
+[GeneratedComInterface]
+[Guid("c1020dde-fe98-4536-a53b-f35a74c327eb")]
+internal unsafe partial interface ISOSDacInterface7
+{
+    [PreserveSig]
+    int GetPendingReJITID(ulong methodDesc, int* pRejitId);
+    [PreserveSig]
+    int GetReJITInformation(ulong methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData);
+    [PreserveSig]
+    int GetProfilerModifiedILInformation(ulong methodDesc, /*struct DacpProfilerILData*/ void* pILData);
+    [PreserveSig]
+    int GetMethodsWithProfilerModifiedIL(ulong mod, ulong* methodDescs, int cMethodDescs, int* pcMethodDescs);
+};
+
+[GeneratedComInterface]
+[Guid("c12f35a9-e55c-4520-a894-b3dc5165dfce")]
+internal unsafe partial interface ISOSDacInterface8
+{
+    [PreserveSig]
+    int GetNumberGenerations(uint* pGenerations);
+
+    // WKS
+    [PreserveSig]
+    int GetGenerationTable(uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
+    [PreserveSig]
+    int GetFinalizationFillPointers(uint cFillPointers, ulong* pFinalizationFillPointers, uint* pNeeded);
+
+    // SVR
+    [PreserveSig]
+    int GetGenerationTableSvr(ulong heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
+    [PreserveSig]
+    int GetFinalizationFillPointersSvr(ulong heapAddr, uint cFillPointers, ulong* pFinalizationFillPointers, uint* pNeeded);
+
+    [PreserveSig]
+    int GetAssemblyLoadContext(ulong methodTable, ulong* assemblyLoadContext);
+}
+
+[GeneratedComInterface]
 [Guid("4eca42d8-7e7b-4c8a-a116-7bfbf6929267")]
 internal partial interface ISOSDacInterface9
 {
     int GetBreakingChangeVersion();
+}
+
+[GeneratedComInterface]
+[Guid("90B8FCC3-7251-4B0A-AE3D-5C13A67EC9AA")]
+internal unsafe partial interface ISOSDacInterface10
+{
+    [PreserveSig]
+    int GetObjectComWrappersData(ulong objAddr, ulong* rcw, uint count, ulong* mowList, uint* pNeeded);
+    [PreserveSig]
+    int IsComWrappersCCW(ulong ccw, Interop.BOOL* isComWrappersCCW);
+    [PreserveSig]
+    int GetComWrappersCCWData(ulong ccw, ulong* managedObject, int* refCount);
+    [PreserveSig]
+    int IsComWrappersRCW(ulong rcw, Interop.BOOL* isComWrappersRCW);
+    [PreserveSig]
+    int GetComWrappersRCWData(ulong rcw, ulong* identity);
+}
+
+[GeneratedComInterface]
+[Guid("96BA1DB9-14CD-4492-8065-1CAAECF6E5CF")]
+internal unsafe partial interface ISOSDacInterface11
+{
+    [PreserveSig]
+    int IsTrackedType(ulong objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory);
+    [PreserveSig]
+    int GetTaggedMemory(ulong objAddr, ulong* taggedMemory, nuint* taggedMemorySizeInBytes);
+}
+
+[GeneratedComInterface]
+[Guid("1b93bacc-8ca4-432d-943a-3e6e7ec0b0a3")]
+internal unsafe partial interface ISOSDacInterface12
+{
+    [PreserveSig]
+    int GetGlobalAllocationContext(ulong* allocPtr, ulong* allocLimit);
+}
+
+[GeneratedComInterface]
+[Guid("3176a8ed-597b-4f54-a71f-83695c6a8c5e")]
+internal unsafe partial interface ISOSDacInterface13
+{
+    [PreserveSig]
+    int TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback);
+    [PreserveSig]
+    int GetDomainLoaderAllocator(ulong domainAddress, ulong* pLoaderAllocator);
+    [PreserveSig]
+    int GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded);
+    [PreserveSig]
+    int GetLoaderAllocatorHeaps(ulong loaderAllocator, int count, ulong* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded);
+    [PreserveSig]
+    int GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    [PreserveSig]
+    int GetGCBookkeepingMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    [PreserveSig]
+    int GetGCFreeRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    [PreserveSig]
+    int LockedFlush();
+}
+
+[GeneratedComInterface]
+[Guid("9aa22aca-6dc6-4a0c-b4e0-70d2416b9837")]
+internal unsafe partial interface ISOSDacInterface14
+{
+    [PreserveSig]
+    int GetStaticBaseAddress(ulong methodTable, ulong* nonGCStaticsAddress, ulong* GCStaticsAddress);
+    [PreserveSig]
+    int GetThreadStaticBaseAddress(ulong methodTable, ulong thread, ulong* nonGCStaticsAddress, ulong* GCStaticsAddress);
+    [PreserveSig]
+    int GetMethodTableInitializationFlags(ulong methodTable, /*MethodTableInitializationFlags*/ int* initializationStatus);
+}
+
+[GeneratedComInterface]
+[Guid("7ed81261-52a9-4a23-a358-c3313dea30a8")]
+internal unsafe partial interface ISOSDacInterface15
+{
+    [PreserveSig]
+    int GetMethodTableSlotEnumerator(ulong mt, /*ISOSMethodEnum*/void** enumerator);
 }

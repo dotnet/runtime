@@ -204,14 +204,14 @@ namespace GenUnicodeProp
 
         private static void PrintByteArray(string tableName, StreamWriter file, byte[] str)
         {
-            file.Write("\n        private static ReadOnlySpan<byte> " + tableName + " => new byte[" + str.Length + "]\n        {\n");
+            file.Write("\n        private static ReadOnlySpan<byte> " + tableName + " => // " + str.Length + "\n        [\n");
             file.Write("            0x{0:x2}", str[0]);
             for (var i = 1; i < str.Length; i++)
             {
                 file.Write(i % 16 == 0 ? ",\n            " : ", ");
                 file.Write("0x{0:x2}", str[i]);
             }
-            file.Write("\n        };\n");
+            file.Write("\n        ];\n");
         }
 
         private static void PrintAssertTableLevelsBitCountRoutine(string tableName, StreamWriter file, TableLevels expectedLevels)

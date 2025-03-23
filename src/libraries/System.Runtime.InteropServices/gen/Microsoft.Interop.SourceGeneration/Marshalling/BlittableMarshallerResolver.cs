@@ -26,12 +26,12 @@ namespace Microsoft.Interop
             {
                 if (runtimeMarshallingDisabled || blittableInfo.IsStrictlyBlittable)
                 {
-                    return ResolvedGenerator.Resolved(s_blittable.Bind(info));
+                    return ResolvedGenerator.Resolved(s_blittable.Bind(info, context));
                 }
 
                 return ResolvedGenerator.NotSupported(
                     info,
-                    new GeneratorDiagnostic.NotSupported(info, context)
+                    context, new GeneratorDiagnostic.NotSupported(info)
                     {
                         NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
                         DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties

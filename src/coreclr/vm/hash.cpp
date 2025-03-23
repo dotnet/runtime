@@ -34,8 +34,6 @@ const DWORD g_rgPrimes[] = {
 };
 const SIZE_T g_rgNumPrimes = sizeof(g_rgPrimes) / sizeof(*g_rgPrimes);
 
-const unsigned int SLOTS_PER_BUCKET = 4;
-
 #ifndef DACCESS_COMPILE
 
 void *PtrHashMap::operator new(size_t size, LoaderHeap *pHeap)

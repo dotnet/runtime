@@ -11,8 +11,8 @@
 
 #include "exstatecommon.h"
 #include "exceptmacros.h"
-#include "corerror.h"  // HResults for the COM+ Runtime
-#include "corexcep.h"  // Exception codes for the COM+ Runtime
+#include "corerror.h"
+#include "corexcep.h"
 
 class Thread;
 
@@ -224,7 +224,6 @@ LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv);
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
                                            BOOL useLastThrownObject = FALSE,
-                                           BOOL isTerminating = FALSE,
                                            BOOL isThreadBaseFilter = FALSE,
                                            BOOL sendAppDomainEvents = TRUE,
                                            BOOL sendWindowsEventLog = FALSE);
@@ -237,7 +236,7 @@ void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF * ppMessage);
 // externs
 
 //==========================================================================
-// Various routines to throw COM+ objects.
+// Various routines to throw CLR objects.
 //==========================================================================
 
 //==========================================================================
@@ -552,7 +551,7 @@ void VerifyValidTransitionFromManagedCode(Thread *pThread, CrawlFrame *pCF);
 
 //==========================================================================
 // This is a workaround designed to allow the use of the StubLinker object at bootup
-// time where the EE isn't sufficient awake to create COM+ exception objects.
+// time where the EE isn't sufficient awake to create CLR exception objects.
 // Instead, COMPlusThrow(rexcep) does a simple RaiseException using this code.
 //==========================================================================
 #define BOOTUP_EXCEPTION_COMPLUS  0xC0020001

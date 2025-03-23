@@ -99,7 +99,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
             {
                 s_ShowOptimizationTiers = true;
             }
-            
+
             s_enabled = true;
         }
     }
@@ -108,11 +108,9 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
     {
         AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (assemblyIterator.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (assemblyIterator.Next(pAssembly.This()))
         {
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
-
             // PerfMap does not log R2R methods so only proceed if we are emitting jitdumps
             if (type == PerfMapType::ALL || type == PerfMapType::JITDUMP)
             {
@@ -166,7 +164,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 codeInfo.GetMethodRegionInfo(&methodRegionInfo);
                 _ASSERTE(methodRegionInfo.hotStartAddress == codeStart);
                 _ASSERTE(methodRegionInfo.hotSize > 0);
-                    
+
                 PrepareCodeConfig config(!nativeCodeVersion.IsNull() ? nativeCodeVersion : NativeCodeVersion(pMethod), FALSE, FALSE);
                 PerfMap::LogJITCompiledMethod(pMethod, codeStart, methodRegionInfo.hotSize, &config);
             }
@@ -427,16 +425,13 @@ void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, CHAR * pszSig, u
     CONTRACTL{
         PRECONDITION(pPEAssembly != nullptr);
         PRECONDITION(pszSig != nullptr);
-        PRECONDITION(nSigSize >= GUID_STR_BUFFER_LEN);
+        PRECONDITION(nSigSize >= MINIPAL_GUID_BUFFER_LEN);
     } CONTRACTL_END;
 
     // We use the MVID as the signature, since ready to run images
     // don't have a native image signature.
     GUID mvid;
     pPEAssembly->GetMVID(&mvid);
-    if(!GuidToLPSTR(mvid, pszSig, nSigSize))
-    {
-        pszSig[0] = '\0';
-    }
+    minipal_guid_as_string(mvid, pszSig, nSigSize);
 }
 #endif // FEATURE_PERFMAP && !DACCESS_COMPILE

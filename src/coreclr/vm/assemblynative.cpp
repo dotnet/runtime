@@ -170,8 +170,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
     bindOperation.SetResult(pPEAssembly.GetValue());
 
-    DomainAssembly *pDomainAssembly = pCurDomain->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
-    RETURN pDomainAssembly->GetAssembly();
+    RETURN pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
 }
 
 extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly)
@@ -336,7 +335,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetLocation(QCall::AssemblyHandle pAsse
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle assemblyHandle,
+extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle pAssembly,
     LPCSTR szTypeName,
     LPCSTR * rgszNestedTypeNames,
     int32_t cNestedTypeNamesLength,
@@ -350,8 +349,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle assem
     CONTRACTL_END;
 
     BEGIN_QCALL;
-
-    Assembly* pAssembly = assemblyHandle->GetAssembly();
 
     TypeHandle th = TypeHandle();
     Module* pManifestModule = pAssembly->GetModule();
@@ -421,7 +418,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHa
 
     BEGIN_QCALL;
 
-    Assembly* pAssembly = assemblyHandle->GetAssembly();
+    Assembly* pAssembly = assemblyHandle;
 
     TypeHandle th = TypeHandle();
     Module* pManifestModule = pAssembly->GetModule();
@@ -499,14 +496,13 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle 
     LPCSTR pszClassName;
     mdToken mdImpl;
 
-    Assembly * pAsm = pAssembly->GetAssembly();
-    Module *pManifestModule = pAsm->GetModule();
+    Module *pManifestModule = pAssembly->GetModule();
     IfFailThrow(pManifestModule->GetMDImport()->GetExportedTypeProps(mdtExternalType, &pszNameSpace, &pszClassName, &mdImpl, NULL, NULL));
     if (TypeFromToken(mdImpl) == mdtAssemblyRef)
     {
         NameHandle typeName(pszNameSpace, pszClassName);
         typeName.SetTypeToken(pManifestModule, mdtExternalType);
-        TypeHandle typeHnd = pAsm->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
+        TypeHandle typeHnd = pAssembly->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
         {
             GCX_COOP();
             retType.Set(typeHnd.GetManagedClassObject());
@@ -516,16 +512,16 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle 
     END_QCALL;
 }
 
-FCIMPL1(FC_BOOL_RET, AssemblyNative::IsDynamic, AssemblyBaseObject* pAssemblyUNSAFE)
+FCIMPL1(FC_BOOL_RET, AssemblyNative::GetIsDynamic, Assembly* pAssembly)
 {
-    FCALL_CONTRACT;
+    CONTRACTL
+    {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pAssembly));
+    }
+    CONTRACTL_END;
 
-    ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-
-    if (refAssembly == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    FC_RETURN_BOOL(refAssembly->GetDomainAssembly()->GetPEAssembly()->IsReflectionEmit());
+    FC_RETURN_BOOL(pAssembly->GetPEAssembly()->IsReflectionEmit());
 }
 FCIMPLEND
 
@@ -648,7 +644,7 @@ extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAs
 
     pAssembly->GetPEAssembly()->GetResource(pNameUTF8, length,
                            &pbInMemoryResource, NULL, NULL,
-                           NULL, pAssembly->GetAssembly());
+                           NULL, pAssembly);
 
     END_QCALL;
 
@@ -680,7 +676,7 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
     DWORD dwLocation = 0;
 
     if (pAssembly->GetPEAssembly()->GetResource(pNameUTF8, NULL, NULL, &pReferencedAssembly, &pFileName,
-                              &dwLocation, pAssembly->GetAssembly()))
+                              &dwLocation, pAssembly))
     {
         if (pFileName)
             retFileName.Set(pFileName);
@@ -815,10 +811,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle 
     BEGIN_QCALL;
 
     InlineSArray<TypeHandle, 20> types;
-
-    Assembly * pAsm = pAssembly->GetAssembly();
-
-    IMDInternalImport *pImport = pAsm->GetMDImport();
+    IMDInternalImport *pImport = pAssembly->GetMDImport();
 
     {
         HENUMTypeDefInternalHolder phTDEnum(pImport);
@@ -846,7 +839,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle 
 
             if (IsTdPublic(dwFlags))
             {
-                TypeHandle typeHnd = ClassLoader::LoadTypeDefThrowing(pAsm->GetModule(), mdTD,
+                TypeHandle typeHnd = ClassLoader::LoadTypeDefThrowing(pAssembly->GetModule(), mdTD,
                                                                       ClassLoader::ThrowIfNotFound,
                                                                       ClassLoader::PermitUninstDefOrRef);
                 types.Append(typeHnd);
@@ -894,8 +887,8 @@ extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle 
                 IsTdPublic(dwFlags))
             {
                 NameHandle typeName(pszNameSpace, pszClassName);
-                typeName.SetTypeToken(pAsm->GetModule(), mdCT);
-                TypeHandle typeHnd = pAsm->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
+                typeName.SetTypeToken(pAssembly->GetModule(), mdCT);
+                TypeHandle typeHnd = pAssembly->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
 
                 types.Append(typeHnd);
             }
@@ -935,10 +928,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedTypes(QCall::AssemblyHandle
     BEGIN_QCALL;
 
     InlineSArray<TypeHandle, 8> types;
-
-    Assembly * pAsm = pAssembly->GetAssembly();
-
-    IMDInternalImport *pImport = pAsm->GetMDImport();
+    IMDInternalImport *pImport = pAssembly->GetMDImport();
 
     // enumerate the ExportedTypes table
     {
@@ -964,8 +954,8 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedTypes(QCall::AssemblyHandle
             if ((TypeFromToken(mdImpl) == mdtAssemblyRef) && (mdImpl != mdAssemblyRefNil))
             {
                 NameHandle typeName(pszNameSpace, pszClassName);
-                typeName.SetTypeToken(pAsm->GetModule(), mdCT);
-                TypeHandle typeHnd = pAsm->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
+                typeName.SetTypeToken(pAssembly->GetModule(), mdCT);
+                TypeHandle typeHnd = pAssembly->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
 
                 types.Append(typeHnd);
             }
@@ -1005,9 +995,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetManifestResourceNames(QCall::Assembl
 
     BEGIN_QCALL;
 
-    Assembly * pAsm = pAssembly->GetAssembly();
-
-    IMDInternalImport *pImport = pAsm->GetMDImport();
+    IMDInternalImport *pImport = pAssembly->GetMDImport();
 
     HENUMInternalHolder phEnum(pImport);
     phEnum.EnumInit(mdtManifestResource, mdTokenNil);
@@ -1047,9 +1035,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetReferencedAssemblies(QCall::Assembly
 {
     BEGIN_QCALL;
 
-    Assembly * pAsm = pAssembly->GetAssembly();
-
-    IMDInternalImport *pImport = pAsm->GetMDImport();
+    IMDInternalImport *pImport = pAssembly->GetMDImport();
 
     HENUMInternalHolder phEnum(pImport);
     phEnum.EnumInit(mdtAssemblyRef, mdTokenNil);
@@ -1099,11 +1085,11 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryPoint(QCall::AssemblyHandle pAs
 
     BEGIN_QCALL;
 
-    pMeth = pAssembly->GetAssembly()->GetEntryPoint();
+    pMeth = pAssembly->GetEntryPoint();
     if (pMeth != NULL)
     {
         GCX_COOP();
-        retMethod.Set(pMeth->GetStubMethodInfo());
+        retMethod.Set(pMeth->AllocateStubMethodInfo());
     }
 
     END_QCALL;
@@ -1132,16 +1118,13 @@ extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlM
 {
     QCALL_CONTRACT;
 
-    DomainAssembly * pExecutingAssembly = NULL;
-
     BEGIN_QCALL;
 
     Assembly* pAssembly = SystemDomain::GetCallersAssembly(stackMark);
     if(pAssembly)
     {
-        pExecutingAssembly = pAssembly->GetDomainAssembly();
         GCX_COOP();
-        retAssembly.Set(pExecutingAssembly->GetExposedAssemblyObject());
+        retAssembly.Set(pAssembly->GetExposedObject());
     }
 
     END_QCALL;
@@ -1153,14 +1136,11 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
 
     BEGIN_QCALL;
 
-    DomainAssembly * pRootAssembly = NULL;
     Assembly * pAssembly = GetAppDomain()->GetRootAssembly();
-
     if (pAssembly)
     {
-        pRootAssembly = pAssembly->GetDomainAssembly();
         GCX_COOP();
-        retAssembly.Set(pRootAssembly->GetExposedAssemblyObject());
+        retAssembly.Set(pAssembly->GetExposedObject());
     }
 
     END_QCALL;
@@ -1224,8 +1204,8 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
                 GCX_PREEMP();
                 // Some of the initialization functions are not virtual. Call through the derived class
                 // to prevent calling the base class version.
-                loaderAllocator->Init(pCurDomain);
-                loaderAllocator->InitVirtualCallStubManager(pCurDomain);
+                loaderAllocator->Init();
+                loaderAllocator->InitVirtualCallStubManager();
 
                 // Setup the managed proxy now, but do not actually transfer ownership to it.
                 // Once everything is setup and nothing can fail anymore, the ownership will be

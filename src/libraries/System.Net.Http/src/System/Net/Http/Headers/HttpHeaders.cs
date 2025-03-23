@@ -334,6 +334,8 @@ namespace System.Net.Http.Headers
 
         private IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumeratorCore()
         {
+            Debug.Assert(_headerStore is not null);
+
             HeaderEntry[]? entries = GetEntriesArray();
             Debug.Assert(_count != 0 && entries is not null, "Caller should have validated the collection is not empty");
 
@@ -347,14 +349,11 @@ namespace System.Net.Http.Headers
                     // during enumeration so that we can parse the raw value in order to a) return
                     // the correct set of parsed values, and b) update the instance for subsequent enumerations
                     // to reflect that parsing.
-
-#nullable disable // https://github.com/dotnet/roslyn/issues/73928
                     ref object storeValueRef = ref EntriesAreLiveView
                         ? ref entries[i].Value
                         : ref CollectionsMarshal.GetValueRefOrNullRef((Dictionary<HeaderDescriptor, object>)_headerStore, entry.Key);
 
                     info = ReplaceWithHeaderStoreItemInfo(ref storeValueRef, entry.Value);
-#nullable restore
                 }
 
                 // Make sure we parse all raw values before returning the result. Note that this has to be
@@ -1165,7 +1164,7 @@ namespace System.Net.Http.Headers
                 else
                 {
                     Debug.Assert(length > 1, "The header should have been removed when it became empty");
-                    values = multiValue = new string[length];
+                    values = (multiValue = new string[length])!;
                 }
 
                 int currentIndex = 0;
@@ -1205,8 +1204,8 @@ namespace System.Net.Http.Headers
                 }
 
                 int currentIndex = 0;
-                ReadStoreValues<object?>(values, info.ParsedAndInvalidValues, descriptor.Parser, ref currentIndex);
-                ReadStoreValues<string?>(values, info.RawValue, null, ref currentIndex);
+                ReadStoreValues<object?>(values!, info.ParsedAndInvalidValues, descriptor.Parser, ref currentIndex);
+                ReadStoreValues<string?>(values!, info.RawValue, null, ref currentIndex);
                 Debug.Assert(currentIndex == length);
 
                 return length;

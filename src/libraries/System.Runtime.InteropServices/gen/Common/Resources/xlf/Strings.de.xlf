@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <target state="translated">Dieser Typ implementiert mindestens einen Typ mit dem GeneratedComInterfaceAttribute-Attribut, oder sein Basistyp weist das GeneratedComClassAttribute-Attribut auf. Fügen Sie „GeneratedComClassAttribute“ hinzu, um die Übergabe dieses Typs an COM zu ermöglichen und die COM-Schnittstellen für die Typen mit dem „GeneratedComInterfaceAttribute“ aus Objekten dieses Typs verfügbar zu machen.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyMessage">
         <source>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</source>
-        <target state="new">The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</target>
+        <target state="translated">Für den Typ „{0}“ ist eine Basisschnittstelle „{1}“ in einer anderen Assembly definiert. Dies kann in einigen Szenarien eine Vielzahl von Problemen verursachen, die schwer zu diagnostizieren sind.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyTitle">
         <source>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</source>
-        <target state="new">Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</target>
+        <target state="translated">Das Angeben von „GeneratedComInterfaceAttribute“ für eine Schnittstelle mit einer in einer anderen Assembly definierten Basisschnittstelle wird nicht unterstützt.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
@@ -504,7 +504,7 @@
       </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
-        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
+        <target state="translated">Objekte, die aus VARIANTEN als in-Parameter in nicht verwalteten Aufrufen gemarshallt werden, werden nicht an das aktualisierte Ergebnis verteilt, auch wenn VARIANTE eine VT_BYREF-Variante ist. Verwenden Sie einen ref-Parameter anstelle eines in-Parameters, um den aktualisierten Wert wieder an den Aufrufer zu übergeben.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -842,9 +842,9 @@
         <target state="translated">Der Marshaller-Einstiegspunkttyp "{0}" für den verwalteten Typ "{1}" muss eine Stelligkeit aufweisen, die größer als der verwaltete Typ ist.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
-        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">Alle Marshaller für Werte, die als nicht verwalteter Rückgabewert übergeben werden, müssen denselben nicht verwalteten Typ aufweisen.</target>
+      <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
+        <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
+        <target state="translated">Alle Marshaller für Werte, die als nicht verwalteter Rückgabewert oder Parameter übergeben werden, müssen denselben nicht verwalteten Typ aufweisen.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">

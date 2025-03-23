@@ -8,6 +8,7 @@ using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
@@ -71,14 +72,19 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			var location = Operation.Syntax.GetLocation ();
+			Location location = Operation.Syntax.GetLocation ();
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
 			{
 				TrimAnalysisVisitor.HandleCall(Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, out var _);
 			}
-
+			// For Requires, make the location the reference to the method, not the entire invocation.
+			// The parameters are not part of the issue, and including them in the location can be misleading.
+			location = Operation.Syntax switch {
+				InvocationExpressionSyntax invocationSyntax => invocationSyntax.Expression.GetLocation (),
+				_ => location
+			};
 			var diagnosticContext = new DiagnosticContext (location, reportDiagnostic);
 			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
 			{

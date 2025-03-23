@@ -8,7 +8,7 @@ import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 import { PromiseHolder, isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
 import { alloc_gcv_handle, assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
+import { mono_assert, runtimeHelpers } from "./globals";
 import {
     ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_bool, set_arg_date,
@@ -18,7 +18,7 @@ import {
     set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type, set_arg_proxy_context, get_arg_intptr
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
-import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
+import { _zero_region, fixupPointer, localHeapViewF64, localHeapViewI32, localHeapViewU8, malloc } from "./memory";
 import { stringToMonoStringRoot, stringToUTF16 } from "./strings";
 import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
@@ -218,7 +218,7 @@ export function marshal_string_to_cs (arg: JSMarshalerArgument, value: string) {
 function _marshal_string_to_cs_impl (arg: JSMarshalerArgument, value: string) {
     if (WasmEnableJsInteropByValue) {
         const bufferLen = value.length * 2;
-        const buffer = Module._malloc(bufferLen);// together with Marshal.FreeHGlobal
+        const buffer = malloc(bufferLen);// together with Marshal.FreeHGlobal
         stringToUTF16(buffer as any, buffer as any + bufferLen, value);
         set_arg_intptr(arg, buffer);
         set_arg_length(arg, value.length);
@@ -458,7 +458,7 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
         mono_assert(element_size != -1, () => `Element type ${element_type} not supported`);
         const length = value.length;
         const buffer_length = element_size * length;
-        const buffer_ptr = <any>Module._malloc(buffer_length);
+        const buffer_ptr = malloc(buffer_length) as any;
         if (element_type == MarshalerType.String) {
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
@@ -494,11 +494,13 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
             targetView.set(value);
         } else if (element_type == MarshalerType.Int32) {
             mono_check(Array.isArray(value) || value instanceof Int32Array, "Value is not an Array or Int32Array");
-            const targetView = localHeapViewI32().subarray(<any>buffer_ptr >> 2, (buffer_ptr >> 2) + length);
+            const bufferOffset = fixupPointer(buffer_ptr, 2);
+            const targetView = localHeapViewI32().subarray(bufferOffset, bufferOffset + length);
             targetView.set(value);
         } else if (element_type == MarshalerType.Double) {
             mono_check(Array.isArray(value) || value instanceof Float64Array, "Value is not an Array or Float64Array");
-            const targetView = localHeapViewF64().subarray(<any>buffer_ptr >> 3, (buffer_ptr >> 3) + length);
+            const bufferOffset = fixupPointer(buffer_ptr, 3);
+            const targetView = localHeapViewF64().subarray(bufferOffset, bufferOffset + length);
             targetView.set(value);
         } else {
             throw new Error("not implemented");

@@ -170,7 +170,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				[Kept]
 				[ExpectedWarning ("IL2098")]
-				[UnexpectedWarning ("IL2067", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 				public AttributeRequiresTypeArrayAttribute (
 					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -191,7 +190,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (AttributeRequiresTypeArrayAttribute))]
-			[UnexpectedWarning ("IL2062", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			[AttributeRequiresTypeArray (new Type[] { typeof (int) })]
 			public static void Test () {
 				typeof (AnnotationOnTypeArray).GetMethod ("Test").GetCustomAttribute (typeof (AttributeRequiresTypeArrayAttribute));

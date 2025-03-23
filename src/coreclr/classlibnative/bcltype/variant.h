@@ -18,30 +18,9 @@
 #endif // FEATURE_COMINTEROP
 
 #include <cor.h>
-#include "fcall.h"
 #include "olevariant.h"
 
-class COMVariant
-{
-    friend class OleVariant;
-
-public:
-    //
-    // Helper Routines
-    //
-
-    static FCDECL2(void, SetFieldsObject, VariantData* vThisRef, Object* vVal);
-    static FCDECL1(Object*, BoxEnum, VariantData* var);
-
-private:
-    // GetCVTypeFromClass
-    // This method will return the CVTypes from the Variant instance
-    static CVTypes GetCVTypeFromClass(TypeHandle th);
-    static int GetEnumFlags(TypeHandle th);
-};
-
-extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::ObjectHandleOnStack obj);
-extern "C" void QCALLTYPE Variant_ConvertOleColorToSystemColor(QCall::ObjectHandleOnStack objRet, uint32_t oleColor, MethodTable* pMT);
+extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT* pOle);
 
 #endif // _VARIANT_H_
 

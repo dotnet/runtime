@@ -37,13 +37,6 @@ namespace pal
 
     template<typename T>
     using malloc_ptr = std::unique_ptr<T, free_delete>;
-
-    enum class debugger_state_t
-    {
-        na,
-        attached,
-        not_attached,
-    };
 }
 
 #ifdef TARGET_WINDOWS
@@ -136,14 +129,37 @@ namespace pal
         return (uint32_t)::GetCurrentProcessId();
     }
 
-    inline debugger_state_t is_debugger_attached()
-    {
-        return (::IsDebuggerPresent() == TRUE) ? debugger_state_t::attached : debugger_state_t::not_attached;
-    }
-
     inline bool does_file_exist(const string_t& file_path)
     {
         return INVALID_FILE_ATTRIBUTES != ::GetFileAttributesW(file_path.c_str());
+    }
+
+    inline bool try_map_file_readonly(const char* path, void** mapped, int64_t* size)
+    {
+        HANDLE file = ::CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE)
+            return false;
+
+        HANDLE file_mapping = ::CreateFileMappingA(file, nullptr, PAGE_READONLY, 0, 0, nullptr);
+        if (file_mapping  == nullptr)
+        {
+            ::CloseHandle(file);
+            return false;
+        }
+
+        void* mapped_local = ::MapViewOfFile(file_mapping, FILE_MAP_READ, 0, 0, 0);
+        if (mapped_local == nullptr)
+        {
+            ::CloseHandle(file);
+            ::CloseHandle(file_mapping);
+            return false;
+        }
+
+        *size = ::GetFileSize(file, nullptr);
+        *mapped = mapped_local;
+        ::CloseHandle(file_mapping);
+        ::CloseHandle(file);
+        return true;
     }
 
     // Forward declaration
@@ -312,7 +328,9 @@ public:
 #else // !TARGET_WINDOWS
 #include <dirent.h>
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -321,7 +339,6 @@ public:
 #include <sys/sysctl.h>
 #include <sys/types.h>
 #else // !__APPLE__
-#include <fcntl.h>
 #include <ctype.h>
 #endif // !__APPLE__
 
@@ -420,83 +437,6 @@ namespace pal
         return (uint32_t)getpid();
     }
 
-    inline debugger_state_t is_debugger_attached()
-    {
-#if defined(__APPLE__)
-        // Taken from https://developer.apple.com/library/archive/qa/qa1361/_index.html
-        int                 junk;
-        int                 mib[4];
-        struct kinfo_proc   info;
-        size_t              size;
-
-        // Initialize the flags so that, if sysctl fails for some bizarre
-        // reason, we get a predictable result.
-
-        info.kp_proc.p_flag = 0;
-
-        // Initialize mib, which tells sysctl the info we want, in this case
-        // we're looking for information about a specific process ID.
-
-        mib[0] = CTL_KERN;
-        mib[1] = KERN_PROC;
-        mib[2] = KERN_PROC_PID;
-        mib[3] = getpid();
-
-        // Call sysctl.
-
-        size = sizeof(info);
-        junk = sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, NULL, 0);
-        assert(junk == 0);
-
-        // We're being debugged if the P_TRACED flag is set.
-
-        return ( (info.kp_proc.p_flag & P_TRACED) != 0 ) ? debugger_state_t::attached : debugger_state_t::not_attached;
-
-#else // !__APPLE__
-        // Use procfs to detect if there is a tracer process.
-        // See https://www.kernel.org/doc/html/latest/filesystems/proc.html
-        char status[2048] = { 0 };
-        int fd = ::open("/proc/self/status", O_RDONLY);
-        if (fd == -1)
-        {
-            // If the file can't be opened assume we are on a not supported platform.
-            return debugger_state_t::na;
-        }
-
-        // Attempt to read
-        ssize_t bytes_read = ::read(fd, status, sizeof(status) - 1);
-        ::close(fd);
-
-        if (bytes_read > 0)
-        {
-            // We have data. At this point we can likely make a strong decision.
-            const char tracer_pid_name[] = "TracerPid:";
-            const char* tracer_pid_ptr = ::strstr(status, tracer_pid_name);
-            if (tracer_pid_ptr == nullptr)
-                return debugger_state_t::not_attached;
-
-            // The number after the name is the process ID of the
-            // tracer application or 0 if none exists.
-            const char* curr = tracer_pid_ptr + (sizeof(tracer_pid_name) - 1);
-            const char* end = status + bytes_read;
-            for (;curr < end; ++curr)
-            {
-                if (::isspace(*curr))
-                    continue;
-
-                // Check the first non-space if it is 0. If so, we have
-                // a non-zero process ID and a tracer is attached.
-                return (::isdigit(*curr) && *curr != '0') ? debugger_state_t::attached : debugger_state_t::not_attached;
-            }
-        }
-
-        // The read in data is either incomplete (i.e. small buffer) or
-        // the returned content is not expected. Let's fallback to not available.
-        return debugger_state_t::na;
-
-#endif // !__APPLE__
-    }
-
     inline bool does_file_exist(const char_t* file_path)
     {
         // Check if the specified path exists
@@ -520,6 +460,33 @@ namespace pal
             return false;
         }
 
+        return true;
+    }
+
+    inline bool try_map_file_readonly(const char* path, void** mapped, int64_t* size)
+    {
+        int fd = open(path, O_RDONLY);
+        if (fd == -1)
+            return false;
+
+        struct stat buf;
+        if (fstat(fd, &buf) == -1)
+        {
+            close(fd);
+            return false;
+        }
+
+        int64_t size_local = buf.st_size;
+        void* mapped_local = mmap(NULL, size_local, PROT_READ, MAP_PRIVATE, fd, 0);
+        if (mapped == MAP_FAILED)
+        {
+            close(fd);
+            return false;
+        }
+
+        *mapped = mapped_local;
+        *size = size_local;
+        close(fd);
         return true;
     }
 

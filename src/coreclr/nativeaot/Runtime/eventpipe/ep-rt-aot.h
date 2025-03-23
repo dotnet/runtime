@@ -515,6 +515,24 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (
 static
 inline
 void
+ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_disabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
     // Following mono's path of no-op
@@ -662,17 +680,6 @@ ep_rt_process_shutdown (void)
 
 static
 inline
-void
-ep_rt_create_activity_id (
-    uint8_t *activity_id,
-    uint32_t activity_id_len)
-{
-    extern void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_len);
-    ep_rt_aot_create_activity_id(activity_id, activity_id_len);
-}
-
-static
-inline
 bool
 ep_rt_is_running (void)
 {
@@ -756,11 +763,22 @@ ep_rt_thread_create (
 }
 
 static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params)
+{
+    EP_UNREACHABLE ("Not implemented in NativeAOT");
+}
+
+static
 inline
 void
 ep_rt_set_server_name(void)
 {
-    // This is optional, decorates the thread name with EventPipe specific information
+    extern void
+    ep_rt_aot_set_server_name (void);
+    ep_rt_aot_set_server_name ();
 }
 
 

@@ -86,7 +86,7 @@ namespace System.IO.Pipelines
         /// The <see cref="System.IO.Pipelines.ReadResult.Buffer" /> previously returned from <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> must not be accessed after this call.
         /// This is equivalent to calling <see cref="System.IO.Pipelines.PipeReader.AdvanceTo(System.SequencePosition,System.SequencePosition)" /> with identical examined and consumed positions.
         /// The examined data communicates to the pipeline when it should signal more data is available.
-        /// Because the consumed parameter doubles as the examined parameter, the consumed parameter should be greater than or equal to the examined position in the previous call to `AdvanceTo`. Otherwise, an <see cref="System.InvalidOperationException" /> is thrown.</remarks>
+        /// </remarks>
         public abstract void AdvanceTo(SequencePosition consumed);
 
         /// <summary>Moves forward the pipeline's read cursor to after the consumed data, marking the data as processed, read and examined.</summary>
@@ -94,8 +94,7 @@ namespace System.IO.Pipelines
         /// <param name="examined">Marks the extent of the data that has been read and examined.</param>
         /// <remarks>The memory for the consumed data will be released and no longer available.
         /// The <see cref="System.IO.Pipelines.ReadResult.Buffer" /> previously returned from <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> must not be accessed after this call.
-        /// The examined data communicates to the pipeline when it should signal more data is available.
-        /// The examined parameter should be greater than or equal to the examined position in the previous call to `AdvanceTo`. Otherwise, an <see cref="System.InvalidOperationException" /> is thrown.</remarks>
+        /// The examined data communicates to the pipeline when it should signal more data is available.</remarks>
         public abstract void AdvanceTo(SequencePosition consumed, SequencePosition examined);
 
         /// <summary>Returns a <see cref="System.IO.Stream" /> representation of the <see cref="System.IO.Pipelines.PipeReader" />.</summary>

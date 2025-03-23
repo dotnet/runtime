@@ -93,7 +93,6 @@
 //
 // Register state on exit:
 //  x2: thread pointer
-//  x12: transition frame flags for the return registers x0 and x1
 //
 .macro FixupHijackedCallstack
 
@@ -107,17 +106,13 @@
     //
     // Fix the stack by restoring the original return address
     //
-    // Load m_pvHijackedReturnAddress and m_uHijackedReturnValueFlags
-    ldp         lr, x12, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    ldr         lr, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
     //
     // Clear hijack state
     //
     // Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
     stp         xzr, xzr, [x2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-    // Clear m_uHijackedReturnValueFlags
-    str         xzr, [x2, #OFFSETOF__Thread__m_uHijackedReturnValueFlags]
-
 .endm
 
 //
@@ -131,7 +126,8 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     ret
 
 LOCAL_LABEL(WaitForGC):
-    orr         x12, x12, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1
+    mov         x12, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1
+    movk        x12, PTFF_THREAD_HIJACK_HI, lsl #32
     b           C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack
 

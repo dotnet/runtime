@@ -1690,9 +1690,6 @@ void ResolveFuncEvalGenericArgInfo(DebuggerEval *pDE)
     }
 
     // Find the proper MethodDesc that we need to call.
-    // Since we're already in the target domain, it can't be unloaded so it's safe to
-    // use domain specific structures like the Module*.
-    _ASSERTE( GetAppDomain() == pDE->m_debuggerModule->GetAppDomain() );
     pDE->m_md = g_pEEInterface->LoadMethodDef(pDE->m_debuggerModule->GetRuntimeModule(),
                                               pDE->m_methodToken,
                                               nGenericArgs,
@@ -3528,7 +3525,7 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
     INT64 *pBufferForArgsArray = (INT64*)_alloca(cbAllocSize);
     memset(pBufferForArgsArray, 0, cbAllocSize);
 
-    FrameWithCookie<ProtectValueClassFrame> protectValueClassFrame;
+    ProtectValueClassFrame protectValueClassFrame;
 
     //
     // Initialize our tracking array
@@ -3861,7 +3858,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
     // Push our FuncEvalFrame. The return address is equal to the IP in the saved context in the DebuggerEval. The
     // m_Datum becomes the ptr to the DebuggerEval. The frame address also serves as the address of the catch-handler-found.
     //
-    FrameWithCookie<FuncEvalFrame> FEFrame(pDE, GetIP(&pDE->m_context), true);
+    FuncEvalFrame FEFrame(pDE, GetIP(&pDE->m_context), true);
     FEFrame.Push();
 
     // On ARM/ARM64 the single step flag is per-thread and not per context.  We need to make sure that the SS flag is cleared

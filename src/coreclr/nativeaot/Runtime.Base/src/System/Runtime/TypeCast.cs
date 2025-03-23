@@ -63,7 +63,6 @@ namespace System.Runtime
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
         // this test must deal with all kinds of type tests
-        [RuntimeExport("RhTypeCast_IsInstanceOfAny")]
         public static unsafe object? IsInstanceOfAny(MethodTable* pTargetType, object? obj)
         {
             if (obj != null)
@@ -94,7 +93,6 @@ namespace System.Runtime
             return IsInstanceOfAny_NoCacheLookup(pTargetType, obj);
         }
 
-        [RuntimeExport("RhTypeCast_IsInstanceOfInterface")]
         public static unsafe object? IsInstanceOfInterface(MethodTable* pTargetType, object? obj)
         {
             Debug.Assert(pTargetType->IsInterface);
@@ -184,7 +182,6 @@ namespace System.Runtime
             return obj;
         }
 
-        [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
         public static unsafe object? IsInstanceOfClass(MethodTable* pTargetType, object? obj)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "IsInstanceOfClass called with parameterized MethodTable");
@@ -248,7 +245,6 @@ namespace System.Runtime
             return obj;
         }
 
-        [RuntimeExport("RhTypeCast_IsInstanceOfException")]
         public static unsafe bool IsInstanceOfException(MethodTable* pTargetType, object? obj)
         {
             // Based on IsInstanceOfClass
@@ -279,7 +275,6 @@ namespace System.Runtime
         // ChkCast test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the ChkCastInterface and ChkCastClass functions,
         // this test must deal with all kinds of type tests
-        [RuntimeExport("RhTypeCast_CheckCastAny")]
         public static unsafe object CheckCastAny(MethodTable* pTargetType, object obj)
         {
             CastResult result;
@@ -307,7 +302,6 @@ namespace System.Runtime
             return objRet;
         }
 
-        [RuntimeExport("RhTypeCast_CheckCastInterface")]
         public static unsafe object CheckCastInterface(MethodTable* pTargetType, object obj)
         {
             Debug.Assert(pTargetType->IsInterface);
@@ -393,7 +387,6 @@ namespace System.Runtime
             return ThrowInvalidCastException(pTargetType);
         }
 
-        [RuntimeExport("RhTypeCast_CheckCastClass")]
         public static unsafe object CheckCastClass(MethodTable* pTargetType, object obj)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "CheckCastClass called with parameterized MethodTable");
@@ -411,7 +404,6 @@ namespace System.Runtime
 
         // Optimized helper for classes. Assumes that the trivial cases
         // has been taken care of by the inlined check
-        [RuntimeExport("RhTypeCast_CheckCastClassSpecial")]
         private static unsafe object CheckCastClassSpecial(MethodTable* pTargetType, object obj)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "CheckCastClassSpecial called with parameterized MethodTable");
@@ -761,8 +753,6 @@ namespace System.Runtime
         //
         // Array stelem/ldelema helpers with RyuJIT conventions
         //
-
-        [RuntimeExport("RhpLdelemaRef")]
         public static unsafe ref object? LdelemaRef(object?[] array, nint index, MethodTable* elementType)
         {
             Debug.Assert(array is null || array.GetMethodTable()->IsArray, "first argument must be an array");
@@ -794,7 +784,6 @@ namespace System.Runtime
             return ref element;
         }
 
-        [RuntimeExport("RhpStelemRef")]
         public static unsafe void StelemRef(object?[] array, nint index, object? obj)
         {
             // This is supported only on arrays
@@ -1066,10 +1055,14 @@ namespace System.Runtime
             bool result = TypeCast.AreTypesAssignableInternalUncached(pSourceType, pTargetType, variation, &newList);
 
             //
-            // Update the cache
+            // Update the cache. We only consider type-based conversion rules here.
+            // Therefore a negative result cannot rule out convertibility for IDynamicInterfaceCastable.
             //
-            nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
-            s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, result);
+            if (result || !(pTargetType->IsInterface && pSourceType->IsIDynamicInterfaceCastable))
+            {
+                nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
+                s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, result);
+            }
 
             return result;
         }
@@ -1252,13 +1245,11 @@ namespace System.Runtime
             }
 
             //
-            // Update the cache
+            // Update the cache. We only consider type-based conversion rules here.
+            // Therefore a negative result cannot rule out convertibility for IDynamicInterfaceCastable.
             //
-            if (!pSourceType->IsIDynamicInterfaceCastable)
+            if (retObj != null || !(pTargetType->IsInterface && pSourceType->IsIDynamicInterfaceCastable))
             {
-                //
-                // Update the cache
-                //
                 nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
                 s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, retObj != null);
             }
@@ -1293,14 +1284,11 @@ namespace System.Runtime
                 obj = CheckCastClass(pTargetType, obj);
             }
 
-            if (!pSourceType->IsIDynamicInterfaceCastable)
-            {
-                //
-                // Update the cache
-                //
-                nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
-                s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
-            }
+            //
+            // Update the cache
+            //
+            nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
+            s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
 
             return obj;
         }

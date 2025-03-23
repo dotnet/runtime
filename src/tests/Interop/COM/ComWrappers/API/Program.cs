@@ -10,6 +10,7 @@ namespace ComWrappersTests
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Runtime.InteropServices.Marshalling;
+    using System.Threading;
 
     using ComWrappersTests.Common;
     using TestLibrary;
@@ -961,6 +962,166 @@ namespace ComWrappersTests
             ForceGC();
 
             Assert.Equal(0, allocTracker.GetCount());
+        }
+
+        [Fact]
+        public void ComWrappersNoLockAroundQueryInterface()
+        {
+            Console.WriteLine($"Running {nameof(ComWrappersNoLockAroundQueryInterface)}...");
+
+            var cw = new RecursiveSimpleComWrappers();
+
+            IntPtr comObject = cw.GetOrCreateComInterfaceForObject(new RecursiveCrossThreadQI(cw), CreateComInterfaceFlags.None);
+            try
+            {
+                _ = cw.GetOrCreateObjectForComInstance(comObject, CreateObjectFlags.TrackerObject);
+            }
+            finally
+            {
+                Marshal.Release(comObject);
+            }
+        }
+
+        private class RecursiveCrossThreadQI(ComWrappers? wrappers) : ICustomQueryInterface
+        {
+            CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out IntPtr ppv)
+            {
+                ppv = IntPtr.Zero;
+                if (iid == ComWrappersHelper.IID_IReferenceTracker && wrappers is not null)
+                {
+                    Console.WriteLine("Attempting to create a new COM object on a different thread.");
+                    Thread thread = new Thread(() =>
+                    {
+                        IntPtr comObject = wrappers.GetOrCreateComInterfaceForObject(new RecursiveCrossThreadQI(null), CreateComInterfaceFlags.None);
+                        try
+                        {
+                            // Make sure that ComWrappers isn't locking in GetOrCreateObjectForComInstance
+                            // around the QI call by calling it on a different thread from within a QI call to register a new managed wrapper
+                            // for a COM object representing "this".
+                            _ = wrappers.GetOrCreateObjectForComInstance(comObject, CreateObjectFlags.None);
+                        }
+                        finally
+                        {
+                            Marshal.Release(comObject);
+                        }
+                    });
+                    thread.Start();
+                    thread.Join(TimeSpan.FromSeconds(20)); // 20 seconds should be more than long enough for the thread to complete
+                }
+
+                return CustomQueryInterfaceResult.Failed;
+            }
+        }
+
+        private unsafe class RecursiveSimpleComWrappers : ComWrappers
+        {
+            protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
+            {
+                count = 0;
+                return null;
+            }
+
+            protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
+            {
+                return new object();
+            }
+
+            protected override void ReleaseObjects(IEnumerable objects)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // COM apartments are Windows-specific
+        public unsafe void CrossApartmentQueryInterface_NoDeadlock()
+        {
+            Console.WriteLine($"Running {nameof(CrossApartmentQueryInterface_NoDeadlock)}...");
+            using ManualResetEvent hasAgileReference = new(false);
+            using ManualResetEvent testCompleted = new(false);
+
+            IntPtr agileReference = IntPtr.Zero;
+            try
+            {
+                Thread staThread = new(() =>
+                {
+                    var cw = new RecursiveSimpleComWrappers();
+                    IntPtr comObject = cw.GetOrCreateComInterfaceForObject(new RecursiveQI(cw), CreateComInterfaceFlags.None);
+                    try
+                    {
+                        Marshal.ThrowExceptionForHR(RoGetAgileReference(0, IUnknownVtbl.IID_IUnknown, comObject, out agileReference));
+                    }
+                    finally
+                    {
+                        Marshal.Release(comObject);
+                    }
+                    hasAgileReference.Set();
+                    testCompleted.WaitOne();
+                });
+                staThread.SetApartmentState(ApartmentState.STA);
+
+                Thread mtaThread = new(() =>
+                {
+                    hasAgileReference.WaitOne();
+                    IntPtr comObject;
+                    int hr = ((delegate* unmanaged<IntPtr, in Guid, out IntPtr, int>)(*(*(void***)agileReference + 3 /* IAgileReference.Resolve slot */)))(agileReference, IUnknownVtbl.IID_IUnknown, out comObject);
+                    Marshal.ThrowExceptionForHR(hr);
+                    try
+                    {
+                        var cw = new RecursiveSimpleComWrappers();
+                        // Make sure that ComWrappers isn't locking in GetOrCreateObjectForComInstance
+                        // across the QI call
+                        // by forcing marshalling across COM apartments.
+                        _ = cw.GetOrCreateObjectForComInstance(comObject, CreateObjectFlags.TrackerObject);
+                    }
+                    finally
+                    {
+                        Marshal.Release(comObject);
+                    }
+                    testCompleted.Set();
+                });
+                mtaThread.SetApartmentState(ApartmentState.MTA);
+
+                staThread.Start();
+                mtaThread.Start();
+                testCompleted.WaitOne();
+            }
+            finally
+            {
+                if (agileReference != IntPtr.Zero)
+                {
+                    Marshal.Release(agileReference);
+                }
+            }
+        }
+
+        [DllImport("ole32.dll")]
+        private static extern int RoGetAgileReference(int options, in Guid iid, IntPtr unknown, out IntPtr agileReference);
+
+        private class RecursiveQI(ComWrappers? wrappers) : ICustomQueryInterface
+        {
+            CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out IntPtr ppv)
+            {
+                ppv = IntPtr.Zero;
+                if (wrappers is not null)
+                {
+                    Console.WriteLine("Attempting to create a new COM object on the same thread.");
+                    IntPtr comObject = wrappers.GetOrCreateComInterfaceForObject(new RecursiveQI(null), CreateComInterfaceFlags.None);
+                    try
+                    {
+                        // Make sure that ComWrappers isn't locking in GetOrCreateObjectForComInstance
+                        // around the QI call by calling it on a different thread from within a QI call to register a new managed wrapper
+                        // for a COM object representing "this".
+                        _ = wrappers.GetOrCreateObjectForComInstance(comObject, CreateObjectFlags.None);
+                    }
+                    finally
+                    {
+                        Marshal.Release(comObject);
+                    }
+                }
+
+                return CustomQueryInterfaceResult.NotHandled;
+            }
         }
     }
 }

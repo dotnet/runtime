@@ -25,7 +25,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "dz", "d", CompareOptions.None, true, 1 };
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { s_hungarianCompare, "dz", "d", CompareOptions.None, false, 0 };
             yield return new object[] { s_hungarianCompare, "dz", "d", CompareOptions.Ordinal, true, 1 };
 
@@ -52,7 +52,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.OrdinalIgnoreCase, false, 0 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, false, 0 };
-            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, true, 7 };
+            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", CompareOptions.IgnoreNonSpace, true, 7 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.Ordinal, true, 1 };
             yield return new object[] { s_invariantCompare, "o\u0000\u0308", "o", CompareOptions.None, true, 1 };
@@ -72,19 +72,16 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800\uD800", CompareOptions.None, true, 2 };
 
             // Ignore symbols
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
                 yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.None, false, 0 };
             }
 
             // Platform differences
-            // in HybridGlobalization on Browser we use TextEncoder that is not supported for v8 and the manual decoding works like NLS
-            bool behavesLikeNls = PlatformDetection.IsNlsGlobalization ||
-                (PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsBrowserDomSupportedOrNodeJS);
-            if (behavesLikeNls)
+            if (PlatformDetection.IsNlsGlobalization)
             {
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {
                     yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, true, 7 };
                     yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, true, 7 };
@@ -96,7 +93,7 @@ namespace System.Globalization.Tests
             else
             {
                 yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, false, 0 };
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                     yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, false, 0 };
                 yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, false, 0 };
                 if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
@@ -114,15 +111,15 @@ namespace System.Globalization.Tests
             }
 
             // Prefixes where matched length does not equal value string length
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
-                yield return new object[] { s_invariantCompare, "dzxyz", "\u01F3", supportedIgnoreNonSpaceOption, true, 2 };
-                yield return new object[] { s_invariantCompare, "\u01F3xyz", "dz", supportedIgnoreNonSpaceOption, true, 1 };
-                yield return new object[] { s_germanCompare, "Strasse xyz", "stra\u00DFe", supportedIgnoreCaseIgnoreNonSpaceOptions, true, 7 };
-                yield return new object[] { s_germanCompare, "stra\u00DFe xyz", "Strasse", supportedIgnoreCaseIgnoreNonSpaceOptions, true, 6 };
+                yield return new object[] { s_invariantCompare, "dzxyz", "\u01F3", CompareOptions.IgnoreNonSpace, true, 2 };
+                yield return new object[] { s_invariantCompare, "\u01F3xyz", "dz", CompareOptions.IgnoreNonSpace, true, 1 };
+                yield return new object[] { s_germanCompare, "Strasse xyz", "stra\u00DFe", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, true, 7 };
+                yield return new object[] { s_germanCompare, "stra\u00DFe xyz", "Strasse", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, true, 6 };
             }
-            yield return new object[] { s_germanCompare, "Strasse xyz", "xtra\u00DFe", supportedIgnoreCaseIgnoreNonSpaceOptions, false, 0 };
-            yield return new object[] { s_germanCompare, "stra\u00DFe xyz", "Xtrasse", supportedIgnoreCaseIgnoreNonSpaceOptions, false, 0 };
+            yield return new object[] { s_germanCompare, "Strasse xyz", "xtra\u00DFe", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, false, 0 };
+            yield return new object[] { s_germanCompare, "stra\u00DFe xyz", "Xtrasse", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, false, 0 };
         }
 
         [Theory]
@@ -151,7 +148,7 @@ namespace System.Globalization.Tests
             valueBoundedMemory.MakeReadonly();
 
             Assert.Equal(expected, compareInfo.IsPrefix(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 Assert.Equal(expected, compareInfo.IsPrefix(sourceBoundedMemory.Span, valueBoundedMemory.Span, options, out int actualMatchLength));
                 Assert.Equal(expectedMatchLength, actualMatchLength);
@@ -164,7 +161,7 @@ namespace System.Globalization.Tests
             bool result = PlatformDetection.IsNlsGlobalization ? true : false;
             int expectedMatchLength = (result) ? 6 : 0;
             IsPrefix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result, expectedMatchLength);
-            IsPrefix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", supportedIgnoreNonSpaceOption, result, expectedMatchLength);
+            IsPrefix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result, expectedMatchLength);
         }
 
         [Fact]
@@ -184,6 +181,7 @@ namespace System.Globalization.Tests
 
             // Options are invalid
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", CompareOptions.StringSort));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", CompareOptions.NumericOrdering));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", (CompareOptions)(-1)));

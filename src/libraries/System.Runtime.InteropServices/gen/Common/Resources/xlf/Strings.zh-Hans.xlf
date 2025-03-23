@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <target state="translated">此类型至少实现了一种具有 'GeneratedComInterfaceAttribute' 属性的类型，或其基本类型具有 'GeneratedComClassAttribute' 属性。添加 'GeneratedComClassAttribute' 以允许将此类型传递到 COM，并公开具有此类型的对象的 'GeneratedComInterfaceAttribute' 的类型的 COM 接口。</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyMessage">
         <source>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</source>
-        <target state="new">The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</target>
+        <target state="translated">类型“{0}”具有在其他程序集中定义的基接口“{1}”。在某些情况下，可能会导致各种难以诊断问题</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyTitle">
         <source>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</source>
-        <target state="new">Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</target>
+        <target state="translated">不支持在另一个进程集中定义了基础接口的接口上指定 'GeneratedComInterfaceAttribute'</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
@@ -504,7 +504,7 @@
       </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
-        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
+        <target state="translated">在非托管到托管调用中从 VARIANT 封送为“in”参数的对象不会传回更新后的结果，即使 VARIANT 是 VT_BYREF 变量也是如此。使用 "ref "参数代替 "in "参数，将更新后的值传回调用方。</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -842,9 +842,9 @@
         <target state="translated">托管类型“{1}”的封送程序入口点类型“{0}”必须具有大于托管类型的 arity。</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
-        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">作为非托管返回值传递的值的所有封送程序必须具有相同的非托管类型。</target>
+      <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
+        <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
+        <target state="translated">作为非托管返回值或参数传递的值的所有封送程序都必须具有相同的非托管类型。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">

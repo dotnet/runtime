@@ -186,8 +186,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CNS_INT:
         case GT_CNS_DBL:
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;
@@ -212,7 +216,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_OR:
+        case GT_OR_NOT:
         case GT_XOR:
+        case GT_XOR_NOT:
         case GT_AND:
         case GT_AND_NOT:
             assert(varTypeIsIntegralOrI(treeNode));
@@ -428,8 +434,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_MEMORYBARRIER:
         {
-            CodeGen::BarrierKind barrierKind =
-                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+            BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD
+                    ? BARRIER_LOAD_ONLY
+                    : (treeNode->gtFlags & GTF_MEMORYBARRIER_STORE ? BARRIER_STORE_ONLY : BARRIER_FULL);
 
             instGen_MemoryBarrier(barrierKind);
             break;
@@ -604,8 +612,6 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
-
-    assert(GetEmitter()->emitGCDisabled());
 
     // We need two temporary registers, to load the GS cookie values and compare them. We can't use
     // any argument registers if 'pushReg' is true (meaning we have a JMP call). They should be
@@ -786,7 +792,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     if (treeNode->putInIncomingArgArea())
     {
         varNumOut    = getFirstArgWithStackSlot();
-        argOffsetMax = compiler->compArgSize;
+        argOffsetMax = compiler->lvaParameterStackSize;
 #if FEATURE_FASTTAILCALL
         // This must be a fast tail call.
         assert(treeNode->gtCall->IsFastTailCall());
@@ -1468,6 +1474,23 @@ void CodeGen::genRangeCheck(GenTree* oper)
         src1    = arrLen;
         src2    = arrIndex;
         jmpKind = EJ_ls;
+
+#if defined(TARGET_ARM64)
+        if (arrIndex->IsIntegralConst(0))
+        {
+            assert(!arrLen->isContained());
+            // For (index == 0), we can just test if (length == 0) as this is the only case that would throw.
+            // This may lead to an optimization by using cbz/tbnz.
+            genJumpToThrowHlpBlk(
+                bndsChk->gtThrowKind,
+                [&](BasicBlock* target, bool isInline) {
+                genCompareImmAndJump(isInline ? GenCondition::NE : GenCondition::EQ, arrLen->GetRegNum(), 0,
+                                     emitActualTypeSize(arrLen), target);
+            },
+                bndsChk->gtIndRngFailBB);
+            return;
+        }
+#endif
     }
     else
     {
@@ -2800,8 +2823,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (node->IsVolatile())
     {
-        // issue a full memory barrier before a volatile CpBlk operation
-        instGen_MemoryBarrier();
+        // issue a store barrier before a volatile CpBlk operation
+        instGen_MemoryBarrier(BARRIER_STORE_ONLY);
     }
 
     emitter* emit = GetEmitter();
@@ -3225,8 +3248,8 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 
     if (initBlkNode->IsVolatile())
     {
-        // issue a full memory barrier before a volatile initBlock Operation
-        instGen_MemoryBarrier();
+        // issue a store barrier before a volatile initBlock Operation
+        instGen_MemoryBarrier(BARRIER_STORE_ONLY);
     }
 
     //  str     xzr, [dstReg]
@@ -3503,9 +3526,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
             {
-                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
                 if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
                 {
                     JITDUMP("Tail call node:\n");
@@ -3738,9 +3760,8 @@ void CodeGen::genJmpPlaceVarArgs()
     for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
-        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
         {
-            const ABIPassingSegment& segment = abiInfo.Segment(i);
             if (segment.IsPassedInRegister())
             {
                 potentialArgs &= ~segment.GetRegisterMask();
@@ -4140,7 +4161,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
     // let's save the values anyway for debugging purposes
     compiler->compInfoBlkAddr = gcInfoEncoder->Emit();
-    compiler->compInfoBlkSize = 0; // not exposed by the GCEncoder interface
+    compiler->compInfoBlkSize = gcInfoEncoder->GetEncodedGCInfoSize();
 }
 
 // clang-format off
@@ -4507,7 +4528,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 //    src         - The source of the return
 //    retTypeDesc - The return type descriptor.
 //
-void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
+void CodeGen::genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc)
 {
     assert(varTypeIsSIMD(src));
     assert(src->isUsedFromReg());

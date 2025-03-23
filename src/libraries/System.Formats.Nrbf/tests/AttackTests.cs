@@ -50,18 +50,51 @@ public class AttackTests : ReadTests
     }
 
     [Fact]
-    public void CyclicReferencesInArraysOfObjectsDoNotCauseStackOverflow()
+    public void CyclicReferencesInSZArraysOfObjectsDoNotCauseStackOverflow()
     {
         object[] input = new object[2];
         input[0] = "not an array";
         input[1] = input;
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
-        object?[] output = ((SZArrayRecord<object>)arrayRecord).GetArray();
+        SerializationRecord?[] output = ((SZArrayRecord<SerializationRecord>)arrayRecord).GetArray();
 
-        Assert.Equal(input[0], output[0]);
+        Assert.Equal(input[0], ((PrimitiveTypeRecord<string>)output[0]).Value);
         Assert.Same(input, input[1]);
-        Assert.Same(output, output[1]);
+        Assert.Same(arrayRecord, output[1]);
+    }
+
+    [Fact]
+    public void CyclicReferencesInMDArraysOfObjectsDoNotCauseStackOverflow()
+    {
+        object[,] input = new object[2, 2];
+        input[0, 0] = "not an array";
+        input[1, 1] = input;
+
+        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
+        SerializationRecord?[,] output = (SerializationRecord?[,])arrayRecord.GetArray(typeof(object[,]));
+
+        Assert.Equal(input[0, 0], ((PrimitiveTypeRecord<string>)output[0, 0]).Value);
+        Assert.Same(input, input[1, 1]);
+        Assert.Same(arrayRecord, output[1, 1]);
+    }
+
+    [Fact]
+    public void CyclicReferencesInJaggedArraysOfObjectsDoNotCauseStackOverflow()
+    {
+        object[][] input = new object[1][];
+        input[0] = new object[2];
+        input[0][0] = "not an array";
+        input[0][1] = input;
+
+        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
+        ArrayRecord[] output = (ArrayRecord[])arrayRecord.GetArray(typeof(object[][]));
+        SZArrayRecord<SerializationRecord> row = (SZArrayRecord<SerializationRecord>)output.Single();
+        SerializationRecord[] contained = row.GetArray();
+
+        Assert.Equal(input[0][0], ((PrimitiveTypeRecord<string>)contained[0]).Value);
+        Assert.Same(input, input[0][1]);
+        Assert.Same(arrayRecord, contained[1]);
     }
 
     [Serializable]
@@ -81,8 +114,8 @@ public class AttackTests : ReadTests
         ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(Serialize(input));
 
         Assert.Equal(input.Name, classRecord.GetString(nameof(WithCyclicReferenceInArrayOfObjects.Name)));
-        SZArrayRecord<object> arrayRecord = (SZArrayRecord<object>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfObjects.ArrayWithReferenceToSelf))!;
-        object?[] array = arrayRecord.GetArray();
+        SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfObjects.ArrayWithReferenceToSelf))!;
+        SerializationRecord?[] array = arrayRecord.GetArray();
         Assert.Same(classRecord, array.Single());
     }
 
@@ -103,7 +136,7 @@ public class AttackTests : ReadTests
         ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(Serialize(input));
 
         Assert.Equal(input.Name, classRecord.GetString(nameof(WithCyclicReferenceInArrayOfT.Name)));
-        SZArrayRecord<ClassRecord> classRecords = (SZArrayRecord<ClassRecord>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfT.ArrayWithReferenceToSelf))!;
+        SZArrayRecord<SerializationRecord> classRecords = (SZArrayRecord<SerializationRecord>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfT.ArrayWithReferenceToSelf))!;
         Assert.Same(classRecord, classRecords.GetArray().Single());
     }
 
@@ -154,7 +187,7 @@ public class AttackTests : ReadTests
         writer.Write((byte)SerializationRecordType.ArraySinglePrimitive);
         writer.Write(1); // object ID
         writer.Write(Array.MaxLength); // length
-        writer.Write((byte)2); // PrimitiveType.Byte
+        writer.Write((byte)PrimitiveType.Byte);
         writer.Write((byte)SerializationRecordType.MessageEnd);
 
         stream.Position = 0;

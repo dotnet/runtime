@@ -32,15 +32,6 @@ namespace System.Net.WebSockets
         /// <summary>Encoding for the payload of text messages: UTF-8 encoding that throws if invalid bytes are discovered, per the RFC.</summary>
         private static readonly UTF8Encoding s_textEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-        /// <summary>Valid states to be in when calling SendAsync.</summary>
-        private static readonly WebSocketState[] s_validSendStates = { WebSocketState.Open, WebSocketState.CloseReceived };
-        /// <summary>Valid states to be in when calling ReceiveAsync.</summary>
-        private static readonly WebSocketState[] s_validReceiveStates = { WebSocketState.Open, WebSocketState.CloseSent };
-        /// <summary>Valid states to be in when calling CloseOutputAsync.</summary>
-        private static readonly WebSocketState[] s_validCloseOutputStates = { WebSocketState.Open, WebSocketState.CloseReceived };
-        /// <summary>Valid states to be in when calling CloseAsync.</summary>
-        private static readonly WebSocketState[] s_validCloseStates = { WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent };
-
         /// <summary>The maximum size in bytes of a message frame header that includes mask bytes.</summary>
         internal const int MaxMessageHeaderLength = 14;
         /// <summary>The maximum size of a control message payload.</summary>
@@ -337,7 +328,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ThrowIfInvalidState(s_validSendStates);
+                ThrowIfInvalidState(WebSocketStateHelper.ValidSendStates);
             }
             catch (Exception exc)
             {
@@ -377,7 +368,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ThrowIfInvalidState(s_validReceiveStates);
+                ThrowIfInvalidState(WebSocketStateHelper.ValidReceiveStates);
 
                 return ReceiveAsyncPrivate<WebSocketReceiveResult>(buffer, cancellationToken).AsTask();
             }
@@ -394,7 +385,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ThrowIfInvalidState(s_validReceiveStates);
+                ThrowIfInvalidState(WebSocketStateHelper.ValidReceiveStates);
 
                 return ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(buffer, cancellationToken);
             }
@@ -413,7 +404,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ThrowIfInvalidState(s_validCloseStates);
+                ThrowIfInvalidState(WebSocketStateHelper.ValidCloseStates);
             }
             catch (Exception exc)
             {
@@ -436,7 +427,7 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
-            ThrowIfInvalidState(s_validCloseOutputStates);
+            ThrowIfInvalidState(WebSocketStateHelper.ValidCloseOutputStates);
 
             await SendCloseFrameAsync(closeStatus, statusDescription, cancellationToken).ConfigureAwait(false);
 
@@ -1737,9 +1728,9 @@ namespace System.Net.WebSockets
                 cancellationToken);
         }
 
-        private void ThrowIfDisposed() => ThrowIfInvalidState();
+        private void ThrowIfDisposed() => ThrowIfInvalidState(validStates: ManagedWebSocketStates.All);
 
-        private void ThrowIfInvalidState(WebSocketState[]? validStates = null)
+        private void ThrowIfInvalidState(ManagedWebSocketStates validStates)
         {
             bool disposed = _disposed;
             WebSocketState state = _state;
@@ -1758,7 +1749,7 @@ namespace System.Net.WebSockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"_state={state}, _disposed={disposed}, _keepAlivePingState.Exception={keepAliveException}");
 
-            WebSocketValidate.ThrowIfInvalidState(state, disposed, keepAliveException, validStates);
+            WebSocketStateHelper.ThrowIfInvalidState(state, disposed, keepAliveException, validStates);
         }
 
         // From https://github.com/aspnet/WebSockets/blob/aa63e27fce2e9202698053620679a9a1059b501e/src/Microsoft.AspNetCore.WebSockets.Protocol/Utilities.cs#L75

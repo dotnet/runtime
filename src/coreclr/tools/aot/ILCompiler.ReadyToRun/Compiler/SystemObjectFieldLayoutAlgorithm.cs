@@ -50,6 +50,11 @@ namespace ILCompiler
             return false;
         }
 
+        public override bool ComputeContainsByRefs(DefType type)
+        {
+            return false;
+        }
+
         public override bool ComputeIsUnsafeValueType(DefType type)
         {
             return false;

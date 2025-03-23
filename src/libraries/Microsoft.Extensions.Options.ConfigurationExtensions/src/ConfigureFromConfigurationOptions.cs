@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         /// <summary>
-        /// Constructor that takes the <see cref="IConfiguration"/> instance to bind against.
+        /// Initializes a new instance of the <see cref="ConfigureFromConfigurationOptions{TOptions}"/> class using the specified <see cref="IConfiguration"/> instance to bind against.
         /// </summary>
         /// <param name="config">The <see cref="IConfiguration"/> instance.</param>
         //Even though TOptions is annotated, we need to annotate as RUC as we can't guarantee properties on referenced types are preserved.

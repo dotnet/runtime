@@ -79,6 +79,11 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_JCMP:
                 return true;
 
+            case GT_CMPXCHG:
+            case GT_XORR:
+            case GT_XAND:
+            case GT_XADD:
+            case GT_XCHG:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
                 if (immVal == 0)
@@ -311,7 +316,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             // No write barriers are needed on the stack.
             // If the layout contains a byref, then we know it must live on the stack.
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
+            if (blkNode->IsAddressNotOnHeap(comp))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the

@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
@@ -21,7 +22,11 @@ namespace System.Security.Cryptography.Pkcs
         private RSASignaturePadding? _signaturePadding;
 
         public X509Certificate2? Certificate { get; set; }
+#if NET || NETSTANDARD2_1
         public AsymmetricAlgorithm? PrivateKey { get; set; }
+#else
+        private AsymmetricAlgorithm? PrivateKey { get; set; }
+#endif
         public X509Certificate2Collection Certificates { get; } = new X509Certificate2Collection();
         public Oid DigestAlgorithm { get; set; }
         public X509IncludeOption IncludeOption { get; set; }
@@ -32,7 +37,12 @@ namespace System.Security.Cryptography.Pkcs
         /// Gets or sets the RSA signature padding to use.
         /// </summary>
         /// <value>The RSA signature padding to use.</value>
-        public RSASignaturePadding? SignaturePadding
+#if NET || NETSTANDARD2_1
+        public
+#else
+        private
+#endif
+        RSASignaturePadding? SignaturePadding
         {
             get => _signaturePadding;
             set
@@ -83,7 +93,12 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-        public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, AsymmetricAlgorithm? privateKey)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        private
+#endif
+        CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, AsymmetricAlgorithm? privateKey)
             : this(signerIdentifierType, certificate, privateKey, signaturePadding: null)
         {
         }
@@ -105,7 +120,12 @@ namespace System.Security.Cryptography.Pkcs
         /// <param name="signaturePadding">
         /// The RSA signature padding to use.
         /// </param>
-        public CmsSigner(
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        CmsSigner(
             SubjectIdentifierType signerIdentifierType,
             X509Certificate2? certificate,
             RSA? privateKey,
@@ -206,7 +226,7 @@ namespace System.Security.Cryptography.Pkcs
                 // If the content type is otherwise not-data we need to record it as the content-type attr.
                 if (SignedAttributes?.Count > 0 || contentTypeOid != Oids.Pkcs7Data)
                 {
-                    List<AttributeAsn> signedAttrs = BuildAttributes(SignedAttributes);
+                    List<AttributeAsn> signedAttrs = PkcsHelpers.BuildAttributes(SignedAttributes);
 
                     AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                     writer.WriteOctetString(dataHash);
@@ -281,7 +301,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (UnsignedAttributes != null && UnsignedAttributes.Count > 0)
             {
-                List<AttributeAsn> attrs = BuildAttributes(UnsignedAttributes);
+                List<AttributeAsn> attrs = PkcsHelpers.BuildAttributes(UnsignedAttributes);
 
                 newSignerInfo.UnsignedAttributes = PkcsHelpers.NormalizeAttributeSet(attrs.ToArray());
             }
@@ -390,34 +410,6 @@ namespace System.Security.Cryptography.Pkcs
 
             chainCerts = certs;
             return newSignerInfo;
-        }
-
-        internal static List<AttributeAsn> BuildAttributes(CryptographicAttributeObjectCollection? attributes)
-        {
-            List<AttributeAsn> signedAttrs = new List<AttributeAsn>();
-
-            if (attributes == null || attributes.Count == 0)
-            {
-                return signedAttrs;
-            }
-
-            foreach (CryptographicAttributeObject attributeObject in attributes)
-            {
-                AttributeAsn newAttr = new AttributeAsn
-                {
-                    AttrType = attributeObject.Oid!.Value!,
-                    AttrValues = new ReadOnlyMemory<byte>[attributeObject.Values.Count],
-                };
-
-                for (int i = 0; i < attributeObject.Values.Count; i++)
-                {
-                    newAttr.AttrValues[i] = attributeObject.Values[i].RawData;
-                }
-
-                signedAttrs.Add(newAttr);
-            }
-
-            return signedAttrs;
         }
     }
 }

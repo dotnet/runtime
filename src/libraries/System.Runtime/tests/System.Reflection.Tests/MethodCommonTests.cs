@@ -293,5 +293,19 @@ namespace System.Reflection.Tests
             Assert.IsType<IntPtr>(ret);
             Assert.True((IntPtr)ret != 0);
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
+        public static void VerifyInnerException()
+        {
+            MethodInfo method = typeof(TestClassThatThrows).GetMethod(nameof(TestClassThatThrows.Throw))!;
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, null));
+            Assert.Contains("Here", ex.InnerException.ToString());
+        }
+
+        private class TestClassThatThrows
+        {
+            public static void Throw() => throw new Exception("Here");
+        }
     }
 }

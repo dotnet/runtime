@@ -9,7 +9,6 @@
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <SuggestedBindingRedirectsPackageFile>$(BaseIntermediateOutputPath)SuggestedBindingRedirects.targets</SuggestedBindingRedirectsPackageFile>
-    <BeforePack>$(BeforePack);GeneratePackageTargetsFile</BeforePack>
     <PackageDescription>Provides classes which read and write resources in a format that supports non-primitive objects.
 
 Commonly Used Types:
@@ -88,10 +87,15 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
+  </ItemGroup>
+
   <Target Name="GeneratePackageTargetsFile" 
           Inputs="$(MSBuildAllProjects)"
           Outputs="$(SuggestedBindingRedirectsPackageFile)"
-          Condition="'$(NetFrameworkMinimum)' != ''">
+          AfterTargets="CoreCompile"
+          Condition="'$(TargetFramework)' == '$(NetFrameworkMinimum)'">
     <PropertyGroup>
       <SuggestedBindingRedirectsPackageFileContent><![CDATA[<Project>
   <!-- ResolveAssemblyReferences will never see the assembly reference embedded in the resources type,
@@ -108,10 +112,11 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
                       Lines="$(SuggestedBindingRedirectsPackageFileContent)"
                       Overwrite="true" />
 
-    <ItemGroup>
-      <Content Include="$(SuggestedBindingRedirectsPackageFile)"
-               PackagePath="buildTransitive\$(NetFrameworkMinimum)\$(PackageId).targets" />
-    </ItemGroup>
   </Target>
+
+  <ItemGroup Condition="'$(NetFrameworkMinimum)' != ''">
+    <None Include="$(SuggestedBindingRedirectsPackageFile)" Pack="true"
+          PackagePath="buildTransitive\$(NetFrameworkMinimum)\$(PackageId).targets" />
+  </ItemGroup>
 
 </Project>

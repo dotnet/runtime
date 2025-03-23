@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.IO;
 using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.TestUtils;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -44,6 +45,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
             TestAssetsOutput = GetTestContextVariable("TEST_ASSETS_OUTPUT");
             TestArtifactsPath = GetTestContextVariable("TEST_ARTIFACTS");
             Directory.CreateDirectory(TestArtifactsPath);
+
+            // Create an empty global.json, so running tests from test artifacts is not affected
+            // by any global.json in parent directiers
+            GlobalJson.CreateEmpty(TestArtifactsPath);
 
             BuiltDotNet = new DotNetCli(Path.Combine(TestAssetsOutput, "sharedFrameworkPublish"));
         }

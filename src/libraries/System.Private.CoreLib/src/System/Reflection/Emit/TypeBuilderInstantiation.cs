@@ -99,7 +99,7 @@ namespace System.Reflection.Emit
         }
         public override Guid GUID => throw new NotSupportedException();
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) { throw new NotSupportedException(); }
 
         public override Assembly Assembly => _genericType.Assembly;

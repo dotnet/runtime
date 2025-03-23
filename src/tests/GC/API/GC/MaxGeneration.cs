@@ -4,9 +4,11 @@
 // Tests GC.MaxGeneration
 
 using System;
+using Xunit;
 
 public class Test_MaxGeneration {
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 				
 		for(int i=0;i<1000;i++) {
 		Object[] array = new Object[i];

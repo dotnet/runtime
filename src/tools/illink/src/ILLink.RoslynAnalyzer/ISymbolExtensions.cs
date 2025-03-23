@@ -47,6 +47,12 @@ namespace ILLink.RoslynAnalyzer
 			}
 		}
 
+		/// <summary>
+		/// Gets DynamicallyAccessedMemberTypes for any DynamicallyAccessedMembers annotation on the symbol.
+		/// This doesn't validate whether the annotation is valid based on the type of the annotated symbol.
+		/// Use FlowAnnotations.Get*Annotation when getting annotations that are valid and should participate
+		/// in dataflow analysis.
+		/// </summary>
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypes (this ISymbol symbol)
 		{
 			if (!TryGetAttribute (symbol, DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var dynamicallyAccessedMembers))
@@ -97,15 +103,15 @@ namespace ILLink.RoslynAnalyzer
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesOnAssociatedSymbol (this IMethodSymbol methodSymbol) =>
 			methodSymbol.AssociatedSymbol is ISymbol associatedSymbol ? GetDynamicallyAccessedMemberTypes (associatedSymbol) : DynamicallyAccessedMemberTypes.None;
 
-		internal static bool TryGetOverriddenMember (this ISymbol? symbol, [NotNullWhen (returnValue: true)] out ISymbol? overridenMember)
+		internal static bool TryGetOverriddenMember (this ISymbol? symbol, [NotNullWhen (returnValue: true)] out ISymbol? overriddenMember)
 		{
-			overridenMember = symbol switch {
+			overriddenMember = symbol switch {
 				IMethodSymbol method => method.OverriddenMethod,
 				IPropertySymbol property => property.OverriddenProperty,
 				IEventSymbol @event => @event.OverriddenEvent,
 				_ => null,
 			};
-			return overridenMember != null;
+			return overriddenMember != null;
 		}
 
 		public static SymbolDisplayFormat ILLinkTypeDisplayFormat { get; } =
@@ -197,5 +203,27 @@ namespace ILLink.RoslynAnalyzer
 
 		public static bool IsStaticConstructor ([NotNullWhen (returnValue: true)] this ISymbol? symbol)
 			=> (symbol as IMethodSymbol)?.MethodKind == MethodKind.StaticConstructor;
+
+		public static bool IsEntryPoint (this IMethodSymbol methodSymbol, Compilation compilation)
+			=> methodSymbol.Name is WellKnownMemberNames.EntryPointMethodName or WellKnownMemberNames.TopLevelStatementsEntryPointMethodName &&
+			   methodSymbol.IsStatic &&
+			   (methodSymbol.ReturnsVoid ||
+				methodSymbol.ReturnType.SpecialType == SpecialType.System_Int32 ||
+				SymbolEqualityComparer.Default.Equals(methodSymbol.ReturnType.OriginalDefinition, compilation.TaskType()) ||
+				SymbolEqualityComparer.Default.Equals(methodSymbol.ReturnType.OriginalDefinition, compilation.TaskOfTType()));
+
+		public static bool IsUnmanagedCallersOnlyEntryPoint (this IMethodSymbol methodSymbol)
+		{
+			foreach (var attr in methodSymbol.GetAttributes ()) {
+				if (attr.AttributeClass is { } attrClass && attrClass.HasName ("System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute")) {
+					foreach (var namedArgument in attr.NamedArguments) {
+						if (namedArgument.Key == "EntryPoint")
+							return true;
+					}
+				}
+			}
+
+			return false;
+		}
 	}
 }

@@ -7,15 +7,10 @@
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides Managed Extensibility Framework types that are useful to developers of extensible applications, or hosts.
-
-Commonly Used Types:
-System.Composition.Hosting.CompositionHost</PackageDescription>
+    <PackageDescription>Provides Managed Extensibility Framework (MEF) types that are useful to developers of extensible applications, or hosts.</PackageDescription>
     <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
-    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
-    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

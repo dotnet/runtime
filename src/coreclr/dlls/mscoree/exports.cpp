@@ -110,9 +110,7 @@ static LPCWSTR* StringArrayToUnicode(int argc, LPCSTR* argv)
 
 static void InitializeStartupFlags(STARTUP_FLAGS* startupFlagsRef)
 {
-    STARTUP_FLAGS startupFlags = static_cast<STARTUP_FLAGS>(
-            STARTUP_FLAGS::STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN |
-            STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN);
+    STARTUP_FLAGS startupFlags = static_cast<STARTUP_FLAGS>(0);
 
     if (Configuration::GetKnobBooleanValue(W("System.GC.Concurrent"), CLRConfig::UNSUPPORTED_gcConcurrent))
     {
@@ -292,9 +290,10 @@ int coreclr_initialize(
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
 
-    if (bundleProbe != nullptr)
+    ExternalAssemblyProbeFn* externalAssemblyProbe = hostContract != nullptr ? hostContract->external_assembly_probe : nullptr;
+    if (bundleProbe != nullptr || externalAssemblyProbe != nullptr)
     {
-        static Bundle bundle(exePath, bundleProbe);
+        static Bundle bundle(exePath, bundleProbe, externalAssemblyProbe);
         Bundle::AppBundle = &bundle;
     }
 
@@ -312,7 +311,7 @@ int coreclr_initialize(
 
     hr = host->CreateAppDomainWithManager(
         appDomainFriendlyNameW,
-        APPDOMAIN_SECURITY_DEFAULT,
+        0,
         NULL,                    // Name of the assembly that contains the AppDomainManager implementation
         NULL,                    // The AppDomainManager implementation type name
         propertyCount,

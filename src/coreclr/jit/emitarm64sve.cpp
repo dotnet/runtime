@@ -18445,6 +18445,12 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         return;
     }
 
+    // Do not sanity check when unit tests are enabled.
+    if (JitConfig.JitEmitUnitTestsSections() != nullptr)
+    {
+        return;
+    }
+
     // Currently only concerned with instructions that follow movprfx
     if (firstId->idIns() != INS_sve_movprfx)
     {

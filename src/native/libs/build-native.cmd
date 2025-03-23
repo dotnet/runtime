@@ -49,6 +49,8 @@ if /i [%1] == [icudir] ( set __icuDir=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [usepthreads] ( set __usePThreads=1&&shift&goto Arg_Loop)
 
 if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=$2"&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [-cmakeargs] ( set __ExtraCmakeParams=%__ExtraCmakeParams% %2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [-os] ( set __TargetOS=%2%&&shift&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -61,7 +63,11 @@ if NOT [%errorlevel%] == [0] goto :Failure
 echo Commencing build of native components
 echo.
 
-call "%__engNativeDir%\version\copy_version_files.cmd"
+if /i not "%__TargetOS%" == "android" (
+    call "%__repoRoot%\eng\native\version\copy_version_files.cmd"
+) else (
+    call powershell -NoProfile -ExecutionPolicy ByPass -File "%__repoRoot%\eng\native\version\copy_version_files.ps1"
+)
 
 :: cmake requires forward slashes in paths
 set __cmakeRepoRoot=%__repoRoot:\=/%
@@ -99,6 +105,14 @@ set MSBUILD_EMPTY_PROJECT_CONTENT= ^
  ^^^</Project^^^>
 echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.props"
 echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.targets"
+
+if /i "%__TargetOS%" == "android" (
+    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DANDROID_STL=none"
+)
+
+if /i "%__TargetOS%" == "linux-bionic" (
+    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DFORCE_ANDROID_OPENSSL=1" "-DANDROID_STL=none" "-DANDROID_FORCE_ICU_DATA_DIR=1"
+)
 
 :: Regenerate the VS solution
 

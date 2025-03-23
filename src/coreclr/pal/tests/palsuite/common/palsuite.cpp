@@ -154,7 +154,7 @@ mkAbsoluteFilenameW (
     sizeFN = wcslen( fileName );
     sizeAPN = (sizeDN + 1 + sizeFN + 1);
 
-    /* insure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
+    /* ensure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
     if ( sizeAPN > _MAX_PATH )
     {
 	return ( 0 );
@@ -195,7 +195,7 @@ mkAbsoluteFilenameA (
     sizeFN = strlen( fileName );
     sizeAPN = (sizeDN + 1 + sizeFN + 1);
     
-    /* insure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
+    /* ensure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
     if ( sizeAPN > _MAX_PATH )
     {
         return ( 0 );

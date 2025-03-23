@@ -8,7 +8,7 @@ using System.Runtime.Versioning;
 namespace System.Threading
 {
     /// <summary>Methods for accessing memory with volatile semantics.</summary>
-    public static unsafe class Volatile
+    public static class Volatile
     {
         // The runtime may replace these implementations with more efficient ones in some cases.
         // In coreclr, for example, see importercalls.cpp.
@@ -225,6 +225,24 @@ namespace System.Threading
         [NonVersionable]
         public static void Write<T>([NotNullIfNotNull(nameof(value))] ref T location, T value) where T : class? =>
             Unsafe.As<T, VolatileObject>(ref location).Value = value;
+        #endregion
+
+        #region Barriers
+        /// <summary>
+        /// Synchronizes memory access as follows:
+        /// The processor that executes the current thread cannot reorder instructions in such a way that memory reads before
+        /// the call to <see cref="ReadBarrier"/> execute after memory accesses that follow the call to <see cref="ReadBarrier"/>.
+        /// </summary>
+        [Intrinsic]
+        public static void ReadBarrier() => ReadBarrier();
+
+        /// <summary>
+        /// Synchronizes memory access as follows:
+        /// The processor that executes the current thread cannot reorder instructions in such a way that memory writes after
+        /// the call to <see cref="WriteBarrier"/> execute before memory accesses that follow the call to <see cref="WriteBarrier"/>.
+        /// </summary>
+        [Intrinsic]
+        public static void WriteBarrier() => WriteBarrier();
         #endregion
     }
 }

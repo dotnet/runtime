@@ -102,5 +102,57 @@ namespace System.Net.Security.Tests
                 await Assert.ThrowsAnyAsync<ObjectDisposedException>(() => client.ReadAsync(readBuffer, cts.Token).AsTask());
             }
         }
+
+        [Fact]
+        [OuterLoop("Computationally expensive")]
+        public async Task Dispose_ParallelWithHandshake_ThrowsODE()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            await Parallel.ForEachAsync(System.Linq.Enumerable.Range(0, 10000), cts.Token, async (i, token) =>
+            {
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                using (client)
+                using (server)
+                using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+                using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+                {
+                    SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                    {
+                        TargetHost = Guid.NewGuid().ToString("N"),
+                        RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+                    };
+
+                    SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+                    {
+                        ServerCertificate = serverCertificate,
+                    };
+
+                    var clientTask = Task.Run(() => client.AuthenticateAsClientAsync(clientOptions, cts.Token));
+                    var serverTask = Task.Run(() => server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                    // Dispose the instances while the handshake is in progress.
+                    client.Dispose();
+                    server.Dispose();
+
+                    await ValidateExceptionAsync(clientTask);
+                    await ValidateExceptionAsync(serverTask);
+                }
+            });
+
+            static async Task ValidateExceptionAsync(Task task)
+            {
+                try
+                {
+                    await task;
+                }
+                // either we disposed the stream, or the other side does and we get unexpected EOF
+                catch (Exception ex) when (ex is ObjectDisposedException or IOException)
+                {
+                    return;
+                }
+            }
+        }
     }
 }

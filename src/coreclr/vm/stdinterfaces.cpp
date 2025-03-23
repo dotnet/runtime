@@ -65,7 +65,7 @@ static const GUID IID_INoMarshal = {0xecc8691b, 0xc1db, 0x4dc0, { 0x85, 0x5e, 0x
 #endif // !__INoMarshal_INTERFACE_DEFINED__
 
 // NOTE: In the following vtables, QI points to the same function
-//       this is because, during marshalling between COM & COM+ we want a fast way to
+//       this is because, during marshalling between COM & CLR we want a fast way to
 //       check if a COM IP is a tear-off that we created.
 
 // array of vtable pointers for std. interfaces such as IProvideClassInfo etc.
@@ -1435,7 +1435,7 @@ InternalDispatchImpl_Invoke
 
 
 //------------------------------------------------------------------------------------------
-//      IDispatchEx methods for COM+ objects
+//      IDispatchEx methods for CLR objects
 
 // IDispatchEx::GetTypeInfoCount
 HRESULT __stdcall   DispatchEx_GetTypeInfoCount(IDispatch* pDisp, unsigned int *pctinfo)
@@ -2112,7 +2112,7 @@ HRESULT GetSpecialMarshaler(IMarshal* pMarsh, SimpleComCallWrapper* pSimpleWrap,
 
 
 //------------------------------------------------------------------------------------------
-//      IMarshal methods for COM+ objects
+//      IMarshal methods for CLR objects
 
 //------------------------------------------------------------------------------------------
 
@@ -2285,7 +2285,7 @@ HRESULT __stdcall Marshal_DisconnectObject (IMarshal* pMarsh, ULONG dwReserved)
 }
 
 //------------------------------------------------------------------------------------------
-//      IConnectionPointContainer methods for COM+ objects
+//      IConnectionPointContainer methods for CLR objects
 //------------------------------------------------------------------------------------------
 
 // Enumerate all the connection points supported by the component.
@@ -2356,7 +2356,7 @@ HRESULT __stdcall ConnectionPointContainer_FindConnectionPoint(IUnknown* pUnk,
 
 
 //------------------------------------------------------------------------------------------
-//      IObjectSafety methods for COM+ objects
+//      IObjectSafety methods for CLR objects
 //------------------------------------------------------------------------------------------
 
 HRESULT __stdcall ObjectSafety_GetInterfaceSafetyOptions(IUnknown* pUnk,
@@ -2379,7 +2379,7 @@ HRESULT __stdcall ObjectSafety_GetInterfaceSafetyOptions(IUnknown* pUnk,
     if (pdwSupportedOptions == NULL || pdwEnabledOptions == NULL)
         return E_POINTER;
 
-    // Make sure the COM+ object implements the requested interface.
+    // Make sure the CLR object implements the requested interface.
     SafeComHolderPreemp<IUnknown> pItf;
     HRESULT hr = SafeQueryInterfacePreemp(pUnk, riid, (IUnknown**)&pItf);
     LogInteropQI(pUnk, riid, hr, "QI to for riid in GetInterfaceSafetyOptions");
@@ -2414,7 +2414,7 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions(IUnknown* pUnk,
     }
     CONTRACTL_END;
 
-    // Make sure the COM+ object implements the requested interface.
+    // Make sure the CLR object implements the requested interface.
     SafeComHolderPreemp<IUnknown> pItf;
     HRESULT hr = SafeQueryInterfacePreemp(pUnk, riid, (IUnknown**)&pItf);
     LogInteropQI(pUnk, riid, hr, "QI to for riid in SetInterfaceSafetyOptions");

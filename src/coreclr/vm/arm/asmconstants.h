@@ -29,19 +29,17 @@
 #define DBG_FRE(dbg,fre) fre
 #endif
 
+#define FRAMETYPE_InlinedCallFrame 1
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::InlinedCallFrame)
+
 #define DynamicHelperFrameFlags_Default     0
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
+#define ThisPtrRetBufPrecodeData__Target      0x00
+ASMCONSTANTS_C_ASSERT(ThisPtrRetBufPrecodeData__Target == offsetof(ThisPtrRetBufPrecodeData, Target));
+
 #define REDIRECTSTUB_SP_OFFSET_CONTEXT 0
-
-#define                  CORINFO_NullReferenceException_ASM 0
-ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
-                      == CORINFO_NullReferenceException);
-
-#define                  CORINFO_IndexOutOfRangeException_ASM 3
-ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
-                      == CORINFO_IndexOutOfRangeException);
 
 
 // Offset of the array containing the address of captured registers in MachState
@@ -63,12 +61,6 @@ ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, capture
 
 #define LazyMachState_captureIp     (LazyMachState_captureSp+4)
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, captureIp))
-
-#define DelegateObject___methodPtr      0x0c
-ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtr == offsetof(DelegateObject, _methodPtr));
-
-#define DelegateObject___target         0x04
-ASMCONSTANTS_C_ASSERT(DelegateObject___target == offsetof(DelegateObject, _target));
 
 #define MethodTable__m_BaseSize         0x04
 ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
@@ -92,9 +84,6 @@ ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumCom
 ASMCONSTANTS_C_ASSERT(PtrArray__m_Array == offsetof(PtrArray, m_Array));
 
 #define TypeHandle_CanCast 0x1 // TypeHandle::CanCast
-
-#define SIZEOF__GSCookie              0x4
-ASMCONSTANTS_C_ASSERT(SIZEOF__GSCookie == sizeof(GSCookie));
 
 #define SIZEOF__Frame                 0x8
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
@@ -206,8 +195,8 @@ ASMCONSTANTS_C_ASSERT(FixupPrecodeData__MethodDesc == offsetof(FixupPrecodeData,
 #define FixupPrecodeData__PrecodeFixupThunk 0x08
 ASMCONSTANTS_C_ASSERT(FixupPrecodeData__PrecodeFixupThunk == offsetof(FixupPrecodeData, PrecodeFixupThunk))
 
-#define StubPrecodeData__MethodDesc 0x00
-ASMCONSTANTS_C_ASSERT(StubPrecodeData__MethodDesc == offsetof(StubPrecodeData, MethodDesc))
+#define StubPrecodeData__SecretParam 0x00
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam == offsetof(StubPrecodeData, SecretParam))
 
 #define StubPrecodeData__Target 0x04
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target == offsetof(StubPrecodeData, Target))

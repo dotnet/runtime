@@ -130,7 +130,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             {
                 return RuntimeAugments.TypeLoaderCallbacks.GetRuntimeFieldHandleForComponents(
                     DeclaringType.TypeHandle,
-                    Name);
+                    _fieldHandle);
             }
         }
 

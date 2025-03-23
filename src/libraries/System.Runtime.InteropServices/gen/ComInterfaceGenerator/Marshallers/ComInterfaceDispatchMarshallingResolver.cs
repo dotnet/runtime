@@ -21,8 +21,8 @@ namespace Microsoft.Interop
             if (info.MarshallingAttributeInfo is ComInterfaceDispatchMarshallingInfo)
             {
                 return context.Direction == MarshalDirection.UnmanagedToManaged
-                    ? ResolvedGenerator.Resolved(new Marshaller().Bind(info))
-                    : ResolvedGenerator.Resolved(KeepAliveThisMarshaller.Instance.Bind(info));
+                    ? ResolvedGenerator.Resolved(new Marshaller().Bind(info, context))
+                    : ResolvedGenerator.Resolved(KeepAliveThisMarshaller.Instance.Bind(info, context));
             }
             else
             {
@@ -37,9 +37,9 @@ namespace Microsoft.Interop
                     $"{TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}*",
                     $"{TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}*",
                     IsFunctionPointer: false);
-            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
+            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {
-                if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
+                if (context.CurrentStage != StubIdentifierContext.Stage.Unmarshal)
                 {
                     yield break;
                 }
@@ -64,8 +64,8 @@ namespace Microsoft.Interop
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;
             public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.NativeIdentifier;
-            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-                => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
+            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, out GeneratorDiagnostic? diagnostic)
+                => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, out diagnostic);
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
         }
     }

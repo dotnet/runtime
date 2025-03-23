@@ -690,8 +690,10 @@ StubCallSite::StubCallSite(TADDR siteAddrForRegisterIndirect, PCODE returnAddr)
     }
 }
 
+#ifndef UNIX_X86_ABI
 // the special return address for VSD tailcalls
 extern "C" void STDCALL JIT_TailCallReturnFromVSD();
+#endif // UNIX_X86_ABI
 
 PCODE StubCallSite::GetCallerAddress()
 {

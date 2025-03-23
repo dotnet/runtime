@@ -651,7 +651,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
 #if defined(USE_FEF)
     BOOL bPopFaultingExceptionFrame = FALSE;
-    FrameWithCookie<FaultingExceptionFrame> faultingExceptionFrame;
+    FaultingExceptionFrame faultingExceptionFrame;
 #endif // USE_FEF
     ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
 
@@ -690,11 +690,11 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
     if (fIsManagedCode &&
         fPGCDisabledOnEntry &&
         (pThread->m_pFrame == FRAME_TOP ||
-         pThread->m_pFrame->GetVTablePtr() != FaultingExceptionFrame::GetMethodFrameVPtr() ||
+         pThread->m_pFrame->GetFrameIdentifier() != FrameIdentifier::FaultingExceptionFrame ||
          (size_t)pThread->m_pFrame > (size_t)pEstablisherFrame))
     {
         // setup interrupted frame so that GC during calls to init won't collect the frames
-        // only need it for non COM+ exceptions in managed code when haven't already
+        // only need it for non CLR exceptions in managed code when haven't already
         // got one on the stack (will have one already if we have called rtlunwind because
         // the instantiation that called unwind would have installed one)
         faultingExceptionFrame.InitAndLink(pContext);
@@ -970,7 +970,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
             // both throwables with the preallocated OOM exception.
             pThread->SafeSetThrowables(pThread->LastThrownObject());
 
-            // now we've got a COM+ exception, fall through to so see if we handle it
+            // now we've got a CLR exception, fall through to so see if we handle it
 
             STRESS_LOG3(LF_EH, LL_INFO10000, "CPFH_RealFirstPassHandler: fall through ExInfo:0x%p setting m_pBottomMostHandler to 0x%p from 0x%p\n",
                         pExInfo, pEstablisherFrame, pExInfo->m_pBottomMostHandler);
@@ -978,14 +978,14 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         }
         else if (bRethrownException)
         {
-            // If it was rethrown and not COM+, will still be the last one thrown. Either we threw it last and
+            // If it was rethrown and not CLR, will still be the last one thrown. Either we threw it last and
             // stashed it here or someone else caught it and rethrew it, in which case it will still have been
             // originally stashed here.
 
             // Update the throwable from the last thrown object. Note: this may cause OOM, in which case we replace
             // both throwables with the preallocated OOM exception.
             pThread->SafeSetThrowables(pThread->LastThrownObject());
-            STRESS_LOG3(LF_EH, LL_INFO10000, "CPFH_RealFirstPassHandler: rethrow non-COM+ ExInfo:0x%p setting m_pBottomMostHandler to 0x%p from 0x%p\n",
+            STRESS_LOG3(LF_EH, LL_INFO10000, "CPFH_RealFirstPassHandler: rethrow non-CLR ExInfo:0x%p setting m_pBottomMostHandler to 0x%p from 0x%p\n",
                         pExInfo, pEstablisherFrame, pExInfo->m_pBottomMostHandler);
             pExInfo->m_pBottomMostHandler = pEstablisherFrame;
         }
@@ -1466,7 +1466,7 @@ CPFH_UnwindHandler(EXCEPTION_RECORD *pExceptionRecord,
             if (pHandler->m_pCurrentExInfo->m_pBottomMostHandler <= pHandler->m_pCurrentHandler)
             {
                 // We're unwinding -- the bottom most handler is potentially off top-of-stack now.  If
-                // it is, change it to the next COM+ frame.  (This one is not good, as it's about to
+                // it is, change it to the next CLR frame.  (This one is not good, as it's about to
                 // disappear.)
                 EXCEPTION_REGISTRATION_RECORD *pNextBottomMost = GetNextCOMPlusSEHRecord(pHandler->m_pCurrentHandler);
 
@@ -1499,14 +1499,14 @@ CPFH_UnwindHandler(EXCEPTION_RECORD *pExceptionRecord,
     CPFH_UnwindFrames1(pThread, pEstablisherFrame, exceptionCode);
 
     // We're unwinding -- the bottom most handler is potentially off top-of-stack now.  If
-    // it is, change it to the next COM+ frame.  (This one is not good, as it's about to
+    // it is, change it to the next CLR frame.  (This one is not good, as it's about to
     // disappear.)
     if (pExInfo->m_pBottomMostHandler &&
         pExInfo->m_pBottomMostHandler <= pEstablisherFrame)
     {
         EXCEPTION_REGISTRATION_RECORD *pNextBottomMost = GetNextCOMPlusSEHRecord(pEstablisherFrame);
 
-        // If there is no previous COM+ SEH handler, GetNextCOMPlusSEHRecord() will return -1.  Much later, we will dereference that and AV.
+        // If there is no previous CLR SEH handler, GetNextCOMPlusSEHRecord() will return -1.  Much later, we will dereference that and AV.
         _ASSERTE (pNextBottomMost != EXCEPTION_CHAIN_END);
 
         STRESS_LOG3(LF_EH, LL_INFO10000, "CPFH_UnwindHandler: setting ExInfo:0x%p m_pBottomMostHandler from 0x%p to 0x%p\n",
@@ -2131,8 +2131,8 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     #else
     #define METHODNAME(pFunc) "<n/a>"
     #endif
-    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusThrowCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameVtable = %pV\n",
-        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
+    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusThrowCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameIdentifier = %s\n",
+        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
     #undef METHODNAME
 
     Thread *pThread = GetThread();
@@ -2167,7 +2167,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         if (pData->pPrevExceptionRecord) {
             // FCALLS have an extra SEH record in debug because of the desctructor
             // associated with ForbidGC checking.  This is benign, so just ignore it.
-            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame || pFrame->GetVTablePtr() == HelperMethodFrame::GetMethodFrameVPtr());
+            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame || pFrame->GetFrameIdentifier() == FrameIdentifier::HelperMethodFrame);
             if (pCf->IsFrameless()) _ASSERTE((ULONG_PTR)pData->pPrevExceptionRecord <= GetRegdisplaySP(pCf->GetRegisterSet()));
         }
     }
@@ -2539,8 +2539,8 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
     #else
     #define METHODNAME(pFunc) "<n/a>"
     #endif
-    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusUnwindCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameVtable = %pV\n",
-        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
+    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusUnwindCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameIdentifier = %s\n",
+        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
     #undef METHODNAME
 
     if (pFrame && pData->pTopFrame == pFrame)
@@ -2668,7 +2668,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
             // Make the filter as done. See comment in CallJitEHFilter
             // on why we have to do it here.
             Frame* pFilterFrame = pThread->GetFrame();
-            _ASSERTE(pFilterFrame->GetVTablePtr() == ExceptionFilterFrame::GetMethodFrameVPtr());
+            _ASSERTE(pFilterFrame->GetFrameIdentifier() == FrameIdentifier::ExceptionFilterFrame);
             ((ExceptionFilterFrame*)pFilterFrame)->SetFilterDone();
 
             // Inform the profiler that we're leaving, and what pass we're on
@@ -3115,7 +3115,7 @@ int CallJitEHFilter(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHCla
     // GC holes. The stack would be in inconsistent state when we trigger gc just before
     // returning from UnwindFrames.
 
-    FrameWithCookie<ExceptionFilterFrame> exceptionFilterFrame(pShadowSP);
+    ExceptionFilterFrame exceptionFilterFrame(pShadowSP);
 
     ETW::ExceptionLog::ExceptionFilterBegin(pCf->GetCodeInfo()->GetMethodDesc(), (PVOID)pCf->GetCodeInfo()->GetStartAddress());
 

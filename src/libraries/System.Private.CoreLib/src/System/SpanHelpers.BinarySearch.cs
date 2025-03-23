@@ -11,7 +11,7 @@ namespace System
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparable>(
-            this ReadOnlySpan<T> span, TComparable comparable)
+            ReadOnlySpan<T> span, TComparable comparable)
             where TComparable : IComparable<T>, allows ref struct
         {
             if (comparable == null)

@@ -37,6 +37,9 @@ static bool runtime_initialized = false;
 
 #endif
 
+extern int mono_jit_parse_options (int argc, char * argv[]);
+extern int mono_wasm_get_debug_level (void);
+
 int initialize_runtime()
 {
 #if defined(WASM_LIBRARY_MODE)
@@ -50,7 +53,7 @@ int initialize_runtime()
 #ifndef WASM_SINGLE_FILE
 	mono_set_assemblies_path("managed");
 #endif
-	mono_wasm_load_runtime("", 0);
+	mono_wasm_load_runtime (mono_wasm_get_debug_level ());
 
 #ifdef WASI_AFTER_RUNTIME_LOADED_CALLS
 	// This is supplied from the MSBuild itemgroup @(WasiAfterRuntimeLoaded)
@@ -61,10 +64,16 @@ int initialize_runtime()
 
 #ifndef WASM_LIBRARY_MODE
 int main(int argc, char * argv[]) {
+	int arg_ofs;
+#ifdef WASM_SINGLE_FILE
+	arg_ofs = mono_jit_parse_options (argc - 1 , &argv[1]);
+#else
+	arg_ofs = 1 + mono_jit_parse_options (argc - 2, &argv[2]);
+#endif
+
     int initval = initialize_runtime();
     if (initval != 0)
         return initval;
-	int arg_ofs = 0;
 #ifdef WASM_SINGLE_FILE
 	/*
 	 * For single-file bundle, running with wasmtime:
@@ -88,7 +97,6 @@ int main(int argc, char * argv[]) {
 	 */
 
 	const char *assembly_name = argv[1];
-	arg_ofs = 1;
 	MonoAssembly* assembly = mono_wasm_assembly_load (assembly_name);
 	if (!assembly) {
 		printf("Could not load assembly %s\n", assembly_name);
@@ -113,6 +121,7 @@ int main(int argc, char * argv[]) {
 	}
 	ret = ret < 0 ? -ret : ret;
 
+	// until WASI can work with unix exit code https://github.com/WebAssembly/wasi-cli/pull/44
 	char* dotnet_wasi_print_exit_code = monoeg_g_getenv ("DOTNET_WASI_PRINT_EXIT_CODE");
 	if (ret != 0 && dotnet_wasi_print_exit_code && strcmp(dotnet_wasi_print_exit_code, "1") == 0)
 	{

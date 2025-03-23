@@ -23,7 +23,6 @@ Revision History:
 #include "pal/critsect.h"
 #include "pal/dbgmsg.h"
 #include "pal/environ.h"
-#include "pal/malloc.hpp"
 
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>

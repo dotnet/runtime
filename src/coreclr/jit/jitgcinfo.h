@@ -162,7 +162,13 @@ public:
                 regMaskSmall rpdDel; // regptr bitset being removed
             } rpdCompiler;
 
-            unsigned short rpdPtrArg; // arg offset or popped arg count
+            struct
+            {
+                // Registers after call containing GC/byref (index 0 = REG_INT_FIRST)
+                unsigned int   rpdCallGCrefRegs;
+                unsigned int   rpdCallByrefRegs;
+                unsigned short rpdPtrArg; // arg offset or popped arg count
+            };
         };
 
 #ifndef JIT32_GCENCODER
@@ -182,11 +188,8 @@ public:
             return (GCtype)rpdGCtype;
         }
 
-        unsigned short rpdIsThis : 1;                       // is it the 'this' pointer
-        unsigned short rpdCall   : 1;                       // is this a true call site?
-        unsigned short           : 1;                       // Padding bit, so next two start on a byte boundary
-        unsigned short rpdCallGCrefRegs : CNT_CALL_GC_REGS; // Callee-saved and return registers containing GC pointers.
-        unsigned short rpdCallByrefRegs : CNT_CALL_GC_REGS; // Callee-saved and return registers containing byrefs.
+        unsigned short rpdIsThis : 1; // is it the 'this' pointer
+        unsigned short rpdCall   : 1; // is this a true call site?
 
 #ifndef JIT32_GCENCODER
         bool rpdIsCallInstr()

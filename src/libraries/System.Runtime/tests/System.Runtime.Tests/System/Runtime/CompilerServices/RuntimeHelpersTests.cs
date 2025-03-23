@@ -391,10 +391,10 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(a, RuntimeHelpers.GetSubArray(a, range));
 
             range = new Range(Index.FromStart(1), Index.FromEnd(5));
-            Assert.Equal(new int [] { 2, 3, 4, 5}, RuntimeHelpers.GetSubArray(a, range));
+            Assert.Equal(new int[] { 2, 3, 4, 5 }, RuntimeHelpers.GetSubArray(a, range));
 
             range = new Range(Index.FromStart(0), Index.FromStart(a.Length + 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => { int [] array = RuntimeHelpers.GetSubArray(a, range); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { int[] array = RuntimeHelpers.GetSubArray(a, range); });
         }
 
         [Fact]
@@ -454,6 +454,11 @@ namespace System.Runtime.CompilerServices.Tests
         private ref struct RefStructWithRef
         {
             public ref int a;
+
+            internal RefStructWithRef(ref int aVal)
+            {
+                a = ref aVal;
+            }
         }
 
         private ref struct RefStructWithNestedRef
@@ -499,7 +504,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(double).TypeHandle));
             Assert.Equal(3, RuntimeHelpers.SizeOf(typeof(Byte3).TypeHandle));
             Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(void*).TypeHandle));
-            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate* <void>).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate*<void>).TypeHandle));
             Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(int).MakeByRefType().TypeHandle));
             Assert.Throws<ArgumentNullException>(() => RuntimeHelpers.SizeOf(default));
             Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(List<>).TypeHandle));

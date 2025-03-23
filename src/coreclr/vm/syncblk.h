@@ -435,7 +435,7 @@ private:
     LockState m_lockState;
 
     ULONG           m_Recursion;
-    PTR_Thread      m_HoldingThread;
+    DWORD           m_HoldingThreadId;
     SIZE_T          m_HoldingOSThreadId;
 
     LONG            m_TransientPrecious;
@@ -455,10 +455,7 @@ private:
     // Only SyncBlocks can create AwareLocks.  Hence this private constructor.
     AwareLock(DWORD indx)
         : m_Recursion(0),
-#ifndef DACCESS_COMPILE
-// PreFAST has trouble with initializing a NULL PTR_Thread.
-          m_HoldingThread(NULL),
-#endif // DACCESS_COMPILE
+          m_HoldingThreadId(0),
           m_HoldingOSThreadId(0),
           m_TransientPrecious(0),
           m_dwSyncIndex(indx),
@@ -517,10 +514,10 @@ public:
         return m_Recursion;
     }
 
-    PTR_Thread GetHoldingThread() const
+    DWORD GetHoldingThreadId() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_HoldingThread;
+        return m_HoldingThreadId;
     }
 
 private:
@@ -529,13 +526,13 @@ private:
     bool ShouldStopPreemptingWaiters() const;
 
 private: // friend access is required for this unsafe function
-    void InitializeToLockedWithNoWaiters(ULONG recursionLevel, PTR_Thread holdingThread, SIZE_T holdingOSThreadId)
+    void InitializeToLockedWithNoWaiters(ULONG recursionLevel, DWORD holdingThreadId, SIZE_T holdingOSThreadId)
     {
         WRAPPER_NO_CONTRACT;
 
         m_lockState.InitializeToLockedWithNoWaiters();
         m_Recursion = recursionLevel;
-        m_HoldingThread = holdingThread;
+        m_HoldingThreadId = holdingThreadId;
         m_HoldingOSThreadId = holdingOSThreadId;
     }
 
@@ -572,6 +569,7 @@ public:
     void    AllocLockSemEvent();
     LONG    LeaveCompletely();
     BOOL    OwnedByCurrentThread();
+    PTR_Thread GetHoldingThread();
 
     void    IncrementTransientPrecious()
     {
@@ -594,14 +592,6 @@ public:
     // Provide access to the object associated with this awarelock, so client can
     // protect it.
     inline OBJECTREF GetOwningObject();
-
-    // Provide access to the Thread object that owns this awarelock.  This is used
-    // to provide a host to find out owner of a lock.
-    inline PTR_Thread GetOwningThread()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_HoldingThread;
-    }
 
     static int GetOffsetOfHoldingOSThreadId()
     {
@@ -970,7 +960,7 @@ private:
     BYTE m_taggedAlloc[2 * sizeof(void*)];
 #endif // FEATURE_OBJCMARSHAL
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<InteropSyncBlockInfo>;
 };
 
 template<>
@@ -1270,10 +1260,10 @@ class SyncBlock
     // This should ONLY be called when initializing a SyncBlock (i.e. ONLY from
     // ObjHeader::GetSyncBlock()), otherwise we'll have a race condition.
     // </NOTE>
-    void InitState(ULONG recursionLevel, PTR_Thread holdingThread, SIZE_T holdingOSThreadId)
+    void InitState(ULONG recursionLevel, DWORD holdingThreadId, SIZE_T holdingOSThreadId)
     {
         WRAPPER_NO_CONTRACT;
-        m_Monitor.InitializeToLockedWithNoWaiters(recursionLevel, holdingThread, holdingOSThreadId);
+        m_Monitor.InitializeToLockedWithNoWaiters(recursionLevel, holdingThreadId, holdingOSThreadId);
     }
 
 #if defined(ENABLE_CONTRACTS_IMPL)
@@ -1286,7 +1276,7 @@ class SyncBlock
     }
 #endif // defined(ENABLE_CONTRACTS_IMPL)
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<SyncBlock>;
 };
 
 template<>
@@ -1674,7 +1664,7 @@ class ObjHeader
 
     BOOL Validate (BOOL bVerifySyncBlkIndex = TRUE);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ObjHeader>;
 };
 
 template<>

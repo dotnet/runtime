@@ -221,8 +221,7 @@ internal sealed class SchemaDef
             members: new MemberDef[] {
                 new MemberDef(name: "PublicKey", value: "0x1", comment: "The assembly reference holds the full (unhashed) public key."),
                 new MemberDef(name: "Retargetable", value: "0x100", comment: "The implementation of this assembly used at runtime is not expected to match the version seen at compile time."),
-                new MemberDef(name: "DisableJITcompileOptimizer", value: "0x4000", comment: "Reserved."),
-                new MemberDef(name: "EnableJITcompileTracking", value: "0x8000", comment: "Reserved."),
+                new MemberDef(name: "ContentTypeMask", value: "0x00000e00", comment: "Content type mask. Masked bits correspond to values of System.Reflection.AssemblyContentType"),
             }
         ),
         // AssemblyHashAlgorithm - as defined in ECMA

@@ -47,7 +47,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
             var ctx = ToManagedContext;
+#if FEATURE_WASM_MANAGED_THREADS
             lock (ctx)
+#endif
             {
                 PromiseHolder holder = ctx.GetPromiseHolder(slot.GCHandle);
                 TaskCompletionSource tcs = new TaskCompletionSource(holder, TaskCreationOptions.RunContinuationsAsynchronously);
@@ -105,7 +107,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
             var ctx = ToManagedContext;
+#if FEATURE_WASM_MANAGED_THREADS
             lock (ctx)
+#endif
             {
                 var holder = ctx.GetPromiseHolder(slot.GCHandle);
                 TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder, TaskCreationOptions.RunContinuationsAsynchronously);
@@ -134,7 +138,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     else
                     {
                         marshaler(ref arg_3, out T result);
-                        if(!tcs.TrySetResult(result))
+                        if (!tcs.TrySetResult(result))
                         {
                             Environment.FailFast("Failed to set result to TaskCompletionSource (marshaler type is none)");
                         }

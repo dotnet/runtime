@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -117,6 +120,42 @@ namespace System.Numerics.Tests
             }
         }
 
+        [Fact]
+        public void Issue109669()
+        {
+            // Operations on numbers whose result is of the form 0xFFFFFFFF 00000000 ... 00000000
+            // in two's complement.
+
+            Assert.Equal(-4294967296, new BigInteger(-4294967296) & new BigInteger(-1919810));
+            Assert.Equal(-4294967296, new BigInteger(-4042322161) & new BigInteger(-252645136));
+            Assert.Equal(-4294967296, new BigInteger(-8589934592) | new BigInteger(-21474836480));
+
+            BigInteger a = new BigInteger(MemoryMarshal.AsBytes([uint.MaxValue, 0u, 0u]), isBigEndian: true);
+            Assert.Equal(a, a & a);
+            Assert.Equal(a, a | a);
+            Assert.Equal(a, a ^ 0);
+        }
+
+        [Fact]
+        public static void RunAndTestsForSampleSet1()
+        {
+            var s = SampleGeneration.EnumerateSequence(UInt32Samples.Set1, 2);
+            var t = SampleGeneration.EnumerateSequence(UInt32Samples.Set1, 2);
+
+            foreach (var i in s)
+            {
+                foreach (var j in t)
+                {
+                    var a = MemoryMarshal.AsBytes(i.Span);
+                    var b = MemoryMarshal.AsBytes(j.Span);
+
+                    VerifyAndString(Print(a) + Print(b) + "b&");
+
+                    VerifyAndString(Print(b) + Print(a) + "b&");
+                }
+            }
+        }
+
         private static void VerifyAndString(string opstring)
         {
             StackCalc sc = new StackCalc(opstring);
@@ -136,6 +175,11 @@ namespace System.Numerics.Tests
         }
 
         private static string Print(byte[] bytes)
+        {
+            return MyBigIntImp.Print(bytes);
+        }
+
+        private static string Print(ReadOnlySpan<byte> bytes)
         {
             return MyBigIntImp.Print(bytes);
         }

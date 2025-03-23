@@ -47,20 +47,6 @@ namespace System.Net.ServerSentEvents.Tests
             Assert.Throws<InvalidOperationException>(() => e.MoveNext());
         }
 
-        [Fact]
-        public void SseItem_Roundtrips()
-        {
-            SseItem<string> item;
-
-            item = new SseItem<string>();
-            Assert.Null(item.EventType);
-            Assert.Null(item.Data);
-
-            item = new SseItem<string>("some data", "eventType");
-            Assert.Equal("eventType", item.EventType);
-            Assert.Equal("some data", item.Data);
-        }
-
         [Theory]
         [MemberData(nameof(NewlineTrickleAsyncData))]
         public async Task Parse_Empty_NoItems(string newline, bool trickle, bool useAsync)
@@ -135,9 +121,9 @@ namespace System.Net.ServerSentEvents.Tests
             Assert.Equal(stream.Length, stream.Position);
 
             Assert.Equal(3, items.Count);
-            AssertSseItemEqual(new SseItem<string>("1", "A"), items[0]);
-            AssertSseItemEqual(new SseItem<string>("4", "B"), items[1]);
-            AssertSseItemEqual(new SseItem<string>("7", "C"), items[2]);
+            AssertSseItemEqual(new SseItem<string>("1", "A") { EventId = "2", ReconnectionInterval = TimeSpan.FromMilliseconds(300) }, items[0]);
+            AssertSseItemEqual(new SseItem<string>("4", "B") { EventId = "5", ReconnectionInterval = TimeSpan.FromMilliseconds(600) }, items[1]);
+            AssertSseItemEqual(new SseItem<string>("7", "C") { EventId = "8", ReconnectionInterval = TimeSpan.FromMilliseconds(900) }, items[2]);
         }
 
         [Theory]
@@ -231,11 +217,11 @@ namespace System.Net.ServerSentEvents.Tests
                 using IEnumerator<SseItem<string>> e = parser.Enumerate().GetEnumerator();
 
                 Assert.True(e.MoveNext());
-                AssertSseItemEqual(new SseItem<string>("first event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("first event", "message") { EventId = "1" }, e.Current);
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(e.MoveNext());
-                AssertSseItemEqual(new SseItem<string>("second event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("second event", "message") { EventId = "" }, e.Current);
                 Assert.Equal(string.Empty, parser.LastEventId);
 
                 Assert.True(e.MoveNext());
@@ -249,11 +235,11 @@ namespace System.Net.ServerSentEvents.Tests
                 await using IAsyncEnumerator<SseItem<string>> e = parser.EnumerateAsync().GetAsyncEnumerator();
 
                 Assert.True(await e.MoveNextAsync());
-                AssertSseItemEqual(new SseItem<string>("first event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("first event", "message") { EventId = "1" }, e.Current);
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(await e.MoveNextAsync());
-                AssertSseItemEqual(new SseItem<string>("second event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("second event", "message") { EventId = "" }, e.Current);
                 Assert.Equal(string.Empty, parser.LastEventId);
 
                 Assert.True(await e.MoveNextAsync());
@@ -287,7 +273,7 @@ namespace System.Net.ServerSentEvents.Tests
                 using IEnumerator<SseItem<string>> e = parser.Enumerate().GetEnumerator();
 
                 Assert.True(e.MoveNext());
-                AssertSseItemEqual(new SseItem<string>("first event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("first event", "message") { EventId = "1" }, e.Current);
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(e.MoveNext());
@@ -295,7 +281,7 @@ namespace System.Net.ServerSentEvents.Tests
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(e.MoveNext());
-                AssertSseItemEqual(new SseItem<string>(" third event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>(" third event", "message") { EventId = "42" }, e.Current);
                 Assert.Equal("42", parser.LastEventId);
             }
             else
@@ -305,7 +291,7 @@ namespace System.Net.ServerSentEvents.Tests
                 await using IAsyncEnumerator<SseItem<string>> e = parser.EnumerateAsync().GetAsyncEnumerator();
 
                 Assert.True(await e.MoveNextAsync());
-                AssertSseItemEqual(new SseItem<string>("first event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("first event", "message") { EventId = "1" }, e.Current);
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(await e.MoveNextAsync());
@@ -313,7 +299,7 @@ namespace System.Net.ServerSentEvents.Tests
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(await e.MoveNextAsync());
-                AssertSseItemEqual(new SseItem<string>(" third event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>(" third event", "message") { EventId = "42" }, e.Current);
                 Assert.Equal("42", parser.LastEventId);
             }
         }
@@ -444,20 +430,22 @@ namespace System.Net.ServerSentEvents.Tests
                 Assert.Equal(Timeout.InfiniteTimeSpan, parser.ReconnectionInterval);
 
                 Assert.True(e.MoveNext());
-                AssertSseItemEqual(new SseItem<string>("second event", "message"), e.Current);
-                Assert.Equal(TimeSpan.FromMilliseconds(42), parser.ReconnectionInterval);
+                TimeSpan firstRetry = TimeSpan.FromMilliseconds(42);
+                AssertSseItemEqual(new SseItem<string>("second event", "message") { ReconnectionInterval = firstRetry}, e.Current);
+                Assert.Equal(firstRetry, parser.ReconnectionInterval);
 
                 Assert.True(e.MoveNext());
-                AssertSseItemEqual(new SseItem<string>(" third event", "message"), e.Current);
-                Assert.Equal(TimeSpan.FromMilliseconds(12345678910), parser.ReconnectionInterval);
+                TimeSpan secondRetry = TimeSpan.FromMilliseconds(12345678910);
+                AssertSseItemEqual(new SseItem<string>(" third event", "message") { ReconnectionInterval = secondRetry }, e.Current);
+                Assert.Equal(secondRetry, parser.ReconnectionInterval);
 
                 Assert.True(e.MoveNext());
                 AssertSseItemEqual(new SseItem<string>("fourth event", "message"), e.Current);
-                Assert.Equal(TimeSpan.FromMilliseconds(12345678910), parser.ReconnectionInterval);
+                Assert.Equal(secondRetry, parser.ReconnectionInterval);
 
                 Assert.True(e.MoveNext());
                 AssertSseItemEqual(new SseItem<string>("fifth event", "message"), e.Current);
-                Assert.Equal(TimeSpan.FromMilliseconds(12345678910), parser.ReconnectionInterval);
+                Assert.Equal(secondRetry, parser.ReconnectionInterval);
             }
             else
             {
@@ -470,21 +458,57 @@ namespace System.Net.ServerSentEvents.Tests
                 AssertSseItemEqual(new SseItem<string>("first event", "message"), e.Current);
 
                 Assert.True(await e.MoveNextAsync());
-                AssertSseItemEqual(new SseItem<string>("second event", "message"), e.Current);
-                Assert.Equal(TimeSpan.FromMilliseconds(42), parser.ReconnectionInterval);
+                TimeSpan firstRetry = TimeSpan.FromMilliseconds(42);
+                AssertSseItemEqual(new SseItem<string>("second event", "message") { ReconnectionInterval = firstRetry }, e.Current);
+                Assert.Equal(firstRetry, parser.ReconnectionInterval);
 
                 Assert.True(await e.MoveNextAsync());
-                AssertSseItemEqual(new SseItem<string>(" third event", "message"), e.Current);
-                Assert.Equal(TimeSpan.FromMilliseconds(12345678910), parser.ReconnectionInterval);
+                TimeSpan secondRetry = TimeSpan.FromMilliseconds(12345678910);
+                AssertSseItemEqual(new SseItem<string>(" third event", "message") { ReconnectionInterval = secondRetry }, e.Current);
+                Assert.Equal(secondRetry, parser.ReconnectionInterval);
 
                 Assert.True(await e.MoveNextAsync());
                 AssertSseItemEqual(new SseItem<string>("fourth event", "message"), e.Current);
-                Assert.Equal(TimeSpan.FromMilliseconds(12345678910), parser.ReconnectionInterval);
+                Assert.Equal(secondRetry, parser.ReconnectionInterval);
 
                 Assert.True(await e.MoveNextAsync());
                 AssertSseItemEqual(new SseItem<string>("fifth event", "message"), e.Current);
-                Assert.Equal(TimeSpan.FromMilliseconds(12345678910), parser.ReconnectionInterval);
+                Assert.Equal(secondRetry, parser.ReconnectionInterval);
             }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(922337203685477)] // TimeSpan.MaxValue.TotalMilliseconds
+        [InlineData(922337203685476)]
+        public async Task Retry_ValidRetryField_IsReturned(long retryValue)
+        {
+            // Workaround for TimeSpan.FromMillisecond not being able to roundtrip TimeSpan.MaxValue
+            TimeSpan expectedInterval = retryValue == TimeSpan.MaxValue.TotalMilliseconds ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(retryValue);
+            using Stream stream = GetStream($"data: test\nretry: {retryValue}\n\n", trickle: false);
+
+            List<SseItem<string>> items = await ReadAllEventsAsync(stream);
+
+            Assert.Equal(1, items.Count);
+            Assert.Equal(expectedInterval, items[0].ReconnectionInterval);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("-1")]
+        [InlineData("-922337203685477")] // TimeSpan.MinValue.TotalMilliseconds
+        [InlineData("922337203685478")] // TimeSpan.MaxValue.TotalMilliseconds + 1
+        [InlineData("9223372036854775807")] // long.MaxValue
+        [InlineData("invalidmilliseconds")]
+        public async Task Retry_InvalidRetryField_IsIgnored(string retryValue)
+        {
+            using Stream stream = GetStream($"data: test\nretry: {retryValue}\n\n", trickle: false);
+
+            List<SseItem<string>> items = await ReadAllEventsAsync(stream);
+
+            Assert.Equal(1, items.Count);
+            Assert.Null(items[0].ReconnectionInterval);
         }
 
         [Theory]
@@ -879,14 +903,9 @@ namespace System.Net.ServerSentEvents.Tests
         private static void AssertSseItemEqual<T>(SseItem<T> left, SseItem<T> right)
         {
             Assert.Equal(left.EventType, right.EventType);
-            if (left.Data is string leftData && right.Data is string rightData)
-            {
-                Assert.Equal($"{leftData.Length} {leftData}", $"{rightData.Length} {rightData}");
-            }
-            else
-            {
-                Assert.Equal(left.Data, right.Data);
-            }
+            Assert.Equal(left.EventId, right.EventId);
+            Assert.Equal(left.ReconnectionInterval, right.ReconnectionInterval);
+            Assert.Equal(left.Data, right.Data);
         }
 
         public static IEnumerable<object[]> NewlineTrickleAsyncData() =>

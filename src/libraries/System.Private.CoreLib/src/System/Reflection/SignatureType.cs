@@ -135,7 +135,7 @@ namespace System.Reflection
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public sealed override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
@@ -147,7 +147,7 @@ namespace System.Reflection
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected sealed override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public sealed override MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter? filter, object? filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
         [DynamicallyAccessedMembers(GetAllMembers)]
@@ -188,7 +188,7 @@ namespace System.Reflection
         public sealed override Type[] FindInterfaces(TypeFilter filter, object? filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsContextfulImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override bool IsEnum => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public abstract override bool IsEnum { get; }
         public sealed override bool IsEquivalentTo([NotNullWhen(true)] Type? other) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsInstanceOfType([NotNullWhen(true)] object? o) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsMarshalByRefImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
@@ -198,7 +198,7 @@ namespace System.Reflection
         [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public sealed override bool IsSerializable => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsSubclassOf(Type c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        protected sealed override bool IsValueTypeImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        protected abstract override bool IsValueTypeImpl();
 
         public sealed override StructLayoutAttribute StructLayoutAttribute => throw new NotSupportedException(SR.NotSupported_SignatureType);
 

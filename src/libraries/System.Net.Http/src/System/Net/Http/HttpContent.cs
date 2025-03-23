@@ -16,7 +16,7 @@ namespace System.Net.Http
     public abstract class HttpContent : IDisposable
     {
         private HttpContentHeaders? _headers;
-        private MemoryStream? _bufferedContent;
+        private LimitArrayPoolWriteStream? _bufferedContent;
         private object? _contentReadStream; // Stream or Task<Stream>
         private bool _disposed;
         private bool _canCalculateLength;
@@ -25,60 +25,32 @@ namespace System.Net.Http
         internal static readonly Encoding DefaultStringEncoding = Encoding.UTF8;
 
         private const int UTF8CodePage = 65001;
-        private const int UTF8PreambleLength = 3;
-        private const byte UTF8PreambleByte0 = 0xEF;
-        private const byte UTF8PreambleByte1 = 0xBB;
-        private const byte UTF8PreambleByte2 = 0xBF;
-        private const int UTF8PreambleFirst2Bytes = 0xEFBB;
-
         private const int UTF32CodePage = 12000;
-        private const int UTF32PreambleLength = 4;
-        private const byte UTF32PreambleByte0 = 0xFF;
-        private const byte UTF32PreambleByte1 = 0xFE;
-        private const byte UTF32PreambleByte2 = 0x00;
-        private const byte UTF32PreambleByte3 = 0x00;
-        private const int UTF32OrUnicodePreambleFirst2Bytes = 0xFFFE;
-
         private const int UnicodeCodePage = 1200;
-        private const int UnicodePreambleLength = 2;
-        private const byte UnicodePreambleByte0 = 0xFF;
-        private const byte UnicodePreambleByte1 = 0xFE;
-
         private const int BigEndianUnicodeCodePage = 1201;
-        private const int BigEndianUnicodePreambleLength = 2;
-        private const byte BigEndianUnicodePreambleByte0 = 0xFE;
-        private const byte BigEndianUnicodePreambleByte1 = 0xFF;
-        private const int BigEndianUnicodePreambleFirst2Bytes = 0xFEFF;
+
+        private static ReadOnlySpan<byte> UTF8Preamble => [0xEF, 0xBB, 0xBF];
+        private static ReadOnlySpan<byte> UTF32Preamble => [0xFF, 0xFE, 0x00, 0x00];
+        private static ReadOnlySpan<byte> UnicodePreamble => [0xFF, 0xFE];
+        private static ReadOnlySpan<byte> BigEndianUnicodePreamble => [0xFE, 0xFF];
 
 #if DEBUG
         static HttpContent()
         {
             // Ensure the encoding constants used in this class match the actual data from the Encoding class
-            AssertEncodingConstants(Encoding.UTF8, UTF8CodePage, UTF8PreambleLength, UTF8PreambleFirst2Bytes,
-                UTF8PreambleByte0,
-                UTF8PreambleByte1,
-                UTF8PreambleByte2);
+            AssertEncodingConstants(Encoding.UTF8, UTF8CodePage, UTF8Preamble);
 
             // UTF32 not supported on Phone
-            AssertEncodingConstants(Encoding.UTF32, UTF32CodePage, UTF32PreambleLength, UTF32OrUnicodePreambleFirst2Bytes,
-                UTF32PreambleByte0,
-                UTF32PreambleByte1,
-                UTF32PreambleByte2,
-                UTF32PreambleByte3);
+            AssertEncodingConstants(Encoding.UTF32, UTF32CodePage, UTF32Preamble);
 
-            AssertEncodingConstants(Encoding.Unicode, UnicodeCodePage, UnicodePreambleLength, UTF32OrUnicodePreambleFirst2Bytes,
-                UnicodePreambleByte0,
-                UnicodePreambleByte1);
+            AssertEncodingConstants(Encoding.Unicode, UnicodeCodePage, UnicodePreamble);
 
-            AssertEncodingConstants(Encoding.BigEndianUnicode, BigEndianUnicodeCodePage, BigEndianUnicodePreambleLength, BigEndianUnicodePreambleFirst2Bytes,
-                BigEndianUnicodePreambleByte0,
-                BigEndianUnicodePreambleByte1);
+            AssertEncodingConstants(Encoding.BigEndianUnicode, BigEndianUnicodeCodePage, BigEndianUnicodePreamble);
         }
 
-        private static void AssertEncodingConstants(Encoding encoding, int codePage, int preambleLength, int first2Bytes, params byte[] preamble)
+        private static void AssertEncodingConstants(Encoding encoding, int codePage, ReadOnlySpan<byte> preamble)
         {
             Debug.Assert(encoding != null);
-            Debug.Assert(preamble != null);
 
             Debug.Assert(codePage == encoding.CodePage,
                 $"Encoding code page mismatch for encoding: {encoding.EncodingName}",
@@ -86,46 +58,16 @@ namespace System.Net.Http
 
             byte[] actualPreamble = encoding.GetPreamble();
 
-            Debug.Assert(preambleLength == actualPreamble.Length,
-                $"Encoding preamble length mismatch for encoding: {encoding.EncodingName}",
-                $"Expected (constant): {preambleLength}, Actual (Encoding.GetPreamble().Length): {actualPreamble.Length}");
-
-            Debug.Assert(actualPreamble.Length >= 2);
-            int actualFirst2Bytes = actualPreamble[0] << 8 | actualPreamble[1];
-
-            Debug.Assert(first2Bytes == actualFirst2Bytes,
-                $"Encoding preamble first 2 bytes mismatch for encoding: {encoding.EncodingName}",
-                $"Expected (constant): {first2Bytes}, Actual: {actualFirst2Bytes}");
-
-            Debug.Assert(preamble.Length == actualPreamble.Length,
+            Debug.Assert(preamble.SequenceEqual(actualPreamble),
                 $"Encoding preamble mismatch for encoding: {encoding.EncodingName}",
-                $"Expected (constant): {BitConverter.ToString(preamble)}, Actual (Encoding.GetPreamble()): {BitConverter.ToString(actualPreamble)}");
-
-            for (int i = 0; i < preamble.Length; i++)
-            {
-                Debug.Assert(preamble[i] == actualPreamble[i],
-                    $"Encoding preamble mismatch for encoding: {encoding.EncodingName}",
-                    $"Expected (constant): {BitConverter.ToString(preamble)}, Actual (Encoding.GetPreamble()): {BitConverter.ToString(actualPreamble)}");
-            }
+                $"Expected (constant): {BitConverter.ToString(preamble.ToArray())}, Actual (Encoding.GetPreamble()): {BitConverter.ToString(actualPreamble)}");
         }
 #endif
 
         public HttpContentHeaders Headers => _headers ??= new HttpContentHeaders(this);
 
-        private bool IsBuffered
-        {
-            get { return _bufferedContent != null; }
-        }
-
-        internal bool TryGetBuffer(out ArraySegment<byte> buffer)
-        {
-            if (_bufferedContent != null)
-            {
-                return _bufferedContent.TryGetBuffer(out buffer);
-            }
-            buffer = default;
-            return false;
-        }
+        [MemberNotNullWhen(true, nameof(_bufferedContent))]
+        private bool IsBuffered => _bufferedContent is not null;
 
         protected HttpContent()
         {
@@ -134,6 +76,12 @@ namespace System.Net.Http
 
             // We start with the assumption that we can calculate the content length.
             _canCalculateLength = true;
+        }
+
+        private MemoryStream CreateMemoryStreamFromBufferedContent()
+        {
+            Debug.Assert(IsBuffered);
+            return new MemoryStream(_bufferedContent.GetSingleBuffer(), 0, (int)_bufferedContent.Length, writable: false);
         }
 
         public Task<string> ReadAsStringAsync() =>
@@ -149,26 +97,23 @@ namespace System.Net.Http
         {
             Debug.Assert(IsBuffered);
 
-            if (_bufferedContent!.Length == 0)
+            return ReadBufferAsString(_bufferedContent, Headers);
+        }
+
+        internal static string ReadBufferAsString(LimitArrayPoolWriteStream stream, HttpContentHeaders headers)
+        {
+            if (stream.Length == 0)
             {
                 return string.Empty;
             }
 
-            ArraySegment<byte> buffer;
-            if (!TryGetBuffer(out buffer))
-            {
-                buffer = new ArraySegment<byte>(_bufferedContent.ToArray());
-            }
-
-            return ReadBufferAsString(buffer, Headers);
-        }
-
-        internal static string ReadBufferAsString(ArraySegment<byte> buffer, HttpContentHeaders headers)
-        {
             // We don't validate the Content-Encoding header: If the content was encoded, it's the caller's
             // responsibility to make sure to only call ReadAsString() on already decoded content. E.g. if the
             // Content-Encoding is 'gzip' the user should set HttpClientHandler.AutomaticDecompression to get a
             // decoded response stream.
+
+            ReadOnlySpan<byte> firstBuffer = stream.GetFirstBuffer();
+            Debug.Assert(firstBuffer.Length >= 4 || firstBuffer.Length == stream.Length);
 
             Encoding? encoding = null;
             int bomLength = -1;
@@ -194,7 +139,7 @@ namespace System.Net.Http
                     }
 
                     // Byte-order-mark (BOM) characters may be present even if a charset was specified.
-                    bomLength = GetPreambleLength(buffer, encoding);
+                    bomLength = GetPreambleLength(firstBuffer, encoding);
                 }
                 catch (ArgumentException e)
                 {
@@ -206,7 +151,7 @@ namespace System.Net.Http
             // then check for a BOM in the data to figure out the encoding.
             if (encoding == null)
             {
-                if (!TryDetectEncoding(buffer, out encoding, out bomLength))
+                if (!TryDetectEncoding(firstBuffer, out encoding, out bomLength))
                 {
                     // Use the default encoding (UTF8) if we couldn't detect one.
                     encoding = DefaultStringEncoding;
@@ -218,7 +163,21 @@ namespace System.Net.Http
             }
 
             // Drop the BOM when decoding the data.
-            return encoding.GetString(buffer.Array!, buffer.Offset + bomLength, buffer.Count - bomLength);
+
+            if (firstBuffer.Length == stream.Length)
+            {
+                return encoding.GetString(firstBuffer[bomLength..]);
+            }
+            else
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent((int)stream.Length);
+                stream.CopyToCore(buffer);
+
+                string result = encoding.GetString(buffer.AsSpan(0, (int)stream.Length)[bomLength..]);
+
+                ArrayPool<byte>.Shared.Return(buffer);
+                return result;
+            }
         }
 
         public Task<byte[]> ReadAsByteArrayAsync() =>
@@ -233,9 +192,8 @@ namespace System.Net.Http
         internal byte[] ReadBufferedContentAsByteArray()
         {
             Debug.Assert(_bufferedContent != null);
-            // The returned array is exposed out of the library, so use ToArray rather
-            // than TryGetBuffer in order to make a copy.
-            return _bufferedContent.ToArray();
+            // The returned array is exposed out of the library, so use CreateCopy rather than GetSingleBuffer.
+            return _bufferedContent.CreateCopy();
         }
 
         public Stream ReadAsStream() =>
@@ -251,8 +209,8 @@ namespace System.Net.Http
 
             if (_contentReadStream == null) // don't yet have a Stream
             {
-                Stream s = TryGetBuffer(out ArraySegment<byte> buffer) ?
-                    new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false) :
+                Stream s = IsBuffered ?
+                    CreateMemoryStreamFromBufferedContent() :
                     CreateContentReadStream(cancellationToken);
                 _contentReadStream = s;
                 return s;
@@ -281,8 +239,8 @@ namespace System.Net.Http
 
             if (_contentReadStream == null) // don't yet have a Stream
             {
-                Task<Stream> t = TryGetBuffer(out ArraySegment<byte> buffer) ?
-                    Task.FromResult<Stream>(new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false)) :
+                Task<Stream> t = IsBuffered ?
+                    Task.FromResult<Stream>(CreateMemoryStreamFromBufferedContent()) :
                     CreateContentReadStreamAsync(cancellationToken);
                 _contentReadStream = t;
                 return t;
@@ -310,8 +268,8 @@ namespace System.Net.Http
 
             if (_contentReadStream == null) // don't yet have a Stream
             {
-                Stream? s = TryGetBuffer(out ArraySegment<byte> buffer) ?
-                    new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false) :
+                Stream? s = IsBuffered ?
+                    CreateMemoryStreamFromBufferedContent() :
                     TryCreateContentReadStream();
                 _contentReadStream = s;
                 return s;
@@ -355,9 +313,9 @@ namespace System.Net.Http
             ArgumentNullException.ThrowIfNull(stream);
             try
             {
-                if (TryGetBuffer(out ArraySegment<byte> buffer))
+                if (IsBuffered)
                 {
-                    stream.Write(buffer.Array!, buffer.Offset, buffer.Count);
+                    stream.Write(_bufferedContent.GetSingleBuffer(), 0, (int)_bufferedContent.Length);
                 }
                 else
                 {
@@ -407,9 +365,9 @@ namespace System.Net.Http
 
         internal ValueTask InternalCopyToAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            if (TryGetBuffer(out ArraySegment<byte> buffer))
+            if (IsBuffered)
             {
-                return stream.WriteAsync(buffer, cancellationToken);
+                return stream.WriteAsync(_bufferedContent.GetSingleBuffer().AsMemory(0, (int)_bufferedContent.Length), cancellationToken);
             }
 
             Task task = SerializeToStreamAsync(stream, context, cancellationToken);
@@ -421,7 +379,7 @@ namespace System.Net.Http
         {
             CheckDisposed();
 
-            if (!CreateTemporaryBuffer(maxBufferSize, out MemoryStream? tempBuffer, out Exception? error))
+            if (!CreateTemporaryBuffer(maxBufferSize, out LimitArrayPoolWriteStream? tempBuffer, out Exception? error))
             {
                 // If we already buffered the content, just return.
                 return;
@@ -441,11 +399,11 @@ namespace System.Net.Http
             try
             {
                 SerializeToStream(tempBuffer, null, cancellationToken);
-                tempBuffer.Seek(0, SeekOrigin.Begin); // Rewind after writing data.
-                _bufferedContent = tempBuffer;
             }
             catch (Exception e)
             {
+                tempBuffer.Dispose();
+
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
                 if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
@@ -465,6 +423,9 @@ namespace System.Net.Http
                 // Clean up the cancellation registration.
                 cancellationRegistration.Dispose();
             }
+
+            tempBuffer.ReallocateIfPooled();
+            _bufferedContent = tempBuffer;
         }
 
         public Task LoadIntoBufferAsync() =>
@@ -506,7 +467,7 @@ namespace System.Net.Http
         {
             CheckDisposed();
 
-            if (!CreateTemporaryBuffer(maxBufferSize, out MemoryStream? tempBuffer, out Exception? error))
+            if (!CreateTemporaryBuffer(maxBufferSize, out LimitArrayPoolWriteStream? tempBuffer, out Exception? error))
             {
                 // If we already buffered the content, just return a completed task.
                 return Task.CompletedTask;
@@ -524,14 +485,21 @@ namespace System.Net.Http
                 CheckTaskNotNull(task);
                 return LoadIntoBufferAsyncCore(task, tempBuffer);
             }
-            catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
+            catch (Exception e)
             {
-                return Task.FromException(GetStreamCopyException(e));
+                tempBuffer.Dispose();
+
+                if (StreamCopyExceptionNeedsWrapping(e))
+                {
+                    return Task.FromException(GetStreamCopyException(e));
+                }
+
+                // other synchronous exceptions from SerializeToStreamAsync/CheckTaskNotNull will propagate
+                throw;
             }
-            // other synchronous exceptions from SerializeToStreamAsync/CheckTaskNotNull will propagate
         }
 
-        private async Task LoadIntoBufferAsyncCore(Task serializeToStreamTask, MemoryStream tempBuffer)
+        private async Task LoadIntoBufferAsyncCore(Task serializeToStreamTask, LimitArrayPoolWriteStream tempBuffer)
         {
             try
             {
@@ -545,16 +513,8 @@ namespace System.Net.Http
                 throw;
             }
 
-            try
-            {
-                tempBuffer.Seek(0, SeekOrigin.Begin); // Rewind after writing data.
-                _bufferedContent = tempBuffer;
-            }
-            catch (Exception e)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
-                throw;
-            }
+            tempBuffer.ReallocateIfPooled();
+            _bufferedContent = tempBuffer;
         }
 
         /// <summary>
@@ -571,7 +531,7 @@ namespace System.Net.Http
         protected virtual Stream CreateContentReadStream(CancellationToken cancellationToken)
         {
             LoadIntoBuffer(MaxBufferSize, cancellationToken);
-            return _bufferedContent!;
+            return CreateMemoryStreamFromBufferedContent();
         }
 
         protected virtual Task<Stream> CreateContentReadStreamAsync()
@@ -579,7 +539,7 @@ namespace System.Net.Http
             // By default just buffer the content to a memory stream. Derived classes can override this behavior
             // if there is a better way to retrieve the content as stream (e.g. byte array/string use a more efficient
             // way, like wrapping a read-only MemoryStream around the bytes/string)
-            return WaitAndReturnAsync(LoadIntoBufferAsync(), this, s => (Stream)s._bufferedContent!);
+            return WaitAndReturnAsync(LoadIntoBufferAsync(), this, static s => (Stream)s.CreateMemoryStreamFromBufferedContent());
         }
 
         protected virtual Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken)
@@ -605,7 +565,7 @@ namespace System.Net.Http
 
             if (IsBuffered)
             {
-                return _bufferedContent!.Length;
+                return _bufferedContent.Length;
             }
 
             // If we already tried to calculate the length, but the derived class returned 'false', then don't try
@@ -625,7 +585,7 @@ namespace System.Net.Http
             return null;
         }
 
-        private bool CreateTemporaryBuffer(long maxBufferSize, out MemoryStream? tempBuffer, out Exception? error)
+        private bool CreateTemporaryBuffer(long maxBufferSize, out LimitArrayPoolWriteStream? tempBuffer, out Exception? error)
         {
             if (maxBufferSize > HttpContent.MaxBufferSize)
             {
@@ -644,34 +604,23 @@ namespace System.Net.Http
                 return false;
             }
 
-            tempBuffer = CreateMemoryStream(maxBufferSize, out error);
-            return true;
-        }
-
-        private LimitMemoryStream? CreateMemoryStream(long maxBufferSize, out Exception? error)
-        {
-            error = null;
-
             // If we have a Content-Length allocate the right amount of buffer up-front. Also check whether the
             // content length exceeds the max. buffer size.
-            long? contentLength = Headers.ContentLength;
+            long contentLength = Headers.ContentLength.GetValueOrDefault();
+            Debug.Assert(contentLength >= 0);
 
-            if (contentLength != null)
+            if (contentLength > maxBufferSize)
             {
-                Debug.Assert(contentLength >= 0);
-
-                if (contentLength > maxBufferSize)
-                {
-                    error = CreateOverCapacityException(maxBufferSize);
-                    return null;
-                }
-
-                // We can safely cast contentLength to (int) since we just checked that it is <= maxBufferSize.
-                return new LimitMemoryStream((int)maxBufferSize, (int)contentLength);
+                tempBuffer = null;
+                error = CreateOverCapacityException(maxBufferSize);
+            }
+            else
+            {
+                tempBuffer = new LimitArrayPoolWriteStream((int)maxBufferSize, contentLength, getFinalSizeFromPool: false);
+                error = null;
             }
 
-            // We couldn't determine the length of the buffer. Create a memory stream with an empty buffer.
-            return new LimitMemoryStream((int)maxBufferSize, 0);
+            return true;
         }
 
         #region IDisposable Members
@@ -692,7 +641,7 @@ namespace System.Net.Http
 
                 if (IsBuffered)
                 {
-                    _bufferedContent!.Dispose();
+                    _bufferedContent.Dispose();
                 }
             }
         }
@@ -747,106 +696,63 @@ namespace System.Net.Http
             return new HttpRequestException(error, SR.net_http_content_stream_copy_error, e);
         }
 
-        private static int GetPreambleLength(ArraySegment<byte> buffer, Encoding encoding)
+        private static int GetPreambleLength(ReadOnlySpan<byte> data, Encoding encoding)
         {
-            byte[]? data = buffer.Array;
-            int offset = buffer.Offset;
-            int dataLength = buffer.Count;
-
-            Debug.Assert(data != null);
             Debug.Assert(encoding != null);
 
             switch (encoding.CodePage)
             {
                 case UTF8CodePage:
-                    return (dataLength >= UTF8PreambleLength
-                        && data[offset + 0] == UTF8PreambleByte0
-                        && data[offset + 1] == UTF8PreambleByte1
-                        && data[offset + 2] == UTF8PreambleByte2) ? UTF8PreambleLength : 0;
+                    return data.StartsWith(UTF8Preamble) ? UTF8Preamble.Length : 0;
+
                 case UTF32CodePage:
-                    return (dataLength >= UTF32PreambleLength
-                        && data[offset + 0] == UTF32PreambleByte0
-                        && data[offset + 1] == UTF32PreambleByte1
-                        && data[offset + 2] == UTF32PreambleByte2
-                        && data[offset + 3] == UTF32PreambleByte3) ? UTF32PreambleLength : 0;
+                    return data.StartsWith(UTF32Preamble) ? UTF32Preamble.Length : 0;
+
                 case UnicodeCodePage:
-                    return (dataLength >= UnicodePreambleLength
-                        && data[offset + 0] == UnicodePreambleByte0
-                        && data[offset + 1] == UnicodePreambleByte1) ? UnicodePreambleLength : 0;
+                    return data.StartsWith(UnicodePreamble) ? UnicodePreamble.Length : 0;
 
                 case BigEndianUnicodeCodePage:
-                    return (dataLength >= BigEndianUnicodePreambleLength
-                        && data[offset + 0] == BigEndianUnicodePreambleByte0
-                        && data[offset + 1] == BigEndianUnicodePreambleByte1) ? BigEndianUnicodePreambleLength : 0;
+                    return data.StartsWith(BigEndianUnicodePreamble) ? BigEndianUnicodePreamble.Length : 0;
 
                 default:
                     byte[] preamble = encoding.GetPreamble();
-                    return BufferHasPrefix(buffer, preamble) ? preamble.Length : 0;
+                    return preamble is not null && data.StartsWith(preamble) ? preamble.Length : 0;
             }
         }
 
-        private static bool TryDetectEncoding(ArraySegment<byte> buffer, [NotNullWhen(true)] out Encoding? encoding, out int preambleLength)
+        private static bool TryDetectEncoding(ReadOnlySpan<byte> data, [NotNullWhen(true)] out Encoding? encoding, out int preambleLength)
         {
-            byte[]? data = buffer.Array;
-            int offset = buffer.Offset;
-            int dataLength = buffer.Count;
-
-            Debug.Assert(data != null);
-
-            if (dataLength >= 2)
+            if (data.StartsWith(UTF8Preamble))
             {
-                int first2Bytes = data[offset + 0] << 8 | data[offset + 1];
+                encoding = Encoding.UTF8;
+                preambleLength = UTF8Preamble.Length;
+                return true;
+            }
 
-                switch (first2Bytes)
-                {
-                    case UTF8PreambleFirst2Bytes:
-                        if (dataLength >= UTF8PreambleLength && data[offset + 2] == UTF8PreambleByte2)
-                        {
-                            encoding = Encoding.UTF8;
-                            preambleLength = UTF8PreambleLength;
-                            return true;
-                        }
-                        break;
+            if (data.StartsWith(UTF32Preamble))
+            {
+                encoding = Encoding.UTF32;
+                preambleLength = UTF32Preamble.Length;
+                return true;
+            }
 
-                    case UTF32OrUnicodePreambleFirst2Bytes:
-                        // UTF32 not supported on Phone
-                        if (dataLength >= UTF32PreambleLength && data[offset + 2] == UTF32PreambleByte2 && data[offset + 3] == UTF32PreambleByte3)
-                        {
-                            encoding = Encoding.UTF32;
-                            preambleLength = UTF32PreambleLength;
-                        }
-                        else
-                        {
-                            encoding = Encoding.Unicode;
-                            preambleLength = UnicodePreambleLength;
-                        }
-                        return true;
+            if (data.StartsWith(UnicodePreamble))
+            {
+                encoding = Encoding.Unicode;
+                preambleLength = UnicodePreamble.Length;
+                return true;
+            }
 
-                    case BigEndianUnicodePreambleFirst2Bytes:
-                        encoding = Encoding.BigEndianUnicode;
-                        preambleLength = BigEndianUnicodePreambleLength;
-                        return true;
-                }
+            if (data.StartsWith(BigEndianUnicodePreamble))
+            {
+                encoding = Encoding.BigEndianUnicode;
+                preambleLength = BigEndianUnicodePreamble.Length;
+                return true;
             }
 
             encoding = null;
             preambleLength = 0;
             return false;
-        }
-
-        private static bool BufferHasPrefix(ArraySegment<byte> buffer, byte[] prefix)
-        {
-            byte[]? byteArray = buffer.Array;
-            if (prefix == null || byteArray == null || prefix.Length > buffer.Count || prefix.Length == 0)
-                return false;
-
-            for (int i = 0, j = buffer.Offset; i < prefix.Length; i++, j++)
-            {
-                if (prefix[i] != byteArray[j])
-                    return false;
-            }
-
-            return true;
         }
 
         #endregion Helpers
@@ -862,185 +768,334 @@ namespace System.Net.Http
             return new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, maxBufferSize));
         }
 
-        internal sealed class LimitMemoryStream : MemoryStream
-        {
-            private readonly int _maxSize;
-
-            public LimitMemoryStream(int maxSize, int capacity)
-                : base(capacity)
-            {
-                Debug.Assert(capacity <= maxSize);
-                _maxSize = maxSize;
-            }
-
-            public byte[] GetSizedBuffer()
-            {
-                ArraySegment<byte> buffer;
-                return TryGetBuffer(out buffer) && buffer.Offset == 0 && buffer.Count == buffer.Array!.Length ?
-                    buffer.Array :
-                    ToArray();
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                CheckSize(count);
-                base.Write(buffer, offset, count);
-            }
-
-            public override void WriteByte(byte value)
-            {
-                CheckSize(1);
-                base.WriteByte(value);
-            }
-
-            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            {
-                CheckSize(count);
-                return base.WriteAsync(buffer, offset, count, cancellationToken);
-            }
-
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
-            {
-                CheckSize(buffer.Length);
-                return base.WriteAsync(buffer, cancellationToken);
-            }
-
-            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            {
-                CheckSize(count);
-                return base.BeginWrite(buffer, offset, count, callback, state);
-            }
-
-            public override void EndWrite(IAsyncResult asyncResult)
-            {
-                base.EndWrite(asyncResult);
-            }
-
-            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-            {
-                ArraySegment<byte> buffer;
-                if (TryGetBuffer(out buffer))
-                {
-                    ValidateCopyToArguments(destination, bufferSize);
-
-                    long pos = Position;
-                    long length = Length;
-                    Position = length;
-
-                    long bytesToWrite = length - pos;
-                    return destination.WriteAsync(buffer.Array!, (int)(buffer.Offset + pos), (int)bytesToWrite, cancellationToken);
-                }
-
-                return base.CopyToAsync(destination, bufferSize, cancellationToken);
-            }
-
-            private void CheckSize(int countToAdd)
-            {
-                if (_maxSize - Length < countToAdd)
-                {
-                    throw CreateOverCapacityException(_maxSize);
-                }
-            }
-        }
-
+        /// <summary>
+        /// A write-only stream that limits the total length of the content to <see cref="_maxBufferSize"/>.
+        /// It uses pooled buffers for the content, but can switch to a regular array allocation, which is useful when the caller
+        /// already knows the final size and needs a new array anyway (e.g. <see cref="HttpClient.GetByteArrayAsync(string?)"/>).
+        /// <para>Since we can't rely on users to reliably dispose content objects, any pooled buffers must be returned before leaving
+        /// the execution path we control. In practice this means <see cref="LoadIntoBufferAsync()"/> must call <see cref="ReturnAllPooledBuffers"/>
+        /// before storing the stream in <see cref="_bufferedContent"/>.</para>
+        /// </summary>
         internal sealed class LimitArrayPoolWriteStream : Stream
         {
-            private const int InitialLength = 256;
+            /// <summary>Applies when a Content-Length header was not specified.</summary>
+            private const int MinInitialBufferSize = 16 * 1024; // 16 KB
 
+            /// <summary>Applies when a Content-Length header was set. If it's &lt;= this limit, we'll allocate an exact-sized buffer upfront.</summary>
+            private const int MaxInitialBufferSize = 16 * 1024 * 1024; // 16 MB
+
+            private const int ResizeFactor = 2;
+
+            /// <summary>Controls how quickly we're willing to expand up to <see cref="_expectedFinalSize"/> when a caller requested that the last buffer should not be pooled.
+            /// <para>The factor is higher than usual to lower the number of memory copies when the caller already committed to allocating a large buffer.</para></summary>
+            private const int LastResizeFactor = 4;
+
+            /// <summary><see cref="_totalLength"/> may not exceed this limit, or we'll throw a <see cref="CreateOverCapacityException"/>.</summary>
             private readonly int _maxBufferSize;
-            private byte[] _buffer;
-            private int _length;
+            /// <summary>The value of the Content-Length header or 0. <see cref="_totalLength"/> may exceed this value if the Content-Length isn't being enforced by the content.</summary>
+            private readonly int _expectedFinalSize;
+            /// <summary>Indicates whether the caller will need an exactly-sized, non-pooled, buffer. The implementation will switch away from pooled buffers earlier to reduce memory copies.</summary>
+            private readonly bool _shouldPoolFinalSize;
 
-            public LimitArrayPoolWriteStream(int maxBufferSize) : this(maxBufferSize, InitialLength) { }
+            private bool _lastBufferIsPooled;
+            private byte[] _lastBuffer;
+            private byte[]?[]? _pooledBuffers;
+            private int _lastBufferOffset;
+            private int _totalLength;
 
-            public LimitArrayPoolWriteStream(int maxBufferSize, long capacity)
+            public LimitArrayPoolWriteStream(int maxBufferSize, long expectedFinalSize, bool getFinalSizeFromPool)
             {
-                if (capacity < InitialLength)
-                {
-                    capacity = InitialLength;
-                }
-                else if (capacity > maxBufferSize)
+                Debug.Assert(maxBufferSize >= 0);
+                Debug.Assert(expectedFinalSize >= 0);
+
+                if (expectedFinalSize > maxBufferSize)
                 {
                     throw CreateOverCapacityException(maxBufferSize);
                 }
 
                 _maxBufferSize = maxBufferSize;
-                _buffer = ArrayPool<byte>.Shared.Rent((int)capacity);
+                _expectedFinalSize = (int)expectedFinalSize;
+                _shouldPoolFinalSize = getFinalSizeFromPool || expectedFinalSize == 0;
+                _lastBufferIsPooled = false;
+                _lastBuffer = [];
             }
+
+#if DEBUG
+            ~LimitArrayPoolWriteStream()
+            {
+                // Ensure that we're not leaking pooled buffers.
+                Debug.Assert(_pooledBuffers is null);
+                Debug.Assert(!_lastBufferIsPooled);
+            }
+#endif
 
             protected override void Dispose(bool disposing)
             {
-                Debug.Assert(_buffer != null);
-
-                ArrayPool<byte>.Shared.Return(_buffer);
-                _buffer = null!;
-
+                ReturnAllPooledBuffers();
                 base.Dispose(disposing);
             }
 
-            public ArraySegment<byte> GetBuffer() => new ArraySegment<byte>(_buffer, 0, _length);
-
+            /// <summary>Should only be called once.</summary>
             public byte[] ToArray()
             {
-                var arr = new byte[_length];
-                Buffer.BlockCopy(_buffer, 0, arr, 0, _length);
-                return arr;
-            }
+                Debug.Assert(!_shouldPoolFinalSize || _expectedFinalSize == 0);
 
-            private void EnsureCapacity(int value)
-            {
-                if ((uint)value > (uint)_maxBufferSize) // value cast handles overflow to negative as well
+                if (!_lastBufferIsPooled && _totalLength == _lastBuffer.Length)
                 {
-                    throw CreateOverCapacityException(_maxBufferSize);
+                    Debug.Assert(_pooledBuffers is null);
+                    return _lastBuffer;
                 }
-                else if (value > _buffer.Length)
+
+                if (_totalLength == 0)
                 {
-                    Grow(value);
+                    return [];
                 }
+
+                byte[] buffer = new byte[_totalLength];
+                CopyToCore(buffer);
+                return buffer;
             }
 
-            private void Grow(int value)
+            /// <summary>Should only be called if <see cref="ReallocateIfPooled"/> was used to avoid exposing pooled buffers.</summary>
+            public byte[] GetSingleBuffer()
             {
-                Debug.Assert(value > _buffer.Length);
+                Debug.Assert(!_lastBufferIsPooled);
+                Debug.Assert(_pooledBuffers is null);
 
-                // Extract the current buffer to be replaced.
-                byte[] currentBuffer = _buffer;
-                _buffer = null!;
-
-                // Determine the capacity to request for the new buffer.  It should be
-                // at least twice as long as the current one, if not more if the requested
-                // value is more than that.  If the new value would put it longer than the max
-                // allowed byte array, than shrink to that (and if the required length is actually
-                // longer than that, we'll let the runtime throw).
-                uint twiceLength = 2 * (uint)currentBuffer.Length;
-                int newCapacity = twiceLength > Array.MaxLength ?
-                    Math.Max(value, Array.MaxLength) :
-                    Math.Max(value, (int)twiceLength);
-
-                // Get a new buffer, copy the current one to it, return the current one, and
-                // set the new buffer as current.
-                byte[] newBuffer = ArrayPool<byte>.Shared.Rent(newCapacity);
-                Buffer.BlockCopy(currentBuffer, 0, newBuffer, 0, _length);
-                ArrayPool<byte>.Shared.Return(currentBuffer);
-                _buffer = newBuffer;
+                return _lastBuffer;
             }
 
-            public override void Write(byte[] buffer, int offset, int count)
+            public ReadOnlySpan<byte> GetFirstBuffer()
             {
-                Debug.Assert(buffer != null);
-                Debug.Assert(offset >= 0);
-                Debug.Assert(count >= 0);
+                return _pooledBuffers is byte[]?[] buffers
+                    ? buffers[0]
+                    : _lastBuffer.AsSpan(0, _totalLength);
+            }
 
-                EnsureCapacity(_length + count);
-                Buffer.BlockCopy(buffer, offset, _buffer, _length, count);
-                _length += count;
+            public byte[] CreateCopy()
+            {
+                Debug.Assert(!_lastBufferIsPooled);
+                Debug.Assert(_pooledBuffers is null);
+                Debug.Assert(_lastBufferOffset == _totalLength);
+                Debug.Assert(_lastBufferOffset <= _lastBuffer.Length);
+
+                return _lastBuffer.AsSpan(0, _totalLength).ToArray();
+            }
+
+            public void ReallocateIfPooled()
+            {
+                Debug.Assert(_lastBufferIsPooled || _pooledBuffers is null);
+
+                if (_lastBufferIsPooled)
+                {
+                    byte[] newBuffer = new byte[_totalLength];
+                    CopyToCore(newBuffer);
+                    ReturnAllPooledBuffers();
+                    _lastBuffer = newBuffer;
+                    _lastBufferOffset = newBuffer.Length;
+                }
             }
 
             public override void Write(ReadOnlySpan<byte> buffer)
             {
-                EnsureCapacity(_length + buffer.Length);
-                buffer.CopyTo(new Span<byte>(_buffer, _length, buffer.Length));
-                _length += buffer.Length;
+                if (_maxBufferSize - _totalLength < buffer.Length)
+                {
+                    throw CreateOverCapacityException(_maxBufferSize);
+                }
+
+                byte[] lastBuffer = _lastBuffer;
+                int offset = _lastBufferOffset;
+
+                if (lastBuffer.Length - offset >= buffer.Length)
+                {
+                    buffer.CopyTo(lastBuffer.AsSpan(offset));
+                    _lastBufferOffset = offset + buffer.Length;
+                    _totalLength += buffer.Length;
+                }
+                else
+                {
+                    GrowAndWrite(buffer);
+                }
+            }
+
+            private void GrowAndWrite(ReadOnlySpan<byte> buffer)
+            {
+                Debug.Assert(_totalLength + buffer.Length <= _maxBufferSize);
+
+                int lastBufferCapacity = _lastBuffer.Length;
+
+                // Start by doubling the current array size.
+                int newBufferCapacity = (int)Math.Min((uint)lastBufferCapacity * ResizeFactor, Array.MaxLength);
+
+                // If the required length is longer than Array.MaxLength, we'll let the runtime throw.
+                newBufferCapacity = Math.Max(newBufferCapacity, _totalLength + buffer.Length);
+
+                // If this is the first write, set an initial minimum size.
+                if (lastBufferCapacity == 0)
+                {
+                    int minCapacity = _expectedFinalSize == 0
+                        ? MinInitialBufferSize
+                        : Math.Min(_expectedFinalSize, MaxInitialBufferSize / LastResizeFactor);
+
+                    newBufferCapacity = Math.Max(newBufferCapacity, minCapacity);
+                }
+
+                // Avoid having the last buffer expand beyond the size limit too much.
+                // It may still go beyond the limit somewhat due to the ArrayPool's buffer sizes being powers of 2.
+                int currentTotalCapacity = _totalLength - _lastBufferOffset + lastBufferCapacity;
+                int remainingUntilMaxCapacity = _maxBufferSize - currentTotalCapacity;
+                newBufferCapacity = Math.Min(newBufferCapacity, remainingUntilMaxCapacity);
+
+                int newTotalCapacity = currentTotalCapacity + newBufferCapacity;
+
+                Debug.Assert(newBufferCapacity > 0);
+                byte[] newBuffer;
+
+                // If we don't want to pool our last buffer and we're getting close to its size, allocate the exact length.
+                if (!_shouldPoolFinalSize && newTotalCapacity >= _expectedFinalSize / LastResizeFactor)
+                {
+                    // We knew the Content-Length upfront, and the caller needs an exactly-sized, non-pooled, buffer.
+                    // It's almost certain that the final length will match the expected size,
+                    // so we switch from pooled buffers to a regular array now to reduce memory copies.
+
+                    // It's possible we're writing more bytes than the expected final size if the handler/content is not
+                    // enforcing Content-Length correctness. Such requests will likely throw later on anyway.
+                    newBuffer = new byte[_totalLength + buffer.Length <= _expectedFinalSize ? _expectedFinalSize : newTotalCapacity];
+
+                    CopyToCore(newBuffer);
+
+                    ReturnAllPooledBuffers();
+
+                    buffer.CopyTo(newBuffer.AsSpan(_totalLength));
+
+                    _totalLength += buffer.Length;
+                    _lastBufferOffset = _totalLength;
+                    _lastBufferIsPooled = false;
+                }
+                else if (lastBufferCapacity == 0)
+                {
+                    // This is the first write call, allocate the initial buffer.
+                    Debug.Assert(_pooledBuffers is null);
+                    Debug.Assert(_lastBufferOffset == 0);
+                    Debug.Assert(_totalLength == 0);
+
+                    newBuffer = ArrayPool<byte>.Shared.Rent(newBufferCapacity);
+                    Debug.Assert(_shouldPoolFinalSize || newBuffer.Length != _expectedFinalSize);
+
+                    buffer.CopyTo(newBuffer);
+                    _totalLength = _lastBufferOffset = buffer.Length;
+                    _lastBufferIsPooled = true;
+                }
+                else
+                {
+                    Debug.Assert(_lastBufferIsPooled);
+
+                    _totalLength += buffer.Length;
+
+                    // When buffers are stored in '_pooledBuffers', they are assumed to be full.
+                    // Copy as many bytes as we can fit into the current buffer now.
+                    Span<byte> remainingInCurrentBuffer = _lastBuffer.AsSpan(_lastBufferOffset);
+                    Debug.Assert(remainingInCurrentBuffer.Length < buffer.Length);
+                    buffer.Slice(0, remainingInCurrentBuffer.Length).CopyTo(remainingInCurrentBuffer);
+                    buffer = buffer.Slice(remainingInCurrentBuffer.Length);
+
+                    newBuffer = ArrayPool<byte>.Shared.Rent(newBufferCapacity);
+                    buffer.CopyTo(newBuffer);
+                    _lastBufferOffset = buffer.Length;
+
+                    // Find the first empty slot in '_pooledBuffers', resizing the array if needed.
+                    int bufferCount = 0;
+                    if (_pooledBuffers is null)
+                    {
+                        // Starting with 4 buffers means we'll have capacity for at least
+                        // 16 KB + 32 KB + 64 KB + 128 KB + 256 KB (last buffer) = 496 KB
+                        _pooledBuffers = new byte[]?[4];
+                    }
+                    else
+                    {
+                        byte[]?[] buffers = _pooledBuffers;
+                        while (bufferCount < buffers.Length && buffers[bufferCount] is not null)
+                        {
+                            bufferCount++;
+                        }
+
+                        if (bufferCount == buffers.Length)
+                        {
+                            Debug.Assert(bufferCount <= 16);
+
+                            // After the first resize, we should have enough capacity for at least ~8 MB.
+                            // ~128 MB after the second, ~2 GB after the third.
+                            Array.Resize(ref _pooledBuffers, bufferCount + 4);
+                        }
+                    }
+
+                    _pooledBuffers[bufferCount] = _lastBuffer;
+                }
+
+                _lastBuffer = newBuffer;
+            }
+
+            public void CopyToCore(Span<byte> destination)
+            {
+                Debug.Assert(destination.Length >= _totalLength);
+
+                if (_pooledBuffers is byte[]?[] buffers)
+                {
+                    Debug.Assert(buffers.Length > 0 && buffers[0] is not null);
+
+                    foreach (byte[]? buffer in buffers)
+                    {
+                        if (buffer is null)
+                        {
+                            break;
+                        }
+
+                        Debug.Assert(destination.Length >= buffer.Length);
+
+                        buffer.CopyTo(destination);
+                        destination = destination.Slice(buffer.Length);
+                    }
+                }
+
+                Debug.Assert(_lastBufferOffset <= _lastBuffer.Length);
+                Debug.Assert(_lastBufferOffset <= destination.Length);
+
+                _lastBuffer.AsSpan(0, _lastBufferOffset).CopyTo(destination);
+            }
+
+            private void ReturnAllPooledBuffers()
+            {
+                if (_pooledBuffers is byte[]?[] buffers)
+                {
+                    _pooledBuffers = null;
+
+                    foreach (byte[]? buffer in buffers)
+                    {
+                        if (buffer is null)
+                        {
+                            break;
+                        }
+
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
+                }
+
+                Debug.Assert(_lastBuffer is not null);
+                byte[] lastBuffer = _lastBuffer;
+                _lastBuffer = null!;
+
+                if (_lastBufferIsPooled)
+                {
+                    _lastBufferIsPooled = false;
+                    ArrayPool<byte>.Shared.Return(lastBuffer);
+                }
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                ValidateBufferArguments(buffer, offset, count);
+
+                Write(buffer.AsSpan(offset, count));
             }
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -1061,18 +1116,13 @@ namespace System.Net.Http
             public override void EndWrite(IAsyncResult asyncResult) =>
                 TaskToAsyncResult.End(asyncResult);
 
-            public override void WriteByte(byte value)
-            {
-                int newLength = _length + 1;
-                EnsureCapacity(newLength);
-                _buffer[_length] = value;
-                _length = newLength;
-            }
+            public override void WriteByte(byte value) =>
+                Write(new ReadOnlySpan<byte>(ref value));
 
             public override void Flush() { }
             public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-            public override long Length => _length;
+            public override long Length => _totalLength;
             public override bool CanWrite => true;
             public override bool CanRead => false;
             public override bool CanSeek => false;

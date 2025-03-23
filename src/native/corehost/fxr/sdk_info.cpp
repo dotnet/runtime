@@ -4,6 +4,7 @@
 #include <cassert>
 #include "pal.h"
 #include "sdk_info.h"
+#include "sdk_resolver.h"
 #include "trace.h"
 #include "utils.h"
 
@@ -74,14 +75,13 @@ void sdk_info::enumerate_sdk_paths(
 }
 
 void sdk_info::get_all_sdk_infos(
-    const pal::string_t& own_dir,
+    const pal::string_t& dotnet_dir,
     std::vector<sdk_info>* sdk_infos)
 {
-    std::vector<pal::string_t> hive_dir;
-    get_framework_and_sdk_locations(own_dir, /*disable_multilevel_lookup*/ true, &hive_dir);
+    sdk_resolver resolver = sdk_resolver::from_nearest_global_file();
+    std::vector<pal::string_t> hive_dir = resolver.get_search_paths(dotnet_dir);
 
     int32_t hive_depth = 0;
-
     for (pal::string_t dir : hive_dir)
     {
         trace::verbose(_X("Gathering SDK locations in [%s]"), dir.c_str());
@@ -103,10 +103,10 @@ void sdk_info::get_all_sdk_infos(
     std::sort(sdk_infos->begin(), sdk_infos->end(), compare_by_version_ascending_then_hive_depth_descending);
 }
 
-/*static*/ bool sdk_info::print_all_sdks(const pal::string_t& own_dir, const pal::string_t& leading_whitespace)
+/*static*/ bool sdk_info::print_all_sdks(const pal::string_t& dotnet_dir, const pal::string_t& leading_whitespace)
 {
     std::vector<sdk_info> sdk_infos;
-    get_all_sdk_infos(own_dir, &sdk_infos);
+    get_all_sdk_infos(dotnet_dir, &sdk_infos);
     for (sdk_info info : sdk_infos)
     {
         trace::println(_X("%s%s [%s]"), leading_whitespace.c_str(), info.version.as_str().c_str(), info.base_path.c_str());

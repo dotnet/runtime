@@ -940,7 +940,7 @@ namespace System.Text.RegularExpressions
                         node = ExtractCommonPrefixText(node);
                         if (node.Kind == RegexNodeKind.Alternate)
                         {
-                            node = ExtractCommonPrefixOneNotoneSet(node);
+                            node = ExtractCommonPrefixNode(node);
                             if (node.Kind == RegexNodeKind.Alternate)
                             {
                                 node = RemoveRedundantEmptiesAndNothings(node);
@@ -1072,7 +1072,7 @@ namespace System.Text.RegularExpressions
             // This function optimizes out prefix nodes from alternation branches that are
             // the same across multiple contiguous branches.
             // e.g. \w12|\d34|\d56|\w78|\w90 => \w12|\d(?:34|56)|\w(?:78|90)
-            static RegexNode ExtractCommonPrefixOneNotoneSet(RegexNode alternation)
+            static RegexNode ExtractCommonPrefixNode(RegexNode alternation)
             {
                 Debug.Assert(alternation.Kind == RegexNodeKind.Alternate);
                 Debug.Assert(alternation.Children is List<RegexNode> { Count: >= 2 });
@@ -1097,7 +1097,7 @@ namespace System.Text.RegularExpressions
                 {
                     Debug.Assert(children[startingIndex].Children is List<RegexNode> { Count: >= 2 });
 
-                    // Only handle the case where each branch begins with the same One, Notone, or Set (individual or loop).
+                    // Only handle the case where each branch begins with the same One, Notone, Set (individual or loop), or Anchor.
                     // Note that while we can do this for individual characters, fixed length loops, and atomic loops, doing
                     // it for non-atomic variable length loops could change behavior as each branch could otherwise have a
                     // different number of characters consumed by the loop based on what's after it.
@@ -1107,6 +1107,10 @@ namespace System.Text.RegularExpressions
                         case RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set:
                         case RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic:
                         case RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop or RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy when required.M == required.N:
+                        case RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.Bol
+                             or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol
+                             or RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary
+                             or RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary:
                             break;
 
                         default:

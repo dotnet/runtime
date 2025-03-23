@@ -115,7 +115,6 @@ void InteropSyncBlockInfo::FreeUMEntryThunk()
         void *pUMEntryThunk = GetUMEntryThunk();
         if (pUMEntryThunk != NULL)
         {
-            COMDelegate::RemoveEntryFromFPtrHash((UPTR)pUMEntryThunk);
             UMEntryThunk::FreeUMEntryThunk((UMEntryThunk *)pUMEntryThunk);
         }
     }
@@ -1815,8 +1814,10 @@ BOOL ObjHeader::GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisition
             SyncBlock* psb = g_pSyncTable[(int)index].m_SyncBlock;
 
             _ASSERTE(psb->GetMonitor() != NULL);
-            Thread* pThread = psb->GetMonitor()->GetHoldingThread();
-            if(pThread == NULL)
+            DWORD holdingThreadId = psb->GetMonitor()->GetHoldingThreadId();
+            // If the lock is orphaned during sync block creation, holdingThreadId would be assigned -1.
+            // Otherwise it would be the id of the holding thread if there is one or 0 if there isn't.
+            if (holdingThreadId == 0 || holdingThreadId == (DWORD)-1)
             {
                 *pThreadId = 0;
                 *pAcquisitionCount = 0;
@@ -1824,7 +1825,9 @@ BOOL ObjHeader::GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisition
             }
             else
             {
-                *pThreadId = pThread->GetThreadId();
+                // Notice this id now could have been reused for a different thread (in case the lock was orphaned),
+                // but orphaned locks shouldn't be expected to work correctly anyway.
+                *pThreadId = holdingThreadId;
                 *pAcquisitionCount = psb->GetMonitor()->GetRecursionLevel();
                 return TRUE;
             }
@@ -2190,20 +2193,22 @@ SyncBlock *ObjHeader::GetSyncBlock()
                             _ASSERTE(lockThreadId != 0);
 
                             Thread *pThread = g_pThinLockThreadIdDispenser->IdToThreadWithValidation(lockThreadId);
+                            DWORD threadId = 0;
                             SIZE_T osThreadId;
 
                             if (pThread == NULL)
                             {
                                 // The lock is orphaned.
-                                pThread = (Thread*) -1;
+                                threadId = -1;
                                 osThreadId = (SIZE_T)-1;
                             }
                             else
                             {
+                                threadId = pThread->GetThreadId();
                                 osThreadId = pThread->GetOSThreadId64();
                             }
 
-                            syncBlock->InitState(recursionLevel + 1, pThread, osThreadId);
+                            syncBlock->InitState(recursionLevel + 1, threadId, osThreadId);
                         }
                     }
                     else if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
@@ -2324,6 +2329,17 @@ void ObjHeader::PulseAll()
 //
 // ***************************************************************************
 
+#endif // !DACCESS_COMPILE
+
+// the DAC needs to have this method available
+PTR_Thread AwareLock::GetHoldingThread()
+{
+    LIMITED_METHOD_CONTRACT;
+    return g_pThinLockThreadIdDispenser->IdToThreadWithValidation(m_HoldingThreadId);
+}
+
+#ifndef DACCESS_COMPILE
+
 void AwareLock::AllocLockSemEvent()
 {
     CONTRACTL
@@ -2361,12 +2377,12 @@ void AwareLock::Enter()
 
     Thread *pCurThread = GetThread();
     LockState state = m_lockState.VolatileLoadWithoutBarrier();
-    if (!state.IsLocked() || m_HoldingThread != pCurThread)
+    if (!state.IsLocked() || m_HoldingThreadId != pCurThread->GetThreadId())
     {
         if (m_lockState.InterlockedTryLock_Or_RegisterWaiter(this, state))
         {
             // We get here if we successfully acquired the mutex.
-            m_HoldingThread = pCurThread;
+            m_HoldingThreadId = pCurThread->GetThreadId();
             m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
@@ -2422,14 +2438,14 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
     }
 
     LockState state = m_lockState.VolatileLoadWithoutBarrier();
-    if (!state.IsLocked() || m_HoldingThread != pCurThread)
+    if (!state.IsLocked() || m_HoldingThreadId != pCurThread->GetThreadId())
     {
         if (timeOut == 0
                 ? m_lockState.InterlockedTryLock(state)
                 : m_lockState.InterlockedTryLock_Or_RegisterWaiter(this, state))
         {
             // We get here if we successfully acquired the mutex.
-            m_HoldingThread = pCurThread;
+            m_HoldingThreadId = pCurThread->GetThreadId();
             m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
@@ -2708,7 +2724,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
         return false;
     }
 
-    m_HoldingThread = pCurThread;
+    m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
 
@@ -2770,7 +2786,7 @@ LONG AwareLock::LeaveCompletely()
 BOOL AwareLock::OwnedByCurrentThread()
 {
     WRAPPER_NO_CONTRACT;
-    return (GetThread() == m_HoldingThread);
+    return (GetThread()->GetThreadId() == m_HoldingThreadId);
 }
 
 // ***************************************************************************

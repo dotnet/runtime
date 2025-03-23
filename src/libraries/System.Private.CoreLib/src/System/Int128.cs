@@ -940,59 +940,27 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
         bool IBinaryInteger<Int128>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= Size)
+            if (BinaryPrimitives.TryWriteInt128BigEndian(destination, this))
             {
-                ulong lower = _lower;
-                ulong upper = _upper;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    lower = BinaryPrimitives.ReverseEndianness(lower);
-                    upper = BinaryPrimitives.ReverseEndianness(upper);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, upper);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), lower);
-
                 bytesWritten = Size;
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<Int128>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= Size)
+            if (BinaryPrimitives.TryWriteInt128LittleEndian(destination, this))
             {
-                ulong lower = _lower;
-                ulong upper = _upper;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    lower = BinaryPrimitives.ReverseEndianness(lower);
-                    upper = BinaryPrimitives.ReverseEndianness(upper);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, lower);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), upper);
-
                 bytesWritten = Size;
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //

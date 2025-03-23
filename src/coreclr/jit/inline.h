@@ -596,15 +596,24 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CORINFO_CLASS_HANDLE  guardedClassHandle;
     CORINFO_METHOD_HANDLE guardedMethodHandle;
     CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
+    CORINFO_METHOD_HANDLE guardedMethodInstantiatedEntryHandle;
     unsigned              likelihood;
-    bool                  requiresInstMethodTableArg;
+    bool                  arrayInterface;
 
     CORINFO_METHOD_INFO methInfo;
 
     // the logical IL caller of this inlinee.
-    CORINFO_METHOD_HANDLE  ilCallerHandle;
-    CORINFO_CLASS_HANDLE   clsHandle;
-    CORINFO_CONTEXT_HANDLE exactContextHnd;
+    CORINFO_METHOD_HANDLE ilCallerHandle;
+    CORINFO_CLASS_HANDLE  clsHandle;
+
+    // Context handle to use when inlining.
+    //
+    CORINFO_CONTEXT_HANDLE exactContextHandle;
+
+    // Context handle of the call before any
+    // GDV/Inlining evaluation
+    //
+    CORINFO_CONTEXT_HANDLE originalContextHandle;
 
     // The GT_RET_EXPR node linking back to the inline candidate.
     GenTreeRetExpr* retExpr;
@@ -613,10 +622,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     unsigned clsAttr;
     unsigned methAttr;
 
-    // actual IL offset of instruction that resulted in this inline candidate
-    IL_OFFSET              ilOffset;
     CorInfoInitClassResult initClassResult;
-    var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
     InlineContext*         inlinersContext;
 };
@@ -628,6 +634,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 struct LateDevirtualizationInfo
 {
     CORINFO_CONTEXT_HANDLE exactContextHnd;
+    InlineContext*         inlinersContext;
 };
 
 // InlArgInfo describes inline candidate argument properties.

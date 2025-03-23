@@ -71,11 +71,6 @@ variables:
       value: 20
     - name: timeoutPerTestCollectionInMinutes
       value: 240
-  - ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
-    - name: timeoutPerTestCollectionInMinutes
-      value: 180
-    - name: timeoutPerTestInMinutes
-      value: 30
   - ${{ if in(parameters.testGroup, 'pgo', 'pgostress') }}:
     - name: timeoutPerTestCollectionInMinutes
       value: 120
@@ -104,9 +99,9 @@ variables:
   - name: priorityArg
     value: ''
 
-  # 'innerloop' and 'clrinterpreter' jobs run the Priority 0 tests; everything else runs the Priority 1 tests.
+  # 'innerloop' job runs the Priority 0 tests; everything else runs the Priority 1 tests.
   # 'gc-standalone' is forced to run pri0 as well to start with.
-  - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'clrinterpreter'), ne(parameters.testGroup, 'gc-standalone'), ne(parameters.testGroup, 'gc-standalone-server') ) }}:
+  - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'gc-standalone'), ne(parameters.testGroup, 'gc-standalone-server') ) }}:
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: priorityArg
         value: 'priority1'

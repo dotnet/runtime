@@ -1350,6 +1350,26 @@ namespace System.Reflection.Metadata
             return TypeDefTable.FindTypeContainingField(fieldRowId, FieldTable.NumberOfRows);
         }
 
+        internal TypeDefinitionHandle GetDeclaringType(EventDefinitionHandle eventDef)
+        {
+            if (UseEventPtrTable)
+            {
+                eventDef = EventPtrTable.GetEventFor(eventDef.RowId);
+            }
+
+            return EventMapTable.FindTypeContainingEvent(eventDef.RowId, EventTable.NumberOfRows);
+        }
+
+        internal TypeDefinitionHandle GetDeclaringType(PropertyDefinitionHandle propertyDef)
+        {
+            if (UsePropertyPtrTable)
+            {
+                propertyDef = PropertyPtrTable.GetPropertyFor(propertyDef.RowId);
+            }
+
+            return PropertyMapTable.FindTypeContainingProperty(propertyDef.RowId, PropertyTable.NumberOfRows);
+        }
+
         public string GetString(DocumentNameBlobHandle handle)
         {
             return BlobHeap.GetDocumentName(handle);

@@ -40,8 +40,11 @@ namespace System
         /// <summary>
         /// Gets whether the current machine has only a single processor.
         /// </summary>
+#if !FEATURE_SINGLE_THREADED
         internal static bool IsSingleProcessor => ProcessorCount == 1;
-
+#else
+        internal const bool IsSingleProcessor = true;
+#endif
         private static volatile sbyte s_privilegedProcess;
 
         /// <summary>

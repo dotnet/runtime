@@ -89,6 +89,8 @@ struct EHblkDsc
         unsigned    ebdTyp;    // Exception type (a class token), otherwise
     };
 
+    unsigned short ebdID; // Unique ID for this eh descriptor (stable across add/delete/inlining)
+
     EHHandlerType ebdHandlerType;
 
 #if defined(FEATURE_EH_WINDOWS_X86)

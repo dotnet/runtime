@@ -107,7 +107,7 @@ namespace System.Reflection
             Debug.Assert(this != target);
             Debug.Assert(this.ReflectedType == target.ReflectedType);
 
-            return Signature.CompareSig(this.Signature, target.Signature);
+            return Signature.AreEqual(this.Signature, target.Signature);
         }
         internal BindingFlags BindingFlags => m_bindingFlags;
         #endregion

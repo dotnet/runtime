@@ -109,7 +109,9 @@ namespace System.Net.Security.Tests
             _serverOptions.ServerCertificate = null;
 
             Assert.Null(_serverOptions.ServerCertificate);
+#pragma warning disable SYSLIB0057
             X509Certificate cert = new X509Certificate2(stackalloc byte[0]);
+#pragma warning restore SYSLIB0057
             _serverOptions.ServerCertificate = cert;
 
             Assert.Equal(cert, _serverOptions.ServerCertificate);

@@ -12,9 +12,9 @@ namespace Microsoft.Extensions.Logging.Configuration
     public interface ILoggerProviderConfigurationFactory
     {
         /// <summary>
-        /// Return configuration section associated with logger provider
+        /// Returns the configuration section associated with the logger provider.
         /// </summary>
-        /// <param name="providerType">The logger provider type</param>
+        /// <param name="providerType">The logger provider type.</param>
         /// <returns>The <see cref="IConfiguration"/> for the given <paramref name="providerType" />.</returns>
         IConfiguration GetConfiguration(Type providerType);
     }

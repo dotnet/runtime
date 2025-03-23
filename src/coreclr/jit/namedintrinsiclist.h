@@ -77,6 +77,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Thread_get_ManagedThreadId,
     NI_System_Threading_Volatile_Read,
     NI_System_Threading_Volatile_Write,
+    NI_System_Threading_Volatile_ReadBarrier,
+    NI_System_Threading_Volatile_WriteBarrier,
     NI_System_Type_get_IsEnum,
     NI_System_Type_GetEnumUnderlyingType,
     NI_System_Type_get_IsValueType,
@@ -116,6 +118,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
 
+    NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref,
+
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
     NI_System_String_Equals,
@@ -144,7 +148,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_Exchange,
     NI_System_Threading_Interlocked_ExchangeAdd,
     NI_System_Threading_Interlocked_MemoryBarrier,
-    NI_System_Threading_Interlocked_ReadMemoryBarrier,
 
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,
@@ -162,18 +165,6 @@ enum NamedIntrinsic : unsigned short
 #include "hwintrinsiclistarm64.h"
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
     NI_HW_INTRINSIC_END,
-
-    NI_SIMD_AS_HWINTRINSIC_START,
-#if defined(TARGET_XARCH)
-#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                  \
-    NI_##classId##_##id,
-#include "simdashwintrinsiclistxarch.h"
-#elif defined(TARGET_ARM64)
-#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                  \
-    NI_##classId##_##id,
-#include "simdashwintrinsiclistarm64.h"
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
-    NI_SIMD_AS_HWINTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 
 #if defined(FEATURE_SIMD)
@@ -251,6 +242,13 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_TrailingZeroCount,
 
     NI_PRIMITIVE_END,
+
+    //
+    // Array Intrinsics
+    //
+    NI_System_SZArrayHelper_GetEnumerator,
+    NI_System_Array_T_GetEnumerator,
+    NI_System_Collections_Generic_IEnumerable_GetEnumerator,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_

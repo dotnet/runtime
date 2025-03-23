@@ -311,7 +311,8 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 		}
 		/* fall through */
 	case MONO_TYPE_VALUETYPE: {
-		MonoMarshalType *info = mono_marshal_load_type_info (ptype->data.klass);
+		// We have to use mono_class_from_mono_type_internal here due to the fallthrough from GENERICINST
+		MonoMarshalType *info = mono_marshal_load_type_info (mono_class_from_mono_type_internal (ptype));
 		for (guint32 i = 0; i < info->num_fields; ++i) {
 			class2 = class1;
 			class2 = merge_argument_class_from_type (info->fields [i].field->type, class2);
@@ -625,13 +626,13 @@ add_return_valuetype_swiftcall (ArgInfo *ainfo, MonoType *type, guint32 *gr, gui
 	// The structs that cannot be lowered, we pass them by reference
 	if (lowered_swift_struct.by_reference) {
 		ainfo->storage = ArgValuetypeAddrInIReg;
-		/* 
+		/*
 		 * On x64, Swift calls expect the return buffer to be passed in RAX.
 		 * However, since RAX mono reg allocator could assign RAX to a different value,
 		 * the R10 register is used instead and before the native call,
 		 * the value is moved from R10 to RAX (`amd64_handle_swift_return_buffer_reg`).
 		 */
-		ainfo->reg = AMD64_R10; 
+		ainfo->reg = AMD64_R10;
 		return;
 	}
 
@@ -987,9 +988,9 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			if (cinfo->ret.storage == ArgValuetypeAddrInIReg) {
 				/*
 				 * We need to set this even when sig->pinvoke is FALSE, because the `cinfo` gets copied to the
-				 * `cfg->arch` on the first pass. However, later in `amd64_handle_swift_return_buffer_reg` we 
+				 * `cfg->arch` on the first pass. However, later in `amd64_handle_swift_return_buffer_reg` we
 				 * condition the Swift return buffer handling only to P/Invoke calls. This however can trigger
-				 * a false positive in some scenarios where the Swift return buffer is not needed. 
+				 * a false positive in some scenarios where the Swift return buffer is not needed.
 				 */
 				cinfo->need_swift_return_buffer = TRUE;
 			}
@@ -998,7 +999,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		{
 			add_valuetype (sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
 		}
-		g_assert (cinfo->ret.storage != ArgInIReg);		
+		g_assert (cinfo->ret.storage != ArgInIReg);
 		break;
 	}
 	case MONO_TYPE_VAR:
@@ -1038,8 +1039,8 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 		if (ret_storage == ArgValuetypeAddrInIReg || ret_storage == ArgGsharedvtVariableInReg) {
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
-			// When Swift struct is returned by reference, we use the R10 register to hold the return buffer. 
-			if (!(cinfo->need_swift_return_buffer && cinfo->ret.reg == AMD64_R10 && 
+			// When Swift struct is returned by reference, we use the R10 register to hold the return buffer.
+			if (!(cinfo->need_swift_return_buffer && cinfo->ret.reg == AMD64_R10 &&
 				sig->pinvoke && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)))
 #endif
 			{
@@ -1306,7 +1307,7 @@ arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
 		g_assert_not_reached ();
 	}
 
-	
+
 }
 
 static void
@@ -1361,7 +1362,7 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 	default:
 		g_assert_not_reached ();
 	}
-	
+
 }
 
 gpointer
@@ -2041,7 +2042,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			} else {
 				offset += cinfo->ret.arg_size;
 				cfg->ret->inst_offset = - offset;
-			}	
+			}
 			break;
 #endif /* MONO_ARCH_HAVE_SWIFTCALL */
 		default:
@@ -5476,11 +5477,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_div_reg_size (code, ins->sreg3, FALSE, 4);
 			break;
 		case OP_X86_IDIVREM2:
-			if (ins->dreg != AMD64_RDX) 
+			if (ins->dreg != AMD64_RDX)
 				amd64_mov_reg_reg (code, ins->dreg, AMD64_RDX, 4);
 			break;
 		case OP_X86_LDIVREM2:
-			if (ins->dreg != AMD64_RDX) 
+			if (ins->dreg != AMD64_RDX)
 				amd64_mov_reg_reg (code, ins->dreg, AMD64_RDX, 8);
 			break;
 
@@ -6905,9 +6906,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			break;
 		}
+		case OP_ATOMIC_EXCHANGE_U1:
+		case OP_ATOMIC_EXCHANGE_U2:
 		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_EXCHANGE_I8: {
-			guint32 size = ins->opcode == OP_ATOMIC_EXCHANGE_I4 ? 4 : 8;
+			guint32 size;
+			switch (ins->opcode) {
+			case OP_ATOMIC_EXCHANGE_U1:
+				size = 1;
+				break;
+			case OP_ATOMIC_EXCHANGE_U2:
+				size = 2;
+				break;
+			case OP_ATOMIC_EXCHANGE_I4:
+				size = 4;
+				break;
+			case OP_ATOMIC_EXCHANGE_I8:
+				size = 8;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
 			/* LOCK prefix is implied. */
 			amd64_mov_reg_reg (code, GP_SCRATCH_REG, ins->sreg2, size);
@@ -6915,14 +6934,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_reg_reg (code, ins->dreg, GP_SCRATCH_REG, size);
 			break;
 		}
+		case OP_ATOMIC_CAS_U1:
+		case OP_ATOMIC_CAS_U2:
 		case OP_ATOMIC_CAS_I4:
 		case OP_ATOMIC_CAS_I8: {
 			guint32 size;
 
-			if (ins->opcode == OP_ATOMIC_CAS_I8)
-				size = 8;
-			else
+			switch (ins->opcode) {
+			case OP_ATOMIC_CAS_U1:
+				size = 1;
+				break;
+			case OP_ATOMIC_CAS_U2:
+				size = 2;
+				break;
+			case OP_ATOMIC_CAS_I4:
 				size = 4;
+				break;
+			case OP_ATOMIC_CAS_I8:
+				size = 8;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
 			/*
 			 * See http://msdn.microsoft.com/en-us/magazine/cc302329.aspx for
@@ -8433,7 +8466,7 @@ MONO_RESTORE_WARNING
 		if (cfg->vret_addr && (cfg->vret_addr->opcode != OP_REGVAR)) {
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 			if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && sig->pinvoke &&
-	    		cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && 
+	    		cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED &&
 	    		cfg->arch.cinfo->need_swift_return_buffer && cinfo->ret.reg == AMD64_R10) {
 				// Save the return buffer passed by the Swift caller
 				amd64_mov_membase_reg (code, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, SWIFT_RETURN_BUFFER_REG, 8);
@@ -8446,8 +8479,8 @@ MONO_RESTORE_WARNING
 	}
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
-	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && 
-	    cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && 
+	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) &&
+	    cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED &&
 	    cfg->arch.cinfo->need_swift_return_buffer) {
 		amd64_mov_reg_reg (code, AMD64_R10, SWIFT_RETURN_BUFFER_REG, 8);
 	}
@@ -9823,8 +9856,12 @@ mono_arch_opcode_supported (int opcode)
 	switch (opcode) {
 	case OP_ATOMIC_ADD_I4:
 	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_EXCHANGE_U1:
+	case OP_ATOMIC_EXCHANGE_U2:
 	case OP_ATOMIC_EXCHANGE_I4:
 	case OP_ATOMIC_EXCHANGE_I8:
+	case OP_ATOMIC_CAS_U1:
+	case OP_ATOMIC_CAS_U2:
 	case OP_ATOMIC_CAS_I4:
 	case OP_ATOMIC_CAS_I8:
 	case OP_ATOMIC_LOAD_I1:

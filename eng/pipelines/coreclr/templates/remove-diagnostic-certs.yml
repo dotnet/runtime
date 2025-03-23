@@ -1,0 +1,11 @@
+parameters:
+  isOfficialBuild: false
+  scriptRoot: '$(Build.SourcesDirectory)'
+
+steps:
+- ${{ if and(eq(parameters.isOfficialBuild, true), ne(variables['Build.Reason'], 'PullRequest'), or(startswith(variables['Build.SourceBranch'], 'refs/heads/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/internal/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/reltest/')), not(endsWith(variables['Build.SourceBranch'], '-staging'))) }}:
+  - powershell: |
+      eng/pipelines/remove-diagnostic-certs.ps1 "$(DacCertificateThumbprints)"
+    workingDirectory: ${{ parameters.scriptRoot }}
+    displayName: 'Remove Diagnostic Certificates'
+    condition: always()

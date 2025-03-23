@@ -35,7 +35,6 @@ namespace System.Net.Sockets
             _acceptedFileDescriptor = acceptedFileDescriptor;
             if (socketError == SocketError.Success)
             {
-                Debug.Assert(socketAddress.Length > 0);
                 _acceptAddressBufferCount = socketAddress.Length;
             }
             else
@@ -348,9 +347,10 @@ namespace System.Net.Sockets
             new ReadOnlySpan<byte>(_acceptBuffer, 0, _acceptAddressBufferCount).CopyTo(remoteSocketAddress.Buffer.Span);
             remoteSocketAddress.Size = _acceptAddressBufferCount;
 
+            // on macOS accept can sometimes return empty remote address even when it returns successfully.
             Socket acceptedSocket = _currentSocket!.CreateAcceptSocket(
                 SocketPal.CreateSocket(_acceptedFileDescriptor),
-                _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
+                remoteSocketAddress.Size > 0 ? _currentSocket._rightEndPoint!.Create(remoteSocketAddress) : null);
             if (_acceptSocket is null)
             {
                 // Store the accepted socket
