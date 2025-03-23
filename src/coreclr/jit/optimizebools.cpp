@@ -1698,8 +1698,8 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     }
 
     // Both edges must be BBJ_RETURN
-    BasicBlock* retTrueBb  = block->GetTrueEdge()->getDestinationBlock();
     BasicBlock* retFalseBb = block->GetFalseEdge()->getDestinationBlock();
+    BasicBlock* retTrueBb  = block->GetTrueEdge()->getDestinationBlock();
 
     // Although, we might want to fold fallthrough BBJ_ALWAYS blocks first
     if (fgCanCompactBlock(retTrueBb))
@@ -1707,16 +1707,16 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
         fgCompactBlock(retTrueBb);
         modified = true;
     }
-
-    if (fgCanCompactBlock(retFalseBb))
+    // By the time we get to the retFalseBb, it might be removed by fgCompactBlock()
+    // so we need to check if it is still valid.
+    if (!retFalseBb->HasFlag(BBF_REMOVED) && fgCanCompactBlock(retFalseBb))
     {
         fgCompactBlock(retFalseBb);
         modified = true;
     }
-
+    // Same here - bail out if the block is no longer BBJ_COND after compacting.
     if (!block->KindIs(BBJ_COND))
     {
-        // In rare cases fgCompactBlock() might have changed the current block
         return modified;
     }
 
@@ -1724,10 +1724,12 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     retFalseBb = block->GetFalseEdge()->getDestinationBlock();
     if (!retTrueBb->KindIs(BBJ_RETURN) || !retFalseBb->KindIs(BBJ_RETURN))
     {
+        // Both edges must be BBJ_RETURN
         return modified;
     }
 
-    // It has to be JTRUE(cond) or JTRUE(comma(cond)), but let's be resilient.
+    // The last statement has to be either JTRUE(cond) or JTRUE(comma(cond)),
+    // but let's be resilient just in case.
     assert(block->lastStmt() != nullptr);
     GenTree* node = block->lastStmt()->GetRootNode();
     GenTree* cond = node->gtGetOp1();
