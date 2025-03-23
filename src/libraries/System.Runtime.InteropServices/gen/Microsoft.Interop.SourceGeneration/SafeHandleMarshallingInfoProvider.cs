@@ -13,34 +13,28 @@ namespace Microsoft.Interop
     /// <summary>
     /// This class supports generating marshalling info for SafeHandle-derived types.
     /// </summary>
-    public sealed class SafeHandleMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
+    public sealed class SafeHandleMarshallingInfoProvider(Compilation compilation) : ITypeBasedMarshallingInfoProvider
     {
-        private readonly Compilation _compilation;
-        private readonly INamedTypeSymbol _safeHandleMarshallerType;
-        private readonly ITypeSymbol _containingScope;
-
-        public SafeHandleMarshallingInfoProvider(Compilation compilation, ITypeSymbol containingScope)
-        {
-            _compilation = compilation;
-            _safeHandleMarshallerType = compilation.GetBestTypeByMetadataName(TypeNames.System_Runtime_InteropServices_Marshalling_SafeHandleMarshaller_Metadata);
-            _containingScope = containingScope;
-        }
+        private readonly INamedTypeSymbol? _safeHandleType = compilation.GetBestTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle);
+        private readonly INamedTypeSymbol? _safeHandleMarshallerType = compilation.GetBestTypeByMetadataName(TypeNames.System_Runtime_InteropServices_Marshalling_SafeHandleMarshaller_Metadata);
 
         public bool CanProvideMarshallingInfoForType(ITypeSymbol type)
         {
-            // Check for an implicit SafeHandle conversion.
+            // Check if type derives from SafHandle
             // The SafeHandle type might not be defined if we're using one of the test CoreLib implementations used for NativeAOT.
-            ITypeSymbol? safeHandleType = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle);
-            if (safeHandleType is not null)
+            if (_safeHandleType is null)
             {
-                CodeAnalysis.Operations.CommonConversion conversion = _compilation.ClassifyCommonConversion(type, safeHandleType);
-                if (conversion.Exists
-                    && conversion.IsImplicit
-                    && (conversion.IsReference || conversion.IsIdentity))
+                return false;
+            }
+
+            for (ITypeSymbol? currentType = type; currentType is not null; currentType = currentType.BaseType)
+            {
+                if (currentType.Equals(_safeHandleType, SymbolEqualityComparer.Default))
                 {
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -59,18 +53,18 @@ namespace Microsoft.Interop
                 }
             }
 
-            // If we don't have the SafeHandleMarshaller<T> type, then we'll return a MissingSupportMarshallingInfo
+            // If we don't have the SafeHandleMarshaller<T> type, then we'll return NoMarshallingInfo,
             // indicating that we don't support marshalling SafeHandles with source-generated marshalling.
             if (_safeHandleMarshallerType is null)
             {
-                return new MissingSupportMarshallingInfo();
+                return NoMarshallingInfo.Instance;
             }
 
             INamedTypeSymbol entryPointType = _safeHandleMarshallerType.Construct(type);
             if (!ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(
                 entryPointType,
                 type,
-                _compilation,
+                compilation,
                 out CustomTypeMarshallers? marshallers))
             {
                 return NoMarshallingInfo.Instance;

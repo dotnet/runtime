@@ -6,6 +6,9 @@
 #pragma once
 #include "pal_types.h"
 
+typedef struct evp_kdf_st EVP_KDF;
+typedef struct evp_kdf_ctx_st EVP_KDF_CTX;
+typedef struct evp_kem_st EVP_KEM;
 typedef struct evp_mac_st EVP_MAC;
 typedef struct evp_mac_ctx_st EVP_MAC_CTX;
 

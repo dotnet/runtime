@@ -1,14 +1,10 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
     <type fullname="System.Diagnostics.Tracing.EventSource" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
-      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
       <method signature="System.Void Finalize()" body="stub" />
       <method signature="System.Boolean IsEnabled()" body="stub" value="false" />
       <method signature="System.Boolean IsEnabled(System.Diagnostics.Tracing.EventLevel,System.Diagnostics.Tracing.EventKeywords)" body="stub" value="false" />
       <method signature="System.Boolean IsEnabled(System.Diagnostics.Tracing.EventLevel,System.Diagnostics.Tracing.EventKeywords,System.Diagnostics.Tracing.EventChannel)" body="stub" value="false" />
-    </type>
-    <type fullname="System.Diagnostics.StackTrace" feature="System.Diagnostics.StackTrace.IsSupported" featurevalue="false">
-      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
     <!-- Note: Invariant=true and Invariant=false are substituted at different levels. This allows for the whole Settings nested class
          to be trimmed when Invariant=true, and allows for the Settings static cctor (on Unix) to be preserved when Invariant=false. -->
@@ -20,27 +16,11 @@
     <type fullname="System.Globalization.GlobalizationMode/Settings">
       <method signature="System.Boolean get_Invariant()" body="stub" value="false" feature="System.Globalization.Invariant" featurevalue="false" />
     </type>
-    <type fullname="System.LocalAppContextSwitches">
-      <method signature="System.Boolean get_EnableUnsafeUTF7Encoding()" body="stub" value="false" feature="System.Text.Encoding.EnableUnsafeUTF7Encoding" featurevalue="false" />
-    </type>
     <type fullname="System.Resources.ResourceReader">
       <method signature="System.Boolean InitializeBinaryFormatter()" body="stub" value="false" feature="System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization" featurevalue="false" />
     </type>
     <type fullname="System.Threading.Tasks.Task" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
       <field name="s_asyncDebuggingEnabled" value="false" initialize="false" />
-      <method signature="System.Boolean get_IsWaitNotificationEnabled()" body="stub" value="false" />
-    </type>
-    <type fullname="System.Resources.ResourceReader" feature="System.Resources.ResourceManager.AllowCustomResourceTypes" featurevalue="false">
-      <method signature="System.Boolean get_AllowCustomResourceTypes()" body="stub" value="false" />
-    </type>
-    <type fullname="System.Reflection.Metadata.MetadataUpdater" feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="false">
-      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
-    </type>
-    <type fullname="Internal.Runtime.InteropServices.ComponentActivator" feature="System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting" featurevalue="false">
-      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
-    </type>
-    <type fullname="System.StartupHookProvider" feature="System.StartupHookProvider.IsSupported" featurevalue="false">
-      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
   </assembly>
 </linker>

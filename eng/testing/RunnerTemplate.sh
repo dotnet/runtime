@@ -56,7 +56,7 @@ exitcode_list[133]="SIGTRAP Breakpoint hit. Core dumped."
 exitcode_list[134]="SIGABRT Abort. Managed or native assert, or runtime check such as heap corruption, caused call to abort(). Core dumped."
 exitcode_list[135]="IGBUS   Unaligned memory access. Core dumped."
 exitcode_list[136]="SIGFPE  Bad floating point arguments. Core dumped."
-exitcode_list[137]="SIGKILL Killed either due to out of memory/resources (see /var/log/messages) or by explicit kill."
+exitcode_list[137]="SIGKILL Killed either due to out of memory/resources (see /var/log/messages) or by explicit kill. No dump will be available for this."
 exitcode_list[139]="SIGSEGV Illegal memory access. Deref invalid pointer, overrunning buffer, stack overflow etc. Core dumped."
 exitcode_list[143]="SIGTERM Terminated. Usually before SIGKILL."
 exitcode_list[159]="SIGSYS  Bad System Call."
@@ -79,23 +79,19 @@ function invoke_xunitlogchecker {
   local dump_folder=$1
 
   total_dumps=$(find $dump_folder -name "*.dmp" | wc -l)
-  
+
   if [[ $total_dumps > 0 ]]; then
     echo "Total dumps found in $dump_folder: $total_dumps"
-    xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker.dll"
-    dotnet_file_name="$RUNTIME_PATH/dotnet"
+    xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker"
 
-    if [[ ! -f $dotnet_file_name ]]; then
-      echo "'$dotnet_file_name' was not found. Unable to run XUnitLogChecker."
-      xunitlogchecker_exit_code=1
-    elif [[ ! -f $xunitlogchecker_file_name ]]; then 
-      echo "'$xunitlogchecker_file_name' was not found. Unable to print dump file contents."
+    if [[ ! -f $xunitlogchecker_file_name ]]; then
+      echo "XUnitLogChecker does not exist in the expected location: $xunitlogchecker_file_name"
       xunitlogchecker_exit_code=2
     elif [[ ! -d $dump_folder ]]; then
       echo "The dump directory '$dump_folder' does not exist."
     else
       echo "Executing XUnitLogChecker in $dump_folder..."
-      cmd="$dotnet_file_name --roll-forward Major $xunitlogchecker_file_name --dumps-path $dump_folder"
+      cmd="$xunitlogchecker_file_name --dumps-path $dump_folder"
       echo "$cmd"
       $cmd
       xunitlogchecker_exit_code=$?
@@ -207,7 +203,7 @@ if [[ $system_name == "Linux" && $test_exitcode -ne 0 ]]; then
   if [[ -e /proc/sys/kernel/core_uses_pid && "1" == $(cat /proc/sys/kernel/core_uses_pid) ]]; then
     core_name_uses_pid=1
   fi
-  
+
   # The osx dumps are too large to egress the machine
   echo Looking around for any Linux dumps...
 
@@ -240,8 +236,9 @@ elif [[ -z "$__IsXUnitLogCheckerSupported" ]]; then
 elif [[ "$__IsXUnitLogCheckerSupported" != "1" ]]; then
   echo "XUnitLogChecker not supported for this test case. Skipping."
 else
+  echo "XUnitLogChecker status: $__IsXUnitLogCheckerSupported"
   echo ----- start ===============  XUnitLogChecker Output =====================================================
-  
+
   invoke_xunitlogchecker "$HELIX_DUMP_FOLDER"
 
   if [[ $xunitlogchecker_exit_code -ne 0 ]]; then

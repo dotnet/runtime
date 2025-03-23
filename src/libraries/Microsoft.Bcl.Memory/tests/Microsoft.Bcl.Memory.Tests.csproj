@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetFrameworkMinimum);$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>$(NetFrameworkCurrent);$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -24,10 +24,17 @@
     <Compile Include="..\..\System.Memory\tests\Base64Url\Base64UrlValidationUnitTests.cs">
       <Link>System\Memory\Base64Url\Base64UrlValidationUnitTests.cs</Link>
     </Compile>
+    <Compile Include="..\..\System.Runtime\tests\System.Runtime.Tests\System\RangeTests.cs">
+      <Link>System\RangeTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Runtime\tests\System.Runtime.Tests\System\IndexTests.cs">
+      <Link>System\IndexTests.cs</Link>
+    </Compile>
   </ItemGroup>
-  
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="..\..\Common\tests\System\Runtime\CompilerServices\RuntimeHelpers.cs" Link="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
     <ProjectReference Include="..\src\Microsoft.Bcl.Memory.csproj" />
   </ItemGroup>
-  
+
 </Project>

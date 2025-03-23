@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -11,6 +12,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
 	//   - so the main validation is done by the ExpectedWarning attributes.
 	[SkipKeptItemsValidation]
+	[SetupCompileArgument ("/unsafe")]
 	[ExpectedNoWarnings]
 	public class FieldDataFlow
 	{
@@ -338,17 +340,77 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnexpectedWarning ("IL2077", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			static void TestFlowOutOfField ()
 			{
 				RequirePublicFields (unsupportedTypeInstance);
 			}
 
-			[UnexpectedWarning ("IL2074", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
-			public static void Test () {
+			static void TestUnsupportedType () {
 				var t = GetUnsupportedTypeInstance ();
 				unsupportedTypeInstance = t;
 				TestFlowOutOfField ();
+			}
+
+			ref struct StringRef
+			{
+				[ExpectedWarning ("IL2097")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public ref string stringRef;
+
+				public StringRef (ref string s)
+				{
+					stringRef = ref s;
+				}
+
+				static string GetString () => null;
+
+				[ExpectedWarning ("IL2098")]
+				static void RequirePublicFields (
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+					ref string s)
+				{
+				}
+
+				void TestFlowOutOfField ()
+				{
+					RequirePublicFields (ref stringRef);
+				}
+
+				public static void Test ()
+				{
+					string s = GetString ();
+					var stringRef = new StringRef (ref s);
+					stringRef.TestFlowOutOfField ();
+				}
+			}
+
+			class GenericField<T>
+			{
+				[ExpectedWarning ("IL2097")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public static T field;
+			}
+
+			static void TestTypeGenericParameter ()
+			{
+				GenericField<Type>.field = GetUnknownType ();
+			}
+
+			[ExpectedWarning ("IL2097")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			unsafe static delegate*<void> functionPointer;
+
+			unsafe static void TestFunctionPointer ()
+			{
+				functionPointer = null;
+			}
+
+			public static void Test ()
+			{
+				TestUnsupportedType ();
+				StringRef.Test ();
+				TestTypeGenericParameter ();
+				TestFunctionPointer ();
 			}
 		}
 

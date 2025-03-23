@@ -383,7 +383,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 return;
                             }
                         }
-                        Debug.Assert(false, "Not possible to reach here");
+                        Debug.Fail("Not possible to reach here");
                     };
                     // Scan for pre-existing fingerprint entry in buckets
                     if (hasEntryInBucket(bucketAIndex, fingerprint) || hasEntryInBucket(bucketBIndex, fingerprint))
@@ -439,7 +439,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     bucketCount *= 2;
                 }
             }
-            while(tryAgainWithBiggerTable && ((countOfRetries++) < 2));
+            while (tryAgainWithBiggerTable && ((countOfRetries++) < 2));
 
             byte[] result;
             if (tryAgainWithBiggerTable)

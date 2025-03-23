@@ -357,7 +357,7 @@ namespace System.Threading.Tasks
         internal override Delegate[]? GetDelegateContinuationsForDebugger() =>
             m_task is null ? null :
             m_task.m_action is null ? m_task.GetDelegateContinuationsForDebugger() :
-            new Delegate[] { m_task.m_action };
+            [m_task.m_action];
     }
 
     /// <summary>Task continuation for awaiting with a current synchronization context.</summary>
@@ -824,7 +824,7 @@ namespace System.Threading.Tasks
         internal override Delegate[] GetDelegateContinuationsForDebugger()
         {
             Debug.Assert(m_action != null);
-            return new Delegate[] { AsyncMethodBuilderCore.TryGetStateMachineForDebugger(m_action) };
+            return [AsyncMethodBuilderCore.TryGetStateMachineForDebugger(m_action)];
         }
     }
 }

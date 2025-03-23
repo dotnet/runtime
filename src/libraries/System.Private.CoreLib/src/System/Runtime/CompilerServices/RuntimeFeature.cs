@@ -52,24 +52,13 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         public static bool IsSupported(string feature)
         {
-            switch (feature)
+            return feature switch
             {
-                case PortablePdb:
-                case CovariantReturnsOfClasses:
-                case ByRefFields:
-                case ByRefLikeGenerics:
-                case UnmanagedSignatureCallingConvention:
-                case DefaultImplementationsOfInterfaces:
-                case VirtualStaticsInInterfaces:
-                case NumericIntPtr:
-                    return true;
-                case nameof(IsDynamicCodeSupported):
-                    return IsDynamicCodeSupported;
-                case nameof(IsDynamicCodeCompiled):
-                    return IsDynamicCodeCompiled;
-            }
-
-            return false;
+                PortablePdb or CovariantReturnsOfClasses or ByRefFields or ByRefLikeGenerics or UnmanagedSignatureCallingConvention or DefaultImplementationsOfInterfaces or VirtualStaticsInInterfaces or NumericIntPtr => true,
+                nameof(IsDynamicCodeSupported) => IsDynamicCodeSupported,
+                nameof(IsDynamicCodeCompiled) => IsDynamicCodeCompiled,
+                _ => false,
+            };
         }
     }
 }

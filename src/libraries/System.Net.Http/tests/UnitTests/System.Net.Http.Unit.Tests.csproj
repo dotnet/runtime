@@ -35,8 +35,6 @@
              Link="ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.Associate.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.Associate.cs" />
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
-             Link="ProductionCode\Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
              Link="ProductionCode\Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
@@ -183,6 +181,8 @@
              Link="ProductionCode\System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\WarningHeaderValue.cs"
              Link="ProductionCode\System\Net\Http\Headers\WarningHeaderValue.cs" />
+    <Compile Include="..\..\src\System\Net\Http\DiagnosticsHelper.cs"
+             Link="ProductionCode\System\Net\Http\DiagnosticsHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpClient.cs"
              Link="ProductionCode\System\Net\Http\HttpClient.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpHandlerDefaults.cs"
@@ -253,6 +253,7 @@
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="ProductionCode\System\Net\Http\HttpHandlerDefaults.cs" />
+    <Compile Include="DiagnosticsHelperTest.cs" />
     <Compile Include="DigestAuthenticationTests.cs" />
     <Compile Include="Fakes\HttpClientHandler.cs" />
     <Compile Include="Fakes\HttpTelemetry.cs" />
@@ -353,6 +354,8 @@
              Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
              Link="ProductionCode\Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs"
              Link="ProductionCode\Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs" />
     <Compile Include="$(CommonPath)System\Runtime\ExceptionServices\ExceptionStackTrace.cs"

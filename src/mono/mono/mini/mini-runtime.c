@@ -119,6 +119,7 @@ const char *mono_build_date;
 gboolean mono_do_signal_chaining;
 gboolean mono_do_crash_chaining;
 int mini_verbose = 0;
+gboolean mono_term_signaled = FALSE;
 
 /*
  * This flag controls whenever the runtime uses LLVM for JIT compilation, and whenever
@@ -2938,6 +2939,11 @@ mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
 static gpointer
 get_ftnptr_for_method (MonoMethod *method, gboolean need_unbox, MonoError *error)
 {
+	if (method->is_generic || mono_class_is_gtd (method->klass)) {
+		mono_error_set_generic_error (error, "System", "InvalidOperationException", "");
+		return NULL;
+	}
+
 	if (!mono_llvm_only) {
 		gpointer res = mono_jit_compile_method (method, error);
 		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), need_unbox);
@@ -3758,6 +3764,17 @@ MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 	}
 }
 
+MONO_SIG_HANDLER_FUNC (, mono_sigterm_signal_handler)
+{
+	mono_environment_exitcode_set(128+SIGTERM);	/* Set default exit code */
+
+	mono_term_signaled = TRUE;
+
+	mono_gc_finalize_notify ();
+
+	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+}
+
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
 
 #define HAVE_SIG_INFO
@@ -3891,7 +3908,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			if (!mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
+				mono_chain_signal_to_default_sigsegv_handler ();
 			return;
 		}
 	}
@@ -3901,7 +3919,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	} else {
 		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			if (!mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
+				mono_chain_signal_to_default_sigsegv_handler ();
 			return;
 		}
 	}
@@ -4921,11 +4940,13 @@ register_icalls (void)
 	 * so on.
 	 */
 	register_icall (mono_profiler_raise_method_enter, mono_icall_sig_void_ptr_ptr, TRUE);
+	register_icall (mono_profiler_raise_method_samplepoint, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_method_leave, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_method_tail_call, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_exception_clause, mono_icall_sig_void_ptr_int_int_object, TRUE);
 
 	register_icall (mono_trace_enter_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
+	register_icall (mono_trace_samplepoint_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	register_icall (mono_trace_leave_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	register_icall (mono_trace_tail_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	g_assert (mono_get_lmf_addr == mono_tls_get_lmf_addr);

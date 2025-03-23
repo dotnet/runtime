@@ -117,7 +117,7 @@ function initRunArgs(runArgs) {
     runArgs.enableGC = runArgs.enableGC === undefined ? true : runArgs.enableGC;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
-    runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/blazor.boot.json' : runArgs.configSrc;
+    runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/dotnet.boot.js' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
     runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? false : runArgs.interpreterPgo;
@@ -368,7 +368,7 @@ async function run() {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
                 const result = await App.runtime.runMain(main_assembly_name, app_args);
-                console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result}`);
+                console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result} and linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
                 mono_exit(result);
             } catch (error) {
                 if (error.name != "ExitStatus") {

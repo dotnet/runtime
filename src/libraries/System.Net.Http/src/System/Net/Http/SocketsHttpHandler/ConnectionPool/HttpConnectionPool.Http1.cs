@@ -259,8 +259,7 @@ namespace System.Net.Http
             HttpConnection? connection = null;
             Exception? connectionException = null;
 
-            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
-            waiter.ConnectionCancellationTokenSource = cts;
+            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource(waiter);
             try
             {
                 connection = await CreateHttp11ConnectionAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
@@ -294,14 +293,14 @@ namespace System.Net.Http
 
         internal async ValueTask<HttpConnection> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            (Stream stream, TransportContext? transportContext, IPEndPoint? remoteEndPoint) = await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
-            return await ConstructHttp11ConnectionAsync(async, stream, transportContext, request, remoteEndPoint, cancellationToken).ConfigureAwait(false);
+            (Stream stream, TransportContext? transportContext, Activity? activity,  IPEndPoint? remoteEndPoint) = await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
+            return await ConstructHttp11ConnectionAsync(async, stream, transportContext, request, activity, remoteEndPoint, cancellationToken).ConfigureAwait(false);
         }
 
-        private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Stream stream, TransportContext? transportContext, HttpRequestMessage request, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)
+        private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Stream stream, TransportContext? transportContext, HttpRequestMessage request, Activity? activity, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)
         {
             Stream newStream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
-            return new HttpConnection(this, newStream, transportContext, remoteEndPoint);
+            return new HttpConnection(this, newStream, transportContext, activity, remoteEndPoint);
         }
 
         private void HandleHttp11ConnectionFailure(HttpConnectionWaiter<HttpConnection>? requestWaiter, Exception e)

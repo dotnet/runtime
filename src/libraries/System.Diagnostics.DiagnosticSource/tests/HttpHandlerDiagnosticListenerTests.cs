@@ -145,6 +145,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/112792")]
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestW3CHeaders()
@@ -194,6 +195,7 @@ namespace System.Diagnostics.Tests
             {
                 using (var eventRecords = new EventObserverAndRecorder())
                 {
+                    Activity.DefaultIdFormat = ActivityIdFormat.W3C;
                     var parent = new Activity("w3c activity");
                     parent.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom());
                     parent.TraceStateString = "some=state";

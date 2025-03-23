@@ -58,6 +58,11 @@
 
 static uint32_t xmmYmmStateSupport()
 {
+#if defined(HOST_X86)
+    // We don't support saving XState context on linux-x86 platforms yet, so we
+    // need to disable any AVX support that uses the extended registers.
+    return 0;
+#else
     uint32_t eax;
     __asm("  xgetbv\n" \
         : "=a"(eax) /*output in eax*/\
@@ -66,11 +71,16 @@ static uint32_t xmmYmmStateSupport()
       );
     // check OS has enabled both XMM and YMM state support
     return ((eax & 0x06) == 0x06) ? 1 : 0;
+#endif // HOST_X86
 }
 
 #ifndef XSTATE_MASK_AVX512
 #define XSTATE_MASK_AVX512 (0xE0) /* 0b1110_0000 */
 #endif // XSTATE_MASK_AVX512
+
+#ifndef XSTATE_MASK_APX
+#define XSTATE_MASK_APX (0x80000)
+#endif // XSTATE_MASK_APX
 
 static uint32_t avx512StateSupport()
 {
@@ -99,6 +109,23 @@ static uint32_t avx512StateSupport()
 #endif
 }
 
+static uint32_t apxStateSupport()
+{
+#if defined(HOST_APPLE)
+    return 0;
+#elif defined(TARGET_X86)
+    return 0;
+#else
+    uint32_t eax;
+    __asm("  xgetbv\n" \
+        : "=a"(eax) /*output in eax*/\
+        : "c"(0) /*inputs - 0 in ecx*/\
+        : "edx" /* registers that are clobbered*/
+      );
+    return ((eax & 0x80000) == 0x80000) ? 1 : 0;
+#endif  // TARGET_AMD64
+}
+
 static bool IsAvxEnabled()
 {
     return true;
@@ -107,6 +134,15 @@ static bool IsAvxEnabled()
 static bool IsAvx512Enabled()
 {
     return true;
+}
+
+static bool IsApxEnabled()
+{
+#if defined(TARGET_X86)
+    return false;
+#else
+    return true;
+#endif  // TARGET_AMD64
 }
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
 #endif // HOST_UNIX
@@ -125,6 +161,15 @@ static uint32_t avx512StateSupport()
     return ((_xgetbv(0) & 0xE6) == 0x0E6) ? 1 : 0;
 }
 
+static uint32_t apxStateSupport()
+{
+#if defined(TARGET_X86)
+    return 0;
+#else
+    return ((_xgetbv(0) & 0x80000) == 0x80000) ? 1 : 0;
+#endif
+}
+
 static bool IsAvxEnabled()
 {
     DWORD64 FeatureMask = GetEnabledXStateFeatures();
@@ -135,6 +180,22 @@ static bool IsAvx512Enabled()
 {
     DWORD64 FeatureMask = GetEnabledXStateFeatures();
     return ((FeatureMask & XSTATE_MASK_AVX512) != 0);
+}
+
+// TODO-XArch-APX:
+// we will eventually need to remove this macro when windows officially supports APX.
+#ifndef XSTATE_MASK_APX
+#define XSTATE_MASK_APX (0x80000)
+#endif // XSTATE_MASK_APX
+
+static bool IsApxEnabled()
+{
+#ifdef TARGET_X86
+    return false;
+#else
+    DWORD64 FeatureMask = GetEnabledXStateFeatures();
+    return ((FeatureMask & XSTATE_MASK_APX) != 0);
+#endif
 }
 
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
@@ -216,6 +277,16 @@ int minipal_getcpufeatures(void)
                             {
                                 __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
+                                if ((cpuidInfo[CPUID_ECX] & (1 << 8)) != 0)                                     // GFNI
+                                {
+                                    result |= XArchIntrinsicConstants_Gfni;
+                                }
+
+                                if ((cpuidInfo[CPUID_ECX] & (1 << 10)) != 0)                                    // VPCLMULQDQ
+                                {
+                                    result |= XArchIntrinsicConstants_Vpclmulqdq;
+                                }
+
                                 if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                                     // AVX2
                                 {
                                     result |= XArchIntrinsicConstants_Avx2;
@@ -252,17 +323,29 @@ int minipal_getcpufeatures(void)
                                         result |= XArchIntrinsicConstants_AvxVnni;
                                     }
 
+                                    if (IsApxEnabled() && apxStateSupport())
+                                    {
+                                        if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                            // Apx
+                                        {
+                                            result |= XArchIntrinsicConstants_Apx;
+                                        }
+                                    }                                    
+
                                     if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
                                     {
                                         __cpuidex(cpuidInfo, 0x00000024, 0x00000000);
                                         uint8_t avx10Version = (uint8_t)(cpuidInfo[CPUID_EBX] & 0xFF);
 
                                         if((avx10Version >= 1) &&
-                                           ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0) &&                         // Avx10/V128
                                            ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0))                           // Avx10/V256
                                         {
                                             result |= XArchIntrinsicConstants_Evex;
-                                            result |= XArchIntrinsicConstants_Avx10v1;
+                                            result |= XArchIntrinsicConstants_Avx10v1;                          // Avx10.1
+
+                                            if (avx10Version >= 2)                                              // Avx10.2
+                                            {
+                                                result |= XArchIntrinsicConstants_Avx10v2;
+                                            }
                                             
                                             // We assume that the Avx10/V512 support can be inferred from
                                             // both Avx10v1 and Avx512 being present.
@@ -418,6 +501,17 @@ int minipal_getcpufeatures(void)
     if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Dp;
+
+        // IsProcessorFeaturePresent does not have a dedicated flag for RDM, so we enable it by implication.
+        // 1) DP is an optional instruction set for Armv8.2, which may be included only in processors implementing at least Armv8.1.
+        // 2) Armv8.1 requires RDM when AdvSIMD is implemented, and AdvSIMD is a baseline requirement of .NET.
+        //
+        // Therefore, by documented standard, DP cannot exist here without RDM. In practice, there is only one CPU supported
+        // by Windows that includes RDM without DP, so this implication also has little practical chance of a false negative.
+        //
+        // See: https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/Learn%20the%20Architecture/Understanding%20the%20Armv8.x%20extensions.pdf
+        //      https://developer.arm.com/documentation/109697/2024_09/Feature-descriptions/The-Armv8-1-architecture-extension
+        result |= ARM64IntrinsicConstants_Rdm;
     }
 
     if (IsProcessorFeaturePresent(PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE))

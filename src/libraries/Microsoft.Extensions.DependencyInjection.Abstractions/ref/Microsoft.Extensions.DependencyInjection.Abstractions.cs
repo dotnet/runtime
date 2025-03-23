@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static object AnyKey { get { throw null; } }
     }
     public delegate object ObjectFactory(System.IServiceProvider serviceProvider, object?[]? arguments);
-    public delegate T ObjectFactory<T>(System.IServiceProvider serviceProvider, object?[]? arguments);
+    public delegate T ObjectFactory<out T>(System.IServiceProvider serviceProvider, object?[]? arguments);
     public partial class ServiceCollection : Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
     {
         public ServiceCollection() { }
@@ -218,6 +218,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static System.Collections.Generic.IEnumerable<object?> GetKeyedServices(this System.IServiceProvider provider, System.Type serviceType, object? serviceKey) { throw null; }
         public static System.Collections.Generic.IEnumerable<T> GetKeyedServices<T>(this System.IServiceProvider provider, object? serviceKey) { throw null; }
         public static T? GetKeyedService<T>(this System.IServiceProvider provider, object? serviceKey) { throw null; }
+        public static object? GetKeyedService(this System.IServiceProvider provider, System.Type serviceType, object? serviceKey) { throw null; }
         public static object GetRequiredKeyedService(this System.IServiceProvider provider, System.Type serviceType, object? serviceKey) { throw null; }
         public static T GetRequiredKeyedService<T>(this System.IServiceProvider provider, object? serviceKey) where T : notnull { throw null; }
     }

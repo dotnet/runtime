@@ -222,7 +222,6 @@ enum GcInfoDecoderFlags
     DECODE_PROLOG_LENGTH         = 0x400,   // length of the prolog (used to avoid reporting generics context)
     DECODE_EDIT_AND_CONTINUE     = 0x800,
     DECODE_REVERSE_PINVOKE_VAR   = 0x1000,
-    DECODE_RETURN_KIND           = 0x2000,
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     DECODE_HAS_TAILCALLS         = 0x4000,
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
@@ -466,6 +465,8 @@ struct GcSlotDesc
     GcSlotFlags Flags;
 };
 
+
+template <typename GcInfoEncoding>
 class GcSlotDecoder
 {
 public:
@@ -508,12 +509,13 @@ private:
 };
 
 #ifdef USE_GC_INFO_DECODER
-class GcInfoDecoder
+template <typename GcInfoEncoding>
+class TGcInfoDecoder
 {
 public:
 
     // If you are not interested in interruptibility or gc lifetime information, pass 0 as instructionOffset
-    GcInfoDecoder(
+    TGcInfoDecoder(
             GCInfoToken gcInfoToken,
             GcInfoDecoderFlags flags = DECODE_EVERYTHING,
             UINT32 instructionOffset = 0
@@ -528,13 +530,12 @@ public:
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     bool IsSafePoint();
-    bool AreSafePointsInterruptible();
-    bool IsInterruptibleSafePoint();
+    bool CouldBeSafePoint();
 
-    // This is used for gccoverage
+    // This is used for gcinfodumper
     bool IsSafePoint(UINT32 codeOffset);
 
-    typedef void EnumerateSafePointsCallback (GcInfoDecoder* decoder, UINT32 offset, void * hCallback);
+    typedef void EnumerateSafePointsCallback (TGcInfoDecoder<GcInfoEncoding> * decoder, UINT32 offset, void * hCallback);
     void EnumerateSafePoints(EnumerateSafePointsCallback * pCallback, void * hCallback);
 
 #endif
@@ -583,7 +584,6 @@ public:
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool    HasTailCalls();
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
-    ReturnKind GetReturnKind();
     UINT32  GetCodeLength();
     UINT32  GetStackBaseRegister();
     UINT32  GetSizeOfEditAndContinuePreservedArea();
@@ -616,7 +616,6 @@ private:
 #ifdef TARGET_ARM64
     UINT32  m_SizeOfEditAndContinueFixedStackFrame;
 #endif
-    ReturnKind m_ReturnKind;
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     UINT32  m_NumSafePoints;
     UINT32  m_SafePointIndex;
@@ -665,7 +664,7 @@ private:
     bool IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY pRD);
 
     void ReportUntrackedSlots(
-                GcSlotDecoder&      slotDecoder,
+                GcSlotDecoder<GcInfoEncoding>&      slotDecoder,
                 PREGDISPLAY         pRD,
                 unsigned            flags,
                 GCEnumCallback      pCallBack,
@@ -693,7 +692,7 @@ private:
 
 
     inline void ReportSlotToGC(
-                    GcSlotDecoder&      slotDecoder,
+                    GcSlotDecoder<GcInfoEncoding>&      slotDecoder,
                     UINT32              slotIndex,
                     PREGDISPLAY         pRD,
                     bool                reportScratchSlots,
@@ -750,6 +749,9 @@ private:
         }
     }
 };
+
+typedef TGcInfoDecoder<TargetGcInfoEncoding> GcInfoDecoder;
+
 #endif // USE_GC_INFO_DECODER
 
 

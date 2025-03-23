@@ -12,7 +12,7 @@ class DebuggerExState;
 class EHClauseInfo;
 
 #include "exceptionhandling.h"
-#include "cdacoffsets.h"
+#include "cdacdata.h"
 
 #if !defined(FEATURE_EH_FUNCLETS)
 // ExInfo contains definitions for 32bit
@@ -51,7 +51,7 @@ class ThreadExceptionState
     // ExceptionTracker or the ExInfo as appropriate for the platform
     friend class ProfToEEInterfaceImpl;
 
-    template<typename T> friend struct ::cdac_offsets;
+    friend struct ::cdac_data<Thread>;
 
 #ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;
@@ -62,16 +62,11 @@ class ThreadExceptionState
 
 public:
 
-    void FreeAllStackTraces();
-
 #ifdef _DEBUG
     typedef enum
     {
         STEC_All,
         STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow,
-#ifdef FEATURE_INTERPRETER
-        STEC_CurrentTrackerEqualNullOkForInterpreter,
-#endif // FEATURE_INTERPRETER
     } SetThrowableErrorChecking;
 #endif
 
@@ -142,10 +137,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         ResetThreadExceptionFlag(TEF_ForeignExceptionRaise);
     }
-
-#if defined(_DEBUG)
-    void AssertStackTraceInfo(StackTraceInfo *pSTI);
-#endif // _debug
 
 private:
     Thread* GetMyThread();

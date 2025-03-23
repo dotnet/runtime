@@ -319,7 +319,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         [Fact]
         public static void TestExplicitCurveImportOnUnsupportedPlatform()
         {
-            if (ECDiffieHellmanFactory.ExplicitCurvesSupported)
+            if (ECDiffieHellmanFactory.ExplicitCurvesSupported || ECDiffieHellmanFactory.ExplicitCurvesSupportFailOnUseOnly)
             {
                 return;
             }

@@ -490,6 +490,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99951")]
         public async Task WaitInAsyncAssertsOnlyOnJSWebWorker(Executor executor, NamedCall method)
         {
             using var cts = CreateTestCaseTimeoutSource();
@@ -520,6 +521,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99951")]
         public async Task WaitAssertsOnSyncCallback(Executor executor, NamedCall method)
         {
             using var cts = CreateTestCaseTimeoutSource();
@@ -555,6 +557,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99951")]
         public async Task WaitAssertsOnSyncJSExport(Executor executor, NamedCall method)
         {
             using var cts = CreateTestCaseTimeoutSource();

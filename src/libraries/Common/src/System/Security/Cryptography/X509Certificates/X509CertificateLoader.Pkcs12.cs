@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
@@ -20,6 +21,15 @@ namespace System.Security.Cryptography.X509Certificates
 #if NET
         private const int NTE_FAIL = unchecked((int)0x80090020);
 #endif
+
+#pragma warning disable CA1805
+        private static readonly AttributeAsn? s_syntheticKspAttribute =
+#if NET
+            null;
+#else
+            BuildSyntheticKspAttribute();
+#endif
+#pragma warning restore CA1805
 
         static partial void LoadPkcs12NoLimits(
             ReadOnlyMemory<byte> data,
@@ -268,12 +278,19 @@ namespace System.Security.Cryptography.X509Certificates
             AsnValueReader reader = outer.ReadSequence();
             outer.ThrowIfNotEmpty();
 
+            HashSet<string> duplicateAttributeCheck = new();
+
             while (reader.HasData)
             {
                 SafeBagAsn.Decode(ref reader, contentData, out SafeBagAsn bag);
 
                 if (bag.BagId == Oids.Pkcs12CertBag)
                 {
+                    if (bag.BagAttributes is not null && !loaderLimits.AllowDuplicateAttributes)
+                    {
+                        RejectDuplicateAttributes(bag.BagAttributes, duplicateAttributeCheck);
+                    }
+
                     CertBagAsn certBag = CertBagAsn.Decode(bag.BagValue, AsnEncodingRules.BER);
 
                     if (certBag.CertId == Oids.Pkcs12X509CertBagType)
@@ -302,6 +319,11 @@ namespace System.Security.Cryptography.X509Certificates
                 }
                 else if (bag.BagId is Oids.Pkcs12KeyBag or Oids.Pkcs12ShroudedKeyBag)
                 {
+                    if (bag.BagAttributes is not null && !loaderLimits.AllowDuplicateAttributes)
+                    {
+                        RejectDuplicateAttributes(bag.BagAttributes, duplicateAttributeCheck);
+                    }
+
                     if (loaderLimits.IgnorePrivateKeys)
                     {
                         continue;
@@ -344,13 +366,38 @@ namespace System.Security.Cryptography.X509Certificates
                                 attrType switch
                                 {
                                     Oids.LocalKeyId => true,
+                                    // MsPkcs12MachineKeySet can be forced off with the UserKeySet flag, or on with MachineKeySet,
+                                    // so always preserve it.
+                                    Oids.MsPkcs12MachineKeySet => true,
                                     Oids.Pkcs9FriendlyName => limits.PreserveKeyName,
                                     Oids.MsPkcs12KeyProviderName => limits.PreserveStorageProvider,
                                     _ => limits.PreserveUnknownAttributes,
                                 });
                     }
 
+                    if (!loaderLimits.PreserveStorageProvider && s_syntheticKspAttribute.HasValue)
+                    {
+                        int newCount = (bag.BagAttributes?.Length).GetValueOrDefault(0) + 1;
+                        Array.Resize(ref bag.BagAttributes, newCount);
+                        bag.BagAttributes[newCount - 1] = s_syntheticKspAttribute.GetValueOrDefault();
+                    }
+
                     bagState.AddKey(bag);
+                }
+            }
+        }
+
+        private static void RejectDuplicateAttributes(AttributeAsn[] bagAttributes, HashSet<string> duplicateAttributeCheck)
+        {
+            duplicateAttributeCheck.Clear();
+
+            foreach (AttributeAsn attrSet in bagAttributes)
+            {
+                // Use >1 instead of =1 to account for MsPkcs12MachineKeySet, which is a named set with no values.
+                // An empty attribute set can't be followed by the same empty set, or a non-empty set.
+                if (!duplicateAttributeCheck.Add(attrSet.AttrType) || attrSet.AttrValues.Length > 1)
+                {
+                    throw new Pkcs12LoadLimitExceededException(nameof(Pkcs12LoaderLimits.AllowDuplicateAttributes));
                 }
             }
         }
@@ -362,10 +409,13 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (bag.BagAttributes is not null)
             {
-                // Should this dedup/fail-on-dup?
                 int attrIdx = -1;
 
-                for (int i = bag.BagAttributes.Length - 1; i > attrIdx; i--)
+                // Filter the attributes, per the loader limits.
+                // Because duplicates might be permitted by the options, this filter
+                // needs to be order preserving.
+
+                for (int i = 0; i < bag.BagAttributes.Length; i++)
                 {
                     string attrType = bag.BagAttributes[i].AttrType;
 
@@ -373,30 +423,28 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         attrIdx++;
 
-                        if (i > attrIdx)
+                        if (attrIdx != i)
                         {
                             AttributeAsn attr = bag.BagAttributes[i];
+#if DEBUG
                             bag.BagAttributes[i] = bag.BagAttributes[attrIdx];
+#endif
                             bag.BagAttributes[attrIdx] = attr;
-
-                            // After swapping, back up one position to check if the attribute
-                            // swapped into this position should also be preserved.
-                            i++;
                         }
                     }
                 }
 
-                attrIdx++;
+                int attrLen = attrIdx + 1;
 
-                if (attrIdx < bag.BagAttributes.Length)
+                if (attrLen < bag.BagAttributes.Length)
                 {
-                    if (attrIdx == 0)
+                    if (attrLen == 0)
                     {
                         bag.BagAttributes = null;
                     }
                     else
                     {
-                        Array.Resize(ref bag.BagAttributes, attrIdx);
+                        Array.Resize(ref bag.BagAttributes, attrLen);
                     }
                 }
             }
@@ -519,6 +567,20 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
         }
+
+#if !NET
+        private static AttributeAsn? BuildSyntheticKspAttribute()
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.BMPString, "Microsoft Software Key Storage Provider");
+
+            return new AttributeAsn
+            {
+                AttrType = Oids.MsPkcs12KeyProviderName,
+                AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) }
+            };
+        }
+#endif
 
         private readonly partial struct Pkcs12Return
         {

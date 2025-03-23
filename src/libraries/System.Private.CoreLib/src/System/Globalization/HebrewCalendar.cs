@@ -432,7 +432,7 @@ namespace System.Globalization
         /// Returns a given date part of this DateTime. This method is used
         /// to compute the year, day-of-year, month, or day part.
         /// </summary>
-        internal virtual int GetDatePart(long ticks, int part)
+        private static int GetDatePart(long ticks, int part)
         {
             // The Gregorian year, month, day value for ticks.
             int hebrewYearType;                // lunar year type
@@ -686,7 +686,7 @@ namespace System.Globalization
 
         public override int GetEra(DateTime time) => HebrewEra;
 
-        public override int[] Eras => new int[] { HebrewEra };
+        public override int[] Eras => [HebrewEra];
 
         public override int GetMonth(DateTime time)
         {

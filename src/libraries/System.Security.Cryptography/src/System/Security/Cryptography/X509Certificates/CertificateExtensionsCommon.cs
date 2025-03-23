@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (typeof(T) == typeof(RSA) || typeof(T) == typeof(DSA))
             {
                 byte[] rawEncodedKeyValue = publicKey.EncodedKeyValue.RawData;
-                byte[] rawEncodedParameters = publicKey.EncodedParameters.RawData;
+                byte[]? rawEncodedParameters = publicKey.EncodedParameters?.RawData;
                 return (T)(X509Pal.Instance.DecodePublicKey(algorithmOid, rawEncodedKeyValue, rawEncodedParameters, certificate.Pal));
             }
             else if (typeof(T) == typeof(ECDsa))

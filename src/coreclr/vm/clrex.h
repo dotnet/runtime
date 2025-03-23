@@ -27,6 +27,9 @@ enum StackTraceElementFlags
 
     // Set if the "ip" field has already been adjusted (decremented)
     STEF_IP_ADJUSTED = 0x0002,
+
+    // Set if the element references a method that needs a keep alive object
+    STEF_KEEPALIVE = 0x0004,
 };
 
 // This struct is used by SOS in the diagnostic repo.
@@ -51,28 +54,13 @@ struct StackTraceElement
     }
 };
 
-// This struct is used by SOS in the diagnostic repo.
-// See: https://github.com/dotnet/diagnostics/blob/9ff35f13af2f03a68a166cfd53f1a4bb32425f2f/src/SOS/Strike/strike.cpp#L2669
 class StackTraceInfo
 {
-private:
-    // for building stack trace info
-    StackTraceElement*  m_pStackTrace;      // pointer to stack trace storage
-    unsigned            m_cStackTrace;      // size of stack trace storage
-    unsigned            m_dFrameCount;      // current frame in stack trace
-    unsigned            m_cDynamicMethodItems; // number of items in the Dynamic Method array
-    unsigned            m_dCurrentDynamicIndex; // index of the next location where the resolver object will be stored
-
+    static OBJECTREF GetKeepAliveObject(MethodDesc* pMethod);
+    static void EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t neededSize);
+    static void EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize);
 public:
-    void Init();
-    BOOL IsEmpty();
-    void AllocateStackTrace();
-    void ClearStackTrace();
-    void FreeStackTrace();
-    void SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable, BOOL bReplaceStack, BOOL bSkipLastElement);
-    BOOL AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
-
-    void GetLeafFrameInfo(StackTraceElement* pStackTraceElement);
+    static void AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
 };
 
 

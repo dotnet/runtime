@@ -145,7 +145,7 @@ namespace System.Security.Cryptography.Pkcs
             scoped Span<byte> I;
             byte[]? IRented = null;
 
-            if (ILen <= 1024)
+            if ((uint)ILen <= 1024)
             {
                 I = stackalloc byte[ILen];
             }
@@ -233,7 +233,7 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        private static void AddPlusOne(Span<byte> into, Span<byte> addend)
+        private static void AddPlusOne(Span<byte> into, ReadOnlySpan<byte> addend)
         {
             Debug.Assert(into.Length == addend.Length);
 

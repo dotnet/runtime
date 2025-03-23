@@ -6,10 +6,12 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Test_PinnedObject
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Object[] arr = new Object[100];
 

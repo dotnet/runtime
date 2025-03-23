@@ -5,10 +5,16 @@
     <Platform>AnyCPU</Platform>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(WasiProjectRoot), 'wasi-sdk'))</WASI_SDK_PATH>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>partial</TrimMode>
+    <TrimMode>full</TrimMode>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
+  <ItemGroup>
+    <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a"/>
+    <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-stub-static.a" />
+    <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-stub-static.a" />
+    <_MonoRuntimeComponentDontLink Include="libmono-component-marshal-ilgen-static.a" />
+  </ItemGroup>
+
 </Project>

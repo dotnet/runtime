@@ -10,12 +10,17 @@ namespace System.Text.Json.Schema
     /// </summary>
     public readonly struct JsonSchemaExporterContext
     {
-        private readonly string[] _path;
+        internal readonly string[] _path;
 
-        internal JsonSchemaExporterContext(JsonTypeInfo typeInfo, JsonPropertyInfo? propertyInfo, string[] path)
+        internal JsonSchemaExporterContext(
+            JsonTypeInfo typeInfo,
+            JsonPropertyInfo? propertyInfo,
+            JsonTypeInfo? baseTypeInfo,
+            string[] path)
         {
             TypeInfo = typeInfo;
             PropertyInfo = propertyInfo;
+            BaseTypeInfo = baseTypeInfo;
             _path = path;
         }
 
@@ -28,6 +33,11 @@ namespace System.Text.Json.Schema
         /// The <see cref="JsonPropertyInfo"/> if the schema is being generated for a property.
         /// </summary>
         public JsonPropertyInfo? PropertyInfo { get; }
+
+        /// <summary>
+        /// Gets the <see cref="JsonTypeInfo"/> for polymorphic base type if the schema is being generated for a derived type.
+        /// </summary>
+        public JsonTypeInfo? BaseTypeInfo { get; }
 
         /// <summary>
         /// The path to the current node in the generated JSON schema.

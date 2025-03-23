@@ -13,12 +13,14 @@ namespace Mono.Linker
 	{
 		public SubstitutionInfo PrimarySubstitutionInfo { get; }
 		private readonly Dictionary<AssemblyDefinition, SubstitutionInfo?> _embeddedXmlInfos;
+		private readonly Dictionary<MethodDefinition, bool> _featureCheckValues;
 		readonly LinkContext _context;
 
 		public MemberActionStore (LinkContext context)
 		{
 			PrimarySubstitutionInfo = new SubstitutionInfo ();
 			_embeddedXmlInfos = new Dictionary<AssemblyDefinition, SubstitutionInfo?> ();
+			_featureCheckValues = new Dictionary<MethodDefinition, bool> ();
 			_context = context;
 		}
 
@@ -68,6 +70,9 @@ namespace Mono.Linker
 
 		internal bool TryGetFeatureCheckValue (MethodDefinition method, out bool value)
 		{
+			if (_featureCheckValues.TryGetValue (method, out value))
+				return true;
+
 			value = false;
 
 			if (!method.IsStatic)
@@ -88,7 +93,11 @@ namespace Mono.Linker
 
 				// If there's a FeatureSwitchDefinition, don't continue looking for FeatureGuard.
 				// We don't want to infer feature switch settings from FeatureGuard.
-				return _context.FeatureSettings.TryGetValue (switchName, out value);
+				if (_context.FeatureSettings.TryGetValue (switchName, out value)) {
+					_featureCheckValues[method] = value;
+					return true;
+				}
+				return false;
 			}
 
 			if (!_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureGuards, method))
@@ -101,13 +110,16 @@ namespace Mono.Linker
 				if (featureType.Namespace == "System.Diagnostics.CodeAnalysis") {
 					switch (featureType.Name) {
 					case "RequiresUnreferencedCodeAttribute":
+						_featureCheckValues[method] = value;
 						return true;
 					case "RequiresDynamicCodeAttribute":
 						if (_context.FeatureSettings.TryGetValue (
 								"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported",
 								out bool isDynamicCodeSupported)
-							&& !isDynamicCodeSupported)
+							&& !isDynamicCodeSupported) {
+							_featureCheckValues[method] = value;
 							return true;
+							}
 						break;
 					}
 				}

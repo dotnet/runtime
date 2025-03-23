@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-browser;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-browser;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CS3011: Only CLS-compliant members can be abstract -->
-    <!-- CS3019: CLS attributes on internal types. Some shared source files are internal in this project. -->
-    <NoWarn>$(NoWarn);CS3011;CS3019</NoWarn>
+    <NoWarn>$(NoWarn);CS3011</NoWarn>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types for encoding and escaping strings for use in JavaScript, HyperText Markup Language (HTML), and uniform resource locators (URL).
@@ -31,7 +30,6 @@ System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
     <Compile Include="System\Text\Encodings\Web\OptimizedInboxTextEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultUrlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoder.cs" />
-    <Compile Include="System\Text\Encodings\Web\SpanUtility.cs" />
     <Compile Include="System\Text\Encodings\Web\ScalarEscaperBase.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultHtmlEncoder.cs" />
@@ -52,6 +50,7 @@ System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
@@ -60,8 +59,9 @@ System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Text\Rune.cs" Link="System\Text\Rune.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf16Utility.cs" Link="System\Text\Unicode\Utf16Utility.cs" />
     <Compile Include="Polyfills\System.Numerics.BitOperations.netstandard20.cs" />
-    <Compile Include="Polyfills\System.Text.Rune.netstandard20.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">

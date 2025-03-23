@@ -858,5 +858,30 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             CompilationHelper.RunJsonSourceGenerator(compilation);
         }
+
+        [Fact]
+        public void RefStructPropertyWithJsonIgnore_CompilesSuccessfully()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/98590
+
+            string source = """
+                using System;
+                using System.Text.Json.Serialization;
+
+                public class MyPoco
+                {
+                    [JsonIgnore]
+                    public ReadOnlySpan<char> Values => "abc".AsSpan();
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
     }
 }

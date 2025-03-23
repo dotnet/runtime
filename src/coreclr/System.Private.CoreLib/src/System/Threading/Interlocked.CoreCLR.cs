@@ -102,21 +102,6 @@ namespace System.Threading
         [return: NotNullIfNotNull(nameof(location1))]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object? ExchangeObject([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
-
-        // The below whole method reduces to a single call to Exchange(ref object, object) but
-        // the JIT thinks that it will generate more native code than it actually does.
-
-        /// <summary>Sets a variable of the specified type <typeparamref name="T"/> to a specified value and returns the original value, as an atomic operation.</summary>
-        /// <param name="location1">The variable to set to the specified value.</param>
-        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
-        /// <returns>The original value of <paramref name="location1"/>.</returns>
-        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
-        /// <typeparam name="T">The type to be used for <paramref name="location1"/> and <paramref name="value"/>. This type must be a reference type.</typeparam>
-        [Intrinsic]
-        [return: NotNullIfNotNull(nameof(location1))]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value) where T : class? =>
-            Unsafe.As<T>(Exchange(ref Unsafe.As<T, object?>(ref location1), value));
 #endregion
 
         #region CompareExchange
@@ -183,29 +168,6 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         [return: NotNullIfNotNull(nameof(location1))]
         private static extern object? CompareExchangeObject(ref object? location1, object? value, object? comparand);
-
-        // Note that getILIntrinsicImplementationForInterlocked() in vm\jitinterface.cpp replaces
-        // the body of the following method with the following IL:
-        //     ldarg.0
-        //     ldarg.1
-        //     ldarg.2
-        //     call System.Threading.Interlocked::CompareExchange(ref Object, Object, Object)
-        //     ret
-        // The workaround is no longer strictly necessary now that we have Unsafe.As but it does
-        // have the advantage of being less sensitive to JIT's inliner decisions.
-
-        /// <summary>Compares two instances of the specified reference type <typeparamref name="T"/> for reference equality and, if they are equal, replaces the first one.</summary>
-        /// <param name="location1">The destination, whose value is compared by reference with <paramref name="comparand"/> and possibly replaced.</param>
-        /// <param name="value">The value that replaces the destination value if the comparison by reference results in equality.</param>
-        /// <param name="comparand">The object that is compared by reference to the value at <paramref name="location1"/>.</param>
-        /// <returns>The original value in <paramref name="location1"/>.</returns>
-        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
-        /// <typeparam name="T">The type to be used for <paramref name="location1"/>, <paramref name="value"/>, and <paramref name="comparand"/>. This type must be a reference type.</typeparam>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NotNullIfNotNull(nameof(location1))]
-        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class? =>
-            Unsafe.As<T>(CompareExchange(ref Unsafe.As<T, object?>(ref location1), value, comparand));
         #endregion
 
         #region Add

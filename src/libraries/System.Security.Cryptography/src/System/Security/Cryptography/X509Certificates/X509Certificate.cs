@@ -23,6 +23,7 @@ namespace System.Security.Cryptography.X509Certificates
         private volatile byte[]? _lazyKeyAlgorithmParameters;
         private volatile byte[]? _lazyPublicKey;
         private volatile byte[]? _lazyRawData;
+        private volatile bool _lazyKeyAlgorithmParametersCreated;
         private DateTime _lazyNotBefore = DateTime.MinValue;
         private DateTime _lazyNotAfter = DateTime.MinValue;
 
@@ -38,6 +39,7 @@ namespace System.Security.Cryptography.X509Certificates
             _lazyRawData = null;
             _lazyNotBefore = DateTime.MinValue;
             _lazyNotAfter = DateTime.MinValue;
+            _lazyKeyAlgorithmParametersCreated = false;
 
             ICertificatePalCore? pal = Pal;
             if (pal != null)
@@ -55,6 +57,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         // Null turns into the empty span here, which is correct for compat.
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate(byte[] data)
             : this(new ReadOnlySpan<byte>(data))
         {
@@ -65,14 +68,12 @@ namespace System.Security.Cryptography.X509Certificates
             if (!data.IsEmpty)
             {
                 // For compat reasons, this constructor treats passing a null or empty data set as the same as calling the nullary constructor.
-                using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
-                {
-                    Pal = CertificatePal.FromBlob(data, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet);
-                }
+                Pal = CertificatePal.FromBlob(data, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.DefaultKeySet);
             }
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate(byte[] rawData, string? password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
@@ -80,12 +81,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         [UnsupportedOSPlatform("browser")]
         [CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate(byte[] rawData, SecureString? password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData == null || rawData.Length == 0)
@@ -101,6 +104,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         [UnsupportedOSPlatform("browser")]
         [CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData == null || rawData.Length == 0)
@@ -140,12 +144,14 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate(string fileName)
             : this(fileName, (string?)null, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate(string fileName, string? password)
             : this(fileName, password, X509KeyStorageFlags.DefaultKeySet)
         {
@@ -153,12 +159,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         [UnsupportedOSPlatform("browser")]
         [CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate(string fileName, SecureString? password)
             : this(fileName, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             ArgumentNullException.ThrowIfNull(fileName);
@@ -185,6 +193,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         [UnsupportedOSPlatform("browser")]
         [CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #pragma warning disable SYSLIB0026
         public X509Certificate(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags) : this()
 #pragma warning restore SYSLIB0026
@@ -220,12 +229,14 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static X509Certificate CreateFromCertFile(string filename)
         {
             return new X509Certificate(filename);
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static X509Certificate CreateFromSignedFile(string filename)
         {
             return new X509Certificate(filename);
@@ -336,6 +347,79 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        /// <summary>
+        ///   Exports the certificate and private key in PKCS#12 / PFX format.
+        /// </summary>
+        /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
+        /// <param name="password">The password to use for the export.</param>
+        /// <returns>A byte array containing the encoded PKCS#12.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="password"/> contains a Unicode 'NULL' character.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="exportParameters"/> is not a valid value.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The current instance is disposed.</para>
+        ///   <para>-or-</para>
+        ///   <para>The export operation failed.</para>
+        /// </exception>
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, string? password)
+        {
+            Helpers.ThrowIfInvalidPkcs12ExportParameters(exportParameters);
+            Helpers.ThrowIfPasswordContainsNullCharacter(password);
+
+            if (Pal is null)
+                throw new CryptographicException(ErrorCode.E_POINTER); // Consistent with existing Export method.
+
+            using (SafePasswordHandle safePasswordHandle = new(password, passwordProvided: true))
+            {
+                return Pal.ExportPkcs12(exportParameters, safePasswordHandle);
+            }
+        }
+
+        /// <summary>
+        ///   Exports the certificate and private key in PKCS#12 / PFX format.
+        /// </summary>
+        /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
+        /// <param name="password">The password to use for the export.</param>
+        /// <returns>A byte array containing the encoded PKCS#12.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="password"/> contains a Unicode 'NULL' character.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="exportParameters"/> is <see langword="null"/> .
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The current instance is disposed.</para>
+        ///   <para>-or-</para>
+        ///   <para>The export operation failed.</para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="exportParameters"/> specifies a <see cref="PbeParameters.HashAlgorithm"/> value that is
+        ///     not supported for the <see cref="PbeParameters.EncryptionAlgorithm"/> value.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="exportParameters"/> contains an invalid encryption algorithm for
+        ///     <see cref="PbeParameters.EncryptionAlgorithm"/>.
+        ///   </para>
+        /// </exception>
+        public byte[] ExportPkcs12(PbeParameters exportParameters, string? password)
+        {
+            ArgumentNullException.ThrowIfNull(exportParameters);
+            Helpers.ThrowIfInvalidPkcs12ExportParameters(exportParameters);
+            Helpers.ThrowIfPasswordContainsNullCharacter(password);
+
+            if (Pal is null)
+                throw new CryptographicException(ErrorCode.E_POINTER); // Consistent with existing Export method.
+
+            using (SafePasswordHandle safePasswordHandle = new(password, passwordProvided: true))
+            {
+                return Pal.ExportPkcs12(exportParameters, safePasswordHandle);
+            }
+        }
+
         public virtual string GetRawCertDataString()
         {
             ThrowIfInvalid();
@@ -438,20 +522,25 @@ namespace System.Security.Cryptography.X509Certificates
             return _lazyKeyAlgorithm ??= Pal.KeyAlgorithm;
         }
 
-        public virtual byte[] GetKeyAlgorithmParameters()
+        public virtual byte[]? GetKeyAlgorithmParameters()
         {
             ThrowIfInvalid();
 
-            byte[] keyAlgorithmParameters = _lazyKeyAlgorithmParameters ??= Pal.KeyAlgorithmParameters;
-            return keyAlgorithmParameters.CloneByteArray();
+            if (!_lazyKeyAlgorithmParametersCreated)
+            {
+                _lazyKeyAlgorithmParameters = Pal.KeyAlgorithmParameters;
+                _lazyKeyAlgorithmParametersCreated = true;
+            }
+
+            return _lazyKeyAlgorithmParameters.CloneByteArray();
         }
 
-        public virtual string GetKeyAlgorithmParametersString()
+        public virtual string? GetKeyAlgorithmParametersString()
         {
             ThrowIfInvalid();
 
-            byte[] keyAlgorithmParameters = GetKeyAlgorithmParameters();
-            return keyAlgorithmParameters.ToHexStringUpper();
+            byte[]? keyAlgorithmParameters = GetKeyAlgorithmParameters();
+            return keyAlgorithmParameters?.ToHexStringUpper();
         }
 
         public virtual byte[] GetPublicKey()

@@ -121,6 +121,8 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+    [System.Runtime.Versioning.SupportedOSPlatform("ios13.0")]
+    [System.Runtime.Versioning.SupportedOSPlatform("tvos13.0")]
     public sealed partial class AesGcm : System.IDisposable
     {
         [System.ObsoleteAttribute("AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size.", DiagnosticId="SYSLIB0053", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -284,6 +286,8 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+    [System.Runtime.Versioning.SupportedOSPlatform("ios13.0")]
+    [System.Runtime.Versioning.SupportedOSPlatform("tvos13.0")]
     public sealed partial class ChaCha20Poly1305 : System.IDisposable
     {
         public ChaCha20Poly1305(byte[] key) { }
@@ -427,6 +431,9 @@ namespace System.Security.Cryptography
         None = 0,
         MachineKey = 32,
         OverwriteExistingKey = 128,
+        PreferVbs = 65536,
+        RequireVbs = 131072,
+        UsePerBootKey = 262144,
     }
     public sealed partial class CngKeyCreationParameters
     {
@@ -1788,6 +1795,49 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+    public abstract partial class MLKem : System.IDisposable
+    {
+        protected MLKem(System.Security.Cryptography.MLKemAlgorithm algorithm) { }
+        public System.Security.Cryptography.MLKemAlgorithm Algorithm { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
+        public void Decapsulate(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected abstract void DecapsulateCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret);
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public void Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected abstract void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret);
+        public void ExportDecapsulationKey(System.Span<byte> destination) { }
+        protected abstract void ExportDecapsulationKeyCore(System.Span<byte> destination);
+        public void ExportEncapsulationKey(System.Span<byte> destination) { }
+        protected abstract void ExportEncapsulationKeyCore(System.Span<byte> destination);
+        public void ExportPrivateSeed(System.Span<byte> destination) { }
+        protected abstract void ExportPrivateSeedCore(System.Span<byte> destination);
+        public static System.Security.Cryptography.MLKem GenerateKey(System.Security.Cryptography.MLKemAlgorithm algorithm) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportDecapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportEncapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        protected void ThrowIfDisposed() { }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+    public sealed partial class MLKemAlgorithm : System.IEquatable<System.Security.Cryptography.MLKemAlgorithm>
+    {
+        internal MLKemAlgorithm() { }
+        public int CiphertextSizeInBytes { get { throw null; } }
+        public int DecapsulationKeySizeInBytes { get { throw null; } }
+        public int EncapsulationKeySizeInBytes { get { throw null; } }
+        public static System.Security.Cryptography.MLKemAlgorithm MLKem1024 { get { throw null; } }
+        public static System.Security.Cryptography.MLKemAlgorithm MLKem512 { get { throw null; } }
+        public static System.Security.Cryptography.MLKemAlgorithm MLKem768 { get { throw null; } }
+        public string Name { get { throw null; } }
+        public int PrivateSeedSizeInBytes { get { throw null; } }
+        public int SharedSecretSizeInBytes { get { throw null; } }
+        public override bool Equals(object? obj) { throw null; }
+        public bool Equals(System.Security.Cryptography.MLKemAlgorithm? other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
+        public static bool operator !=(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
+    }
     public sealed partial class Oid
     {
         public Oid() { }
@@ -1886,11 +1936,15 @@ namespace System.Security.Cryptography
     public static partial class PemEncoding
     {
         public static System.Security.Cryptography.PemFields Find(System.ReadOnlySpan<char> pemData) { throw null; }
+        public static System.Security.Cryptography.PemFields FindUtf8(System.ReadOnlySpan<byte> pemData) { throw null; }
         public static int GetEncodedSize(int labelLength, int dataLength) { throw null; }
         public static bool TryFind(System.ReadOnlySpan<char> pemData, out System.Security.Cryptography.PemFields fields) { throw null; }
+        public static bool TryFindUtf8(System.ReadOnlySpan<byte> pemData, out System.Security.Cryptography.PemFields fields) { throw null; }
         public static bool TryWrite(System.ReadOnlySpan<char> label, System.ReadOnlySpan<byte> data, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryWriteUtf8(System.ReadOnlySpan<byte> utf8Label, System.ReadOnlySpan<byte> data, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static char[] Write(System.ReadOnlySpan<char> label, System.ReadOnlySpan<byte> data) { throw null; }
         public static string WriteString(System.ReadOnlySpan<char> label, System.ReadOnlySpan<byte> data) { throw null; }
+        public static byte[] WriteUtf8(System.ReadOnlySpan<byte> utf8Label, System.ReadOnlySpan<byte> data) { throw null; }
     }
     public readonly partial struct PemFields
     {
@@ -1900,9 +1954,9 @@ namespace System.Security.Cryptography
         public System.Range Label { get { throw null; } }
         public System.Range Location { get { throw null; } }
     }
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PKCS1MaskGenerationMethod is not trim compatible because the algorithm implementation referenced by HashName might be removed.")]
     public partial class PKCS1MaskGenerationMethod : System.Security.Cryptography.MaskGenerationMethod
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PKCS1MaskGenerationMethod is not trim compatible because the algorithm implementation referenced by HashName might be removed.")]
         public PKCS1MaskGenerationMethod() { }
         public string HashName { get { throw null; } set { } }
         public override byte[] GenerateMask(byte[] rgbSeed, int cbReturn) { throw null; }
@@ -1962,18 +2016,21 @@ namespace System.Security.Cryptography
     }
     public partial class Rfc2898DeriveBytes : System.Security.Cryptography.DeriveBytes
     {
-        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations) { }
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
-        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, byte[] salt) { }
-        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations) { }
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
-        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, int saltSize) { }
-        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations) { }
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
         public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get { throw null; } }
         public int IterationCount { get { throw null; } set { } }
@@ -2361,6 +2418,12 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static System.Security.Cryptography.SafeEvpPKeyHandle OpenKeyFromProvider(string providerName, string keyUri) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static System.Security.Cryptography.SafeEvpPKeyHandle OpenPrivateKeyFromEngine(string engineName, string keyId) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -2723,6 +2786,8 @@ namespace System.Security.Cryptography
         public int GetCiphertextLengthCbc(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.PKCS7) { throw null; }
         public int GetCiphertextLengthCfb(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.None, int feedbackSizeInBits = 8) { throw null; }
         public int GetCiphertextLengthEcb(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode) { throw null; }
+        public void SetKey(System.ReadOnlySpan<byte> key) { }
+        protected virtual void SetKeyCore(System.ReadOnlySpan<byte> key) { }
         public bool TryDecryptCbc(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, out int bytesWritten, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.PKCS7) { throw null; }
         protected virtual bool TryDecryptCbcCore(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, System.Security.Cryptography.PaddingMode paddingMode, out int bytesWritten) { throw null; }
         public bool TryDecryptCfb(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, out int bytesWritten, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.None, int feedbackSizeInBits = 8) { throw null; }
@@ -2887,6 +2952,12 @@ namespace System.Security.Cryptography.X509Certificates
         OpenExistingOnly = 4,
         IncludeArchived = 8,
     }
+    public enum Pkcs12ExportPbeParameters
+    {
+        Default = 0,
+        Pkcs12TripleDesSha1 = 1,
+        Pbes2Aes256Sha256 = 2,
+    }
     public sealed partial class Pkcs12LoaderLimits
     {
         public Pkcs12LoaderLimits() { }
@@ -2914,9 +2985,9 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed partial class PublicKey
     {
         public PublicKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
-        public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
+        public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData? parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
         public System.Security.Cryptography.AsnEncodedData EncodedKeyValue { get { throw null; } }
-        public System.Security.Cryptography.AsnEncodedData EncodedParameters { get { throw null; } }
+        public System.Security.Cryptography.AsnEncodedData? EncodedParameters { get { throw null; } }
         [System.ObsoleteAttribute("PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey.", DiagnosticId="SYSLIB0027", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.Cryptography.AsymmetricAlgorithm Key { get { throw null; } }
         public System.Security.Cryptography.Oid Oid { get { throw null; } }
@@ -3061,19 +3132,24 @@ namespace System.Security.Cryptography.X509Certificates
     }
     public partial class X509Certificate : System.IDisposable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate() { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(byte[] data) { }
         [System.CLSCompliantAttribute(false)]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(byte[] rawData, System.Security.SecureString? password) { }
         [System.CLSCompliantAttribute(false)]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(byte[] rawData, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(byte[] rawData, string? password) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -3083,24 +3159,31 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(System.Security.Cryptography.X509Certificates.X509Certificate cert) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(string fileName) { }
         [System.CLSCompliantAttribute(false)]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(string fileName, System.Security.SecureString? password) { }
         [System.CLSCompliantAttribute(false)]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(string fileName, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(string fileName, string? password) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public System.IntPtr Handle { get { throw null; } }
         public string Issuer { get { throw null; } }
         public System.ReadOnlyMemory<byte> SerialNumberBytes { get { throw null; } }
         public string Subject { get { throw null; } }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.X509Certificates.X509Certificate CreateFromCertFile(string filename) { throw null; }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.X509Certificates.X509Certificate CreateFromSignedFile(string filename) { throw null; }
         public void Dispose() { }
@@ -3111,6 +3194,8 @@ namespace System.Security.Cryptography.X509Certificates
         [System.CLSCompliantAttribute(false)]
         public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, System.Security.SecureString? password) { throw null; }
         public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, string? password) { throw null; }
+        public byte[] ExportPkcs12(System.Security.Cryptography.PbeParameters exportParameters, string? password) { throw null; }
+        public byte[] ExportPkcs12(System.Security.Cryptography.X509Certificates.Pkcs12ExportPbeParameters exportParameters, string? password) { throw null; }
         protected static string FormatDate(System.DateTime date) { throw null; }
         public virtual byte[] GetCertHash() { throw null; }
         public virtual byte[] GetCertHash(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
@@ -3123,8 +3208,8 @@ namespace System.Security.Cryptography.X509Certificates
         [System.ObsoleteAttribute("X509Certificate.GetIssuerName has been deprecated. Use the Issuer property instead.")]
         public virtual string GetIssuerName() { throw null; }
         public virtual string GetKeyAlgorithm() { throw null; }
-        public virtual byte[] GetKeyAlgorithmParameters() { throw null; }
-        public virtual string GetKeyAlgorithmParametersString() { throw null; }
+        public virtual byte[]? GetKeyAlgorithmParameters() { throw null; }
+        public virtual string? GetKeyAlgorithmParametersString() { throw null; }
         [System.ObsoleteAttribute("X509Certificate.GetName has been deprecated. Use the Subject property instead.")]
         public virtual string GetName() { throw null; }
         public virtual byte[] GetPublicKey() { throw null; }
@@ -3133,19 +3218,19 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual string GetRawCertDataString() { throw null; }
         public virtual byte[] GetSerialNumber() { throw null; }
         public virtual string GetSerialNumberString() { throw null; }
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual void Import(byte[] rawData) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual void Import(byte[] rawData, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual void Import(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual void Import(string fileName) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual void Import(string fileName, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual void Import(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public virtual void Reset() { }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
@@ -3156,44 +3241,57 @@ namespace System.Security.Cryptography.X509Certificates
     }
     public partial class X509Certificate2 : System.Security.Cryptography.X509Certificates.X509Certificate
     {
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2() { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(byte[] rawData) { }
         [System.CLSCompliantAttribute(false)]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(byte[] rawData, System.Security.SecureString? password) { }
         [System.CLSCompliantAttribute(false)]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(byte[] rawData, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(byte[] rawData, string? password) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.IntPtr handle) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.ReadOnlySpan<byte> rawData) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.ReadOnlySpan<byte> rawData, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected X509Certificate2(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.Security.Cryptography.X509Certificates.X509Certificate certificate) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
         [System.CLSCompliantAttribute(false)]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName, System.Security.SecureString? password) { }
         [System.CLSCompliantAttribute(false)]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName, string? password) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public bool Archived { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
@@ -3234,19 +3332,19 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.ECDiffieHellman? GetECDiffieHellmanPrivateKey() { throw null; }
         public System.Security.Cryptography.ECDiffieHellman? GetECDiffieHellmanPublicKey() { throw null; }
         public string GetNameInfo(System.Security.Cryptography.X509Certificates.X509NameType nameType, bool forIssuer) { throw null; }
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void Import(byte[] rawData) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void Import(byte[] rawData, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void Import(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void Import(string fileName) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void Import(string fileName, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void Import(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public bool MatchesHostname(string hostname, bool allowWildcards = true, bool allowCommonName = true) { throw null; }
         public override void Reset() { }
@@ -3269,18 +3367,31 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType) { throw null; }
         public byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, string? password) { throw null; }
         public string ExportCertificatePems() { throw null; }
+        public byte[] ExportPkcs12(System.Security.Cryptography.PbeParameters exportParameters, string? password) { throw null; }
+        public byte[] ExportPkcs12(System.Security.Cryptography.X509Certificates.Pkcs12ExportPbeParameters exportParameters, string? password) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public string ExportPkcs7Pem() { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Find(System.Security.Cryptography.X509Certificates.X509FindType findType, object findValue, bool validOnly) { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection FindByThumbprint(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> thumbprintBytes) { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection FindByThumbprint(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<char> thumbprintHex) { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection FindByThumbprint(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, string thumbprintHex) { throw null; }
         public new System.Security.Cryptography.X509Certificates.X509Certificate2Enumerator GetEnumerator() { throw null; }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(byte[] rawData) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(System.ReadOnlySpan<byte> rawData) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(System.ReadOnlySpan<byte> rawData, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(System.ReadOnlySpan<byte> rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(string fileName) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(string fileName, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
         public void ImportFromPem(System.ReadOnlySpan<char> certPem) { }
         public void ImportFromPemFile(string certPemFilePath) { }

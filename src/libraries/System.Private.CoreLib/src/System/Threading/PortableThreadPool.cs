@@ -30,16 +30,23 @@ namespace System.Threading
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
 
-#if CORECLR
-#pragma warning disable CA1823
-        private static readonly bool s_initialized = ThreadPool.EnsureConfigInitialized();
-#pragma warning restore CA1823
-#endif
-
         private static readonly short ForcedMinWorkerThreads =
-            AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
+            AppContextConfigHelper.GetInt16ComPlusOrDotNetConfig("System.Threading.ThreadPool.MinThreads", "ThreadPool_ForceMinWorkerThreads", 0, false);
         private static readonly short ForcedMaxWorkerThreads =
-            AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MaxThreads", 0, false);
+            AppContextConfigHelper.GetInt16ComPlusOrDotNetConfig("System.Threading.ThreadPool.MaxThreads", "ThreadPool_ForceMaxWorkerThreads", 0, false);
+
+#if TARGET_WINDOWS
+        // Continuations of IO completions are dispatched to the ThreadPool from IO completion poller threads. This avoids
+        // continuations blocking/stalling the IO completion poller threads. Setting UnsafeInlineIOCompletionCallbacks allows
+        // continuations to run directly on the IO completion poller thread, but is inherently unsafe due to the potential for
+        // those threads to become stalled due to blocking. Sometimes, setting this config value may yield better latency. The
+        // config value is named for consistency with SocketAsyncEngine.Unix.cs.
+        private static readonly bool UnsafeInlineIOCompletionCallbacks =
+            Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
+
+        private static readonly short IOCompletionPortCount = DetermineIOCompletionPortCount();
+        private static readonly int IOCompletionPollerCount = DetermineIOCompletionPollerCount();
+#endif
 
         private static readonly int ThreadPoolThreadTimeoutMs = DetermineThreadPoolThreadTimeoutMs();
 
@@ -107,11 +114,6 @@ namespace System.Threading
         private long _memoryUsageBytes;
         private long _memoryLimitBytes;
 
-#if TARGET_WINDOWS
-        private readonly nint _ioPort;
-        private IOCompletionPoller[]? _ioCompletionPollers;
-#endif
-
         private readonly LowLevelLock _threadAdjustmentLock = new LowLevelLock();
 
         private CacheLineSeparated _separated; // SOS's ThreadPool command depends on this name
@@ -149,7 +151,7 @@ namespace System.Threading
             _separated.counts.NumThreadsGoal = _minThreads;
 
 #if TARGET_WINDOWS
-            _ioPort = CreateIOCompletionPort();
+            InitializeIOOnWindows();
 #endif
         }
 

@@ -182,7 +182,6 @@ inline const SString& PEAssembly::GetIdentityPath()
     return m_PEImage->GetPath();
 }
 
-#ifdef DACCESS_COMPILE
 inline const SString &PEAssembly::GetModuleFileNameHint()
 {
     CONTRACTL
@@ -201,7 +200,6 @@ inline const SString &PEAssembly::GetModuleFileNameHint()
     else
         return m_PEImage->GetModuleFileNameHintForDAC();
 }
-#endif // DACCESS_COMPILE
 
 #ifdef LOGGING
 inline LPCUTF8 PEAssembly::GetDebugName()
@@ -715,6 +713,7 @@ inline BOOL PEAssembly::IsPtrInPEImage(PTR_CVOID data)
 // ------------------------------------------------------------
 // Descriptive strings
 // ------------------------------------------------------------
+#ifndef DACCESS_COMPILE
 inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
 {
     CONTRACTL
@@ -726,14 +725,11 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
     }
     CONTRACTL_END;
 
-#ifndef DACCESS_COMPILE
     AssemblySpec spec;
     spec.InitializeSpec(this);
     spec.GetDisplayName(flags, result);
-#else
-    DacNotImpl();
-#endif //DACCESS_COMPILE
 }
+#endif //DACCESS_COMPILE
 
 // ------------------------------------------------------------
 // Metadata access

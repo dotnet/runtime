@@ -221,8 +221,7 @@ namespace System.Reflection.Tests
             Assert.Equal(new AssemblyName(expectedEqualString).FullName, assemblyName.FullName);
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         public void CultureName_Set_Invalid_ThrowsCultureNotFoundException()
         {
             var assemblyName = new AssemblyName("Test");

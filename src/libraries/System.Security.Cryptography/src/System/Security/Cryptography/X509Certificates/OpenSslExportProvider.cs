@@ -20,43 +20,27 @@ namespace System.Security.Cryptography.X509Certificates
 
         protected override byte[] ExportPkcs8(
             ICertificatePalCore certificatePal,
+            PbeParameters pbeParameters,
             ReadOnlySpan<char> password)
         {
-            AsymmetricAlgorithm? alg = null;
             SafeEvpPKeyHandle? privateKey = ((OpenSslX509CertificateReader)certificatePal).PrivateKeyHandle;
 
-            try
+            if (privateKey == null)
             {
-                alg = new RSAOpenSsl(privateKey!);
-            }
-            catch (CryptographicException)
-            {
+                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
 
-            if (alg == null)
-            {
-                try
-                {
-                    alg = new ECDsaOpenSsl(privateKey!);
-                }
-                catch (CryptographicException)
-                {
-                }
-            }
+            Interop.Crypto.EvpAlgorithmId evpAlgId = Interop.Crypto.EvpPKeyType(privateKey);
 
-            if (alg == null)
+            AsymmetricAlgorithm alg = evpAlgId switch
             {
-                try
-                {
-                    alg = new DSAOpenSsl(privateKey!);
-                }
-                catch (CryptographicException)
-                {
-                }
-            }
+                Interop.Crypto.EvpAlgorithmId.RSA => new RSAOpenSsl(privateKey),
+                Interop.Crypto.EvpAlgorithmId.ECC => new ECDsaOpenSsl(privateKey),
+                Interop.Crypto.EvpAlgorithmId.DSA => new DSAOpenSsl(privateKey),
+                _ => throw new CryptographicException(SR.Cryptography_InvalidHandle),
+            };
 
-            Debug.Assert(alg != null);
-            return alg.ExportEncryptedPkcs8PrivateKey(password, s_windowsPbe);
+            return alg.ExportEncryptedPkcs8PrivateKey(password, pbeParameters);
         }
 
         private static void PushHandle(IntPtr certPtr, SafeX509StackHandle publicCerts)

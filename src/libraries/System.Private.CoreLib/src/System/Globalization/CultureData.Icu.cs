@@ -278,10 +278,10 @@ namespace System.Globalization
 
             if (secondaryGroupingSize == 0)
             {
-                return new int[] { primaryGroupingSize };
+                return [primaryGroupingSize];
             }
 
-            return new int[] { primaryGroupingSize, secondaryGroupingSize };
+            return [primaryGroupingSize, secondaryGroupingSize];
         }
 
         private string IcuGetTimeFormatString() => IcuGetTimeFormatString(shortFormat: false);
@@ -490,7 +490,7 @@ namespace System.Globalization
                         return ",,";
 
                     default:
-                        Debug.Assert(false, "[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
+                        Debug.Fail("[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
                         break;
                 }
             }
@@ -521,12 +521,11 @@ namespace System.Globalization
                 bufferLength = Interop.Globalization.GetLocalesNative(null, 0);
             }
             else
+#endif
             {
                 bufferLength = Interop.Globalization.GetLocales(null, 0);
             }
-#else
-            bufferLength = Interop.Globalization.GetLocales(null, 0);
-#endif
+
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();
@@ -540,12 +539,11 @@ namespace System.Globalization
                 bufferLength = Interop.Globalization.GetLocalesNative(chars, bufferLength);
             }
             else
+#endif
             {
                 bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
             }
-#else
-            bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
-#endif
+
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();

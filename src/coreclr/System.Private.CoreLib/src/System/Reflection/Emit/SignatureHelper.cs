@@ -277,9 +277,7 @@ namespace System.Reflection.Emit
                 for (int i = 0; i < optionalCustomModifiers.Length; i++)
                 {
                     Type t = optionalCustomModifiers[i];
-
-                    if (t == null)
-                        throw new ArgumentNullException(nameof(optionalCustomModifiers));
+                    ArgumentNullException.ThrowIfNull(t, nameof(optionalCustomModifiers));
 
                     if (t.HasElementType)
                         throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(optionalCustomModifiers));
@@ -430,7 +428,7 @@ namespace System.Reflection.Emit
 
                 if (clsArgument is RuntimeType)
                 {
-                    type = RuntimeTypeHandle.GetCorElementType((RuntimeType)clsArgument);
+                    type = ((RuntimeType)clsArgument).GetCorElementType();
 
                     // GetCorElementType returns CorElementType.ELEMENT_TYPE_CLASS for both object and string
                     if (type == CorElementType.ELEMENT_TYPE_CLASS)

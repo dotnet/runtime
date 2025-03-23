@@ -185,7 +185,6 @@ void ArrayClass::InitArrayMethodDesc(
     PCCOR_SIGNATURE pShortSig,
     DWORD   cShortSig,
     DWORD   dwVtableSlot,
-    LoaderAllocator *pLoaderAllocator,
     AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
@@ -198,7 +197,7 @@ void ArrayClass::InitArrayMethodDesc(
     pNewMD->SetStoredMethodSig(pShortSig, cShortSig);
 
     _ASSERTE(!pNewMD->MayHaveNativeCode());
-    pNewMD->SetTemporaryEntryPoint(pLoaderAllocator, pamTracker);
+    pNewMD->SetTemporaryEntryPoint(pamTracker);
 
 #ifdef _DEBUG
     _ASSERTE(pNewMD->GetMethodName() && GetDebugClassName());
@@ -238,7 +237,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     BOOL            containsPointers = CorTypeInfo::IsObjRef(elemType);
-    if (elemType == ELEMENT_TYPE_VALUETYPE && pElemMT->ContainsPointers())
+    if (elemType == ELEMENT_TYPE_VALUETYPE && pElemMT->ContainsGCPointers())
         containsPointers = TRUE;
 
     // this is the base for every array type
@@ -338,7 +337,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         pClass->SetInternalCorElementType(arrayKind);
         pClass->SetAttrClass (tdPublic | tdSerializable | tdSealed);  // This class is public, serializable, sealed
         pClass->SetRank (Rank);
-        pClass->SetArrayElementType (elemType);
         pClass->SetMethodTable (pMT);
 
         // Fill In the method table
@@ -509,7 +507,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
             pClass->GenerateArrayAccessorCallSig(dwFuncRank, dwFuncType, &pSig, &cSig, pAllocator, pamTracker, FALSE);
 
-            pClass->InitArrayMethodDesc(pNewMD, pSig, cSig, numVirtuals + dwMethodIndex, pAllocator, pamTracker);
+            pClass->InitArrayMethodDesc(pNewMD, pSig, cSig, numVirtuals + dwMethodIndex, pamTracker);
 
             dwMethodIndex++;
         }
@@ -520,7 +518,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     if (CorTypeInfo::IsObjRef(elemType) ||
         ((elemType == ELEMENT_TYPE_VALUETYPE) && pElemMT->IsAllGCPointers()))
     {
-        pMT->SetContainsPointers();
+        pMT->SetContainsGCPointers();
 
         // This array is all GC Pointers
         CGCDesc::GetCGCDescFromMT(pMT)->Init( pMT, 1 );
@@ -536,9 +534,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     else if (elemType == ELEMENT_TYPE_VALUETYPE)
     {
         // If it's an array of value classes, there is a different format for the GCDesc if it contains pointers
-        if (pElemMT->ContainsPointers())
+        if (pElemMT->ContainsGCPointers())
         {
-            pMT->SetContainsPointers();
+            pMT->SetContainsGCPointers();
 
             CGCDescSeries* pElemSeries = CGCDesc::GetCGCDescFromMT(pElemMT)->GetHighestSeries();
 
@@ -659,9 +657,8 @@ public:
             hiddenArgIdx = 0;
         }
 #endif
-
-        ArrayClass *pcls = (ArrayClass*)(pMT->GetClass());
-        if(pcls->GetArrayElementType() == ELEMENT_TYPE_CLASS)
+        CorElementType sigElementType = pMT->GetArrayElementType();
+        if (CorTypeInfo::IsObjRef(sigElementType))
         {
             // Type Check
             if(m_pMD->GetArrayFuncIndex() == ArrayMethodDesc::ARRAY_FUNC_SET)

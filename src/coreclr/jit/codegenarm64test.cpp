@@ -1900,6 +1900,16 @@ void CodeGen::genArm64EmitterUnitTestsAdvSimd()
     theEmitter->emitIns_R_R_I(INS_stur, EA_8BYTE, REG_V7, REG_R10, 9);
     theEmitter->emitIns_R_R_I(INS_stur, EA_16BYTE, REG_V7, REG_R10, 17);
 
+    theEmitter->emitIns_R_R_I(INS_stlurb, EA_1BYTE, REG_V7, REG_R10, 0);
+    theEmitter->emitIns_R_R_I(INS_stlurh, EA_2BYTE, REG_V7, REG_R10, 0);
+    theEmitter->emitIns_R_R_I(INS_stlur, EA_4BYTE, REG_V7, REG_R10, 0);
+    theEmitter->emitIns_R_R_I(INS_stlur, EA_8BYTE, REG_V7, REG_R10, 0);
+
+    theEmitter->emitIns_R_R_I(INS_ldapurb, EA_1BYTE, REG_V8, REG_R9, 0);
+    theEmitter->emitIns_R_R_I(INS_ldapurh, EA_2BYTE, REG_V8, REG_R9, 0);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_4BYTE, REG_V8, REG_R9, 0);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_8BYTE, REG_V8, REG_R9, 0);
+
     // load/store pair
     theEmitter->emitIns_R_R_R(INS_ldnp, EA_8BYTE, REG_V0, REG_V1, REG_R10);
     theEmitter->emitIns_R_R_R_I(INS_stnp, EA_8BYTE, REG_V1, REG_V2, REG_R10, 0);
@@ -6096,6 +6106,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_PATTERN_I(INS_sve_uqincw, EA_SCALABLE, REG_V11, SVE_PATTERN_ALL, 16,
                                     INS_OPTS_SCALABLE_S); // UQINCW <Zdn>.S{, <pattern>{, MUL #<imm>}}
 
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     // IF_SVE_BQ_2A
     theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V0, REG_V1, 0, INS_OPTS_SCALABLE_B,
                               INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
@@ -6105,6 +6116,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
     theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V6, REG_FP_LAST, 255, INS_OPTS_SCALABLE_B,
                               INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
+#endif                                                             // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_BQ_2B
     theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V0, REG_V1, 0,
@@ -6590,11 +6602,11 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // IF_SVE_GV_3A
     theEmitter->emitIns_R_R_R_I_I(INS_sve_fcmla, EA_SCALABLE, REG_V0, REG_V1, REG_V0, 0, 0,
                                   INS_OPTS_SCALABLE_S); // FCMLA <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
-    theEmitter->emitIns_R_R_R_I_I(INS_sve_fcmla, EA_SCALABLE, REG_V2, REG_V3, REG_V5, 1, 90,
+    theEmitter->emitIns_R_R_R_I_I(INS_sve_fcmla, EA_SCALABLE, REG_V2, REG_V3, REG_V5, 1, 1,
                                   INS_OPTS_SCALABLE_S); // FCMLA <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
-    theEmitter->emitIns_R_R_R_I_I(INS_sve_fcmla, EA_SCALABLE, REG_V4, REG_V5, REG_V10, 0, 180,
+    theEmitter->emitIns_R_R_R_I_I(INS_sve_fcmla, EA_SCALABLE, REG_V4, REG_V5, REG_V10, 0, 2,
                                   INS_OPTS_SCALABLE_S); // FCMLA <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
-    theEmitter->emitIns_R_R_R_I_I(INS_sve_fcmla, EA_SCALABLE, REG_V6, REG_V7, REG_V15, 1, 270,
+    theEmitter->emitIns_R_R_R_I_I(INS_sve_fcmla, EA_SCALABLE, REG_V6, REG_V7, REG_V15, 1, 3,
                                   INS_OPTS_SCALABLE_S); // FCMLA <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
 
     // IF_SVE_GX_3A
@@ -8391,23 +8403,23 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                                 INS_OPTS_SCALABLE_D); // ST1B    {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D]
 
     // IF_SVE_GP_3A
-    theEmitter->emitIns_R_R_R_I(INS_sve_fcadd, EA_SCALABLE, REG_V0, REG_P1, REG_V2, 90,
+    theEmitter->emitIns_R_R_R_I(INS_sve_fcadd, EA_SCALABLE, REG_V0, REG_P1, REG_V2, 0,
                                 INS_OPTS_SCALABLE_H); // FCADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
-    theEmitter->emitIns_R_R_R_I(INS_sve_fcadd, EA_SCALABLE, REG_V0, REG_P1, REG_V2, 270,
+    theEmitter->emitIns_R_R_R_I(INS_sve_fcadd, EA_SCALABLE, REG_V0, REG_P1, REG_V2, 1,
                                 INS_OPTS_SCALABLE_H); // FCADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
-    theEmitter->emitIns_R_R_R_I(INS_sve_fcadd, EA_SCALABLE, REG_V0, REG_P1, REG_V2, 270,
+    theEmitter->emitIns_R_R_R_I(INS_sve_fcadd, EA_SCALABLE, REG_V0, REG_P1, REG_V2, 1,
                                 INS_OPTS_SCALABLE_S); // FCADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
-    theEmitter->emitIns_R_R_R_I(INS_sve_fcadd, EA_SCALABLE, REG_V0, REG_P1, REG_V2, 270,
+    theEmitter->emitIns_R_R_R_I(INS_sve_fcadd, EA_SCALABLE, REG_V0, REG_P1, REG_V2, 1,
                                 INS_OPTS_SCALABLE_D); // FCADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
 
     // IF_SVE_GT_4A
     theEmitter->emitIns_R_R_R_R_I(INS_sve_fcmla, EA_SCALABLE, REG_V2, REG_P1, REG_V3, REG_V4, 0,
                                   INS_OPTS_SCALABLE_H); // FCMLA   <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>, <const>
-    theEmitter->emitIns_R_R_R_R_I(INS_sve_fcmla, EA_SCALABLE, REG_V0, REG_P2, REG_V1, REG_V5, 90,
+    theEmitter->emitIns_R_R_R_R_I(INS_sve_fcmla, EA_SCALABLE, REG_V0, REG_P2, REG_V1, REG_V5, 1,
                                   INS_OPTS_SCALABLE_S); // FCMLA   <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>, <const>
-    theEmitter->emitIns_R_R_R_R_I(INS_sve_fcmla, EA_SCALABLE, REG_V2, REG_P3, REG_V0, REG_V6, 180,
+    theEmitter->emitIns_R_R_R_R_I(INS_sve_fcmla, EA_SCALABLE, REG_V2, REG_P3, REG_V0, REG_V6, 2,
                                   INS_OPTS_SCALABLE_D); // FCMLA   <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>, <const>
-    theEmitter->emitIns_R_R_R_R_I(INS_sve_fcmla, EA_SCALABLE, REG_V2, REG_P3, REG_V0, REG_V6, 270,
+    theEmitter->emitIns_R_R_R_R_I(INS_sve_fcmla, EA_SCALABLE, REG_V2, REG_P3, REG_V0, REG_V6, 3,
                                   INS_OPTS_SCALABLE_D); // FCMLA   <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>, <const>
 
     // IF_SVE_GI_4A
@@ -9099,4 +9111,32 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_I(INS_sve_extq, EA_SCALABLE, REG_V31, REG_V31, 15, INS_OPTS_SCALABLE_B);
 }
 
+/*****************************************************************************
+ * Unit tests for Pointer Authentication (PAC) instructions.
+ */
+void CodeGen::genArm64EmitterUnitTestsPac()
+{
+    emitter* theEmitter = GetEmitter();
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // IF_PC_0A
+    theEmitter->emitIns(INS_autia1716); // AUTIA1716
+    theEmitter->emitIns(INS_autiasp);   // AUTIASP
+    theEmitter->emitIns(INS_autiaz);    // AUTIAZ
+    theEmitter->emitIns(INS_pacia1716); // PACIA1716
+    theEmitter->emitIns(INS_paciasp);   // PACIASP
+    theEmitter->emitIns(INS_paciaz);    // PACIAZ
+    theEmitter->emitIns(INS_xpaclri);   // XPACLRI
+
+    // IF_PC_1A
+    theEmitter->emitIns_R(INS_autiza, EA_8BYTE, REG_R1); // AUTIZA <Xd>
+    theEmitter->emitIns_R(INS_paciza, EA_8BYTE, REG_R8); // PACIZA <Xd>
+    theEmitter->emitIns_R(INS_xpacd, EA_8BYTE, REG_R10); // XPACD <Xd>
+    theEmitter->emitIns_R(INS_xpaci, EA_8BYTE, REG_R12); // XPACI <Xd>
+
+    // IF_PC_2A
+    theEmitter->emitIns_R_R(INS_autia, EA_8BYTE, REG_R20, REG_SP); // AUTIA <Xd>, <Xn|SP>
+    theEmitter->emitIns_R_R(INS_pacia, EA_8BYTE, REG_R27, REG_SP); // PACIA <Xd>, <Xn|SP>
+}
 #endif // defined(TARGET_ARM64) && defined(DEBUG)

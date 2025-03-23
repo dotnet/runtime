@@ -60,7 +60,7 @@ namespace System.Reflection
                             _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
                             _fieldAccessType = GetPrimitiveAccessorTypeForStatic(fieldType.GetEnumUnderlyingType());
                         }
-                        else if (RuntimeTypeHandle.GetCorElementType(fieldType) == CorElementType.ELEMENT_TYPE_VALUETYPE)
+                        else if (fieldType.GetCorElementType() == CorElementType.ELEMENT_TYPE_VALUETYPE)
                         {
                             // The runtime stores non-primitive value types as a boxed value.
                             _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
@@ -202,7 +202,7 @@ namespace System.Reflection
                         throw new FieldAccessException();
 
                     default:
-                        Debug.Assert(false, "Unknown enum value");
+                        Debug.Fail("Unknown enum value");
                         return null;
                 }
             }

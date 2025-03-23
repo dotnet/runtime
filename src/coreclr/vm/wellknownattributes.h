@@ -29,11 +29,9 @@ enum class WellKnownAttribute : DWORD
     ManagedToNativeComInteropStub,
     UnmanagedCallConv,
     UnmanagedCallersOnly,
-    NativeCallableInternal, // This is needed to support MCG scenarios
     TypeIdentifier,
     UnmanagedFunctionPointer,
     ThreadStatic,
-    WinRTMarshalingBehaviorAttribute,
     PreserveBaseOverridesAttribute,
     ObjectiveCTrackedTypeAttribute,
     InlineArrayAttribute,
@@ -44,78 +42,124 @@ enum class WellKnownAttribute : DWORD
 
 inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
 {
+    LIMITED_METHOD_CONTRACT;
+
+    const char* ret;
     switch (attribute)
     {
         case WellKnownAttribute::ParamArray:
-            return "System.ParamArrayAttribute";
+            ret = "System.ParamArrayAttribute";
+            break;
         case WellKnownAttribute::DefaultMember:
-            return "System.Reflection.DefaultMemberAttribute";
+            ret = "System.Reflection.DefaultMemberAttribute";
+            break;
         case WellKnownAttribute::FixedAddressValueType:
-            return "System.Runtime.CompilerServices.FixedAddressValueTypeAttribute";
+            ret = "System.Runtime.CompilerServices.FixedAddressValueTypeAttribute";
+            break;
         case WellKnownAttribute::UnsafeValueType:
-            return "System.Runtime.CompilerServices.UnsafeValueTypeAttribute";
+            ret = "System.Runtime.CompilerServices.UnsafeValueTypeAttribute";
+            break;
         case WellKnownAttribute::BestFitMapping:
-            return "System.Runtime.InteropServices.BestFitMappingAttribute";
+            ret = "System.Runtime.InteropServices.BestFitMappingAttribute";
+            break;
         case WellKnownAttribute::ClassInterface:
-            return "System.Runtime.InteropServices.ClassInterfaceAttribute";
+            ret = "System.Runtime.InteropServices.ClassInterfaceAttribute";
+            break;
         case WellKnownAttribute::CoClass:
-            return "System.Runtime.InteropServices.CoClassAttribute";
+            ret = "System.Runtime.InteropServices.CoClassAttribute";
+            break;
         case WellKnownAttribute::ComCompatibleVersion:
-            return "System.Runtime.InteropServices.ComCompatibleVersionAttribute";
+            ret = "System.Runtime.InteropServices.ComCompatibleVersionAttribute";
+            break;
         case WellKnownAttribute::ComDefaultInterface:
-            return "System.Runtime.InteropServices.ComDefaultInterfaceAttribute";
+            ret = "System.Runtime.InteropServices.ComDefaultInterfaceAttribute";
+            break;
         case WellKnownAttribute::ComEventInterface:
-            return "System.Runtime.InteropServices.ComEventInterfaceAttribute";
+            ret = "System.Runtime.InteropServices.ComEventInterfaceAttribute";
+            break;
         case WellKnownAttribute::ComSourceInterfaces:
-            return "System.Runtime.InteropServices.ComSourceInterfacesAttribute";
+            ret = "System.Runtime.InteropServices.ComSourceInterfacesAttribute";
+            break;
         case WellKnownAttribute::ComVisible:
-            return "System.Runtime.InteropServices.ComVisibleAttribute";
+            ret = "System.Runtime.InteropServices.ComVisibleAttribute";
+            break;
         case WellKnownAttribute::SuppressGCTransition:
-            return "System.Runtime.InteropServices.SuppressGCTransitionAttribute";
+            ret = "System.Runtime.InteropServices.SuppressGCTransitionAttribute";
+            break;
         case WellKnownAttribute::DefaultDllImportSearchPaths:
-            return "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute";
+            ret = "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute";
+            break;
         case WellKnownAttribute::Guid:
-            return "System.Runtime.InteropServices.GuidAttribute";
+            ret = "System.Runtime.InteropServices.GuidAttribute";
+            break;
         case WellKnownAttribute::LCIDConversion:
-            return "System.Runtime.InteropServices.LCIDConversionAttribute";
+            ret = "System.Runtime.InteropServices.LCIDConversionAttribute";
+            break;
         case WellKnownAttribute::ImportedFromTypeLib:
-            return "System.Runtime.InteropServices.ImportedFromTypeLibAttribute";
+            ret = "System.Runtime.InteropServices.ImportedFromTypeLibAttribute";
+            break;
         case WellKnownAttribute::Intrinsic:
-            return "System.Runtime.CompilerServices.IntrinsicAttribute";
+            ret = "System.Runtime.CompilerServices.IntrinsicAttribute";
+            break;
         case WellKnownAttribute::IsByRefLike:
-            return "System.Runtime.CompilerServices.IsByRefLikeAttribute";
+            ret = "System.Runtime.CompilerServices.IsByRefLikeAttribute";
+            break;
         case WellKnownAttribute::PrimaryInteropAssembly:
-            return "System.Runtime.InteropServices.PrimaryInteropAssemblyAttribute";
+            ret = "System.Runtime.InteropServices.PrimaryInteropAssemblyAttribute";
+            break;
         case WellKnownAttribute::ManagedToNativeComInteropStub:
-            return "System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute";
+            ret = "System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute";
+            break;
         case WellKnownAttribute::UnmanagedCallConv:
-            return "System.Runtime.InteropServices.UnmanagedCallConvAttribute";
+            ret = "System.Runtime.InteropServices.UnmanagedCallConvAttribute";
+            break;
         case WellKnownAttribute::UnmanagedCallersOnly:
-            return "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
-        case WellKnownAttribute::NativeCallableInternal:
-            return "System.Runtime.InteropServices.NativeCallableInternalAttribute";
+            ret = "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
+            break;
         case WellKnownAttribute::TypeIdentifier:
-            return "System.Runtime.InteropServices.TypeIdentifierAttribute";
+            ret = "System.Runtime.InteropServices.TypeIdentifierAttribute";
+            break;
         case WellKnownAttribute::UnmanagedFunctionPointer:
-            return "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute";
+            ret = "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute";
+            break;
         case WellKnownAttribute::ThreadStatic:
-            return "System.ThreadStaticAttribute";
-        case WellKnownAttribute::WinRTMarshalingBehaviorAttribute:
-            return "Windows.Foundation.Metadata.MarshalingBehaviorAttribute";
+            ret = "System.ThreadStaticAttribute";
+            break;
         case WellKnownAttribute::PreserveBaseOverridesAttribute:
-            return "System.Runtime.CompilerServices.PreserveBaseOverridesAttribute";
+            ret = "System.Runtime.CompilerServices.PreserveBaseOverridesAttribute";
+            break;
         case WellKnownAttribute::ObjectiveCTrackedTypeAttribute:
-            return "System.Runtime.InteropServices.ObjectiveC.ObjectiveCTrackedTypeAttribute";
+            ret = "System.Runtime.InteropServices.ObjectiveC.ObjectiveCTrackedTypeAttribute";
+            break;
         case WellKnownAttribute::InlineArrayAttribute:
-            return "System.Runtime.CompilerServices.InlineArrayAttribute";
+            ret = "System.Runtime.CompilerServices.InlineArrayAttribute";
+            break;
         case WellKnownAttribute::UnsafeAccessorAttribute:
-            return "System.Runtime.CompilerServices.UnsafeAccessorAttribute";
+            ret = "System.Runtime.CompilerServices.UnsafeAccessorAttribute";
+            break;
         case WellKnownAttribute::CountOfWellKnownAttributes:
         default:
-            break; // Silence compiler warnings
+            ret = nullptr;
+            break;
     }
-    _ASSERTE(false); // Should not be possible
-    return nullptr;
+
+#ifdef _DEBUG
+    _ASSERTE(ret != nullptr); // Should not be possible
+
+    // ReadyToRun special cases what attributes it detects.
+    // Currently it special cases a few and then assumes all other
+    // attributes are under the "System.Runtime" namespace.
+    // See AttributePresenceFilterNode.cs.
+    const char prefix[] = "System.Runtime.";
+    bool readyToRunAware =
+        attribute == WellKnownAttribute::ThreadStatic
+        || attribute == WellKnownAttribute::ParamArray
+        || attribute == WellKnownAttribute::DefaultMember
+        || strncmp(prefix, ret, ARRAY_SIZE(prefix) - 1) == 0;
+    _ASSERTE(readyToRunAware);
+#endif // _DEBUG
+
+    return ret;
 }
 
 #endif // __WELLKNOWNATTRIBUTES_H_

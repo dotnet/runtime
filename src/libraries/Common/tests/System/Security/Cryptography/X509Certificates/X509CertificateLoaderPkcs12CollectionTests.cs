@@ -742,6 +742,75 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LoadWithDuplicateAttributes(bool allowDuplicates)
+        {
+            Pkcs12LoaderLimits limits = Pkcs12LoaderLimits.Defaults;
+
+            if (allowDuplicates)
+            {
+                limits = Pkcs12LoaderLimits.DangerousNoLimits;
+            }
+
+            // remove the edit lock
+            limits = new Pkcs12LoaderLimits(limits)
+            {
+                PreserveCertificateAlias = false,
+                PreserveKeyName = false,
+                PreserveStorageProvider = false,
+                PreserveUnknownAttributes = false,
+            };
+
+            Func<X509Certificate2Collection> func =
+                () => LoadPfxNoFile(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw, loaderLimits: limits);
+
+            if (allowDuplicates)
+            {
+                X509Certificate2Collection coll = func();
+
+                using (new CollectionDisposer(coll))
+                {
+                    Assert.Equal(1, coll.Count);
+                    X509Certificate2 cert = coll[0];
+
+                    Assert.Equal("Certificate 1", cert.GetNameInfo(X509NameType.SimpleName, false));
+                    Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+                }
+            }
+            else
+            {
+                Pkcs12LoadLimitExceededException ex = Assert.Throws<Pkcs12LoadLimitExceededException>(() => func());
+                Assert.Contains("AllowDuplicateAttributes", ex.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void LoadWithLegacyProvider(bool preserveStorageProvider, bool ephemeralIfPossible)
+        {
+            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits { PreserveStorageProvider = preserveStorageProvider };
+            X509KeyStorageFlags flags = ephemeralIfPossible ? EphemeralIfPossible : X509KeyStorageFlags.DefaultKeySet;
+
+            // EphemeralKeySet is not available by name in the netfx build.
+            const X509KeyStorageFlags EphemeralKeySet = (X509KeyStorageFlags)0x20;
+            bool expectLegacy = (flags & EphemeralKeySet) == 0 && preserveStorageProvider;
+
+            X509Certificate2Collection coll = LoadPfxNoFile(TestData.SChannelPfx, TestData.PlaceholderPw, flags, limits);
+
+            using (new CollectionDisposer(coll))
+            {
+                foreach (X509Certificate2 cert in coll)
+                {
+                    X509CertificateLoaderPkcs12Tests.VerifySChannelProvider(cert, expectLegacy);
+                }
+            }
+        }
+
         private sealed class CollectionDisposer : IDisposable
         {
             private readonly X509Certificate2Collection _coll;

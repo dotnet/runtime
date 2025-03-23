@@ -7,10 +7,16 @@
     <Compile Include="Tests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\WrappedStream.cs" Link="Common\System\IO\WrappedStream.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <Compile Include="ReflectionTests.cs" />
+    <Compile Include="PartPieceTests.cs" />
     <Compile Include="LargeFilesTests.Net.cs" />
+    <Compile Include="Tests.Net.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="Tests.NetFramework.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Packaging.TestData" Version="$(SystemIOPackagingTestDataVersion)" />

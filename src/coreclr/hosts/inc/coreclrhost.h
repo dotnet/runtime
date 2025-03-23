@@ -16,11 +16,17 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+#define CORECLR_HOSTING_API_LINKAGE extern "C"
+#else
+#define CORECLR_HOSTING_API_LINKAGE
+#endif
+
 // For each hosting API, we define a function prototype and a function pointer
 // The prototype is useful for implicit linking against the dynamic coreclr
 // library and the pointer for explicit dynamic loading (dlopen, LoadLibrary)
 #define CORECLR_HOSTING_API(function, ...) \
-    extern "C" int CORECLR_CALLING_CONVENTION function(__VA_ARGS__); \
+    CORECLR_HOSTING_API_LINKAGE int CORECLR_CALLING_CONVENTION function(__VA_ARGS__); \
     typedef int (CORECLR_CALLING_CONVENTION *function##_ptr)(__VA_ARGS__)
 
 //
@@ -144,6 +150,7 @@ CORECLR_HOSTING_API(coreclr_execute_assembly,
 //
 // Callback types used by the hosts
 //
+typedef bool(CORECLR_CALLING_CONVENTION ExternalAssemblyProbeFn)(const char* path, void** data_start, int64_t* size);
 typedef bool(CORECLR_CALLING_CONVENTION BundleProbeFn)(const char* path, int64_t* offset, int64_t* size, int64_t* compressedSize);
 typedef const void* (CORECLR_CALLING_CONVENTION PInvokeOverrideFn)(const char* libraryName, const char* entrypointName);
 

@@ -67,7 +67,7 @@ public:
     ~CodeRangeMapRangeList()
     {
         LIMITED_METHOD_CONTRACT;
-        RemoveRangesWorker(_id, NULL, NULL);
+        RemoveRangesWorker(_id);
     }
 
     StubCodeBlockKind GetCodeBlockKind()
@@ -132,7 +132,7 @@ protected:
 #endif // DACCESS_COMPILE
     }
 
-    virtual void RemoveRangesWorker(void *id, const BYTE *start, const BYTE *end)
+    virtual void RemoveRangesWorker(void *id)
     {
         CONTRACTL
         {
@@ -142,10 +142,6 @@ protected:
         CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-        // This implementation only works for the case where the RangeList is used in a single LoaderHeap
-        _ASSERTE(start == NULL);
-        _ASSERTE(end == NULL);
-        
         SimpleWriteLockHolder lh(&_RangeListRWLock);
         _ASSERTE(id == _id || (_id == NULL && _starts.IsEmpty()));
 
@@ -163,7 +159,7 @@ protected:
 #endif // DACCESS_COMPILE
     }
 
-    virtual BOOL IsInRangeWorker(TADDR address, TADDR *pID = NULL)
+    virtual BOOL IsInRangeWorker(TADDR address)
     {
         WRAPPER_NO_CONTRACT;
         RangeSection *pRS = ExecutionManager::FindCodeRange(address, ExecutionManager::ScanReaderLock);
@@ -264,6 +260,8 @@ class SegmentedHandleIndexStack
 
 public:
 
+    ~SegmentedHandleIndexStack();
+    
     // Push the value to the stack. If the push cannot be done due to OOM, return false;
     inline bool Push(DWORD value);
 
@@ -303,19 +301,26 @@ protected:
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
-    BYTE                m_PrecodeHeapInstance[sizeof(CodeFragmentHeap)];
     BYTE                m_FixupPrecodeHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_NewStubPrecodeHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_StaticsHeapInstance[sizeof(LoaderHeap)];
+#ifdef FEATURE_READYTORUN
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    BYTE                m_DynamicHelpersHeapInstance[sizeof(LoaderHeap)];
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+#endif // FEATURE_READYTORUN
     PTR_LoaderHeap      m_pLowFrequencyHeap;
     PTR_LoaderHeap      m_pHighFrequencyHeap;
     PTR_LoaderHeap      m_pStaticsHeap;
     PTR_LoaderHeap      m_pStubHeap; // stubs for PInvoke, remoting, etc
-    PTR_CodeFragmentHeap m_pPrecodeHeap;
     PTR_LoaderHeap      m_pExecutableHeap;
 #ifdef FEATURE_READYTORUN
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    PTR_LoaderHeap      m_pDynamicHelpersStubHeap; // R2R Stubs for dynamic helpers. Seperate from m_pStubHeap to avoid allowing these stubs to take up cache space once the process is fully hot.
+#else
     PTR_CodeFragmentHeap m_pDynamicHelpersHeap;
-#endif
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+#endif // FEATURE_READYTORUN
     PTR_LoaderHeap      m_pFixupPrecodeHeap;
     PTR_LoaderHeap      m_pNewStubPrecodeHeap;
     //****************************************************************************************
@@ -346,6 +351,9 @@ protected:
     // IL stub cache with fabricated MethodTable parented by a random module in this LoaderAllocator.
     ILStubCache         m_ILStubCache;
 
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+    CodeRangeMapRangeList m_dynamicHelpersRangeList;
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     CodeRangeMapRangeList m_stubPrecodeRangeList;
     CodeRangeMapRangeList m_fixupPrecodeRangeList;
 
@@ -360,11 +368,13 @@ public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
     BYTE *GetCodeHeapInitialBlock(const BYTE * loAddr, const BYTE * hiAddr, DWORD minimumSize, DWORD *pSize);
 
-    BaseDomain *m_pDomain;
-
     // ExecutionManager caches
     void * m_pLastUsedCodeHeap;
     void * m_pLastUsedDynamicCodeHeap;
+#ifdef FEATURE_INTERPRETER
+    void * m_pLastUsedInterpreterCodeHeap;
+    void * m_pLastUsedInterpreterDynamicCodeHeap;
+#endif // FEATURE_INTERPRETER
     void * m_pJumpStubCache;
 
     // LoaderAllocator GC Structures
@@ -574,7 +584,7 @@ public:
 
     // This function may only be called while the runtime is suspended
     // As it does not lock around access to a RangeList
-    static PTR_LoaderAllocator GetAssociatedLoaderAllocator_Unsafe(TADDR ptr);
+    static void GcReportAssociatedLoaderAllocators_Unsafe(TADDR ptr, promote_func* fn, ScanContext* sc);
 
     static void AssociateMemoryWithLoaderAllocator(BYTE *start, const BYTE *end, LoaderAllocator* pLoaderAllocator);
     static void RemoveMemoryToLoaderAllocatorAssociation(LoaderAllocator* pLoaderAllocator);
@@ -607,17 +617,19 @@ public:
         return m_pStubHeap;
     }
 
-    PTR_CodeFragmentHeap GetPrecodeHeap()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pPrecodeHeap;
-    }
-
     PTR_LoaderHeap GetNewStubPrecodeHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pNewStubPrecodeHeap;
     }
+
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+    PTR_LoaderHeap GetDynamicHelpersStubHeap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pDynamicHelpersStubHeap;
+    }
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
 
     // The executable heap is intended to only be used by the global loader allocator.
     // It refers to executable memory that is not associated with a rangelist.
@@ -735,9 +747,8 @@ public:
 
     LoaderAllocator(bool collectible);
     virtual ~LoaderAllocator();
-    BaseDomain *GetDomain() { LIMITED_METHOD_CONTRACT; return m_pDomain; }
     virtual BOOL CanUnload() = 0;
-    void Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory = NULL);
+    void Init(BYTE *pExecutableHeapMemory);
     void Terminate();
     virtual void ReleaseManagedAssemblyLoadContext() {}
 
@@ -761,13 +772,13 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_nGCCount;
     }
-    void AllocateBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cbMem);
-    void AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cSlots, MethodTable* pMTWithStaticBoxes);
+    void AllocateBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cbMem, bool isClassInitedByUpdatingStaticPointer);
+    void AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cSlots, MethodTable* pMTWithStaticBoxes, bool isClassInitedByUpdatingStaticPointer);
 
     static BOOL Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 
     //****************************************************************************************
-    // Methods to retrieve a pointer to the COM+ string STRINGREF for a string constant.
+    // Methods to retrieve a pointer to the CLR string STRINGREF for a string constant.
     // If the string is not currently in the hash table it will be added and if the
     // copy string flag is set then the string will be copied before it is inserted.
     STRINGREF *GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData, void** ppPinnedString = nullptr);
@@ -776,7 +787,7 @@ public:
     STRINGREF *GetOrInternString(STRINGREF *pString);
     void CleanupStringLiteralMap();
 
-    void InitVirtualCallStubManager(BaseDomain *pDomain);
+    void InitVirtualCallStubManager();
     void UninitVirtualCallStubManager();
 
     inline PTR_VirtualCallStubManager GetVirtualCallStubManager()
@@ -887,7 +898,7 @@ protected:
     LoaderAllocatorID m_Id;
 
 public:
-    void Init(BaseDomain *pDomain);
+    void Init();
     GlobalLoaderAllocator() : LoaderAllocator(false), m_Id(LAT_Global, (void*)1) { LIMITED_METHOD_CONTRACT;};
     virtual LoaderAllocatorID* Id();
     virtual BOOL CanUnload();
@@ -913,7 +924,7 @@ public:
         , m_binderToRelease(NULL)
 #endif
     { LIMITED_METHOD_CONTRACT; }
-    void Init(AppDomain *pAppDomain);
+    void Init();
     virtual BOOL CanUnload();
 
     void AddDomainAssembly(DomainAssembly *pDomainAssembly)

@@ -97,6 +97,8 @@ namespace System.Formats.Tar.Tests
         internal const char Separator = '/';
         internal const int MaxPathComponent = 255;
         internal const long LegacyMaxFileSize = (1L << 33) - 1; // Max value of 11 octal digits = 2^33 - 1 or 8 Gb.
+        internal const byte ExpectedOffsetDataSingleByte = 5;
+        internal readonly byte[] ExpectedOffsetDataMultiByte = [9, 8, 7, 6];
 
         private static readonly string[] V7TestCaseNames = new[]
         {

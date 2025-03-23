@@ -9,6 +9,10 @@ set(MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME "diagnostics_tracing")
 set(MONO_DEBUGGER_COMPONENT_NAME "debugger")
 set(MONO_MARSHAL_ILGEN_COMPONENT_NAME "marshal-ilgen")
 
+set(EP_GENERATED_HEADER_PATH "${CMAKE_CURRENT_BINARY_DIR}")
+include (${SHARED_EVENTPIPE_SOURCE_PATH}configure.cmake)
+include_directories(${SHARED_EVENTPIPE_CONFIG_HEADER_PATH})
+
 add_subdirectory(${SHARED_CONTAINERS_SOURCE_PATH} containers)
 add_subdirectory(${SHARED_EVENTPIPE_SOURCE_PATH} eventpipe)
 
@@ -39,7 +43,6 @@ set(${MONO_DEBUGGER_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/debugger-state-machine.h
   ${MONO_COMPONENT_PATH}/debugger-state-machine.c
   ${MONO_COMPONENT_PATH}/mini-wasm-debugger.c
-  ${MONO_COMPONENT_PATH}/mini-wasi-debugger.c
   ${MONO_COMPONENT_PATH}/debugger-protocol.h
   ${MONO_COMPONENT_PATH}/debugger-protocol.c
   )
@@ -77,7 +80,6 @@ set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-sources
   ${diagnostic_server_sources}
   ${MONO_COMPONENT_PATH}/event_pipe.c
   ${MONO_COMPONENT_PATH}/event_pipe.h
-  ${MONO_COMPONENT_PATH}/event_pipe-wasm.h
   ${MONO_COMPONENT_PATH}/diagnostics_server.c
   ${MONO_COMPONENT_PATH}/diagnostics_server.h
   )
@@ -228,10 +230,16 @@ if (ENABLE_PERFTRACING AND "${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}" IN_LIST 
     # Link the diagnostics_tracing component to the EventPipe and DiagnosticServer libraries.
     if (TARGET ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects)
         target_sources(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
-        list(APPEND mono-components-objects $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
+        # If we are going to link the diagnostics component via mono-components-objects, link in the supporting object libraries as well.
+        string(REPLACE
+          "$<TARGET_OBJECTS:${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects>"
+          "$<TARGET_OBJECTS:${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects>;$<TARGET_OBJECTS:eventpipe-mono-objects>;$<TARGET_OBJECTS:dn-containers>"
+          mono-components-objects "${mono-components-objects}")
     endif()
     if (TARGET mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-static)
-        target_sources(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-static PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
+        # We don't add dn-containers here as any scenario that uses this target will also use the monosgen-static target,
+        # which will also have dn-containers linked into it.
+        target_sources(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-static PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects>)
     endif()
     if (TARGET mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME})
         target_sources(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME} PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)

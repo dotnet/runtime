@@ -47,7 +47,6 @@ class FramedMethodFrame;
 class Module;
 struct DeclActionInfo;
 class ComCallMethodDesc;
-class BaseDomain;
 class ZapNode;
 struct ArgLocDesc;
 
@@ -70,8 +69,6 @@ EXTERN_C void checkStack(void);
 
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
-
-#define HAS_COMPACT_ENTRYPOINTS                 1
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 
@@ -910,70 +907,12 @@ public:
         Emit16((WORD) (0x0b00 | ((dest & 0xf) << 12) | (abs(offset)>>2)));
     }
 
-#ifdef FEATURE_INTERPRETER
-    void ThumbEmitStoreMultipleVFPDoubleReg(ThumbVFPDoubleReg source, ThumbReg dest, unsigned numRegs)
-    {
-        _ASSERTE((numRegs + source) <= 16);
-
-        // The third nibble is 0x8; the 0x4 bit (D) is zero because the source reg number must be less
-        // than 16 for double registers.
-        Emit16((WORD) (0xec80 | 0x80 | dest));
-        Emit16((WORD) (((source & 0xf) << 12) | 0xb00 | numRegs));
-    }
-
-    void ThumbEmitLoadMultipleVFPDoubleReg(ThumbVFPDoubleReg dest, ThumbReg source, unsigned numRegs)
-    {
-        _ASSERTE((numRegs + dest) <= 16);
-
-        // The third nibble is 0x8; the 0x4 bit (D) is zero because the source reg number must be less
-        // than 16 for double registers.
-        Emit16((WORD) (0xec90 | 0x80 | source));
-        Emit16((WORD) (((dest & 0xf) << 12) | 0xb00 | numRegs));
-    }
-#endif // FEATURE_INTERPRETER
-
     // Scratches r12.
     void ThumbEmitTailCallManagedMethod(MethodDesc *pMD);
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
     VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 };
-
-extern "C" void SinglecastDelegateInvokeStub();
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4359) // Prevent "warning C4359: 'UMEntryThunkCode': Alignment specifier is less than actual alignment (8), and will be ignored." in crossbitness scenario
-#endif // _MSC_VER
-
-struct DECLSPEC_ALIGN(4) UMEntryThunkCode
-{
-    WORD        m_code[4];
-
-    TADDR       m_pTargetCode;
-    TADDR       m_pvSecretParam;
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)((TADDR)this | THUMB_CODE);
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return 0;
-    }
-};
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER
 
 struct HijackArgs
 {
@@ -1022,63 +961,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-
-//------------------------------------------------------------------------
-//
-// Precode definitions
-//
-//------------------------------------------------------------------------
-//
-// Note: If you introduce new precode implementation below, then please
-//       update PrecodeStubManager::CheckIsStub_Internal to account for it.
-
-// Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
-struct ThisPtrRetBufPrecode {
-
-    static const int Type = 0x01;
-
-    // mov r12, r0
-    // mov r0, r1
-    // mov r1, r12
-    // ldr pc, [pc, #0]     ; =m_pTarget
-    // dcd pTarget
-    // dcd pMethodDesc
-    WORD    m_rgCode[6];
-    TADDR   m_pTarget;
-    TADDR   m_pMethodDesc;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
-
-    TADDR GetMethodDesc()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pMethodDesc;
-    }
-
-    PCODE GetTarget()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pTarget;
-    }
-
-#ifndef DACCESS_COMPILE
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-        }
-        CONTRACTL_END;
-
-        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode));
-        return InterlockedCompareExchange((LONG*)&precodeWriterHolder.GetRW()->m_pTarget, (LONG)target, (LONG)expected) == (LONG)expected;
-    }
-#endif // !DACCESS_COMPILE
-};
-typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
-
 
 //**********************************************************************
 // Miscellaneous

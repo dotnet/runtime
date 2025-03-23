@@ -309,6 +309,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory, MemberData(nameof(BrainpoolCurvesPfx))]
         public static void ReadECDsaPrivateKey_BrainpoolP160r1_Pfx(byte[] pfxData)
         {
+            static bool IsKnownGoodPlatform() => PlatformDetection.IsWindows10OrLater || PlatformDetection.IsUbuntu;
+
             try
             {
                 using (var cert = new X509Certificate2(pfxData, TestData.PfxDataPassword))
@@ -324,11 +326,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     }
                 }
             }
-            catch (CryptographicException)
+            catch (CryptographicException) when (!IsKnownGoodPlatform())
             {
-                // Windows 7, Windows 8, CentOS, macOS can fail. Verify known good platforms don't fail.
-                Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10, "Is Windows 10");
-                Assert.False(PlatformDetection.IsUbuntu, "Is Ubuntu");
+                // Windows 7, Windows 8, CentOS, macOS can fail. If the platform is a known good, let the exception
+                // through since it should not fail.
             }
         }
 
@@ -477,6 +478,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     Assert.False(key.IsEphemeral, "key.IsEphemeral");
                     Assert.NotNull(key.KeyName);
+                }
+            }
+        }
+
+        [Fact]
+        public static void VerifyNamesWithDuplicateAttributes()
+        {
+            // This is the same as the Windows Attributes test for X509CertificateLoaderPkcs12Tests,
+            // but using the legacy X509Certificate2 ctor, to test the settings for that set of
+            // loader limits with respect to duplicates.
+
+            X509Certificate2 cert = new X509Certificate2(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw);
+
+            using (cert)
+            {
+                Assert.Equal("Certificate 1", cert.GetNameInfo(X509NameType.SimpleName, false));
+                Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.Equal("Microsoft Enhanced RSA and AES Cryptographic Provider", cert.FriendlyName);
+
+                    using (RSA key = cert.GetRSAPrivateKey())
+                    using (CngKey cngKey = Assert.IsType<RSACng>(key).Key)
+                    {
+                        Assert.Equal("Microsoft Enhanced RSA and AES Cryptographic Provider", cngKey.Provider.Provider);
+                        Assert.True(cngKey.IsMachineKey, "cngKey.IsMachineKey");
+
+                        // If keyname000 gets taken, we'll get a random key name on import.  What's important is that we
+                        // don't pick the second entry: keyname001.
+                        Assert.NotEqual("keyname001", cngKey.KeyName);
+                    }
                 }
             }
         }

@@ -72,11 +72,6 @@ GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
 #endif
 
 GPTR_IMPL(MethodTable,      g_pIDynamicInterfaceCastableInterface);
-
-#ifdef FEATURE_ICASTABLE
-GPTR_IMPL(MethodTable,      g_pICastableInterface);
-#endif // FEATURE_ICASTABLE
-
 GPTR_IMPL(MethodDesc,       g_pObjectFinalizerMD);
 
 GPTR_IMPL(Thread,g_pFinalizerThread);
@@ -140,7 +135,7 @@ ETW::CEtwTracer * g_pEtwTracer = NULL;
 #endif // #ifndef DACCESS_COMPILE
 
 //
-// Support for the COM+ Debugger.
+// Support for the CLR Debugger.
 //
 GPTR_IMPL(DebugInterface,     g_pDebugInterface);
 // A managed debugger may set this flag to high from out of process.
@@ -148,6 +143,12 @@ GVAL_IMPL_INIT(DWORD,         g_CORDebuggerControlFlags, DBCF_NORMAL_OPERATION);
 
 #ifdef DEBUGGING_SUPPORTED
 GPTR_IMPL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
+
+#ifndef DACCESS_COMPILE
+GVAL_IMPL_INIT(DWORD, g_multicastDelegateTraceActiveCount, 0);
+GVAL_IMPL_INIT(DWORD, g_externalMethodFixupTraceActiveCount, 0);
+#endif // DACCESS_COMPILE
+
 #endif // DEBUGGING_SUPPORTED
 
 #if defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
@@ -193,8 +194,6 @@ GVAL_IMPL(SIZE_T, g_runtimeVirtualSize);
 #ifndef DACCESS_COMPILE
 
 bool g_fManagedAttach = false;
-
-DWORD g_FinalizerWaiterStatus = 0;
 
 //
 // Do we own the lifetime of the process, ie. is it an EXE?

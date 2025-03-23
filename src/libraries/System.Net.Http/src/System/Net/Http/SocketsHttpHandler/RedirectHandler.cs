@@ -55,7 +55,7 @@ namespace System.Net.Http
 
                 if (HttpTelemetry.Log.IsEnabled())
                 {
-                    HttpTelemetry.Log.Redirect(redirectUri.AbsoluteUri);
+                    HttpTelemetry.Log.Redirect(redirectUri);
                 }
                 if (NetEventSource.Log.IsEnabled())
                 {
@@ -78,8 +78,6 @@ namespace System.Net.Http
                         request.Headers.TransferEncodingChunked = false;
                     }
                 }
-
-                request.MarkAsRedirected();
 
                 // Issue the redirected request.
                 response = await _redirectInnerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
