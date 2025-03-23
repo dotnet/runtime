@@ -1688,7 +1688,7 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
 
 #ifdef JIT32_GCENCODER
     // JIT32_GCENCODER has a hard limit on the number of epilogues.
-    return changed;
+    return modified;
 #endif
 
     // Early out if the current method is not returning a boolean.
