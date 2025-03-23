@@ -18,12 +18,14 @@ namespace System.Security.Cryptography
             string name,
             int encapsulationKeySizeInBytes,
             int decapsulationKeySizeInBytes,
-            int ciphertextSizeInBytes)
+            int ciphertextSizeInBytes,
+            string oid)
         {
             Name = name;
             EncapsulationKeySizeInBytes = encapsulationKeySizeInBytes;
             DecapsulationKeySizeInBytes = decapsulationKeySizeInBytes;
             CiphertextSizeInBytes = ciphertextSizeInBytes;
+            Oid = oid;
         }
 
         // Values are from NIST FIPS-203 table 3.
@@ -34,7 +36,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An ML-KEM algorithm identifier for the ML-KEM-512 algorithm.
         /// </value>
-        public static MLKemAlgorithm MLKem512 { get; } = new("ML-KEM-512", 800, 1632, 768);
+        public static MLKemAlgorithm MLKem512 { get; } = new("ML-KEM-512", 800, 1632, 768, Oids.MlKem512);
 
         /// <summary>
         ///   Gets an ML-KEM algorithm identifier for the ML-KEM-768 algorithm.
@@ -42,7 +44,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An ML-KEM algorithm identifier for the ML-KEM-768 algorithm.
         /// </value>
-        public static MLKemAlgorithm MLKem768 { get; } = new("ML-KEM-768", 1184, 2400, 1088);
+        public static MLKemAlgorithm MLKem768 { get; } = new("ML-KEM-768", 1184, 2400, 1088, Oids.MlKem768);
 
         /// <summary>
         ///   Gets an ML-KEM algorithm identifier for the ML-KEM-1024 algorithm.
@@ -50,7 +52,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An ML-KEM algorithm identifier for the ML-KEM-1024 algorithm.
         /// </value>
-        public static MLKemAlgorithm MLKem1024 { get; } = new("ML-KEM-1024", 1568, 3168, 1568);
+        public static MLKemAlgorithm MLKem1024 { get; } = new("ML-KEM-1024", 1568, 3168, 1568, Oids.MlKem1024);
 
         /// <summary>
         ///   Gets the name of the algorithm.
@@ -103,6 +105,8 @@ namespace System.Security.Cryptography
         // Right now every seed for ML-KEM is 64 bytes. If or when a different seed
         // size is needed, then it can be provided as input to the private constructor.
         public int PrivateSeedSizeInBytes { get; } = 64;
+
+        internal string Oid { get; }
 
         /// <summary>
         ///   Compares two <see cref="MLKemAlgorithm" /> objects.

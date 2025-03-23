@@ -3,7 +3,9 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
@@ -726,6 +728,85 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the encapsulation key.
         /// </param>
         protected abstract void ExportEncapsulationKeyCore(Span<byte> destination);
+
+        /// <summary>
+        ///   Attempts to export the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format
+        ///   into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the X.509 SubjectPublicKeyInfo value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten)
+        {
+            ThrowIfDisposed();
+            return ExportSubjectPublicKeyInfoCore().TryEncode(destination, out bytesWritten);
+        }
+
+        /// <summary>
+        ///  Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
+        /// </summary>
+        /// <returns>
+        ///   A byte array containing the X.509 SubjectPublicKeyInfo representation of the public-key portion of this key.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public byte[] ExportSubjectPublicKeyInfo()
+        {
+            ThrowIfDisposed();
+            return ExportSubjectPublicKeyInfoCore().Encode();
+        }
+
+        private AsnWriter ExportSubjectPublicKeyInfoCore()
+        {
+            int encapsulationKeySize = Algorithm.EncapsulationKeySizeInBytes;
+            byte[] encapsulationKeyBuffer = CryptoPool.Rent(encapsulationKeySize);
+            Memory<byte> encapsulationKey = encapsulationKeyBuffer.AsMemory(0, encapsulationKeySize);
+
+            try
+            {
+                ExportEncapsulationKeyCore(encapsulationKey.Span);
+
+                SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
+                {
+                    Algorithm = new AlgorithmIdentifierAsn
+                    {
+                        Algorithm = Algorithm.Oid,
+                        Parameters = default(ReadOnlyMemory<byte>?),
+                    },
+                    SubjectPublicKey = encapsulationKey,
+                };
+
+                // The ASN.1 overhead of a SubjectPublicKeyInfo encoding an encapsulation key is 22 bytes.
+                // Round it off to 32. This checked operation should never throw because the inputs are not
+                // user provided.
+                int capacity = checked(32 + encapsulationKeySize);
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
+                spki.Encode(writer);
+                return writer;
+            }
+            finally
+            {
+                CryptoPool.Return(encapsulationKeyBuffer, clearSize: 0); // SPKI is public info, skip clear.
+            }
+        }
 
         /// <summary>
         ///  Releases all resources used by the <see cref="MLKem"/> class.
