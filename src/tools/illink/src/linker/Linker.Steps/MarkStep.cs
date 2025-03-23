@@ -1202,6 +1202,7 @@ namespace Mono.Linker.Steps
 					MarkMethod (property.SetMethod, reason, origin);
 				} catch {
 					Console.WriteLine ($"Exception occured when reading property {property.FullName} of type {property.DeclaringType.FullName} with SetMethod {property.SetMethod}");
+					throw;
 				}
 			}
 
