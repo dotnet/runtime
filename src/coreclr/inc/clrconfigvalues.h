@@ -325,6 +325,12 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitOs, W("AltJitOS"), "Sets target OS for 
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitExcludeAssemblies, W("AltJitExcludeAssemblies"), "Do not use AltJit on this semicolon-delimited list of assemblies.")
 #endif // defined(ALLOW_SXS_JIT)
 
+#ifdef FEATURE_INTERPRETER
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_InterpreterName, W("InterpreterName"), "Primary interpreter to use")
+CONFIG_STRING_INFO(INTERNAL_InterpreterPath, W("InterpreterPath"), "Full path to the interpreter to use")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_Interpreter, W("Interpreter"), "Enables Interpreter and selectively limits it to the specified methods.")
+#endif // FEATURE_INTERPRETER
+
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitHostMaxSlabCache, W("JitHostMaxSlabCache"), 0x1000000, "Sets jit host max slab cache size, 16MB default")
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitOptimizeType, W("JitOptimizeType"), 0 /* OPT_DEFAULT */, "")
