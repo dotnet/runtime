@@ -47,7 +47,7 @@ namespace System.Reflection.PortableExecutable
             builder.WriteInt32(debugMetadata.Count);
 
             // compressed data:
-            using (var deflate = new DeflateStream(new BlobBuilderStream(builder), CompressionLevel.Optimal))
+            using (var deflate = new DeflateStream(new BlobBuilderStream(builder), CompressionLevel.Optimal, leaveOpen: true))
             {
                 foreach (var blob in debugMetadata.GetBlobs())
                 {
