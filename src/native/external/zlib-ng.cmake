@@ -1,4 +1,4 @@
- # IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects 
+ # IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects
 
 include(FetchContent)
 
@@ -13,10 +13,22 @@ set(Z_PREFIX ON)
 
 # TODO: Turn back on when Linux kernels with proper RISC-V extension detection (>= 6.5) are more commonplace
 set(WITH_RVV OFF)
+# We don't support ARMv6 and the check works incorrectly when compiling for ARMv7 w/ Thumb instruction set
+set(WITH_ARMV6 OFF)
+# The checks for NEON_AVAILABLE and NEON_HAS_LD4 work incorrectly when compiling for arm32.
+if(CLR_CMAKE_TARGET_ARCH_ARM AND CLR_CMAKE_TARGET_LINUX)
+    set(WITH_NEON OFF)
+endif()
 
-# 'aligned_alloc' is not available in browser/wasi, yet it is set by zlib-ng/CMakeLists.txt.
 if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+  # 'aligned_alloc' is not available in browser/wasi, yet it is set by zlib-ng/CMakeLists.txt.
   set(HAVE_ALIGNED_ALLOC FALSE CACHE BOOL "have aligned_alloc" FORCE)
+
+  # zlib-ng uses atomics, so we need to enable threads when requested for browser/wasi, otherwise the wasm target won't have thread support.
+  if (CMAKE_USE_PTHREADS)
+      add_compile_options(-pthread)
+      add_linker_flag(-pthread)
+  endif()
 endif()
 
 set(BUILD_SHARED_LIBS OFF) # Shared libraries aren't supported in wasm

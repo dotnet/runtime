@@ -28,9 +28,11 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
+target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal)
 
 add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.ServerGC aot_eventing_headers)
+target_link_libraries(Runtime.ServerGC PRIVATE aotminipal)
 
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
 add_dependencies(standalonegc-disabled aot_eventing_headers)
@@ -49,50 +51,38 @@ endif (CLR_CMAKE_TARGET_ARCH_AMD64)
 target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
 
 if (CLR_CMAKE_TARGET_WIN32)
-  add_library(standalonegc-disabled.GuardCF STATIC ${STANDALONEGC_DISABLED_SOURCES})
-  set_target_properties(standalonegc-disabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-  add_dependencies(standalonegc-disabled.GuardCF aot_eventing_headers)
-  add_dependencies(standalonegc-disabled.GuardCF aot_etw_headers)
-  add_library(standalonegc-enabled.GuardCF STATIC ${STANDALONEGC_ENABLED_SOURCES})
-  set_target_properties(standalonegc-enabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-  add_dependencies(standalonegc-enabled.GuardCF aot_eventing_headers)
-  add_dependencies(standalonegc-enabled.GuardCF aot_etw_headers)
-  add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
-  target_compile_definitions(Runtime.ServerGC.GuardCF PRIVATE -DFEATURE_SVR_GC)
-  set_target_properties(Runtime.ServerGC.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-
-  if (CLR_CMAKE_TARGET_ARCH_AMD64)
-    add_library(Runtime.VxsortEnabled.GuardCF STATIC ${VXSORT_SOURCES})
-    set_target_properties(Runtime.VxsortEnabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-  endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+  set_target_properties(aotminipal PROPERTIES
+    COMPILE_PDB_NAME "aotminipal"
+    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
 endif (CLR_CMAKE_TARGET_WIN32)
 
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)
 
-set(ASM_OFFSETS_CSPP ${RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.cspp)
+set(ASM_OFFSETS_CSPP ${NATIVEAOT_RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.cspp)
 
 if(WIN32)
     set(COMPILER_LANGUAGE "")
     set(PREPROCESSOR_FLAGS -EP -nologo)
-    set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/windows/AsmOffsets.cpp)
+    set(ASM_OFFSETS_CPP ${NATIVEAOT_RUNTIME_DIR}/windows/AsmOffsets.cpp)
 else()
     set(COMPILER_LANGUAGE -x c++)
     set(PREPROCESSOR_FLAGS -E -P)
-    set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/unix/AsmOffsets.cpp)
+    set(ASM_OFFSETS_CPP ${NATIVEAOT_RUNTIME_DIR}/unix/AsmOffsets.cpp)
 endif()
 
 add_custom_command(
     # The AsmOffsets.cs is consumed later by the managed build
     TARGET Runtime.WorkstationGC
-    COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
-    DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
+    POST_BUILD
+    COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS}
+            -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
 )
 
 add_custom_command(
-    COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${RUNTIME_DIR}" -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
+    COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${NATIVEAOT_RUNTIME_DIR}" -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
-    DEPENDS "${ASM_OFFSETS_CPP}" "${RUNTIME_DIR}/AsmOffsets.h"
+    DEPENDS "${ASM_OFFSETS_CPP}" "${NATIVEAOT_RUNTIME_DIR}/AsmOffsets.h"
     COMMENT "Generating AsmOffsets.inc"
 )
 
@@ -107,24 +97,13 @@ add_custom_target(
 
 add_dependencies(Runtime.WorkstationGC RuntimeAsmHelpers)
 add_dependencies(Runtime.ServerGC RuntimeAsmHelpers)
-if (CLR_CMAKE_TARGET_WIN32)
-  add_dependencies(Runtime.ServerGC.GuardCF RuntimeAsmHelpers)
-endif (CLR_CMAKE_TARGET_WIN32)
 
 install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 install_static_library(Runtime.ServerGC aotsdk nativeaot)
 install_static_library(standalonegc-disabled aotsdk nativeaot)
 install_static_library(standalonegc-enabled aotsdk nativeaot)
-if (CLR_CMAKE_TARGET_WIN32)
-  install_static_library(Runtime.ServerGC.GuardCF aotsdk nativeaot)
-  add_dependencies(Runtime.ServerGC.GuardCF aot_eventing_headers)
-  install_static_library(standalonegc-disabled.GuardCF aotsdk nativeaot)
-  install_static_library(standalonegc-enabled.GuardCF aotsdk nativeaot)
-endif (CLR_CMAKE_TARGET_WIN32)
+install_static_library(aotminipal aotsdk nativeaot)
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
   install_static_library(Runtime.VxsortEnabled aotsdk nativeaot)
   install_static_library(Runtime.VxsortDisabled aotsdk nativeaot)
-  if (CLR_CMAKE_TARGET_WIN32)
-    install_static_library(Runtime.VxsortEnabled.GuardCF aotsdk nativeaot)
-  endif (CLR_CMAKE_TARGET_WIN32)
 endif (CLR_CMAKE_TARGET_ARCH_AMD64)

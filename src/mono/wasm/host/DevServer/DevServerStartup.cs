@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 using Microsoft.WebAssembly.AppHost;
 
 namespace Microsoft.WebAssembly.AppHost.DevServer;
@@ -46,7 +47,7 @@ internal sealed class DevServerStartup
                 if (ctx.Request.Path.StartsWithSegments("/_framework") && !ctx.Request.Path.StartsWithSegments("/_framework/blazor.server.js") && !ctx.Request.Path.StartsWithSegments("/_framework/blazor.web.js"))
                 {
                     string fileExtension = Path.GetExtension(ctx.Request.Path);
-                    if (string.Equals(fileExtension, ".js"))
+                    if (string.Equals(fileExtension, ".js") || string.Equals(fileExtension, ".mjs"))
                     {
                         // Browser multi-threaded runtime requires cross-origin policy headers to enable SharedArrayBuffer.
                         ApplyCrossOriginPolicyHeaders(ctx);
@@ -57,7 +58,9 @@ internal sealed class DevServerStartup
             });
         }
 
-        app.UseBlazorFrameworkFiles();
+        //app.UseBlazorFrameworkFiles();
+        app.UseRouting();
+
         app.UseStaticFiles(new StaticFileOptions
         {
             // In development, serve everything, as there's no other way to configure it.
@@ -65,7 +68,6 @@ internal sealed class DevServerStartup
             ServeUnknownFileTypes = true,
         });
 
-        app.UseRouting();
         app.UseWebSockets();
 
         if (options.OnConsoleConnected is not null)
@@ -92,10 +94,20 @@ internal sealed class DevServerStartup
 
         app.UseEndpoints(endpoints =>
         {
+            endpoints.MapStaticAssets(options.StaticWebAssetsEndpointsPath);
+
             endpoints.MapFallbackToFile("index.html", new StaticFileOptions
             {
                 OnPrepareResponse = fileContext =>
                 {
+                    // Avoid caching index.html during development.
+                    // When hot reload is enabled, a middleware injects a hot reload script into the response HTML.
+                    // We don't want the browser to bypass this injection by using a cached response that doesn't
+                    // contain the injected script. In the future, if script injection is removed in favor of a
+                    // different mechanism, we can delete this comment and the line below it.
+                    // See also: https://github.com/dotnet/aspnetcore/issues/45213
+                    fileContext.Context.Response.Headers[HeaderNames.CacheControl] = "no-store";
+
                     if (options.WebServerUseCrossOriginPolicy)
                     {
                         // Browser multi-threaded runtime requires cross-origin policy headers to enable SharedArrayBuffer.

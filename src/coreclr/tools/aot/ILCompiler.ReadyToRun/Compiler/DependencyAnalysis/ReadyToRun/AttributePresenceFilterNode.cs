@@ -439,7 +439,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     bucketCount *= 2;
                 }
             }
-            while(tryAgainWithBiggerTable && ((countOfRetries++) < 2));
+            while (tryAgainWithBiggerTable && ((countOfRetries++) < 2));
 
             byte[] result;
             if (tryAgainWithBiggerTable)

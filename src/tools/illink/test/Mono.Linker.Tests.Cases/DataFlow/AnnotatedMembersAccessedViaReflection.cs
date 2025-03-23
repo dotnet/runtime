@@ -953,17 +953,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RequiresUnreferencedCode("--AnnotatedType--")]
 			public class AnnotatedType
 			{
-				[ExpectedWarning("IL2112", [nameof(AnnotatedType), "requires unreferenced code", "--AnnotatedType--"], Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+				[ExpectedWarning("IL2112", nameof(AnnotatedType), "requires unreferenced code", "--AnnotatedType--")]
 				public AnnotatedType () { }
 			}
 
-			[ExpectedWarning("IL2114", nameof(MethodWithDataflow), nameof(DynamicallyAccessedMembersAttribute), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+			[ExpectedWarning("IL2114", nameof(MethodWithDataflow), nameof(DynamicallyAccessedMembersAttribute))]
 			public void MethodWithDataflow ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) { }
 
 			[RequiresDynamicCode ("--MethodWithRequires--")]
 			[RequiresUnreferencedCode("--MethodWithRequires--")]
 			[RequiresAssemblyFiles("--MethodWithRequires--")]
-			[ExpectedWarning("IL2112", "requires unreferenced code", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+			[ExpectedWarning("IL2112", "requires unreferenced code", "--MethodWithRequires--")]
 			public void MethodWithRequires () { }
 
 			public static void Test ()

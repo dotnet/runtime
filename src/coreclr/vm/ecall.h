@@ -94,8 +94,6 @@ class ECall
 
         static void PopulateManagedStringConstructors();
 
-        static void PopulateManagedHelpers();
-
 #ifdef DACCESS_COMPILE
         // Enumerates all gFCallMethods for minidumps.
         static void EnumFCallMethods();

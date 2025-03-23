@@ -104,7 +104,7 @@ public:
     static void Startup();
 
     ~PEImage();
-    PEImage();
+    explicit PEImage(const WCHAR* path);
 
     BOOL Equals(PEImage* pImage);
 
@@ -121,7 +121,7 @@ public:
         MDInternalImportFlags flags = MDInternalImport_Default,
         BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
 
-    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle = TRUE);
+    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle);
     void AddToHashMap();
 #endif
 
@@ -138,6 +138,7 @@ public:
 
     BOOL IsFile();
     BOOL IsInBundle() const;
+    void* GetExternalData(INT64* size);
     INT64 GetOffset() const;
     INT64 GetSize() const;
     INT64 GetUncompressedSize() const;
@@ -182,8 +183,8 @@ public:
     void SetModuleFileNameHintForDAC();
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    const SString &GetModuleFileNameHintForDAC();
 #endif
+    const SString &GetModuleFileNameHintForDAC();
 
 private:
 #ifndef DACCESS_COMPILE
@@ -206,7 +207,7 @@ private:
     // Private routines
     // ------------------------------------------------------------
 
-    void Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
+    void Init(BundleFileLocation bundleFileLocation);
 
     struct PEImageLocator
     {
@@ -237,7 +238,6 @@ public:
         Crst            m_lock;
         void*           m_base;
         DWORD           m_flags;
-        PTR_LoaderHeap  m_DllThunkHeap;
 
         // the fixup for the next iteration in FixupVTables
         // we use it to make sure that we do not try to fix up the same entry twice
@@ -251,19 +251,15 @@ public:
 
     public:
         IJWFixupData(void* pBase);
-        ~IJWFixupData();
         void* GetBase() { LIMITED_METHOD_CONTRACT; return m_base; }
         Crst* GetLock() { LIMITED_METHOD_CONTRACT; return &m_lock; }
         BOOL IsFixedUp() { LIMITED_METHOD_CONTRACT; return m_flags & e_FIXED_UP; }
         void SetIsFixedUp() { LIMITED_METHOD_CONTRACT; m_flags |= e_FIXED_UP; }
-        PTR_LoaderHeap  GetThunkHeap();
         void MarkMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
         BOOL IsMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
     };
 
     static IJWFixupData* GetIJWData(void* pBase);
-    static PTR_LoaderHeap GetDllThunkHeap(void* pBase);
-    static void UnloadIJWModule(void* pBase);
 
 private:
 
@@ -285,7 +281,7 @@ private:
     // Instance fields
     // ------------------------------------------------------------
 
-    SString   m_path;
+    const SString   m_path;
     ULONG     m_pathHash;
     LONG      m_refCount;
 
@@ -302,12 +298,10 @@ private:
     DWORD m_dwPEKind;
     DWORD m_dwMachine;
 
-    // This variable will have the data of module name.
-    // It is only used by DAC to remap fusion loaded modules back to
-    // disk IL. This really is a workaround. The real fix is for fusion loader
-    // hook (public API on hosting) to take an additional file name hint.
-    // We are piggy backing on the fact that module name is the same as file name!!!
-    SString   m_sModuleFileNameHintUsedByDac; // This is only used by DAC
+    // This only used by DAC
+    // For assemblies loaded from a path or single-file bundle, this is the file name portion of the path
+    // For assemblies loaded from memory, this is the module file name from metadata
+    SString   m_sModuleFileNameHintUsedByDac;
 
     enum
     {

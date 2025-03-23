@@ -27,6 +27,8 @@
     <Compile Include="..\Common\ConvertToSourceGeneratedInteropFixer.cs" Link="Common\ConvertToSourceGeneratedInteropFixer.cs" />
     <Compile Include="..\Common\FixAllContextExtensions.cs" Link="Common\FixAllContextExtensions.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Index.cs" Link="Common\System\Index.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="../Common/UnreachableException.cs" Link="Common/UnreachableException.cs" />
   </ItemGroup>
 
   <ItemGroup>

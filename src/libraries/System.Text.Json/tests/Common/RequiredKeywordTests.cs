@@ -727,6 +727,25 @@ namespace System.Text.Json.Serialization.Tests
             };
         }
 
+        [Fact]
+        public async Task ClassWithNullValidatingConstructor_ValidatesRequiredParameterBeforeCallingCtor()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/107065
+            JsonSerializerOptions options = new(Serializer.DefaultOptions) { RespectRequiredConstructorParameters = true };
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<ClassWithNullValidatingConstructor>("{}", options));
+            Assert.Null(ex.InnerException);
+        }
+
+        public class ClassWithNullValidatingConstructor
+        {
+            public ClassWithNullValidatingConstructor(string value)
+            {
+                Value = value ?? throw new ArgumentNullException(nameof(value));
+            }
+
+            public string Value { get; }
+        }
+
         private static JsonTypeInfo GetTypeInfo<T>(JsonSerializerOptions options)
         {
             options.TypeInfoResolver ??= JsonSerializerOptions.Default.TypeInfoResolver;

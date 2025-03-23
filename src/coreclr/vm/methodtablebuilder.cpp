@@ -1,14 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: METHODTABLEBUILDER.CPP
 //
-
-
-//
-
-//
-// ============================================================================
 
 #include "common.h"
 
@@ -1260,8 +1255,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
     CONTRACTL_END;
 
-    pModule->EnsureLibraryLoaded();
-
     // The following structs, defined as private members of MethodTableBuilder, contain the necessary local
     // parameters needed for BuildMethodTable Look at the struct definitions for a detailed list of all
     // parameters available to BuildMethodTableThrowing.
@@ -1490,13 +1483,26 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (bmtProp->fIsIntrinsicType && !bmtGenerics->HasInstantiation())
     {
-        LPCUTF8 className;
         LPCUTF8 nameSpace;
-        HRESULT hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace);
+        HRESULT hr = S_OK;
 
-        if (bmtInternal->pType->IsNested())
+        if (!bmtInternal->pType->IsNested())
         {
-            IfFailThrow(GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetEnclosingTypeToken(), NULL, &nameSpace));
+            hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), NULL, &nameSpace);
+        }
+        else
+        {
+            mdTypeDef rootEnclosingTD = bmtInternal->pType->GetEnclosingTypeToken();
+
+            mdTypeDef td = rootEnclosingTD;
+            // Some are hardware intrinsics are nested twice, so try to go
+            // another level up to get the namespace.
+            if (SUCCEEDED(GetMDImport()->GetNestedClassProps(rootEnclosingTD, &td)))
+            {
+                rootEnclosingTD = td;
+            }
+
+            IfFailThrow(GetMDImport()->GetNameOfTypeDef(td, NULL, &nameSpace));
         }
 
 #if defined(TARGET_ARM64)
@@ -1794,6 +1800,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
+    if (IsValueClass())
+    {
+        if ((int)bmtFP->NumInstanceFieldBytes != (INT64)bmtFP->NumInstanceFieldBytes)
+            BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+    }
+
     if (CheckIfSIMDAndUpdateSize())
     {
         totalDeclaredFieldSize = bmtFP->NumInstanceFieldBytes;
@@ -1880,6 +1892,13 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // TODO: fix it so that we emit them in the correct order in the first place.
     if (pMT->ContainsGCPointers())
     {
+#ifdef _DEBUG
+        if (pMT->IsValueType())
+        {
+            DWORD baseSizePadding = pMT->GetClass()->GetBaseSizePadding();
+            _ASSERTE(baseSizePadding == (sizeof(TADDR) * 2)); // This is dependended on by GetNumInstanceFieldBytesIfContainsGCPointers.
+        }
+#endif // _DEBUG
         CGCDesc* gcDesc = CGCDesc::GetCGCDescFromMT(pMT);
         qsort(gcDesc->GetLowestSeries(), (int)gcDesc->GetNumSeries(), sizeof(CGCDescSeries), compareCGCDescSeries);
     }
@@ -1985,13 +2004,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     if (!IsValueClass())
     {
-#ifdef FEATURE_ICASTABLE
-        if (g_pICastableInterface != NULL && pMT->CanCastToInterface(g_pICastableInterface))
-        {
-            pMT->SetICastable();
-        }
-#endif // FEATURE_ICASTABLE
-
         if (g_pIDynamicInterfaceCastableInterface != NULL && pMT->CanCastToInterface(g_pIDynamicInterfaceCastableInterface))
         {
             pMT->SetIDynamicInterfaceCastable();
@@ -2045,7 +2057,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared methods: %d\n", NumDeclaredMethods()));
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared non-abstract methods: %d\n", bmtMethod->dwNumDeclaredNonAbstractMethods));
 
-        BOOL debugging = IsDebuggerPresent();
+        BOOL debugging = minipal_is_native_debugger_present();
         pMT->Debug_DumpInterfaceMap("Approximate");
         pMT->DebugDumpVtable(pszDebugName, debugging);
         pMT->DebugDumpFieldLayout(pszDebugName, debugging);
@@ -3170,14 +3182,14 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
                 else
                 {
-                    type = mcNDirect;
+                    type = mcPInvoke;
                 }
             }
             // The NAT_L attribute is present, marking this method as NDirect
             else
             {
                 CONSISTENCY_CHECK(hr == S_OK);
-                type = mcNDirect;
+                type = mcPInvoke;
             }
         }
         else if (IsMiRuntime(dwImplFlags))
@@ -3242,11 +3254,6 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 // Methods in instantiated interfaces need nothing special - they are not visible from COM etc.
                 type = mcIL;
-            }
-            else if (bmtProp->fIsMngStandardItf)
-            {
-                // If the interface is a standard managed interface then allocate space for an FCall method desc.
-                type = mcFCall;
             }
             else if (IsMdAbstract(dwMemberAttrs))
             {
@@ -5060,7 +5067,7 @@ MethodTableBuilder::ValidateMethods()
                 if (IsMiNative(it.ImplFlags()))
                 {
                     // For now simply disallow managed native code if you turn this on you have to at least
-                    // insure that we have SkipVerificationPermission or equivalent
+                    // ensure that we have SkipVerificationPermission or equivalent
                     BuildMethodTableThrowException(BFA_MANAGED_NATIVE_NYI, it.Token());
                 }
                 else
@@ -5080,7 +5087,7 @@ MethodTableBuilder::ValidateMethods()
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_BAD_UNMANAGED_RVA, it.Token());
             }
-            if (it.MethodType() != mcNDirect)
+            if (it.MethodType() != mcPInvoke)
             {
                 BuildMethodTableThrowException(BFA_BAD_UNMANAGED_ENTRY_POINT);
             }
@@ -5212,9 +5219,8 @@ MethodTableBuilder::InitNewMethodDesc(
         }
     }
 
-    // Turn off inlining for any calls
-    // that are marked in the metadata as not being inlineable.
-    if(IsMiNoInlining(pMethod->GetImplAttrs()))
+    // Turn off inlining for any calls that are marked in the metadata as NoInlining or NoOptimization.
+    if (IsMiNoInlining(pMethod->GetImplAttrs()) || IsMiNoOptimization(pMethod->GetImplAttrs()))
     {
         pNewMD->SetNotInline(true);
     }
@@ -6086,7 +6092,7 @@ MethodTableBuilder::InitMethodDesc(
 
     switch (Classification)
     {
-    case mcNDirect:
+    case mcPInvoke:
         {
             // NDirect specific initialization.
             NDirectMethodDesc *pNewNMD = (NDirectMethodDesc*)pNewMD;
@@ -6133,15 +6139,9 @@ MethodTableBuilder::InitMethodDesc(
             BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod == NULL);
             ((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod = pNewMD;
         }
-        else if (strcmp(pMethodName, "BeginInvoke") == 0)
+        else if (strcmp(pMethodName, "BeginInvoke") == 0 || strcmp(pMethodName, "EndInvoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod == NULL);
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod = pNewMD;
-        }
-        else if (strcmp(pMethodName, "EndInvoke") == 0)
-        {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod == NULL);
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod = pNewMD;
+            // Obsolete async methods
         }
         else
         {
@@ -8677,30 +8677,19 @@ MethodTableBuilder::HandleExplicitLayout(
             else
             {
                 MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
-                if (pByValueMT->IsByRefLike() || pByValueMT->ContainsGCPointers())
+                if (pByValueMT->ContainsGCPointers() || pByValueMT->IsByRefLike())
                 {
-                    if ((pFD->GetOffset() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
-                    {
-                        // If we got here, then a ByRefLike valuetype or a valuetype containing an OREF was misaligned.
-                        badOffset = pFD->GetOffset();
-                        fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
-                        break;
-                    }
-
-                    ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset()]);
+                    ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset()], pFD->GetOffset());
                     fieldTrust.SetTrust(trust);
 
-                    if (trust != ExplicitFieldTrust::kNone)
-                    {
-                        continue;
-                    }
-                    else
+                    if (trust == ExplicitFieldTrust::kNone)
                     {
                         // If we got here, then an OREF/BYREF inside the valuetype illegally overlapped a non-OREF field. THROW.
                         badOffset = pFD->GetOffset();
                         break;
                     }
-                    break;
+
+                    continue;
                 }
                 // no pointers so fall through to do standard checking
                 fieldSize = pByValueMT->GetNumInstanceFieldBytes();
@@ -8855,13 +8844,13 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 // make sure that no object fields are overlapped incorrectly, returns the trust level
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout, UINT fieldBaseOffset)
 {
     STANDARD_VM_CONTRACT;
 
     // ByRefLike types need to be checked for ByRef fields.
     if (pMT->IsByRefLike())
-        return CheckByRefLikeValueClassLayout(pMT, pFieldLayout);
+        return CheckByRefLikeValueClassLayout(pMT, pFieldLayout, fieldBaseOffset);
 
     // Build a layout of the value class (vc). Don't know the sizes of all the fields easily, but
     // do know (a) vc is already consistent so don't need to check it's overlaps and
@@ -8873,10 +8862,18 @@ MethodTableBuilder::HandleExplicitLayout(
     bmtFieldLayoutTag *vcLayout = (bmtFieldLayoutTag*) qb.AllocThrows(fieldSize * sizeof(bmtFieldLayoutTag));
     memset((void*)vcLayout, nonoref, fieldSize);
 
-    // If the type contains pointers fill it out from the GC data
+    // If the type contains pointers fill it out from the GC data and validate OREF alignment.
     if (pMT->ContainsGCPointers())
     {
-        // use pointer series to locate the orefs
+        // If the type contains pointers, it has to start at an aligned offset.
+        // The alignment of the pointer series itself was checked earlier.
+        if (fieldBaseOffset % TARGET_POINTER_SIZE != 0)
+        {
+            // If we got here, then an OREF is misaligned.
+            return ExplicitFieldTrust::kNone;
+        }
+
+        // Use pointer series to locate the OREFs
         CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
         CGCDescSeries *pSeries = map->GetLowestSeries();
 
@@ -8884,6 +8881,7 @@ MethodTableBuilder::HandleExplicitLayout(
         {
             CONSISTENCY_CHECK(pSeries <= map->GetHighestSeries());
 
+            // Get offset into the value class of the first pointer field (includes a +Object)
             memset((void*)&vcLayout[pSeries->GetSeriesOffset() - OBJECT_SIZE], oref, pSeries->GetSeriesSize() + pMT->GetBaseSize());
             pSeries++;
         }
@@ -8947,7 +8945,7 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 // make sure that no byref/object fields are overlapped, returns the trust level
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout, UINT fieldBaseOffset)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pMT->IsByRefLike());
@@ -8964,17 +8962,21 @@ MethodTableBuilder::HandleExplicitLayout(
         if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
         {
             MethodTable *pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-            trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex]);
+            trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex], fieldBaseOffset + fieldStartIndex);
         }
         else if (pFD->IsObjRef())
         {
-            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
-            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, oref);
+            UINT absOffset = fieldBaseOffset + fieldStartIndex;
+            trust = (absOffset % TARGET_POINTER_SIZE == 0)
+                ? MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, oref)
+                : ExplicitFieldTrust::kNone;
         }
         else if (pFD->IsByRef())
         {
-            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
-            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, byref);
+            UINT absOffset = fieldBaseOffset + fieldStartIndex;
+            trust = (absOffset % TARGET_POINTER_SIZE == 0)
+                ? MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, byref)
+                : ExplicitFieldTrust::kNone;
         }
         else
         {
@@ -10067,7 +10069,25 @@ void MethodTableBuilder::CheckForSystemTypes()
             // Pre-compute whether the class is a Nullable<T> so that code:Nullable::IsNullableType is efficient
             // This is useful to the performance of boxing/unboxing a Nullable
             if (GetCl() == g_pNullableClass->GetCl())
+            {
                 pMT->SetIsNullable();
+
+                // Capure Nullable<T> specific details into the MethodTable for better unboxing performance
+                FieldDesc* pFDValue = &pMT->GetApproxFieldDescListRaw()[1];
+                _ASSERTE(strcmp(pFDValue->GetDebugName(), "value") == 0);
+                UINT32 offset = pFDValue->GetOffset();
+                if (offset > 0xFF)
+                {
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+                }
+
+                TypeHandle thValueFieldType = pFDValue->GetApproxFieldTypeHandleThrowing();
+                if (!thValueFieldType.IsTypeDesc()) // Non-MethodTable cases can only happen when the size doesn't matter, such as for type variables.
+                {
+                    pMT->SetNullableDetails((UINT8)offset, thValueFieldType.AsMethodTable()->GetNumInstanceFieldBytes());
+                    _ASSERTE(pMT->GetNullableNumInstanceFieldBytes() == pMT->GetNumInstanceFieldBytes());
+                }
+            }
 
             return;
         }
@@ -10161,6 +10181,8 @@ void MethodTableBuilder::CheckForSystemTypes()
             // although applying 16 byte alignment is consistent with treatment of 128 bit SSE types
             // even on X86
             pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
+#elif defined(TARGET_WASM)
+            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(v128)
 #else
 #error Unknown architecture
 #endif // TARGET_64BIT
@@ -10566,20 +10588,6 @@ MethodTableBuilder::SetupMethodTable2(
 
     if (GetParentMethodTable() != NULL)
     {
-        if (GetParentMethodTable()->HasModuleDependencies())
-        {
-            pMT->SetHasModuleDependencies();
-        }
-        else
-        {
-            Module * pModule = GetModule();
-            Module * pParentModule = GetParentMethodTable()->GetModule();
-            if (pModule != pParentModule)
-            {
-                pMT->SetHasModuleDependencies();
-            }
-        }
-
         if (GetParentMethodTable()->HasPreciseInitCctors() || !pClass->IsBeforeFieldInit())
         {
             pMT->SetHasPreciseInitCctors();
@@ -11358,10 +11366,8 @@ VOID MethodTableBuilder::CheckForRemotingProxyAttrib()
 
 
 //*******************************************************************************
-// Checks for a bunch of special interface names and if it matches then it sets
-// bmtProp->fIsMngStandardItf to TRUE. Additionally, it checks to see if the
-// type is an interface and if it has ComEventInterfaceAttribute custom attribute
-// set, then it sets bmtProp->fComEventItfType to true.
+// Checks to see if the type is an interface and if it has ComEventInterfaceAttribute
+// custom attribute set, then it sets bmtProp->fComEventItfType to true.
 //
 // NOTE: This only does anything when COM interop is enabled.
 
@@ -11369,54 +11375,6 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
 {
 #ifdef FEATURE_COMINTEROP
     STANDARD_VM_CONTRACT;
-
-
-    Module *pModule = GetModule();
-    IMDInternalImport *pMDImport = pModule->GetMDImport();
-
-    // Check to see if this type is a managed standard interface. All the managed
-    // standard interfaces live in CoreLib so checking for that first
-    // makes the strcmp that comes afterwards acceptable.
-    if (pModule->IsSystem())
-    {
-        if (IsInterface())
-        {
-            LPCUTF8 pszClassName;
-            LPCUTF8 pszClassNamespace;
-            if (FAILED(pMDImport->GetNameOfTypeDef(GetCl(), &pszClassName, &pszClassNamespace)))
-            {
-                pszClassName = pszClassNamespace = NULL;
-            }
-            if ((pszClassName != NULL) && (pszClassNamespace != NULL))
-            {
-                LPUTF8 pszFullyQualifiedName = NULL;
-                MAKE_FULLY_QUALIFIED_NAME(pszFullyQualifiedName, pszClassNamespace, pszClassName);
-
-                // This is just to give us a scope to break out of.
-                do
-                {
-
-#define MNGSTDITF_BEGIN_INTERFACE(FriendlyName, strMngItfName, strUCOMMngItfName, strCustomMarshalerName, strCustomMarshalerCookie, strManagedViewName, NativeItfIID, bCanCastOnNativeItfQI) \
-                    if (strcmp(strMngItfName, pszFullyQualifiedName) == 0) \
-                    { \
-                        bmtProp->fIsMngStandardItf = true; \
-                        break; \
-                    }
-
-#define MNGSTDITF_DEFINE_METH_IMPL(FriendlyName, ECallMethName, MethName, MethSig, FcallDecl)
-
-#define MNGSTDITF_END_INTERFACE(FriendlyName)
-
-#include "mngstditflist.h"
-
-#undef MNGSTDITF_BEGIN_INTERFACE
-#undef MNGSTDITF_DEFINE_METH_IMPL
-#undef MNGSTDITF_END_INTERFACE
-
-                } while (FALSE);
-            }
-        }
-    }
 
     // Check to see if the type is a COM event interface (classic COM interop only).
     if (IsInterface())

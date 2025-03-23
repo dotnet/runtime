@@ -399,6 +399,43 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NET
         [InlineData(false)]
 #endif
+        public void CreateFactory_CreatesFactoryMethod_KeyedParams_ValueTypes(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory = ActivatorUtilities.CreateFactory<ClassWithAValueTypedKeyedBCSYZ>(Type.EmptyTypes);
+
+                var services = new ServiceCollection();
+                services.AddSingleton(new A());
+                services.AddKeyedSingleton(uint.MaxValue, new B());
+                services.AddKeyedSingleton(int.MaxValue, new C());
+                services.AddKeyedSingleton(ulong.MaxValue, new S());
+                services.AddKeyedSingleton(long.MaxValue, new Y());
+                services.AddKeyedSingleton(TestEnum.A, new Z());
+                using var provider = services.BuildServiceProvider();
+                ClassWithAValueTypedKeyedBCSYZ item = factory(provider, null);
+
+                Assert.IsType<ObjectFactory<ClassWithAValueTypedKeyedBCSYZ>>(factory);
+                Assert.NotNull(item.A);
+                Assert.NotNull(item.B);
+                Assert.NotNull(item.C);
+                Assert.NotNull(item.S);
+                Assert.NotNull(item.Y);
+                Assert.NotNull(item.Z);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
         public void CreateFactory_CreatesFactoryMethod_KeyedParams_1Injected(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
@@ -709,6 +746,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     internal class B { }
     internal class C { }
     internal class S { }
+    internal class Y { }
     internal class Z { }
 
     internal class ClassWithAKeyedBKeyedC : ClassWithABC
@@ -736,6 +774,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public ClassWithAKeyedBKeyedCSZ(A a, [FromKeyedServices("b")] B b, [FromKeyedServices("c")] C c, S s, Z z)
             : base(a, b, c, s, z)
         { }
+    }
+
+    internal class ClassWithAValueTypedKeyedBCSYZ : ClassWithABCSZ
+    {
+        public Y Y { get; }
+
+        public ClassWithAValueTypedKeyedBCSYZ(A a, [FromKeyedServices(uint.MaxValue)] B b, [FromKeyedServices(int.MaxValue)] C c, [FromKeyedServices(ulong.MaxValue)] S s, [FromKeyedServices(long.MaxValue)] Y y, [FromKeyedServices(TestEnum.A)] Z z)
+            : base(a, b, c, s, z) { Y = y; }
+    }
+
+    internal enum TestEnum
+    {
+        A
     }
 
     internal class ClassWithABC_FirstConstructorWithAttribute : ClassWithABC

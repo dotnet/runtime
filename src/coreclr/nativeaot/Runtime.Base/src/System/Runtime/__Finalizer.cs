@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 //
@@ -19,10 +20,6 @@ namespace System.Runtime
         [UnmanagedCallersOnly(EntryPoint = "ProcessFinalizers")]
         public static void ProcessFinalizers()
         {
-#if INPLACE_RUNTIME
-            System.Runtime.FinalizerInitRunner.DoInitialize();
-#endif
-
             while (true)
             {
                 // Wait until there's some work to be done. If true is returned we should finalize objects,
@@ -63,10 +60,15 @@ namespace System.Runtime
 
                 finalizerCount++;
 
-                // Call the finalizer on the current target object. If the finalizer throws we'll fail
-                // fast via normal Redhawk exception semantics (since we don't attempt to catch
-                // anything).
-                ((delegate*<object, void>)target.GetMethodTable()->FinalizerCode)(target);
+                try
+                {
+                    // Call the finalizer on the current target object.
+                    ((delegate*<object, void>)target.GetMethodTable()->FinalizerCode)(target);
+                }
+                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
+                {
+                    // the handler returned "true" means the exception is now "handled" and we should continue.
+                }
             }
         }
     }

@@ -187,9 +187,7 @@ namespace System.Text.Json.Nodes
 
                     foreach (KeyValuePair<string, JsonNode?> item in currentDict)
                     {
-                        otherDict.TryGetValue(item.Key, out JsonNode? jsonNode);
-
-                        if (!DeepEquals(item.Value, jsonNode))
+                        if (!otherDict.TryGetValue(item.Key, out JsonNode? jsonNode) || !DeepEquals(item.Value, jsonNode))
                         {
                             return false;
                         }
@@ -248,17 +246,29 @@ namespace System.Text.Json.Nodes
 
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
-            if (dict.TryGetValue(propertyName, out JsonNode? replacedValue))
+            if (
+#if NET10_0_OR_GREATER
+                !dict.TryAdd(propertyName, value, out int index)
+#else
+                !dict.TryAdd(propertyName, value)
+#endif
+                )
             {
+#if !NET10_0_OR_GREATER
+                int index = dict.IndexOf(propertyName);
+#endif
+                Debug.Assert(index >= 0);
+                JsonNode? replacedValue = dict.GetAt(index).Value;
+
                 if (ReferenceEquals(value, replacedValue))
                 {
                     return;
                 }
 
                 DetachParent(replacedValue);
+                dict.SetAt(index, value);
             }
 
-            dict[propertyName] = value;
             value?.AssignParent(this);
         }
 

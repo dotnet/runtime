@@ -90,7 +90,7 @@ namespace System.Reflection.PortableExecutable
             bool success = false;
             try
             {
-                var compressed = new ReadOnlyUnmanagedMemoryStream(headerReader.CurrentPointer, headerReader.RemainingBytes);
+                var compressed = new UnmanagedMemoryStream(headerReader.CurrentPointer, headerReader.RemainingBytes);
                 using var deflate = new DeflateStream(compressed, CompressionMode.Decompress, leaveOpen: true);
 
                 if (decompressedSize > 0)

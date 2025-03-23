@@ -58,7 +58,7 @@ typedef CQuickArray<MethodTable*> CQuickEEClassPtrs;
 CrstStatic g_CreateWrapperTemplateCrst;
 
 
-// This is the prestub that is used for Com calls entering COM+
+// This is the prestub that is used for Com calls entering CLR
 extern "C" VOID ComCallPreStub();
 
 class NewCCWHolderBase : public HolderBase<ComCallWrapper *>
@@ -1102,7 +1102,7 @@ CQuickArray<ConnectionPoint*> *SimpleComCallWrapper::CreateCPArray()
 }
 
 //--------------------------------------------------------------------------
-// Returns TRUE if the simple wrapper represents a COM+ exception object.
+// Returns TRUE if the simple wrapper represents a CLR exception object.
 //--------------------------------------------------------------------------
 BOOL SimpleComCallWrapper::SupportsExceptions(MethodTable *pClass)
 {
@@ -1126,7 +1126,7 @@ BOOL SimpleComCallWrapper::SupportsExceptions(MethodTable *pClass)
 }
 
 //--------------------------------------------------------------------------
-// Returns TRUE if the COM+ object that this wrapper represents implements
+// Returns TRUE if the CLR object that this wrapper represents implements
 // IReflect.
 //--------------------------------------------------------------------------
 BOOL SimpleComCallWrapper::SupportsIReflect(MethodTable *pClass)
@@ -1509,8 +1509,8 @@ void SimpleComCallWrapper::EnumConnectionPoints(IEnumConnectionPoints **ppEnumCP
 }
 
 //--------------------------------------------------------------------------
-// COM called wrappers on COM+ objects
-//  Purpose: Expose COM+ objects as COM classic Interfaces
+// COM called wrappers on CLR objects
+//  Purpose: Expose CLR objects as COM classic Interfaces
 //  Reqmts:  Wrapper has to have the same layout as the COM2 interface
 //
 //  The wrapper objects are aligned at 16 bytes, and the original this
@@ -3094,7 +3094,7 @@ void ComMethodTable::Cleanup()
                 continue;
             }
 
-            // All the stubs that are in a COM->COM+ VTable are to the generic
+            // All the stubs that are in a COM->CLR VTable are to the generic
             // helpers (g_pGenericComCallStubFields, etc.).  So all we do is
             // discard the resources held by the ComMethodDesc.
             pCMD->Destruct();
@@ -3272,7 +3272,7 @@ void ComMethodTable::LayOutClassMethodTable()
 
         //
         // Set up the COM call method desc's for all the methods and fields that were introduced
-        // between the current class and its parent COM+ class. This includes any methods on
+        // between the current class and its parent CLR class. This includes any methods on
         // COM classes.
         //
         for (cClassesToProcess -= 2; cClassesToProcess >= 0; cClassesToProcess--)
@@ -3647,8 +3647,8 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
 #if defined(_DEBUG)
-        CHAR rIID[GUID_STR_BUFFER_LEN];
-        GuidToLPSTR(m_IID, rIID);
+        CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
+        minipal_guid_as_string(m_IID, rIID, MINIPAL_GUID_BUFFER_LEN);
         LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%hs, IID:%s, vTbl:%#08x\n",
              pItfClass->GetDebugClassName(), rIID, pUnkVtable));
 #else
@@ -4219,8 +4219,8 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
         apClassesToProcess[cClassesToProcess++] = pCurrMT;
 
         // Compute the number of methods and fields that were added between our parent
-        // COM+ class and the current class. This includes methods on COM classes
-        // between the current class and its parent COM+ class.
+        // CLR class and the current class. This includes methods on COM classes
+        // between the current class and its parent CLR class.
         for (cClassesToProcess -= 2; cClassesToProcess >= 0; cClassesToProcess--)
         {
             // Retrieve the current class and the current parent class.
@@ -4698,8 +4698,8 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
                 GenerateClassItfGuid(thClass, &IClassXIID);
 
 #if defined(_DEBUG)
-            CHAR rIID[GUID_STR_BUFFER_LEN];
-            GuidToLPSTR(IClassXIID, rIID);
+            CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
+            minipal_guid_as_string(IClassXIID, rIID, MINIPAL_GUID_BUFFER_LEN);
             SString ssName;
             thClass.GetName(ssName);
             LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",

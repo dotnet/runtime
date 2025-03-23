@@ -425,7 +425,7 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="UInt128" />.</returns>
         [CLSCompliant(false)]
-        public static explicit operator UInt128(Int128 value) => Unsafe.BitCast<Int128, UInt128>(value);
+        public static explicit operator UInt128(Int128 value) => new UInt128(value._upper, value._lower);
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="UInt128" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
@@ -438,7 +438,7 @@ namespace System
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return Unsafe.BitCast<Int128, UInt128>(value);
+            return new UInt128(value._upper, value._lower);
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="UIntPtr" /> value.</summary>
@@ -940,59 +940,27 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
         bool IBinaryInteger<Int128>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= Size)
+            if (BinaryPrimitives.TryWriteInt128BigEndian(destination, this))
             {
-                ulong lower = _lower;
-                ulong upper = _upper;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    lower = BinaryPrimitives.ReverseEndianness(lower);
-                    upper = BinaryPrimitives.ReverseEndianness(upper);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, upper);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), lower);
-
                 bytesWritten = Size;
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<Int128>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= Size)
+            if (BinaryPrimitives.TryWriteInt128LittleEndian(destination, this))
             {
-                ulong lower = _lower;
-                ulong upper = _upper;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    lower = BinaryPrimitives.ReverseEndianness(lower);
-                    upper = BinaryPrimitives.ReverseEndianness(upper);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, lower);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), upper);
-
                 bytesWritten = Size;
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //

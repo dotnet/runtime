@@ -65,7 +65,7 @@ int main(const int argc, const pal::char_t *argv[])
         if (explicit_load)
         {
             pal::string_t nethost_path;
-            if (!pal::get_own_executable_path(&nethost_path) || !pal::realpath(&nethost_path))
+            if (!pal::get_own_executable_path(&nethost_path) || !pal::fullpath(&nethost_path))
             {
                 std::cout << "Failed to get path to current executable" << std::endl;
                 return EXIT_FAILURE;

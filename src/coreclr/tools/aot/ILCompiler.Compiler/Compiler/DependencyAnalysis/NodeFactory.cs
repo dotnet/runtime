@@ -241,9 +241,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeThreadStaticIndexNode(type, null);
             });
 
-            _GCStaticEETypes = new NodeCache<GCPointerMap, GCStaticEETypeNode>((GCPointerMap gcMap) =>
+            _GCStaticEETypes = new NodeCache<(GCPointerMap, bool), GCStaticEETypeNode>(((GCPointerMap gcMap, bool requiresAlign8) key) =>
             {
-                return new GCStaticEETypeNode(Target, gcMap);
+                return new GCStaticEETypeNode(Target, key.gcMap, key.requiresAlign8);
             });
 
             _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
@@ -377,6 +377,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new GenericStaticBaseInfoNode(type);
             });
 
+            _objectGetTypeCalled = new NodeCache<MetadataType, ObjectGetTypeCalledNode>(type =>
+            {
+                return new ObjectGetTypeCalledNode(type);
+            });
+
             _objectGetTypeFlowDependencies = new NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode>(type =>
             {
                 return new ObjectGetTypeFlowDependenciesNode(type);
@@ -478,7 +483,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
-                return new GenericCompositionNode(details);
+                return new GenericCompositionNode(details, constructed: false);
+            });
+
+            _constructedGenericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
+            {
+                return new GenericCompositionNode(details, constructed: true);
             });
 
             _genericVariances = new NodeCache<GenericVarianceDetails, GenericVarianceNode>((GenericVarianceDetails details) =>
@@ -531,7 +541,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _methodsWithMetadata = new NodeCache<MethodDesc, MethodMetadataNode>(method =>
             {
-                return new MethodMetadataNode(method);
+                return new MethodMetadataNode(method, isMinimal: false);
+            });
+
+            _methodsWithLimitedMetadata = new NodeCache<MethodDesc, MethodMetadataNode>(method =>
+            {
+                return new MethodMetadataNode(method, isMinimal: true);
             });
 
             _fieldsWithMetadata = new NodeCache<FieldDesc, FieldMetadataNode>(field =>
@@ -552,6 +567,11 @@ namespace ILCompiler.DependencyAnalysis
             _customAttributesWithMetadata = new NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode>(ca =>
             {
                 return new CustomAttributeMetadataNode(ca);
+            });
+
+            _parametersWithMetadata = new NodeCache<ReflectableParameter, MethodParameterMetadataNode>(p =>
+            {
+                return new MethodParameterMetadataNode(p);
             });
 
             _genericDictionaryLayouts = new NodeCache<TypeSystemEntity, DictionaryLayoutNode>(_dictionaryLayoutProvider.GetLayout);
@@ -581,7 +601,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (type.IsGenericDefinition)
                 {
-                    return new GenericDefinitionEETypeNode(this, type);
+                    return new ReflectionInvisibleGenericDefinitionEETypeNode(this, type);
                 }
                 else if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                 {
@@ -610,7 +630,11 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_compilationModuleGroup.ContainsType(type))
             {
-                if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                if (type.IsGenericDefinition)
+                {
+                    return new ReflectionVisibleGenericDefinitionEETypeNode(this, type);
+                }
+                else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     return new CanonicalEETypeNode(this, type);
                 }
@@ -693,7 +717,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode MaximallyConstructableType(TypeDesc type)
         {
-            if (ConstructedEETypeNode.CreationAllowed(type))
+            if (ConstructedEETypeNode.CreationAllowed(type) || type.IsGenericDefinition)
                 return ConstructedTypeSymbol(type);
             else
                 return NecessaryTypeSymbol(type);
@@ -805,11 +829,12 @@ namespace ILCompiler.DependencyAnalysis
             return _embeddedTrimmingDescriptors.GetOrAdd(module);
         }
 
-        private NodeCache<GCPointerMap, GCStaticEETypeNode> _GCStaticEETypes;
+        private NodeCache<(GCPointerMap, bool), GCStaticEETypeNode> _GCStaticEETypes;
 
-        public ISymbolNode GCStaticEEType(GCPointerMap gcMap)
+        public ISymbolNode GCStaticEEType(GCPointerMap gcMap, bool requiredAlign8)
         {
-            return _GCStaticEETypes.GetOrAdd(gcMap);
+            requiredAlign8 &= Target.SupportsAlign8;
+            return _GCStaticEETypes.GetOrAdd((gcMap, requiredAlign8));
         }
 
         private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;
@@ -845,6 +870,13 @@ namespace ILCompiler.DependencyAnalysis
         internal ISymbolNode GenericComposition(Instantiation details)
         {
             return _genericCompositions.GetOrAdd(details);
+        }
+
+        private NodeCache<Instantiation, GenericCompositionNode> _constructedGenericCompositions;
+
+        internal ISymbolNode ConstructedGenericComposition(Instantiation details)
+        {
+            return _constructedGenericCompositions.GetOrAdd(details);
         }
 
         private NodeCache<GenericVarianceDetails, GenericVarianceNode> _genericVariances;
@@ -1134,6 +1166,12 @@ namespace ILCompiler.DependencyAnalysis
             return _genericStaticBaseInfos.GetOrAdd(type);
         }
 
+        private NodeCache<MetadataType, ObjectGetTypeCalledNode> _objectGetTypeCalled;
+        internal ObjectGetTypeCalledNode ObjectGetTypeCalled(MetadataType type)
+        {
+            return _objectGetTypeCalled.GetOrAdd(type);
+        }
+
         private NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode> _objectGetTypeFlowDependencies;
         internal ObjectGetTypeFlowDependenciesNode ObjectGetTypeFlowDependencies(MetadataType type)
         {
@@ -1303,6 +1341,16 @@ namespace ILCompiler.DependencyAnalysis
             return _methodsWithMetadata.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, MethodMetadataNode> _methodsWithLimitedMetadata;
+
+        internal MethodMetadataNode LimitedMethodMetadata(MethodDesc method)
+        {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _methodsWithLimitedMetadata.GetOrAdd(method);
+        }
+
         private NodeCache<FieldDesc, FieldMetadataNode> _fieldsWithMetadata;
 
         internal FieldMetadataNode FieldMetadata(FieldDesc field)
@@ -1339,6 +1387,16 @@ namespace ILCompiler.DependencyAnalysis
             return _customAttributesWithMetadata.GetOrAdd(ca);
         }
 
+        private NodeCache<ReflectableParameter, MethodParameterMetadataNode> _parametersWithMetadata;
+
+        internal MethodParameterMetadataNode MethodParameterMetadata(ReflectableParameter ca)
+        {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _parametersWithMetadata.GetOrAdd(ca);
+        }
+
         private NodeCache<string, FrozenStringNode> _frozenStringNodes;
 
         public FrozenStringNode SerializedStringObject(string data)
@@ -1355,7 +1413,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public FrozenRuntimeTypeNode SerializedMaximallyConstructableRuntimeTypeObject(TypeDesc type)
         {
-            if (ConstructedEETypeNode.CreationAllowed(type))
+            if (ConstructedEETypeNode.CreationAllowed(type) || type.IsGenericDefinition)
                 return SerializedConstructedRuntimeTypeObject(type);
             return SerializedNecessaryRuntimeTypeObject(type);
         }
@@ -1410,12 +1468,16 @@ namespace ILCompiler.DependencyAnalysis
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.
         /// </summary>
-        public string GetSymbolAlternateName(ISymbolNode node)
+        public string GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
         {
-            string value;
-            if (!NodeAliases.TryGetValue(node, out value))
+            if (!NodeAliases.TryGetValue(node, out var value))
+            {
+                isHidden = false;
                 return null;
-            return value;
+            }
+
+            isHidden = value.Hidden;
+            return value.Name;
         }
 
         public ArrayOfEmbeddedPointersNode<GCStaticsNode> GCStaticsRegion = new ArrayOfEmbeddedPointersNode<GCStaticsNode>(
@@ -1438,7 +1500,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
-        public Dictionary<ISymbolNode, string> NodeAliases = new Dictionary<ISymbolNode, string>();
+        public Dictionary<ISymbolNode, (string Name, bool Hidden)> NodeAliases = new Dictionary<ISymbolNode, (string, bool)>();
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 

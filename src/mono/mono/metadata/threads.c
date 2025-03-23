@@ -2199,16 +2199,6 @@ gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *locati
 	return mono_atomic_cas_i32(location, value, comparand);
 }
 
-gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int_Success(gint32 *location, gint32 value, gint32 comparand, MonoBoolean *success)
-{
-	if (G_UNLIKELY (!location))
-		return (gint32)set_pending_null_reference_exception ();
-
-	gint32 r = mono_atomic_cas_i32(location, value, comparand);
-	*success = r == comparand;
-	return r;
-}
-
 void
 ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*comparand, MonoObject *volatile* res)
 {
@@ -2951,20 +2941,13 @@ collect_frame (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	return FALSE;
 }
 
-/* This needs to be async safe */
 static SuspendThreadResult
 get_thread_dump (MonoThreadInfo *info, gpointer ud)
 {
 	ThreadDumpUserData *user_data = (ThreadDumpUserData *)ud;
 	MonoInternalThread *thread = user_data->thread;
 
-#if 0
-/* This no longer works with remote unwinding */
-	g_string_append_printf (text, " tid=0x%p this=0x%p ", (gpointer)(gsize)thread->tid, thread);
-	mono_thread_internal_describe (thread, text);
-	g_string_append (text, "\n");
-#endif
-
+	/* This needs to be async safe */
 	if (thread == mono_thread_internal_current ())
 		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (collect_frame, NULL, MONO_UNWIND_SIGNAL_SAFE, ud);
 	else
@@ -4117,9 +4100,8 @@ mono_thread_info_get_last_managed (MonoThreadInfo *info)
 	 * The suspended thread might be holding runtime locks. Make sure we don't try taking
 	 * any runtime locks while unwinding.
 	 */
-	mono_thread_info_set_is_async_context (TRUE);
 	mono_get_eh_callbacks ()->mono_walk_stack_with_state (last_managed, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, &ji);
-	mono_thread_info_set_is_async_context (FALSE);
+
 	return ji;
 }
 

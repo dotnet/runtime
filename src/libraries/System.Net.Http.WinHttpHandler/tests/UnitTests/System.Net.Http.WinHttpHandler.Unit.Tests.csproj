@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NoWarn>$(NoWarn);0436;SYSLIB0057</NoWarn>
+    <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
-    <DefineConstants>UNITTEST</DefineConstants>
+    <DefineConstants>$(DefineConstants);UNITTEST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />
@@ -40,8 +40,6 @@
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
              Link="Common\System\Net\UriScheme.cs" />
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
-             Link="Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="$(CommonPath)\System\Net\Http\WinInetProxyHelper.cs"

@@ -556,6 +556,7 @@ static EVP_PKEY* LoadKeyFromEngine(
         *haveEngine = 1;
         EVP_PKEY* ret = NULL;
         ENGINE* engine = NULL;
+        UI_METHOD* ui = NULL;
 
         // Per https://github.com/openssl/openssl/discussions/21427
         // using EVP_PKEY after freeing ENGINE is correct.
@@ -567,10 +568,28 @@ static EVP_PKEY* LoadKeyFromEngine(
             {
                 ret = load_func(engine, keyName, NULL, NULL);
 
+                if (ret == NULL)
+                {
+                    // Some engines do not tolerate having NULL passed to the ui_method parameter.
+                    // We re-try with a non-NULL UI_METHOD.
+                    ERR_clear_error();
+                    ui = UI_create_method(".NET NULL UI");
+
+                    if (ui)
+                    {
+                        ret = load_func(engine, keyName, ui, NULL);
+                    }
+                }
+
                 ENGINE_finish(engine);
             }
 
             ENGINE_free(engine);
+        }
+
+        if (ui)
+        {
+            UI_destroy_method(ui);
         }
 
         return ret;
@@ -611,19 +630,20 @@ EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const cha
     return NULL;
 }
 
-EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle)
+EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider)
 {
     ERR_clear_error();
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (!API_EXISTS(OSSL_PROVIDER_load))
     {
-        ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
+        *haveProvider = 0;
         return NULL;
     }
 #endif
 
 #ifdef NEED_OPENSSL_3_0
+    *haveProvider = 1;
     EVP_PKEY* ret = NULL;
     OSSL_LIB_CTX* libCtx = OSSL_LIB_CTX_new();
     OSSL_PROVIDER* prov = NULL;
@@ -730,6 +750,7 @@ end:
     (void)keyUri;
     ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
     *extraHandle = NULL;
+    *haveProvider = 0;
     return NULL;
 #endif
 }
@@ -753,4 +774,66 @@ EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle)
 #endif
         return EVP_PKEY_CTX_new(pkey, NULL);
     }
+}
+
+EVP_PKEY* CryptoNative_EvpPKeyFromData(const char* algorithmName, uint8_t* key, int32_t keyLength, int32_t privateKey)
+{
+    assert(algorithmName);
+    assert(key);
+    assert(keyLength > 0);
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_CTX_new_from_name))
+    {
+        ERR_clear_error();
+        EVP_PKEY_CTX* ctx = NULL;
+        EVP_PKEY* pkey = NULL;
+        ctx = EVP_PKEY_CTX_new_from_name(NULL, algorithmName, NULL);
+
+        if (ctx == NULL)
+        {
+            goto done;
+        }
+
+        if (EVP_PKEY_fromdata_init(ctx) != 1)
+        {
+            goto done;
+        }
+
+        const char* paramName = privateKey == 0 ? OSSL_PKEY_PARAM_PUB_KEY : OSSL_PKEY_PARAM_PRIV_KEY;
+        int selection = privateKey == 0 ? EVP_PKEY_PUBLIC_KEY : EVP_PKEY_KEYPAIR;
+        size_t keyLengthT = Int32ToSizeT(keyLength);
+
+        OSSL_PARAM params[] =
+        {
+            OSSL_PARAM_construct_octet_string(paramName, (void*)key, keyLengthT),
+            OSSL_PARAM_construct_end(),
+        };
+
+        if (EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1)
+        {
+            if (pkey != NULL)
+            {
+                EVP_PKEY_free(pkey);
+                pkey = NULL;
+            }
+
+            goto done;
+        }
+
+done:
+        if (ctx)
+        {
+            EVP_PKEY_CTX_free(ctx);
+        }
+
+        return pkey;
+    }
+#endif
+
+    (void)algorithmName;
+    (void)key;
+    (void)keyLength;
+    (void)privateKey;
+    return NULL;
 }

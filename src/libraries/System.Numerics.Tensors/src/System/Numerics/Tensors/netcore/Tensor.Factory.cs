@@ -12,6 +12,9 @@ using Microsoft.VisualBasic;
 
 namespace System.Numerics.Tensors
 {
+    /// <summary>
+    /// Provides methods for creating tensors.
+    /// </summary>
     public static partial class Tensor
     {
         /// <summary>
@@ -61,7 +64,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static Tensor<T> Create<T>(T[] values, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
         {
-            return new Tensor<T>(values, lengths, strides, pinned);
+            return new Tensor<T>(values, lengths, strides, memoryOffset: 0, pinned);
         }
 
         /// <summary>
@@ -74,7 +77,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Create<T>(IEnumerable<T> values, scoped ReadOnlySpan<nint> lengths, bool pinned = false)
         {
             T[] data = values.ToArray();
-            return new Tensor<T>(data, lengths.IsEmpty ? [data.Length] : lengths, pinned);
+            return new Tensor<T>(data, lengths.IsEmpty ? [data.Length] : lengths, memoryOffset: 0, pinned);
         }
 
         /// <summary>
@@ -87,7 +90,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Create<T>(IEnumerable<T> values, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
         {
             T[] data = values.ToArray();
-            return new Tensor<T>(data, lengths.IsEmpty ? [data.Length] : lengths, strides, pinned);
+            return new Tensor<T>(data, lengths.IsEmpty ? [data.Length] : lengths, strides, memoryOffset: 0, pinned);
         }
 
         #region Normal
@@ -112,7 +115,7 @@ namespace System.Numerics.Tensors
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = new T[linearLength];
             GaussianDistribution<T>(values, linearLength, random);
-            return new Tensor<T>(values, lengths, false);
+            return new Tensor<T>(values, lengths, memoryOffset: 0, isPinned: false);
         }
 
         private static void GaussianDistribution<T>(in Span<T> values, nint linearLength, Random random)
@@ -151,7 +154,7 @@ namespace System.Numerics.Tensors
             for (int i = 0; i < values.Length; i++)
                 values[i] = T.CreateChecked(random.NextDouble());
 
-            return new Tensor<T>(values, lengths, false);
+            return new Tensor<T>(values, lengths, memoryOffset: 0, isPinned: false);
         }
 
         /// <summary>
@@ -172,9 +175,17 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
-            return new Tensor<T>(values, lengths, strides, pinned);
+            return new Tensor<T>(values, lengths, strides, memoryOffset: 0, pinned);
         }
 
+        /// <summary>
+        /// Fills the given <see cref="TensorSpan{T}"/> with random data in a Gaussian normal distribution. <see cref="System.Random"/>
+        /// can optionally be provided for seeding.
+        /// </summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <param name="destination">The destination <see cref="TensorSpan{T}"/> where the data will be stored.</param>
+        /// <param name="random"><see cref="System.Random"/> to provide random seeding. Defaults to <see cref="Random.Shared"/> if not provided.</param>
+        /// <returns></returns>
         public static ref readonly TensorSpan<T> FillGaussianNormalDistribution<T>(in TensorSpan<T> destination, Random? random = null) where T : IFloatingPoint<T>
         {
             Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._shape._memoryLength);
@@ -184,6 +195,14 @@ namespace System.Numerics.Tensors
             return ref destination;
         }
 
+        /// <summary>
+        /// Fills the given <see cref="TensorSpan{T}"/> with random data in a uniform distribution. <see cref="System.Random"/>
+        /// can optionally be provided for seeding.
+        /// </summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <param name="destination">The destination <see cref="TensorSpan{T}"/> where the data will be stored.</param>
+        /// <param name="random"><see cref="System.Random"/> to provide random seeding. Defaults to <see cref="Random.Shared"/> if not provided.</param>
+        /// <returns></returns>
         public static ref readonly TensorSpan<T> FillUniformDistribution<T>(in TensorSpan<T> destination, Random? random = null) where T : IFloatingPoint<T>
         {
             Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._shape._memoryLength);

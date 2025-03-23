@@ -19,6 +19,27 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyBits")]
         internal static partial int EvpPKeyBits(SafeEvpPKeyHandle pkey);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyFromData", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial SafeEvpPKeyHandle CryptoNative_EvpPKeyFromData(
+            string algorithmName,
+            ReadOnlySpan<byte> key,
+            int keyLength,
+            [MarshalAs(UnmanagedType.Bool)] bool privateKey);
+
+        internal static SafeEvpPKeyHandle EvpPKeyFromData(string algorithmName, ReadOnlySpan<byte> key, bool privateKey)
+        {
+            SafeEvpPKeyHandle handle = CryptoNative_EvpPKeyFromData(algorithmName, key, key.Length, privateKey);
+
+            if (handle.IsInvalid)
+            {
+                Exception ex = CreateOpenSslCryptographicException();
+                handle.Dispose();
+                throw ex;
+            }
+
+            return handle;
+        }
+
         internal static int GetEvpPKeySizeBytes(SafeEvpPKeyHandle pkey)
         {
             // EVP_PKEY_size returns the maximum suitable size for the output buffers for almost all operations that can be done with the key.
@@ -281,7 +302,8 @@ internal static partial class Interop
         private static partial IntPtr CryptoNative_LoadKeyFromProvider(
             string providerName,
             string keyUri,
-            ref IntPtr extraHandle);
+            ref IntPtr extraHandle,
+            [MarshalAs(UnmanagedType.Bool)] out bool haveProvider);
 
         internal static SafeEvpPKeyHandle LoadKeyFromProvider(
             string providerName,
@@ -292,7 +314,13 @@ internal static partial class Interop
 
             try
             {
-                evpPKeyHandle = CryptoNative_LoadKeyFromProvider(providerName, keyUri, ref extraHandle);
+                evpPKeyHandle = CryptoNative_LoadKeyFromProvider(providerName, keyUri, ref extraHandle, out bool haveProvider);
+
+                if (!haveProvider)
+                {
+                    Debug.Assert(evpPKeyHandle == IntPtr.Zero && extraHandle == IntPtr.Zero, "both handles should be null if provider is not supported");
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSLProvidersNotSupported);
+                }
 
                 if (evpPKeyHandle == IntPtr.Zero || extraHandle == IntPtr.Zero)
                 {

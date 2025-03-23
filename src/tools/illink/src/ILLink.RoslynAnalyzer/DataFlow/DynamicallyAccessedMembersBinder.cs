@@ -30,12 +30,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			var declaredOnlyFlags = declaredOnly ? BindingFlags.DeclaredOnly : BindingFlags.Default;
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.NonPublicConstructors)) {
-				foreach (var c in typeDefinition.GetConstructorsOnType (filter: null, bindingFlags: BindingFlags.NonPublic))
+				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicConstructorsWithInherited);
+				foreach (var c in typeDefinition.ApplyIncludeInherited (t => t.GetConstructorsOnType (filter: null, bindingFlags: BindingFlags.NonPublic), withInherited))
 					yield return c;
 			}
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors)) {
-				foreach (var c in typeDefinition.GetConstructorsOnType (filter: null, bindingFlags: BindingFlags.Public))
+				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.PublicConstructorsWithInherited);
+				foreach (var c in typeDefinition.ApplyIncludeInherited (t => t.GetConstructorsOnType (filter: null, bindingFlags: BindingFlags.Public), withInherited))
 					yield return c;
 			}
 
@@ -45,7 +47,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.NonPublicMethods)) {
-				foreach (var m in typeDefinition.GetMethodsOnTypeHierarchy (filter: null, bindingFlags: BindingFlags.NonPublic | declaredOnlyFlags))
+				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicMethodsWithInherited);
+				foreach (var m in typeDefinition.ApplyIncludeInherited (t => t.GetMethodsOnTypeHierarchy (filter: null, bindingFlags: BindingFlags.NonPublic | declaredOnlyFlags), withInherited))
 					yield return m;
 			}
 
@@ -55,7 +58,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.NonPublicFields)) {
-				foreach (var f in typeDefinition.GetFieldsOnTypeHierarchy (filter: null, bindingFlags: BindingFlags.NonPublic | declaredOnlyFlags))
+				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicFieldsWithInherited);
+				foreach (var f in typeDefinition.ApplyIncludeInherited (t => t.GetFieldsOnTypeHierarchy (filter: null, bindingFlags: BindingFlags.NonPublic | declaredOnlyFlags), withInherited))
 					yield return f;
 			}
 
@@ -65,7 +69,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.NonPublicNestedTypes)) {
-				foreach (var nested in typeDefinition.GetNestedTypesOnType (filter: null, bindingFlags: BindingFlags.NonPublic)) {
+				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicNestedTypesWithInherited);
+				foreach (var nested in typeDefinition.ApplyIncludeInherited (t => t.GetNestedTypesOnType (filter: null, bindingFlags: BindingFlags.NonPublic), withInherited)) {
 					yield return nested;
 					var members = new List<ISymbol> ();
 					nested.GetAllOnType (declaredOnly: false, members);
@@ -75,7 +80,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicNestedTypes)) {
-				foreach (var nested in typeDefinition.GetNestedTypesOnType (filter: null, bindingFlags: BindingFlags.Public)) {
+				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.PublicNestedTypesWithInherited);
+				foreach (var nested in typeDefinition.ApplyIncludeInherited (t => t.GetNestedTypesOnType (filter: null, bindingFlags: BindingFlags.Public), withInherited)) {
 					yield return nested;
 					var members = new List<ISymbol> ();
 					nested.GetAllOnType (declaredOnly: false, members);
@@ -85,7 +91,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.NonPublicProperties)) {
-				foreach (var p in typeDefinition.GetPropertiesOnTypeHierarchy (filter: null, bindingFlags: BindingFlags.NonPublic | declaredOnlyFlags))
+				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicPropertiesWithInherited);
+				foreach (var p in typeDefinition.ApplyIncludeInherited (t => t.GetPropertiesOnTypeHierarchy (filter: null, bindingFlags: BindingFlags.NonPublic | declaredOnlyFlags), withInherited))
 					yield return p;
 			}
 
@@ -95,7 +102,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.NonPublicEvents)) {
-				foreach (var e in typeDefinition.GetEventsOnTypeHierarchy (filter: null, bindingFlags: BindingFlags.NonPublic | declaredOnlyFlags))
+				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicEventsWithInherited);
+				foreach (var e in typeDefinition.ApplyIncludeInherited (t => t.GetEventsOnTypeHierarchy (filter: null, bindingFlags: BindingFlags.NonPublic | declaredOnlyFlags), withInherited))
 					yield return e;
 			}
 
@@ -409,6 +417,19 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					break;
 				}
 			}
+		}
+		private static IEnumerable<T> ApplyIncludeInherited<T> (this ITypeSymbol thisType, Func<ITypeSymbol, IEnumerable<T>> selector, bool includeBases)
+		{
+			ITypeSymbol? type = thisType;
+			do {
+				foreach (var m in selector (type))
+					yield return m;
+
+				if (!includeBases)
+					yield break;
+
+				type = type.BaseType;
+			} while (type != null);
 		}
 	}
 }

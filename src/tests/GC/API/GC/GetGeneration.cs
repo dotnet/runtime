@@ -4,6 +4,7 @@
 // Tests GC.GetGeneration
 
 using System;
+using Xunit;
 
 public class GetGenerationTest
 {
@@ -117,7 +118,8 @@ public class GetGenerationTest
 
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         GetGenerationTest t = new GetGenerationTest();
 

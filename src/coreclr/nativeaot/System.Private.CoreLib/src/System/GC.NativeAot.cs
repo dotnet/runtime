@@ -111,10 +111,7 @@ namespace System
             object? obj = RuntimeImports.RhHandleGet(wo.WeakHandle);
             KeepAlive(wo);
 
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(wo));
-            }
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
 
             return RuntimeImports.RhGetGeneration(obj);
         }
@@ -308,7 +305,7 @@ namespace System
             public bool scheduled;
             public bool abandoned;
 
-            public GCHandle action;
+            public GCHandle<Action> action;
         }
 
         public static unsafe void RegisterNoGCRegionCallback(long totalSize, Action callback)
@@ -320,7 +317,7 @@ namespace System
             try
             {
                 pWorkItem = (NoGCRegionCallbackFinalizerWorkItem*)NativeMemory.AllocZeroed((nuint)sizeof(NoGCRegionCallbackFinalizerWorkItem));
-                pWorkItem->action = GCHandle.Alloc(callback);
+                pWorkItem->action = new GCHandle<Action>(callback);
                 pWorkItem->callback = &Callback;
 
                 EnableNoGCRegionCallbackStatus status = (EnableNoGCRegionCallbackStatus)RuntimeImports.RhEnableNoGCRegionCallback(pWorkItem, totalSize);
@@ -350,14 +347,13 @@ namespace System
             {
                 Debug.Assert(pWorkItem->scheduled);
                 if (!pWorkItem->abandoned)
-                    ((Action)(pWorkItem->action.Target!))();
+                    pWorkItem->action.Target();
                 Free(pWorkItem);
             }
 
             static void Free(NoGCRegionCallbackFinalizerWorkItem* pWorkItem)
             {
-                if (pWorkItem->action.IsAllocated)
-                    pWorkItem->action.Free();
+                pWorkItem->action.Dispose();
                 NativeMemory.Free(pWorkItem);
             }
         }

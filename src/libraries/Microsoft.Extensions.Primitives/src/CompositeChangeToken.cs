@@ -10,7 +10,7 @@ using System.Threading;
 namespace Microsoft.Extensions.Primitives
 {
     /// <summary>
-    /// An <see cref="IChangeToken"/> which represents one or more <see cref="IChangeToken"/> instances.
+    /// An <see cref="IChangeToken"/> that represents one or more <see cref="IChangeToken"/> instances.
     /// </summary>
     [DebuggerDisplay("HasChanged = {HasChanged}")]
     public class CompositeChangeToken : IChangeToken
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <summary>
-        /// Returns the list of <see cref="IChangeToken"/> which compose the current <see cref="CompositeChangeToken"/>.
+        /// Returns the list of <see cref="IChangeToken"/> that compose the current <see cref="CompositeChangeToken"/>.
         /// </summary>
         public IReadOnlyList<IChangeToken> ChangeTokens { get; }
 

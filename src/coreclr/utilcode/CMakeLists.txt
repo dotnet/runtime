@@ -23,7 +23,6 @@ set(UTILCODE_COMMON_SOURCES
   check.cpp
   log.cpp
   arraylist.cpp
-  bitvector.cpp
   comex.cpp
   guidfromname.cpp
   memorypool.cpp
@@ -85,7 +84,9 @@ convert_to_absolute_path(UTILCODE_SOURCES ${UTILCODE_SOURCES})
 convert_to_absolute_path(UTILCODE_DAC_SOURCES ${UTILCODE_DAC_SOURCES})
 convert_to_absolute_path(UTILCODE_STATICNOHOST_SOURCES ${UTILCODE_STATICNOHOST_SOURCES})
 
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
 add_library_clr(utilcode_dac STATIC ${UTILCODE_DAC_SOURCES})
+endif()
 add_library_clr(utilcode OBJECT ${UTILCODE_SOURCES})
 add_library_clr(utilcodestaticnohost STATIC ${UTILCODE_STATICNOHOST_SOURCES})
 
@@ -93,9 +94,11 @@ target_link_libraries(utilcodestaticnohost PUBLIC coreclrminipal)
 
 if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(utilcodestaticnohost PUBLIC nativeresourcestring)
-  target_link_libraries(utilcode_dac PUBLIC nativeresourcestring)
+  if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    target_link_libraries(utilcode_dac PUBLIC nativeresourcestring)
+    add_dependencies(utilcode_dac coreclrpal)
+  endif()
   target_link_libraries(utilcode INTERFACE nativeresourcestring)
-  add_dependencies(utilcode_dac coreclrpal)
   add_dependencies(utilcode coreclrpal)
 endif(CLR_CMAKE_HOST_UNIX)
 
@@ -108,12 +111,14 @@ if(CLR_CMAKE_HOST_WIN32)
     link_natvis_sources_for_target(utilcode INTERFACE utilcode.natvis)
 endif(CLR_CMAKE_HOST_WIN32)
 
-set_target_properties(utilcode_dac PROPERTIES DAC_COMPONENT TRUE)
-target_compile_definitions(utilcode_dac PRIVATE SELF_NO_HOST)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  set_target_properties(utilcode_dac PROPERTIES DAC_COMPONENT TRUE)
+  target_compile_definitions(utilcode_dac PRIVATE SELF_NO_HOST)
+  add_dependencies(utilcode_dac ${UTILCODE_DEPENDENCIES})
+  target_precompile_headers(utilcode_dac PRIVATE [["stdafx.h"]])
+  endif()
 target_compile_definitions(utilcodestaticnohost PRIVATE SELF_NO_HOST)
-add_dependencies(utilcode_dac ${UTILCODE_DEPENDENCIES})
 add_dependencies(utilcode ${UTILCODE_DEPENDENCIES})
 add_dependencies(utilcodestaticnohost ${UTILCODE_DEPENDENCIES})
-target_precompile_headers(utilcode_dac PRIVATE [["stdafx.h"]])
 target_precompile_headers(utilcode PRIVATE [["stdafx.h"]])
 target_precompile_headers(utilcodestaticnohost PRIVATE [["stdafx.h"]])

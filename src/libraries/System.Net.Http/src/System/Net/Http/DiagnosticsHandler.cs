@@ -97,7 +97,7 @@ namespace System.Net.Http
 
             // Since we are reusing the request message instance on redirects, clear any existing headers
             // Do so before writing DiagnosticListener events as instrumentations use those to inject headers
-            if (request.WasRedirected() && _propagatorFields is HeaderDescriptor[] fields)
+            if (request.WasPropagatorStateInjectedByDiagnosticsHandler() && _propagatorFields is HeaderDescriptor[] fields)
             {
                 foreach (HeaderDescriptor field in fields)
                 {
@@ -194,25 +194,6 @@ namespace System.Net.Http
                 if (activity is not null)
                 {
                     activity.SetEndTime(DateTime.UtcNow);
-
-                    if (activity.IsAllDataRequested)
-                    {
-                        // Add standard tags known at request completion.
-                        if (response is not null)
-                        {
-                            activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedInt32((int)response.StatusCode));
-                            activity.SetTag("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
-                        }
-
-                        if (DiagnosticsHelper.TryGetErrorType(response, exception, out string? errorType))
-                        {
-                            activity.SetTag("error.type", errorType);
-
-                            // The presence of error.type indicates that the conditions for setting Error status are also met.
-                            // https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/docs/http/http-spans.md#status
-                            activity.SetStatus(ActivityStatusCode.Error);
-                        }
-                    }
 
                     if (activity.IsAllDataRequested)
                     {
@@ -374,6 +355,7 @@ namespace System.Net.Http
                     request.Headers.TryAddWithoutValidation(descriptor, value);
                 }
             });
+            request.MarkPropagatorStateInjectedByDiagnosticsHandler();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",

@@ -33,6 +33,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       could be removed by the ILLink, causing a trimmed app to crash. -->
   <PropertyGroup Condition="'$(PublishTrimmed)' == 'true'">
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
+    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == ''">false</MetadataUpdaterSupport>
     <CustomResourceTypesSupport Condition="'$(CustomResourceTypesSupport)' == ''">false</CustomResourceTypesSupport>
     <EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization Condition="'$(EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)' == ''">false</EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization>
     <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
@@ -57,6 +58,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_DefaultValueAttributeSupport Condition="'$(_DefaultValueAttributeSupport)' == ''">false</_DefaultValueAttributeSupport>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">true</DynamicCodeSupport>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
+    <_DataSetXmlSerializationSupport Condition="'$(_DataSetXmlSerializationSupport)' == ''">false</_DataSetXmlSerializationSupport>
   </PropertyGroup>
 
 
@@ -125,7 +127,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     if the output semaphore file is out of date with respect to the inputs.
     ============================================================
     -->
-  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" TaskFactory="TaskHostFactory" />
   <Target Name="_RunILLink"
           DependsOnTargets="_ComputeManagedAssemblyToLink;PrepareForILLink"
           Inputs="$(MSBuildAllProjects);@(ManagedAssemblyToLink);@(TrimmerRootDescriptor);@(ReferencePath)"
@@ -156,6 +158,7 @@ Copyright (c) .NET Foundation. All rights reserved.
             UnusedInterfaces="$(_TrimmerUnusedInterfaces)"
             IPConstProp="$(_TrimmerIPConstProp)"
             Sealer="$(_TrimmerSealer)"
+            KeepMetadata="@(_TrimmerKeepMetadata)"
 
             Warn="$(ILLinkWarningLevel)"
             NoWarn="$(NoWarn)"
@@ -240,6 +243,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <TrimmerRemoveSymbols Condition=" '$(DebuggerSupport)' != 'false' ">false</TrimmerRemoveSymbols>
     </PropertyGroup>
 
+    <ItemGroup>
+      <!-- Keep parameter name and other metadata unless debugger support is disabled. -->
+      <_TrimmerKeepMetadata Include="all" Condition=" '$(DebuggerSupport)' != 'false' " />
+    </ItemGroup>
+
     <PropertyGroup>
       <_TrimmerPreserveSymbolPaths Condition=" '$(_TrimmerPreserveSymbolPaths)' == '' and '$(DeterministicSourcePaths)' == 'true' ">true</_TrimmerPreserveSymbolPaths>
       <_TrimmerPreserveSymbolPaths Condition=" '$(_TrimmerPreserveSymbolPaths)' == '' ">false</_TrimmerPreserveSymbolPaths>
@@ -304,7 +312,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     Compute the set of inputs to ILLink.
     ============================================================
     -->
-  <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" TaskFactory="TaskHostFactory" />
   <Target Name="_ComputeManagedAssemblyToLink" DependsOnTargets="_ComputeAssembliesToPostprocessOnPublish">
 
     <!-- NB: There should not be non-managed assemblies in this list, but we still give the ILLink a chance to
