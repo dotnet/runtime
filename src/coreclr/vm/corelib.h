@@ -835,6 +835,7 @@ DEFINE_METHOD(STRING,               CTORF_SBYTEPTR_START_LEN_ENCODING, Ctor,    
 DEFINE_METHOD(STRING,               INTERNAL_COPY,          InternalCopy,               SM_Str_IntPtr_Int_RetVoid)
 DEFINE_METHOD(STRING,               WCSLEN,                 wcslen,                     SM_PtrChar_RetInt)
 DEFINE_METHOD(STRING,               STRLEN,                 strlen,                     SM_PtrByte_RetInt)
+DEFINE_METHOD(STRING,               STRCNS,                 StrCns,                     SM_UInt_IntPtr_RetStr)
 DEFINE_PROPERTY(STRING,             LENGTH,                 Length,                     Int)
 
 DEFINE_CLASS(STRING_BUILDER,        Text,                   StringBuilder)

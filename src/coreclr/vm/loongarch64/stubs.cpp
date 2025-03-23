@@ -548,31 +548,6 @@ void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
 
-#ifndef DACCESS_COMPILE
-
-void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    //Initially
-    //a0 -This ptr
-    //a1 -ReturnBuffer
-    m_rgCode[0] = 0x18000055; //pcaddi  r21,2
-    m_rgCode[1] = 0x28c042b5; //ld.d  r21,16(r21)
-    m_rgCode[2] = 0x0380008f; //ori  r15,a0,0x0
-    m_rgCode[3] = 0x038000a4; //ori  a0,a1,0x0
-    m_rgCode[4] = 0x038001e5; //ori  a1,r15,0x0
-    m_rgCode[5] = 0x4c0002a0; //jirl  r0,r21,0
-
-    _ASSERTE((UINT32*)&m_pTarget == &m_rgCode[6]);
-    _ASSERTE(6 == ARRAY_SIZE(m_rgCode));
-
-    m_pTarget = GetPreStubEntryPoint();
-    m_pMethodDesc = (TADDR)pMD;
-}
-
-#endif // !DACCESS_COMPILE
-
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pCalleeSaved)
 {
     LIMITED_METHOD_CONTRACT;

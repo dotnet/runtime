@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             public void MeasurementsCompleted(Instrument instrument, object? userState) => throw new NotImplementedException();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         public void TestSubscriptionManagerDisposal()
         {
             var meter = new Meter("TestMeter");

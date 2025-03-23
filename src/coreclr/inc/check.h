@@ -723,7 +723,9 @@ CHECK CheckOverflow(UINT64 value1, UINT64 value2);
 #ifdef __APPLE__
 CHECK CheckOverflow(SIZE_T value1, SIZE_T value2);
 #endif
+#ifndef __wasm__
 CHECK CheckOverflow(PTR_CVOID address, UINT offset);
+#endif
 #if defined(_MSC_VER)
 CHECK CheckOverflow(const void *address, ULONG offset);
 #endif

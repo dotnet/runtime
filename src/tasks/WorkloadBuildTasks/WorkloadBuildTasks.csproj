@@ -19,7 +19,7 @@
       <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
       <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
 
-      <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
+      <!-- For .NET Framework we need all the dependent assemblies too, so copy from the publish folder -->
       <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFrameworkTasks)\*.dll*"
                       TargetPath="tasks\$(TargetFrameworkForNETFrameworkTasks)" />
     </ItemGroup>

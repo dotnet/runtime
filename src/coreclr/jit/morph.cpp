@@ -2287,6 +2287,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
 #else
                 *use = fieldList->SoleFieldOrThis();
 #endif
+                *use = fgMorphTree(*use);
             }
             else
             {
@@ -2335,7 +2336,8 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
 
         // Try to see if we can use the promoted fields to pass this argument.
         //
-        if (varDsc->lvPromoted && (varDsc->lvFieldCnt == arg->AbiInfo.CountRegsAndStackSlots()))
+        if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister &&
+            (varDsc->lvFieldCnt == arg->AbiInfo.CountRegsAndStackSlots()))
         {
             bool fieldsMatch = true;
 
@@ -2366,6 +2368,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
             if (fieldsMatch)
             {
                 newArg = fgMorphLclToFieldList(lclNode)->SoleFieldOrThis();
+                newArg = fgMorphTree(newArg);
             }
         }
     }
@@ -2511,7 +2514,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                         lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
                     }
                 }
-                result->SetMorphed(this);
+                result = fgMorphTree(result);
                 return result;
             }
             else
@@ -2532,7 +2535,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                 }
 
                 GenTree* indir = gtNewIndir(type, addr);
-                indir->SetMorphed(this, /* doChildren*/ true);
+                indir->SetMorphed(this, /* doChildren */ true);
                 return indir;
             }
         };
@@ -2593,16 +2596,15 @@ GenTreeFieldList* Compiler::fgMorphLclToFieldList(GenTreeLclVar* lcl)
     unsigned fieldLclNum = varDsc->lvFieldLclStart;
 
     GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
-    fieldList->SetMorphed(this);
 
     for (unsigned i = 0; i < fieldCount; i++)
     {
         LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
         GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->TypeGet());
-        lclVar->SetMorphed(this);
         fieldList->AddField(this, lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->TypeGet());
         fieldLclNum++;
     }
+
     return fieldList;
 }
 
@@ -4684,8 +4686,13 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // fgMorphRecursiveFastTailCallIntoLoop() is not handling update of generic context while transforming
     // a recursive call into a loop.  Another option is to modify gtIsRecursiveCall() to check that the
     // generic type parameters of both caller and callee generic method are the same.
-    if (opts.compTailCallLoopOpt && canFastTailCall && gtIsRecursiveCall(call) && !lvaReportParamTypeArg() &&
-        !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam && !varTypeIsStruct(call->TypeGet()))
+    //
+    // For OSR, we prefer to tailcall for call counting + potential transition
+    // into the actual tier1 version.
+    //
+    if (opts.compTailCallLoopOpt && canFastTailCall && !opts.IsOSR() && gtIsRecursiveCall(call) &&
+        !lvaReportParamTypeArg() && !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam &&
+        !varTypeIsStruct(call->TypeGet()))
     {
         fastTailCallToLoop = true;
     }
@@ -6159,23 +6166,12 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // Remove the call
     fgRemoveStmt(block, lastStmt);
 
+    assert(!opts.IsOSR());
     // Set the loop edge.
-    BasicBlock* entryBB;
-    if (opts.IsOSR())
-    {
-        // Todo: this may not look like a viable loop header.
-        // Might need the moral equivalent of an init BB.
-        entryBB = fgEntryBB;
-    }
-    else
-    {
-        assert(doesMethodHaveRecursiveTailcall());
-
-        // TODO-Cleanup: We should really be expanding tailcalls into loops
-        // much earlier than this, at a place where we do not need to have
-        // hacky workarounds to figure out what the actual IL entry block is.
-        entryBB = fgGetFirstILBlock();
-    }
+    // TODO-Cleanup: We should really be expanding tailcalls into loops much
+    // earlier than this, at a place where we can just use the init BB here.
+    BasicBlock* entryBB = fgGetFirstILBlock();
+    assert(doesMethodHaveRecursiveTailcall());
 
     FlowEdge* const newEdge = fgAddRefPred(entryBB, block);
     block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
@@ -8366,7 +8362,10 @@ DONE_MORPHING_CHILDREN:
             GenTree*& retVal = tree->AsOp()->ReturnValueRef();
             if ((retVal != nullptr) && ((genReturnBB == nullptr) || (compCurBB == genReturnBB)))
             {
-                fgTryReplaceStructLocalWithFields(&retVal);
+                if (fgTryReplaceStructLocalWithFields(&retVal))
+                {
+                    retVal = fgMorphTree(retVal);
+                }
             }
             break;
         }
@@ -8424,19 +8423,22 @@ DONE_MORPHING_CHILDREN:
 // Notes:
 //    Currently only called when the tree parent is a GT_RETURN/GT_SWIFT_ERROR_RET.
 //
-void Compiler::fgTryReplaceStructLocalWithFields(GenTree** use)
+bool Compiler::fgTryReplaceStructLocalWithFields(GenTree** use)
 {
     if (!(*use)->OperIs(GT_LCL_VAR))
     {
-        return;
+        return false;
     }
 
     LclVarDsc* varDsc = lvaGetDesc((*use)->AsLclVar());
 
-    if (!varDsc->lvDoNotEnregister && varDsc->lvPromoted)
+    if (varDsc->lvDoNotEnregister || !varDsc->lvPromoted)
     {
-        *use = fgMorphLclToFieldList((*use)->AsLclVar());
+        return false;
     }
+
+    *use = fgMorphLclToFieldList((*use)->AsLclVar());
+    return true;
 }
 
 //------------------------------------------------------------------------

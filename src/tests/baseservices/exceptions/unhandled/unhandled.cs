@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using TestLibrary;
 
 namespace TestUnhandledException
 {
@@ -40,6 +41,9 @@ namespace TestUnhandledException
 
         static void Main(string[] args)
         {
+            // Ensure that the OS doesn't generate core dump for this intentionally crashing process
+            Utilities.DisableOSCoreDump();
+
             if (args[0] == "main")
             {
                 throw new Exception("Test");

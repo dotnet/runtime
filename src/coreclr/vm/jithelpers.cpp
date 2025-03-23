@@ -902,38 +902,14 @@ HCIMPL1(StringObject*, FramedAllocateString, DWORD stringLength)
 HCIMPLEND
 
 /*********************************************************************/
-OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
+STRINGREF* ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
-
     Module* module = GetModule(scopeHnd);
     return module->ResolveStringRef(metaTok, ppPinnedString);
 }
-
-/*********************************************************************/
-HCIMPL2(Object *, JIT_StrCns, unsigned rid, CORINFO_MODULE_HANDLE scopeHnd)
-{
-    FCALL_CONTRACT;
-
-    OBJECTHANDLE hndStr = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    // Retrieve the handle to the CLR string object.
-    hndStr = ConstructStringLiteral(scopeHnd, RidToToken(rid, mdtString));
-    HELPER_METHOD_FRAME_END();
-
-    // Don't use ObjectFromHandle; this isn't a real handle
-    return *(Object**)hndStr;
-}
-HCIMPLEND
-
 
 //========================================================================
 //
@@ -3384,21 +3360,21 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     frame->pMD = pMD;
 
     Thread* thread = GetThreadNULLOk();
-    
+
     // If a thread instance exists and is in the
     // correct GC mode attempt a quick transition.
     if (thread != NULL
         && !thread->PreemptiveGCDisabled())
     {
         frame->currentThread = thread;
-        
+
 #ifdef PROFILING_SUPPORTED
         if (CORProfilerTrackTransitions())
         {
             ProfilerUnmanagedToManagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_CALL);
         }
 #endif
-        
+
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads != 0)

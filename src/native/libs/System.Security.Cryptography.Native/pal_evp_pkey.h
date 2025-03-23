@@ -120,6 +120,11 @@ until the EVP_PKEY is destroyed.
 PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider);
 
 /*
+Loads a key using EVP_PKEY_fromdata_init and EVP_PKEY_fromdata.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_EvpPKeyFromData(const char* algorithmName, uint8_t* key, int32_t keyLength, int32_t privateKey);
+
+/*
 It's a wrapper for EVP_PKEY_CTX_new_from_pkey and EVP_PKEY_CTX_new
 which handles extraHandle.
 */

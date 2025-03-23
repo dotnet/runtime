@@ -13,7 +13,6 @@
 #include "GcEnum.h"
 #include "shash.h"
 #include "TypeManager.h"
-#include "varint.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "holder.h"

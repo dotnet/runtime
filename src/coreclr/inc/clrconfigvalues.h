@@ -325,6 +325,12 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitOs, W("AltJitOS"), "Sets target OS for 
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitExcludeAssemblies, W("AltJitExcludeAssemblies"), "Do not use AltJit on this semicolon-delimited list of assemblies.")
 #endif // defined(ALLOW_SXS_JIT)
 
+#ifdef FEATURE_INTERPRETER
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_InterpreterName, W("InterpreterName"), "Primary interpreter to use")
+CONFIG_STRING_INFO(INTERNAL_InterpreterPath, W("InterpreterPath"), "Full path to the interpreter to use")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_Interpreter, W("Interpreter"), "Enables Interpreter and selectively limits it to the specified methods.")
+#endif // FEATURE_INTERPRETER
+
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitHostMaxSlabCache, W("JitHostMaxSlabCache"), 0x1000000, "Sets jit host max slab cache size, 16MB default")
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitOptimizeType, W("JitOptimizeType"), 0 /* OPT_DEFAULT */, "")
@@ -688,6 +694,9 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 #endif
 
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_MaxVectorTBitWidth,           W("MaxVectorTBitWidth"),        0, "The maximum decimal width, in bits, that Vector<T> is allowed to be. A value less than 128 is treated as the system default.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_PreferredVectorBitWidth,      W("PreferredVectorBitWidth"),   0, "The maximum decimal width, in bits, of fixed-width vectors that may be considered hardware accelerated. A value less than 128 is treated as the system default.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+#endif // defined(TARGET_AMD64) || defined(TARGET_X86)
 
 //
 // Hardware Intrinsic ISAs; keep in sync with jitconfigvalues.h
