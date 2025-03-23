@@ -77,8 +77,8 @@ if(CLR_CMAKE_TARGET_WIN32)
         ../apphost.windows.h
 		../appcontainer_helpers.h
 	)
-	
-	set_source_files_properties(../appcontainer_helpers.cpp PROPERTIES COMPILE_FLAGS "/std:c++17 /O1")
+
+    set_source_files_properties(../appcontainer_helpers.cpp PROPERTIES COMPILE_FLAGS "$<$<CONFIG:Debug>:/std:c++17> $<$<NOT:$<CONFIG:Debug>>:/std:c++17 /O1>")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
