@@ -16,5 +16,4 @@ extends:
   parameters:
     platforms:
     - windows_x64
-    - windows_x86
-    replayType: standard
+    replayType: apx
