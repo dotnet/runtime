@@ -1197,8 +1197,13 @@ namespace Mono.Linker.Steps
 		protected void MarkCustomAttributeProperty (CustomAttributeNamedArgument namedArgument, TypeDefinition attribute, ICustomAttribute ca, in DependencyInfo reason, MessageOrigin origin)
 		{
 			PropertyDefinition? property = GetProperty (attribute, namedArgument.Name);
-			if (property != null)
-				MarkMethod (property.SetMethod, reason, origin);
+			if (property != null) {
+				try {
+					MarkMethod (property.SetMethod, reason, origin);
+				} catch {
+					Console.WriteLine ($"Exception occured when reading property {property.FullName} of type {property.DeclaringType.FullName} with SetMethod {property.SetMethod}");
+				}
+			}
 
 			MarkCustomAttributeArgument (namedArgument.Argument, ca, origin);
 
