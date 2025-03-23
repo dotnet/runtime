@@ -1200,9 +1200,8 @@ namespace Mono.Linker.Steps
 			if (property != null) {
 				try {
 					MarkMethod (property.SetMethod, reason, origin);
-				} catch {
-					Context.LogMessage ($"Exception occurred when reading property {property.FullName} of type {property.DeclaringType.FullName} with SetMethod {property.SetMethod}");
-					throw;
+				} catch (Exception ex) {
+					throw new Exception ($"Exception occurred when reading property {property.FullName} of type {property.DeclaringType.FullName} with SetMethod {property.SetMethod}", ex);
 				}
 			}
 
