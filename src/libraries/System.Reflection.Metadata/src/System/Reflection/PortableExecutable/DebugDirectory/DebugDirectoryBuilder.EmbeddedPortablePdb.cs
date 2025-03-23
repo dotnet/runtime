@@ -49,11 +49,7 @@ namespace System.Reflection.PortableExecutable
             // compressed data:
             using (var deflate = new DeflateStream(new BlobBuilderStream(builder), CompressionLevel.Optimal, leaveOpen: true))
             {
-                foreach (var blob in debugMetadata.GetBlobs())
-                {
-                    var segment = blob.GetBytes();
-                    deflate.Write(segment.Array!, segment.Offset, segment.Count);
-                }
+                debugMetadata.WriteContentTo(deflate);
             }
 
             return builder.Count - start;
