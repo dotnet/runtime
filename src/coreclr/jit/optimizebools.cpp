@@ -1591,11 +1591,11 @@ PhaseStatus Compiler::optOptimizeBools()
         for (BasicBlock* b1 = fgFirstBB; b1 != nullptr; b1 = retry ? b1 : b1->Next())
         {
             retry = false;
-            /*if (b1->KindIs(BBJ_COND) && fgFoldCondToReturnBlock(b1))
+            if (b1->KindIs(BBJ_COND) && fgFoldCondToReturnBlock(b1))
             {
                 change = true;
                 numCond++;
-            }*/
+            }
 
             // We're only interested in conditional jumps here
 
@@ -1722,7 +1722,8 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
 
     retTrueBb  = block->GetTrueEdge()->getDestinationBlock();
     retFalseBb = block->GetFalseEdge()->getDestinationBlock();
-    if (!retTrueBb->KindIs(BBJ_RETURN) || !retFalseBb->KindIs(BBJ_RETURN))
+    if (!retTrueBb->KindIs(BBJ_RETURN) || !retFalseBb->KindIs(BBJ_RETURN) ||
+        !BasicBlock::sameEHRegion(block, retTrueBb) || !BasicBlock::sameEHRegion(block, retFalseBb))
     {
         // Both edges must be BBJ_RETURN
         return modified;
@@ -1737,6 +1738,7 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     {
         return modified;
     }
+    assert(cond->TypeIs(TYP_INT));
 
     if ((retTrueBb->GetUniquePred(this) == nullptr) && (retFalseBb->GetUniquePred(this) == nullptr))
     {
@@ -1766,12 +1768,9 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     // Reverse the condition if we jump to "return false" on true.
     if (retFalseTrue)
     {
-        cond->SetOper(GenTree::ReverseRelop(cond->OperGet()));
+        gtReverseCond(cond);
     }
     modified = true;
-    assert(cond->TypeIs(TYP_INT));
-    assert(BasicBlock::sameEHRegion(block, retTrueBb));
-    assert(BasicBlock::sameEHRegion(block, retFalseBb));
 
     // Unlink the return blocks, someone will pick them up later.
     fgRemoveRefPred(block->GetTrueEdge());
