@@ -243,7 +243,9 @@ namespace System.Reflection.Runtime.PropertyInfos
 
                     if (getter is null)
                     {
-                        if (Setter is not null && Setter.IsVirtual)
+                        RuntimeNamedMethodInfo setter = GetPropertyMethod(PropertyMethodSemantics.Setter);
+
+                        if (setter is not null && setter.IsVirtual)
                         {
                             Type? baseType = DeclaringType.BaseType;
 
@@ -256,8 +258,9 @@ namespace System.Reflection.Runtime.PropertyInfos
                                         if (basePropertyInfo is RuntimePropertyInfo baseRuntimePropertyInfo)
                                         {
                                             getter = baseRuntimePropertyInfo.GetPropertyMethod(PropertyMethodSemantics.Getter);
-                                            break;
                                         }
+
+                                        break;
                                     }
                                 }
 
@@ -292,7 +295,9 @@ namespace System.Reflection.Runtime.PropertyInfos
 
                     if (setter is null)
                     {
-                        if (Getter is not null && Getter.IsVirtual)
+                        RuntimeNamedMethodInfo getter = GetPropertyMethod(PropertyMethodSemantics.Getter);
+
+                        if (getter is not null && getter.IsVirtual)
                         {
                             Type? baseType = DeclaringType.BaseType;
 
@@ -305,8 +310,9 @@ namespace System.Reflection.Runtime.PropertyInfos
                                         if (basePropertyInfo is RuntimePropertyInfo baseRuntimePropertyInfo)
                                         {
                                             setter = baseRuntimePropertyInfo.GetPropertyMethod(PropertyMethodSemantics.Setter);
-                                            break;
                                         }
+
+                                        break;
                                     }
                                 }
 
