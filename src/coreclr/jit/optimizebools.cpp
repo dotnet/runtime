@@ -1682,39 +1682,65 @@ PhaseStatus Compiler::optOptimizeBools()
 //
 bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
 {
+    bool modified = false;
+
     assert(block->KindIs(BBJ_COND));
 
 #ifdef JIT32_GCENCODER
     // JIT32_GCENCODER has a hard limit on the number of epilogues.
-    return false;
+    return changed;
 #endif
 
     // Early out if the current method is not returning a boolean.
     if ((info.compRetType != TYP_UBYTE) || (genReturnBB != nullptr))
     {
-        return false;
+        return modified;
     }
 
     // Both edges must be BBJ_RETURN
     BasicBlock* retTrueBb  = block->GetTrueEdge()->getDestinationBlock();
     BasicBlock* retFalseBb = block->GetFalseEdge()->getDestinationBlock();
-    if (!retTrueBb->KindIs(BBJ_RETURN) || !retFalseBb->KindIs(BBJ_RETURN))
+
+    // Although, we might want to fold fallthrough BBJ_ALWAYS blocks first
+    if (fgCanCompactBlock(retTrueBb))
     {
-        return false;
+        fgCompactBlock(retTrueBb);
+        modified = true;
     }
 
+    if (fgCanCompactBlock(retFalseBb))
+    {
+        fgCompactBlock(retFalseBb);
+        modified = true;
+    }
+
+    if (!block->KindIs(BBJ_COND))
+    {
+        // In rare cases fgCompactBlock() might have changed the current block
+        return modified;
+    }
+
+    retTrueBb  = block->GetTrueEdge()->getDestinationBlock();
+    retFalseBb = block->GetFalseEdge()->getDestinationBlock();
+    if (!retTrueBb->KindIs(BBJ_RETURN) || !retFalseBb->KindIs(BBJ_RETURN))
+    {
+        return modified;
+    }
+
+    // It has to be JTRUE(cond) or JTRUE(comma(cond)), but let's be resilient.
+    assert(block->lastStmt() != nullptr);
     GenTree* node = block->lastStmt()->GetRootNode();
     GenTree* cond = node->gtGetOp1();
     if (!cond->OperIsCompare())
     {
-        return false;
+        return modified;
     }
 
     if ((retTrueBb->GetUniquePred(this) == nullptr) && (retFalseBb->GetUniquePred(this) == nullptr))
     {
         // Both return blocks have multiple predecessors - bail out.
         // We don't want to introduce a new epilogue.
-        return false;
+        return modified;
     }
 
     // Is block a BBJ_RETURN(1/0) ? (single statement)
@@ -1732,7 +1758,7 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     bool retFalseTrue = isReturnBool(retTrueBb, false) && isReturnBool(retFalseBb, true);
     if (!retTrueFalse && !retFalseTrue)
     {
-        return false;
+        return modified;
     }
 
     // Reverse the condition if we jump to "return false" on true.
@@ -1740,7 +1766,7 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     {
         cond->SetOper(GenTree::ReverseRelop(cond->OperGet()));
     }
-
+    modified = true;
     assert(cond->TypeIs(TYP_INT));
     assert(BasicBlock::sameEHRegion(block, retTrueBb));
     assert(BasicBlock::sameEHRegion(block, retFalseBb));
@@ -1753,11 +1779,14 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     node->ChangeType(TYP_INT);
     cond->gtFlags &= ~GTF_RELOP_JMP_USED;
 
-    // It's difficult to restore the original weight of the block
+    // It's difficult to restore the original weight of the block, profile repair will handle it.
     fgPgoConsistent      = false;
     block->bbCodeOffsEnd = max(retTrueBb->bbCodeOffsEnd, retFalseBb->bbCodeOffsEnd);
     gtSetStmtInfo(block->lastStmt());
     fgSetStmtSeq(block->lastStmt());
     gtUpdateStmtSideEffects(block->lastStmt());
-    return true;
+
+    JITDUMP("fgFoldCondToReturnBlock: folding " FMT_BB " from BBJ_COND into BBJ_RETURN:", block->bbNum);
+    DISPBLOCK(block)
+    return modified;
 }
