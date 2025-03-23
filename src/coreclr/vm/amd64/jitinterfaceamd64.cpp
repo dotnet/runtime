@@ -698,8 +698,8 @@ bool WriteBarrierManager::NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, b
         {
         case WRITE_BARRIER_UNINITIALIZED:
 #ifdef _DEBUG
-            // Use the default slow write barrier some of the time in debug builds because of of contains some good asserts
-            if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DbgRandomOnExe(0.5)) {
+            // The default slow write barrier has some good asserts
+            if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK)) {
                 break;
             }
 #endif
@@ -901,7 +901,7 @@ int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSus
         default:
             break; // clang seems to require all enum values to be covered for some reason
     }
-    
+
     if (*(UINT64*)m_pCardTableImmediate != (size_t)g_card_table)
     {
          ExecutableWriterHolder<UINT64> cardTableImmediateWriterHolder((UINT64*)m_pCardTableImmediate, sizeof(UINT64));

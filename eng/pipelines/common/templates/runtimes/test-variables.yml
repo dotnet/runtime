@@ -50,7 +50,7 @@ variables:
     # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
     - name: timeoutPerTestInMinutes
       value: 240
-  - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
+  - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstress-isas-sve', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
     - name: timeoutPerTestCollectionInMinutes
       value: 120
     - name: timeoutPerTestInMinutes
@@ -71,11 +71,6 @@ variables:
       value: 20
     - name: timeoutPerTestCollectionInMinutes
       value: 240
-  - ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
-    - name: timeoutPerTestCollectionInMinutes
-      value: 180
-    - name: timeoutPerTestInMinutes
-      value: 30
   - ${{ if in(parameters.testGroup, 'pgo', 'pgostress') }}:
     - name: timeoutPerTestCollectionInMinutes
       value: 120
@@ -104,9 +99,9 @@ variables:
   - name: priorityArg
     value: ''
 
-  # 'innerloop' and 'clrinterpreter' jobs run the Priority 0 tests; everything else runs the Priority 1 tests.
+  # 'innerloop' job runs the Priority 0 tests; everything else runs the Priority 1 tests.
   # 'gc-standalone' is forced to run pri0 as well to start with.
-  - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'clrinterpreter'), ne(parameters.testGroup, 'gc-standalone'), ne(parameters.testGroup, 'gc-standalone-server') ) }}:
+  - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'gc-standalone'), ne(parameters.testGroup, 'gc-standalone-server') ) }}:
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: priorityArg
         value: 'priority1'

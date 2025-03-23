@@ -17,7 +17,23 @@
 .endm
 
 .macro PATCH_LABEL Name
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name)
+        .private_extern C_FUNC(\Name)
+#else
         .global C_FUNC(\Name)
+#endif
+C_FUNC(\Name):
+.endm
+
+.macro ALTERNATE_ENTRY Name
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name)
+        .private_extern C_FUNC(\Name)
+#else
+        .global C_FUNC(\Name)
+        .hidden C_FUNC(\Name)
+#endif
 C_FUNC(\Name):
 .endm
 
@@ -121,7 +137,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EMIT_BREAKPOINT
-        brk #0
+        brk #0xf000
 .endm
 
 //-----------------------------------------------------------------------------
@@ -206,7 +222,7 @@ C_FUNC(\Name\()_End):
 // base address to be passed in $reg
 //
 
-// Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
+// Reserve 72 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
 .macro SAVE_ARGUMENT_REGISTERS reg, ofs
 
         str                    x8, [\reg, #(\ofs)]

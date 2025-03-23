@@ -3,7 +3,7 @@
 
 using System;
 using System.IO;
-
+using System.Runtime.InteropServices;
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -95,7 +95,7 @@ namespace HostActivation.Tests
         {
             var app = sharedTestState.App.Copy();
 
-            var renamedAppExe = app.AppExe + Binaries.GetExeFileNameForCurrentPlatform("renamed");
+            var renamedAppExe = app.AppExe + Binaries.GetExeName("renamed");
             File.Move(app.AppExe, renamedAppExe, true);
 
             Command.Create(renamedAppExe)
@@ -122,7 +122,8 @@ namespace HostActivation.Tests
             HostWriter.CreateAppHost(
                 Binaries.AppHost.FilePath,
                 appExe,
-                Path.GetRelativePath(subDir, app.AppDll));
+                Path.GetRelativePath(subDir, app.AppDll),
+                enableMacOSCodeSign: RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
 
             Command.Create(appExe)
                 .CaptureStdErr()

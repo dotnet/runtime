@@ -15,7 +15,6 @@ namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class QuicListenerTests : QuicTestBase
     {
         public QuicListenerTests(ITestOutputHelper output) : base(output) { }
@@ -27,9 +26,9 @@ namespace System.Net.Quic.Tests
             {
                 await using QuicListener listener = await CreateQuicListener();
 
-                var clientStreamTask = CreateQuicConnection(listener.LocalEndPoint);
+                var clientConnectionTask = CreateQuicConnection(listener.LocalEndPoint);
                 await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-                await using QuicConnection clientConnection = await clientStreamTask;
+                await using QuicConnection clientConnection = await clientConnectionTask;
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
 
@@ -57,9 +56,9 @@ namespace System.Net.Quic.Tests
 
                 await using QuicListener listener = await CreateQuicListener(new IPEndPoint(IPv6Any, 0));
 
-                var clientStreamTask = CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, listener.LocalEndPoint.Port));
+                var clientConnectionTask = CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, listener.LocalEndPoint.Port));
                 await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-                await using QuicConnection clientConnection = await clientStreamTask;
+                await using QuicConnection clientConnection = await clientConnectionTask;
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
 
@@ -306,7 +305,7 @@ namespace System.Net.Quic.Tests
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
 
             // Kick off requested number of parallel connects.
-            List<Task> connectTasks = new List<Task>();
+            List<Task<QuicConnection>> connectTasks = new List<Task<QuicConnection>>();
             for (int i = 0; i < connectCount; ++i)
             {
                 connectTasks.Add(CreateQuicConnection(listener.LocalEndPoint).AsTask());
@@ -319,7 +318,7 @@ namespace System.Net.Quic.Tests
             {
                 try
                 {
-                    await connectTask;
+                    await using var connection = await connectTask;
                     Interlocked.Increment(ref success);
                 }
                 catch (QuicException qex) when (qex.QuicError == QuicError.ConnectionRefused)

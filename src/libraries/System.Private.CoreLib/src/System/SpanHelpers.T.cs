@@ -7,8 +7,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System
 {
     internal static partial class SpanHelpers // .T
@@ -67,27 +65,48 @@ namespace System
                     {
                         vector = Vector256.Create(vec128).AsVector();
                     }
+                    else if (Vector<byte>.Count == 64)
+                    {
+                        vector = Vector512.Create(vec128).AsVector();
+                    }
                     else
                     {
-                        Debug.Fail("Vector<T> isn't 128 or 256 bits in size?");
+                        Debug.Fail("Vector<T> is unexpected size.");
                         goto CannotVectorize;
                     }
                 }
                 else if (sizeof(T) == 32)
                 {
+                    Vector256<byte> vec256 = Unsafe.As<T, Vector256<byte>>(ref tmp);
                     if (Vector<byte>.Count == 32)
                     {
-                        vector = Unsafe.As<T, Vector256<byte>>(ref tmp).AsVector();
+                        vector = vec256.AsVector();
+                    }
+                    else if (Vector<byte>.Count == 64)
+                    {
+                        vector = Vector512.Create(vec256).AsVector();
                     }
                     else
                     {
-                        Debug.Fail("Vector<T> isn't 256 bits in size?");
+                        Debug.Fail("Vector<T> is unexpected size.");
+                        goto CannotVectorize;
+                    }
+                }
+                else if (sizeof(T) == 64)
+                {
+                    if (Vector<byte>.Count == 64)
+                    {
+                        vector = Unsafe.As<T, Vector512<byte>>(ref tmp).AsVector();
+                    }
+                    else
+                    {
+                        Debug.Fail("Vector<T> is unexpected size.");
                         goto CannotVectorize;
                     }
                 }
                 else
                 {
-                    Debug.Fail("Vector<T> is greater than 256 bits in size?");
+                    Debug.Fail("Vector<T> is greater than 512 bits in size?");
                     goto CannotVectorize;
                 }
 
@@ -2508,7 +2527,7 @@ namespace System
                 TVector current;
                 TVector values = TVector.Create(value);
 
-                int offset = length - TVector.Count;
+                int offset = length - TVector.ElementCount;
 
                 // Loop until either we've finished all elements -or- there's one or less than a vector's-worth remaining.
                 while (offset > 0)
@@ -2517,10 +2536,10 @@ namespace System
 
                     if (TNegator.HasMatch(values, current))
                     {
-                        return offset + TVector.IndexOfLastMatch(TNegator.GetMatchMask(values, current));
+                        return offset + TVector.LastIndexOfWhereAllBitsSet(TNegator.GetMatchMask(values, current));
                     }
 
-                    offset -= TVector.Count;
+                    offset -= TVector.ElementCount;
                 }
 
                 // Process the first vector in the search space.
@@ -2529,7 +2548,7 @@ namespace System
 
                 if (TNegator.HasMatch(values, current))
                 {
-                    return TVector.IndexOfLastMatch(TNegator.GetMatchMask(values, current));
+                    return TVector.LastIndexOfWhereAllBitsSet(TNegator.GetMatchMask(values, current));
                 }
 
                 return -1;
@@ -3775,7 +3794,7 @@ namespace System
             return count;
         }
 
-        public static int CountValueType<T>(ref T current, T value, int length) where T : struct, IEquatable<T>?
+        public static unsafe int CountValueType<T>(ref T current, T value, int length) where T : struct, IEquatable<T>?
         {
             int count = 0;
             ref T end = ref Unsafe.Add(ref current, length);
@@ -3794,7 +3813,7 @@ namespace System
 
                     // Count the last vector and mask off the elements that were already counted (number of elements between oneVectorAwayFromEnd and current).
                     ulong mask = Vector512.Equals(Vector512.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
-                    mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)Unsafe.SizeOf<T>());
+                    mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)sizeof(T));
                     count += BitOperations.PopCount(mask);
                 }
                 else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
@@ -3809,7 +3828,7 @@ namespace System
 
                     // Count the last vector and mask off the elements that were already counted (number of elements between oneVectorAwayFromEnd and current).
                     uint mask = Vector256.Equals(Vector256.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
-                    mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)Unsafe.SizeOf<T>());
+                    mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)sizeof(T));
                     count += BitOperations.PopCount(mask);
                 }
                 else
@@ -3824,7 +3843,7 @@ namespace System
 
                     // Count the last vector and mask off the elements that were already counted (number of elements between oneVectorAwayFromEnd and current).
                     uint mask = Vector128.Equals(Vector128.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
-                    mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)Unsafe.SizeOf<T>());
+                    mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)sizeof(T));
                     count += BitOperations.PopCount(mask);
                 }
             }

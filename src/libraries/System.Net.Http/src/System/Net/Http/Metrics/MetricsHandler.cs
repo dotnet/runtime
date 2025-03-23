@@ -110,7 +110,7 @@ namespace System.Net.Http.Metrics
 
             if (response is not null)
             {
-                tags.Add("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
+                tags.Add("http.response.status_code", DiagnosticsHelper.GetBoxedInt32((int)response.StatusCode));
                 tags.Add("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
             }
 
@@ -121,14 +121,14 @@ namespace System.Net.Http.Metrics
 
             TimeSpan durationTime = Stopwatch.GetElapsedTime(startTimestamp, Stopwatch.GetTimestamp());
 
-            HttpMetricsEnrichmentContext? enrichmentContext = HttpMetricsEnrichmentContext.GetEnrichmentContextForRequest(request);
-            if (enrichmentContext is null)
+            List<Action<HttpMetricsEnrichmentContext>>? callbacks = HttpMetricsEnrichmentContext.GetEnrichmentCallbacksForRequest(request);
+            if (callbacks is null)
             {
                 _requestsDuration.Record(durationTime.TotalSeconds, tags);
             }
             else
             {
-                enrichmentContext.RecordDurationWithEnrichment(request, response, exception, durationTime, tags, _requestsDuration);
+                HttpMetricsEnrichmentContext.RecordDurationWithEnrichment(callbacks, request, response, exception, durationTime, tags, _requestsDuration);
             }
         }
 
@@ -140,11 +140,7 @@ namespace System.Net.Http.Metrics
             {
                 tags.Add("url.scheme", requestUri.Scheme);
                 tags.Add("server.address", requestUri.Host);
-                // Add port tag when not the default value for the current scheme
-                if (!requestUri.IsDefaultPort)
-                {
-                    tags.Add("server.port", requestUri.Port);
-                }
+                tags.Add("server.port", DiagnosticsHelper.GetBoxedInt32(requestUri.Port));
             }
             tags.Add(DiagnosticsHelper.GetMethodTag(request.Method, out _));
 

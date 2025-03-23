@@ -252,7 +252,7 @@ namespace System.Globalization
             return GetDatePart(time.Ticks, DatePartMonth);
         }
 
-        public override int[] Eras => new int[] { JulianEra };
+        public override int[] Eras => [JulianEra];
 
         public override int GetMonthsInYear(int year, int era)
         {

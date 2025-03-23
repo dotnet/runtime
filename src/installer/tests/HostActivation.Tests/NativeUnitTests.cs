@@ -15,7 +15,7 @@ namespace HostActivation.Tests
         [Fact]
         public void Native_Test_Fx_Ver()
         {
-            string testPath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, Binaries.GetExeFileNameForCurrentPlatform("test_fx_ver"));
+            string testPath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, Binaries.GetExeName("test_fx_ver"));
 
             Command testCommand = Command.Create(testPath);
             testCommand

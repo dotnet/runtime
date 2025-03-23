@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static System.Linq.Utilities;
 
@@ -31,15 +32,19 @@ namespace System.Linq
 
             public override List<TResult> ToList()
             {
-                var list = new List<TResult>();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
                 Func<TSource, TResult> selector = _selector;
                 foreach (TSource item in _source)
                 {
-                    list.Add(selector(item));
+                    builder.Add(selector(item));
                 }
 
-                return list;
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override int GetCount(bool onlyIfCheap)
@@ -226,6 +231,19 @@ namespace System.Linq
                 found = true;
                 return _selector(_source[^1]);
             }
+
+            public override bool Contains(TResult value)
+            {
+                foreach (TSource item in _source)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(item), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         private sealed partial class RangeSelectIterator<TResult> : Iterator<TResult>
@@ -353,6 +371,19 @@ namespace System.Linq
                 found = true;
                 return _selector(_end - 1);
             }
+
+            public override bool Contains(TResult value)
+            {
+                for (int i = _start; i != _end; i++)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(i), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         private sealed partial class ListSelectIterator<TSource, TResult>
@@ -454,6 +485,21 @@ namespace System.Linq
 
                 found = false;
                 return default;
+            }
+
+            public override bool Contains(TResult value)
+            {
+                int count = _source.Count;
+
+                for (int i = 0; i < count; i++)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(_source[i]), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
 
@@ -558,6 +604,21 @@ namespace System.Linq
                 found = false;
                 return default;
             }
+
+            public override bool Contains(TResult value)
+            {
+                int count = _source.Count;
+
+                for (int i = 0; i < count; i++)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(_source[i]), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         /// <summary>
@@ -657,7 +718,7 @@ namespace System.Linq
                 return sourceFound ? _selector(input!) : default!;
             }
 
-            private TResult[] LazyToArray()
+            private TResult[] ToArrayNoPresizing()
             {
                 Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
 
@@ -691,10 +752,29 @@ namespace System.Linq
                 int count = _source.GetCount(onlyIfCheap: true);
                 return count switch
                 {
-                    -1 => LazyToArray(),
+                    -1 => ToArrayNoPresizing(),
                     0 => [],
                     _ => PreallocatingToArray(count),
                 };
+            }
+
+            private List<TResult> ToListNoPresizing()
+            {
+                Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
+
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
+
+                Func<TSource, TResult> selector = _selector;
+                foreach (TSource input in _source)
+                {
+                    builder.Add(selector(input));
+                }
+
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override List<TResult> ToList()
@@ -704,14 +784,10 @@ namespace System.Linq
                 switch (count)
                 {
                     case -1:
-                        list = new List<TResult>();
-                        foreach (TSource input in _source)
-                        {
-                            list.Add(_selector(input));
-                        }
+                        list = ToListNoPresizing();
                         break;
                     case 0:
-                        list = new List<TResult>();
+                        list = [];
                         break;
                     default:
                         list = new List<TResult>(count);
@@ -888,7 +964,7 @@ namespace System.Linq
                 int count = Count;
                 if (count == 0)
                 {
-                    return new List<TResult>();
+                    return [];
                 }
 
                 List<TResult> list = new List<TResult>(count);
@@ -922,6 +998,22 @@ namespace System.Linq
                 }
 
                 return count;
+            }
+
+            public override bool Contains(TResult value)
+            {
+                int count = Count;
+
+                int end = _minIndexInclusive + count;
+                for (int i = _minIndexInclusive; i != end; ++i)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(_source[i]), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
     }

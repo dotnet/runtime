@@ -121,19 +121,13 @@ namespace System.Reflection
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
 
-            switch (argCount)
+            return argCount switch
             {
-                case 0:
-                    return Invoker.InvokeWithNoArgs(obj, invokeAttr);
-                case 1:
-                    return Invoker.InvokeWithOneArg(obj, invokeAttr, binder, parameters!, culture);
-                case 2:
-                case 3:
-                case 4:
-                    return Invoker.InvokeWithFewArgs(obj, invokeAttr, binder, parameters!, culture);
-                default:
-                    return Invoker.InvokeWithManyArgs(obj, invokeAttr, binder, parameters!, culture);
-            }
+                0 => Invoker.InvokeWithNoArgs(obj, invokeAttr),
+                1 => Invoker.InvokeWithOneArg(obj, invokeAttr, binder, parameters!, culture),
+                2 or 3 or 4 => Invoker.InvokeWithFewArgs(obj, invokeAttr, binder, parameters!, culture),
+                _ => Invoker.InvokeWithManyArgs(obj, invokeAttr, binder, parameters!, culture),
+            };
         }
     }
 }

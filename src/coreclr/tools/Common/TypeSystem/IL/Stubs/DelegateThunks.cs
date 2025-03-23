@@ -10,13 +10,18 @@ namespace Internal.IL.Stubs
     /// <summary>
     /// Base class for all delegate invocation thunks.
     /// </summary>
-    public abstract partial class DelegateThunk : ILStubMethod
+    public abstract partial class DelegateThunk : SpecializableILStubMethod
     {
         protected readonly DelegateInfo _delegateInfo;
 
         public DelegateThunk(DelegateInfo delegateInfo)
         {
             _delegateInfo = delegateInfo;
+        }
+
+        public override MethodIL EmitIL(MethodDesc specializedMethod)
+        {
+            return null;
         }
 
         public sealed override TypeSystemContext Context
@@ -143,6 +148,20 @@ namespace Internal.IL.Stubs
         internal DelegateInvokeOpenInstanceThunk(DelegateInfo delegateInfo)
             : base(delegateInfo)
         {
+        }
+
+        public override MethodIL EmitIL(MethodDesc specializedMethod)
+        {
+            Debug.Assert(specializedMethod.GetTypicalMethodDefinition() == this);
+            if (!_delegateInfo.Thunks.SignatureSupportsOpenInstanceThunks(specializedMethod.Signature))
+            {
+                var emit = new ILEmitter();
+                ILCodeStream codeStream = emit.NewCodeStream();
+                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException"));
+                return emit.Link(specializedMethod);
+            }
+
+            return null;
         }
 
         public override MethodIL EmitIL()
@@ -464,6 +483,20 @@ namespace Internal.IL.Stubs
         internal DelegateInvokeObjectArrayThunk(DelegateInfo delegateInfo)
             : base(delegateInfo)
         {
+        }
+
+        public override MethodIL EmitIL(MethodDesc specializedMethod)
+        {
+            Debug.Assert(specializedMethod.GetTypicalMethodDefinition() == this);
+            if (!_delegateInfo.Thunks.SignatureSupportsObjectArrayThunk(specializedMethod.Signature))
+            {
+                var emit = new ILEmitter();
+                ILCodeStream codeStream = emit.NewCodeStream();
+                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException"));
+                return emit.Link(specializedMethod);
+            }
+
+            return null;
         }
 
         public override MethodIL EmitIL()

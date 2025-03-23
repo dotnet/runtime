@@ -3914,10 +3914,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         {
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
             emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ true, &baseRegUsed);
-
-            // Ensure the baseReg calculated is correct.
-            assert(baseRegUsed == reg2);
-            emitIns_R_R(INS_add, EA_4BYTE, rsvdReg, reg2);
+            emitIns_R_R(INS_add, EA_4BYTE, rsvdReg, baseRegUsed);
             emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
             return;
         }

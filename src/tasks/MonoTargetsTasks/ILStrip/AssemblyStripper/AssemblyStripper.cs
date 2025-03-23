@@ -237,5 +237,19 @@ namespace AssemblyStripper
             AssemblyDefinition assembly = AssemblyFactory.GetAssembly(assemblyFile);
             AssemblyStripper.StripAssembly(assembly, outputPath);
         }
+
+        public static bool TryStripAssembly(string assemblyFile, string outputPath)
+        {
+            try
+            {
+                StripAssembly(assemblyFile, outputPath);
+                return true;
+            }
+            // Skip unmanged assemblies
+            catch (ImageFormatException)
+            {
+                return false;
+            }
+        }
     }
 }

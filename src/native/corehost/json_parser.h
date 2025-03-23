@@ -40,24 +40,22 @@ class json_parser_t {
         bool parse_file(const pal::string_t& path);
 
         json_parser_t()
-            : m_bundle_data(nullptr)
+            : m_data(nullptr)
             , m_bundle_location(nullptr) {}
 
         ~json_parser_t();
 
     private:
-        // This is a vector of char and not pal::char_t because JSON data
-        // parsed by this class is always encoded in UTF-8.  On Windows,
-        // where wide strings are used, m_json is kept in UTF-8, but converted
+        char* m_data; // The memory mapped bytes of the file
+        size_t m_size; // Size of the mapped memory
+
+        // On Windows, where wide strings are used, m_data is kept in UTF-8, but converted
         // to UTF-16 by m_document during load.
-        std::vector<char> m_json;
         document_t m_document;
 
-        // If a json file is parsed from a single-file bundle, the following two fields represent:
-        char* m_bundle_data; // The memory mapped bytes of the application bundle.
-        const bundle::location_t* m_bundle_location; // Location of this json file within the bundle.
-
-        void realloc_buffer(size_t size);
+        // If a json file is parsed from a single-file bundle, the following fields represents
+        // the location of this json file within the bundle.
+        const bundle::location_t* m_bundle_location;
 };
 
 #endif // __JSON_PARSER_H__

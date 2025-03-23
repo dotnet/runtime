@@ -246,6 +246,15 @@ export function invoke2(arg1, name) {
     return res;
 }
 
+export function returnResolvedPromise() {
+    return Promise.resolve();
+}
+
+export async function invokeReturnCompletedTask() {
+    await dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper.ReturnCompletedTask();
+    return "resolved";
+}
+
 export function invokeStructClassRecords(arg1) {
     return [
         dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelper.EchoString(arg1),
@@ -456,4 +465,29 @@ export function delay(ms) {
 
 export function reject(what) {
     return new Promise((_, reject) => globalThis.setTimeout(() => reject(what), 0));
+}
+
+let setTimeoutHit = false;
+let promiseThenHit = false;
+export function beforeYield() {
+    setTimeoutHit = false;
+    promiseThenHit = false;
+    setTimeout(() => {
+        setTimeoutHit = true;
+    }, 0);
+    let res;
+    new Promise((resolve) => {
+        res = resolve;
+    }).then(() => {
+        promiseThenHit = true;
+    });
+    res();
+}
+
+export function isSetTimeoutHit() {
+    return setTimeoutHit;
+}
+
+export function isPromiseThenHit() {
+    return promiseThenHit;
 }

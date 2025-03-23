@@ -38,8 +38,6 @@
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <!-- This warning code isn't yet included in SuppressTrimAnalysisWarnings -->
-    <NoWarn>$(NoWarn);IL2118</NoWarn>
     <!-- IL2121: Unnecessary UnconditionalSuppressMessage attribute -->
     <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
@@ -89,11 +87,15 @@
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppToolCurrent)\WasmSymbolicator.dll" />
   </ItemGroup>
 
-  <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />
+  <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" >
+    <ForceMSBuildGC />
+  </Target>
 
   <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true'"
              TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps"
-             AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
+             AssemblyFile="$(WasmBuildTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ForceMSBuildGC" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="$(_BundleAOTTestWasmAppForHelixDependsOn)">
     <PropertyGroup>

@@ -5,6 +5,8 @@
 
   <PropertyGroup>
     <HWITestsArm64Only>true</HWITestsArm64Only>
+    <!-- SYSLIB5003: System.Runtime.Intrinsics.Arm.Sve is experimental in .NET 9 -->
+    <NoWarn>$(NoWarn);SYSLIB5003</NoWarn>
   </PropertyGroup>
 
 </Project>

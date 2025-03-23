@@ -30,7 +30,12 @@ struct REGDISPLAY
 #endif // TARGET_AMD64
 
     uintptr_t   SP;
-    PCODE        IP;
+    PCODE       IP;
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    uintptr_t   SSP;          // keep track of SSP for EH unwind
+                              // we do not adjust the original, so only need the value
+#endif  // TARGET_AMD64 && TARGET_WINDOWS
 
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     Fp128          Xmm[16-6]; // preserved xmm6..xmm15 regs for EH stackwalk
@@ -68,6 +73,7 @@ struct REGDISPLAY
     inline void SetEdiLocation(unsigned long *loc) { pRdi = (PTR_uintptr_t)loc; }
     inline void SetEbpLocation(unsigned long *loc) { pRbp = (PTR_uintptr_t)loc; }
 #endif
+
 };
 
 #ifdef TARGET_X86
@@ -113,6 +119,8 @@ struct REGDISPLAY
     inline PCODE GetIP() { return IP; }
     inline uintptr_t GetSP() { return SP; }
     inline uintptr_t GetFP() { return *pR11; }
+    inline PTR_uintptr_t GetReturnAddressRegisterLocation() { return pLR; }
+
     inline void SetIP(PCODE IP) { this->IP = IP; }
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
 };
@@ -165,6 +173,7 @@ struct REGDISPLAY
     inline PCODE GetIP() { return IP; }
     inline uintptr_t GetSP() { return SP; }
     inline uintptr_t GetFP() { return *pFP; }
+    inline PTR_uintptr_t GetReturnAddressRegisterLocation() { return pLR; }
 
     inline void SetIP(PCODE IP) { this->IP = IP; }
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
@@ -220,6 +229,59 @@ struct REGDISPLAY
     inline PCODE GetIP() { return IP; }
     inline uintptr_t GetSP() { return SP; }
     inline uintptr_t GetFP() { return *pFP; }
+    inline PTR_uintptr_t GetReturnAddressRegisterLocation() { return pRA; }
+
+    inline void SetIP(PCODE IP) { this->IP = IP; }
+    inline void SetSP(uintptr_t SP) { this->SP = SP; }
+};
+
+#elif defined(TARGET_RISCV64)
+
+struct REGDISPLAY
+{
+    PTR_uintptr_t pR0;
+    PTR_uintptr_t pRA;
+
+    uintptr_t   SP;
+
+    PTR_uintptr_t pGP;
+    PTR_uintptr_t pTP;
+    PTR_uintptr_t pT0;
+    PTR_uintptr_t pT1;
+    PTR_uintptr_t pT2;
+    PTR_uintptr_t pFP;
+    PTR_uintptr_t pS1;
+    PTR_uintptr_t pA0;
+    PTR_uintptr_t pA1;
+    PTR_uintptr_t pA2;
+    PTR_uintptr_t pA3;
+    PTR_uintptr_t pA4;
+    PTR_uintptr_t pA5;
+    PTR_uintptr_t pA6;
+    PTR_uintptr_t pA7;
+    PTR_uintptr_t pS2;
+    PTR_uintptr_t pS3;
+    PTR_uintptr_t pS4;
+    PTR_uintptr_t pS5;
+    PTR_uintptr_t pS6;
+    PTR_uintptr_t pS7;
+    PTR_uintptr_t pS8;
+    PTR_uintptr_t pS9;
+    PTR_uintptr_t pS10;
+    PTR_uintptr_t pS11;
+    PTR_uintptr_t pT3;
+    PTR_uintptr_t pT4;
+    PTR_uintptr_t pT5;
+    PTR_uintptr_t pT6;
+
+    PCODE        IP;
+
+    uint64_t F[32];  // Expanded to cover all F registers
+
+    inline PCODE GetIP() { return IP; }
+    inline uintptr_t GetSP() { return SP; }
+    inline uintptr_t GetFP() { return *pFP; }
+    inline PTR_uintptr_t GetReturnAddressRegisterLocation() { return pRA; }
 
     inline void SetIP(PCODE IP) { this->IP = IP; }
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
@@ -241,7 +303,7 @@ struct REGDISPLAY
     inline void SetIP(PCODE IP) { }
     inline void SetSP(uintptr_t SP) { }
 };
-#endif // HOST_X86 || HOST_AMD64 || HOST_ARM || HOST_ARM64 || HOST_WASM || HOST_LOONGARCH64
+#endif
 
 typedef REGDISPLAY * PREGDISPLAY;
 

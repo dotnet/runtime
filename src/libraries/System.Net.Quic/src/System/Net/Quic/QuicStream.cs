@@ -60,9 +60,9 @@ public sealed partial class QuicStream
     private readonly MsQuicContextSafeHandle _handle;
 
     /// <summary>
-    /// Set to non-zero once disposed. Prevents double and/or concurrent disposal.
+    /// Set to true once disposed. Prevents double and/or concurrent disposal.
     /// </summary>
-    private int _disposed;
+    private bool _disposed;
 
     private readonly ValueTaskSource _startedTcs = new ValueTaskSource();
     private readonly ValueTaskSource _shutdownTcs = new ValueTaskSource();
@@ -169,20 +169,17 @@ public sealed partial class QuicStream
         try
         {
             QUIC_HANDLE* handle;
-            int status = MsQuicApi.Api.StreamOpen(
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.StreamOpen(
                 connectionHandle,
                 type == QuicStreamType.Unidirectional ? QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL : QUIC_STREAM_OPEN_FLAGS.NONE,
                 &NativeCallback,
                 (void*)GCHandle.ToIntPtr(context),
-                &handle);
-
-            if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? ex, streamWasSuccessfullyStarted: false, message: "StreamOpen failed"))
+                &handle),
+                "StreamOpen failed");
+            _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Stream, connectionHandle)
             {
-                throw ex;
-            }
-
-            _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Stream, connectionHandle);
-            _handle.Disposable = _sendBuffers;
+                Disposable = _sendBuffers
+            };
         }
         catch
         {
@@ -213,8 +210,10 @@ public sealed partial class QuicStream
         GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
         try
         {
-            _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Stream, connectionHandle);
-            _handle.Disposable = _sendBuffers;
+            _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Stream, connectionHandle)
+            {
+                Disposable = _sendBuffers
+            };
             delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, QUIC_STREAM_EVENT*, int> nativeCallback = &NativeCallback;
             MsQuicApi.Api.SetCallbackHandler(
                 _handle,
@@ -261,21 +260,19 @@ public sealed partial class QuicStream
             int status = MsQuicApi.Api.StreamStart(
                 _handle,
                 QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
-
-            if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception, streamWasSuccessfullyStarted: false))
+            if (StatusFailed(status))
             {
                 _decrementStreamCapacity = null;
-                _startedTcs.TrySetException(exception);
+                _startedTcs.TrySetException(ThrowHelper.GetExceptionForMsQuicStatus(status));
             }
         }
-
         return valueTask;
     }
 
     /// <inheritdoc />
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!_canRead)
         {
@@ -362,7 +359,7 @@ public sealed partial class QuicStream
     /// <param name="completeWrites">Notifies the peer about gracefully closing the write side, i.e.: sends FIN flag with the data.</param>
     public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
     {
-        if (_disposed == 1)
+        if (_disposed)
         {
             return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(QuicStream))));
         }
@@ -454,7 +451,7 @@ public sealed partial class QuicStream
     /// <param name="errorCode">The error code with which to abort the stream, this value is application protocol (layer above QUIC) dependent.</param>
     public void Abort(QuicAbortDirection abortDirection, long errorCode)
     {
-        if (_disposed == 1)
+        if (_disposed)
         {
             return;
         }
@@ -513,7 +510,7 @@ public sealed partial class QuicStream
     /// </remarks>
     public void CompleteWrites()
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         // Nothing to complete, the writing side is already closed.
         if (_sendTcs.IsCompleted)
@@ -637,7 +634,7 @@ public sealed partial class QuicStream
                 // It's local shutdown by app, this side called QuicConnection.CloseAsync, throw QuicError.OperationAborted.
                 (shutdownByApp: true, closedRemotely: false) => ThrowHelper.GetOperationAbortedException(),
                 // It's remote shutdown by transport, we received a CONNECTION_CLOSE frame with a QUIC transport error code, throw error based on the status.
-                (shutdownByApp: false, closedRemotely: true) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus, (long)data.ConnectionErrorCode, $"Shutdown by transport {data.ConnectionErrorCode}"),
+                (shutdownByApp: false, closedRemotely: true) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus, (long)data.ConnectionErrorCode),
                 // It's local shutdown by transport, most likely due to a timeout, throw error based on the status.
                 (shutdownByApp: false, closedRemotely: false) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus, (long)data.ConnectionErrorCode),
             };
@@ -715,7 +712,7 @@ public sealed partial class QuicStream
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
     public override async ValueTask DisposeAsync()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        if (Interlocked.Exchange(ref _disposed, true))
         {
             return;
         }

@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
         // Windows arm64 TLS access
         IMAGE_REL_ARM64_TLS_SECREL_HIGH12A = 0x10F,  // ADD high 12-bit offset for tls
-        IMAGE_REL_ARM64_TLS_SECREL_LOW12L  = 0x110,  // ADD low 12-bit offset for tls
+        IMAGE_REL_ARM64_TLS_SECREL_LOW12A  = 0x110,  // ADD low 12-bit offset for tls
 
         //
         // Relocations for R2R image production
@@ -418,7 +418,7 @@ namespace ILCompiler.DependencyAnalysis
 
             uint pcInstr = *pCode;
 
-            Debug.Assert(pcInstr == 0x1e00000e);  // Must be pcaddu18i R14, 0
+            Debug.Assert(pcInstr == 0x1e000010);  // Must be pcaddu18i t4, 0
 
             long relOff = imm38 & 0x20000;
             long imm = imm38 + relOff;
@@ -469,7 +469,7 @@ namespace ILCompiler.DependencyAnalysis
         private static unsafe void PutRiscV64PC(uint* pCode, long imm32)
         {
             // Verify that we got a valid offset
-            Debug.Assert((int)imm32 == imm32);
+            Debug.Assert((imm32 >= (long)-0x80000000 - 0x800) && (imm32 < (long)0x80000000 - 0x800));
 
             int doff = (int)(imm32 & 0xfff);
             uint auipcInstr = *pCode;
@@ -536,7 +536,7 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
-                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12L:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A:
                     PutArm64Rel12((uint*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
@@ -593,7 +593,7 @@ namespace ILCompiler.DependencyAnalysis
                     return GetArm64Rel21((uint*)location);
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                 case RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A:
-                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12L:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A:
                     return GetArm64Rel12((uint*)location);
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:

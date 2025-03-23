@@ -349,7 +349,7 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
 {
     FCALL_CONTRACT;
 
-    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_SIZEDREF);
+    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_DEPENDENT);
 
     if (CORProfilerTrackGC())
         return NULL;
@@ -745,7 +745,7 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pO
 }
 
 //====================================================================
-// Free unused RCWs in the current COM+ context.
+// Free unused RCWs in the current CLR context.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_CleanupUnusedObjectsInCurrentContext()
 {

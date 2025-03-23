@@ -10,6 +10,13 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Limits the maximum value of <seealso cref="TypeName.GetNodeCount">node count</seealso> that parser can handle.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Setting this to a large value can render <see cref="TypeName"/> susceptible to Denial of Service
+        /// attacks when parsing or handling malicious input.
+        /// </para>
+        /// <para>The default value is 20.</para>
+        /// </remarks>
         public int MaxNodes
         {
             get => _maxNodes;
@@ -27,7 +34,5 @@ namespace System.Reflection.Metadata
                 _maxNodes = value;
             }
         }
-
-        internal bool IsMaxDepthExceeded(int depth) => depth >= _maxNodes;
     }
 }

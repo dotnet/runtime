@@ -287,6 +287,9 @@ struct WriteBarrierDescriptor
     DWORD   m_dw_g_ephemeral_low_offset;    // Offset of the instruction reading g_ephemeral_low
     DWORD   m_dw_g_ephemeral_high_offset;   // Offset of the instruction reading g_ephemeral_high
     DWORD   m_dw_g_card_table_offset;       // Offset of the instruction reading g_card_table
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    DWORD   m_dw_g_sw_ww_table_offset;      // Offset of the instruction reading g_sw_ww_table
+#endif
 };
 
 // Infrastructure used for mapping of the source and destination of current WB patching
@@ -455,6 +458,9 @@ void UpdateGCWriteBarriers(bool postGrow = false)
             GWB_PATCH_OFFSET(g_ephemeral_low);
             GWB_PATCH_OFFSET(g_ephemeral_high);
             GWB_PATCH_OFFSET(g_card_table);
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+            GWB_PATCH_OFFSET(g_sw_ww_table);
+#endif
         }
 
         pDesc++;
@@ -493,6 +499,24 @@ int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
     UpdateGCWriteBarriers();
     return SWB_ICACHE_FLUSH;
 }
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
+{
+    UNREFERENCED_PARAMETER(isRuntimeSuspended);
+    _ASSERTE(isRuntimeSuspended);
+    UpdateGCWriteBarriers();
+    return SWB_ICACHE_FLUSH;
+}
+
+int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
+{
+    UNREFERENCED_PARAMETER(isRuntimeSuspended);
+    _ASSERTE(isRuntimeSuspended);
+    UpdateGCWriteBarriers();
+    return SWB_ICACHE_FLUSH;
+}
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 void FlushWriteBarrierInstructionCache()
 {
@@ -615,7 +639,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     unwoundstate->_isValid = true;
 }
 
-void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL
     {
@@ -651,7 +675,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(false, pUnwoundState);
+        EnsureInit(pUnwoundState);
 
         pRD->pCurrentContext->Pc = pRD->ControlPC = pUnwoundState->_pc;
         pRD->pCurrentContext->Sp = pRD->SP        = pUnwoundState->_sp;
@@ -708,26 +732,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
 }
 
 #ifndef DACCESS_COMPILE
-
-void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    int n = 0;
-
-    m_rgCode[n++] = 0x4684; // mov r12, r0
-    m_rgCode[n++] = 0x4608; // mov r0, r1
-    m_rgCode[n++] = 0xea4f; // mov r1, r12
-    m_rgCode[n++] = 0x010c;
-    m_rgCode[n++] = 0xf8df; // ldr pc, [pc, #0]
-    m_rgCode[n++] = 0xf000;
-
-    _ASSERTE(n == ARRAY_SIZE(m_rgCode));
-
-    m_pTarget = GetPreStubEntryPoint();
-    m_pMethodDesc = (TADDR)pMD;
-}
-
 
 /*
 Rough pseudo-code of interface dispatching:
@@ -1098,7 +1102,7 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _stub._cacheMask           = CALL_STUB_CACHE_MASK * sizeof(void*);
 
     _ASSERTE(resolveWorkerTarget == (PCODE)ResolveWorkerChainLookupAsmStub);
-    _ASSERTE(patcherTarget == NULL);
+    _ASSERTE(patcherTarget == (PCODE)NULL);
 }
 
 Stub *GenerateInitPInvokeFrameHelper()
@@ -1119,9 +1123,6 @@ Stub *GenerateInitPInvokeFrameHelper()
     CORINFO_EE_INFO::InlinedCallFrameInfo FrameInfo;
     InlinedCallFrame::GetEEInfo(&FrameInfo);
 
-    // R4 contains address of the frame on stack (the frame ptr, not its neg space)
-    unsigned negSpace = FrameInfo.offsetOfFrameVptr;
-
     ThumbReg regFrame   = ThumbReg(4);
     ThumbReg regThread  = ThumbReg(5);
     ThumbReg regScratch = ThumbReg(6);
@@ -1139,32 +1140,28 @@ Stub *GenerateInitPInvokeFrameHelper()
     for (int reg = 0; reg < 4; reg++)
         psl->ThumbEmitLoadRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r) + sizeof(*ArgumentRegisters::r) * reg);
 
-    // mov [regFrame + FrameInfo.offsetOfGSCookie], GetProcessGSCookie()
-    psl->ThumbEmitMovConstant(regScratch, GetProcessGSCookie());
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfGSCookie - negSpace);
-
-    // mov [regFrame + FrameInfo.offsetOfFrameVptr], InlinedCallFrame::GetMethodFrameVPtr()
-    psl->ThumbEmitMovConstant(regScratch, InlinedCallFrame::GetMethodFrameVPtr());
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfFrameVptr - negSpace);
+    // mov [regFrame], FrameIdentifier::InlinedCallFrame
+    psl->ThumbEmitMovConstant(regScratch, (DWORD)FrameIdentifier::InlinedCallFrame);
+    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, 0);
 
     // ldr regScratch, [regThread + offsetof(Thread, m_pFrame)]
     // str regScratch, [regFrame + FrameInfo.offsetOfFrameLink]
     psl->ThumbEmitLoadRegIndirect(regScratch, regThread, offsetof(Thread, m_pFrame));
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfFrameLink - negSpace);
+    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfFrameLink);
 
     // str FP, [regFrame + FrameInfo.offsetOfCalleeSavedFP]
-    psl->ThumbEmitStoreRegIndirect(thumbRegFp, regFrame, FrameInfo.offsetOfCalleeSavedFP - negSpace);
+    psl->ThumbEmitStoreRegIndirect(thumbRegFp, regFrame, FrameInfo.offsetOfCalleeSavedFP);
 
     // str R9, [regFrame + FrameInfo.offsetOfSPAfterProlog]
-    psl->ThumbEmitStoreRegIndirect(regR9, regFrame, FrameInfo.offsetOfSPAfterProlog - negSpace);
+    psl->ThumbEmitStoreRegIndirect(regR9, regFrame, FrameInfo.offsetOfSPAfterProlog);
 
     // mov [regFrame + FrameInfo.offsetOfReturnAddress], 0
     psl->ThumbEmitMovConstant(regScratch, 0);
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfReturnAddress - negSpace);
+    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfReturnAddress);
 
     DWORD cbSavedRegs = sizeof(ArgumentRegisters) + 2 * 4; // r0-r3, r4, lr
     psl->ThumbEmitAdd(regScratch, thumbRegSp, cbSavedRegs);
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfCallSiteSP - negSpace);
+    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfCallSiteSP);
 
     // mov [regThread + offsetof(Thread, m_pFrame)], regFrame
     psl->ThumbEmitStoreRegIndirect(regFrame, regThread, offsetof(Thread, m_pFrame));
@@ -1381,11 +1378,14 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
 void StubLinkerCPU::ThumbEmitTailCallManagedMethod(MethodDesc *pMD)
 {
+    STANDARD_VM_CONTRACT;
+
+    PCODE multiCallableAddr = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT);
     // Use direct call if possible.
-    if (pMD->HasStableEntryPoint())
+    if (multiCallableAddr != (PCODE)NULL)
     {
         // mov r12, #entry_point
-        ThumbEmitMovConstant(ThumbReg(12), (TADDR)pMD->GetStableEntryPoint());
+        ThumbEmitMovConstant(ThumbReg(12), (TADDR)multiCallableAddr);
     }
     else
     {
@@ -1494,7 +1494,7 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pRD->pCurrentContextPointers->Lr = NULL;
 }
 
-void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
 #ifndef DACCESS_COMPILE
     if (updateFloats)
@@ -1528,10 +1528,10 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     // Finally, syncup the regdisplay with the context
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -1557,7 +1557,7 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
-void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -1615,13 +1615,13 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 }
 
 #ifdef FEATURE_HIJACK
-TADDR ResumableFrame::GetReturnAddressPtr(void)
+TADDR ResumableFrame::GetReturnAddressPtr_Impl(void)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return dac_cast<TADDR>(m_Regs) + offsetof(T_CONTEXT, Pc);
 }
 
-void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -1657,7 +1657,7 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
-void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
      CONTRACTL {
          NOTHROW;
@@ -1673,6 +1673,7 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
      pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + sizeof(struct HijackArgs);
 
      pRD->pCurrentContext->R0 = m_Args->R0;
+     pRD->volatileCurrContextPointers.R0 = &m_Args->R0;
 
      pRD->pCurrentContext->R4 = m_Args->R4;
      pRD->pCurrentContext->R5 = m_Args->R5;
@@ -1696,60 +1697,6 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
      SyncRegDisplayToCurrentContext(pRD);
 }
 #endif // FEATURE_HIJACK
-
-class UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
-{
-    _ASSERTE(offsetof(UMEntryThunkCode, m_code) == 0);
-    UMEntryThunkCode * pCode = (UMEntryThunkCode*)((ULONG_PTR)pCallback & ~THUMB_CODE);
-
-    // We may be called with an unmanaged external code pointer instead. So if it doesn't look like one of our
-    // stubs (see UMEntryThunkCode::Encode below) then we'll return NULL. Luckily in these scenarios our
-    // caller will perform a hash lookup on successful return to verify our result in case random unmanaged
-    // code happens to look like ours.
-    if ((pCode->m_code[0] == 0xf8df) &&
-        (pCode->m_code[1] == 0xc008) &&
-        (pCode->m_code[2] == 0xf8df) &&
-        (pCode->m_code[3] == 0xf000))
-    {
-        return (UMEntryThunk*)pCode->m_pvSecretParam;
-    }
-
-    return NULL;
-}
-
-void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
-{
-    // ldr r12, [pc + 8]
-    m_code[0] = 0xf8df;
-    m_code[1] = 0xc008;
-    // ldr pc, [pc]
-    m_code[2] = 0xf8df;
-    m_code[3] = 0xf000;
-
-    m_pTargetCode = (TADDR)pTargetCode;
-    m_pvSecretParam = (TADDR)pvSecretParam;
-
-    FlushInstructionCache(GetCurrentProcess(),&pEntryThunkCodeRX->m_code,sizeof(m_code));
-}
-
-#ifndef DACCESS_COMPILE
-
-void UMEntryThunkCode::Poison()
-{
-    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
-    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
-
-    pThisRW->m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
-
-    // ldr r0, [pc + 8]
-    pThisRW->m_code[0] = 0x4802;
-    // nop
-    pThisRW->m_code[1] = 0xbf00;
-
-    ClrFlushInstructionCache(&m_code,sizeof(m_code));
-}
-
-#endif // DACCESS_COMPILE
 
 ///////////////////////////// UNIMPLEMENTED //////////////////////////////////
 
@@ -2015,9 +1962,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
-        GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
-        GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
+    PCODE helperAddress = GetDictionaryLookupHelper(pLookup->helper);
 
     GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
     ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));

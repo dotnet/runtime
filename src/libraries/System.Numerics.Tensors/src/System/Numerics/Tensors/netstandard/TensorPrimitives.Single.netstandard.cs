@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+extern alias Vectors;
+using Vectors::System.Numerics;
+
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -175,28 +178,15 @@ namespace System.Numerics.Tensors
                     {
                         float* xPtr = px;
 
-                        // We need to the ensure the underlying data can be aligned and only align
-                        // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // Unlike many other vectorization algorithms, we cannot align for aggregation
+                        // because that changes how results compound together and can cause a significant
+                        // difference in the output. This also means we're processing the full data from beg
+                        // so account for that to ensure we don't double process and include them in the
+                        // aggregate twice.
 
-                        bool canAlign = ((nuint)(xPtr) % sizeof(float)) == 0;
-
-                        if (canAlign)
-                        {
-                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
-                            //
-                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
-                            // are more expensive than unaligned loads and aligning both is significantly more
-                            // complex.
-
-                            misalignment = ((uint)(sizeof(Vector<float>)) - ((nuint)(xPtr) % (uint)(sizeof(Vector<float>)))) / sizeof(float);
-
-                            xPtr += misalignment;
-
-                            Debug.Assert(((nuint)(xPtr) % (uint)(sizeof(Vector<float>))) == 0);
-
-                            remainder -= misalignment;
-                        }
+                        misalignment = (uint)Vector<float>.Count;
+                        xPtr += misalignment;
+                        remainder -= misalignment;
 
                         Vector<float> vector1;
                         Vector<float> vector2;
@@ -480,29 +470,18 @@ namespace System.Numerics.Tensors
                         float* xPtr = px;
                         float* yPtr = py;
 
-                        // We need to the ensure the underlying data can be aligned and only align
-                        // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // Unlike many other vectorization algorithms, we cannot align for aggregation
+                        // because that changes how results compound together and can cause a significant
+                        // difference in the output. This also means we're processing the full data from beg
+                        // so account for that to ensure we don't double process and include them in the
+                        // aggregate twice.
 
-                        bool canAlign = ((nuint)(xPtr) % sizeof(float)) == 0;
+                        misalignment = (uint)Vector<float>.Count;
 
-                        if (canAlign)
-                        {
-                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
-                            //
-                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
-                            // are more expensive than unaligned loads and aligning both is significantly more
-                            // complex.
+                        xPtr += misalignment;
+                        yPtr += misalignment;
 
-                            misalignment = ((uint)(sizeof(Vector<float>)) - ((nuint)(xPtr) % (uint)(sizeof(Vector<float>)))) / sizeof(float);
-
-                            xPtr += misalignment;
-                            yPtr += misalignment;
-
-                            Debug.Assert(((nuint)(xPtr) % (uint)(sizeof(Vector<float>))) == 0);
-
-                            remainder -= misalignment;
-                        }
+                        remainder -= misalignment;
 
                         Vector<float> vector1;
                         Vector<float> vector2;
@@ -3498,7 +3477,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => MathF.Exp(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftLeft (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>MathF.Sinh(x)</summary>
@@ -3508,7 +3487,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => MathF.Sinh(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftLeft (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>MathF.Cosh(x)</summary>
@@ -3518,7 +3497,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => MathF.Cosh(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftLeft (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>MathF.Tanh(x)</summary>
@@ -3528,7 +3507,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => MathF.Tanh(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftLeft (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>MathF.Log(x)</summary>
@@ -3538,7 +3517,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => MathF.Log(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftRightArithmetic (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>MathF.Log2(x)</summary>
@@ -3548,7 +3527,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => Log2(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftRightArithmetic (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>1f / (1f + MathF.Exp(-x))</summary>
@@ -3558,7 +3537,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => 1.0f / (1.0f + MathF.Exp(-x));
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftRightArithmetic (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>Operator that takes one input value and returns a single value.</summary>

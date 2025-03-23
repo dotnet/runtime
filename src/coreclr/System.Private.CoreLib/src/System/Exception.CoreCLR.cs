@@ -55,38 +55,28 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool IsImmutableAgileException(Exception e);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IRuntimeMethodInfo GetMethodFromStackTrace(object stackTrace);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetMethodFromStackTrace")]
+        private static partial void GetMethodFromStackTrace(ObjectHandleOnStack stackTrace, ObjectHandleOnStack method);
 
         private MethodBase? GetExceptionMethodFromStackTrace()
         {
-            Debug.Assert(_stackTrace != null, "_stackTrace shouldn't be null when this method is called");
-            IRuntimeMethodInfo method = GetMethodFromStackTrace(_stackTrace!);
-
-            // Under certain race conditions when exceptions are re-used, this can be null
-            if (method == null)
+            object? stackTraceLocal = _stackTrace;
+            if (stackTraceLocal == null)
+            {
                 return null;
+            }
 
-            return RuntimeType.GetMethodBase(method);
+            IRuntimeMethodInfo? methodInfo = null;
+            GetMethodFromStackTrace(ObjectHandleOnStack.Create(ref stackTraceLocal), ObjectHandleOnStack.Create(ref methodInfo));
+            Debug.Assert(methodInfo != null);
+
+            return RuntimeType.GetMethodBase(methodInfo);
         }
 
         public MethodBase? TargetSite
         {
             [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
-            get
-            {
-                if (_exceptionMethod != null)
-                {
-                    return _exceptionMethod;
-                }
-                if (_stackTrace == null)
-                {
-                    return null;
-                }
-
-                _exceptionMethod = GetExceptionMethodFromStackTrace();
-                return _exceptionMethod;
-            }
+            get => _exceptionMethod ??= GetExceptionMethodFromStackTrace();
         }
 
         // This method will clear the _stackTrace of the exception object upon deserialization
@@ -126,9 +116,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void PrepareForForeignExceptionRaise();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? GetFrozenStackTrace(Exception exception);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint GetExceptionCount();
@@ -176,14 +163,14 @@ namespace System
         private string? _source;         // Mainly used by VB.
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private readonly IntPtr _xptrs;             // Internal EE stuff
-        private readonly int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
+        private readonly int _xcode = EXCEPTION_COMPLUS;             // Internal EE stuff
 #pragma warning restore CA1823, 414
 
         // @MANAGED: HResult is used from within the EE!  Rename with care - check VM directory
         private int _HResult;       // HResult
 
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
-        private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
+        private const int EXCEPTION_COMPLUS = unchecked((int)0xe0434352);   // Win32 exception code for CLR exceptions
 
         private bool HasBeenThrown => _stackTrace != null;
 
@@ -236,9 +223,14 @@ namespace System
             }
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetFrozenStackTrace")]
+        private static partial void GetFrozenStackTrace(ObjectHandleOnStack exception, ObjectHandleOnStack stackTrace);
+
         internal DispatchState CaptureDispatchState()
         {
-            object? stackTrace = GetFrozenStackTrace(this);
+            Exception _this = this;
+            object? stackTrace = null;
+            GetFrozenStackTrace(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref stackTrace));
 
             return new DispatchState(stackTrace,
                 _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);

@@ -6,6 +6,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#if NET
+using static System.ArgumentNullException;
+using static System.ArgumentOutOfRangeException;
+#else
+using static System.Collections.ThrowHelper;
+#endif
+
 namespace System.Collections.Generic
 {
     /// <summary>
@@ -19,7 +26,12 @@ namespace System.Collections.Generic
     /// </remarks>
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
-    public class OrderedDictionary<TKey, TValue> :
+#if SYSTEM_COLLECTIONS
+    public
+#else
+    internal sealed
+#endif
+    class OrderedDictionary<TKey, TValue> :
         IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary,
         IList<KeyValuePair<TKey, TValue>>, IReadOnlyList<KeyValuePair<TKey, TValue>>, IList
         where TKey : notnull
@@ -85,10 +97,10 @@ namespace System.Collections.Generic
         /// The <see cref="IEqualityComparer{TKey}"/> implementation to use when comparing keys,
         /// or null to use the default <see cref="EqualityComparer{TKey}"/> for the type of the key.
         /// </param>
-        /// <exception cref="ArgumentOutOfRangeException">capacity is less than 0.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="capacity"/> is less than 0.</exception>
         public OrderedDictionary(int capacity, IEqualityComparer<TKey>? comparer)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+            ThrowIfNegative(capacity);
 
             if (capacity > 0)
             {
@@ -110,11 +122,13 @@ namespace System.Collections.Generic
             {
                 _comparer = comparer ?? EqualityComparer<TKey>.Default;
 
+#if SYSTEM_COLLECTIONS
                 if (typeof(TKey) == typeof(string) &&
                     NonRandomizedStringEqualityComparer.GetStringComparer(_comparer) is IEqualityComparer<string> stringComparer)
                 {
                     _comparer = (IEqualityComparer<TKey>)stringComparer;
                 }
+#endif
             }
             else if (comparer is not null && // first check for null to avoid forcing default comparer instantiation unnecessarily
                      comparer != EqualityComparer<TKey>.Default)
@@ -131,7 +145,7 @@ namespace System.Collections.Generic
         /// The <see cref="IDictionary{TKey, TValue}"/> whose elements are copied to the new <see cref="OrderedDictionary{TKey, TValue}"/>.
         /// The initial order of the elements in the new collection is the order the elements are enumerated from the supplied dictionary.
         /// </param>
-        /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is <see langword="null"/>.</exception>
         public OrderedDictionary(IDictionary<TKey, TValue> dictionary) : this(dictionary, null)
         {
         }
@@ -148,11 +162,11 @@ namespace System.Collections.Generic
         /// The <see cref="IEqualityComparer{TKey}"/> implementation to use when comparing keys,
         /// or null to use the default <see cref="EqualityComparer{TKey}"/> for the type of the key.
         /// </param>
-        /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is <see langword="null"/>.</exception>
         public OrderedDictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer) :
             this(dictionary?.Count ?? 0, comparer)
         {
-            ArgumentNullException.ThrowIfNull(dictionary);
+            ThrowIfNull(dictionary);
 
             AddRange(dictionary);
         }
@@ -165,7 +179,7 @@ namespace System.Collections.Generic
         /// The <see cref="IEnumerable{T}"/> whose elements are copied to the new <see cref="OrderedDictionary{TKey, TValue}"/>.
         /// The initial order of the elements in the new collection is the order the elements are enumerated from the supplied collection.
         /// </param>
-        /// <exception cref="ArgumentNullException"><paramref name="collection"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="collection"/> is <see langword="null"/>.</exception>
         public OrderedDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection) : this(collection, null)
         {
         }
@@ -182,11 +196,11 @@ namespace System.Collections.Generic
         /// The <see cref="IEqualityComparer{TKey}"/> implementation to use when comparing keys,
         /// or null to use the default <see cref="EqualityComparer{TKey}"/> for the type of the key.
         /// </param>
-        /// <exception cref="ArgumentNullException"><paramref name="collection"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="collection"/> is <see langword="null"/>.</exception>
         public OrderedDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer) :
             this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
         {
-            ArgumentNullException.ThrowIfNull(collection);
+            ThrowIfNull(collection);
 
             AddRange(collection);
         }
@@ -210,6 +224,7 @@ namespace System.Collections.Generic
             {
                 IEqualityComparer<TKey>? comparer = _comparer;
 
+#if SYSTEM_COLLECTIONS
                 // If the key is a string, we may have substituted a non-randomized comparer during construction.
                 // If we did, fish out and return the actual comparer that had been provided.
                 if (typeof(TKey) == typeof(string) &&
@@ -217,6 +232,7 @@ namespace System.Collections.Generic
                 {
                     return ec;
                 }
+#endif
 
                 // Otherwise, return whatever comparer we have, or the default if none was provided.
                 return comparer ?? EqualityComparer<TKey>.Default;
@@ -277,7 +293,7 @@ namespace System.Collections.Generic
             get => GetAt(index);
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
+                ThrowIfNull(value);
 
                 if (value is not KeyValuePair<TKey, TValue> tpair)
                 {
@@ -293,7 +309,7 @@ namespace System.Collections.Generic
         {
             get
             {
-                ArgumentNullException.ThrowIfNull(key);
+                ThrowIfNull(key);
 
                 if (key is TKey tkey && TryGetValue(tkey, out TValue? value))
                 {
@@ -304,10 +320,10 @@ namespace System.Collections.Generic
             }
             set
             {
-                ArgumentNullException.ThrowIfNull(key);
+                ThrowIfNull(key);
                 if (default(TValue) is not null)
                 {
-                    ArgumentNullException.ThrowIfNull(value);
+                    ThrowIfNull(value);
                 }
 
                 if (key is not TKey tkey)
@@ -343,7 +359,7 @@ namespace System.Collections.Generic
         /// <summary>Gets or sets the value associated with the specified key.</summary>
         /// <param name="key">The key of the value to get or set.</param>
         /// <returns>The value associated with the specified key. If the specified key is not found, a get operation throws a <see cref="KeyNotFoundException"/>, and a set operation creates a new element with the specified key.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="key"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="KeyNotFoundException">The property is retrieved and <paramref name="key"/> does not exist in the collection.</exception>
         /// <remarks>Setting the value of an existing key does not impact its order in the collection.</remarks>
         public TValue this[TKey key]
@@ -359,9 +375,9 @@ namespace System.Collections.Generic
             }
             set
             {
-                ArgumentNullException.ThrowIfNull(key);
+                ThrowIfNull(key);
 
-                bool modified = TryInsert(index: -1, key, value, InsertionBehavior.OverwriteExisting);
+                bool modified = TryInsert(index: -1, key, value, InsertionBehavior.OverwriteExisting, out _);
                 Debug.Assert(modified);
             }
         }
@@ -376,8 +392,9 @@ namespace System.Collections.Generic
         /// - OverwriteExisting: If the key already exists, overwrites its value with the specified value, e.g. this[key] = value
         /// - ThrowOnExisting: If the key already exists, throws an exception, e.g. Add(key, value)
         /// </param>
+        /// <param name="keyIndex">The index of the added or existing key. This is always a valid index into the dictionary.</param>
         /// <returns>true if the collection was updated; otherwise, false.</returns>
-        private bool TryInsert(int index, TKey key, TValue value, InsertionBehavior behavior)
+        private bool TryInsert(int index, TKey key, TValue value, InsertionBehavior behavior, out int keyIndex)
         {
             // Search for the key in the dictionary.
             uint hashCode = 0, collisionCount = 0;
@@ -386,6 +403,9 @@ namespace System.Collections.Generic
             // Handle the case where the key already exists, based on the requested behavior.
             if (i >= 0)
             {
+                keyIndex = i;
+                Debug.Assert(0 <= keyIndex && keyIndex < _count);
+
                 Debug.Assert(_entries is not null);
 
                 switch (behavior)
@@ -451,31 +471,42 @@ namespace System.Collections.Generic
 
             RehashIfNecessary(collisionCount, entries);
 
+            keyIndex = index;
+            Debug.Assert(0 <= keyIndex && keyIndex < _count);
+
             return true;
         }
 
         /// <summary>Adds the specified key and value to the dictionary.</summary>
         /// <param name="key">The key of the element to add.</param>
-        /// <param name="value">The value of the element to add. The value can be null for reference types.</param>
-        /// <exception cref="ArgumentNullException">key is null.</exception>
+        /// <param name="value">The value of the element to add. The value can be <see langword="null"/> for reference types.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">An element with the same key already exists in the <see cref="OrderedDictionary{TKey, TValue}"/>.</exception>
         public void Add(TKey key, TValue value)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
-            TryInsert(index: -1, key, value, InsertionBehavior.ThrowOnExisting);
+            TryInsert(index: -1, key, value, InsertionBehavior.ThrowOnExisting, out _);
         }
 
         /// <summary>Adds the specified key and value to the dictionary if the key doesn't already exist.</summary>
         /// <param name="key">The key of the element to add.</param>
-        /// <param name="value">The value of the element to add. The value can be null for reference types.</param>
-        /// <exception cref="ArgumentNullException">key is null.</exception>
-        /// <returns>true if the key didn't exist and the key and value were added to the dictionary; otherwise, false.</returns>
-        public bool TryAdd(TKey key, TValue value)
-        {
-            ArgumentNullException.ThrowIfNull(key);
+        /// <param name="value">The value of the element to add. The value can be <see langword="null"/> for reference types.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <returns><see langword="true"/> if the key didn't exist and the key and value were added to the dictionary; otherwise, <see langword="false"/>.</returns>
+        public bool TryAdd(TKey key, TValue value) => TryAdd(key, value, out _);
 
-            return TryInsert(index: -1, key, value, InsertionBehavior.IgnoreInsertion);
+        /// <summary>Adds the specified key and value to the dictionary if the key doesn't already exist.</summary>
+        /// <param name="key">The key of the element to add.</param>
+        /// <param name="value">The value of the element to add. The value can be <see langword="null"/> for reference types.</param>
+        /// <param name="index">The index of the added or existing <paramref name="key"/>. This is always a valid index into the dictionary.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <returns><see langword="true"/> if the key didn't exist and the key and value were added to the dictionary; otherwise, <see langword="false"/>.</returns>
+        public bool TryAdd(TKey key, TValue value, out int index)
+        {
+            ThrowIfNull(key);
+
+            return TryInsert(index: -1, key, value, InsertionBehavior.IgnoreInsertion, out index);
         }
 
         /// <summary>Adds each element of the enumerable to the dictionary.</summary>
@@ -515,12 +546,13 @@ namespace System.Collections.Generic
 
         /// <summary>Determines whether the <see cref="OrderedDictionary{TKey, TValue}"/> contains the specified key.</summary>
         /// <param name="key">The key to locate in the <see cref="OrderedDictionary{TKey, TValue}"/>.</param>
-        /// <returns>true if the <see cref="OrderedDictionary{TKey, TValue}"/> contains an element with the specified key; otherwise, false.</returns>
+        /// <returns><see langword="true"/> if the <see cref="OrderedDictionary{TKey, TValue}"/> contains an element with the specified key; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public bool ContainsKey(TKey key) => IndexOf(key) >= 0;
 
         /// <summary>Determines whether the <see cref="OrderedDictionary{TKey, TValue}"/> contains a specific value.</summary>
         /// <param name="value">The value to locate in the <see cref="OrderedDictionary{TKey, TValue}"/>. The value can be null for reference types.</param>
-        /// <returns>true if the <see cref="OrderedDictionary{TKey, TValue}"/> contains an element with the specified value; otherwise, false.</returns>
+        /// <returns><see langword="true"/> if the <see cref="OrderedDictionary{TKey, TValue}"/> contains an element with the specified value; otherwise, <see langword="false"/>.</returns>
         public bool ContainsValue(TValue value)
         {
             int count = _count;
@@ -570,16 +602,16 @@ namespace System.Collections.Generic
             Debug.Assert(_entries is not null, "count must be positive, which means we must have entries");
 
             ref Entry e = ref _entries[index];
-            return KeyValuePair.Create(e.Key, e.Value);
+            return new(e.Key, e.Value);
         }
 
         /// <summary>Determines the index of a specific key in the <see cref="OrderedDictionary{TKey, TValue}"/>.</summary>
         /// <param name="key">The key to locate.</param>
         /// <returns>The index of <paramref name="key"/> if found; otherwise, -1.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="key"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public int IndexOf(TKey key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             uint _ = 0;
             return IndexOf(key, ref _, ref _);
@@ -686,7 +718,7 @@ namespace System.Collections.Generic
         /// <param name="index">The zero-based index at which item should be inserted.</param>
         /// <param name="key">The key to insert.</param>
         /// <param name="value">The value to insert.</param>
-        /// <exception cref="ArgumentNullException">key is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">An element with the same key already exists in the <see cref="OrderedDictionary{TKey, TValue}"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than 0 or greater than <see cref="Count"/>.</exception>
         public void Insert(int index, TKey key, TValue value)
@@ -696,23 +728,25 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowIndexArgumentOutOfRange();
             }
 
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
-            TryInsert(index, key, value, InsertionBehavior.ThrowOnExisting);
+            TryInsert(index, key, value, InsertionBehavior.ThrowOnExisting, out _);
         }
 
         /// <summary>Removes the value with the specified key from the <see cref="OrderedDictionary{TKey, TValue}"/>.</summary>
         /// <param name="key">The key of the element to remove.</param>
-        /// <returns></returns>
+        /// <returns><see langword="true"/> if the element is successfully found and removed; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public bool Remove(TKey key) => Remove(key, out _);
 
         /// <summary>Removes the value with the specified key from the <see cref="OrderedDictionary{TKey, TValue}"/> and copies the element to the value parameter.</summary>
         /// <param name="key">The key of the element to remove.</param>
         /// <param name="value">The removed element.</param>
-        /// <returns>true if the element is successfully found and removed; otherwise, false.</returns>
+        /// <returns><see langword="true"/> if the element is successfully found and removed; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             // Find the key.
             int index = IndexOf(key);
@@ -733,6 +767,7 @@ namespace System.Collections.Generic
 
         /// <summary>Removes the key/value pair at the specified index.</summary>
         /// <param name="index">The zero-based index of the item to remove.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than 0 or greater than or equal to <see cref="Count"/>.</exception>
         public void RemoveAt(int index)
         {
             int count = _count;
@@ -758,8 +793,9 @@ namespace System.Collections.Generic
         }
 
         /// <summary>Sets the value for the key at the specified index.</summary>
-        /// <param name="index">The zero-based index of the element to get or set.</param>
+        /// <param name="index">The zero-based index at which to set the value.</param>
         /// <param name="value">The value to store at the specified index.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than 0 or greater than or equal to <see cref="Count"/>.</exception>
         public void SetAt(int index, TValue value)
         {
             if ((uint)index >= (uint)_count)
@@ -773,10 +809,12 @@ namespace System.Collections.Generic
         }
 
         /// <summary>Sets the key/value pair at the specified index.</summary>
-        /// <param name="index">The zero-based index of the element to get or set.</param>
+        /// <param name="index">The zero-based index at which to set the key/value pair.</param>
         /// <param name="key">The key to store at the specified index.</param>
         /// <param name="value">The value to store at the specified index.</param>
-        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">An element with the same key already exists at an index different to <paramref name="index"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than 0 or greater than or equal to <see cref="Count"/>.</exception>
         public void SetAt(int index, TKey key, TValue value)
         {
             if ((uint)index >= (uint)_count)
@@ -784,7 +822,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowIndexArgumentOutOfRange();
             }
 
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             Debug.Assert(_entries is not null);
             ref Entry e = ref _entries[index];
@@ -836,7 +874,7 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="capacity"/> is negative.</exception>
         public int EnsureCapacity(int capacity)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+            ThrowIfNegative(capacity);
 
             if (Capacity < capacity)
             {
@@ -863,7 +901,7 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="capacity"/> is less than <see cref="Count"/>.</exception>
         public void TrimExcess(int capacity)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, Count);
+            ThrowIfLessThan(capacity, Count);
 
             int currentCapacity = _entries?.Length ?? 0;
             capacity = HashHelpers.GetPrime(capacity);
@@ -879,13 +917,25 @@ namespace System.Collections.Generic
         /// When this method returns, contains the value associated with the specified key, if the key is found;
         /// otherwise, the default value for the type of the value parameter.
         /// </param>
-        /// <returns>true if the <see cref="OrderedDictionary{TKey, TValue}"/> contains an element with the specified key; otherwise, false.</returns>
-        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
+        /// <returns><see langword="true"/> if the <see cref="OrderedDictionary{TKey, TValue}"/> contains an element with the specified key; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => TryGetValue(key, out value, out _);
+
+        /// <summary>Gets the value associated with the specified key.</summary>
+        /// <param name="key">The key of the value to get.</param>
+        /// <param name="value">
+        /// When this method returns, contains the value associated with the specified key, if the key is found;
+        /// otherwise, the default value for the type of the value parameter.
+        /// </param>
+        /// <param name="index">The index of <paramref name="key"/> if found; otherwise, -1.</param>
+        /// <returns><see langword="true"/> if the <see cref="OrderedDictionary{TKey, TValue}"/> contains an element with the specified key; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value, out int index)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             // Find the key.
-            int index = IndexOf(key);
+            index = IndexOf(key);
             if (index >= 0)
             {
                 // It exists. Return its value.
@@ -1013,8 +1063,10 @@ namespace System.Collections.Generic
         /// and does so if necessary.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Is no-op in certain targets")]
         private void RehashIfNecessary(uint collisionCount, Entry[] entries)
         {
+#if SYSTEM_COLLECTIONS
             // If we exceeded the hash collision threshold and we're using a randomized comparer, rehash.
             // This is only ever done for string keys, so we can optimize it all away for value type keys.
             if (!typeof(TKey).IsValueType &&
@@ -1024,6 +1076,7 @@ namespace System.Collections.Generic
                 // Switch to a randomized comparer and rehash.
                 Resize(entries.Length, forceNewHashCodes: true);
             }
+#endif
         }
 
         /// <summary>Grow or shrink <see cref="_buckets"/> and <see cref="_entries"/> to the specified capacity.</summary>
@@ -1052,6 +1105,7 @@ namespace System.Collections.Generic
                 Array.Copy(_entries, newEntries, count);
             }
 
+#if SYSTEM_COLLECTIONS
             // If we're being asked to upgrade to a non-randomized comparer due to too many collisions, do so.
             if (!typeof(TKey).IsValueType && forceNewHashCodes)
             {
@@ -1067,6 +1121,7 @@ namespace System.Collections.Generic
                     newEntries[i].HashCode = (uint)comparer.GetHashCode(newEntries[i].Key);
                 }
             }
+#endif
 
             // Now publish the buckets array. It's necessary to do this prior to the below loop,
             // as PushEntryIntoBucket will be populating _buckets.
@@ -1120,7 +1175,7 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         int IList<KeyValuePair<TKey, TValue>>.IndexOf(KeyValuePair<TKey, TValue> item)
         {
-            ArgumentNullException.ThrowIfNull(item.Key, nameof(item));
+            ThrowIfNull(item.Key, nameof(item));
 
             int index = IndexOf(item.Key);
             if (index >= 0)
@@ -1144,7 +1199,7 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item)
         {
-            ArgumentNullException.ThrowIfNull(item.Key, nameof(item));
+            ThrowIfNull(item.Key, nameof(item));
 
             return
                 TryGetValue(item.Key, out TValue? value) &&
@@ -1154,8 +1209,8 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            ArgumentNullException.ThrowIfNull(array);
-            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+            ThrowIfNull(array);
+            ThrowIfNegative(arrayIndex);
             if (array.Length - arrayIndex < _count)
             {
                 throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
@@ -1177,10 +1232,10 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         void IDictionary.Add(object key, object? value)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
             if (default(TValue) is not null)
             {
-                ArgumentNullException.ThrowIfNull(value);
+                ThrowIfNull(value);
             }
 
             if (key is not TKey tkey)
@@ -1190,7 +1245,7 @@ namespace System.Collections.Generic
 
             if (default(TValue) is not null)
             {
-                ArgumentNullException.ThrowIfNull(value);
+                ThrowIfNull(value);
             }
 
             TValue tvalue = default!;
@@ -1210,7 +1265,7 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         bool IDictionary.Contains(object key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             return key is TKey tkey && ContainsKey(tkey);
         }
@@ -1218,7 +1273,7 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         void IDictionary.Remove(object key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             if (key is TKey tkey)
             {
@@ -1229,7 +1284,7 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         void ICollection.CopyTo(Array array, int index)
         {
-            ArgumentNullException.ThrowIfNull(array);
+            ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
@@ -1241,7 +1296,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
-            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ThrowIfNegative(index);
 
             if (array.Length - index < _count)
             {
@@ -1450,8 +1505,8 @@ namespace System.Collections.Generic
             /// <inheritdoc/>
             public void CopyTo(TKey[] array, int arrayIndex)
             {
-                ArgumentNullException.ThrowIfNull(array);
-                ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+                ThrowIfNull(array);
+                ThrowIfNegative(arrayIndex);
 
                 OrderedDictionary<TKey, TValue> dictionary = _dictionary;
                 int count = dictionary._count;
@@ -1472,7 +1527,7 @@ namespace System.Collections.Generic
             /// <inheritdoc/>
             void ICollection.CopyTo(Array array, int index)
             {
-                ArgumentNullException.ThrowIfNull(array);
+                ThrowIfNull(array);
 
                 if (array.Rank != 1)
                 {
@@ -1484,7 +1539,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
-                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ThrowIfNegative(index);
 
                 if (array.Length - index < _dictionary.Count)
                 {
@@ -1639,8 +1694,8 @@ namespace System.Collections.Generic
             /// <inheritdoc/>
             public void CopyTo(TValue[] array, int arrayIndex)
             {
-                ArgumentNullException.ThrowIfNull(array);
-                ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+                ThrowIfNull(array);
+                ThrowIfNegative(arrayIndex);
 
                 OrderedDictionary<TKey, TValue> dictionary = _dictionary;
                 int count = dictionary._count;
@@ -1781,7 +1836,7 @@ namespace System.Collections.Generic
             /// <inheritdoc/>
             void ICollection.CopyTo(Array array, int index)
             {
-                ArgumentNullException.ThrowIfNull(array);
+                ThrowIfNull(array);
 
                 if (array.Rank != 1)
                 {
@@ -1793,7 +1848,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
-                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ThrowIfNegative(index);
 
                 if (array.Length - index < _dictionary.Count)
                 {

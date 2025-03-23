@@ -15,7 +15,7 @@ namespace ILLink.Shared.TrimAnalysis
 	///  - Single-file warnings (suppressed by RequiresAssemblyFilesAttribute)
 	/// Note that not all categories are used/supported by all tools, for example the ILLink only handles trimmer warnings and ignores the rest.
 	/// </summary>
-	internal readonly partial struct DiagnosticContext
+	public readonly partial struct DiagnosticContext
 	{
 		/// <param name="id">The diagnostic ID, this will be used to determine the category of diagnostic (trimmer, AOT, single-file)</param>
 		/// <param name="args">The arguments for diagnostic message.</param>

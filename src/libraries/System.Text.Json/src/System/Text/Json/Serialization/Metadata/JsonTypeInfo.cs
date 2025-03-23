@@ -123,7 +123,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind != JsonTypeInfoKind.Object)
+                if (Kind is not (JsonTypeInfoKind.Object or JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
@@ -153,7 +153,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind != JsonTypeInfoKind.Object)
+                if (Kind is not (JsonTypeInfoKind.Object or JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
@@ -183,9 +183,15 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind != JsonTypeInfoKind.Object)
+                if (Kind is not (JsonTypeInfoKind.Object or JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
+                }
+
+                if (Converter.IsConvertibleCollection)
+                {
+                    // The values for convertible collections aren't available at the start of deserialization.
+                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOnDeserializingCallbacksNotSupported(Type);
                 }
 
                 _onDeserializing = value;
@@ -213,7 +219,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind != JsonTypeInfoKind.Object)
+                if (Kind is not (JsonTypeInfoKind.Object or JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
@@ -1203,7 +1209,8 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
-                ParameterLookupKey paramKey = new(propertyInfo.PropertyType, propertyInfo.Name);
+                string propertyName = propertyInfo.MemberName ?? propertyInfo.Name;
+                ParameterLookupKey paramKey = new(propertyInfo.PropertyType, propertyName);
                 if (!parameterIndex.TryAdd(paramKey, parameterInfo))
                 {
                     // Multiple object properties cannot bind to the same constructor parameter.
@@ -1256,9 +1263,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(!IsReadOnly);
 
-            // Callbacks currently only supported in object kinds
-            // TODO: extend to collections/dictionaries
-            if (Kind == JsonTypeInfoKind.Object)
+            if (Kind is JsonTypeInfoKind.Object or JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary)
             {
                 if (typeof(IJsonOnSerializing).IsAssignableFrom(Type))
                 {

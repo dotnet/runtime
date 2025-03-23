@@ -671,6 +671,36 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             """;
 
+        public string ForwarderWithPreserveSigAndRefKind(string refKind) => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            #nullable enable
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{GeneratedComInterface()}}
+            partial interface IValue
+            {
+            }
+
+            {{GeneratedComInterface()}}
+            partial interface INativeAPIBase
+            {
+                [PreserveSig]
+                int FindValue(int key, {{refKind}} IValue? value);
+            }
+
+            {{GeneratedComInterface()}}
+            unsafe partial interface INativeDerived : INativeAPIBase
+            {
+                [PreserveSig]
+                int GetName(out char* name);
+            }
+            """;
+
         public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider
         {
             public MarshalDirection Direction => MarshalDirection.ManagedToUnmanaged;

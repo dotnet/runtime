@@ -16,7 +16,7 @@ namespace System.Net.Http
     internal sealed class DiagnosticsHandler : HttpMessageHandlerStage
     {
         private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
-        private static readonly ActivitySource s_activitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.Namespace);
+        internal static readonly ActivitySource s_activitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.RequestNamespace);
 
         private readonly HttpMessageHandler _innerHandler;
         private readonly DistributedContextPropagator _propagator;
@@ -58,14 +58,14 @@ namespace System.Net.Http
             Activity? activity = null;
             if (s_activitySource.HasListeners())
             {
-                activity = s_activitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ActivityName, ActivityKind.Client);
+                activity = s_activitySource.StartActivity(DiagnosticsHandlerLoggingStrings.RequestActivityName, ActivityKind.Client);
             }
 
             if (activity is null &&
                 (Activity.Current is not null ||
-                s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request)))
+                s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityName, request)))
             {
-                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName).Start();
+                activity = new Activity(DiagnosticsHandlerLoggingStrings.RequestActivityName).Start();
             }
 
             return activity;
@@ -97,7 +97,7 @@ namespace System.Net.Http
 
             // Since we are reusing the request message instance on redirects, clear any existing headers
             // Do so before writing DiagnosticListener events as instrumentations use those to inject headers
-            if (request.WasRedirected() && _propagatorFields is HeaderDescriptor[] fields)
+            if (request.WasPropagatorStateInjectedByDiagnosticsHandler() && _propagatorFields is HeaderDescriptor[] fields)
             {
                 foreach (HeaderDescriptor field in fields)
                 {
@@ -134,9 +134,9 @@ namespace System.Net.Http
                 }
 
                 // Only send start event to users who subscribed for it.
-                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
+                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityStartName))
                 {
-                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ActivityStartName, new ActivityStartData(request));
+                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.RequestActivityStartName, new ActivityStartData(request));
                 }
             }
 
@@ -200,7 +200,7 @@ namespace System.Net.Http
                         // Add standard tags known at request completion.
                         if (response is not null)
                         {
-                            activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
+                            activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedInt32((int)response.StatusCode));
                             activity.SetTag("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
                         }
 
@@ -215,9 +215,9 @@ namespace System.Net.Http
                     }
 
                     // Only send stop event to users who subscribed for it.
-                    if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStopName))
+                    if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityStopName))
                     {
-                        Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ActivityStopName, new ActivityStopData(response, request, taskStatus));
+                        Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.RequestActivityStopName, new ActivityStopData(response, request, taskStatus));
                     }
 
                     activity.Stop();
@@ -355,6 +355,7 @@ namespace System.Net.Http
                     request.Headers.TryAddWithoutValidation(descriptor, value);
                 }
             });
+            request.MarkPropagatorStateInjectedByDiagnosticsHandler();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",

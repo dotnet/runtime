@@ -130,7 +130,6 @@ namespace System
             _a = a;
             _b = b;
             _c = c;
-            _k = d[7]; // hoist bounds checks
             _d = d[0];
             _e = d[1];
             _f = d[2];
@@ -138,6 +137,7 @@ namespace System
             _h = d[4];
             _i = d[5];
             _j = d[6];
+            _k = d[7];
         }
 
         // Creates a new GUID initialized to the value represented by the
@@ -284,7 +284,7 @@ namespace System
         ///     <para>This corresponds to the most significant 4 bits of the 6th byte: 00000000-0000-F000-0000-000000000000.</para>
         ///     <para>See RFC 9562 for more information on how to interpret this value.</para>
         /// </remarks>
-        public int Version => _c >>> 12;
+        public int Version => (ushort)_c >>> 12;
 
         /// <summary>Creates a new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</summary>
         /// <returns>A new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</returns>
@@ -303,9 +303,11 @@ namespace System
         /// </remarks>
         public static Guid CreateVersion7(DateTimeOffset timestamp)
         {
-            // This isn't the most optimal way, but we don't have an easy way to get
-            // secure random bytes in corelib without doing this since the secure rng
-            // is in a different layer.
+            // NewGuid uses CoCreateGuid on Windows and Interop.GetCryptographicallySecureRandomBytes on Unix to get
+            // cryptographically-secure random bytes. We could use Interop.BCrypt.BCryptGenRandom to generate the random
+            // bytes on Windows, as is done in RandomNumberGenerator, but that's measurably slower than using CoCreateGuid.
+            // And while CoCreateGuid only generates 122 bits of randomness, the other 6 bits being for the version / variant
+            // fields, this method also needs those bits to be non-random, so we can just use NewGuid for efficiency.
             Guid result = NewGuid();
 
             // 2^48 is roughly 8925.5 years, which from the Unix Epoch means we won't
@@ -421,29 +423,15 @@ namespace System
             input = input.Trim();
 
             var parseResult = new GuidResult(GuidParseThrowStyle.None);
-            bool success = false;
-            switch ((char)(format[0] | 0x20))
+            bool success = (format[0] | 0x20) switch
             {
-                case 'd':
-                    success = TryParseExactD(input, ref parseResult);
-                    break;
-
-                case 'n':
-                    success = TryParseExactN(input, ref parseResult);
-                    break;
-
-                case 'b':
-                    success = TryParseExactB(input, ref parseResult);
-                    break;
-
-                case 'p':
-                    success = TryParseExactP(input, ref parseResult);
-                    break;
-
-                case 'x':
-                    success = TryParseExactX(input, ref parseResult);
-                    break;
-            }
+                'd' => TryParseExactD(input, ref parseResult),
+                'n' => TryParseExactN(input, ref parseResult),
+                'b' => TryParseExactB(input, ref parseResult),
+                'p' => TryParseExactP(input, ref parseResult),
+                'x' => TryParseExactX(input, ref parseResult),
+                _ => false
+            };
 
             if (success)
             {
@@ -912,13 +900,13 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(g, in this);
+                MemoryMarshal.Write(g, in this);
             }
             else
             {
                 // slower path for BigEndian
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
-                MemoryMarshal.TryWrite(g, in guid);
+                MemoryMarshal.Write(g, in guid);
             }
             return g;
         }
@@ -930,13 +918,13 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(g, in this);
+                MemoryMarshal.Write(g, in this);
             }
             else
             {
                 // slower path for Reverse
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
-                MemoryMarshal.TryWrite(g, in guid);
+                MemoryMarshal.Write(g, in guid);
             }
             return g;
         }
@@ -949,13 +937,13 @@ namespace System
 
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(destination, in this);
+                MemoryMarshal.Write(destination, in this);
             }
             else
             {
                 // slower path for BigEndian
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
-                MemoryMarshal.TryWrite(destination, in guid);
+                MemoryMarshal.Write(destination, in guid);
             }
             return true;
         }
@@ -971,13 +959,13 @@ namespace System
 
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(destination, in this);
+                MemoryMarshal.Write(destination, in this);
             }
             else
             {
                 // slower path for Reverse
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
-                MemoryMarshal.TryWrite(destination, in guid);
+                MemoryMarshal.Write(destination, in guid);
             }
             bytesWritten = 16;
             return true;
@@ -1104,24 +1092,6 @@ namespace System
             guidChars[3] = TChar.CastFrom(HexConverter.ToCharLower(b));
 
             return 4;
-        }
-
-        private static unsafe int HexsToCharsHexOutput<TChar>(TChar* guidChars, int a, int b) where TChar : unmanaged, IUtfChar<TChar>
-        {
-            guidChars[0] = TChar.CastFrom('0');
-            guidChars[1] = TChar.CastFrom('x');
-
-            guidChars[2] = TChar.CastFrom(HexConverter.ToCharLower(a >> 4));
-            guidChars[3] = TChar.CastFrom(HexConverter.ToCharLower(a));
-
-            guidChars[4] = TChar.CastFrom(',');
-            guidChars[5] = TChar.CastFrom('0');
-            guidChars[6] = TChar.CastFrom('x');
-
-            guidChars[7] = TChar.CastFrom(HexConverter.ToCharLower(b >> 4));
-            guidChars[8] = TChar.CastFrom(HexConverter.ToCharLower(b));
-
-            return 9;
         }
 
         // Returns the guid in "registry" format.
@@ -1377,49 +1347,67 @@ namespace System
             return true;
         }
 
-        private unsafe bool TryFormatX<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        private bool TryFormatX<TChar>(Span<TChar> dest, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
-            if (destination.Length < 68)
+            if (dest.Length < 68)
             {
                 charsWritten = 0;
                 return false;
             }
+
+            // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
+            dest[0]  = TChar.CastFrom('{');
+            dest[1]  = TChar.CastFrom('0');
+            dest[2]  = TChar.CastFrom('x');
+            dest[3]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 28));
+            dest[4]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 24));
+            dest[5]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 20));
+            dest[6]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 16));
+            dest[7]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 12));
+            dest[8]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 8));
+            dest[9]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 4));
+            dest[10] = TChar.CastFrom(HexConverter.ToCharLower(_a));
+            dest[11] = TChar.CastFrom(',');
+            dest[12] = TChar.CastFrom('0');
+            dest[13] = TChar.CastFrom('x');
+            dest[14] = TChar.CastFrom(HexConverter.ToCharLower(_b >> 12));
+            dest[15] = TChar.CastFrom(HexConverter.ToCharLower(_b >> 8));
+            dest[16] = TChar.CastFrom(HexConverter.ToCharLower(_b >> 4));
+            dest[17] = TChar.CastFrom(HexConverter.ToCharLower(_b));
+            dest[18] = TChar.CastFrom(',');
+            dest[19] = TChar.CastFrom('0');
+            dest[20] = TChar.CastFrom('x');
+            dest[21] = TChar.CastFrom(HexConverter.ToCharLower(_c >> 12));
+            dest[22] = TChar.CastFrom(HexConverter.ToCharLower(_c >> 8));
+            dest[23] = TChar.CastFrom(HexConverter.ToCharLower(_c >> 4));
+            dest[24] = TChar.CastFrom(HexConverter.ToCharLower(_c));
+            dest[25] = TChar.CastFrom(',');
+            dest[26] = TChar.CastFrom('{');
+            WriteHex(dest, 27, _d);
+            WriteHex(dest, 32, _e);
+            WriteHex(dest, 37, _f);
+            WriteHex(dest, 42, _g);
+            WriteHex(dest, 47, _h);
+            WriteHex(dest, 52, _i);
+            WriteHex(dest, 57, _j);
+            WriteHex(dest, 62, _k, appendComma: false);
+            dest[66] = TChar.CastFrom('}');
+            dest[67] = TChar.CastFrom('}');
             charsWritten = 68;
-
-            fixed (TChar* guidChars = &MemoryMarshal.GetReference(destination))
-            {
-                TChar* p = guidChars;
-
-                // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
-                *p++ = TChar.CastFrom('{');
-                *p++ = TChar.CastFrom('0');
-                *p++ = TChar.CastFrom('x');
-                p += HexsToChars(p, _a >> 24, _a >> 16);
-                p += HexsToChars(p, _a >> 8, _a);
-                *p++ = TChar.CastFrom(',');
-                *p++ = TChar.CastFrom('0');
-                *p++ = TChar.CastFrom('x');
-                p += HexsToChars(p, _b >> 8, _b);
-                *p++ = TChar.CastFrom(',');
-                *p++ = TChar.CastFrom('0');
-                *p++ = TChar.CastFrom('x');
-                p += HexsToChars(p, _c >> 8, _c);
-                *p++ = TChar.CastFrom(',');
-                *p++ = TChar.CastFrom('{');
-                p += HexsToCharsHexOutput(p, _d, _e);
-                *p++ = TChar.CastFrom(',');
-                p += HexsToCharsHexOutput(p, _f, _g);
-                *p++ = TChar.CastFrom(',');
-                p += HexsToCharsHexOutput(p, _h, _i);
-                *p++ = TChar.CastFrom(',');
-                p += HexsToCharsHexOutput(p, _j, _k);
-                *p++ = TChar.CastFrom('}');
-                *p = TChar.CastFrom('}');
-
-                Debug.Assert(p == guidChars + charsWritten - 1);
-            }
-
             return true;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void WriteHex(Span<TChar> dest, int offset, int val, bool appendComma = true)
+            {
+                dest[offset + 0] = TChar.CastFrom('0');
+                dest[offset + 1] = TChar.CastFrom('x');
+                dest[offset + 2] = TChar.CastFrom(HexConverter.ToCharLower(val >> 4));
+                dest[offset + 3] = TChar.CastFrom(HexConverter.ToCharLower(val));
+                if (appendComma)
+                {
+                    dest[offset + 4] = TChar.CastFrom(',');
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -93,15 +93,20 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     return _changed;
                 }
 
-                if (Clock.UtcNow - _lastScanTimeUtc >= PollingInterval)
+                if (ShouldRefresh())
                 {
                     lock (_enumerationLock)
                     {
-                        _changed = CalculateChanges();
+                        if (!_changed && ShouldRefresh())
+                        {
+                            _changed = CalculateChanges();
+                        }
                     }
                 }
 
                 return _changed;
+
+                bool ShouldRefresh() => Clock.UtcNow - _lastScanTimeUtc >= PollingInterval;
             }
         }
 

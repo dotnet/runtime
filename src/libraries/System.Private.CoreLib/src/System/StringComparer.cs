@@ -217,7 +217,9 @@ namespace System
         internal static readonly CultureAwareComparer InvariantCaseSensitiveInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.None);
         internal static readonly CultureAwareComparer InvariantIgnoreCaseInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.IgnoreCase);
 
-        private const CompareOptions ValidCompareMaskOffFlags = ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
+        private const CompareOptions ValidCompareMaskOffFlags =
+            ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType |
+              CompareOptions.IgnoreWidth | CompareOptions.NumericOrdering | CompareOptions.StringSort);
 
         private readonly CompareInfo _compareInfo; // Do not rename (binary serialization)
         private readonly CompareOptions _options;
@@ -409,7 +411,7 @@ namespace System
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is OrdinalComparer comparer))
+            if (obj is not OrdinalComparer comparer)
             {
                 return false;
             }

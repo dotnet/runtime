@@ -258,5 +258,10 @@ namespace standalone
         {
             ::GCToEEInterface::LogErrorToHost(message);
         }
+
+        uint64_t GetThreadOSThreadId(Thread* thread)
+        {
+            return ::GCToEEInterface::GetThreadOSThreadId(thread);
+        }
     };
 }

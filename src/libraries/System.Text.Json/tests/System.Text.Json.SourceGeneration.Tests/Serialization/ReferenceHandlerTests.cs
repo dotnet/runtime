@@ -135,6 +135,15 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LinkedList<object[]>))]
         [JsonSerializable(typeof(LinkedList<Base[]>))]
         [JsonSerializable(typeof(LinkedList<Base[][]>))]
+        [JsonSerializable(typeof(ClassWithConflictingRefProperty))]
+        [JsonSerializable(typeof(ClassWithConflictingIdProperty))]
+        [JsonSerializable(typeof(ClassWithIgnoredConflictingProperty))]
+        [JsonSerializable(typeof(ClassWithExtensionDataConflictingProperty))]
+        [JsonSerializable(typeof(EmployeeLocation))]
+        [JsonSerializable(typeof(EmployeeLocation[]))]
+        [JsonSerializable(typeof(OfficeWorker))]
+        [JsonSerializable(typeof(Office))]
+        [JsonSerializable(typeof(RemoteWorker))]
         internal sealed partial class ReferenceHandlerTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -273,6 +282,15 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LinkedList<object[]>))]
         [JsonSerializable(typeof(LinkedList<Base[]>))]
         [JsonSerializable(typeof(LinkedList<Base[][]>))]
+        [JsonSerializable(typeof(ClassWithConflictingRefProperty))]
+        [JsonSerializable(typeof(ClassWithConflictingIdProperty))]
+        [JsonSerializable(typeof(ClassWithIgnoredConflictingProperty))]
+        [JsonSerializable(typeof(ClassWithExtensionDataConflictingProperty))]
+        [JsonSerializable(typeof(EmployeeLocation))]
+        [JsonSerializable(typeof(EmployeeLocation[]))]
+        [JsonSerializable(typeof(OfficeWorker))]
+        [JsonSerializable(typeof(Office))]
+        [JsonSerializable(typeof(RemoteWorker))]
         internal sealed partial class ReferenceHandlerTestsContext_Default : JsonSerializerContext
         {
         }

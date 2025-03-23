@@ -75,16 +75,14 @@ struct Scev
 
     bool IsInvariant();
 
+    Scev* PeelAdditions(int64_t* offset);
+
     static bool Equals(Scev* left, Scev* right);
 };
 
 struct ScevConstant : Scev
 {
-    ScevConstant(var_types type, int64_t value)
-        : Scev(ScevOper::Constant, type)
-        , Value(value)
-    {
-    }
+    ScevConstant(var_types type, int64_t value);
 
     int64_t Value;
 };
@@ -228,21 +226,17 @@ class ScalarEvolutionContext
 
     Scev* Analyze(BasicBlock* block, GenTree* tree, int depth);
     Scev* AnalyzeNew(BasicBlock* block, GenTree* tree, int depth);
-    Scev* CreateSimpleAddRec(GenTreeLclVarCommon* headerStore,
-                             ScevLocal*           start,
-                             BasicBlock*          stepDefBlock,
-                             GenTree*             stepDefData);
+    Scev* CreateSimpleAddRec(GenTreePhi* headerPhi, ScevLocal* start, BasicBlock* stepDefBlock, GenTree* stepDefData);
     Scev* MakeAddRecFromRecursiveScev(Scev* start, Scev* scev, Scev* recursiveScev);
     Scev* CreateSimpleInvariantScev(GenTree* tree);
     Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
     void  ExtractAddOperands(ScevBinop* add, ArrayStack<Scev*>& operands);
 
-    VNFunc                MapRelopToVNFunc(genTreeOps oper, bool isUnsigned);
-    RelopEvaluationResult EvaluateRelop(ValueNum relop);
-    bool                  MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, VNFunc exitOp);
-    bool AddRecMayOverflow(ScevAddRec* addRec, bool signedBound, const SimplificationAssumptions& assumptions);
+    VNFunc MapRelopToVNFunc(genTreeOps oper, bool isUnsigned);
+    bool   MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, VNFunc exitOp);
+    bool   AddRecMayOverflow(ScevAddRec* addRec, bool signedBound, const SimplificationAssumptions& assumptions);
 
-    bool Materialize(Scev* scev, bool createIR, GenTree** result, ValueNum* resultVN);
+    bool Materialize(Scev* scev, bool createIR, GenTree** result, ValueNumPair* resultVN);
 
 public:
     ScalarEvolutionContext(Compiler* comp);
@@ -260,8 +254,9 @@ public:
     static const SimplificationAssumptions NoAssumptions;
     Scev* Simplify(Scev* scev, const SimplificationAssumptions& assumptions = NoAssumptions);
 
-    Scev* ComputeExitNotTakenCount(BasicBlock* exiting);
+    Scev*                 ComputeExitNotTakenCount(BasicBlock* exiting);
+    RelopEvaluationResult EvaluateRelop(ValueNum relop);
 
-    GenTree* Materialize(Scev* scev);
-    ValueNum MaterializeVN(Scev* scev);
+    GenTree*     Materialize(Scev* scev);
+    ValueNumPair MaterializeVN(Scev* scev);
 };

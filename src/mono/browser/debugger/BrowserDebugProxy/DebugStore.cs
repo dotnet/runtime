@@ -1683,6 +1683,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             var asm_files = new List<string>();
             List<DebugItem> steps = new List<DebugItem>();
 
+            // Use System.Private.CoreLib to determine if we have a fingerprinted assemblies or not.
+            bool isFingerprinted = Path.GetFileNameWithoutExtension(loaded_files.FirstOrDefault(f => f.Contains("System.Private.CoreLib"))) != "System.Private.CoreLib";
+
             if (!useDebuggerProtocol)
             {
                 var pdb_files = new List<string>();
@@ -1698,8 +1701,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     try
                     {
-                        string candidate_pdb = Path.ChangeExtension(url, "pdb");
-                        string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
+                        string pdb;
+                        if (isFingerprinted)
+                        {
+                            string noFingerprintPdbFileName = string.Concat(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(url)), ".pdb");
+                            pdb = pdb_files.FirstOrDefault(n => string.Concat(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(n)), Path.GetExtension(n)) == noFingerprintPdbFileName);
+                        }
+                        else
+                        {
+                            string candidate_pdb = Path.ChangeExtension(url, "pdb");
+                            pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
+                        }
 
                         steps.Add(
                             new DebugItem
@@ -1722,12 +1734,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                         continue;
                     try
                     {
-                        string unescapedFileName = Uri.UnescapeDataString(file_name);
+                        string unescapedFileName = Path.GetFileName(Uri.UnescapeDataString(file_name));
+                        if (isFingerprinted)
+                            unescapedFileName = string.Concat(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(unescapedFileName)), Path.GetExtension(unescapedFileName));
                         steps.Add(
                             new DebugItem
                             {
                                 Url = file_name,
-                                DataTask = context.SdbAgent.GetDataFromAssemblyAndPdbAsync(Path.GetFileName(unescapedFileName), false, token)
+                                DataTask = context.SdbAgent.GetDataFromAssemblyAndPdbAsync(unescapedFileName, false, token)
                             });
                     }
                     catch (Exception e)
@@ -1755,6 +1769,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (assemblyAndPdbData == null || assemblyAndPdbData.AsmBytes == null)
                     {
                         var unescapedFileName = Uri.UnescapeDataString(step.Url);
+                        if (isFingerprinted)
+                            unescapedFileName = string.Concat(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(unescapedFileName)), Path.GetExtension(unescapedFileName));
                         assemblies.Add(AssemblyInfo.WithoutDebugInfo(Path.GetFileName(unescapedFileName), logger));
                         logger.LogDebug($"Bytes from assembly {step.Url} is NULL");
                         continue;

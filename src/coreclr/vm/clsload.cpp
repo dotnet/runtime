@@ -78,14 +78,14 @@ NameHandle::NameHandle(Module* pModule, mdToken token) :
 // This method determines the "loader module" for an instantiated type
 // or method. The rule must ensure that any types involved in the
 // instantiated type or method do not outlive the loader module itself
-// with respect to app-domain unloading (e.g. MyList<MyType> can't be
+// with respect to module unloading (e.g. MyList<MyType> can't be
 // put in the module of MyList if MyList's assembly is
-// app-domain-neutral but MyType's assembly is app-domain-specific).
+// non-collectible but MyType's assembly is collectible).
 // The rule we use is:
 //
 // * Pick the first type in the class instantiation, followed by
-//   method instantiation, whose loader module is non-shared (app-domain-bound)
-// * If no type is app-domain-bound, return the module containing the generic type itself
+//   method instantiation, whose loader allocator is collectible and has the highest creation number.
+// * If no type is in collectible assembly, return the module containing the generic type itself.
 //
 // Some useful effects of this rule (for ngen purposes) are:
 //
@@ -113,18 +113,15 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     }
     CONTRACT_END
 
+    // No generic instantiation, return the definition module
     if (classInst.IsEmpty() && methodInst.IsEmpty())
         RETURN PTR_Module(pDefinitionModule);
 
-    Module *pLoaderModule = NULL;
+    // Use the definition module as the loader module by default
+    Module *pLoaderModule = pDefinitionModule;
 
-    if (pDefinitionModule)
-    {
-        if (pDefinitionModule->IsCollectible())
-            goto ComputeCollectibleLoaderModule;
-        pLoaderModule = pDefinitionModule;
-    }
-
+    // If any of generic type arguments are in collectible module,
+    // we use a generic procedure.
     for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
     {
         TypeHandle classArg = classInst[i];
@@ -135,6 +132,8 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
             pLoaderModule = pModule;
     }
 
+    // If any of generic method arguments are in collectible module,
+    // we also use a generic procedure.
     for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
     {
         TypeHandle methodArg = methodInst[i];
@@ -155,14 +154,18 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     if (FALSE)
     {
 ComputeCollectibleLoaderModule:
-        LoaderAllocator *pLoaderAllocatorOfDefiningType = NULL;
-        LoaderAllocator *pOldestLoaderAllocator = NULL;
-        Module *pOldestLoaderModule = NULL;
-        UINT64 oldestFoundAge = 0;
+        Module *pLatestLoaderModule = NULL;
+        UINT64 latestFoundNumber = 0;
         DWORD classArgsCount = classInst.GetNumArgs();
         DWORD totalArgsCount = classArgsCount + methodInst.GetNumArgs();
 
-        if (pDefinitionModule != NULL) pLoaderAllocatorOfDefiningType = pDefinitionModule->GetLoaderAllocator();
+        // If loader allocator of the defining type is collectible, we use it
+        // and its creation number as the starting age.
+        if (pDefinitionModule != NULL && pDefinitionModule->IsCollectible())
+        {
+            pLatestLoaderModule = pDefinitionModule;
+            latestFoundNumber = pDefinitionModule->GetLoaderAllocator()->GetCreationNumber();
+        }
 
         for (DWORD i = 0; i < totalArgsCount; i++) {
 
@@ -176,22 +179,18 @@ ComputeCollectibleLoaderModule:
             Module *pModuleCheck = arg.GetLoaderModule();
             LoaderAllocator *pLoaderAllocatorCheck = pModuleCheck->GetLoaderAllocator();
 
-            if (pLoaderAllocatorCheck != pLoaderAllocatorOfDefiningType &&
-                pLoaderAllocatorCheck->IsCollectible() &&
-                pLoaderAllocatorCheck->GetCreationNumber() > oldestFoundAge)
+            if (pLoaderAllocatorCheck->IsCollectible() &&
+                pLoaderAllocatorCheck->GetCreationNumber() > latestFoundNumber)
             {
-                pOldestLoaderModule = pModuleCheck;
-                pOldestLoaderAllocator = pLoaderAllocatorCheck;
-                oldestFoundAge = pLoaderAllocatorCheck->GetCreationNumber();
+                pLatestLoaderModule = pModuleCheck;
+                latestFoundNumber = pLoaderAllocatorCheck->GetCreationNumber();
             }
         }
 
-        // Only if we didn't find a different loader allocator than the defining loader allocator do we
-        // use the defining loader allocator
-        if (pOldestLoaderModule != NULL)
-            pLoaderModule = pOldestLoaderModule;
-        else
-            pLoaderModule = pDefinitionModule;
+        // Use the module of the latest found collectible loader allocator.
+        // If nothing was found, then by default we use the defining module.
+        if (pLatestLoaderModule != NULL)
+            pLoaderModule = pLatestLoaderModule;
     }
     RETURN PTR_Module(pLoaderModule);
 }
@@ -832,27 +831,6 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
             pLoaderModule->GetClassLoader()->LoadTypeHandleForTypeKey(&typeKey, typeHnd, level);
         }
     }
-
-#endif // DACCESS_COMPILE
-}
-
-/*static*/
-void ClassLoader::TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifndef DACCESS_COMPILE // Nothing to do for the DAC case
-
-    EX_TRY
-    {
-        ClassLoader::EnsureLoaded(typeHnd, level);
-    }
-    EX_CATCH
-    {
-        // Some type may not load successfully. For eg. generic instantiations
-        // that do not satisfy the constraints of the type arguments.
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
 
 #endif // DACCESS_COMPILE
 }
@@ -2695,7 +2673,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
         DWORD numArgs = pKey->GetNumArgs();
         BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FnPtrTypeDesc)) + S_SIZE_T(sizeof(TypeHandle)) * S_SIZE_T(numArgs)));
 
-        typeHnd = TypeHandle(new(mem)  FnPtrTypeDesc(pKey->GetCallConv(), numArgs, pKey->GetRetAndArgTypes()));
+        typeHnd = TypeHandle(new(mem)  FnPtrTypeDesc(pKey->GetCallConv(), numArgs, pKey->GetRetAndArgTypes(), pLoaderModule));
     }
     else
     {
@@ -2775,6 +2753,16 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
     }
     CONTRACTL_END;
 
+#ifdef _DEBUG
+    if (!typeHnd.IsTypeDesc())
+    {
+        // The IsPublished flag is used by various asserts to assure that allocations of
+        // MethodTable associated memory which do not use the AllocMemTracker of the MethodTableBuilder
+        // aren't permitted until the MethodTable is in a state where the MethodTable object
+        // cannot be freed (except by freeing an entire LoaderAllocator)
+        typeHnd.AsMethodTable()->GetAuxiliaryDataForWrite()->SetIsPublished();
+    }
+#endif
 
     if (pTypeKey->IsConstructed())
     {
@@ -2902,7 +2890,7 @@ void ClassLoader::Notify(TypeHandle typeHnd)
         if (CORDebuggerAttached())
         {
             LOG((LF_CORDB, LL_EVERYTHING, "NotifyDebuggerLoad clsload 2239 class %s\n", pMT->GetDebugClassName()));
-            typeHnd.NotifyDebuggerLoad(NULL, FALSE);
+            typeHnd.NotifyDebuggerLoad(FALSE);
         }
 #endif // DEBUGGING_SUPPORTED
     }
@@ -3471,6 +3459,12 @@ VOID ClassLoader::AddAvailableClassHaveLock(
     EEClassHashEntry_t *pEncloser = NULL;
     if (SUCCEEDED(pMDImport->GetNestedClassProps(classdef, &enclosing))) {
         // nested type
+
+        if (enclosing == COR_GLOBAL_PARENT_TOKEN)
+        {
+            // Types nested in the <module> class can't be found by lookup.
+            return;
+        }
 
         COUNT_T classEntryIndex = RidFromToken(enclosing) - 1;
         _ASSERTE(RidFromToken(enclosing) < RidFromToken(classdef));

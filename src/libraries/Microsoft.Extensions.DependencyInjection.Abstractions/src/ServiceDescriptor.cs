@@ -152,24 +152,22 @@ namespace Microsoft.Extensions.DependencyInjection
         private Type? _implementationType;
 
         /// <summary>
-        /// Gets the <see cref="Type"/> that implements the service.
+        /// Gets the <see cref="Type"/> that implements the service,
+        /// or returns <see langword="null"/> if <see cref="IsKeyedService"/> is <see langword="true"/>.
         /// </summary>
+        /// <remarks>
+        /// If <see cref="IsKeyedService"/> is <see langword="true"/>, <see cref="KeyedImplementationType"/> should be called instead.
+        /// </remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        public Type? ImplementationType
-        {
-            get
-            {
-                if (IsKeyedService)
-                {
-                    ThrowKeyedDescriptor();
-                }
-                return _implementationType;
-            }
-        }
+        public Type? ImplementationType => IsKeyedService ? null : _implementationType;
 
         /// <summary>
-        /// Gets the <see cref="Type"/> that implements the service.
+        /// Gets the <see cref="Type"/> that implements the service,
+        /// or throws <see cref="InvalidOperationException"/> if <see cref="IsKeyedService"/> is <see langword="false"/>.
         /// </summary>
+        /// <remarks>
+        /// If <see cref="IsKeyedService"/> is <see langword="false"/>, <see cref="ImplementationType"/> should be called instead.
+        /// </remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public Type? KeyedImplementationType
         {
@@ -186,23 +184,21 @@ namespace Microsoft.Extensions.DependencyInjection
         private object? _implementationInstance;
 
         /// <summary>
-        /// Gets the instance that implements the service.
+        /// Gets the instance that implements the service,
+        /// or returns <see langword="null"/> if <see cref="IsKeyedService"/> is <see langword="true"/>.
         /// </summary>
-        public object? ImplementationInstance
-        {
-            get
-            {
-                if (IsKeyedService)
-                {
-                    ThrowKeyedDescriptor();
-                }
-                return _implementationInstance;
-            }
-        }
+        /// <remarks>
+        /// If <see cref="IsKeyedService"/> is <see langword="true"/>, <see cref="KeyedImplementationInstance"/> should be called instead.
+        /// </remarks>
+        public object? ImplementationInstance =>  IsKeyedService ? null : _implementationInstance;
 
         /// <summary>
-        /// Gets the instance that implements the service.
+        /// Gets the instance that implements the service,
+        /// or throws <see cref="InvalidOperationException"/> if <see cref="IsKeyedService"/> is <see langword="false"/>.
         /// </summary>
+        /// <remarks>
+        /// If <see cref="IsKeyedService"/> is <see langword="false"/>, <see cref="ImplementationInstance"/> should be called instead.
+        /// </remarks>
         public object? KeyedImplementationInstance
         {
             get
@@ -218,23 +214,21 @@ namespace Microsoft.Extensions.DependencyInjection
         private object? _implementationFactory;
 
         /// <summary>
-        /// Gets the factory used for creating service instances.
+        /// Gets the factory used for creating service instance,
+        /// or returns <see langword="null"/> if <see cref="IsKeyedService"/> is <see langword="true"/>.
         /// </summary>
-        public Func<IServiceProvider, object>? ImplementationFactory
-        {
-            get
-            {
-                if (IsKeyedService)
-                {
-                    ThrowKeyedDescriptor();
-                }
-                return (Func<IServiceProvider, object>?)_implementationFactory;
-            }
-        }
+        /// <remarks>
+        /// If <see cref="IsKeyedService"/> is <see langword="true"/>, <see cref="KeyedImplementationFactory"/> should be called instead.
+        /// </remarks>
+        public Func<IServiceProvider, object>? ImplementationFactory => IsKeyedService ? null : (Func<IServiceProvider, object>?) _implementationFactory;
 
         /// <summary>
-        /// Gets the factory used for creating Keyed service instances.
+        /// Gets the factory used for creating Keyed service instances,
+        /// or throws <see cref="InvalidOperationException"/> if <see cref="IsKeyedService"/> is <see langword="false"/>.
         /// </summary>
+        /// <remarks>
+        /// If <see cref="IsKeyedService"/> is <see langword="false"/>, <see cref="ImplementationFactory"/> should be called instead.
+        /// </remarks>
         public Func<IServiceProvider, object?, object>? KeyedImplementationFactory
         {
             get
@@ -330,7 +324,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
-            Debug.Assert(false, "ImplementationType, ImplementationInstance, ImplementationFactory or KeyedImplementationFactory must be non null");
+            Debug.Fail("ImplementationType, ImplementationInstance, ImplementationFactory or KeyedImplementationFactory must be non null");
             return null;
         }
 
@@ -1057,8 +1051,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return debugText;
         }
-
-        private static void ThrowKeyedDescriptor() => throw new InvalidOperationException(SR.KeyedDescriptorMisuse);
 
         private static void ThrowNonKeyedDescriptor() => throw new InvalidOperationException(SR.NonKeyedDescriptorMisuse);
     }

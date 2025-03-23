@@ -85,7 +85,9 @@ bool CodeGen::genInstrWithConstant(instruction ins,
         case INS_fst_d:
 
         case INS_ld_b:
+        case INS_ld_bu:
         case INS_ld_h:
+        case INS_ld_hu:
         case INS_ld_w:
         case INS_fld_s:
         case INS_ld_d:
@@ -172,7 +174,7 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
     {
         // spDelta is negative in the prolog, positive in the epilog,
         // but we always tell the unwind codes the positive value.
-        ssize_t  spDeltaAbs    = abs(spDelta);
+        ssize_t  spDeltaAbs    = std::abs(spDelta);
         unsigned unwindSpDelta = (unsigned)spDeltaAbs;
         assert((ssize_t)unwindSpDelta == spDeltaAbs); // make sure that it fits in a unsigned
 
@@ -220,7 +222,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     emitter*  emit         = GetEmitter();
     int       regNum       = FIRST_INT_CALLEE_SAVED;
     regMaskTP regsMask     = regsToSaveMask & RBM_INT_CALLEE_SAVED;
-    int64_t   maskSaveRegs = (int64_t)regsMask.getLow() >> FIRST_INT_CALLEE_SAVED;
+    uint64_t  maskSaveRegs = (uint64_t)regsMask.getLow() >> FIRST_INT_CALLEE_SAVED;
     do
     {
         if (maskSaveRegs & 1)
@@ -234,7 +236,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     } while (maskSaveRegs != 0);
 
     regsMask     = regsToSaveMask & RBM_FLT_CALLEE_SAVED;
-    maskSaveRegs = (int64_t)regsMask.getLow() >> FIRST_FLT_CALLEE_SAVED;
+    maskSaveRegs = (uint64_t)regsMask.getLow() >> FIRST_FLT_CALLEE_SAVED;
     regNum       = FIRST_FLT_CALLEE_SAVED;
     do
     {
@@ -1922,7 +1924,40 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 //
 void CodeGen::genCodeForBswap(GenTree* tree)
 {
-    NYI_LOONGARCH64("genCodeForBswap unimpleement yet");
+    assert(tree->OperIs(GT_BSWAP, GT_BSWAP16));
+
+    emitAttr  attr      = emitActualTypeSize(tree);
+    regNumber targetReg = tree->GetRegNum();
+    emitter*  emit      = GetEmitter();
+
+    GenTree* operand = tree->gtGetOp1();
+    assert(!operand->isContained());
+    // The src must be a register.
+    regNumber   operandReg = genConsumeReg(operand);
+    instruction ins;
+
+    if (tree->OperIs(GT_BSWAP16))
+    {
+        ins = INS_revb_4h;
+    }
+    else if (attr == EA_8BYTE)
+    {
+        ins = INS_revb_d;
+    }
+    else
+    {
+        assert(attr == EA_4BYTE);
+        ins = INS_revb_2w;
+    }
+
+    emit->emitIns_R_R(ins, attr, targetReg, operandReg);
+
+    if (tree->OperIs(GT_BSWAP16) && !genCanOmitNormalizationForBswap16(tree))
+    {
+        emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, targetReg, targetReg, 15, 0);
+    }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -2231,8 +2266,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack =
-        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -2459,10 +2493,9 @@ static inline bool isImmed(GenTree* treeNode)
 
 instruction CodeGen::genGetInsForOper(GenTree* treeNode)
 {
-    var_types  type = treeNode->TypeGet();
-    genTreeOps oper = treeNode->OperGet();
-    GenTree*   op1  = treeNode->gtGetOp1();
-    GenTree*   op2;
+    var_types  type  = treeNode->TypeGet();
+    genTreeOps oper  = treeNode->OperGet();
+    GenTree*   op1   = treeNode->gtGetOp1();
     emitAttr   attr  = emitActualTypeSize(treeNode);
     bool       isImm = false;
 
@@ -3179,6 +3212,14 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
             }
         }
 
+        GetEmitter()->emitIns_R_R_I(INS_ori, dstSize, treeNode->GetRegNum(), REG_R0, 0);
+
+        GetEmitter()->emitIns_R_R(srcType == TYP_DOUBLE ? INS_movgr2fr_d : INS_movgr2fr_w, EA_8BYTE, tmpReg, REG_R0);
+
+        GetEmitter()->emitIns_R_R_I(srcType == TYP_DOUBLE ? INS_fcmp_cult_d : INS_fcmp_cult_s, EA_8BYTE,
+                                    op1->GetRegNum(), tmpReg, 2);                                     // cc=2
+        GetEmitter()->emitIns_I_I(INS_bcnez, EA_PTRSIZE, 2, dstType == TYP_UINT ? 16 << 2 : 13 << 2); // cc=2
+
         if (srcType == TYP_DOUBLE)
         {
             GetEmitter()->emitIns_R_R_I(INS_lu52i_d, EA_8BYTE, REG_R21, REG_R0, imm >> 8);
@@ -3192,9 +3233,6 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
         GetEmitter()->emitIns_R_R_I(srcType == TYP_DOUBLE ? INS_fcmp_clt_d : INS_fcmp_clt_s, EA_8BYTE, op1->GetRegNum(),
                                     tmpReg, 2); // cc=2
-
-        GetEmitter()->emitIns_R_R_I(srcType == TYP_DOUBLE ? INS_fcmp_ceq_d : INS_fcmp_ceq_s, EA_8BYTE, op1->GetRegNum(),
-                                    tmpReg, 3); // cc=3
 
         GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, 0);
         GetEmitter()->emitIns_I_I(INS_bcnez, EA_PTRSIZE, 2, 4 << 2); // cc=2
@@ -3217,9 +3255,6 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
             GetEmitter()->emitIns_R_R_I(INS_bne, EA_PTRSIZE, treeNode->GetRegNum(), REG_RA, (2 << 2));
             GetEmitter()->emitIns_R_R_I(INS_ori, dstSize, treeNode->GetRegNum(), REG_R0, 0);
         }
-
-        GetEmitter()->emitIns_I_I(INS_bcnez, EA_PTRSIZE, 3, 2 << 2); // cc=3
-        GetEmitter()->emitIns_R_I(INS_beqz, EA_PTRSIZE, treeNode->GetRegNum(), 2 << 2);
 
         GetEmitter()->emitIns_R_R_R(INS_or, dstSize, treeNode->GetRegNum(), REG_R21, treeNode->GetRegNum());
     }
@@ -4430,8 +4465,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_MEMORYBARRIER:
         {
-            CodeGen::BarrierKind barrierKind =
-                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+            BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD
+                    ? BARRIER_LOAD_ONLY
+                    : (treeNode->gtFlags & GTF_MEMORYBARRIER_STORE ? BARRIER_STORE_ONLY : BARRIER_FULL);
 
             instGen_MemoryBarrier(barrierKind);
             break;
@@ -4610,13 +4647,6 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-    // Make sure that the return register is reported as live GC-ref so that any GC that kicks in while
-    // executing GS cookie check will not collect the object pointed to by REG_INTRET (A0).
-    if (!pushReg && (compiler->info.compRetNativeType == TYP_REF))
-    {
-        gcInfo.gcRegGCrefSetCur |= RBM_INTRET;
-    }
-
     // We need two temporary registers, to load the GS cookie values and compare them. We can't use
     // any argument registers if 'pushReg' is true (meaning we have a JMP call). They should be
     // callee-trash registers, which should not contain anything interesting at this point.
@@ -4716,7 +4746,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     if (treeNode->putInIncomingArgArea())
     {
         varNumOut    = getFirstArgWithStackSlot();
-        argOffsetMax = compiler->compArgSize;
+        argOffsetMax = compiler->lvaParameterStackSize;
 #if FEATURE_FASTTAILCALL
         // This must be a fast tail call.
         assert(treeNode->gtCall->IsFastTailCall());
@@ -4844,8 +4874,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 assert(varDsc->lvType == TYP_STRUCT);
                 assert(varDsc->lvOnFrame && !varDsc->lvRegister);
 
-                srcSize = varDsc->lvSize(); // This yields the roundUp size, but that is fine
-                                            // as that is how much stack is allocated for this LclVar
+                srcSize = compiler->lvaLclStackHomeSize(varNode->GetLclNum());
+
                 layout = varDsc->GetLayout();
             }
             else // we must have a GT_BLK
@@ -4873,8 +4903,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 if (varNode != nullptr)
                 {
                     // If we have a varNode, even if it was casted using `OBJ`, we can read its original memory size.
-                    const LclVarDsc* varDsc       = compiler->lvaGetDesc(varNode);
-                    const unsigned   varStackSize = varDsc->lvSize();
+                    const unsigned varStackSize = compiler->lvaLclStackHomeSize(varNode->GetLclNum());
                     if (varStackSize >= srcSize)
                     {
                         srcSize = varStackSize;
@@ -6046,9 +6075,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
+            for (unsigned i = 0; i < arg.AbiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                const ABIPassingSegment& seg = arg.AbiInfo.Segment(i);
                 if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
                 {
                     JITDUMP("Tail call node:\n");
@@ -6491,7 +6520,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
     // let's save the values anyway for debugging purposes
     compiler->compInfoBlkAddr = gcInfoEncoder->Emit();
-    compiler->compInfoBlkSize = 0; // not exposed by the GCEncoder interface
+    compiler->compInfoBlkSize = gcInfoEncoder->GetEncodedGCInfoSize();
 }
 
 //------------------------------------------------------------------------
@@ -6844,8 +6873,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             excpRaisingBlock = failBlk;
 
 #ifdef DEBUG
-            Compiler::AddCodeDsc* add =
-                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
             assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
@@ -6856,8 +6884,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
         else
         {
             // Find the helper-block which raises the exception.
-            Compiler::AddCodeDsc* add =
-                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
             assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
@@ -7171,7 +7198,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     if (leftFrameSize != 0)
     {
-        genStackPointerAdjustment(-leftFrameSize, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+        // We've already established the frame pointer, so no need to report the stack pointer change to unwind info.
+        genStackPointerAdjustment(-leftFrameSize, initReg, pInitRegZeroed, /* reportUnwindData */ false);
     }
 }
 

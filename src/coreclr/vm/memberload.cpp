@@ -292,10 +292,10 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
     {
     case mdtModuleRef:
         {
-            DomainAssembly *pTargetModule = pModule->LoadModule(parent);
+            Module *pTargetModule = pModule->LoadModule(parent);
             if (pTargetModule == NULL)
                 COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-            typeHnd = TypeHandle(pTargetModule->GetModule()->GetGlobalMethodTable());
+            typeHnd = TypeHandle(pTargetModule->GetGlobalMethodTable());
             if (typeHnd.IsNull())
                 COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }

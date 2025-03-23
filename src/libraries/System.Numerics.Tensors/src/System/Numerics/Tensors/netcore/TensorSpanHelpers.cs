@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-
-#pragma warning disable 8500 // sizeof of managed types
 
 namespace System.Numerics.Tensors
 {
+
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal static partial class TensorSpanHelpers
     {
         internal static bool AreShapesTheSame<T>(ReadOnlyTensorSpan<T> tensor1, ReadOnlyTensorSpan<T> tensor2)
@@ -192,7 +190,8 @@ namespace System.Numerics.Tensors
 
         public static void ValidateStrides(ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
         {
-            Debug.Assert(strides.Length == lengths.Length);
+            if (strides.Length != lengths.Length)
+                ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
 
             if (strides.Length == 0)
                 return;
@@ -263,11 +262,44 @@ namespace System.Numerics.Tensors
         {
             if (addend <= 0 || curIndex < 0)
                 return;
+
             curIndexes[curIndex] -= addend;
             if (curIndexes[curIndex] < 0)
             {
                 curIndexes[curIndex] = shape[curIndex] - 1;
                 AdjustIndexes(curIndex - 1, 1, curIndexes, shape);
+            }
+        }
+
+        /// <summary>Fills <paramref name="lengths"/> with the corresponding lengths of the ranks in <paramref name="array"/>.</summary>
+        public static ReadOnlySpan<nint> FillLengths(Span<nint> lengths, Array array)
+        {
+            Debug.Assert(array is not null);
+            Debug.Assert(array.Rank == lengths.Length);
+
+            for (int i = 0; i < lengths.Length; i++)
+            {
+                lengths[i] = array.GetLength(i);
+            }
+
+            return lengths;
+        }
+
+        /// <summary>Fills <paramref name="span"/> with values <paramref name="span"/>[i] = i.</summary>
+        public static void FillRange(Span<int> span)
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                span[i] = i;
+            }
+        }
+
+        /// <summary>Fills <paramref name="span"/> with values <paramref name="span"/>[i] = i.</summary>
+        public static void FillRange(Span<nint> span)
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                span[i] = i;
             }
         }
     }

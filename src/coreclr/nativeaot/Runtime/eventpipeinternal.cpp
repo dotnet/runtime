@@ -161,7 +161,7 @@ EXTERN_C void QCALLTYPE EventPipeInternal_DeleteProvider(intptr_t provHandle)
     }
 }
 
-// All the runtime redefine this enum, should move to commmon code.
+// All the runtime redefine this enum, should move to common code.
 // https://github.com/dotnet/runtime/issues/87069
 enum class ActivityControlCode
 {
@@ -198,7 +198,7 @@ EXTERN_C int QCALLTYPE EventPipeInternal_EventActivityIdControl(uint32_t control
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_ID:
 
-            ep_rt_create_activity_id(reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_thread_create_activity_id(reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
             break;
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_SET_ID:
@@ -212,7 +212,7 @@ EXTERN_C int QCALLTYPE EventPipeInternal_EventActivityIdControl(uint32_t control
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_SET_ID:
 
             ep_rt_thread_get_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
-            ep_rt_create_activity_id(reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_thread_create_activity_id(reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
             ep_rt_thread_set_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
             break;
 

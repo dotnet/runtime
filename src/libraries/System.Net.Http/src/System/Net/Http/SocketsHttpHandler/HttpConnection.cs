@@ -67,15 +67,15 @@ namespace System.Net.Http
         private bool _canRetry;
         private bool _connectionClose; // Connection: close was seen on last response
 
-        private const int Status_Disposed = 1;
-        private int _disposed;
+        private volatile bool _disposed;
 
         public HttpConnection(
             HttpConnectionPool pool,
             Stream stream,
             TransportContext? transportContext,
+            Activity? connectionSetupActivity,
             IPEndPoint? remoteEndPoint)
-            : base(pool, remoteEndPoint)
+            : base(pool, connectionSetupActivity, remoteEndPoint)
         {
             Debug.Assert(stream != null);
 
@@ -97,7 +97,7 @@ namespace System.Net.Http
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.
-            if (Interlocked.Exchange(ref _disposed, Status_Disposed) != Status_Disposed)
+            if (!Interlocked.Exchange(ref _disposed, true))
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
 
@@ -547,6 +547,7 @@ namespace System.Net.Http
 
             // Send the request.
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
+            if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
             CancellationTokenRegistration cancellationRegistration = RegisterCancellation(cancellationToken);
             try
             {
@@ -871,7 +872,7 @@ namespace System.Net.Http
                     // In case the connection is disposed, it's most probable that
                     // expect100Continue timer expired and request content sending failed.
                     // We're awaiting the task to propagate the exception in this case.
-                    if (Volatile.Read(ref _disposed) == Status_Disposed)
+                    if (_disposed)
                     {
                         try
                         {
@@ -2055,9 +2056,14 @@ namespace System.Net.Http
                 _connectionClose = true;
             }
 
-            // If the connection is no longer in use (i.e. for NT authentication), then we can return it to the pool now.
-            // Otherwise, it will be returned when the connection is no longer in use (i.e. Release above is called).
-            if (!_inUse)
+            // If the connection is no longer in use (i.e. for NT authentication), then we can
+            // return it to the pool now; otherwise, it will be returned by the Release method later.
+            // The cancellation logic in HTTP/1.1 response stream reading methods is prone to race conditions
+            // where CancellationTokenRegistration callbacks may dispose the connection without the disposal
+            // leading to an actual cancellation of the response reading methods by an OperationCanceledException.
+            // To guard against these cases, it is necessary to check if the connection is disposed before
+            // attempting to return it to the pool.
+            if (!_inUse && !_disposed)
             {
                 ReturnConnectionToPool();
             }
@@ -2096,6 +2102,7 @@ namespace System.Net.Http
 
         private void ReturnConnectionToPool()
         {
+            Debug.Assert(!_disposed, "Connection should not be disposed.");
             Debug.Assert(_currentRequest == null, "Connection should no longer be associated with a request.");
             Debug.Assert(_readAheadTask == default, "Expected a previous initial read to already be consumed.");
             Debug.Assert(_readAheadTaskStatus == ReadAheadTask_NotStarted, "Expected SendAsync to reset the read-ahead task status.");

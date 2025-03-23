@@ -415,6 +415,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonTypeInfoOnDeserializingCallbacksNotSupported(Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.OnDeserializingCallbacksNotSupported, type));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_CreateObjectConverterNotCompatible(Type type)
         {
             throw new InvalidOperationException(SR.Format(SR.CreateObjectConverterNotCompatible, type));
@@ -898,15 +904,21 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_PropertyConflictsWithMetadataPropertyName(Type type, string propertyName)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_PropertyConflictsWithMetadataPropertyName, type, propertyName));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_PolymorphicTypeConfigurationDoesNotSpecifyDerivedTypes(Type baseType)
         {
             throw new InvalidOperationException(SR.Format(SR.Polymorphism_ConfigurationDoesNotSpecifyDerivedTypes, baseType));
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(Type enumType, string enumName)
+        public static void ThrowInvalidOperationException_UnsupportedEnumIdentifier(Type enumType, string? enumName)
         {
-            throw new InvalidOperationException(SR.Format(SR.InvalidEnumTypeWithSpecialChar, enumType.Name, enumName));
+            throw new InvalidOperationException(SR.Format(SR.UnsupportedEnumIdentifier, enumType.Name, enumName));
         }
 
         [DoesNotReturn]

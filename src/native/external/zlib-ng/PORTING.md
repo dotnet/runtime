@@ -4,6 +4,38 @@ Porting applications to use zlib-ng
 Zlib-ng can be used/compiled in two different modes, that require some
 consideration by the application developer.
 
+Changes from zlib affecting native and compat modes
+---------------------------------------------------
+Zlib-ng is not as conservative with memory allocation as Zlib is.
+
+Where Zlib's inflate will allocate a lower amount of memory depending on
+compression level and window size, zlib-ng will always allocate the maximum
+amount of memory and possibly leave parts of it unused.
+Zlib-ng's deflate will however allocate a lower amount of memory depending
+on compression level and window size.
+
+Zlib-ng also allocates one "big" buffer instead of doing multiple smaller
+allocations. This is faster, can lead to better cache locality and reduces
+space lost to alignment padding.
+
+At the time of writing, by default zlib-ng allocates the following amounts
+of memory on a 64-bit system (except on S390x that requires ~4KiB more):
+-  Deflate: 350.272 Bytes
+-  Inflate:  42.112 Bytes
+
+**Advantages:**
+- All memory is allocated during DeflateInit or InflateInit functions,
+  leaving the actual deflate/inflate functions free from allocations.
+- Zlib-ng can only fail from memory allocation errors during init.
+- Time spent doing memory allocation systemcalls is all done during init,
+  allowing applications to do prepare this before doing latency-sensitive
+  deflate/inflate later.
+- Can reduce wasted memory due to buffer alignment padding both by OS and zlib-ng.
+- Potentially improved memory locality.
+
+**Disadvantages:**
+- Zlib-ng allocates a little more memory than zlib does.
+
 zlib-compat mode
 ----------------
 Zlib-ng can be compiled in zlib-compat mode, suitable for zlib-replacement

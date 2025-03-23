@@ -9,6 +9,7 @@ parameters:
   archType: ''                    # required -- targeting CPU architecture
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
+  crossBuild: ''                  # optional -- 'true' if this is a cross-build
   continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
   dependsOn: ''                   # optional -- dependencies of the job
   timeoutInMinutes: 180           # optional -- timeout for the job
@@ -27,6 +28,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    crossBuild: ${{ parameters.crossBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
@@ -144,10 +146,10 @@ jobs:
       condition: always()
 
     - task: CopyFiles@2
-      displayName: Copying superpmi.md of all partitions
+      displayName: Copying superpmi.json of all partitions
       inputs:
         sourceFolder: '$(HelixResultLocation)'
-        contents: '**/superpmi_*.md'
+        contents: '**/superpmi_*.json'
         targetFolder: '$(SpmiDiffsLocation)'
       condition: always()
 
@@ -160,7 +162,7 @@ jobs:
           targetFolder: '$(SpmiDiffsLocation)'
         condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_summarize.py -diff_summary_dir $(SpmiDiffsLocation) -type $(diffType) -platform $(osGroup) -arch $(archType)
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_summarize.py -source_directory $(Build.SourcesDirectory) -diff_summary_dir $(SpmiDiffsLocation) -type $(diffType) -platform $(osGroup) -arch $(archType)
       displayName: ${{ format('Summarize ({0} {1}{2} {3})', parameters.diffType, parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
       condition: always()
 

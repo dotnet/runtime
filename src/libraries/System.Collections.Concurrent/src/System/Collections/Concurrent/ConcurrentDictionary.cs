@@ -42,6 +42,11 @@ namespace System.Collections.Concurrent
         /// extra branch when using a custom comparer with a reference type key.
         /// </remarks>
         private readonly bool _comparerIsDefaultForClasses;
+        /// <summary>The initial size of the _buckets array.</summary>
+        /// <remarks>
+        /// We store this to retain the initially specified growing behavior of the _buckets array even after clearing the collection.
+        /// </remarks>
+        private readonly int _initialCapacity;
 
         /// <summary>The default capacity, i.e. the initial # of buckets.</summary>
         /// <remarks>
@@ -220,6 +225,7 @@ namespace System.Collections.Concurrent
 
             _tables = new Tables(buckets, locks, countPerLock, comparer);
             _growLockArray = growLockArray;
+            _initialCapacity = capacity;
             _budget = buckets.Length / locks.Length;
         }
 
@@ -443,57 +449,52 @@ namespace System.Collections.Concurrent
                 object[] locks = tables._locks;
                 ref Node? bucket = ref GetBucketAndLock(tables, hashcode, out uint lockNo);
 
-                // Do a hot read on number of items stored in the bucket.  If it's empty, we can avoid
-                // taking the lock and fail fast.
-                if (tables._countPerLock[lockNo] != 0)
+                lock (locks[lockNo])
                 {
-                    lock (locks[lockNo])
+                    // If the table just got resized, we may not be holding the right lock, and must retry.
+                    // This should be a rare occurrence.
+                    if (tables != _tables)
                     {
-                        // If the table just got resized, we may not be holding the right lock, and must retry.
-                        // This should be a rare occurrence.
-                        if (tables != _tables)
+                        tables = _tables;
+                        if (!ReferenceEquals(comparer, tables._comparer))
                         {
-                            tables = _tables;
-                            if (!ReferenceEquals(comparer, tables._comparer))
-                            {
-                                comparer = tables._comparer;
-                                hashcode = GetHashCode(comparer, key);
-                            }
-                            continue;
+                            comparer = tables._comparer;
+                            hashcode = GetHashCode(comparer, key);
                         }
+                        continue;
+                    }
 
-                        Node? prev = null;
-                        for (Node? curr = bucket; curr is not null; curr = curr._next)
+                    Node? prev = null;
+                    for (Node? curr = bucket; curr is not null; curr = curr._next)
+                    {
+                        Debug.Assert((prev is null && curr == bucket) || prev!._next == curr);
+
+                        if (hashcode == curr._hashcode && NodeEqualsKey(comparer, curr, key))
                         {
-                            Debug.Assert((prev is null && curr == bucket) || prev!._next == curr);
-
-                            if (hashcode == curr._hashcode && NodeEqualsKey(comparer, curr, key))
+                            if (matchValue)
                             {
-                                if (matchValue)
+                                bool valuesMatch = EqualityComparer<TValue>.Default.Equals(oldValue, curr._value);
+                                if (!valuesMatch)
                                 {
-                                    bool valuesMatch = EqualityComparer<TValue>.Default.Equals(oldValue, curr._value);
-                                    if (!valuesMatch)
-                                    {
-                                        value = default;
-                                        return false;
-                                    }
+                                    value = default;
+                                    return false;
                                 }
-
-                                if (prev is null)
-                                {
-                                    Volatile.Write(ref bucket, curr._next);
-                                }
-                                else
-                                {
-                                    prev._next = curr._next;
-                                }
-
-                                value = curr._value;
-                                tables._countPerLock[lockNo]--;
-                                return true;
                             }
-                            prev = curr;
+
+                            if (prev is null)
+                            {
+                                Volatile.Write(ref bucket, curr._next);
+                            }
+                            else
+                            {
+                                prev._next = curr._next;
+                            }
+
+                            value = curr._value;
+                            tables._countPerLock[lockNo]--;
+                            return true;
                         }
+                        prev = curr;
                     }
                 }
 
@@ -721,7 +722,7 @@ namespace System.Collections.Concurrent
                 }
 
                 Tables tables = _tables;
-                var newTables = new Tables(new VolatileNode[HashHelpers.GetPrime(DefaultCapacity)], tables._locks, new int[tables._countPerLock.Length], tables._comparer);
+                var newTables = new Tables(new VolatileNode[HashHelpers.GetPrime(_initialCapacity)], tables._locks, new int[tables._countPerLock.Length], tables._comparer);
                 _tables = newTables;
                 _budget = Math.Max(1, newTables._buckets.Length / newTables._locks.Length);
             }
@@ -2547,6 +2548,7 @@ namespace System.Collections.Concurrent
             /// When this method returns, contains the value associated with the specified key, if the key is found;
             /// otherwise, the default value for the type of the value parameter.
             /// </param>
+            /// <returns><see langword="true"/> if an entry was found; otherwise, <see langword="false"/>.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
             public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TValue value) =>
                 TryGetValue(key, out _, out value);
@@ -2561,6 +2563,7 @@ namespace System.Collections.Concurrent
             /// When this method returns, contains the value associated with the specified key, if the key is found;
             /// otherwise, the default value for the type of the value parameter.
             /// </param>
+            /// <returns><see langword="true"/> if an entry was found; otherwise, <see langword="false"/>.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
             public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey, [MaybeNullWhen(false)] out TValue value)
             {

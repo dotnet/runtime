@@ -232,7 +232,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
-            get { return GetProcessTimes().PrivilegedProcessorTime; }
+            get => IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : GetProcessTimes().PrivilegedProcessorTime;
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
@@ -251,7 +251,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
-            get { return GetProcessTimes().TotalProcessorTime; }
+            get => IsCurrentProcess ? Environment.CpuUsage.TotalTime : GetProcessTimes().TotalProcessorTime;
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
-            get { return GetProcessTimes().UserProcessorTime; }
+            get => IsCurrentProcess ? Environment.CpuUsage.UserTime : GetProcessTimes().UserProcessorTime;
         }
 
         /// <summary>

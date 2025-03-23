@@ -211,9 +211,7 @@ namespace System.Threading.Tasks
             if (iteration < oldLBI)
             {
                 SpinWait wait = default;
-                while (typeof(TInt) == typeof(int) ?
-                    Interlocked.CompareExchange(ref Unsafe.As<TInt, int>(ref pflags._lowestBreakIteration), Unsafe.As<TInt, int>(ref iteration), Unsafe.As<TInt, int>(ref oldLBI)) != Unsafe.As<TInt, int>(ref oldLBI) :
-                    Interlocked.CompareExchange(ref Unsafe.As<TInt, long>(ref pflags._lowestBreakIteration), Unsafe.As<TInt, long>(ref iteration), Unsafe.As<TInt, long>(ref oldLBI)) != Unsafe.As<TInt, long>(ref oldLBI))
+                while (Interlocked.CompareExchange(ref pflags._lowestBreakIteration, iteration, oldLBI) != oldLBI)
                 {
                     wait.SpinOnce();
                     oldLBI = pflags.LowestBreakIteration;

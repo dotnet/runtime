@@ -52,7 +52,7 @@ namespace Internal.Runtime.TypeLoader
             unsafe
             {
                 MethodTable* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
-                if ((typeAsEEType->RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0)
+                if ((typeAsEEType->DynamicTypeFlags & DynamicTypeFlags.HasNonGCStatics) != 0)
                 {
                     return typeAsEEType->DynamicNonGcStaticsData;
                 }
@@ -91,7 +91,7 @@ namespace Internal.Runtime.TypeLoader
             unsafe
             {
                 MethodTable* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
-                if ((typeAsEEType->RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0)
+                if ((typeAsEEType->DynamicTypeFlags & DynamicTypeFlags.HasGCStatics) != 0)
                 {
                     return typeAsEEType->DynamicGcStaticsData;
                 }

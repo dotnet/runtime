@@ -29,7 +29,7 @@ struct HandleWrapper
     }
 
     HandleWrapper(const HandleWrapper&) = delete;
-    HandleWrapper& operator=(HandleWrapper&) = delete;
+    HandleWrapper& operator=(const HandleWrapper&) = delete;
 
     HandleWrapper(HandleWrapper&& hw) noexcept
         : m_handle(hw.m_handle)
@@ -82,15 +82,40 @@ typedef HandleWrapper<FileViewHandleSpec> FileViewHandle;
 class FileWriter
 {
     FileHandle m_file;
+    std::vector<char> m_buffer;
+    size_t m_bufferIndex = 0;
 
-    FileWriter(FileHandle file)
+    explicit FileWriter(FileHandle file)
         : m_file(std::move(file))
+        , m_buffer(8192)
     {
     }
 
 public:
     FileWriter()
     {
+    }
+
+    FileWriter(FileWriter&& fw) noexcept
+        : m_file(std::move(fw.m_file))
+        , m_buffer(std::move(fw.m_buffer))
+        , m_bufferIndex(fw.m_bufferIndex)
+    {
+    }
+    FileWriter& operator=(FileWriter&& fw) noexcept
+    {
+        m_file = std::move(fw.m_file);
+        m_buffer = std::move(fw.m_buffer);
+        m_bufferIndex = fw.m_bufferIndex;
+        return *this;
+    }
+
+    FileWriter(const FileWriter&) = delete;
+    FileWriter& operator=(const FileWriter&) = delete;
+
+    ~FileWriter()
+    {
+        Flush();
     }
 
     bool Print(const char* value, size_t numChars);
@@ -100,6 +125,7 @@ public:
     bool Print(double value);
     bool PrintQuotedCsvField(const char* value);
     bool Printf(const char* fmt, ...);
+    bool Flush();
 
     static bool CreateNew(const char* path, FileWriter* fw);
 };

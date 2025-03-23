@@ -21,13 +21,11 @@ namespace System
         {
             if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-#pragma warning disable 8500 // sizeof of managed types
                 // Blittable memmove
                 SpanHelpers.Memmove(
                     ref Unsafe.As<T, byte>(ref destination),
                     ref Unsafe.As<T, byte>(ref source),
                     elementCount * (nuint)sizeof(T));
-#pragma warning restore 8500
             }
             else if (elementCount > 0)
             {

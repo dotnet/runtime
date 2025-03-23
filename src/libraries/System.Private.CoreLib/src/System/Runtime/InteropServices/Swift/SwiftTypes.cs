@@ -42,6 +42,7 @@ namespace System.Runtime.InteropServices.Swift
     /// Represents the Swift 'self' context when the argument is Swift frozen struct T, which is either enregistered into multiple registers,
     /// or passed by reference in the 'self' register.
     /// </summary>
+    /// <typeparam name="T">The type of the frozen struct to pass in the 'self' context.</typeparam>
     /// <remarks>
     /// <para>
     /// This struct is used to pass the Swift frozen struct T to Swift functions in the context of interop with .NET.
@@ -56,7 +57,7 @@ namespace System.Runtime.InteropServices.Swift
     /// </para>
     /// </remarks>
     [Intrinsic]
-    public readonly unsafe struct SwiftSelf<T> where T: unmanaged
+    public readonly struct SwiftSelf<T> where T: unmanaged
     {
         /// <summary>
         /// Creates a new instance of the SwiftSelf struct with the specified value.

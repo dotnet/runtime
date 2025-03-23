@@ -31,7 +31,7 @@ namespace AppHost.Bundle.Tests
             var bundleDir = Directory.GetParent(bundledApp.Path);
             bundleDir.Should().OnlyHaveFiles(new[]
             {
-                Binaries.GetExeFileNameForCurrentPlatform(app.Name),
+                Binaries.GetExeName(app.Name),
                 $"{app.Name}.pdb"
             });
 

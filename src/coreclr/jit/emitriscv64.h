@@ -68,6 +68,7 @@ void emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const;
 void emitDispBranchLabel(const instrDesc* id) const;
 bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const;
 void emitDispIllegalInstruction(code_t instructionCode);
+void emitDispImmediate(ssize_t imm, bool newLine = true, unsigned regBase = REG_ZERO);
 
 emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/) const;
 
@@ -85,10 +86,9 @@ void    emitOutputInstrJumpDistanceHelper(const insGroup* ig,
 
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
-static bool IsMovInstruction(instruction ins);
-bool        IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
-bool        IsRedundantLdStr(
-           instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
+bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
+bool IsRedundantLdStr(
+    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
 
 static code_t insEncodeRTypeInstr(
     unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned rs2, unsigned funct7);
@@ -120,9 +120,6 @@ unsigned emitOutput_BTypeInstr_InvertComparation(
 unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigned imm21) const;
 
 BYTE* emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_OptsI(BYTE* dst, const instrDesc* id);
-BYTE* emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1);
-BYTE* emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber reg1);
 BYTE* emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
 BYTE* emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
@@ -141,6 +138,31 @@ static unsigned TrimSignedToImm12(ssize_t imm12);
 static unsigned TrimSignedToImm13(ssize_t imm13);
 static unsigned TrimSignedToImm20(ssize_t imm20);
 static unsigned TrimSignedToImm21(ssize_t imm21);
+
+// Major opcode of a 32-bit instruction as per "The RISC-V Instruction Set Manual", Chapter "RV32/64G Instruction Set
+// Listings", Table "RISC-V base opcode map"
+enum class MajorOpcode
+{
+    // clang-format off
+    // inst[4:2]    000,    001,     010,      011,     100,    101,   110,          111 (>32Bit)
+    /* inst[6:5] */
+    /*        00 */ Load,   LoadFp,  Custom0,  MiscMem, OpImm,  Auipc, OpImm32,      Encoding48Bit1,
+    /*        01 */ Store,  StoreFp, Custom1,  Amo,     Op,     Lui,   Op32,         Encoding64Bit,
+    /*        11 */ MAdd,   MSub,    NmSub,    NmAdd,   OpFp,   OpV,   Custom2Rv128, Encoding48Bit2,
+    /*        11 */ Branch, Jalr,    Reserved, Jal,     System, OpVe,  Custom3Rv128, Encoding80Bit,
+    // clang-format on
+};
+
+//------------------------------------------------------------------------
+// GetMajorOpcode: extracts major opcode from an instruction
+//
+// Arguments:
+//    instr - instruction encoded in 32-bit format
+//
+// Return Value:
+//    Major opcode
+//
+static MajorOpcode GetMajorOpcode(code_t instr);
 
 /************************************************************************/
 /*           Public inline informational methods                        */
@@ -195,11 +217,31 @@ static bool isValidSimm21(ssize_t value)
     return -(((int)1) << 20) <= value && value < (((int)1) << 20);
 };
 
-// Returns true if 'value' is a legal signed immediate 32 bit encoding.
+// Returns true if 'value' is a legal signed immediate 32-bit encoding with the offset adjustment.
 static bool isValidSimm32(ssize_t value)
 {
-    return -(((ssize_t)1) << 31) <= value && value < (((ssize_t)1) << 31);
-};
+    return (-(((ssize_t)1) << 31) - 0x800) <= value && value < (((ssize_t)1) << 31) - 0x800;
+}
+
+//------------------------------------------------------------------------
+// isSingleInstructionFpImm: checks if the floating-point constant can be synthesized with one instruction
+//
+// Arguments:
+//    value   - the constant to be imm'ed
+//    size    - size of the target immediate
+//    outBits - [out] the bits of the immediate
+//
+// Return Value:
+//    Whether the floating-point immediate can be synthesized with one instruction
+//
+static bool isSingleInstructionFpImm(double value, emitAttr size, int64_t* outBits)
+{
+    assert(size == EA_4BYTE || size == EA_8BYTE);
+    *outBits = (size == EA_4BYTE)
+                   ? (int32_t)BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(value))
+                   : (int64_t)BitOperations::DoubleToUInt64Bits(value);
+    return isValidSimm12(*outBits) || (((*outBits & 0xfff) == 0) && isValidSimm20(*outBits >> 12));
+}
 
 // Returns the number of bits used by the given 'size'.
 inline static unsigned getBitWidth(emitAttr size)

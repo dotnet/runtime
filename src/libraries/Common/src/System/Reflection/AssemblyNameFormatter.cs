@@ -10,12 +10,18 @@ namespace System.Reflection
 {
     internal static class AssemblyNameFormatter
     {
-        public static string ComputeDisplayName(string name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags = 0, AssemblyContentType contentType = 0)
+        public static string ComputeDisplayName(string name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags = 0, AssemblyContentType contentType = 0, byte[]? pk = null)
+        {
+            ValueStringBuilder vsb = new(stackalloc char[256]);
+            AppendDisplayName(ref vsb, name, version, cultureName, pkt, flags, contentType, pk);
+            return vsb.ToString();
+        }
+
+        public static void AppendDisplayName(ref ValueStringBuilder vsb, string name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags = 0, AssemblyContentType contentType = 0, byte[]? pk = null)
         {
             const int PUBLIC_KEY_TOKEN_LEN = 8;
             Debug.Assert(name.Length != 0);
 
-            var vsb = new ValueStringBuilder(stackalloc char[256]);
             vsb.AppendQuoted(name);
 
             if (version != null)
@@ -57,19 +63,28 @@ namespace System.Reflection
                 vsb.AppendQuoted(cultureName);
             }
 
-            if (pkt != null)
+            byte[]? keyOrToken = pkt ?? pk;
+            if (keyOrToken != null)
             {
-                if (pkt.Length > PUBLIC_KEY_TOKEN_LEN)
-                    throw new ArgumentException();
+                if (pkt != null)
+                {
+                    if (pkt.Length > PUBLIC_KEY_TOKEN_LEN)
+                        throw new ArgumentException();
 
-                vsb.Append(", PublicKeyToken=");
-                if (pkt.Length == 0)
+                    vsb.Append(", PublicKeyToken=");
+                }
+                else
+                {
+                    vsb.Append(", PublicKey=");
+                }
+
+                if (keyOrToken.Length == 0)
                 {
                     vsb.Append("null");
                 }
                 else
                 {
-                    HexConverter.EncodeToUtf16(pkt, vsb.AppendSpan(pkt.Length * 2), HexConverter.Casing.Lower);
+                    HexConverter.EncodeToUtf16(keyOrToken, vsb.AppendSpan(keyOrToken.Length * 2), HexConverter.Casing.Lower);
                 }
             }
 
@@ -80,8 +95,6 @@ namespace System.Reflection
                 vsb.Append(", ContentType=WindowsRuntime");
 
             // NOTE: By design (desktop compat) AssemblyName.FullName and ToString() do not include ProcessorArchitecture.
-
-            return vsb.ToString();
         }
 
         private static void AppendQuoted(this ref ValueStringBuilder vsb, string s)
