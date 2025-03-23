@@ -2,27 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-//
-// ===========================================================================
-// File: palrt.h
-//
-// ===========================================================================
-
 /*++
-
-
 Abstract:
 
     PAL runtime functions.  These are functions which are ordinarily
     implemented as part of the Win32 API set, but when compiling CoreCLR for
     Unix-like systems, are implemented as a runtime library on top of the PAL.
-
-Author:
-
-
-
-Revision History:
-
 --*/
 
 #ifndef __PALRT_H__
@@ -213,19 +198,7 @@ EXTERN_C const GUID GUID_NULL;
 typedef GUID *LPGUID;
 typedef const GUID FAR *LPCGUID;
 
-#ifdef __cplusplus
-extern "C++" {
-#if !defined _SYS_GUID_OPERATOR_EQ_ && !defined _NO_SYS_GUID_OPERATOR_EQ_
-#define _SYS_GUID_OPERATOR_EQ_
-inline int IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
-    { return !memcmp(&rguid1, &rguid2, sizeof(GUID)); }
-inline int operator==(REFGUID guidOne, REFGUID guidOther)
-    { return IsEqualGUID(guidOne,guidOther); }
-inline int operator!=(REFGUID guidOne, REFGUID guidOther)
-    { return !IsEqualGUID(guidOne,guidOther); }
-#endif
-};
-#endif // __cplusplus
+#define IsEqualGUID(guid1, guid2) guid1 == guid2
 
 #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
     EXTERN_C const GUID FAR name
@@ -274,10 +247,6 @@ typedef union _ULARGE_INTEGER {
 } ULARGE_INTEGER, *PULARGE_INTEGER;
 
 /******************* OLE, BSTR, VARIANT *************************/
-
-STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemAlloc(SIZE_T cb);
-STDAPI_VIS(DLLEXPORT, void) CoTaskMemFree(LPVOID pv);
-
 typedef SHORT VARIANT_BOOL;
 #define VARIANT_TRUE ((VARIANT_BOOL)-1)
 #define VARIANT_FALSE ((VARIANT_BOOL)0)
@@ -489,9 +458,6 @@ struct tagVARIANT
 
 typedef VARIANT VARIANTARG, *LPVARIANTARG;
 
-STDAPI_(void) VariantInit(VARIANT * pvarg);
-STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
-
 #define V_VT(X)         ((X)->n1.n2.vt)
 #define V_UNION(X, Y)   ((X)->n1.n2.n3.Y)
 #define V_RECORDINFO(X) ((X)->n1.n2.n3.brecVal.pRecInfo)
@@ -555,8 +521,6 @@ STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
 #define V_DECIMALREF(X)    V_UNION(X, pdecVal)
 
 #define V_ISBYREF(X)     (V_VT(X)&VT_BYREF)
-
-STDAPI CreateStreamOnHGlobal(PVOID hGlobal, BOOL fDeleteOnRelease, interface IStream** ppstm);
 
 #define STGM_DIRECT             0x00000000L
 
@@ -1039,6 +1003,14 @@ typedef struct _DISPATCHER_CONTEXT {
     DWORD Reserved;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
+#elif defined(HOST_WASM)
+
+typedef struct _DISPATCHER_CONTEXT {
+    // WASM does not build the VM or JIT at this point,
+    // so we only provide a dummy definition.
+    DWORD Reserved;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
 #else
 
 #error Unknown architecture for defining DISPATCHER_CONTEXT.
@@ -1073,33 +1045,6 @@ typedef LONG (WINAPI *PTOP_LEVEL_EXCEPTION_FILTER)(
     IN struct _EXCEPTION_POINTERS *ExceptionInfo
     );
 typedef PTOP_LEVEL_EXCEPTION_FILTER LPTOP_LEVEL_EXCEPTION_FILTER;
-
-/******************** PAL RT APIs *******************************/
-
-typedef struct _HSATELLITE *HSATELLITE;
-
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceW(LPCWSTR SatelliteResourceFileName);
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceA(LPCSTR SatelliteResourceFileName);
-EXTERN_C BOOL PALAPI PAL_FreeSatelliteResource(HSATELLITE SatelliteResource);
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringW(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPWSTR lpBuffer,
-             UINT nBufferMax);
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringA(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPSTR lpBuffer,
-             UINT nBufferMax);
-
-EXTERN_C HRESULT PALAPI PAL_CoCreateInstance(REFCLSID   rclsid,
-                             REFIID     riid,
-                             void     **ppv);
-
-// So we can have CoCreateInstance in most of the code base,
-// instead of spreading around of if'def FEATURE_PALs for PAL_CoCreateInstance.
-#define CoCreateInstance(rclsid, pUnkOuter, dwClsContext, riid, ppv) PAL_CoCreateInstance(rclsid, riid, ppv)
-
-STDAPI
-CoCreateGuid(OUT GUID * pguid);
 
 /************** Byte swapping & unaligned access ******************/
 

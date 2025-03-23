@@ -81,6 +81,10 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Gets the name of the culture associated with the assembly.
         /// </summary>
+        /// <remarks>
+        /// Do not create a <see cref="System.Globalization.CultureInfo"/> instance from this string unless
+        /// you know the string has originated from a trustworthy source.
+        /// </remarks>
         public string? CultureName { get; }
 
         /// <summary>
@@ -108,9 +112,26 @@ namespace System.Reflection.Metadata
             {
                 if (_fullName is null)
                 {
-                    bool isPublicKey = (Flags & AssemblyNameFlags.PublicKey) != 0;
+                    ValueStringBuilder vsb = new(stackalloc char[256]);
+                    AppendFullName(ref vsb);
+                    _fullName = vsb.ToString();
+                }
 
-                    byte[]? publicKeyOrToken =
+                return _fullName;
+            }
+        }
+
+        internal void AppendFullName(ref ValueStringBuilder vsb)
+        {
+            if (_fullName is not null)
+            {
+                vsb.Append(_fullName);
+            }
+            else
+            {
+                bool isPublicKey = (Flags & AssemblyNameFlags.PublicKey) != 0;
+
+                byte[]? publicKeyOrToken =
 #if SYSTEM_PRIVATE_CORELIB
                     PublicKeyOrToken;
 #elif NET8_0_OR_GREATER
@@ -118,19 +139,20 @@ namespace System.Reflection.Metadata
 #else
                     !PublicKeyOrToken.IsDefault ? PublicKeyOrToken.ToArray() : null;
 #endif
-                    _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName,
-                        pkt: isPublicKey ? null : publicKeyOrToken,
-                        ExtractAssemblyNameFlags(_flags), ExtractAssemblyContentType(_flags),
-                        pk: isPublicKey ? publicKeyOrToken : null);
-                }
-
-                return _fullName;
+                AssemblyNameFormatter.AppendDisplayName(ref vsb, Name, Version, CultureName,
+                    pkt: isPublicKey ? null : publicKeyOrToken,
+                    ExtractAssemblyNameFlags(_flags), ExtractAssemblyContentType(_flags),
+                    pk: isPublicKey ? publicKeyOrToken : null);
             }
         }
 
         /// <summary>
         /// Initializes a new instance of the <seealso cref="AssemblyName"/> class based on the stored information.
         /// </summary>
+        /// <remarks>
+        /// Do not create an <see cref="AssemblyName"/> instance with <see cref="CultureName"/> string unless
+        /// you know the string has originated from a trustworthy source.
+        /// </remarks>
         public AssemblyName ToAssemblyName()
         {
             AssemblyName assemblyName = new();

@@ -78,11 +78,11 @@ void DecomposeLongs::DecomposeBlock(BasicBlock* block)
 // Return Value:
 //    None.
 //
-void DecomposeLongs::DecomposeRange(Compiler* compiler, LIR::Range& range)
+void DecomposeLongs::DecomposeRange(Compiler* compiler, Lowering* lowering, LIR::Range& range)
 {
     assert(compiler != nullptr);
 
-    DecomposeLongs decomposer(compiler);
+    DecomposeLongs decomposer(compiler, lowering);
     decomposer.m_range = &range;
 
     decomposer.DecomposeRangeHelper();
@@ -90,7 +90,7 @@ void DecomposeLongs::DecomposeRange(Compiler* compiler, LIR::Range& range)
 
 //------------------------------------------------------------------------
 // DecomposeLongs::DecomposeRangeHelper:
-//    Decompiose each node in the current range.
+//    Decompose each node in the current range.
 //
 //    Decomposition is done as an execution-order walk. Decomposition of
 //    a particular node can create new nodes that need to be further
@@ -122,43 +122,75 @@ void DecomposeLongs::DecomposeRangeHelper()
 GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
 {
     // Handle the case where we are implicitly using the lower half of a long lclVar.
-    if ((tree->TypeGet() == TYP_INT) && tree->OperIsLocal())
+    if (tree->TypeIs(TYP_INT) && tree->OperIsLocal())
     {
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
         if (varTypeIsLong(varDsc) && varDsc->lvPromoted)
         {
-#ifdef DEBUG
-            if (m_compiler->verbose)
-            {
-                printf("Changing implicit reference to lo half of long lclVar to an explicit reference of its promoted "
-                       "half:\n");
-                m_compiler->gtDispTreeRange(Range(), tree);
-            }
-#endif // DEBUG
+            JITDUMP("Changing implicit reference to lo half of long lclVar to an explicit reference of its promoted "
+                    "half:\n");
+            DISPTREERANGE(Range(), tree);
+
             unsigned loVarNum = varDsc->lvFieldLclStart;
             tree->AsLclVarCommon()->SetLclNum(loVarNum);
             return tree->gtNext;
         }
     }
 
-    if (tree->TypeGet() != TYP_LONG)
+    if (!tree->TypeIs(TYP_LONG))
     {
         return tree->gtNext;
     }
-
-#ifdef DEBUG
-    if (m_compiler->verbose)
-    {
-        printf("Decomposing TYP_LONG tree.  BEFORE:\n");
-        m_compiler->gtDispTreeRange(Range(), tree);
-    }
-#endif // DEBUG
 
     LIR::Use use;
     if (!Range().TryGetUse(tree, &use))
     {
         LIR::Use::MakeDummyUse(Range(), tree, &use);
     }
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_X86)
+    if (!use.IsDummyUse())
+    {
+        // HWIntrinsics can consume/produce a long directly, provided its source/target is memory.
+        // Here we do a conservative check for specific cases where it is certain the load/store
+        // can be contained. In those cases, we can skip decomposition.
+
+        GenTree* user = use.User();
+
+        if (user->OperIsHWIntrinsic())
+        {
+            if (tree->OperIs(GT_CNS_LNG) ||
+                (tree->OperIs(GT_IND, GT_LCL_FLD) && m_lowering->IsSafeToContainMem(user, tree)))
+            {
+                NamedIntrinsic intrinsicId = user->AsHWIntrinsic()->GetHWIntrinsicId();
+                assert(HWIntrinsicInfo::IsVectorCreate(intrinsicId) ||
+                       HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) ||
+                       HWIntrinsicInfo::IsVectorCreateScalarUnsafe(intrinsicId));
+
+                return tree->gtNext;
+            }
+        }
+        else if (user->OperIs(GT_STOREIND) && tree->OperIsHWIntrinsic() && m_compiler->opts.OptimizationEnabled())
+        {
+            NamedIntrinsic intrinsicId = tree->AsHWIntrinsic()->GetHWIntrinsicId();
+            if (HWIntrinsicInfo::IsVectorToScalar(intrinsicId) && m_lowering->IsSafeToContainMem(user, tree))
+            {
+                return tree->gtNext;
+            }
+        }
+    }
+
+    if (tree->OperIs(GT_STOREIND) && tree->AsStoreInd()->Data()->OperIsHWIntrinsic())
+    {
+        // We should only get here if we matched the second pattern above.
+        assert(HWIntrinsicInfo::IsVectorToScalar(tree->AsStoreInd()->Data()->AsHWIntrinsic()->GetHWIntrinsicId()));
+
+        return tree->gtNext;
+    }
+#endif // FEATURE_HW_INTRINSICS && TARGET_X86
+
+    JITDUMP("Decomposing TYP_LONG tree.  BEFORE:\n");
+    DISPTREERANGE(Range(), tree);
 
     GenTree* nextNode = nullptr;
     switch (tree->OperGet())
@@ -270,19 +302,14 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
 
     // If we replaced the argument to a GT_FIELD_LIST element with a GT_LONG node, split that field list
     // element into two elements: one for each half of the GT_LONG.
-    if ((use.Def()->OperGet() == GT_LONG) && !use.IsDummyUse() && (use.User()->OperGet() == GT_FIELD_LIST))
+    if (use.Def()->OperIs(GT_LONG) && !use.IsDummyUse() && use.User()->OperIs(GT_FIELD_LIST))
     {
         DecomposeFieldList(use.User()->AsFieldList(), use.Def()->AsOp());
     }
 
-#ifdef DEBUG
-    if (m_compiler->verbose)
-    {
-        // NOTE: st_lcl_var doesn't dump properly afterwards.
-        printf("Decomposing TYP_LONG tree.  AFTER:\n");
-        m_compiler->gtDispTreeRange(Range(), use.Def());
-    }
-#endif
+    // NOTE: st_lcl_var doesn't dump properly afterwards.
+    JITDUMP("Decomposing TYP_LONG tree.  AFTER:\n");
+    DISPTREERANGE(Range(), use.Def());
 
     // When casting from a decomposed long to a smaller integer we can discard the high part.
     if (m_compiler->opts.OptimizationEnabled() && !use.IsDummyUse() && use.User()->OperIs(GT_CAST) &&
@@ -1707,6 +1734,18 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
             return DecomposeHWIntrinsicGetElement(use, hwintrinsicTree);
         }
 
+        case NI_Vector128_ToScalar:
+        case NI_Vector256_ToScalar:
+        case NI_Vector512_ToScalar:
+        {
+            return DecomposeHWIntrinsicToScalar(use, hwintrinsicTree);
+        }
+
+        case NI_EVEX_MoveMask:
+        {
+            return DecomposeHWIntrinsicMoveMask(use, hwintrinsicTree);
+        }
+
         default:
         {
             noway_assert(!"unexpected GT_HWINTRINSIC node in long decomposition");
@@ -1746,9 +1785,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 {
     assert(node == use.Def());
     assert(varTypeIsLong(node));
-    assert((node->GetHWIntrinsicId() == NI_Vector128_GetElement) ||
-           (node->GetHWIntrinsicId() == NI_Vector256_GetElement) ||
-           (node->GetHWIntrinsicId() == NI_Vector512_GetElement));
+    assert(HWIntrinsicInfo::IsVectorGetElement(node->GetHWIntrinsicId()));
 
     GenTree*  op1          = node->Op(1);
     GenTree*  op2          = node->Op(2);
@@ -1830,6 +1867,175 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
+//------------------------------------------------------------------------
+// DecomposeHWIntrinsicToScalar: Decompose GT_HWINTRINSIC -- NI_Vector*_ToScalar.
+//
+// create:
+//
+// tmp_simd_var = simd_var
+// lo_result = GT_HWINTRINSIC{ToScalar}[int](tmp_simd_var)
+// hi_result = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, 1)
+//             - or -
+//             GT_HWINTRINSIC{ToScalar}[int](GT_RSZ(tmp_simd_var, 32))
+// return: GT_LONG(lo_result, hi_result)
+//
+// Arguments:
+//    use - the LIR::Use object for the def that needs to be decomposed.
+//   node - the hwintrinsic node to decompose
+//
+// Return Value:
+//    The GT_LONG node wrapping the upper and lower halves.
+//
+GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIntrinsic* node)
+{
+    assert(node == use.Def());
+    assert(varTypeIsLong(node));
+    assert(HWIntrinsicInfo::IsVectorToScalar(node->GetHWIntrinsicId()));
+
+    GenTree*       op1          = node->Op(1);
+    NamedIntrinsic intrinsicId  = node->GetHWIntrinsicId();
+    var_types      simdBaseType = node->GetSimdBaseType();
+    unsigned       simdSize     = node->GetSimdSize();
+
+    assert(varTypeIsLong(simdBaseType));
+    assert(varTypeIsSIMD(op1));
+
+    GenTree* simdTmpVar    = RepresentOpAsLocalVar(op1, node, &node->Op(1));
+    unsigned simdTmpVarNum = simdTmpVar->AsLclVarCommon()->GetLclNum();
+    JITDUMP("[DecomposeHWIntrinsicToScalar]: Saving op1 tree to a temp var:\n");
+    DISPTREERANGE(Range(), simdTmpVar);
+
+    GenTree* loResult = m_compiler->gtNewSimdToScalarNode(TYP_INT, simdTmpVar, CORINFO_TYPE_INT, simdSize);
+    Range().InsertAfter(simdTmpVar, loResult);
+
+    simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
+    Range().InsertAfter(loResult, simdTmpVar);
+
+    GenTree* hiResult;
+    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        GenTree* one = m_compiler->gtNewIconNode(1);
+        hiResult     = m_compiler->gtNewSimdGetElementNode(TYP_INT, simdTmpVar, one, CORINFO_TYPE_INT, simdSize);
+
+        Range().InsertAfter(simdTmpVar, one, hiResult);
+    }
+    else
+    {
+        assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_SSE2));
+
+        GenTree* thirtyTwo = m_compiler->gtNewIconNode(32);
+        GenTree* shift     = m_compiler->gtNewSimdBinOpNode(GT_RSZ, op1->TypeGet(), simdTmpVar, thirtyTwo,
+                                                            node->GetSimdBaseJitType(), simdSize);
+        hiResult           = m_compiler->gtNewSimdToScalarNode(TYP_INT, shift, CORINFO_TYPE_INT, simdSize);
+
+        Range().InsertAfter(simdTmpVar, thirtyTwo, shift, hiResult);
+    }
+
+    Range().Remove(node);
+
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
+}
+
+//------------------------------------------------------------------------
+// DecomposeHWIntrinsicMoveMask: Decompose GT_HWINTRINSIC -- NI_EVEX_MoveMask
+//
+// Decompose a MoveMask(x) node on Vector512<*>. For:
+//
+// GT_HWINTRINSIC{MoveMask}[*](simd_var)
+//
+// create:
+//
+// tmp_simd_var = simd_var
+// tmp_simd_lo  = GT_HWINTRINSIC{GetLower}(tmp_simd_var)
+// lo_result = GT_HWINTRINSIC{MoveMask}(tmp_simd_lo)
+// tmp_simd_hi  = GT_HWINTRINSIC{GetUpper}(tmp_simd_var)
+// hi_result = GT_HWINTRINSIC{MoveMask}(tmp_simd_hi)
+// return: GT_LONG(lo_result, hi_result)
+//
+// Noting that for all types except byte/sbyte, hi_result will be exclusively
+// zero and so we can actually optimize this a bit more directly
+//
+// Arguments:
+//    use - the LIR::Use object for the def that needs to be decomposed.
+//   node - the hwintrinsic node to decompose
+//
+// Return Value:
+//    The next node to process.
+//
+GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIntrinsic* node)
+{
+    assert(node == use.Def());
+    assert(varTypeIsLong(node));
+    assert(node->GetHWIntrinsicId() == NI_EVEX_MoveMask);
+
+    GenTree*    op1             = node->Op(1);
+    CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+    var_types   simdBaseType    = node->GetSimdBaseType();
+    unsigned    simdSize        = node->GetSimdSize();
+
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(op1->TypeGet() == TYP_MASK);
+    assert(simdSize == 64);
+
+    GenTree* loResult = nullptr;
+    GenTree* hiResult = nullptr;
+
+    if (varTypeIsByte(simdBaseType))
+    {
+        // Create:
+        //      simdTmpVar = op1
+
+        GenTree* simdTmpVar    = RepresentOpAsLocalVar(op1, node, &node->Op(1));
+        unsigned simdTmpVarNum = simdTmpVar->AsLclVarCommon()->GetLclNum();
+        JITDUMP("[DecomposeHWIntrinsicMoveMask]: Saving op1 tree to a temp var:\n");
+        DISPTREERANGE(Range(), simdTmpVar);
+        Range().Remove(simdTmpVar);
+
+        Range().InsertBefore(node, simdTmpVar);
+
+        // Create:
+        //      loResult  = GT_HWINTRINSIC{MoveMask}(simdTmpVar)
+
+        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_EVEX_MoveMask, simdBaseJitType, 32);
+        Range().InsertBefore(node, loResult);
+
+        simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
+        Range().InsertBefore(node, simdTmpVar);
+
+        // Create:
+        //      simdTmpVar = GT_HWINTRINSIC{ShiftRightMask}(simdTmpVar, 32)
+        //      hiResult  = GT_HWINTRINSIC{MoveMask}(simdTmpVar)
+
+        GenTree* shiftIcon = m_compiler->gtNewIconNode(32, TYP_INT);
+        Range().InsertBefore(node, shiftIcon);
+
+        simdTmpVar = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, simdTmpVar, shiftIcon, NI_EVEX_ShiftRightMask,
+                                                          simdBaseJitType, 64);
+        Range().InsertBefore(node, simdTmpVar);
+
+        hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_EVEX_MoveMask, simdBaseJitType, 32);
+        Range().InsertBefore(node, hiResult);
+    }
+    else
+    {
+        // Create:
+        //      loResult  = GT_HWINTRINSIC{MoveMask}(op1)
+
+        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, op1, NI_EVEX_MoveMask, simdBaseJitType, simdSize);
+        Range().InsertBefore(node, loResult);
+
+        // Create:
+        //      hiResult  = GT_ICON(0)
+
+        hiResult = m_compiler->gtNewZeroConNode(TYP_INT);
+        Range().InsertBefore(node, hiResult);
+    }
+
+    // Done with the original tree; remove it.
+    Range().Remove(node);
+
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
+}
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
@@ -1947,13 +2153,13 @@ GenTree* DecomposeLongs::StoreNodeToVar(LIR::Use& use)
     if (user->OperGet() == GT_STORE_LCL_VAR)
     {
         // If parent is already a STORE_LCL_VAR, just mark it lvIsMultiRegRet.
-        m_compiler->lvaGetDesc(user->AsLclVar())->lvIsMultiRegRet = true;
+        m_compiler->lvaGetDesc(user->AsLclVar())->SetIsMultiRegDest();
         return tree->gtNext;
     }
 
     // Otherwise, we need to force var = call()
-    unsigned lclNum                              = use.ReplaceWithLclVar(m_compiler);
-    m_compiler->lvaTable[lclNum].lvIsMultiRegRet = true;
+    unsigned lclNum = use.ReplaceWithLclVar(m_compiler);
+    m_compiler->lvaGetDesc(lclNum)->SetIsMultiRegDest();
 
     if (m_compiler->lvaEnregMultiRegVars)
     {
@@ -2157,6 +2363,13 @@ void DecomposeLongs::TryPromoteLongVar(unsigned lclNum)
     {
         return;
     }
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_X86)
+    if (varDsc->lvIsParam)
+    {
+        // Promotion blocks combined read optimizations for SIMD loads of long params
+        return;
+    }
+#endif // FEATURE_HW_INTRINSICS && TARGET_X86
 
     varDsc->lvFieldCnt      = 2;
     varDsc->lvFieldLclStart = m_compiler->lvaCount;
@@ -2189,13 +2402,7 @@ void DecomposeLongs::TryPromoteLongVar(unsigned lclNum)
             fieldVarDsc->lvIsParam = true;
             m_compiler->lvaSetVarDoNotEnregister(fieldLclNum DEBUGARG(DoNotEnregisterReason::LongParamField));
 
-#if FEATURE_MULTIREG_ARGS
-            if (varDsc->lvIsRegArg)
-            {
-                fieldVarDsc->lvIsRegArg = 1; // Longs are never split.
-                fieldVarDsc->SetArgReg((index == 0) ? varDsc->GetArgReg() : varDsc->GetOtherArgReg());
-            }
-#endif // FEATURE_MULTIREG_ARGS
+            fieldVarDsc->lvIsRegArg = varDsc->lvIsRegArg;
         }
     }
 }

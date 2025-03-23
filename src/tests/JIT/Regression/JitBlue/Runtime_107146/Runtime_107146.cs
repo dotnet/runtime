@@ -28,21 +28,19 @@ public class Runtime_107146
     [Fact]
     public static void TestEntryPoint()
     {
-        if (!Avx512BW.VL.IsSupported)
+        if (Avx512BW.VL.IsSupported && Popcnt.IsSupported)
         {
-            return;
-        }
-
-        for (int vr15 = 0; vr15 < 2; vr15++)
-        {
-            s_26[0] = 0;
-            float vr16 = s_24[0]--;
-            System.Console.WriteLine(s_25);
-            System.Console.WriteLine(System.BitConverter.SingleToUInt32Bits(vr16));
-            var vr17 = (byte)Popcnt.PopCount(1);
-            var vr18 = Vector256.Create<byte>(vr17);
-            var vr19 = Vector256.Create<byte>(1);
-            s_29 = Avx512BW.VL.CompareLessThan(vr18, vr19);
+            for (int vr15 = 0; vr15 < 2; vr15++)
+            {
+                s_26[0] = 0;
+                float vr16 = s_24[0]--;
+                System.Console.WriteLine(s_25);
+                System.Console.WriteLine(System.BitConverter.SingleToUInt32Bits(vr16));
+                var vr17 = (byte)Popcnt.PopCount(1);
+                var vr18 = Vector256.Create<byte>(vr17);
+                var vr19 = Vector256.Create<byte>(1);
+                s_29 = Avx512BW.VL.CompareLessThan(vr18, vr19);
+            }
         }
     }
 }

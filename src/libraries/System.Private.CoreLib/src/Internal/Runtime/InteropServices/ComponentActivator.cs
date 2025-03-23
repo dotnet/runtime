@@ -67,6 +67,9 @@ namespace Internal.Runtime.InteropServices
                                                                    IntPtr reserved,
                                                                    IntPtr functionHandle)
         {
+            if (functionHandle != IntPtr.Zero)
+                *(IntPtr*)functionHandle = 0;
+
             if (!IsSupported)
                 return HostFeatureDisabled;
 
@@ -107,7 +110,7 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         [UnmanagedCallersOnly]
-        public static unsafe int LoadAssembly(IntPtr assemblyPathNative, IntPtr loadContext, IntPtr reserved)
+        public static int LoadAssembly(IntPtr assemblyPathNative, IntPtr loadContext, IntPtr reserved)
         {
             if (!IsSupported)
                 return HostFeatureDisabled;
@@ -229,6 +232,9 @@ namespace Internal.Runtime.InteropServices
                                                     IntPtr reserved,
                                                     IntPtr functionHandle)
         {
+            if (functionHandle != IntPtr.Zero)
+                *(IntPtr*)functionHandle = 0;
+
             if (!IsSupported)
             {
 #if CORECLR

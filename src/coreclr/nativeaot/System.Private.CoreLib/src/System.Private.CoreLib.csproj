@@ -8,7 +8,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
     <ILLinkLinkAttributesXmls Include="ILLink\ILLink.LinkAttributes.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
@@ -59,6 +58,7 @@
   <ItemGroup>
     <Compile Include="Internal\Runtime\CompilerHelpers\DelegateHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\ReachabilityInstrumentationSupport.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ReflectionHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\SharedCodeHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Reflection.cs" />
@@ -119,9 +119,7 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\GenericMethodDescriptor.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\RuntimeFieldHandleInfo.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\RuntimeMethodHandleInfo.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\RuntimeSignature.cs" />
+    <Compile Include="Internal\Runtime\CompilerServices\MethodNameAndSignature.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\OpenMethodResolver.cs" />
     <Compile Include="Internal\Runtime\TypeLoaderExceptionHelper.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperience.cs" />
@@ -201,7 +199,6 @@
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\ThunkPool.cs" />
-    <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
@@ -213,7 +210,6 @@
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\TrackerObjectManager.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveCMarshal.NativeAot.cs" Condition="'$(FeatureObjCMarshal)' == 'true'" />
-    <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\Intrinsics\X86\X86Base.NativeAot.cs" Condition="'$(SupportsX86Intrinsics)' == 'true'" />
     <Compile Include="System\Runtime\JitInfo.NativeAot.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.NativeAot.cs" />
@@ -269,9 +265,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs">
-      <Link>Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.RaiseFailFastException.cs">
       <Link>Interop\Windows\Kernel32\Interop.RaiseFailFastException.cs</Link>
@@ -333,6 +326,9 @@
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
+      <Link>Utilities\LockFreeReaderHashtableOfPointers.cs</Link>
+    </Compile>
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>
@@ -356,9 +352,6 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs">
       <Link>Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs</Link>
-    </Compile>
-    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\CanonTypeKind.cs">
-      <Link>Internal\Runtime\CanonTypeKind.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\System\Runtime\RhFailFastReason.cs">
       <Link>System\Runtime\RhFailFastReason.cs</Link>
@@ -425,7 +418,6 @@
     <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.NativeFormat.cs" />
-    <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
     <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
@@ -570,6 +562,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <CompilerVisibleProperty Include="InformationalVersion" />
   </ItemGroup>
 
   <!-- Setup eventing file generation -->

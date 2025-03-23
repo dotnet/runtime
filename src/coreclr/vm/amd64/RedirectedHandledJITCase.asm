@@ -97,8 +97,8 @@ endif
 endif
 
 
-; scratch area; padding; GSCookie
-OFFSET_OF_FRAME = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES + 8 + SIZEOF_GSCookie
+; scratch area
+OFFSET_OF_FRAME = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES
 
 ; force evaluation to avoid "expression is too complex errors"
 SIZEOF__FaultingExceptionFrame = SIZEOF__FaultingExceptionFrame
@@ -144,7 +144,7 @@ STUB&_RspAligned:
 
         mov             dword ptr [rcx], 0                                                          ; Initialize vtbl (it is not strictly necessary)
         mov             dword ptr [rcx + OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted], 0    ; Initialize BOOL for personality routine
-        mov             qword ptr [rcx + OFFSETOF__FaultingExceptionFrame__m_SSP], rax
+        mov             r8, rax
 
         call            TARGET
 
@@ -185,6 +185,7 @@ NESTED_ENTRY RedirectForThrowControl2, _TEXT
 
         save_reg_postrsp    rcx, REDIRECT_FOR_THROW_CONTROL_FRAME_SIZE + 8h     ; FaultingExceptionFrame
         save_reg_postrsp    rdx, REDIRECT_FOR_THROW_CONTROL_FRAME_SIZE + 10h    ; Original RSP
+        save_reg_postrsp    r8, REDIRECT_FOR_THROW_CONTROL_FRAME_SIZE + 18h     ; SSP
 
         END_PROLOGUE
 
@@ -197,7 +198,8 @@ NESTED_ENTRY RedirectForThrowControl2, _TEXT
         mov             rdx, [rsp + REDIRECT_FOR_THROW_CONTROL_FRAME_SIZE + 10h] ; Original RSP
         mov             [rdx - 8], rax
 
-        mov             rcx, [rsp + REDIRECT_FOR_THROW_CONTROL_FRAME_SIZE + 8h] ; FaultingExceptionFrame
+        mov             rcx, [rsp + REDIRECT_FOR_THROW_CONTROL_FRAME_SIZE + 8h]  ; FaultingExceptionFrame
+        mov             rdx, [rsp + REDIRECT_FOR_THROW_CONTROL_FRAME_SIZE + 18h] ; SSP
         call            ThrowControlForThread
 
         ; ThrowControlForThread doesn't return.

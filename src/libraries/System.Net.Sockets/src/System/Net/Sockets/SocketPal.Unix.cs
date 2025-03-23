@@ -71,7 +71,8 @@ namespace System.Net.Sockets
 
                 // The socket was created successfully; enable IPV6_V6ONLY by default for normal AF_INET6 sockets.
                 // This fails on raw sockets so we just let them be in default state.
-                if (addressFamily == AddressFamily.InterNetworkV6 && socketType != SocketType.Raw)
+                // WASI is always IPv6-only when IPv6 is enabled.
+                if (!OperatingSystem.IsWasi() && addressFamily == AddressFamily.InterNetworkV6 && socketType != SocketType.Raw)
                 {
                     int on = 1;
                     error = Interop.Sys.SetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
@@ -288,8 +289,13 @@ namespace System.Net.Sockets
             // Pin buffers and set up iovecs.
             int startIndex = bufferIndex, startOffset = offset;
 
-            int maxBuffers = buffers.Count - startIndex;
-            bool allocOnStack = maxBuffers <= IovStackThreshold;
+            int maxBuffers = checked(buffers.Count - startIndex);
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI doesn't have iovecs and recvmsg in preview2
+                maxBuffers = Math.Max(maxBuffers, 1);
+            }
+            bool allocOnStack = (uint)maxBuffers <= IovStackThreshold;
             Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[maxBuffers];
             Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[maxBuffers];
 
@@ -376,7 +382,12 @@ namespace System.Net.Sockets
             Debug.Assert(socket.IsSocket);
 
             int maxBuffers = buffers.Count;
-            bool allocOnStack = maxBuffers <= IovStackThreshold;
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI doesn't have iovecs and recvmsg in preview2
+                maxBuffers = Math.Max(maxBuffers, 1);
+            }
+            bool allocOnStack = (uint)maxBuffers <= IovStackThreshold;
 
             // When there are many buffers, reduce the number of pinned buffers based on available bytes.
             int available = int.MaxValue;
@@ -532,7 +543,13 @@ namespace System.Net.Sockets
             Debug.Assert(socket.IsSocket);
 
             int buffersCount = buffers.Count;
-            bool allocOnStack = buffersCount <= IovStackThreshold;
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI doesn't have iovecs and sendmsg in preview2
+                buffersCount = Math.Max(buffersCount, 1);
+            }
+
+            bool allocOnStack = (uint)buffersCount <= IovStackThreshold;
             Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[buffersCount];
             Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffersCount];
             int iovCount = 0;
@@ -1056,6 +1073,8 @@ namespace System.Net.Sockets
 
         public static SocketError SetBlocking(SafeSocketHandle handle, bool shouldBlock, out bool willBlock)
         {
+            if (OperatingSystem.IsWasi() && shouldBlock) throw new PlatformNotSupportedException();
+
             handle.IsNonBlocking = !shouldBlock;
             willBlock = shouldBlock;
             return SocketError.Success;
@@ -1403,7 +1422,7 @@ namespace System.Net.Sockets
         {
             if (err == Interop.Error.SUCCESS)
             {
-                handle.TrackOption(optionLevel, optionName);
+                handle.TrackSocketOption(optionLevel, optionName);
                 return SocketError.Success;
             }
             return GetSocketErrorForErrorCode(err);
@@ -1790,7 +1809,7 @@ namespace System.Net.Sockets
             }
 
             const int StackThreshold = 80; // arbitrary limit to avoid too much space on stack
-            if (count < StackThreshold)
+            if ((uint)count < StackThreshold)
             {
                 Interop.PollEvent* eventsOnStack = stackalloc Interop.PollEvent[count];
                 return SelectViaPoll(

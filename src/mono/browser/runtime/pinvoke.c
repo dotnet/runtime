@@ -23,39 +23,71 @@ mono_wasm_pinvoke_vararg_stub (void)
 	/* This is just a stub used to mark vararg pinvokes */
 }
 
+int
+table_compare_name (const void *t1, const void *t2)
+{
+	return strcmp (((PinvokeTable*)t1)->name, ((PinvokeTable*)t2)->name);
+}
+
 void*
 wasm_dl_lookup_pinvoke_table (const char *name)
 {
-	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (void*); ++i) {
-		if (!strcmp (name, pinvoke_names [i]))
-			return pinvoke_tables [i];
-	}
-	return NULL;
+	PinvokeImport needle = { name, NULL };
+	return bsearch (&needle, pinvoke_tables, (sizeof (pinvoke_tables) / sizeof (PinvokeTable)), sizeof (PinvokeTable), table_compare_name);
 }
 
 int
 wasm_dl_is_pinvoke_table (void *handle)
 {
-	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (void*); ++i) {
-		if (pinvoke_tables [i] == handle) {
+	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (PinvokeTable); ++i) {
+		if (&pinvoke_tables[i] == handle) {
 			return 1;
 		}
 	}
 	return 0;
 }
 
+static int
+export_compare_key (const void *k1, const void *k2)
+{
+	return strcmp (((UnmanagedExport*)k1)->key, ((UnmanagedExport*)k2)->key);
+}
+
+static int
+export_compare_key_and_token (const void *k1, const void *k2)
+{
+	UnmanagedExport *e1 = (UnmanagedExport*)k1;
+	UnmanagedExport *e2 = (UnmanagedExport*)k2;
+
+	// first compare by key
+	int compare = strcmp (e1->key, e2->key);
+	if (compare)
+		return compare;
+
+	// then by token
+	return (int)(e1->token - e2->token);
+}
+
 void*
-wasm_dl_get_native_to_interp (const char *key, void *extra_arg)
+wasm_dl_get_native_to_interp (uint32_t token, const char *key, void *extra_arg)
 {
 #ifdef GEN_PINVOKE
-	for (int i = 0; i < sizeof (wasm_native_to_interp_map) / sizeof (void*); ++i) {
-		if (!strcmp (wasm_native_to_interp_map [i], key)) {
-			void *addr = wasm_native_to_interp_funcs [i];
-			wasm_native_to_interp_ftndescs [i] = *(InterpFtnDesc*)extra_arg;
-			return addr;
-		}
+	UnmanagedExport needle = { key, token, NULL };
+	int count = (sizeof (wasm_native_to_interp_table) / sizeof (UnmanagedExport));
+
+	// comparison must match the one used in the PInvokeTableGenerator to ensure the same order
+	UnmanagedExport *result = bsearch (&needle, wasm_native_to_interp_table, count, sizeof (UnmanagedExport), export_compare_key_and_token);
+	if (!result) {
+		// assembly may have been trimmed / modified, try to find by key only
+		result = bsearch (&needle, wasm_native_to_interp_table, count, sizeof (UnmanagedExport), export_compare_key);
 	}
-	return NULL;
+
+	if (!result)
+		return NULL;
+
+	void *addr = result->func;
+	wasm_native_to_interp_ftndescs [result - wasm_native_to_interp_table] = *(InterpFtnDesc*)extra_arg;
+	return addr;
 #else
 	return NULL;
 #endif

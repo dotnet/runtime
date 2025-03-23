@@ -781,6 +781,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_FMA, LAST_NI_FMA },
     { FIRST_NI_LZCNT, LAST_NI_LZCNT },
     { FIRST_NI_PCLMULQDQ, LAST_NI_PCLMULQDQ },
+    { FIRST_NI_PCLMULQDQ_V256, LAST_NI_PCLMULQDQ_V256 },
+    { FIRST_NI_PCLMULQDQ_V512, LAST_NI_PCLMULQDQ_V512 },
     { FIRST_NI_POPCNT, LAST_NI_POPCNT },
     { FIRST_NI_Vector128, LAST_NI_Vector128 },
     { FIRST_NI_Vector256, LAST_NI_Vector256 },
@@ -804,6 +806,12 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 // VectorT128
     { NI_Illegal, NI_Illegal },                                 // VectorT256
     { NI_Illegal, NI_Illegal },                                 // VectorT512
+    { NI_Illegal, NI_Illegal },                                 // APX
+    { FIRST_NI_AVX10v2, LAST_NI_AVX10v2 },                      // AVX10v2
+    { FIRST_NI_AVX10v2_V512, LAST_NI_AVX10v2_V512 },            // AVX10v2_V512
+    { FIRST_NI_GFNI, LAST_NI_GFNI },
+    { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },
+    { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },
     { FIRST_NI_SSE_X64, LAST_NI_SSE_X64 },
     { FIRST_NI_SSE2_X64, LAST_NI_SSE2_X64 },
@@ -821,21 +829,17 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 // PCLMULQDQ_X64
     { FIRST_NI_POPCNT_X64, LAST_NI_POPCNT_X64 },
     { NI_Illegal, NI_Illegal },                                 // AVXVNNI_X64
-    { NI_Illegal, NI_Illegal },                                 // MOVBE_X64
     { NI_Illegal, NI_Illegal },                                 // X86Serialize_X64
-    { NI_Illegal, NI_Illegal },                                 // EVEX_X64
     { FIRST_NI_AVX512F_X64, LAST_NI_AVX512F_X64 },
-    { NI_Illegal, NI_Illegal },                                 // AVX512F_VL_X64
     { NI_Illegal, NI_Illegal },                                 // AVX512BW_X64
-    { NI_Illegal, NI_Illegal },                                 // AVX512BW_VL_X64
     { NI_Illegal, NI_Illegal },                                 // AVX512CD_X64
-    { NI_Illegal, NI_Illegal },                                 // AVX512CD_VL_X64
     { NI_Illegal, NI_Illegal },                                 // AVX512DQ_X64
-    { NI_Illegal, NI_Illegal },                                 // AVX512DQ_VL_X64
     { NI_Illegal, NI_Illegal },                                 // AVX512VBMI_X64
-    { NI_Illegal, NI_Illegal },                                 // AVX512VBMI_VL_X64
     { FIRST_NI_AVX10v1_X64, LAST_NI_AVX10v1_X64 },
     { NI_Illegal, NI_Illegal },                                 // AVX10v1_V512_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX10v2_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX10v2_V512_X64
+    { NI_Illegal, NI_Illegal },                                 // GFNI_X64
 #elif defined (TARGET_ARM64)
     { FIRST_NI_ArmBase, LAST_NI_ArmBase },
     { FIRST_NI_AdvSimd, LAST_NI_AdvSimd },
@@ -2071,8 +2075,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_SSE41_ConvertToVector128Int64:
                     case NI_AVX2_BroadcastScalarToVector128:
                     case NI_AVX2_BroadcastScalarToVector256:
-                    case NI_AVX512F_BroadcastScalarToVector512:
-                    case NI_AVX512BW_BroadcastScalarToVector512:
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:

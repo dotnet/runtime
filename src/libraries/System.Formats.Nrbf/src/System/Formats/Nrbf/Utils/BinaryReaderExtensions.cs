@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -15,8 +16,26 @@ internal static class BinaryReaderExtensions
 {
     private static object? s_baseAmbiguousDstDateTime;
 
+    internal static SerializationRecordType ReadSerializationRecordType(this BinaryReader reader, AllowedRecordTypes allowed)
+    {
+        byte nextByte = reader.ReadByte();
+        if (nextByte > (byte)SerializationRecordType.MethodReturn // MethodReturn is the last defined value.
+            || (nextByte > (byte)SerializationRecordType.ArraySingleString && nextByte < (byte)SerializationRecordType.MethodCall) // not part of the spec
+            || ((uint)allowed & (1u << nextByte)) == 0) // valid, but not allowed
+        {
+            ThrowHelper.ThrowForUnexpectedRecordType(nextByte);
+        }
+
+        return (SerializationRecordType)nextByte;
+    }
+
     internal static BinaryArrayType ReadArrayType(this BinaryReader reader)
     {
+        // To simplify the behavior and security review of the BinaryArrayRecord type, we
+        // do not support reading non-zero-offset arrays. If this should change in the
+        // future, the NrbfDecoder.DecodeBinaryArrayRecord method and supporting infrastructure
+        // will need re-review.
+
         byte arrayType = reader.ReadByte();
         // Rectangular is the last defined value.
         if (arrayType > (byte)BinaryArrayType.Rectangular)
@@ -47,8 +66,8 @@ internal static class BinaryReaderExtensions
     internal static PrimitiveType ReadPrimitiveType(this BinaryReader reader)
     {
         byte primitiveType = reader.ReadByte();
-        // String is the last defined value, 4 is not used at all.
-        if (primitiveType is 4 or > (byte)PrimitiveType.String)
+        // Boolean is the first valid value (1), UInt64 (16) is the last one. 4 is not used at all.
+        if (primitiveType is 4 or < (byte)PrimitiveType.Boolean or > (byte)PrimitiveType.UInt64)
         {
             ThrowHelper.ThrowInvalidValue(primitiveType);
         }
@@ -64,7 +83,7 @@ internal static class BinaryReaderExtensions
             PrimitiveType.Boolean => reader.ReadBoolean(),
             PrimitiveType.Byte => reader.ReadByte(),
             PrimitiveType.SByte => reader.ReadSByte(),
-            PrimitiveType.Char => reader.ReadChar(),
+            PrimitiveType.Char => reader.ParseChar(),
             PrimitiveType.Int16 => reader.ReadInt16(),
             PrimitiveType.UInt16 => reader.ReadUInt16(),
             PrimitiveType.Int32 => reader.ReadInt32(),
@@ -73,10 +92,63 @@ internal static class BinaryReaderExtensions
             PrimitiveType.UInt64 => reader.ReadUInt64(),
             PrimitiveType.Single => reader.ReadSingle(),
             PrimitiveType.Double => reader.ReadDouble(),
-            PrimitiveType.Decimal => decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture),
+            PrimitiveType.Decimal => reader.ParseDecimal(),
             PrimitiveType.DateTime => CreateDateTimeFromData(reader.ReadUInt64()),
-            _ => new TimeSpan(reader.ReadInt64()),
+            PrimitiveType.TimeSpan => new TimeSpan(reader.ReadInt64()),
+            _ => throw new InvalidOperationException(),
         };
+
+    // BinaryFormatter serializes decimals as strings and we can't BinaryReader.ReadDecimal.
+    internal static decimal ParseDecimal(this BinaryReader reader)
+    {
+        // The spec (MS NRBF 2.1.1.6, https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/10b218f5-9b2b-4947-b4b7-07725a2c8127)
+        // says that the length of LengthPrefixedString must be of optimal size (using as few bytes as possible).
+        // BinaryReader.ReadString does not enforce that and we are OK with that,
+        // as it takes care of handling multiple edge cases and we don't want to re-implement it.
+
+        string text = reader.ReadString();
+        if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal result))
+        {
+            ThrowHelper.ThrowInvalidFormat();
+        }
+
+        return result;
+    }
+
+    internal static char ParseChar(this BinaryReader reader)
+    {
+        try
+        {
+            return reader.ReadChar();
+        }
+        catch (ArgumentException) // A surrogate character was read.
+        {
+            throw new SerializationException(SR.Serialization_SurrogateCharacter);
+        }
+    }
+
+    internal static char[] ParseChars(this BinaryReader reader, int count)
+    {
+        char[]? result;
+        try
+        {
+            result = reader.ReadChars(count);
+        }
+        catch (ArgumentException) // A surrogate character was read.
+        {
+            throw new SerializationException(SR.Serialization_SurrogateCharacter);
+        }
+
+        if (result.Length != count)
+        {
+            // We might hit EOF before fully reading the requested
+            // number of chars. This means that ReadChars(count) could return a char[] with
+            // *fewer* than 'count' elements.
+            ThrowHelper.ThrowEndOfStreamException();
+        }
+
+        return result;
+    }
 
     /// <summary>
     ///  Creates a <see cref="DateTime"/> object from raw data with validation.
@@ -142,6 +214,8 @@ internal static class BinaryReaderExtensions
 
     internal static bool? IsDataAvailable(this BinaryReader reader, long requiredBytes)
     {
+        Debug.Assert(requiredBytes >= 0);
+
         if (!reader.BaseStream.CanSeek)
         {
             return null;

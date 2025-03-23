@@ -513,20 +513,6 @@ bool deps_resolver_t::resolve_tpa_list(
     // we cannot determine what assemblies are framework assemblies, and what assemblies are app-local assemblies.
     if (m_host_mode != host_mode_t::libhost)
     {
-        // First add managed assembly to the TPA.
-        // TODO: Remove: the deps should contain the managed DLL.
-        // Workaround for: csc.deps.json doesn't have the csc.dll
-
-        // If this is a single-file bundle, app.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
-        // In all other cases, add its path to the TPA list.
-        pal::string_t managed_app_name = get_filename(m_managed_app);
-        if (!bundle::info_t::is_single_file_bundle() ||
-            bundle::runner_t::app()->probe(managed_app_name) == nullptr)
-        {
-            deps_asset_t asset(get_filename_without_ext(m_managed_app), managed_app_name, version_t(), version_t());
-            add_tpa_asset(asset, m_managed_app, &items);
-        }
-
         // Add the app's entries
         const auto& deps_entries = get_app_deps().get_entries(deps_entry_t::asset_types::runtime);
         for (const auto& entry : deps_entries)

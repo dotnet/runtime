@@ -666,13 +666,13 @@ namespace
         {
             // Framework dependent apps always know their frameworks
             if (!fx_resolver_t::is_config_compatible_with_frameworks(app_config, existing_context->fx_versions_by_name))
-                return StatusCode::CoreHostIncompatibleConfig;
+                return StatusCode::HostIncompatibleConfig;
         }
         else if (!existing_context->included_fx_versions_by_name.empty())
         {
             // Self-contained apps can include information about their frameworks in `includedFrameworks` property in runtime config
             if (!fx_resolver_t::is_config_compatible_with_frameworks(app_config, existing_context->included_fx_versions_by_name))
-                return StatusCode::CoreHostIncompatibleConfig;
+                return StatusCode::HostIncompatibleConfig;
         }
         else
         {
@@ -1041,7 +1041,8 @@ int fx_muxer_t::handle_cli(
     //
 
     sdk_resolver resolver = sdk_resolver::from_nearest_global_file();
-    auto sdk_dotnet = resolver.resolve(host_info.dotnet_root, false /*print_errors*/);
+    pal::string_t sdk_root;
+    pal::string_t sdk_dotnet = resolver.resolve(host_info.dotnet_root, false /*print_errors*/, &sdk_root);
     if (sdk_dotnet.empty())
     {
         assert(argc > 1);
@@ -1062,16 +1063,21 @@ int fx_muxer_t::handle_cli(
         trace::error(
             _X("The command could not be loaded, possibly because:\n")
             _X("  * You intended to execute a .NET application:\n")
-            _X("      The application '%s' does not exist.\n")
+            _X("      The application '%s' does not exist or is not a managed .dll or .exe.\n")
             _X("  * You intended to execute a .NET SDK command:"),
             app_candidate.c_str());
         resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
-        return StatusCode::LibHostSdkFindFailure;
+        return StatusCode::SdkResolveFailure;
     }
 
     append_path(&sdk_dotnet, SDK_DOTNET_DLL);
     assert(pal::file_exists(sdk_dotnet));
+
+    // Use the root path from the resolved SDK to run the SDK dll
+    host_startup_info_t host_info_local = pal::strcmp(sdk_root.c_str(), host_info.dotnet_root.c_str()) == 0
+        ? host_info
+        : host_startup_info_t(host_info.host_path.c_str(), sdk_root.c_str(), host_info.app_path.c_str());
 
     // Transform dotnet [command] [args] -> dotnet dotnet.dll [command] [args]
 
@@ -1086,13 +1092,13 @@ int fx_muxer_t::handle_cli(
     int new_argoff;
     pal::string_t sdk_app_candidate;
     opt_map_t opts;
-    int result = command_line::parse_args_for_sdk_command(host_info, (int32_t)new_argv.size(), new_argv.data(), &new_argoff, sdk_app_candidate, opts);
+    int result = command_line::parse_args_for_sdk_command(host_info_local, (int32_t)new_argv.size(), new_argv.data(), &new_argoff, sdk_app_candidate, opts);
     if (!result)
     {
         // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
         result = handle_exec_host_command(
             pal::string_t{} /*host_command*/,
-            host_info,
+            host_info_local,
             sdk_app_candidate,
             opts,
             (int32_t)new_argv.size(),

@@ -1544,6 +1544,88 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(new string[] { "a", "b", "c" }, options.Array);
         }
 
+
+        public static IEnumerable<object[]> Configuration_TestData()
+        {
+            yield return new object[]
+            {
+                new ConfigurationBuilder()
+                    .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(@"{
+                            ""IntValue"" :              """",
+                            ""DoubleValue"" :           """",
+                            ""BoolValue"" :             """",
+                            ""DecimalValue"" :          """",
+                            ""FloatValue"" :            """",
+                            ""LongValue"" :             """",
+                            ""ShortValue"" :            """",
+                            ""ByteValue"" :             """",
+                            ""SByteValue"" :            """",
+                            ""UIntValue"" :             """",
+                            ""UShortValue"" :           """",
+                            ""ULongValue"" :            """",
+                            ""DateTimeValue"" :         """",
+                            ""DateTimeOffsetValue"" :   """",
+                            ""TimeSpanValue"" :         """",
+                            ""GuidValue"" :             """",
+                            ""StringComparisonValue"" : """"
+                        }"
+                    ))).Build()
+            };
+
+            yield return new object[]
+            {
+                new ConfigurationBuilder().AddInMemoryCollection(
+                    new Dictionary<string, string>
+                    {
+                        { "IntValue",               null },
+                        { "DoubleValue",            null },
+                        { "BoolValue",              null },
+                        { "DecimalValue",           null },
+                        { "FloatValue",             null },
+                        { "LongValue",              null },
+                        { "ShortValue",             null },
+                        { "ByteValue",              null },
+                        { "SByteValue",             null },
+                        { "UIntValue",              null },
+                        { "UShortValue",            null },
+                        { "ULongValue",             null },
+                        { "DateTimeValue",          null },
+                        { "DateTimeOffsetValue",    null },
+                        { "TimeSpanValue",          null },
+                        { "GuidValue",              null },
+                        { "StringComparisonValue",  null },
+                    }).Build()
+            };
+        }
+
+        /// <summary>
+        /// Test binding a value parsable types to null configuration values.
+        /// The test ensure the binding will succeed without exceptions and the value will be null (not set).
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Configuration_TestData))]
+        public void BindToKnownParsableTypesWithNullValueTest(IConfiguration configuration)
+        {
+            ParsableValuesClass instance = configuration.Get<ParsableValuesClass>();
+            Assert.Null(instance.IntValue);
+            Assert.Null(instance.DoubleValue);
+            Assert.Null(instance.BoolValue);
+            Assert.Null(instance.DecimalValue);
+            Assert.Null(instance.FloatValue);
+            Assert.Null(instance.LongValue);
+            Assert.Null(instance.ShortValue);
+            Assert.Null(instance.ByteValue);
+            Assert.Null(instance.SByteValue);
+            Assert.Null(instance.UIntValue);
+            Assert.Null(instance.UShortValue);
+            Assert.Null(instance.ULongValue);
+            Assert.Null(instance.DateTimeValue);
+            Assert.Null(instance.DateTimeOffsetValue);
+            Assert.Null(instance.TimeSpanValue);
+            Assert.Null(instance.GuidValue);
+            Assert.Null(instance.StringComparisonValue);
+        }
+
         /// <summary>
         /// Test binding to recursive types using Dictionary or Collections.
         /// This ensure no stack overflow will occur during the compilation through the source gen or at runtime.
@@ -2733,5 +2815,22 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.True(result.Enabled);
             Assert.Equal(new [] { "new", "class", "rosebud"}, result.Keywords);
         }
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [Fact]
+        public void EnsureThrowingWithCollectionAndErrorOnUnknownConfigurationOption()
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = "not-an-array-of-string" }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+
+            configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = "" }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+
+            configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = null }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+        }
+
+        internal class TestSettings { public Dictionary<DayOfWeek, string[]> Values { get; init; } = []; }
+#endif
     }
 }

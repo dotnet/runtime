@@ -9,6 +9,7 @@
 #include "commandline.h"
 #include "errorhandling.h"
 #include "fileio.h"
+#include <minipal/random.h>
 
 // Forward declare the conversion method. Including spmiutil.h pulls in other headers
 // that cause build breaks.
@@ -409,10 +410,10 @@ void addJitOptionArgument(LightWeightMap<DWORD, DWORD>* jitOptions,
     {
         for (unsigned i = 0; i < jitOptions->GetCount(); i++)
         {
-            std::string key   = ConvertToUtf8((WCHAR*)jitOptions->GetBuffer(jitOptions->GetKey(i)));
-            std::string value = ConvertToUtf8((WCHAR*)jitOptions->GetBuffer(jitOptions->GetItem(i)));
+            const char* key   = (const char*)jitOptions->GetBuffer(jitOptions->GetKey(i));
+            const char* value = (const char*)jitOptions->GetBuffer(jitOptions->GetItem(i));
             bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -%s %s=%s",
-                                      optionName, key.c_str(), value.c_str());
+                                      optionName, key, value);
         }
     }
 }
@@ -557,11 +558,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
     // Add a random number to the temporary file names to allow multiple parallel SuperPMI to happen at once.
     unsigned int randNumber = 0;
-#ifdef TARGET_UNIX
-    PAL_Random(&randNumber, sizeof(randNumber));
-#else  // !TARGET_UNIX
-    rand_s(&randNumber);
-#endif // !TARGET_UNIX
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randNumber, sizeof(randNumber));
 
     for (int i = 0; i < o.workerCount; i++)
     {

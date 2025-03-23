@@ -24,10 +24,6 @@ EXTERN __imp__RtlUnwind@16:DWORD
 ifdef _DEBUG
 EXTERN _HelperMethodFrameConfirmState@20:PROC
 endif
-ifdef FEATURE_COMINTEROP
-EXTERN _StubRareDisableHRWorker@4:PROC
-endif ; FEATURE_COMINTEROP
-EXTERN _StubRareDisableTHROWWorker@4:PROC
 ifdef FEATURE_HIJACK
 EXTERN _OnHijackWorker@4:PROC
 endif ;FEATURE_HIJACK
@@ -46,6 +42,7 @@ EXTERN _TheUMEntryPrestubWorker@4:PROC
 
 ifdef FEATURE_COMINTEROP
 EXTERN _CLRToCOMWorker@8:PROC
+EXTERN _COMToCLRWorker@4:PROC
 endif
 
 EXTERN _ExternalMethodFixupWorker@16:PROC
@@ -57,8 +54,6 @@ endif
 ifdef FEATURE_READYTORUN
 EXTERN _DynamicHelperWorker@20:PROC
 endif
-
-EXTERN @JIT_InternalThrow@4:PROC
 
 EXTERN @ProfileEnter@8:PROC
 EXTERN @ProfileLeave@8:PROC
@@ -392,38 +387,6 @@ endif
         retn    8
 _CallJitEHFinallyHelper@8 ENDP
 
-ifdef FEATURE_COMINTEROP
-_StubRareDisableHR proc public
-        push    edx
-
-        push    ebx     ; Thread
-        call    _StubRareDisableHRWorker@4
-
-        pop     edx
-        retn
-_StubRareDisableHR ENDP
-endif ; FEATURE_COMINTEROP
-
-_StubRareDisableTHROW proc public
-        push    eax
-        push    edx
-
-        push    ebx     ; Thread
-        call    _StubRareDisableTHROWWorker@4
-
-        pop     edx
-        pop     eax
-        retn
-_StubRareDisableTHROW endp
-
-
-InternalExceptionWorker proc public
-        pop     edx             ; recover RETADDR
-        add     esp, eax        ; release caller's args
-        push    edx             ; restore RETADDR
-        jmp     @JIT_InternalThrow@4
-InternalExceptionWorker endp
-
 ;------------------------------------------------------------------------------
 ; This helper routine enregisters the appropriate arguments and makes the
 ; actual call.
@@ -462,7 +425,7 @@ donestack:
 ifdef _DEBUG
         nop     ; This is a tag that we use in an assert.  Fcalls expect to
                 ; be called from Jitted code or from certain blessed call sites like
-                ; this one.  (See HelperMethodFrame::InsureInit)
+                ; this one.  (See HelperMethodFrame::EnsureInit)
 endif
 
         ; Save FP return value if necessary
@@ -1135,9 +1098,6 @@ _DelayLoad_MethodCall@0 proc public
 
     STUB_EPILOG
 
-_ExternalMethodFixupPatchLabel@0:
-public _ExternalMethodFixupPatchLabel@0
-
     ; Tailcall target
     jmp eax
 
@@ -1195,7 +1155,7 @@ _TheUMEntryPrestub@0 proc public
     push        ecx
     push        edx
 
-    push    eax     ; UMEntryThunk*
+    push    eax     ; UMEntryThunkData*
     call    _TheUMEntryPrestubWorker@4
 
     ; pop argument registers
@@ -1244,6 +1204,49 @@ _GenericCLRToCOMCallStub@0 proc public
     ret
 
 _GenericCLRToCOMCallStub@0 endp
+
+_GenericComCallStub@0 proc public
+
+    ; Pop ComCallMethodDesc* pushed by prestub
+    pop         eax
+
+    ; Create UnmanagedToManagedFrame on stack
+
+    ; push ebp-frame
+    push        ebp
+    mov         ebp,esp
+
+    ; save CalleeSavedRegisters
+    push        ebx
+    push        esi
+    push        edi
+
+    push        eax         ; UnmanagedToManagedFrame::m_pvDatum = ComCallMethodDesc*
+    sub         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
+
+    push        esp
+    call        _COMToCLRWorker@4
+
+    add         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
+
+    ; pop the ComCallMethodDesc*
+    pop         ecx
+
+    ; pop CalleeSavedRegisters
+    pop         edi
+    pop         esi
+    pop         ebx
+    pop         ebp
+
+    sub         ecx, COMMETHOD_PREPAD_ASM
+    jmp         ecx
+
+    ; This will never be executed. It is just to help out stack-walking logic
+    ; which disassembles the epilog to unwind the stack.
+    ret
+
+_GenericComCallStub@0 endp
+
 endif ; FEATURE_COMINTEROP
 
 
@@ -1267,10 +1270,10 @@ _ComCallPreStub@0 proc public
     push        edi
 
     push        eax         ; ComCallMethodDesc*
-    sub         esp, 5*4    ; next, vtable, gscookie, 64-bit error return
+    sub         esp, 4*4    ; next, vtable, 64-bit error return
 
-    lea     edi, [esp]
-    lea     esi, [esp+3*4]
+    lea     edi, [esp]      ; Point at the 64-bit error return
+    lea     esi, [esp+2*4]  ; Leave space for the 64-bit error return
 
     push    edi                 ; pErrorReturn
     push    esi                 ; pFrame
@@ -1280,7 +1283,7 @@ _ComCallPreStub@0 proc public
     cmp eax, 0
     je nostub                   ; oops we could not create a stub
 
-    add     esp, 6*4
+    add     esp, 5*4            ; Pop off 64-bit error return, vtable, next and ComCallMethodDesc*
 
     ; pop CalleeSavedRegisters
     pop edi
@@ -1303,7 +1306,7 @@ nostub:
     mov     eax, [edi]
     mov     edx, [edi+4]
 
-    add     esp, 6*4
+    add     esp, 5*4            ; Pop off 64-bit error return, vtable, next and ComCallMethodDesc*
 
     ; pop CalleeSavedRegisters
     pop edi
@@ -1390,5 +1393,16 @@ _OnCallCountThresholdReachedStub@0 proc public
 _OnCallCountThresholdReachedStub@0 endp
 
 endif ; FEATURE_TIERED_COMPILATION
+
+; rcx -This pointer
+; rdx -ReturnBuffer
+_ThisPtrRetBufPrecodeWorker@0 proc public
+    mov  eax, [eax + ThisPtrRetBufPrecodeData__Target]
+    ; Use XOR swap technique to set avoid the need to spill to the stack
+    xor ecx, edx
+    xor edx, ecx
+    xor ecx, edx
+    jmp eax
+_ThisPtrRetBufPrecodeWorker@0 endp
 
     end

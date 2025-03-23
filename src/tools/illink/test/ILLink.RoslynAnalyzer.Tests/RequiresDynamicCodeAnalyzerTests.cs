@@ -141,13 +141,13 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				fixedSource: fixtest,
 				baselineExpected: new[] {
 					// /0/Test0.cs(8,14): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(8, 14, 8, 18).WithArguments("C.M1()", " message.", ""),
+					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(8, 14, 8, 16).WithArguments("C.M1()", " message.", ""),
 					// /0/Test0.cs(12,24): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(12, 24, 12, 30).WithArguments("C.M1()", " message.", ""),
+					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(12, 24, 12, 28).WithArguments("C.M1()", " message.", ""),
 					// /0/Test0.cs(16,25): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(16, 25, 16, 31).WithArguments("C.M1()", " message.", ""),
+					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(16, 25, 16, 29).WithArguments("C.M1()", " message.", ""),
 					// /0/Test0.cs(23,25): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(23, 25, 23, 31).WithArguments("C.M1()", " message.", "")
+					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(23, 25, 23, 29).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: new[] {
 				// /0/Test0.cs(26,10): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)'
@@ -176,7 +176,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			""";
 			var diag = new[] {
 				// /0/Test0.cs(11,16): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(11, 16, 11, 20).WithArguments("C.M1()", " message.", "")
+				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(11, 16, 11, 18).WithArguments("C.M1()", " message.", "")
 			};
 			// No fix available inside a lambda, requires manual code change since attribute cannot
 			// be applied
@@ -225,7 +225,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				fixedSource: fix,
 				baselineExpected: new[] {
 					// /0/Test0.cs(11,22): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(11, 22, 11, 26).WithArguments("C.M1()", " message.", "")
+					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(11, 22, 11, 24).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> (),
 				// The default iterations for the codefix is the number of diagnostics (1 in this case)
@@ -268,7 +268,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				fixedSource: fix,
 				baselineExpected: new[] {
 					// /0/Test0.cs(9,16): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(9, 16, 9, 20).WithArguments("C.M1()", " message.", "")
+					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(9, 16, 9, 18).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: new[] {
 					// /0/Test0.cs(9,6): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)'
@@ -293,7 +293,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			""";
 			var diag = new[] {
 				// /0/Test0.cs(9,12): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(9, 12, 9, 16).WithArguments("C.M1()", " message.", "")
+				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(9, 12, 9, 14).WithArguments("C.M1()", " message.", "")
 			};
 			// Can't apply RDC on properties at the moment
 			return VerifyRequiresDynamicCodeCodeFix (src, src, diag, diag);
@@ -341,11 +341,51 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			""";
 			var diag = new[] {
 				// /0/Test0.cs(12,16): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(12, 16, 12, 20).WithArguments("C.M1()", " message.", ""),
+				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(12, 16, 12, 18).WithArguments("C.M1()", " message.", ""),
 				// /0/Test0.cs(13,17): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(13, 17, 13, 21).WithArguments("C.M1()", " message.", "")
+				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(13, 17, 13, 19).WithArguments("C.M1()", " message.", "")
 			};
 			return VerifyRequiresDynamicCodeCodeFix (src, fix, diag, Array.Empty<DiagnosticResult> ());
+		}
+
+		[Fact]
+		public Task FixInClass ()
+		{
+			var src = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			public class C
+			{
+				[RequiresDynamicCodeAttribute("message")]
+				static int M1() => 0;
+
+				static int Field = M1();
+			}
+			""";
+
+			var fix = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			[RequiresDynamicCode()]
+			public class C
+			{
+				[RequiresDynamicCodeAttribute("message")]
+				static int M1() => 0;
+
+				static int Field = M1();
+			}
+			""";
+			return VerifyRequiresDynamicCodeCodeFix (src, fix,
+				baselineExpected: new[] {
+					// /0/Test0.cs(9,21,9,25): warning IL2026: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(9, 21, 9, 23).WithArguments("C.M1()", " message.", ""),
+				},
+				fixedExpected: new[] {
+					// /0/Test0.cs(4,2): error CS7036: There is no argument given that corresponds to the required parameter 'message' of 'RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)'
+					DiagnosticResult.CompilerError("CS7036").WithSpan(4, 2, 4, 23).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)"),
+					});
 		}
 
 		[Fact]
@@ -407,7 +447,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 
 			return VerifyRequiresDynamicCodeAnalyzer (src,
 				// (4,21): warning IL3050: Using member 'System.Type.MakeGenericType(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 68).WithArguments ("System.Type.MakeGenericType(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 52).WithArguments ("System.Type.MakeGenericType(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
 		}
 
 		[Fact]
@@ -425,7 +465,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 
 			return VerifyRequiresDynamicCodeAnalyzer (src,
 				// (4,21): warning IL3050: Using member 'System.Type.MakeGenericType(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 63).WithArguments ("System.Type.MakeGenericType(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 50).WithArguments ("System.Type.MakeGenericType(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
 		}
 
 		[Fact]
@@ -487,7 +527,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 
 			return VerifyRequiresDynamicCodeAnalyzer (src,
 				// (4,21): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 70).WithArguments ("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 54).WithArguments ("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
 		}
 
 		[Fact]
@@ -505,7 +545,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 
 			return VerifyRequiresDynamicCodeAnalyzer (src,
 				// (4,21): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 82).WithArguments ("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 69).WithArguments ("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
 		}
 	}
 }

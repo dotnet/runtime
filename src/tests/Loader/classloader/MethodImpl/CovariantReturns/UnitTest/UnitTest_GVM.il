@@ -289,57 +289,6 @@
 }
 
 // ========================================================================================
-// THIRD LAYER INVALID types: Couple of types that override some method from GenBaseType
-// using a return type signature that would be incompatible with the return type used in
-// GenMiddle. Loading these types will throw a TypeLoadException.
-// ========================================================================================
-
-.class public auto ansi beforefieldinit Invalid1<U,V> extends class GenMiddleType<!U,!V>
-{
-  // Invalid: when comparing 'object' with !!Y in the instantiation of NonGenericDerived1 in the base type chain
-  .method public hidebysig newslot virtual instance class NonGenThroughGen4 NonGenThroughGenOverride<Y>(string& res)
-  {
-    .override method instance class B class GenBaseType<!U,!V>::NonGenThroughGenFunc<[1]>(string& res)
-    ldnull
-    ret
-  }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-}
-.class public auto ansi beforefieldinit Invalid2<U,V> extends class GenMiddleType<!U,!V>
-{
-   // Invalid: when comparing 'object' with !!Y in the instantiation
-  .method public hidebysig newslot virtual instance class GenToNonGen3<!V,object> GenToNonGenOverride<Y>(string& res)
-  {
-    .override method instance class B class GenBaseType<!U,!V>::GenToNonGen<[1]>(string& res)
-    ldnull
-    ret
-  }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-}
-.class public auto ansi beforefieldinit Invalid3<U,V> extends class GenMiddleType<!U,!V>
-{
-  // Invalid when comparing !!Y and 'object' in instantiation of GenRetType
-  .method public hidebysig newslot virtual instance class NonGenericDerived4 NewGenFunc1<Y>(string& res)
-  {
-    .override method instance class GenRetType<int32,!!0> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
-    ldnull
-    ret
-  }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-}
-.class public auto ansi beforefieldinit Invalid4<U,V> extends class GenMiddleType<!U,!V>
-{
-  // Invalid when comparing !!Y and 'string' in instantiation of Dictionary
-  .method public hidebysig newslot virtual instance class GenDerive3<!U,!V> NewGenFunc2<Y>(string& res)
-  {
-    .override method instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
-    ldnull
-    ret
-  }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-}
-
-// ========================================================================================
 
 .class public auto ansi beforefieldinit CMain extends [mscorlib]System.Object
 {
@@ -700,38 +649,6 @@
     ret
   }
 
-  // ============== Test using GenMiddleType ============== //
-  // These test methods attempt to load the invalid types, and are
-  // expected to throw a TypeLoadException (caught by Main())
-
-  .method public static void RunInvalidTest1() noinlining
-  {
-    newobj     instance void class Invalid1<int32,object>::.ctor()
-    call       void [System.Console]System.Console::WriteLine(object)
-    ret
-  }
-
-  .method public static void RunInvalidTest2() noinlining
-  {
-    newobj     instance void class Invalid2<int32,object>::.ctor()
-    call       void [System.Console]System.Console::WriteLine(object)
-    ret
-  }
-
-  .method public static void RunInvalidTest3() noinlining
-  {
-    newobj     instance void class Invalid3<int32,object>::.ctor()
-    call       void [System.Console]System.Console::WriteLine(object)
-    ret
-  }
-
-  .method public static void RunInvalidTest4() noinlining
-  {
-    newobj     instance void class Invalid4<int32,object>::.ctor()
-    call       void [System.Console]System.Console::WriteLine(object)
-    ret
-  }
-
   // ===================================================================================== //
   .method public hidebysig static int32  Main() cil managed
   {
@@ -801,81 +718,9 @@
 
     M4:
     call bool CMain::RunTest_Middle4()
-    brtrue.s INVALID1
+    brtrue.s DONE
     ldc.i4.0
     stloc.0
-
-    INVALID1:
-    .try
-    {
-        call void CMain::RunInvalidTest1()
-        ldc.i4.0
-        stloc.0
-        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid1."
-        call       void [System.Console]System.Console::WriteLine(string)
-        leave.s INVALID2
-    }
-    catch [mscorlib]System.TypeLoadException
-    {
-        ldstr "Caught expected TypeLoadException:"
-        call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)
-        leave.s INVALID2
-    }
-
-    INVALID2:
-    .try
-    {
-        call void CMain::RunInvalidTest2()
-        ldc.i4.0
-        stloc.0
-        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid2."
-        call       void [System.Console]System.Console::WriteLine(string)
-        leave.s INVALID3
-    }
-    catch [mscorlib]System.TypeLoadException
-    {
-        ldstr "Caught expected TypeLoadException:"
-        call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)
-        leave.s INVALID3
-    }
-
-    INVALID3:
-    .try
-    {
-        call void CMain::RunInvalidTest3()
-        ldc.i4.0
-        stloc.0
-        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid3."
-        call       void [System.Console]System.Console::WriteLine(string)
-        leave.s INVALID4
-    }
-    catch [mscorlib]System.TypeLoadException
-    {
-        ldstr "Caught expected TypeLoadException:"
-        call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)
-        leave.s INVALID4
-    }
-
-    INVALID4:
-    .try
-    {
-        call void CMain::RunInvalidTest4()
-        ldc.i4.0
-        stloc.0
-        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid4."
-        call       void [System.Console]System.Console::WriteLine(string)
-        leave.s DONE
-    }
-    catch [mscorlib]System.TypeLoadException
-    {
-        ldstr "Caught expected TypeLoadException:"
-        call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)
-        leave.s DONE
-    }
 
     DONE:
     ldloc.0

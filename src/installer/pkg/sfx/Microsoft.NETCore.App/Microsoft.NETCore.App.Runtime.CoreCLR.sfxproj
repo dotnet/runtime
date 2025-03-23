@@ -1,0 +1,87 @@
+<Project TreatAsLocalProperty="RuntimeFlavor;BuildNativeAOTRuntimePack">
+  <PropertyGroup>
+    <RuntimeFlavor>CoreCLR</RuntimeFlavor>
+    <BuildNativeAOTRuntimePack>false</BuildNativeAOTRuntimePack>
+    <OutDirName>coreclr-pack</OutDirName>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <PlatformPackageType>RuntimePack</PlatformPackageType>
+    <InstallerName Condition="'$(TargetOS)' != 'osx'">dotnet-runtime</InstallerName>
+    <InstallerName Condition="'$(TargetOS)' == 'osx'">dotnet-runtime-internal</InstallerName>
+    <IsPackable Condition="'$(BuildOnlyPgoInstrumentedAssets)' != ''">false</IsPackable>
+    <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
+    <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
+    <UseRidGraph>true</UseRidGraph>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
+    <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
+    <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
+    <PublishReadyToRun Condition="'$(TargetOS)'=='freebsd' and '$(CrossBuild)'=='true'">false</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(StageTwoBuild)'=='true'">false</PublishReadyToRun>
+    <UsesMuxerHostModel Condition="'$(TargetsMobile)' != 'true'">true</UsesMuxerHostModel>
+    <IncludeDiaSymReaderNative Condition="'$(TargetOS)' == 'windows'">true</IncludeDiaSymReaderNative>
+    <UseLocalCrossgen2Pack>$(PublishReadyToRun)</UseLocalCrossgen2Pack>
+  </PropertyGroup>
+
+  <Import Project="Microsoft.NETCore.App.Runtime.props" />
+
+  <PropertyGroup>
+    <PublishReadyToRunComposite Condition="$(ForcePublishReadyToRunComposite) == 'true'">true</PublishReadyToRunComposite>
+  </PropertyGroup>
+
+
+  <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+    <PropertyGroup>
+      <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
+      <_CrossGenTargetOS Condition="'$(TargetsAndroid)' != 'true'">$(TargetOS)</_CrossGenTargetOS>
+      <_CrossGenTargetOS Condition="'$(TargetsAndroid)' == 'true'">linux</_CrossGenTargetOS>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Crossgen2Tool Include="$(Crossgen2Path)"
+                     TargetArch="$(TargetArchitecture)"
+                     TargetOS="$(_CrossGenTargetOS)"
+                     PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Put the mibc file into tools and not into PgoData. Add it after GetFilesToPackage to ensure it isn't automatically classified.
+    Putting it in tools will also hide it from being part of the RuntimeList.xml.
+  -->
+  <Target Name="AddMibcFilesToPackage"
+          AfterTargets="GetFilesToPackage">
+    <ItemGroup>
+      <FilesToPackageMibcData Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"
+                              Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')">
+        <TargetPath>tools</TargetPath>
+      </FilesToPackageMibcData>
+      <FilesToPackage Include="@(FilesToPackageMibcData)"/>
+    </ItemGroup>
+  </Target>
+
+
+  <Target Name="AddCoreCLRRuntimeFiles" AfterTargets="AddRuntimeFilesToPackage">
+    <ItemGroup>
+      <CoreCLRCrossTargetFiles PackOnly="true" />
+      <CoreCLRCrossTargetFiles Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore')) and '$(TargetsWindows)' == 'true'">
+        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
+        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
+      </CoreCLRCrossTargetFiles>
+
+      <ReferenceCopyLocalPaths Include="@(CoreCLRCrossTargetFiles)" />
+    </ItemGroup>
+  </Target>
+</Project>

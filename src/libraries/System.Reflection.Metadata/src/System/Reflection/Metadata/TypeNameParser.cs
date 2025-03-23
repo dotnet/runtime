@@ -80,6 +80,8 @@ namespace System.Reflection.Metadata
                 return null;
             }
 
+            // At this point, we have performed O(fullTypeNameLength) total work.
+
             ReadOnlySpan<char> fullTypeName = _inputString.Slice(0, fullTypeNameLength);
             _inputString = _inputString.Slice(fullTypeNameLength);
 
@@ -142,6 +144,12 @@ namespace System.Reflection.Metadata
                 }
             }
 
+            // At this point, we may have performed O(fullTypeNameLength + _inputString.Length) total work.
+            // This will be the case if there was whitespace after the full type name in the original input
+            // string. We could end up looking at these same whitespace chars again later in this method,
+            // such as when parsing decorators. We rely on the TryDive routine to limit the total number
+            // of times we might inspect the same character.
+
             // If there was an error stripping the generic args, back up to
             // before we started processing them, and let the decorator
             // parser try handling it.
@@ -202,6 +210,9 @@ namespace System.Reflection.Metadata
                 result = new(fullName: null, assemblyName, elementOrGenericType: result, declaringType, genericArgs);
             }
 
+            // The loop below is protected by the dive check during the first decorator pass prior
+            // to assembly name parsing above.
+
             if (previousDecorator != default) // some decorators were recognized
             {
                 while (TryParseNextDecorator(ref capturedBeforeProcessing, out int parsedModifier))
@@ -244,6 +255,8 @@ namespace System.Reflection.Metadata
             {
                 return null;
             }
+
+            // The loop below is protected by the dive check in GetFullTypeNameLength.
 
             TypeName? declaringType = null;
             int nameOffset = 0;

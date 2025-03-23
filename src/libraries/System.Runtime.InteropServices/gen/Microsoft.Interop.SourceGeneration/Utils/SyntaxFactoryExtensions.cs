@@ -107,13 +107,13 @@ namespace Microsoft.Interop
         /// <summary>
         /// Returns a for loop with no body:
         /// <code>
-        /// for(int <paramref name="indexerIdentifier"/>; <paramref name="indexerIdentifier"/> &lt; <paramref name="lengthExpression"/>; ++<paramref name="indexerIdentifier"/>)
+        /// for (int <paramref name="indexerIdentifier"/>; <paramref name="indexerIdentifier"/> &lt; <paramref name="lengthExpression"/>; ++<paramref name="indexerIdentifier"/>)
         /// ;
         /// </code>
         /// </summary>
         public static ForStatementSyntax ForLoop(string indexerIdentifier, ExpressionSyntax lengthExpression)
         {
-            // for(int <indexerIdentifier> = 0; <indexerIdentifier> < <lengthIdentifier>; ++<indexerIdentifier>)
+            // for (int <indexerIdentifier> = 0; <indexerIdentifier> < <lengthIdentifier>; ++<indexerIdentifier>)
             //      ;
             return ForStatement(EmptyStatement())
             .WithDeclaration(

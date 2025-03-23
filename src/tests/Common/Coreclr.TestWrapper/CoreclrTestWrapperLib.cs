@@ -392,24 +392,31 @@ namespace CoreclrTestLib
 
                 Console.WriteLine("=========================================");
                 string? userName = Environment.GetEnvironmentVariable("USER");
-                if (!string.IsNullOrEmpty(userName))
+                if (string.IsNullOrEmpty(userName))
                 {
-                    if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                    userName="helixbot";
+                }
 
-                    Console.WriteLine("=========================================");
-                    if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                if (!RunProcess("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
 
-                    Console.WriteLine("=========================================");
-                    if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
+
+                Console.WriteLine("=========================================");
+                if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
+
+                Console.WriteLine("=========================================");
+                if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
                 }
             }
 
@@ -642,6 +649,8 @@ namespace CoreclrTestLib
         // The children are sorted in the order they should be dumped
         static unsafe IEnumerable<Process> FindChildProcessesByName(Process process, string childName)
         {
+            Console.WriteLine($"Finding all child processes of '{process.ProcessName}' (ID: {process.Id}) with name '{childName}'");
+
             var children = new Stack<Process>();
             Queue<Process> childrenToCheck = new Queue<Process>();
             HashSet<int> seen = new HashSet<int>();
@@ -656,6 +665,7 @@ namespace CoreclrTestLib
                 if (seen.Contains(child.Id))
                     continue;
 
+                Console.WriteLine($"Checking child process: '{child.ProcessName}' (ID: {child.Id})");
                 seen.Add(child.Id);
 
                 foreach (var grandchild in child.GetChildren())
@@ -784,9 +794,25 @@ namespace CoreclrTestLib
                         outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
                                 executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
                                 startTime.ToString(), endTime.ToString());
+                        outputWriter.Flush();
                         errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
                                 executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
                                 startTime.ToString(), endTime.ToString());
+                        errorWriter.Flush();
+
+                        Console.WriteLine("Collecting diagnostic information...");
+                        Console.WriteLine("Snapshot of processes currently running:");
+                        Console.WriteLine($"\t{"ID",-6} ProcessName");
+                        foreach (var activeProcess in Process.GetProcesses())
+                        {
+                            Console.WriteLine($"\t{activeProcess.Id,-6} {activeProcess.ProcessName}");
+                        }
+
+                        if (OperatingSystem.IsWindows())
+                        {
+                            Console.WriteLine("Snapshot of processes currently running (using wmic):");
+                            Console.WriteLine(GetAllProcessNames_wmic());
+                        }
 
                         if (collectCrashDumps)
                         {
@@ -819,6 +845,28 @@ namespace CoreclrTestLib
             }
 
             return exitCode;
+        }
+
+        private static string GetAllProcessNames_wmic()
+        {
+            // The command to execute
+            string command = "wmic process get Name, ProcessId, ParentProcessId";
+            
+            // Start the process and capture the output
+            Process process = new Process();
+            process.StartInfo.FileName = "cmd.exe";
+            process.StartInfo.Arguments = $"/c {command}";
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+
+            // Start the process and read the output
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(100); // wait for 100 ms
+
+            // Output the result
+            return output;
         }
     }
 }

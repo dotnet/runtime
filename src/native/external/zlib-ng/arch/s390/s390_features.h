@@ -1,3 +1,7 @@
+/* s390_features.h -- check for s390 features.
+ * For conditions of distribution and use, see copyright notice in zlib.h
+ */
+
 #ifndef S390_FEATURES_H_
 #define S390_FEATURES_H_
 

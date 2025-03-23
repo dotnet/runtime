@@ -811,8 +811,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack =
-        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -1036,7 +1035,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
             regNumber halfdoubleAsInt2 = internalRegisters.GetSingle(tree);
             emit->emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, halfdoubleAsInt1, halfdoubleAsInt2, dataReg);
             emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 0);
-            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 4);
+            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt2, addr, 4);
         }
     }
     else
@@ -2101,6 +2100,30 @@ regMaskTP CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskC
         default:
             return RBM_NONE;
     }
+}
+
+//-----------------------------------------------------------------------------------
+// genPrespilledUnmappedRegs: Get a mask of the registers that are prespilled
+// and also not mapped to any locals.
+//
+// Returns:
+//   Mask of those registers. These registers can be used safely in prolog as
+//   they won't be needed after prespilling.
+//
+regMaskTP CodeGen::genPrespilledUnmappedRegs()
+{
+    regMaskTP regs = regSet.rsMaskPreSpillRegs(false);
+
+    if (compiler->m_paramRegLocalMappings != nullptr)
+    {
+        for (int i = 0; i < compiler->m_paramRegLocalMappings->Height(); i++)
+        {
+            const ParameterRegisterLocalMapping& mapping = compiler->m_paramRegLocalMappings->BottomRef(i);
+            regs &= ~mapping.RegisterSegment->GetRegisterMask();
+        }
+    }
+
+    return regs;
 }
 
 //-----------------------------------------------------------------------------------

@@ -434,37 +434,27 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
         bool IBinaryInteger<ulong>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ulong))
+            if (BinaryPrimitives.TryWriteUInt64BigEndian(destination, m_value))
             {
-                ulong value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(m_value) : m_value;
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
-
                 bytesWritten = sizeof(ulong);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<ulong>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ulong))
+            if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination, m_value))
             {
-                ulong value = BitConverter.IsLittleEndian ? m_value : BinaryPrimitives.ReverseEndianness(m_value);
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
-
                 bytesWritten = sizeof(ulong);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //

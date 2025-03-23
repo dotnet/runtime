@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Tests
             Span<byte> buffer = stackalloc byte[512 / 8];
 
             int written = HashData(input, buffer);
-            AssertExtensions.SequenceEqual(expected, buffer.Slice(0, written));
+            AssertExtensions.SequenceEqual(expected.AsSpan(), buffer.Slice(0, written));
         }
 
         private async Task VerifyOneShotStreamAsync(Stream input, string output)
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Tests
             Memory<byte> buffer = new byte[512 / 8];
 
             int written = await HashDataAsync(input, buffer, cancellationToken: default);
-            AssertExtensions.SequenceEqual(expected, buffer.Slice(0, written).Span);
+            AssertExtensions.SequenceEqual(expected.AsSpan(), buffer.Slice(0, written).Span);
         }
 
         private void VerifyOneShotAllocatingStream(Stream input, string output)
@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.Tests
             Span<byte> buffer = stackalloc byte[512 / 8];
 
             int written = CryptographicOperations.HashData(HashAlgorithm, input, buffer);
-            AssertExtensions.SequenceEqual(expected, buffer.Slice(0, written));
+            AssertExtensions.SequenceEqual(expected.AsSpan(), buffer.Slice(0, written));
         }
 
         private async Task VerifyOneShotStreamAsync_CryptographicOperations(Stream input, string output)
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.Tests
                 buffer,
                 cancellationToken: default);
 
-            AssertExtensions.SequenceEqual(expected, buffer.Slice(0, written).Span);
+            AssertExtensions.SequenceEqual(expected.AsSpan(), buffer.Slice(0, written).Span);
         }
 
         private void VerifyOneShotAllocatingStream_CryptographicOperations(Stream input, string output)

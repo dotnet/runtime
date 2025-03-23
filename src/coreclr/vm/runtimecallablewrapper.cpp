@@ -65,7 +65,7 @@ void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
 
     SString strMessage;
     SString strResource;
-    WCHAR strClsid[GUID_STR_BUFFER_LEN];
+    WCHAR strClsid[MINIPAL_GUID_BUFFER_LEN];
     SString strHRDescription;
 
     // Obtain the textual representation of the HRESULT.
@@ -110,7 +110,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     if (FAILED(SafeQueryInterface(pClassFact, IID_IClassFactory2, (IUnknown**)&pClassFact2))
         || m_pClassMT == NULL)
     {
-        FrameWithCookie<DebuggerExitFrame> __def;
+        DebuggerExitFrame __def;
         {
             GCX_PREEMP();
             hr = pClassFact->CreateInstance(punkOuter, IID_IUnknown, (void **)&pUnk);
@@ -196,7 +196,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
         // Create the instance
         if (SUCCEEDED(hr))
         {
-            FrameWithCookie<DebuggerExitFrame> __def;
+            DebuggerExitFrame __def;
             {
                 GCX_PREEMP();
                 if (fDesignTime || bstrKey == NULL)
@@ -253,7 +253,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
 
 //-------------------------------------------------------------
 // ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass)
-// create a COM+ instance that aggregates a COM instance
+// create a CLR instance that aggregates a COM instance
 
 OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL ForManaged)
 {
@@ -322,7 +322,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         if (pCallbackMT && !pCallbackMT->IsComImport())
             bUseDelegate = TRUE;
 
-        FrameWithCookie<DebuggerExitFrame> __def;
+        DebuggerExitFrame __def;
 
         // get the IUnknown interface for the managed object
         pOuter = ComCallWrapper::GetComIPFromCCW(pComWrap, IID_IUnknown, NULL);
@@ -505,7 +505,7 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     {
         SString strMessage;
         SString strResource;
-        WCHAR strClsid[GUID_STR_BUFFER_LEN];
+        WCHAR strClsid[MINIPAL_GUID_BUFFER_LEN];
         SString strHRDescription;
 
         // Obtain the textual representation of the HRESULT.
@@ -1491,30 +1491,15 @@ RCW::MarshalingType RCW::GetMarshalingType(IUnknown* pUnk, MethodTable *pClassMT
     }
     CONTRACTL_END;
 
-    PTR_EEClass pClass = pClassMT->GetClass();
+    // Check whether the COM object can be marshaled. Hence we query for INoMarshal
+    SafeComHolderPreemp<INoMarshal> pNoMarshal;
+    HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_INoMarshal, (IUnknown**)&pNoMarshal);
+    LogInteropQI(pUnk, IID_INoMarshal, hr, "RCW::GetMarshalingType: QI for INoMarshal");
 
-    // Skip attributes on interfaces as any object could implement those interface
-    if (!pClass->IsInterface() && pClass->IsMarshalingTypeSet())
-    {
-        MarshalingType mType;
-        ( pClass ->IsMarshalingTypeFreeThreaded() ) ? mType = MarshalingType_FreeThreaded
-            : (pClass->IsMarshalingTypeInhibit() ? mType = MarshalingType_Inhibit
-            : mType = MarshalingType_Standard);
-        return mType;
-    }
-    // MarshalingBehavior is not set and hence we will have to find the behavior using the QI
-    else
-    {
-        // Check whether the COM object can be marshaled. Hence we query for INoMarshal
-        SafeComHolderPreemp<INoMarshal> pNoMarshal;
-        HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_INoMarshal, (IUnknown**)&pNoMarshal);
-        LogInteropQI(pUnk, IID_INoMarshal, hr, "RCW::GetMarshalingType: QI for INoMarshal");
-
-        if (SUCCEEDED(hr))
-            return MarshalingType_Inhibit;
-        if (IUnkEntry::IsComponentFreeThreaded(pUnk))
-            return MarshalingType_FreeThreaded;
-    }
+    if (SUCCEEDED(hr))
+        return MarshalingType_Inhibit;
+    if (IUnkEntry::IsComponentFreeThreaded(pUnk))
+        return MarshalingType_FreeThreaded;
     return MarshalingType_Unknown;
 }
 
@@ -2527,7 +2512,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         }
 
         // Convert the IID to a string.
-        WCHAR strIID[GUID_STR_BUFFER_LEN];
+        WCHAR strIID[MINIPAL_GUID_BUFFER_LEN];
         GuidToLPWSTR(iid, strIID);
 
         // Obtain the textual description of the HRESULT.
@@ -2545,7 +2530,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             pSrcItfClass->GetGuid(&SrcItfIID, TRUE);
 
             // Convert the source interface IID to a string.
-            WCHAR strSrcItfIID[GUID_STR_BUFFER_LEN];
+            WCHAR strSrcItfIID[MINIPAL_GUID_BUFFER_LEN];
             GuidToLPWSTR(SrcItfIID, strSrcItfIID);
 
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),

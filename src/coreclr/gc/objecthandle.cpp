@@ -1105,7 +1105,7 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
 
     // promote objects pointed to by strong handles
     // during ephemeral GCs we also want to promote the ones pointed to by sizedref handles.
-    uint32_t types[2] = {
+    uint32_t types[] = {
         HNDTYPE_STRONG,
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF

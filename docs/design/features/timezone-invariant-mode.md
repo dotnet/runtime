@@ -8,9 +8,28 @@ Therefore dotnet bundles the timezone database as binary as part of the runtime.
 That makes download size larger and application startup slower.
 If your application doesn't need to work with time zone information, you could use this feature to make the runtime about 200KB smaller.
 
-You enable it in project file:
+## Enabling the invariant mode
+
+Applications can enable the invariant mode by either of the following:
+
+1. in project file:
+
     ```xml
     <PropertyGroup>
         <InvariantTimezone>true</InvariantTimezone>
     </PropertyGroup>
     ```
+
+2. in `runtimeconfig.json` file:
+
+    ```json
+    {
+        "runtimeOptions": {
+            "configProperties": {
+                "System.TimeZoneInfo.Invariant": true
+            }
+        }
+    }
+    ```
+
+3. setting environment variable value `DOTNET_SYSTEM_TIMEZONE_INVARIANT` to `true` or `1`.

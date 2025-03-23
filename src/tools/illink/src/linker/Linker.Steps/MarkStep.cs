@@ -326,8 +326,6 @@ namespace Mono.Linker.Steps
 			}
 
 			MarkTypeVisibleToReflection (type, reason, origin);
-			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type), origin);
-			MarkTypeSpecialCustomAttributes (type, origin);
 
 			if (type.HasInterfaces) {
 				foreach (InterfaceImplementation iface in type.Interfaces)
@@ -1728,6 +1726,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.AlreadyMarked:
 			case DependencyKind.TypePreserve:
 			case DependencyKind.PreservedMethod:
+			case DependencyKind.MemberOfType:
 				return;
 
 			case DependencyKind.DynamicallyAccessedMemberOnType:
@@ -2597,6 +2596,8 @@ namespace Mono.Linker.Steps
 			case "MulticastDelegate":
 			case "ValueType":
 			case "Enum":
+			case "Array":
+			case "RuntimeType": // works around https://github.com/dotnet/runtime/issues/110605
 				return td.Namespace == "System";
 			}
 
@@ -3088,6 +3089,8 @@ namespace Mono.Linker.Steps
 				Tracer.AddDirectDependency (method.DeclaringType, new DependencyInfo (DependencyKind.InstantiatedByCtor, method), marked: false);
 			} else if (method.IsStaticConstructor () && Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method))
 				Context.LogWarning (methodOrigin, DiagnosticId.RequiresUnreferencedCodeOnStaticConstructor, method.GetDisplayName ());
+			else if (method == method.Module.EntryPoint && Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute>(method))
+				Context.LogWarning (methodOrigin, DiagnosticId.RequiresUnreferencedCodeOnEntryPoint, method.GetDisplayName ());
 
 			if (method.IsConstructor) {
 				if (!Annotations.ProcessSatelliteAssemblies && KnownMembers.IsSatelliteAssemblyMarker (method))

@@ -7,7 +7,7 @@
 /* DESIGN NOTES DESIGN NOTES DESIGN NOTES DESIGN NOTES */
 // DESIGN NOTES
 // Over the years EventSource has become more complex and so it is important to understand
-// the basic structure of the code to insure that it does not grow more complex.
+// the basic structure of the code to ensure that it does not grow more complex.
 //
 // Basic Model
 //
@@ -399,7 +399,10 @@ namespace System.Diagnostics.Tracing
             return GetName(eventSourceType, EventManifestOptions.None);
         }
 
-        private const DynamicallyAccessedMemberTypes ManifestMemberTypes = DynamicallyAccessedMemberTypes.All;
+        private const DynamicallyAccessedMemberTypes ManifestMemberTypes =
+            DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.NonPublicMethods
+            | DynamicallyAccessedMemberTypes.PublicNestedTypes;
 
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
@@ -1423,12 +1426,12 @@ namespace System.Diagnostics.Tracing
 
                     if (m_Dispatchers != null && metadata.EnabledForAnyListener)
                     {
-#if MONO && !TARGET_BROWSER && !TARGET_WASI
+#if MONO && !TARGET_WASI
                         // On Mono, managed events from NativeRuntimeEventSource are written using WriteEventCore which can be
                         // written doubly because EventPipe tries to pump it back up to EventListener via NativeRuntimeEventSource.ProcessEvents.
                         // So we need to prevent this from getting written directly to the Listeners.
                         if (this.GetType() != typeof(NativeRuntimeEventSource))
-#endif // MONO && !TARGET_BROWSER && !TARGET_WASI
+#endif // MONO && !TARGET_WASI
                         {
                             var eventCallbackArgs = new EventWrittenEventArgs(this, eventId, pActivityId, relatedActivityId);
                             WriteToAllListeners(eventCallbackArgs, eventDataCount, data);
@@ -1669,7 +1672,7 @@ namespace System.Diagnostics.Tracing
                 // Register the provider with ETW
                 Func<EventSource?> eventSourceFactory = () => this;
                 OverrideEventProvider? etwProvider = EventSourceInitHelper.TryGetPreregisteredEtwProvider(eventSourceGuid);
-                if(etwProvider == null)
+                if (etwProvider == null)
                 {
                     etwProvider = new OverrideEventProvider(eventSourceFactory, EventProviderType.ETW);
                     etwProvider.Register(eventSourceGuid, eventSourceName);
@@ -2079,7 +2082,7 @@ namespace System.Diagnostics.Tracing
             Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                             "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-        private unsafe object?[] SerializeEventArgs(int eventId, object?[] args)
+        private object?[] SerializeEventArgs(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
             TraceLoggingEventTypes eventTypes = m_eventData[eventId].TraceLoggingEventTypes;
@@ -2174,7 +2177,7 @@ namespace System.Diagnostics.Tracing
             DispatchToAllListeners(eventCallbackArgs);
         }
 
-        internal unsafe void DispatchToAllListeners(EventWrittenEventArgs eventCallbackArgs)
+        internal void DispatchToAllListeners(EventWrittenEventArgs eventCallbackArgs)
         {
             int eventId = eventCallbackArgs.EventId;
             Exception? lastThrownException = null;
@@ -2517,9 +2520,6 @@ namespace System.Diagnostics.Tracing
             private TraceLoggingEventTypes _traceLoggingEventTypes;
             public TraceLoggingEventTypes TraceLoggingEventTypes
             {
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
                 get
                 {
@@ -3879,7 +3879,7 @@ namespace System.Diagnostics.Tracing
 #endif
         internal static void InitializeDefaultEventSources()
         {
-            if(!EventSource.IsSupported)
+            if (!EventSource.IsSupported)
             {
                 return;
             }
@@ -3888,7 +3888,9 @@ namespace System.Diagnostics.Tracing
 // it to mean other aspects of tracing such as these EventSources.
 #if FEATURE_PERFTRACING
             _ = NativeRuntimeEventSource.Log;
+#if !TARGET_BROWSER
             _ = RuntimeEventSource.Log;
+#endif
 #endif
             // System.Diagnostics.MetricsEventSource allows listening to Meters and indirectly
             // also creates the System.Runtime Meter.
@@ -5261,7 +5263,7 @@ namespace System.Diagnostics.Tracing
         internal readonly EventListener m_Listener;   // The dispatcher this entry is for
         internal bool[]? m_EventEnabled;              // For every event in a the eventSource, is it enabled?
 
-        // Only guaranteed to exist after a InsureInit()
+        // Only guaranteed to exist after a EnsureInit()
         internal EventDispatcher? m_Next;              // These form a linked list in code:EventSource.m_Dispatchers
         // Of all listeners for that eventSource.
     }

@@ -204,7 +204,8 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic uses a mask in arg1 to select elements present in the result
     HW_Flag_ExplicitMaskedOperation = 0x20000,
 
-    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low register.
+    // The intrinsic uses a mask in arg1 (either explicitly, embedded or optionally embedded) to select elements present
+    // in the result, and must use a low register.
     HW_Flag_LowMaskedOperation = 0x40000,
 
     // The intrinsic can optionally use a mask in arg1 to select elements present in the result, which is not present in
@@ -922,6 +923,96 @@ struct HWIntrinsicInfo
         return false;
     }
 
+    static bool IsVectorCreate(NamedIntrinsic id)
+    {
+        switch (id)
+        {
+#if defined(TARGET_ARM64)
+            case NI_Vector64_Create:
+#endif // TARGET_ARM64
+            case NI_Vector128_Create:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_Create:
+            case NI_Vector512_Create:
+#endif // TARGET_XARCH
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    static bool IsVectorCreateScalar(NamedIntrinsic id)
+    {
+        switch (id)
+        {
+#if defined(TARGET_ARM64)
+            case NI_Vector64_CreateScalar:
+#endif // TARGET_ARM64
+            case NI_Vector128_CreateScalar:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_CreateScalar:
+            case NI_Vector512_CreateScalar:
+#endif // TARGET_XARCH
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    static bool IsVectorCreateScalarUnsafe(NamedIntrinsic id)
+    {
+        switch (id)
+        {
+#if defined(TARGET_ARM64)
+            case NI_Vector64_CreateScalarUnsafe:
+#endif // TARGET_ARM64
+            case NI_Vector128_CreateScalarUnsafe:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_CreateScalarUnsafe:
+            case NI_Vector512_CreateScalarUnsafe:
+#endif // TARGET_XARCH
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    static bool IsVectorGetElement(NamedIntrinsic id)
+    {
+        switch (id)
+        {
+#if defined(TARGET_ARM64)
+            case NI_Vector64_GetElement:
+#endif // TARGET_ARM64
+            case NI_Vector128_GetElement:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_GetElement:
+            case NI_Vector512_GetElement:
+#endif // TARGET_XARCH
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    static bool IsVectorToScalar(NamedIntrinsic id)
+    {
+        switch (id)
+        {
+#if defined(TARGET_ARM64)
+            case NI_Vector64_ToScalar:
+#endif // TARGET_ARM64
+            case NI_Vector128_ToScalar:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_ToScalar:
+            case NI_Vector512_ToScalar:
+#endif // TARGET_XARCH
+                return true;
+            default:
+                return false;
+        }
+    }
+
     static bool HasImmediateOperand(NamedIntrinsic id)
     {
 #if defined(TARGET_ARM64)
@@ -947,16 +1038,16 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_Scalable) != 0;
     }
 
-    static bool IsMaskedOperation(NamedIntrinsic id)
-    {
-        const HWIntrinsicFlag flags = lookupFlags(id);
-        return IsLowMaskedOperation(id) || IsOptionalEmbeddedMaskedOperation(id) || IsExplicitMaskedOperation(id);
-    }
-
     static bool IsLowMaskedOperation(NamedIntrinsic id)
     {
-        const HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_LowMaskedOperation) != 0;
+        const HWIntrinsicFlag flags                = lookupFlags(id);
+        const bool            isLowMaskedOperation = (flags & HW_Flag_LowMaskedOperation) != 0;
+        if (isLowMaskedOperation)
+        {
+            assert(IsExplicitMaskedOperation(id) || IsEmbeddedMaskedOperation(id) ||
+                   IsOptionalEmbeddedMaskedOperation(id));
+        }
+        return isLowMaskedOperation;
     }
 
     static bool IsLowVectorOperation(NamedIntrinsic id)

@@ -13,7 +13,7 @@ using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class EnumConverter<T> : JsonPrimitiveConverter<T>
+    internal sealed class EnumConverter<T> : JsonPrimitiveConverter<T> // Do not rename FQN (legacy schema generation)
         where T : struct, Enum
     {
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
@@ -22,9 +22,8 @@ namespace System.Text.Json.Serialization.Converters
         private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
         private static readonly bool s_isFlagsEnum = typeof(T).IsDefined(typeof(FlagsAttribute), inherit: false);
 
-        private readonly EnumConverterOptions _converterOptions;
-
-        private readonly JsonNamingPolicy? _namingPolicy;
+        private readonly EnumConverterOptions _converterOptions; // Do not rename (legacy schema generation)
+        private readonly JsonNamingPolicy? _namingPolicy; // Do not rename (legacy schema generation)
 
         /// <summary>
         /// Stores metadata for the individual fields declared on the enum.
@@ -56,7 +55,7 @@ namespace System.Text.Json.Serialization.Converters
 
         public EnumConverter(EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions options)
         {
-            Debug.Assert(EnumConverterFactory.IsSupportedTypeCode(s_enumTypeCode));
+            Debug.Assert(EnumConverterFactory.Helpers.IsSupportedTypeCode(s_enumTypeCode));
 
             _converterOptions = converterOptions;
             _namingPolicy = namingPolicy;
@@ -601,7 +600,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 Debug.Assert(JsonName.Equals(other.JsonName, StringComparison.OrdinalIgnoreCase), "The conflicting entry must be equal up to case insensitivity.");
 
-                if (Kind is EnumFieldNameKind.Default || JsonName.Equals(other.JsonName, StringComparison.Ordinal))
+                if (ConflictsWith(this, other))
                 {
                     // Silently discard if the preceding entry is the default or has identical name.
                     return;
@@ -612,13 +611,34 @@ namespace System.Text.Json.Serialization.Converters
                 // Walk the existing list to ensure we do not add duplicates.
                 foreach (EnumFieldInfo conflictingField in conflictingFields)
                 {
-                    if (conflictingField.Kind is EnumFieldNameKind.Default || conflictingField.JsonName.Equals(other.JsonName, StringComparison.Ordinal))
+                    if (ConflictsWith(conflictingField, other))
                     {
                         return;
                     }
                 }
 
                 conflictingFields.Add(other);
+
+                // Determines whether the first field info matches everything that the second field info matches,
+                // in which case the second field info is redundant and doesn't need to be added to the list.
+                static bool ConflictsWith(EnumFieldInfo current, EnumFieldInfo other)
+                {
+                    // The default name matches everything case-insensitively.
+                    if (current.Kind is EnumFieldNameKind.Default)
+                    {
+                        return true;
+                    }
+
+                    // current matches case-sensitively since it's not the default name.
+                    // other matches case-insensitively, so it matches more than current.
+                    if (other.Kind is EnumFieldNameKind.Default)
+                    {
+                        return false;
+                    }
+
+                    // Both are case-sensitive so they need to be identical.
+                    return current.JsonName.Equals(other.JsonName, StringComparison.Ordinal);
+                }
             }
 
             public EnumFieldInfo? GetMatchingField(ReadOnlySpan<char> input)

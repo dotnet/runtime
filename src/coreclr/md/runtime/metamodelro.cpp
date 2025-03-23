@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //*****************************************************************************
-// MetaModelRO.cpp -- Read-only implementation of compressed COM+ metadata.
+// MetaModelRO.cpp -- Read-only implementation of compressed CLR metadata.
 //
 
 //
@@ -411,7 +411,7 @@ CMiniMd::CommonGetCustomAttributeByNameEx(
                 IfFailGo(GetCustomAttributeRecord(ridStart, &pRec));
                 IfFailGo(getValueOfCustomAttribute(pRec, reinterpret_cast<const BYTE **>(ppData), pcbData));
                 if (ptkCA)
-                    *ptkCA = TokenFromRid(mdtCustomAttribute, ridStart);
+                    *ptkCA = TokenFromRid(ridStart, mdtCustomAttribute);
             }
             break;
         }

@@ -453,6 +453,7 @@ G_BEGIN_DECLS
 #ifdef DISABLE_THREADS
 EMSCRIPTEN_KEEPALIVE void mono_wasm_execute_timer (void);
 EMSCRIPTEN_KEEPALIVE void mono_background_exec (void);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_ds_exec (void);
 extern void mono_wasm_schedule_timer (int shortestDueTimeMs);
 #else
 extern void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread);
@@ -577,7 +578,6 @@ mono_init_native_crash_info (void)
 void
 mono_runtime_setup_stat_profiler (void)
 {
-	g_error ("mono_runtime_setup_stat_profiler");
 }
 
 gboolean
@@ -586,6 +586,12 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	g_error ("mono_chain_signal");
 
 	return FALSE;
+}
+
+void
+mono_chain_signal_to_default_sigsegv_handler (void)
+{
+	g_error ("mono_chain_signal_to_default_sigsegv_handler not supported on WASM");
 }
 
 gboolean
@@ -749,7 +755,7 @@ mono_wasm_enable_debugging (int log_level)
 	mono_wasm_debug_level = log_level;
 }
 
-int
+MONO_API int
 mono_wasm_get_debug_level (void)
 {
 	return mono_wasm_debug_level;

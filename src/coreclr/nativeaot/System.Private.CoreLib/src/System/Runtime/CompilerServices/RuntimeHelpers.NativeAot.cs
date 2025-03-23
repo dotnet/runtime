@@ -45,7 +45,7 @@ namespace System.Runtime.CompilerServices
             if (type.IsNull)
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
 
-            ReflectionAugments.ReflectionCoreCallbacks.RunClassConstructor(type);
+            ReflectionAugments.RunClassConstructor(type);
         }
 
         public static void RunModuleConstructor(ModuleHandle module)
@@ -322,14 +322,7 @@ namespace System.Runtime.CompilerServices
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
             }
 
-            Debug.Assert(MethodTable.Of<object>()->NumVtableSlots > 0);
-            if (mt->NumVtableSlots == 0)
-            {
-                // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
-                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(type);
-            }
-            // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
-            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(mt) != 0);
+            RuntimeAugments.EnsureMethodTableSafeToAllocate(mt);
 
             if (mt->IsNullable)
             {
@@ -364,13 +357,7 @@ namespace System.Runtime.CompilerServices
             if (mt->ElementType == EETypeElementType.Void || mt->IsGenericTypeDefinition || mt->IsByRef || mt->IsPointer || mt->IsFunctionPointer)
                 throw new ArgumentException(SR.Arg_TypeNotSupported);
 
-            if (mt->NumVtableSlots == 0)
-            {
-                // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
-                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(Type.GetTypeFromHandle(type));
-            }
-            // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
-            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(mt) != 0);
+            RuntimeAugments.EnsureMethodTableSafeToAllocate(mt);
 
             if (!mt->IsValueType)
             {
@@ -380,7 +367,7 @@ namespace System.Runtime.CompilerServices
             if (mt->IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
-            return RuntimeImports.RhBox(mt, ref target);
+            return RuntimeExports.RhBox(mt, ref target);
         }
 
         /// <summary>

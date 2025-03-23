@@ -8,7 +8,7 @@ import { WasmOpcode, WasmSimdOpcode, WasmAtomicOpcode, WasmValtype } from "./jit
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
-import { localHeapViewU8, localHeapViewU32 } from "./memory";
+import { localHeapViewU8, localHeapViewU32, malloc } from "./memory";
 import {
     JiterpNumberMode, BailoutReason, JiterpreterTable,
     JiterpCounter, JiterpMember, OpcodeInfoType
@@ -20,7 +20,8 @@ export const maxFailures = 2,
     shortNameBase = 36,
     // NOTE: This needs to be big enough to hold the maximum module size since there's no auto-growth
     //  support yet. If that becomes a problem, we should just make it growable
-    blobBuilderCapacity = 16 * 1024;
+    blobBuilderCapacity = 24 * 1024,
+    INT32_MIN = -2147483648;
 
 // uint16
 export declare interface MintOpcodePtr extends NativePointer {
@@ -948,7 +949,7 @@ export class BlobBuilder {
 
     constructor () {
         this.capacity = blobBuilderCapacity;
-        this.buffer = <any>Module._malloc(this.capacity);
+        this.buffer = <any>malloc(this.capacity);
         mono_assert(this.buffer, () => `Failed to allocate ${blobBuilderCapacity}b buffer for BlobBuilder`);
         localHeapViewU8().fill(0, this.buffer, this.buffer + this.capacity);
         this.size = 0;
@@ -1150,7 +1151,14 @@ type CfgBranch = {
     branchType: CfgBranchType;
 }
 
-type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch;
+type CfgJumpTable = {
+    type: "jump-table";
+    from: MintOpcodePtr;
+    targets: MintOpcodePtr[];
+    fallthrough: MintOpcodePtr;
+}
+
+type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch | CfgJumpTable;
 
 export const enum CfgBranchType {
     Unconditional,
@@ -1276,6 +1284,23 @@ class Cfg {
                 this.overheadBytes += 17;
             }
         }
+    }
+
+    // It's the caller's responsibility to wrap this in a block and follow it with a bailout!
+    jumpTable (targets: MintOpcodePtr[], fallthrough: MintOpcodePtr) {
+        this.appendBlob();
+        this.segments.push({
+            type: "jump-table",
+            from: this.ip,
+            targets,
+            fallthrough,
+        });
+        // opcode, length, fallthrough (approximate)
+        this.overheadBytes += 4;
+        // length of branch depths (approximate)
+        this.overheadBytes += targets.length;
+        // bailout for missing targets (approximate)
+        this.overheadBytes += 24;
     }
 
     emitBlob (segment: CfgBlob, source: Uint8Array) {
@@ -1415,6 +1440,38 @@ class Cfg {
                     this.blockStack.shift();
                     break;
                 }
+                case "jump-table": {
+                    // Our caller wrapped us in a block and put a missing target bailout after us
+                    const offset = 1;
+                    // The selector was already loaded onto the wasm stack before cfg.jumpTable was called,
+                    //  so we just need to generate a br_table
+                    this.builder.appendU8(WasmOpcode.br_table);
+                    this.builder.appendULeb(segment.targets.length);
+                    for (const target of segment.targets) {
+                        const indexInStack = this.blockStack.indexOf(target);
+                        if (indexInStack >= 0) {
+                            modifyCounter(JiterpCounter.SwitchTargetsOk, 1);
+                            this.builder.appendULeb(indexInStack + offset);
+                        } else {
+                            modifyCounter(JiterpCounter.SwitchTargetsFailed, 1);
+                            if (this.trace > 0)
+                                mono_log_info(`Switch target ${target} not found in block stack ${this.blockStack}`);
+                            this.builder.appendULeb(0);
+                        }
+                    }
+                    const fallthroughIndex = this.blockStack.indexOf(segment.fallthrough);
+                    if (fallthroughIndex >= 0) {
+                        modifyCounter(JiterpCounter.SwitchTargetsOk, 1);
+                        this.builder.appendULeb(fallthroughIndex + offset);
+                    } else {
+                        modifyCounter(JiterpCounter.SwitchTargetsFailed, 1);
+                        if (this.trace > 0)
+                            mono_log_info(`Switch fallthrough ${segment.fallthrough} not found in block stack ${this.blockStack}`);
+                        this.builder.appendULeb(0);
+                    }
+                    this.builder.appendU8(WasmOpcode.unreachable);
+                    break;
+                }
                 case "branch": {
                     const lookupTarget = segment.isBackward ? dispatchIp : segment.target;
                     let indexInStack = this.blockStack.indexOf(lookupTarget),
@@ -1543,6 +1600,27 @@ export const _now = (globalThis.performance && globalThis.performance.now)
 
 let scratchBuffer: NativePointer = <any>0;
 
+export function append_profiler_event (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) {
+    let event_name:string;
+    switch (opcode) {
+        case MintOpcode.MINT_PROF_ENTER:
+            event_name = "prof_enter";
+            break;
+        case MintOpcode.MINT_PROF_SAMPLEPOINT:
+            event_name = "prof_samplepoint";
+            break;
+        case MintOpcode.MINT_PROF_EXIT:
+        case MintOpcode.MINT_PROF_EXIT_VOID:
+            event_name = "prof_leave";
+            break;
+        default:
+            throw new Error(`Unimplemented profiler event ${opcode}`);
+    }
+    builder.local("frame");
+    builder.i32_const(ip);
+    builder.callImport(event_name);
+}
+
 export function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {
     // safepoints are never triggered in a single-threaded build
     if (!WasmEnableThreads)
@@ -1609,7 +1687,7 @@ export function append_exit (builder: WasmBuilder, ip: MintOpcodePtr, opcodeCoun
 
 export function copyIntoScratchBuffer (src: NativePointer, size: number): NativePointer {
     if (!scratchBuffer)
-        scratchBuffer = Module._malloc(64);
+        scratchBuffer = malloc(64);
     if (size > 64)
         throw new Error("Scratch buffer size is 64");
 
@@ -1965,6 +2043,7 @@ export type JiterpreterOptions = {
     tableSize: number;
     aotTableSize: number;
     maxModuleSize: number;
+    maxSwitchSize: number;
 }
 
 const optionNames: { [jsName: string]: string } = {
@@ -2002,6 +2081,7 @@ const optionNames: { [jsName: string]: string } = {
     "tableSize": "jiterpreter-table-size",
     "aotTableSize": "jiterpreter-aot-table-size",
     "maxModuleSize": "jiterpreter-max-module-size",
+    "maxSwitchSize": "jiterpreter-max-switch-size",
 };
 
 let optionsVersion = -1;
@@ -2048,7 +2128,7 @@ function updateOptions () {
     optionTable = <any>{};
     for (const k in optionNames) {
         const value = cwraps.mono_jiterp_get_option_as_int(optionNames[k]);
-        if (value > -2147483647)
+        if (value !== INT32_MIN)
             (<any>optionTable)[k] = value;
         else
             mono_log_info(`Failed to retrieve value of option ${optionNames[k]}`);
