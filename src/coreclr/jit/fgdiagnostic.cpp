@@ -3278,14 +3278,20 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
                 assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
             }
 
-            if (node->OperIs(GT_NOP))
+            switch (node->OperGet())
             {
-                assert(node->TypeIs(TYP_VOID) && "GT_NOP should be TYP_VOID.");
-            }
+                case GT_NOP:
+                case GT_JTRUE:
+                case GT_BOUNDS_CHECK:
+                    if (!node->TypeIs(TYP_VOID))
+                    {
+                        printf("The tree is expected to be TYP_VOID:\n");
+                        m_compiler->gtDispTree(node);
+                    }
+                    break;
 
-            if (node->OperIs(GT_JTRUE))
-            {
-                assert(node->TypeIs(TYP_VOID) && "GT_JTRUE should be TYP_VOID.");
+                default:
+                    break;
             }
 
             if (varTypeIsSmall(node))

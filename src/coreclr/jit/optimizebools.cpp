@@ -1776,87 +1776,6 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     return opr1;
 }
 
-bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
-{
-    assert(block->KindIs(BBJ_COND));
-
-#ifdef JIT32_GCENCODER
-    // JIT32_GCENCODER has a hard limit on the number of epilogues, let's not add more.
-    return false;
-#endif
-
-    // Early out if the current method is not returning a boolean.
-    if ((info.compRetType != TYP_UBYTE) || (genReturnBB != nullptr))
-    {
-        return false;
-    }
-
-    BasicBlock* retTrueBb  = block->GetTrueEdge()->getDestinationBlock();
-    BasicBlock* retFalseBb = block->GetFalseEdge()->getDestinationBlock();
-    if (!retTrueBb->KindIs(BBJ_RETURN) || !retFalseBb->KindIs(BBJ_RETURN))
-    {
-        return false;
-    }
-
-    if ((retTrueBb->GetUniquePred(this) == nullptr) && (retFalseBb->GetUniquePred(this) == nullptr))
-    {
-        // Both return blocks have multiple predecessors - bail out.
-        // We don't want to introduce a new epilogue.
-        return false;
-    }
-
-    // Is block a BBJ_RETURN(1/0) ? (single statement)
-    auto isReturnBool = [](const BasicBlock* block, bool value) {
-        if (block->KindIs(BBJ_RETURN) && block->hasSingleStmt() && (block->lastStmt() != nullptr))
-        {
-            GenTree* node = block->lastStmt()->GetRootNode();
-            return node->OperIs(GT_RETURN) && node->gtGetOp1()->IsIntegralConst(value ? 1 : 0);
-        }
-        return false;
-    };
-
-    // Make sure we deal with true/false return blocks (or false/true)
-    bool retTrueFalse = isReturnBool(retTrueBb, true) && isReturnBool(retFalseBb, false);
-    bool retFalseTrue = isReturnBool(retTrueBb, false) && isReturnBool(retFalseBb, true);
-    if (!retTrueFalse && !retFalseTrue)
-    {
-        return false;
-    }
-
-    GenTree* node = block->lastStmt()->GetRootNode();
-    assert(node->OperIs(GT_JTRUE));
-
-    GenTree* cond = node->gtGetOp1();
-    if (!cond->OperIsCompare())
-    {
-        return false;
-    }
-
-    // Reverse the condition if we jump to "return false" on true.
-    if (retFalseTrue)
-    {
-        cond->SetOper(GenTree::ReverseRelop(cond->OperGet()));
-    }
-
-    assert(cond->TypeIs(TYP_INT));
-    assert(BasicBlock::sameEHRegion(block, retTrueBb));
-    assert(BasicBlock::sameEHRegion(block, retFalseBb));
-
-    // Unlink the return blocks, someone will pick them up later.
-    fgRemoveRefPred(block->GetTrueEdge());
-    fgRemoveRefPred(block->GetFalseEdge());
-    block->SetKindAndTargetEdge(BBJ_RETURN);
-    node->ChangeOper(GT_RETURN);
-    node->ChangeType(TYP_INT);
-
-    fgPgoConsistent      = false;
-    block->bbCodeOffsEnd = max(retTrueBb->bbCodeOffsEnd, retFalseBb->bbCodeOffsEnd);
-    gtSetStmtInfo(block->lastStmt());
-    fgSetStmtSeq(block->lastStmt());
-    gtUpdateStmtSideEffects(block->lastStmt());
-    return true;
-}
-
 //-----------------------------------------------------------------------------
 // optOptimizeBools:    Folds boolean conditionals for GT_JTRUE/GT_RETURN/GT_SWIFT_ERROR_RET nodes
 //
@@ -2002,7 +1921,6 @@ PhaseStatus Compiler::optOptimizeBools()
     unsigned numReturn = 0;
     unsigned numPasses = 0;
     unsigned stress    = false;
-    bool     modified  = false;
 
     do
     {
@@ -2012,10 +1930,6 @@ PhaseStatus Compiler::optOptimizeBools()
         for (BasicBlock* b1 = fgFirstBB; b1 != nullptr; b1 = retry ? b1 : b1->Next())
         {
             retry = false;
-            if (b1->KindIs(BBJ_COND))
-            {
-                modified |= fgFoldCondToReturnBlock(b1);
-            }
 
             // We're only interested in conditional jumps here
 
@@ -2110,6 +2024,6 @@ PhaseStatus Compiler::optOptimizeBools()
 
     JITDUMP("\noptimized %u BBJ_COND cases, %u BBJ_RETURN cases in %u passes\n", numCond, numReturn, numPasses);
 
-    modified |= stress || ((numCond + numReturn) > 0);
+    const bool modified = stress || ((numCond + numReturn) > 0);
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

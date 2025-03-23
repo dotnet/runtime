@@ -4260,15 +4260,15 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 }
 
 //-------------------------------------------------------------
-// fgDedupReturnComparison: Expands BBJ_RETURN CMP into BBJ_COND CMP with two
+// fgDedupReturnComparison: Expands BBJ_RETURN <relop> into BBJ_COND <relop> with two
 //   BBJ_RETURN blocks ("return true" and "return false"). Such transformation
-//   helps other phases to focus only on BBJ_COND CMP.
+//   helps other phases to focus only on BBJ_COND <relop> (normalization).
 //
 // Arguments:
-//    block - the BBJ_RETURN block to convert into BBJ_COND CMP
+//    block - the BBJ_RETURN block to convert into BBJ_COND <relop>
 //
 // Returns:
-//    true if the block was converted into BBJ_COND CMP
+//    true if the block was converted into BBJ_COND <relop>
 //
 bool Compiler::fgDedupReturnComparison(BasicBlock* block)
 {
@@ -4291,18 +4291,7 @@ bool Compiler::fgDedupReturnComparison(BasicBlock* block)
         return false;
     }
 
-    GenTree* cmp    = rootNode->gtGetOp1();
-    GenTree* cmpOp1 = cmp->gtGetOp1();
-    GenTree* cmpOp2 = cmp->gtGetOp2();
-
-    // The following check is purely to improve TP and handle some size regressions we fail to handle
-    // Eventually, we should remove it.
-    /*bool profitable = (cmpOp1->IsLocal() && cmpOp2->IsCnsIntOrI()) || (cmpOp2->IsLocal() && cmpOp1->IsCnsIntOrI());
-    if (!profitable)
-    {
-        return false;
-    }*/
-
+    GenTree* cmp = rootNode->gtGetOp1();
     cmp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
     rootNode->ChangeOper(GT_JTRUE);
     rootNode->ChangeType(TYP_VOID);
@@ -4423,13 +4412,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
             bDest      = nullptr;
             bFalseDest = nullptr;
 
+            // Expand BBJ_RETURN <relop> into BBJ_COND <relop> when doTailDuplication is enabled
             if (doTailDuplication && block->KindIs(BBJ_RETURN) && fgDedupReturnComparison(block))
             {
+                assert(block->KindIs(BBJ_COND));
                 change   = true;
                 modified = true;
                 bNext    = block->Next();
             }
-
+            // Remove empty blocks
             if (block->KindIs(BBJ_ALWAYS))
             {
                 bDest = block->GetTarget();
