@@ -15,6 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 #include "compiler.h"
+#include "minipal/log.h"
 
 #if MEASURE_FATAL
 unsigned fatal_badCode;
@@ -318,7 +319,14 @@ int vflogf(FILE* file, const char* fmt, va_list args)
     // 0-length string means flush
     if (fmt[0] == '\0')
     {
-        fflush(file);
+        if (file == procstdout())
+        {
+            minipal_log_flush_verbose();
+        }
+        else
+        {
+            fflush(file);
+        }
         return 0;
     }
 
@@ -331,8 +339,15 @@ int vflogf(FILE* file, const char* fmt, va_list args)
         OutputDebugStringA(buffer);
     }
 
-    // We use fputs here so that this executes as fast a possible
-    fputs(&buffer[0], file);
+    if (file == procstdout())
+    {
+        minipal_log_write_verbose(buffer);
+    }
+    else
+    {
+        fputs(&buffer[0], file);
+    }
+
     return written;
 }
 
