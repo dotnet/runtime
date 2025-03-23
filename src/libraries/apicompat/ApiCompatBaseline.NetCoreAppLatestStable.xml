@@ -2,7 +2,6 @@
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
-  <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.ComponentModel.DesignerAttribute.#ctor(System.String,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/netstandard.dll</Left>
