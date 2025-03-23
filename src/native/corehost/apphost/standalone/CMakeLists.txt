@@ -27,10 +27,16 @@ set(HEADERS
 if(CLR_CMAKE_TARGET_WIN32)
     add_compile_definitions(UNICODE)
     list(APPEND SOURCES
-        ../apphost.windows.cpp)
+        ../apphost.windows.cpp
+		../appcontainer_helpers.cpp
+	)
 
     list(APPEND HEADERS
-        ../apphost.windows.h)
+        ../apphost.windows.h
+		../appcontainer_helpers.h
+	)
+	
+	set_source_files_properties(../appcontainer_helpers.cpp PROPERTIES COMPILE_FLAGS "/std:c++17 /O1")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
