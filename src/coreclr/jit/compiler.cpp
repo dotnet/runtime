@@ -6226,9 +6226,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_APX);
         }
-
 #elif defined(TARGET_RISCV64)
-
         if (JitConfig.EnableHWIntrinsic() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
@@ -6243,7 +6241,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
         }
-
 #endif
 
         // These calls are important and explicitly ordered to ensure that the flags are correct in

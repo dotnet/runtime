@@ -544,9 +544,7 @@ int minipal_getcpufeatures(void)
 
 #if HAVE_HWPROBE_H
 
-    struct riscv_hwprobe pairs[1] = {
-        {RISCV_HWPROBE_KEY_IMA_EXT_0, 0}
-    };
+    struct riscv_hwprobe pairs[1] = {{RISCV_HWPROBE_KEY_IMA_EXT_0, 0}};
 
     if (syscall(__NR_riscv_hwprobe, pairs, 1, 0, NULL, 0) == 0)
     {

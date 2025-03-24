@@ -1540,9 +1540,7 @@ void EEJitManager::SetCpuInfo()
     {
         g_arm64_atomics_present = true;
     }
-
 #elif defined(TARGET_RISCV64)
-
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {
         CPUCompileFlags.Set(InstructionSet_RiscV64Base);
@@ -1557,7 +1555,6 @@ void EEJitManager::SetCpuInfo()
     {
         CPUCompileFlags.Set(InstructionSet_Zbb);
     }
-
 #endif
 
     // These calls are very important as it ensures the flags are consistent with any
