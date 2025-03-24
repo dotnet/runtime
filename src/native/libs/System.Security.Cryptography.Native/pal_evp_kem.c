@@ -77,6 +77,44 @@ int32_t CryptoNative_EvpKemAvailable(const char* algorithm)
     return 0;
 }
 
+int32_t CryptoNative_EvpKemGetName(const EVP_PKEY* pKey, char* algorithm, int32_t* algorithmLength)
+{
+#ifdef NEED_OPENSSL_3_0
+    assert(pKey);
+    assert(algorithm);
+    assert(algorithmLength);
+
+    if (API_EXISTS(EVP_PKEY_get0_type_name))
+    {
+        ERR_clear_error();
+        const char* name = EVP_PKEY_get0_type_name(pKey);
+
+        if (name == NULL)
+        {
+            return 0;
+        }
+
+        size_t nameLength = strlen(name);
+
+        if (SizeTToInt32(nameLength) > *algorithmLength)
+        {
+            return 0;
+        }
+
+        strncpy(algorithm, name, nameLength);
+        *algorithmLength = SizeTToInt32(nameLength);
+
+        return 1;
+    }
+#else
+    (void)pKey;
+    (void)algorithm;
+    (void)algorithmLength;
+#endif
+
+    return 0;
+}
+
 EVP_PKEY* CryptoNative_EvpKemGeneratePkey(const char* kemName, uint8_t* seed, int32_t seedLength)
 {
     assert(kemName);

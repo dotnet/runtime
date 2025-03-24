@@ -138,6 +138,9 @@
   <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
     <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
+  <data name="Argument_KemInvalidAlgorithmHandle" xml:space="preserve">
+    <value>The specified EVP_PKEY handle has an unexpected algorithm name '{0}'.</value>
+  </data>
   <data name="Argument_SignatureContextTooLong255" xml:space="preserve">
     <value>The specified signature context exceeds the maximum length of 255 bytes.</value>
   </data>

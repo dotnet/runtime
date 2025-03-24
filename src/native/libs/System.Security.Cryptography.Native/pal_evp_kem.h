@@ -6,6 +6,7 @@
 #include "opensslshim.h"
 
 PALEXPORT int32_t CryptoNative_EvpKemAvailable(const char* algorithm);
+PALEXPORT int32_t CryptoNative_EvpKemGetName(const EVP_PKEY* pKey, char* algorithm, int32_t* algorithmLength);
 PALEXPORT EVP_PKEY* CryptoNative_EvpKemGeneratePkey(const char* kemName, uint8_t* seed, int32_t seedLength);
 PALEXPORT int32_t CryptoNative_EvpKemExportPrivateSeed(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength);
 PALEXPORT int32_t CryptoNative_EvpKemExportDecapsulationKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength);

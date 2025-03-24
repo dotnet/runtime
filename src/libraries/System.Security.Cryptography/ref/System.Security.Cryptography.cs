@@ -1853,6 +1853,16 @@ namespace System.Security.Cryptography
         public static bool operator ==(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+    public sealed partial class MLKemOpenSsl : System.Security.Cryptography.MLKem
+    {
+        public MLKemOpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) : base (default(System.Security.Cryptography.MLKemAlgorithm)) { }
+        protected override void DecapsulateCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected override void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected override void ExportDecapsulationKeyCore(System.Span<byte> destination) { }
+        protected override void ExportEncapsulationKeyCore(System.Span<byte> destination) { }
+        protected override void ExportPrivateSeedCore(System.Span<byte> destination) { }
+    }
     public sealed partial class Oid
     {
         public Oid() { }

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
@@ -19,6 +20,17 @@ namespace System.Security.Cryptography.Tests
                 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F,
                 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
             ];
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void SafeEvpPKeyHandle()
+        {
+            using MLKem kem = MLKem.GenerateKey(MLKemAlgorithm.MLKem768);
+            FieldInfo info = kem.GetType().GetField("_key", BindingFlags.Instance | BindingFlags.NonPublic);
+            SafeEvpPKeyHandle handle = (SafeEvpPKeyHandle)info.GetValue(kem);
+
+            using MLKemOpenSsl ossl = new(handle);
+        }
+
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemAlgorithms))]

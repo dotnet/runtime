@@ -19,6 +19,12 @@ internal static partial class Interop
             Span<byte> sharedSecret,
             int sharedSecretLength);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGetName")]
+        private static partial int CryptoNative_EvpKemGetName(
+            SafeEvpPKeyHandle kem,
+            Span<byte> algorithmBuffer,
+            ref int algorithmBufferLength);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGeneratePkey", StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_EvpKemGeneratePkey(
             string kemName,
@@ -83,6 +89,21 @@ internal static partial class Interop
             }
 
             return handle;
+        }
+
+        internal static string EvpKemGetName(SafeEvpPKeyHandle key)
+        {
+            const int BufferSize = 32;// All known KEM names are much shorter like ML-KEM-1024.
+            Span<byte> buffer = stackalloc byte[BufferSize + 1]; // Add one for the null terminator.
+            int size = BufferSize;
+            int result = CryptoNative_EvpKemGetName(key, buffer, ref size);
+
+            return result switch
+            {
+                1 => System.Text.Encoding.UTF8.GetString(buffer.Slice(0, size)),
+                0 => throw CreateOpenSslCryptographicException(),
+                int what => throw new CryptographicException($"{what}"),
+            };
         }
 
         internal static void EvpKemDecapsulate(SafeEvpPKeyHandle key, ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
