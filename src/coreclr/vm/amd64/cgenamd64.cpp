@@ -349,16 +349,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     pRD->pCurrentContextPointers->Rax = (PULONG64)&m_Args->Rax;
 
     SyncRegDisplayToCurrentContext(pRD);
-
-/*
-    // This only describes the top-most frame
-    pRD->pContext = NULL;
-
-
-    pRD->PCTAddr = dac_cast<TADDR>(m_Args) + offsetof(HijackArgs, Rip);
-    //pRD->pPC  = PTR_SLOT(pRD->PCTAddr);
-    pRD->SP   = (ULONG64)(pRD->PCTAddr + sizeof(TADDR));
-*/
 }
 #endif // FEATURE_HIJACK
 

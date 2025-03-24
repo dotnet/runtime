@@ -6302,39 +6302,6 @@ UMEntryPrestubUnwindFrameChainHandler(
     return disposition;
 }
 
-EXTERN_C EXCEPTION_DISPOSITION
-UMThunkStubUnwindFrameChainHandler(
-              IN     PEXCEPTION_RECORD   pExceptionRecord,
-              IN     PVOID               pEstablisherFrame,
-              IN OUT PCONTEXT            pContextRecord,
-              IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-            )
-{
-
-#ifdef _DEBUG
-    // If the exception is escaping the last CLR personality routine on the stack,
-    // then state a flag on the thread to indicate so.
-    //
-    // We check for thread object since this function is the personality routine of the UMThunk
-    // and we can landup here even when thread creation (within the thunk) fails.
-    if (GetThreadNULLOk() != NULL)
-    {
-        SetReversePInvokeEscapingUnhandledExceptionStatus(IS_UNWINDING(pExceptionRecord->ExceptionFlags),
-            pEstablisherFrame
-            );
-    }
-#endif // _DEBUG
-
-    EXCEPTION_DISPOSITION disposition = UMThunkUnwindFrameChainHandler(
-                pExceptionRecord,
-                pEstablisherFrame,
-                pContextRecord,
-                pDispatcherContext
-                );
-
-    return disposition;
-}
-
 
 // This is the personality routine setup for the assembly helper (CallDescrWorker) that calls into
 // managed code.
