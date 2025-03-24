@@ -1698,8 +1698,8 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     }
 
     // Both edges must be BBJ_RETURN
-    BasicBlock* retFalseBb = block->GetFalseEdge()->getDestinationBlock();
-    BasicBlock* retTrueBb  = block->GetTrueEdge()->getDestinationBlock();
+    BasicBlock* retFalseBb = block->GetFalseTarget();
+    BasicBlock* retTrueBb  = block->GetTrueTarget();
 
     // Although, we might want to fold fallthrough BBJ_ALWAYS blocks first
     if (fgCanCompactBlock(retTrueBb))
