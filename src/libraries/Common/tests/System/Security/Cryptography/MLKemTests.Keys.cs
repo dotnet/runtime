@@ -278,6 +278,33 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(spki1, spki2);
         }
 
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void TryExportSubjectPublicKeyInfo_Buffers(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.ImportPrivateSeed(algorithm, IncrementalSeed);
+            byte[] expectedSpki = kem.ExportSubjectPublicKeyInfo();
+            byte[] buffer;
+            int written;
+
+            // Too small
+            buffer = new byte[expectedSpki.Length - 1];
+            Assert.False(kem.TryExportSubjectPublicKeyInfo(buffer, out written), nameof(kem.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(0, written);
+
+            // Just right
+            buffer = new byte[expectedSpki.Length];
+            Assert.True(kem.TryExportSubjectPublicKeyInfo(buffer, out written), nameof(kem.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(expectedSpki.Length, written);
+            AssertExtensions.SequenceEqual(expectedSpki, buffer);
+
+            // More than enough
+            buffer = new byte[expectedSpki.Length + 42];
+            Assert.True(kem.TryExportSubjectPublicKeyInfo(buffer, out written), nameof(kem.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(expectedSpki.Length, written);
+            AssertExtensions.SequenceEqual(expectedSpki.AsSpan(), buffer.AsSpan(0, written));
+        }
+
         private static void AssertSubjectPublicKeyInfo(MLKem kem, bool useTryExport, ReadOnlySpan<byte> expectedSpki)
         {
             byte[] spki;
