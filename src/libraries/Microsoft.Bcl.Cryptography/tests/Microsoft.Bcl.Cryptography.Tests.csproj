@@ -1,19 +1,37 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFrameworks>$(NetFrameworkCurrent);$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs"
-             Link="Common\System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs" /> 
+             Link="Common\System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AesGcmTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AesGcmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CommonAEADTests.cs"
+             Link="CommonTest\System\Security\Cryptography\CommonAEADTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
              Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemAlgorithmTests.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemAlgorithmTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.ArgValidation.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemTests.ArgValidation.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.Keys.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemTests.Keys.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.Encapsulation.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemTests.Encapsulation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs"
@@ -34,14 +52,19 @@
              Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderTests.cs" />
     <Compile Include="X509Certificates\TestFiles.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs"
+             Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.Bcl.Cryptography.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
-  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.Security.Cryptography.X509Certificates.TestData" Version="$(SystemSecurityCryptographyX509CertificatesTestDataVersion)" />
   </ItemGroup>
+
 </Project>

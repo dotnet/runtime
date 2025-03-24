@@ -836,8 +836,6 @@ namespace Internal.JitInterface
             // Size of the Frame structure inside IL stubs that include secret stub arg in the frame
             public uint sizeWithSecretStubArg;
 
-            public uint offsetOfGSCookie;
-            public uint offsetOfFrameVptr;
             public uint offsetOfFrameLink;
             public uint offsetOfCallSiteSP;
             public uint offsetOfCalleeSavedFP;
@@ -1405,9 +1403,6 @@ namespace Internal.JitInterface
         // ARM only
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
-
-        // x86/x64 only
-        CORJIT_FLAG_VECTOR512_THROTTLING    = 31, // On x86/x64, 512-bit vector usage may incur CPU frequency throttling
     }
 
     public struct CORJIT_FLAGS

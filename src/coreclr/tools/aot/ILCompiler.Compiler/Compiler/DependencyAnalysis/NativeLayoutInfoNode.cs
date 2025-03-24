@@ -22,7 +22,6 @@ namespace ILCompiler.DependencyAnalysis
         private byte[] _writerSavedBytes;
 
         private Section _signaturesSection;
-        private Section _ldTokenInfoSection;
         private Section _templatesSection;
 
         private List<NativeLayoutVertexNode> _vertexNodesToWrite;
@@ -34,7 +33,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _writer = new NativeWriter();
             _signaturesSection = _writer.NewSection();
-            _ldTokenInfoSection = _writer.NewSection();
             _templatesSection = _writer.NewSection();
 
             _vertexNodesToWrite = new List<NativeLayoutVertexNode>();
@@ -51,7 +49,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public Section LdTokenInfoSection => _ldTokenInfoSection;
         public Section SignaturesSection => _signaturesSection;
         public Section TemplatesSection => _templatesSection;
         public ExternalReferencesTableNode ExternalReferences => _externalReferences;

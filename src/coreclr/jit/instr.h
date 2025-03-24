@@ -275,8 +275,16 @@ enum insOpts: unsigned
     INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
 
     INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
+    INS_OPTS_EVEX_dfv_byte_offset = 8, // save the bit offset for first dfv flag pos
 
-    INS_OPTS_EVEX_NoApxPromotion = 1 << 8,    // Do not promote to APX-EVEX
+    INS_OPTS_EVEX_dfv_cf = 1 << 8,
+    INS_OPTS_EVEX_dfv_zf = 1 << 9,
+    INS_OPTS_EVEX_dfv_sf = 1 << 10,
+    INS_OPTS_EVEX_dfv_of = 1 << 11,
+
+    INS_OPTS_EVEX_dfv_MASK = 0xF00,
+
+    INS_OPTS_EVEX_NoApxPromotion = 1 << 12,    // Do not promote to APX-EVEX
 
 };
 
@@ -524,7 +532,6 @@ enum insOpts : unsigned
     INS_OPTS_JALR,   // see ::emitIns_J_R().
     INS_OPTS_J,      // see ::emitIns_J().
     INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
-    INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
 };

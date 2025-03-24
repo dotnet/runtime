@@ -343,7 +343,7 @@ StackWalkAction UpdateObjectRefInResumeContextCallback(CrawlFrame* pCF, LPVOID p
             pState->pHighestFrameWithRegisters = pFrame;
 
             // Is this an InlinedCallFrame?
-            if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame)
             {
                 // If we are here, then ICF is expected to be active.
                 _ASSERTE(InlinedCallFrame::FrameHasActiveCall(pFrame));
@@ -932,20 +932,27 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
     Thread* pThread         = GetThread();
 
-    if (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+    // Skip native frames of asm helpers that have the ProcessCLRException set as their personality routine.
+    // There is nothing to do for those with the new exception handling.
+    // Also skip all frames when processing unhandled exceptions. That allows them to reach the host app
+    // level and let 3rd party the chance to handle them.
+    if (!ExecutionManager::IsManagedCode((PCODE)pDispatcherContext->ControlPc) ||
+        pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
     {
-        if ((pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
-        {
-            GCX_COOP();
-            PopExplicitFrames(pThread, (void*)pDispatcherContext->EstablisherFrame, (void*)GetSP(pDispatcherContext->ContextRecord));
-            ExInfo::PopExInfos(pThread, (void*)pDispatcherContext->EstablisherFrame);
-        }
         return ExceptionContinueSearch;
     }
 
 #ifndef HOST_UNIX
     if (!(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
     {
+        // If the exception is a breakpoint, let it go. The managed exception handling
+        // doesn't process breakpoints.
+        if ((pExceptionRecord->ExceptionCode == STATUS_BREAKPOINT) ||
+            (pExceptionRecord->ExceptionCode == STATUS_SINGLE_STEP))
+        {
+            return ExceptionContinueSearch;
+        }
+
         // Failfast if exception indicates corrupted process state
         if (IsProcessCorruptedStateException(pExceptionRecord->ExceptionCode, /* throwable */ NULL))
         {
@@ -1462,7 +1469,7 @@ void ExceptionTracker::InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisF
     pcfThisFrame->pFrame = pFrame;
     pcfThisFrame->pFunc = pFrame->GetFunction();
 
-    if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr() &&
+    if (pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame &&
         !InlinedCallFrame::FrameHasActiveCall(pFrame))
     {
         // Inactive ICFs in IL stubs contain the true interop MethodDesc which must be
@@ -1900,11 +1907,6 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
         MethodDesc *pMD = cfThisFrame.GetFunction();
 
         Frame*  pFrame = GetLimitFrame(); // next frame to process
-        if (pFrame != FRAME_TOP)
-        {
-            // The following function call sets the GS cookie pointers and checks the cookie.
-            cfThisFrame.SetCurGSCookie(Frame::SafeGetGSCookiePtr(pFrame));
-        }
 
         while (((UINT_PTR)pFrame) < uCallerSP)
         {
@@ -1963,7 +1965,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
             // the ICF immediately before and after a PInvoke in non-IL-stubs, like ReadyToRun.
             // See the usages for USE_PER_FRAME_PINVOKE_INIT for more information.
 
-            if (fTargetUnwind && (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()))
+            if (fTargetUnwind && (pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame))
             {
                 PTR_InlinedCallFrame pICF = (PTR_InlinedCallFrame)pFrame;
                 // Does it live inside the current managed method? It will iff:
@@ -5516,8 +5518,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 #endif // TARGET_AMD64 || TARGET_X86
 
         // Create frame necessary for the exception handling
-        FrameWithCookie<FaultingExceptionFrame> fef;
-        *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
+        FaultingExceptionFrame fef;
         {
             GCX_COOP();     // Must be cooperative to modify frame chain.
 
@@ -5908,7 +5909,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     }
 
     pDispatcherContext->ControlPc = (UINT_PTR) GetIP(pDispatcherContext->ContextRecord);
-    
+
 #if defined(TARGET_ARM64)
     // Since this routine is used to fixup contexts for async exceptions,
     // clear the CONTEXT_UNWOUND_TO_CALL flag since, semantically, frames
@@ -6145,6 +6146,7 @@ BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain
     // Otherwise "unwind" to managed method
     REGDISPLAY rd;
     CONTEXT ctx;
+    ctx.ContextFlags = CONTEXT_CONTROL;
     SetIP(&ctx, 0);
     SetSP(&ctx, 0);
     FillRegDisplay(&rd, &ctx);
@@ -6190,9 +6192,16 @@ void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFr
     // Instead, we rely on the END_SO_TOLERANT_CODE macro to call ClearExceptionStateAfterSO().  Of course,
     // we may leak in the UMThunkStubCommon() case where we don't have this macro lower on the stack
     // (stack grows up).
-    if (!fIsSO && !g_isNewExceptionHandlingEnabled)
+    if (!fIsSO)
     {
-        ExceptionTracker::PopTrackerIfEscaping(MemoryStackFp);
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            ExInfo::PopExInfos(pThread, MemoryStackFp);
+        }
+        else
+        {
+            ExceptionTracker::PopTrackerIfEscaping(MemoryStackFp);
+        }
     }
 }
 
@@ -6223,7 +6232,7 @@ UnhandledExceptionHandlerUnix(
     // Unhandled exception happened, so dump the managed stack trace and terminate the process
 
     DefaultCatchHandler(NULL /*pExceptionInfo*/, NULL /*Throwable*/, TRUE /*useLastThrownObject*/,
-        TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
+        FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
 
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     return _URC_FATAL_PHASE1_ERROR;
@@ -7595,7 +7604,7 @@ void ExceptionTracker::ResetThreadAbortStatus(PTR_Thread pThread, CrawlFrame *pC
 // Mark the pinvoke frame as invoking CallCatchFunclet (and similar) for collided unwind detection
 void MarkInlinedCallFrameAsFuncletCall(Frame* pFrame)
 {
-    _ASSERTE(pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+    _ASSERTE(pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame);
     InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
     pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller);
 }
@@ -7603,7 +7612,7 @@ void MarkInlinedCallFrameAsFuncletCall(Frame* pFrame)
 // Mark the pinvoke frame as invoking any exception handling helper
 void MarkInlinedCallFrameAsEHHelperCall(Frame* pFrame)
 {
-    _ASSERTE(pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+    _ASSERTE(pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame);
     InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
     pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper);
 }
@@ -8031,7 +8040,7 @@ extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvReg
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay)
+extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay)
 {
     QCALL_CONTRACT;
 
@@ -8097,7 +8106,7 @@ struct ExtendedEHClauseEnumerator : EH_CLAUSE_ENUMERATOR
     unsigned EHCount;
 };
 
-extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
+extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
 {
     QCALL_CONTRACT;
 
@@ -8119,10 +8128,10 @@ extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *p
     return pExtendedEHEnum->EHCount != 0;
 }
 
-extern "C" BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause)
+extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause)
 {
     QCALL_CONTRACT;
-    BOOL result = FALSE;
+    CLR_BOOL result = FALSE;
 
     BEGIN_QCALL;
     Thread* pThread = GET_THREAD();
@@ -8202,10 +8211,10 @@ extern uint32_t g_exceptionCount;
 
 MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
-static BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterator, ExInfo *pExInfo)
+static CLR_BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterator, ExInfo *pExInfo)
 {
     // check if the exception is intercepted.
-    BOOL isIntercepted = FALSE;
+    CLR_BOOL isIntercepted = FALSE;
     if (pExInfo->m_ExceptionFlags.DebuggerInterceptInfo())
     {
         MethodDesc *pMD = pStackFrameIterator->m_crawl.GetFunction();
@@ -8258,7 +8267,7 @@ void FailFastIfCorruptingStateException(ExInfo *pExInfo)
 
 static bool IsTopmostDebuggerU2MCatchHandlerFrame(Frame *pFrame)
 {
-    return (pFrame->GetVTablePtr() == DebuggerU2MCatchHandlerFrame::GetMethodFrameVPtr()) && (pFrame->PtrNextFrame() == FRAME_TOP);
+    return (pFrame->GetFrameIdentifier() == FrameIdentifier::DebuggerU2MCatchHandlerFrame) && (pFrame->PtrNextFrame() == FRAME_TOP);
 }
 
 static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
@@ -8332,12 +8341,12 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
             {
                 Frame* pFrame = pThis->m_crawl.GetFrame();
                 // If the frame is ProtectValueClassFrame, move to the next one as we want to report the FuncEvalFrame
-                if (pFrame->GetVTablePtr() == ProtectValueClassFrame::GetMethodFrameVPtr())
+                if (pFrame->GetFrameIdentifier() == FrameIdentifier::ProtectValueClassFrame)
                 {
                     pFrame = pFrame->PtrNextFrame();
                     _ASSERTE(pFrame != FRAME_TOP);
                 }
-                if ((pFrame->GetVTablePtr() == FuncEvalFrame::GetMethodFrameVPtr()) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame))
+                if ((pFrame->GetFrameIdentifier() == FrameIdentifier::FuncEvalFrame) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame))
                 {
                     EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, pFrame);
                 }
@@ -8370,11 +8379,11 @@ static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExIn
     pExInfo->m_pMDToReportFunctionLeave = pMD;
 }
 
-extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault, bool* pfIsExceptionIntercepted)
+extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
 
-    bool result = false;
+    CLR_BOOL result = FALSE;
     Thread* pThread = GET_THREAD();
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
@@ -8442,7 +8451,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                 // a slightly different location in the managed code calling the pinvoke and the inlined
                 // call frame doesn't update the context pointers anyways.
                 Frame *pSkippedFrame = pThis->m_crawl.GetFrame();
-                if (pSkippedFrame->NeedsUpdateRegDisplay() && (pSkippedFrame->GetVTablePtr() != InlinedCallFrame::GetMethodFrameVPtr()))
+                if (pSkippedFrame->NeedsUpdateRegDisplay() && (pSkippedFrame->GetFrameIdentifier() != FrameIdentifier::InlinedCallFrame))
                 {
                     pSkippedFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet());
                 }
@@ -8520,9 +8529,9 @@ static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrame
     return retVal;
 }
 
-extern "C" size_t CallDescrWorkerInternalReturnAddressOffset;
+bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
-extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* pfIsExceptionIntercepted)
+extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR_BOOL* fUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
 
@@ -8547,7 +8556,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
     // Check for reverse pinvoke (but eliminate the case when the caller is managed) or CallDescrWorkerInternal.
     if (!ExecutionManager::IsManagedCode(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
     {
-        bool invalidRevPInvoke;
+        CLR_BOOL invalidRevPInvoke;
 #ifdef USE_GC_INFO_DECODER
         GcInfoDecoder gcInfoDecoder(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
         invalidRevPInvoke = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
@@ -8556,6 +8565,8 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
         DecodeGCHdrInfo(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), 0, &gcHdrInfo);
         invalidRevPInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
+        bool isFilterFunclet = false;
+        bool isPropagatingToExternalNativeCode = false;
 
         if (invalidRevPInvoke)
         {
@@ -8571,18 +8582,25 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                 pTopExInfo->m_propagateExceptionCallback = callback;
                 pTopExInfo->m_propagateExceptionContext = callbackCxt;
             }
+            else
+            {
+                isPropagatingToExternalNativeCode = true;
+            }
 #endif // HOST_UNIX
         }
         else
         {
-            size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
-            if (GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext) == CallDescrWorkerInternalReturnAddress)
+            if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
             {
-                invalidRevPInvoke = true;
+                invalidRevPInvoke = TRUE;
             }
             else if (pThis->m_crawl.IsFilterFunclet())
             {
-                invalidRevPInvoke = true;
+                invalidRevPInvoke = TRUE;
+            }
+            else
+            {
+                isPropagatingToExternalNativeCode = true;
             }
         }
 
@@ -8599,8 +8617,17 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             _ASSERTE(pThis->GetFrameState() != StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
 
             pFrame = pThis->m_crawl.GetFrame();
-            // Check if there are any further managed frames on the stack, if not, the exception is unhandled.
-            if ((pFrame == FRAME_TOP) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame))
+
+            // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
+            // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
+            // If not, the exception is unhandled.
+            if ((pFrame == FRAME_TOP) ||
+                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions())
+#ifdef HOST_UNIX
+                // Don't allow propagating exceptions from managed to non-runtime native code
+                || isPropagatingToExternalNativeCode
+#endif
+               )
             {
                 if (pTopExInfo->m_passNumber == 1)
                 {
@@ -8626,7 +8653,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
     {
         if (fUnwoundReversePInvoke)
         {
-            *fUnwoundReversePInvoke = false;
+            *fUnwoundReversePInvoke = FALSE;
         }
     }
 
@@ -8735,10 +8762,10 @@ Exit:;
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pTopExInfo);
 
-        return true;
+        return TRUE;
     }
 
-    return false;
+    return FALSE;
 }
 
 namespace AsmOffsetsAsserts

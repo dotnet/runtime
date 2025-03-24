@@ -59,6 +59,7 @@
     <MonoLLVMMajorVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.Substring(0, $(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.IndexOf('.'))))</MonoLLVMMajorVersion>
     <MonoLLVMLibclangVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion)</MonoLLVMLibclangVersion>
     <MonoUseLibCxx Condition="'$(MonoLLVMMajorVersion)' >= '16.0'">true</MonoUseLibCxx>
+    <ProvisionEmscriptenAfterTargets Condition="'$(ProvisionEmscriptenOnly)' == 'true'">Build</ProvisionEmscriptenAfterTargets>
   </PropertyGroup>
 
   <!-- default thread suspend for specific platforms -->
@@ -175,6 +176,7 @@
 
   <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
   <Target Name="ProvisionEmscripten"
+          AfterTargets="$(ProvisionEmscriptenAfterTargets)"
           Condition="'$(ShouldProvisionEmscripten)' == 'true'">
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)\browser\emscripten-version.txt">
       <Output TaskParameter="Lines" ItemName="_VersionLines" />
@@ -698,10 +700,18 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
+    <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_CONNECT_PORTS=1" />
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_THREADS=1" Condition="'$(WasmEnableThreads)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_WS=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_THREADS=1" Condition="'$(WasmEnableThreads)' != 'true'" />
     </ItemGroup>
 
     <!-- Components -->
@@ -1038,7 +1048,7 @@ JS_ENGINES = [NODE_JS]
   </PropertyGroup>
 
   <!-- General targets -->
-  <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="$(MonoDependsOnTargets)">
+  <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="$(MonoDependsOnTargets)" Condition="'$(ProvisionEmscriptenOnly)' != 'true'">
 
     <!-- If you don't specify the AOT host, assume it's the build machine -->
     <PropertyGroup>
