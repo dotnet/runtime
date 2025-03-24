@@ -524,14 +524,49 @@ struct RangeOps
         {
             result.uLimit = r1hi;
         }
+
+        // <$bnd + cns1, ...> U <cns2, ...> = <min(cns1, cns2), ...> when cns1 <= 0
+        // where "cns1 <= 0" to avoid masking possible overflow.
+        // We rely on the fact that $bnd is always >= 0.
+        //
+        // Example: <$bnd - 3, ...> U <0, ...> = <-3, ...>
+        if (r1lo.IsBinOpArray() && r2lo.IsConstant() && (r1lo.cns <= 0))
+        {
+            result.lLimit = Limit(Limit::keConstant, min(r1lo.cns, r2lo.cns));
+        }
+        if (r2lo.IsBinOpArray() && r1lo.IsConstant() && (r2lo.cns <= 0))
+        {
+            result.lLimit = Limit(Limit::keConstant, min(r2lo.cns, r1lo.cns));
+        }
+
+        // <$bnd + cns1, ...> U <cns2, ...> = <$bnd + cns1, ...> when cns1 >= cns2
+        // Possible overflow is preserved in the result.
+        // We rely on the fact that $bnd is always >= 0.
+        //
+        // Example: <$bnd + 10, ...> U <1, ...> = <$bnd + 10, ...>
+        if (r1lo.IsBinOpArray() && r2lo.IsConstant() && (r1lo.cns >= r2lo.cns))
+        {
+            result.lLimit = r1lo;
+        }
+        if (r2lo.IsBinOpArray() && r1lo.IsConstant() && (r2lo.cns >= r1lo.cns))
+        {
+            result.lLimit = r2lo;
+        }
+
+        // <..., $bnd + cns1> U <..., $bnd + cns2> = <..., $bnd + max(cns1, cns2)>
+        //
+        // Example: <..., $bnd + 10> U <..., $bnd + 20> = <..., $bnd + 20>
         if (r1hi.IsBinOpArray() && r2hi.IsBinOpArray() && r1hi.vn == r2hi.vn)
         {
-            result.uLimit = r1hi;
-            // Widen the upper bound if the other constant is greater.
-            if (r2hi.GetConstant() > r1hi.GetConstant())
-            {
-                result.uLimit = r2hi;
-            }
+            result.uLimit.cns = max(r1hi.cns, r2hi.cns);
+        }
+
+        // <$bnd + cns1, ...> U <$bnd + cns2, ...> = <$bnd + min(cns1, cns2), ...>
+        //
+        // Example: <$bnd + 10, ...> U <$bnd + 20, ...> = <$bnd + 10, ...>
+        if (r1lo.IsBinOpArray() && r2lo.IsBinOpArray() && r1lo.vn == r2lo.vn)
+        {
+            result.lLimit.cns = min(r1lo.cns, r2lo.cns);
         }
         return result;
     }
