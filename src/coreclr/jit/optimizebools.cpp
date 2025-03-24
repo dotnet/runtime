@@ -1692,7 +1692,7 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
 #endif
 
     // Early out if the current method is not returning a boolean.
-    if ((info.compRetType != TYP_UBYTE) || (genReturnBB != nullptr))
+    if ((info.compRetType != TYP_UBYTE))
     {
         return modified;
     }
@@ -1723,7 +1723,8 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     retTrueBb  = block->GetTrueTarget();
     retFalseBb = block->GetFalseTarget();
     if (!retTrueBb->KindIs(BBJ_RETURN) || !retFalseBb->KindIs(BBJ_RETURN) ||
-        !BasicBlock::sameEHRegion(block, retTrueBb) || !BasicBlock::sameEHRegion(block, retFalseBb))
+        !BasicBlock::sameEHRegion(block, retTrueBb) || !BasicBlock::sameEHRegion(block, retFalseBb) ||
+        (retTrueBb == genReturnBB) || (retFalseBb == genReturnBB))
     {
         // Both edges must be BBJ_RETURN
         return modified;
