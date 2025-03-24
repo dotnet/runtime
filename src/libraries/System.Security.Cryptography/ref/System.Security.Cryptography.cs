@@ -1795,6 +1795,49 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+    public abstract partial class MLKem : System.IDisposable
+    {
+        protected MLKem(System.Security.Cryptography.MLKemAlgorithm algorithm) { }
+        public System.Security.Cryptography.MLKemAlgorithm Algorithm { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
+        public void Decapsulate(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected abstract void DecapsulateCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret);
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public void Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected abstract void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret);
+        public void ExportDecapsulationKey(System.Span<byte> destination) { }
+        protected abstract void ExportDecapsulationKeyCore(System.Span<byte> destination);
+        public void ExportEncapsulationKey(System.Span<byte> destination) { }
+        protected abstract void ExportEncapsulationKeyCore(System.Span<byte> destination);
+        public void ExportPrivateSeed(System.Span<byte> destination) { }
+        protected abstract void ExportPrivateSeedCore(System.Span<byte> destination);
+        public static System.Security.Cryptography.MLKem GenerateKey(System.Security.Cryptography.MLKemAlgorithm algorithm) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportDecapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportEncapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        protected void ThrowIfDisposed() { }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+    public sealed partial class MLKemAlgorithm : System.IEquatable<System.Security.Cryptography.MLKemAlgorithm>
+    {
+        internal MLKemAlgorithm() { }
+        public int CiphertextSizeInBytes { get { throw null; } }
+        public int DecapsulationKeySizeInBytes { get { throw null; } }
+        public int EncapsulationKeySizeInBytes { get { throw null; } }
+        public static System.Security.Cryptography.MLKemAlgorithm MLKem1024 { get { throw null; } }
+        public static System.Security.Cryptography.MLKemAlgorithm MLKem512 { get { throw null; } }
+        public static System.Security.Cryptography.MLKemAlgorithm MLKem768 { get { throw null; } }
+        public string Name { get { throw null; } }
+        public int PrivateSeedSizeInBytes { get { throw null; } }
+        public int SharedSecretSizeInBytes { get { throw null; } }
+        public override bool Equals(object? obj) { throw null; }
+        public bool Equals(System.Security.Cryptography.MLKemAlgorithm? other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
+        public static bool operator !=(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
+    }
     public sealed partial class Oid
     {
         public Oid() { }
@@ -2743,6 +2786,8 @@ namespace System.Security.Cryptography
         public int GetCiphertextLengthCbc(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.PKCS7) { throw null; }
         public int GetCiphertextLengthCfb(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.None, int feedbackSizeInBits = 8) { throw null; }
         public int GetCiphertextLengthEcb(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode) { throw null; }
+        public void SetKey(System.ReadOnlySpan<byte> key) { }
+        protected virtual void SetKeyCore(System.ReadOnlySpan<byte> key) { }
         public bool TryDecryptCbc(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, out int bytesWritten, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.PKCS7) { throw null; }
         protected virtual bool TryDecryptCbcCore(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, System.Security.Cryptography.PaddingMode paddingMode, out int bytesWritten) { throw null; }
         public bool TryDecryptCfb(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, out int bytesWritten, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.None, int feedbackSizeInBits = 8) { throw null; }
@@ -2940,9 +2985,9 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed partial class PublicKey
     {
         public PublicKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
-        public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
+        public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData? parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
         public System.Security.Cryptography.AsnEncodedData EncodedKeyValue { get { throw null; } }
-        public System.Security.Cryptography.AsnEncodedData EncodedParameters { get { throw null; } }
+        public System.Security.Cryptography.AsnEncodedData? EncodedParameters { get { throw null; } }
         [System.ObsoleteAttribute("PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey.", DiagnosticId="SYSLIB0027", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.Cryptography.AsymmetricAlgorithm Key { get { throw null; } }
         public System.Security.Cryptography.Oid Oid { get { throw null; } }
@@ -3163,8 +3208,8 @@ namespace System.Security.Cryptography.X509Certificates
         [System.ObsoleteAttribute("X509Certificate.GetIssuerName has been deprecated. Use the Issuer property instead.")]
         public virtual string GetIssuerName() { throw null; }
         public virtual string GetKeyAlgorithm() { throw null; }
-        public virtual byte[] GetKeyAlgorithmParameters() { throw null; }
-        public virtual string GetKeyAlgorithmParametersString() { throw null; }
+        public virtual byte[]? GetKeyAlgorithmParameters() { throw null; }
+        public virtual string? GetKeyAlgorithmParametersString() { throw null; }
         [System.ObsoleteAttribute("X509Certificate.GetName has been deprecated. Use the Subject property instead.")]
         public virtual string GetName() { throw null; }
         public virtual byte[] GetPublicKey() { throw null; }

@@ -537,31 +537,6 @@ void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
 
-#ifndef DACCESS_COMPILE
-void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    int n = 0;
-    //Initially
-    //x0 -This ptr
-    //x1 -ReturnBuffer
-    m_rgCode[n++] = 0x91000010; // mov x16, x0
-    m_rgCode[n++] = 0x91000020; // mov x0, x1
-    m_rgCode[n++] = 0x91000201; // mov x1, x16
-    m_rgCode[n++] = 0x58000070; // ldr x16, [pc, #12]
-    _ASSERTE((UINT32*)&m_pTarget == &m_rgCode[n + 2]);
-    m_rgCode[n++] = 0xd61f0200; // br  x16
-    n++;                        // empty 4 bytes for data alignment below
-    _ASSERTE(n == ARRAY_SIZE(m_rgCode));
-
-
-    m_pTarget = GetPreStubEntryPoint();
-    m_pMethodDesc = (TADDR)pMD;
-}
-
-#endif // !DACCESS_COMPILE
-
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pCalleeSaved)
 {
     LIMITED_METHOD_CONTRACT;
@@ -960,26 +935,45 @@ AdjustContextForVirtualStub(
 
     PCODE f_IP = GetIP(pContext);
 
-    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
+    bool isVirtualStubNullCheck = false;
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
+    {
+        isVirtualStubNullCheck = true; 
+    }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    if (!isVirtualStubNullCheck)
+    {
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
-    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
-    {
-        if (*PTR_DWORD(f_IP) != DISPATCH_STUB_FIRST_DWORD)
+        if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
         {
-            _ASSERTE(!"AV in DispatchStub at unknown instruction");
-            return FALSE;
+            if (*PTR_DWORD(f_IP) != DISPATCH_STUB_FIRST_DWORD)
+            {
+                _ASSERTE(!"AV in DispatchStub at unknown instruction");
+            }
+            else
+            {
+                isVirtualStubNullCheck = true;
+            }
+        }
+        else
+        if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
+        {
+            if (*PTR_DWORD(f_IP) != RESOLVE_STUB_FIRST_DWORD)
+            {
+                _ASSERTE(!"AV in ResolveStub at unknown instruction");
+            }
+            else
+            {
+                isVirtualStubNullCheck = true;
+            }
         }
     }
-    else
-    if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
-    {
-        if (*PTR_DWORD(f_IP) != RESOLVE_STUB_FIRST_DWORD)
-        {
-            _ASSERTE(!"AV in ResolveStub at unknown instruction");
-            return FALSE;
-        }
-    }
-    else
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+
+    if (!isVirtualStubNullCheck)
     {
         return FALSE;
     }
@@ -1449,6 +1443,7 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 //
 // Allocation of dynamic helpers
 //
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
@@ -1920,6 +1915,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         END_DYNAMIC_HELPER_EMIT();
     }
 }
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif // FEATURE_READYTORUN
 
 

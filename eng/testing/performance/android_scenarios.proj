@@ -36,7 +36,7 @@
     <HelixWorkItem Include="Device Startup - Android HelloWorld">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloandroid;copy %HELIX_WORKITEM_ROOT%\HelloAndroid.apk .;$(Python) pre.py --apk-name HelloAndroid.apk</PreCommands>
-      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroid.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot;</Command>
+      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroid.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
     <!-- <HelixWorkItem Include="SOD - Android Benchmarks.Droid APK Size" Condition="'$(RuntimeType)' == 'Mono'"> # Disabled due to not working and needing consistent normal android results. https://github.com/dotnet/performance/issues/4729

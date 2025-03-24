@@ -467,30 +467,6 @@ void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
 
-#ifndef DACCESS_COMPILE
-void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    //Initially
-    //a0 -This ptr
-    //a1 -ReturnBuffer
-    m_rgCode[0] = 0x00050f93; // addi  t6, a0, 0x0
-    m_rgCode[1] = 0x00058513; // addi  a0, a1, 0x0
-    m_rgCode[2] = 0x000f8593; // addi  a1, t6, 0x0
-    m_rgCode[3] = 0x00000f97; // auipc t6, 0
-    m_rgCode[4] = 0x00cfbf83; // ld    t6, 12(t6)
-    m_rgCode[5] = 0x000f8067; // jalr  x0, 0(t6)
-
-    _ASSERTE((UINT32*)&m_pTarget == &m_rgCode[6]);
-    _ASSERTE(6 == ARRAY_SIZE(m_rgCode));
-
-    m_pTarget = GetPreStubEntryPoint();
-    m_pMethodDesc = (TADDR)pMD;
-}
-
-#endif // !DACCESS_COMPILE
-
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pCalleeSaved)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1034,7 +1010,7 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
 }
 
 
-// Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+// Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
 static unsigned ITypeInstr(unsigned opcode, unsigned funct3, unsigned rd, unsigned rs1, int imm12)
 {
     _ASSERTE(!(opcode >> 7));
@@ -1098,14 +1074,6 @@ static const char* intRegAbiNames[] = {
     "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
     "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
     "t3", "t4", "t5", "t6"
-};
-
-static const char* fpRegAbiNames[] = {
-    "ft0", "ft1", "ft2", "ft3", "ft4", "ft5", "ft6", "ft7",
-    "fs0", "fs1",
-    "fa0", "fa1", "fa2", "fa3", "fa4", "fa5", "fa6", "fa7",
-    "fs2", "fs3", "fs4", "fs5", "fs6", "fs7", "fs8", "fs9", "fs10", "fs11",
-    "ft8", "ft9", "ft10", "ft11"
 };
 
 void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)

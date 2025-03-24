@@ -87,7 +87,9 @@
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppToolCurrent)\WasmSymbolicator.dll" />
   </ItemGroup>
 
-  <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />
+  <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" >
+    <ForceMSBuildGC />
+  </Target>
 
   <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true'"
              TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps"
