@@ -266,7 +266,7 @@ namespace System.Security.Cryptography.Tests
             AssertSubjectPublicKeyInfo(kem, tryExport, MLKemTestData.IetfMlKem1024Spki);
         }
 
-        private static void AssertSubjectPublicKeyInfo(MLKem kem, bool tryExport, ReadOnlySpan<byte> excpectedSpki)
+        private static void AssertSubjectPublicKeyInfo(MLKem kem, bool tryExport, ReadOnlySpan<byte> expectedSpki)
         {
             byte[] spki;
             int written;
@@ -283,7 +283,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             ReadOnlySpan<byte> encodedSpki = spki.AsSpan(0, written);
-            AssertExtensions.SequenceEqual(excpectedSpki, encodedSpki);
+            AssertExtensions.SequenceEqual(expectedSpki, encodedSpki);
 
             using MLKem encapsulator = MLKem.ImportSubjectPublicKeyInfo(encodedSpki);
             byte[] ciphertext = encapsulator.Encapsulate(out byte[] encapsulatorSharedSecret);
