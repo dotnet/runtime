@@ -915,12 +915,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
     }
 }
 
-EXTERN_C EXCEPTION_DISPOSITION
-ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                    IN     PVOID               pEstablisherFrame,
-                    IN OUT PCONTEXT            pContextRecord,
-                    IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                    )
+EXCEPTION_HANDLER_IMPL(ProcessCLRExceptionNew)
 {
     //
     // This method doesn't always return, so it will leave its
@@ -977,7 +972,7 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
         else
         {
             OBJECTREF oref = ExceptionTracker::CreateThrowable(pExceptionRecord, FALSE);
-            DispatchManagedException(oref, pContextRecord, pExceptionRecord);
+            DispatchManagedException(oref, pContext, pExceptionRecord);
         }
     }
 #endif // !HOST_UNIX
@@ -985,12 +980,7 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
     UNREACHABLE();
 }
 
-EXTERN_C EXCEPTION_DISPOSITION
-ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                    IN     PVOID               pEstablisherFrame,
-                    IN OUT PCONTEXT            pContextRecord,
-                    IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                    )
+EXCEPTION_HANDLER_IMPL(ProcessCLRException)
 {
     //
     // This method doesn't always return, so it will leave its
@@ -1002,7 +992,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
     if (g_isNewExceptionHandlingEnabled)
     {
-        return ProcessCLRExceptionNew(pExceptionRecord, pEstablisherFrame, pContextRecord, pDispatcherContext);
+        return ProcessCLRExceptionNew(pExceptionRecord, pEstablisherFrame, pContext, pDispatcherContext);
     }
 
     // We must preserve this so that GCStress=4 eh processing doesnt kill last error.
@@ -1013,8 +1003,8 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
     STRESS_LOG5(LF_EH, LL_INFO10, "Processing exception at establisher=%p, ip=%p disp->cxr: %p, sp: %p, cxr @ exception: %p\n",
                                                         pEstablisherFrame, pDispatcherContext->ControlPc,
                                                         pDispatcherContext->ContextRecord,
-                                                        GetSP(pDispatcherContext->ContextRecord), pContextRecord);
-    AMD64_ONLY(STRESS_LOG3(LF_EH, LL_INFO10, "                     rbx=%p, rsi=%p, rdi=%p\n", pContextRecord->Rbx, pContextRecord->Rsi, pContextRecord->Rdi));
+                                                        GetSP(pDispatcherContext->ContextRecord), pContext);
+    AMD64_ONLY(STRESS_LOG3(LF_EH, LL_INFO10, "                     rbx=%p, rsi=%p, rdi=%p\n", pContext->Rbx, pContext->Rsi, pContext->Rdi));
 
     // sample flags early on because we may change pExceptionRecord below
     // if we are seeing a STATUS_UNWIND_CONSOLIDATE
@@ -1130,7 +1120,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
             (pExceptionRecord->ExceptionCode == STATUS_SINGLE_STEP))
         {
             // It is a breakpoint; is it from the runtime or managed code?
-            PCODE ip = GetIP(pContextRecord); // IP of the fault.
+            PCODE ip = GetIP(pContext); // IP of the fault.
 
             BOOL fExternalException;
 
@@ -1160,7 +1150,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
                                                 pDispatcherContext->ControlPc,
                                                 sf,
                                                 pExceptionRecord,
-                                                pContextRecord,
+                                                pContext,
                                                 bAsynchronousThreadStop,
                                                 !(dwExceptionFlags & EXCEPTION_UNWINDING),
                                                 &STState);
@@ -1214,7 +1204,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
         status = pTracker->ProcessOSExceptionNotification(
             pExceptionRecord,
-            pContextRecord,
+            pContext,
             pDispatcherContext,
             dwExceptionFlags,
             sf,
@@ -1268,11 +1258,11 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         {
             bool     fAborting = false;
             UINT_PTR uResumePC = (UINT_PTR)-1;
-            UINT_PTR uOriginalSP = GetSP(pContextRecord);
+            UINT_PTR uOriginalSP = GetSP(pContext);
 
             Frame* pLimitFrame = pTracker->GetLimitFrame();
 
-            pDispatcherContext->ContextRecord = pContextRecord;
+            pDispatcherContext->ContextRecord = pContext;
 
             // We may be in COOP mode at this point - the indefinite switch was done
             // in ExceptionTracker::ProcessManagedCallFrame.
@@ -1291,7 +1281,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
             //
             // Since CallCatchHandler expects to be in COOP mode, perform the switch here.
             GCX_COOP_NO_DTOR();
-            uResumePC = pTracker->CallCatchHandler(pContextRecord, &fAborting);
+            uResumePC = pTracker->CallCatchHandler(pContext, &fAborting);
 
             {
                 //
@@ -1318,11 +1308,11 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
                 INDEBUG(pTracker = (ExceptionTracker*)POISONC);
 
                 // Note that we should only fail to fix up for SO.
-                bool fFixedUp = FixNonvolatileRegisters(uOriginalSP, pThread, pContextRecord, fAborting);
+                bool fFixedUp = FixNonvolatileRegisters(uOriginalSP, pThread, pContext, fAborting);
                 _ASSERTE(fFixedUp || (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW));
 
 
-                CONSISTENCY_CHECK(pLimitFrame > dac_cast<PTR_VOID>(GetSP(pContextRecord)));
+                CONSISTENCY_CHECK(pLimitFrame > dac_cast<PTR_VOID>(GetSP(pContext)));
                 if (pICFSetAsLimitFrame != NULL)
                 {
                     _ASSERTE(pICFSetAsLimitFrame == pLimitFrame);
@@ -1337,9 +1327,9 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
                 pThread->SetFrame(pLimitFrame);
 
-                FixContext(pContextRecord);
+                FixContext(pContext);
 
-                SetIP(pContextRecord, (PCODE)uResumePC);
+                SetIP(pContext, (PCODE)uResumePC);
             }
 
 #ifdef STACK_GUARDS_DEBUG
@@ -1351,10 +1341,10 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
 #ifdef TARGET_AMD64
             // OSes older than Win8 have a bug where RtlUnwindEx passes meaningless ContextFlags to the personality routine in
             // some cases.
-            pContextRecord->ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+            pContext->ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 #endif
 
-            ExceptionTracker::ResumeExecution(pContextRecord);
+            ExceptionTracker::ResumeExecution(pContext);
             UNREACHABLE();
         }
     }
@@ -4656,7 +4646,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
 
             // Perform unwinding of the current frame
             disposition = ProcessCLRException(exceptionRecord,
-                (void*)establisherFrame,
+                (struct _EXCEPTION_REGISTRATION_RECORD *)establisherFrame,
                 currentFrameContext,
                 &dispatcherContext);
 
@@ -4849,7 +4839,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
 
             // Find exception handler in the current frame
             disposition = ProcessCLRException(ex.GetExceptionRecord(),
-                (void*)establisherFrame,
+                (struct _EXCEPTION_REGISTRATION_RECORD *)establisherFrame,
                 ex.GetContextRecord(),
                 &dispatcherContext);
 
@@ -6050,12 +6040,7 @@ BOOL FirstCallToHandler (
 }
 
 
-EXTERN_C EXCEPTION_DISPOSITION
-HijackHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
-              IN     PVOID               pEstablisherFrame,
-              IN OUT PCONTEXT            pContextRecord,
-              IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-             )
+EXCEPTION_HANDLER_IMPL(HijackHandler)
 {
     CONTRACTL
     {
@@ -6069,7 +6054,7 @@ HijackHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
         pDispatcherContext->EstablisherFrame,
         pDispatcherContext->ContextRecord,
         GetSP(pDispatcherContext->ContextRecord),
-        pContextRecord);
+        pContext);
 
     Thread* pThread = GetThread();
     CONTEXT *pNewContext = NULL;
@@ -6240,12 +6225,7 @@ UnhandledExceptionHandlerUnix(
 
 #else // TARGET_UNIX
 
-EXTERN_C EXCEPTION_DISPOSITION
-UMThunkUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                               IN     PVOID               pEstablisherFrame,
-                               IN OUT PCONTEXT            pContextRecord,
-                               IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                              )
+EXCEPTION_HANDLER_IMPL(UMThunkUnwindFrameChainHandler)
 {
     Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL) {
@@ -6284,68 +6264,22 @@ UMThunkUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
     return ExceptionContinueSearch;
 }
 
-EXTERN_C EXCEPTION_DISPOSITION
-UMEntryPrestubUnwindFrameChainHandler(
-                IN     PEXCEPTION_RECORD   pExceptionRecord,
-                IN     PVOID               pEstablisherFrame,
-                IN OUT PCONTEXT            pContextRecord,
-                IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-            )
+EXCEPTION_HANDLER_IMPL(UMEntryPrestubUnwindFrameChainHandler)
 {
     EXCEPTION_DISPOSITION disposition = UMThunkUnwindFrameChainHandler(
                 pExceptionRecord,
                 pEstablisherFrame,
-                pContextRecord,
+                pContext,
                 pDispatcherContext
                 );
 
     return disposition;
 }
-
-EXTERN_C EXCEPTION_DISPOSITION
-UMThunkStubUnwindFrameChainHandler(
-              IN     PEXCEPTION_RECORD   pExceptionRecord,
-              IN     PVOID               pEstablisherFrame,
-              IN OUT PCONTEXT            pContextRecord,
-              IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-            )
-{
-
-#ifdef _DEBUG
-    // If the exception is escaping the last CLR personality routine on the stack,
-    // then state a flag on the thread to indicate so.
-    //
-    // We check for thread object since this function is the personality routine of the UMThunk
-    // and we can landup here even when thread creation (within the thunk) fails.
-    if (GetThreadNULLOk() != NULL)
-    {
-        SetReversePInvokeEscapingUnhandledExceptionStatus(IS_UNWINDING(pExceptionRecord->ExceptionFlags),
-            pEstablisherFrame
-            );
-    }
-#endif // _DEBUG
-
-    EXCEPTION_DISPOSITION disposition = UMThunkUnwindFrameChainHandler(
-                pExceptionRecord,
-                pEstablisherFrame,
-                pContextRecord,
-                pDispatcherContext
-                );
-
-    return disposition;
-}
-
 
 // This is the personality routine setup for the assembly helper (CallDescrWorker) that calls into
 // managed code.
-EXTERN_C EXCEPTION_DISPOSITION
-CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                                       IN     PVOID               pEstablisherFrame,
-                                       IN OUT PCONTEXT            pContextRecord,
-                                       IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                                      )
+EXCEPTION_HANDLER_IMPL(CallDescrWorkerUnwindFrameChainHandler)
 {
-
     Thread* pThread = GetThread();
     if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
     {
@@ -6366,7 +6300,7 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
     {
         retVal = ProcessCLRException(pExceptionRecord,
                                      pEstablisherFrame,
-                                     pContextRecord,
+                                     pContext,
                                      pDispatcherContext);
     }
     else
@@ -6393,12 +6327,7 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
 #endif // TARGET_UNIX
 
 #ifdef FEATURE_COMINTEROP
-EXTERN_C EXCEPTION_DISPOSITION
-ReverseComUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                                  IN     PVOID               pEstablisherFrame,
-                                  IN OUT PCONTEXT            pContextRecord,
-                                  IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                                 )
+EXCEPTION_HANDLER_IMPL(ReverseComUnwindFrameChainHandler)
 {
     if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
     {
@@ -6409,13 +6338,7 @@ ReverseComUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
 #endif // FEATURE_COMINTEROP
 
 #ifndef TARGET_UNIX
-EXTERN_C EXCEPTION_DISPOSITION
-FixRedirectContextHandler(
-                  IN     PEXCEPTION_RECORD   pExceptionRecord,
-                  IN     PVOID               pEstablisherFrame,
-                  IN OUT PCONTEXT            pContextRecord,
-                  IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                 )
+EXCEPTION_HANDLER_IMPL(FixRedirectContextHandler)
 {
     CONTRACTL
     {
@@ -6428,7 +6351,7 @@ FixRedirectContextHandler(
     STRESS_LOG4(LF_EH, LL_INFO10, "FixRedirectContextHandler: sp %p, establisher %p, cxr: %p, disp cxr: %p\n",
         GetSP(pDispatcherContext->ContextRecord),
         pDispatcherContext->EstablisherFrame,
-        pContextRecord,
+        pContext,
         pDispatcherContext->ContextRecord);
 
     CONTEXT *pRedirectedContext = GetCONTEXTFromRedirectedStubStackFrame(pDispatcherContext);
