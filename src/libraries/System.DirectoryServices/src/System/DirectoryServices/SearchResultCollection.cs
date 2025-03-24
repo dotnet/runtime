@@ -214,21 +214,21 @@ namespace System.DirectoryServices
             InnerList.CopyTo(array, index);
         }
 
-        /// <devdoc>
-        /// Supports a simple type-specific wrapper for the underlying cached list
-        /// </devdoc>
+        /// <summary>Provides an enumerator implementation for the array of <see cref="SearchResult"/>.</summary>
         private struct AlreadyReadResultsEnumerator : IEnumerator
         {
             private readonly IEnumerator _innerEnumerator;
 
+            /// <summary>Initialize the enumerator.</summary>
+            /// <param name="innerList">The ArrayList to enumerate.</param>
             internal AlreadyReadResultsEnumerator(ArrayList innerList)
             {
                 _innerEnumerator = innerList.GetEnumerator();
             }
 
-            /// <devdoc>
-            /// Gets the current element in the collection.
-            /// </devdoc>
+            /// <summary>
+            /// Current <see cref="SearchResult"/> value of the <see cref="IEnumerator"/>
+            /// </summary>
             public SearchResult Current
             {
                 get
@@ -237,23 +237,25 @@ namespace System.DirectoryServices
                 }
             }
 
-            /// <devdoc>
-            /// Advances the enumerator to the next element of the collection
-            /// and returns a Boolean value indicating whether a valid element is available.
-            /// </devdoc>
+            /// <summary>
+            /// Advances the enumerator to the next <see cref="SearchResult"/> element of the arrray.
+            /// </summary>
             public bool MoveNext()
             {
                 return _innerEnumerator.MoveNext();
             }
 
-            /// <devdoc>
-            /// Resets the enumerator back to its initial position before the first element in the collection.
-            /// </devdoc>
+            /// <summary>
+            /// Resets the enumerator to the beginning of the array.
+            /// </summary>
             public void Reset()
             {
                 _innerEnumerator.Reset();
             }
 
+            /// <summary>
+            /// Current <see cref="object"/> of the <see cref="IEnumerator"/>
+            /// </summary>
             object IEnumerator.Current => Current;
         }
 

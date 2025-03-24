@@ -22,7 +22,7 @@ namespace System.DirectoryServices.Tests
         public void DirectorySearch_IteratesCorrectly_SimpleEnumeration()
         {
             bool seen = false;
-            var e = GetDomains();
+            SearchResultCollection e = GetDomains();
             Assert.NotNull(e);
 
             foreach (var result in e)
@@ -38,7 +38,7 @@ namespace System.DirectoryServices.Tests
         public void DirectorySearch_IteratesCorrectly_AfterCount()
         {
             bool seen = false;
-            var e = GetDomains();
+            SearchResultCollection e = GetDomains();
             Assert.NotNull(e);
             Assert.NotEqual(0, e.Count);
 
