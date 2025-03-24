@@ -500,7 +500,7 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
     {
         target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
 
-        // todo-anthony: make this check work
+        // TODO-XArch-APX: make this check work
         // if (emitter::emitIns_valid_imm_for_ccmp(immVal))
         //{
         MakeSrcContained(cmp, op2);
