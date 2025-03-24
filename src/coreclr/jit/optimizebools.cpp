@@ -1720,8 +1720,8 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
         return modified;
     }
 
-    retTrueBb  = block->GetTrueEdge()->getDestinationBlock();
-    retFalseBb = block->GetFalseEdge()->getDestinationBlock();
+    retTrueBb  = block->GetTrueTarget();
+    retFalseBb = block->GetFalseTarget();
     if (!retTrueBb->KindIs(BBJ_RETURN) || !retFalseBb->KindIs(BBJ_RETURN) ||
         !BasicBlock::sameEHRegion(block, retTrueBb) || !BasicBlock::sameEHRegion(block, retFalseBb))
     {
@@ -1772,7 +1772,12 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     }
     modified = true;
 
-    // Unlink the return blocks, someone will pick them up later.
+    // Decrease the weight of the return blocks since we no longer have edges to them.
+    // Although, they still might be reachable from other blocks (at least one of them).
+    retTrueBb->decreaseBBProfileWeight(block->GetTrueEdge()->getLikelyWeight());
+    retFalseBb->decreaseBBProfileWeight(block->GetFalseEdge()->getLikelyWeight());
+
+    // Unlink the return blocks
     fgRemoveRefPred(block->GetTrueEdge());
     fgRemoveRefPred(block->GetFalseEdge());
     block->SetKindAndTargetEdge(BBJ_RETURN);
@@ -1780,8 +1785,6 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     node->ChangeType(TYP_INT);
     cond->gtFlags &= ~GTF_RELOP_JMP_USED;
 
-    // It's difficult to restore the original weight of the block, profile repair will handle it.
-    fgPgoConsistent      = false;
     block->bbCodeOffsEnd = max(retTrueBb->bbCodeOffsEnd, retFalseBb->bbCodeOffsEnd);
     gtSetStmtInfo(block->lastStmt());
     fgSetStmtSeq(block->lastStmt());

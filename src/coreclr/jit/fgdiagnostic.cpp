@@ -3285,8 +3285,8 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
                 case GT_BOUNDS_CHECK:
                     if (!node->TypeIs(TYP_VOID))
                     {
-                        printf("The tree is expected to be TYP_VOID:\n");
                         m_compiler->gtDispTree(node);
+                        assert("The tree is expected to be of TYP_VOID type");
                     }
                     break;
 
