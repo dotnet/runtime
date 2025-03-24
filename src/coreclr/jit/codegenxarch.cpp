@@ -1709,7 +1709,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
 }
 
 // clang-format off
-const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
+const GenConditionDesc GenConditionDesc::map[32]
 {
     { },        // NONE
     { },        // 1
@@ -8972,6 +8972,20 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     regSet.verifyRegistersUsed(killMask);
 }
 
+//-----------------------------------------------------------------------------------------
+// OptsFromCFlags - Convert condition flags into approxpriate insOpts.
+//
+// Arguments:
+//    flags - The condition flags to be converted.
+//
+// Return Value:
+//    An insOpts value encoding the condition flags.
+//
+// Notes:
+//    This function maps the condition flags (e.g., CF, ZF, SF, OF) to the appropriate
+//    instruction options used for setting the default flag values in extneded EVEX
+//    encoding conditional instructions.
+//
 insOpts CodeGen::OptsFromCFlags(insCflags flags)
 {
     unsigned opts = 0x0;
@@ -8988,6 +9002,18 @@ insOpts CodeGen::OptsFromCFlags(insCflags flags)
 
 #ifdef TARGET_AMD64
 
+//-----------------------------------------------------------------------------------------
+// genCodeForCCMP - Generate code for a conditional compare (CCMP) node.
+//
+// Arguments:
+//    ccmp - The GenTreeCCMP node representing the conditional compare.
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    This function generates code for a conditional compare operation. On X86, it supports integer 
+//    comparisons using the extended EVEX encoding and ccmp instruction.
 void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
 {
     emitter* emit = GetEmitter();

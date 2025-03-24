@@ -859,7 +859,7 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
  *                          and LinearCodeGen will be responsible to generate downstream).
  *
  *     This way there are no implicit temporaries.
- *
+ 
  * b) For small-sized switches, we will actually morph them into a series of conditionals of the form
  *     if (case falls into the default){ goto jumpTable[size]; // last entry in the jump table is the default case }
  *     (For the default case conditional, we'll be constructing the exact same code as the jump table case one).
@@ -4453,11 +4453,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
         GenTree* relopOp2 = relop->gtGetOp2();
 
 #ifdef TARGET_XARCH
-        if (!allowMultipleFlagsChecks && cond->IsFloat())
-        {
-            return false;
-        }
-
         // Optimize FP x != x to only check parity flag. This is a common way of
         // checking NaN and avoids two branches that we would otherwise emit.
         if (optimizing && (cond->GetCode() == GenCondition::FNEU) && relopOp1->OperIsLocal() &&
@@ -4465,6 +4460,16 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
             IsInvariantInRange(relopOp2, relop))
         {
             *cond = GenCondition(GenCondition::P);
+        }
+
+        if (!allowMultipleFlagsChecks && cond->IsFloat())
+        {
+            const GenConditionDesc& desc = GenConditionDesc::Get(*cond);
+
+            if (desc.oper != GT_NONE)
+            {
+                return false;
+            }
         }
 #endif
 
@@ -4506,7 +4511,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
     {
         assert((condition->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
         GenTree* flagsDef = condition->gtPrev;
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
         // CCMP is a flag producing node that also consumes flags, so find the
         // "root" of the flags producers and move the entire range.
         // We limit this to 10 nodes look back to avoid quadratic behavior.
@@ -4522,6 +4527,16 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
         }
 
         *cond = condition->AsCC()->gtCondition;
+
+        if (!allowMultipleFlagsChecks)
+        {
+            const GenConditionDesc& desc = GenConditionDesc::Get(*cond);
+
+            if (desc.oper != GT_NONE)
+            {
+                return false;
+            }
+        }
 
         LIR::Range range = BlockRange().Remove(flagsDef, condition->gtPrev);
         BlockRange().InsertBefore(parent, std::move(range));
