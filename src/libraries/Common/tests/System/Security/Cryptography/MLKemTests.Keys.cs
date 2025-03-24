@@ -96,6 +96,16 @@ namespace System.Security.Cryptography.Tests
                 MLKem.ImportPrivateSeed(algorithm, new ReadOnlySpan<byte>(new byte[algorithm.PrivateSeedSizeInBytes])));
         }
 
+        [ConditionalFact(nameof(IsNotSupported))]
+        public static void ImportSubjectPublicKeyInfo_NotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                MLKem.ImportSubjectPublicKeyInfo(Array.Empty<byte>()));
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                MLKem.ImportSubjectPublicKeyInfo(ReadOnlySpan<byte>.Empty));
+        }
+
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void ImportEncapsulationKey_Array_Roundtrip()
         {
@@ -229,14 +239,13 @@ namespace System.Security.Cryptography.Tests
                 new byte[vector.Algorithm.DecapsulationKeySizeInBytes]));
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
-        public static void ExportSubjectPublicKeyInfo_MLKem512_Buffer_Ietf()
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void SubjectPublicKeyInfo_MLKem512_Ietf(bool tryExport)
         {
             using MLKem kem = MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem512, IncrementalSeed);
-            byte[] buffer = new byte[2048];
-            kem.TryExportSubjectPublicKeyInfo(buffer, out int written);
-
-            ReadOnlySpan<byte> ExpectedSpki = Convert.FromBase64String(@"
+            AssertSubjectPublicKeyInfo(kem, tryExport, Convert.FromBase64String(@"
                 MIIDMjALBglghkgBZQMEBAEDggMhADmVgV5ZfRBDVc8pqlMzyTJRhp1bzb5IcST2
                 Ari2pmwWxHYWSK12XPXYAGtRXpBafwrAdrDGLvoygVPnylcBaZ8TBfHmvG+QsOSb
                 aTUSts6ZKouAFt38GmYsfj+WGcvYad13GvMIlszVkYrGy3dGbF53mZbWf/mqvJdQ
@@ -254,19 +263,16 @@ namespace System.Security.Cryptography.Tests
                 kNIlz2u5LZRiomzbM92lEjx6rw4moLg2Ve6ii/OoB0clAY/WuuS2Ac9huqtxp6PT
                 UZejQ+dLSicsEl1UCJZCbYW3lY07OKa6mH7DciXHtEzbEt3kU5tKsII2NoPwS/eg
                 nMXEHf6DChsWLgsyQzQ2LwhKFEZ3IzRLrdAA+NjFN8SPmY8FMHzr0e3guBw7xZoG
-                WhttY7Js");
-
-            AssertExtensions.SequenceEqual(ExpectedSpki, buffer.AsSpan(0, written));
+                WhttY7Js"));
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
-        public static void ExportSubjectPublicKeyInfo_MLKem768_Buffer_Ietf()
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void SubjectPublicKeyInfo_MLKem768_Ietf(bool tryExport)
         {
             using MLKem kem = MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem768, IncrementalSeed);
-            byte[] buffer = new byte[2048];
-            kem.TryExportSubjectPublicKeyInfo(buffer, out int written);
-
-            ReadOnlySpan<byte> ExpectedSpki = Convert.FromBase64String(@"
+            AssertSubjectPublicKeyInfo(kem, tryExport, Convert.FromBase64String(@"
                 MIIEsjALBglghkgBZQMEBAIDggShACmKoQ1CPI3aBp0CvFnmzfA6CWuLPaTKubgM
                 pKFJB2cszvHsT68jSgvFt+nUc/KzEzs7JqHRdctnp4BZGWmcAvdlMbmcX4kYBwS7
                 TKRTXFuJcmecZgoHxeUUuHAJyGLrj1FXaV77P8QKne9rgcHMAqJJrk8JStDZvTSF
@@ -292,9 +298,75 @@ namespace System.Security.Cryptography.Tests
                 IrbxWCi4qPDgCoukSlPDqLFDVxsHQKvVZ9rxzenHnCBLbV4lnRdmoxu7y05qBc9F
                 AhdrMBwcL0Ekd1AVe87IXoCbMKTWDXdHzdD1uZqoyCaYdRd5OqqAgKCxJKhVjfcr
                 vje3X07btr6CFtbGM/srIoDiURPYaV5DSBw+6zl+sZJQUim2eiAeqJPD4ssy2ovD
-                QvpN6gV4");
+                QvpN6gV4"));
+        }
 
-            AssertExtensions.SequenceEqual(ExpectedSpki, buffer.AsSpan(0, written));
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void SubjectPublicKeyInfo_MLKem1024_Ietf(bool tryExport)
+        {
+            using MLKem kem = MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem1024, IncrementalSeed);
+            AssertSubjectPublicKeyInfo(kem, tryExport, Convert.FromBase64String(@"
+                MIIGMjALBglghkgBZQMEBAMDggYhAEuUwpRQERGRgjs1FMmsHqPZglzLhjk6LfsE
+                ZU+iGS03v60cSXxlAu7lyoCnO/zguvWlSohYWkATl6PSMvQmp6+wgrwhpEMXCQ6q
+                x1ksLqiKZTxEkeoZOTEzX1LpiaPEzFbZxVNzLVfEcPtBq3WbZdLQREU4L82cTjRK
+                ESj6nhHgQ1jhku0BSyMjKn7isi4jcX9EER7jNXU5nDdkbamBPsmyEq/pTl3FwjMK
+                cpTMH0I0ptP7tPFoWriJLASssXzRwXDXsGEbanF2x5TMjGf1X8kjwq0gMQDzZZkY
+                gsMCQ9d4E4Q7XsfJZAMiY3BgkuzwDHUWvmTkWYykImwGm7XmfkF1zyKGyN1cSIps
+                WGHzG6oL0CaUcOi1Ud07zTjIbBL5zbF2x33ItsAqcB9HiQLIVT9pTA2CcntMSlws
+                EEEhKqEnSAi4IRGzd+x1IU6bGXj3YATUE52YYT9LjpjSCve1NAc6UJqVm3p1ZPm0
+                DKIYv2GCkyCoUCAXlU0yjXrGx2nsKXAHVuewaFs0DV4RgFlQSkmppQoQGY6xCleE
+                Z460J9e0uruVUpM7BiiXlz4TGOrwoOrDdYSmVAGxcD4EKszYN1MUg/JBytzRwdN4
+                EZ5pRCnbGZrIkeTFNDdXCFuzrng2ZzUMRFjZdnLoYegLHSZ5UQ6jpvI2DHekaULH
+                oGpVTSKAgMhLR67xTbF2IMsWwGqzChvkzacIK+n4fpwhHEaRY0mluo6qUgHHKUo8
+                CIW1O2V0UhCIJexkbJCgRhIyTufQMa/lNDEyy+9ntu+xpewoCbdzU4znez2LBOsL
+                PCJWAR5McWwZqLoHUr9xSSEXZJ8GFcMpD8KaRv3kvVLbkobWAziCRCWcFaesK2QK
+                YMwDN2pYQaP7ikc1aPqbGiZyFfNMAWl7Dw5icXXXIQW3cHwpueYUvcM6b2yBipU3
+                C0J4gte0dnlqnsbrmTJ0zZsjkagrpF4zk9Lprpchyp1sG5iLWCdxP5CmWF3pQzUo
+                wCsDzhC7X3IBOND7tMMMEma5GOUpJd/hezf5XSK8pU9HWRmshZCYwPDQisWHXvKb
+                Vv0UHm7xX3AKC2bzlZXFiBdzc8RmmyG8Bx5MOqXwtKMbYljzXaJKw80px/IJJBDF
+                B4NVsTj7U6a5rm4LnAgkPnuqRcRzduuMfxPUz1Gqc2+jFUDJJB83DaVEv5+cKNml
+                fi8qfKlaTktGbmQas7zHat8ROdVnpvErUvOmXn7AquJryqjFWDOwTlmZjryaGTD7
+                ttIjPFPSwfi5UY48Lec6Gd7ms4Clsylxz2ThKf1sH6bnXUojRQHpZt06VAr1yPTz
+                SmtKJT7ihJJWbV5nxvVYVfywUG+wbBVnRNmgOjGib6lMrRTxV7fzA9B6acdzdo/L
+                TQecCQWXA6DDqU3kuZ6jovFlg9D5Fwo5UNsHtPC8MIApJ/n3lhtiWYkmNqlQKicF
+                MDY3eZ3TRNpFHBz3v2eEDOsweauMa4wZJ/ZAU8YSRQxFyeYDvBZmbllrNHHhA7bx
+                VEdCTRcCIEgRH/vTfhxnD2TxS4p7MrlMGkm0XdL8OM1SidkQrWNgLPXhMELGSsZ5
+                e4n7VRrQjgWpLSAMzLfnEu8jyTEss1DwKatTfihzR/0wdawQkGp4PxxsB8y4j0Ei
+                jEvhxkD3kLXDpdXTynkklddLxGFWJljAesYAJ2uSSrW8m+HwSUy3b4L0YKdICXJm
+                M4HhaZlgYdeZhZ7FTU9cpcQRwB2xWXsWWXdmneE6koo0r7rCWP6oxHZCOclCHcMR
+                m/W0dpkgaXgyexxTRe90anmDhB8FbiU0EAqyTU6au9CxfGqVvUw8DkD2nhYSrO6y
+                i5kIbJURbnIEJziTOQv0a4mbNihrDr8ZR7uYhPcyyifagrGbXcDMf4iFcUkQiIsj
+                EMT5MZ1BCzTmQzuQA+IXa7mVJXRWEG6JUhY7i6WSUwzFqgrrQ605j+npe6pSPXpE
+                MWd8PTrwcZ5HXbhcqVr1CJvqvrBbL6q0iWumD4HIhHKle0aoKIJqDN+0RvgYkYLS
+                v16sTsHMXer1mcihPkgjVAbRf/3cg0S2xmmEqGiqkvoCInoIaVDrDIcB7VjcYod2
+                uYOILhF1"));
+        }
+
+        private static void AssertSubjectPublicKeyInfo(MLKem kem, bool tryExport, ReadOnlySpan<byte> excpectedSpki)
+        {
+            byte[] spki;
+            int written;
+
+            if (tryExport)
+            {
+                spki = new byte[kem.Algorithm.EncapsulationKeySizeInBytes + 22]; // 22 bytes of ASN.1 overhead.
+                Assert.True(kem.TryExportSubjectPublicKeyInfo(spki, out written), nameof(kem.TryExportSubjectPublicKeyInfo));
+            }
+            else
+            {
+                spki = kem.ExportSubjectPublicKeyInfo();
+                written = spki.Length;
+            }
+
+            ReadOnlySpan<byte> encodedSpki = spki.AsSpan(0, written);
+            AssertExtensions.SequenceEqual(excpectedSpki, encodedSpki);
+
+            using MLKem encapsulator = MLKem.ImportSubjectPublicKeyInfo(encodedSpki);
+            byte[] ciphertext = encapsulator.Encapsulate(out byte[] encapsulatorSharedSecret);
+            byte[] decapsulatedSharedSecret = kem.Decapsulate(ciphertext);
+            AssertExtensions.SequenceEqual(encapsulatorSharedSecret, decapsulatedSharedSecret);
         }
 
         public static IEnumerable<object[]> MLKemAlgorithms

@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -774,6 +777,102 @@ namespace System.Security.Cryptography
             return ExportSubjectPublicKeyInfoCore().Encode();
         }
 
+        /// <summary>
+        ///  Imports an ML-KEM encapsulation key from an X.509 SubjectPublicKeyInfo structure.
+        /// </summary>
+        /// <param name="source">
+        ///  The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-DER-encoded X.509 SubjectPublicKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The SubjectPublicKeyInfo value does not represent an ML-KEM key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports MK-KEM.
+        /// </exception>
+        public static MLKem ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
+        {
+            ThrowIfNotSupported();
+            return ImportSubjectPublicKeyInfoCore(source, MLKemImplementation.ImportEncapsulationKeyImpl);
+        }
+
+        /// <inheritdoc cref="ImportSubjectPublicKeyInfo(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />
+        /// </exception>
+        public static MLKem ImportSubjectPublicKeyInfo(byte[] source)
+        {
+            ThrowIfNull(source);
+            return ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(source));
+        }
+
+        /// <summary>
+        ///  Releases all resources used by the <see cref="MLKem"/> class.
+        /// </summary>
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+        }
+
+        /// <summary>
+        ///   Called by the <c>Dispose()</c> and <c>Finalize()</c> methods to release the managed and unmanaged
+        ///   resources used by the current instance of the <see cref="MLKem"/> class.
+        /// </summary>
+        /// <param name="disposing">
+        ///   <see langword="true" /> to release managed and unmanaged resources;
+        ///   <see langword="false" /> to release only unmanaged resources.
+        /// </param>
+        protected virtual void Dispose(bool disposing)
+        {
+        }
+
+        private protected static MLKem ImportSubjectPublicKeyInfoCore(
+            ReadOnlySpan<byte> source,
+            ImportEncapsulationKeyCallback implementation)
+        {
+            unsafe
+            {
+                fixed (byte* pointer = source)
+                {
+                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
+                    {
+                        AsnValueReader reader = new(source, AsnEncodingRules.DER);
+                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
+                        MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(spki.Algorithm.Algorithm);
+
+                        // draft-ietf-lamps-kyber-certificates-07:
+                        // The parameters field of the AlgorithmIdentifier for the ML-KEM public key MUST be absent.
+                        if (spki.Algorithm.Parameters.HasValue)
+                        {
+                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                            spki.Algorithm.Encode(writer);
+                            throw Helpers.CreateAlgorithmUnknownException(writer);
+                        }
+
+                        return implementation(algorithm, spki.SubjectPublicKey.Span);
+                    }
+                }
+            }
+        }
+
         private AsnWriter ExportSubjectPublicKeyInfoCore()
         {
             int encapsulationKeySize = Algorithm.EncapsulationKeySizeInBytes;
@@ -808,31 +907,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        /// <summary>
-        ///  Releases all resources used by the <see cref="MLKem"/> class.
-        /// </summary>
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                _disposed = true;
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-        }
-
-        /// <summary>
-        ///   Called by the <c>Dispose()</c> and <c>Finalize()</c> methods to release the managed and unmanaged
-        ///   resources used by the current instance of the <see cref="MLKem"/> class.
-        /// </summary>
-        /// <param name="disposing">
-        ///   <see langword="true" /> to release managed and unmanaged resources;
-        ///   <see langword="false" /> to release only unmanaged resources.
-        /// </param>
-        protected virtual void Dispose(bool disposing)
-        {
-        }
-
         private protected static void ThrowIfNotSupported()
         {
             if (!IsSupported)
@@ -854,5 +928,7 @@ namespace System.Security.Cryptography
             }
 #endif
         }
+
+        private protected delegate MLKem ImportEncapsulationKeyCallback(MLKemAlgorithm algorithm, ReadOnlySpan<byte> encapsulationKey);
     }
 }

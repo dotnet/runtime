@@ -319,6 +319,13 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void ImportSubjectPublicKeyInfo_NullSource()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", static () =>
+                MLKem.ImportSubjectPublicKeyInfo((byte[])null));
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void UseAfterDispose()
         {
             MLKem kem = MLKem.GenerateKey(MLKemAlgorithm.MLKem512);
@@ -367,6 +374,11 @@ namespace System.Security.Cryptography.Tests
                 new byte[MLKemAlgorithm.MLKem512.EncapsulationKeySizeInBytes]));
 
             Assert.Throws<ObjectDisposedException>(() => kem.ExportEncapsulationKey());
+
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportSubjectPublicKeyInfo());
+            Assert.Throws<ObjectDisposedException>(() => kem.TryExportSubjectPublicKeyInfo(
+                new byte[2048],
+                out _));
         }
     }
 }
