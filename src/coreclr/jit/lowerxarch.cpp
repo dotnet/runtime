@@ -455,7 +455,7 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
 //    (NOTE: This just has to make the condition be true, i.e., if the condition calls for (SF ^ OF), then
 //    returning one will suffice
 //
-//    todo-anthony: Revisit this
+//    TODO-XArch-APX: Revisit this
 insCflags Lowering::TruthifyingFlags(GenCondition condition)
 {
     switch (condition.GetCode())
