@@ -1207,6 +1207,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_ArmBase_Arm64_ReverseElementBits:
                             case NI_ArmBase_LeadingZeroCount:
                             case NI_ArmBase_ReverseElementBits:
+                            case NI_Vector_Create:
                             case NI_Vector64_Create:
                             case NI_Vector64_CreateScalar:
                             case NI_Vector64_CreateScalarUnsafe:

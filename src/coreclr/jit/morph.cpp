@@ -9224,6 +9224,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
     switch (intrinsicId)
     {
 #if defined(TARGET_ARM64)
+        case NI_Vector_Create:
         case NI_Vector64_Create:
 #endif // TARGET_ARM64
         case NI_Vector128_Create:

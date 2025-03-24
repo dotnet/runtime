@@ -2520,21 +2520,17 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         if (tree->TypeGet() == TYP_SIMD32)
                         {
                             simd32_t val = vecCon->gtSimd32Val;
-                            if (ElementsAreSame(val.i32, 8) &&
-                                emitter::isValidSimm_MultipleOf<8, 256>(val.i32[0]))
+                            if (ElementsAreSame(val.i8, 32))
                             {
-                                emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, val.i32[0], INS_OPTS_SCALABLE_S,
-                                                  INS_SCALABLE_OPTS_IMM_BITMASK);
+                                emit->emitIns_R_I(INS_sve_dup, EA_SCALABLE, targetReg, val.i8[0], INS_OPTS_SCALABLE_B);
                             }
-                            else if (ElementsAreSame(val.i16, 16) &&
-                                     emitter::isValidSimm_MultipleOf<8, 256>(val.i16[0]))
+                            else if (ElementsAreSame(val.i16, 16))
                             {
-                                emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, val.i16[0], INS_OPTS_SCALABLE_H,
-                                                  INS_SCALABLE_OPTS_IMM_BITMASK);
+                                emit->emitIns_R_I(INS_sve_dup, EA_SCALABLE, targetReg, val.i16[0], INS_OPTS_SCALABLE_H);
                             }
-                            else if (ElementsAreSame(val.i8, 32) && emitter::isValidSimm<8>(val.i8[0]))
+                            else if (ElementsAreSame(val.i32, 8))
                             {
-                                emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, val.i8[0], INS_OPTS_SCALABLE_B, INS_SCALABLE_OPTS_IMM_BITMASK);
+                                emit->emitIns_R_I(INS_sve_dup, EA_SCALABLE, targetReg, val.i32[0], INS_OPTS_SCALABLE_S);
                             }
                             else
                             {

@@ -3892,6 +3892,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             case NI_Vector512_CreateScalar:
             case NI_Vector512_CreateScalarUnsafe:
 #elif defined(TARGET_ARM64)
+            case NI_Vector_Create:
             case NI_Vector64_Create:
             case NI_Vector64_CreateScalar:
             case NI_Vector64_CreateScalarUnsafe:
@@ -22742,7 +22743,6 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types   type,
                 unreached();
             }
         }
-
         return vecCon;
     }
 
@@ -22766,7 +22766,11 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types   type,
         hwIntrinsicID = NI_Vector256_Create;
     }
 #elif defined(TARGET_ARM64)
-    if (simdSize == 8)
+    if ((simdSize == 64) || (simdSize == 32))
+    {
+        hwIntrinsicID = NI_Vector_Create;
+    }
+    else if (simdSize == 8)
     {
         hwIntrinsicID = NI_Vector64_Create;
     }

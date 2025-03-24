@@ -1073,6 +1073,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_Create:
         case NI_Vector64_Create:
         case NI_Vector128_Create:
         {

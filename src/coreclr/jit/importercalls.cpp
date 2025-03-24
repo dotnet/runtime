@@ -3240,7 +3240,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // handled by the AltJit, so limit only the platform specific intrinsics
             assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
 
-            if (ni < LAST_NI_Vector128)
+            if ((ni < LAST_NI_Vector128) || ((ni >= FIRST_NI_Vector) && (ni < LAST_NI_Vector)))
 #else
 #error Unsupported platform
 #endif

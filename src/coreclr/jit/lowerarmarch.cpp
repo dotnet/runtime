@@ -1612,6 +1612,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
+#ifdef TARGET_ARM64
+        case NI_Vector_Create:
+#endif
         case NI_Vector64_Create:
         case NI_Vector128_Create:
         case NI_Vector64_CreateScalar:
@@ -2016,6 +2019,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
     assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
+           (node->GetHWIntrinsicId() == NI_Vector_Create) ||
            (node->GetHWIntrinsicId() == NI_Vector64_CreateScalar) ||
            (node->GetHWIntrinsicId() == NI_Vector128_CreateScalar) ||
            (node->GetHWIntrinsicId() == NI_Vector64_CreateScalarUnsafe) ||
