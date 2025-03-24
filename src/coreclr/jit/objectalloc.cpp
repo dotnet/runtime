@@ -944,7 +944,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
     bool didStackAllocate             = false;
     m_PossiblyStackPointingPointers   = BitVecOps::MakeEmpty(&m_bitVecTraits);
     m_DefinitelyStackPointingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
-    const bool isReadyToRun           = comp->opts.IsReadyToRun() && !comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    const bool isReadyToRun           = comp->IsReadyToRun();
 
     for (BasicBlock* const block : comp->Blocks())
     {
@@ -1243,7 +1243,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 #ifdef FEATURE_READYTORUN
     if (entryPoint.addr != nullptr)
     {
-        assert(comp->opts.IsReadyToRun());
+        assert(comp->IsAot());
         helperCall->AsCall()->setEntryPoint(entryPoint);
     }
     else

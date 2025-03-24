@@ -6009,7 +6009,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz += 2;
                     }
                 }
-                else if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+                else if (!IsAot())
                 {
                     costEx += 2;
                     costSz += 6;
@@ -9087,7 +9087,7 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP lookup = {};
 
-    if (opts.IsReadyToRun())
+    if (IsAot())
     {
         helper                                        = CORINFO_HELP_READYTORUN_NEW;
         CORINFO_LOOKUP_KIND* const pGenericLookupKind = nullptr;
@@ -12066,7 +12066,7 @@ void Compiler::gtDispConst(GenTree* tree)
                             printf(" scope");
                             break;
                         case GTF_ICON_CLASS_HDL:
-                            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                            if (IsAot())
                             {
                                 printf(" class");
                             }
@@ -12076,7 +12076,7 @@ void Compiler::gtDispConst(GenTree* tree)
                             }
                             break;
                         case GTF_ICON_METHOD_HDL:
-                            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                            if (IsAot())
                             {
                                 printf(" method");
                             }
@@ -12086,7 +12086,7 @@ void Compiler::gtDispConst(GenTree* tree)
                             }
                             break;
                         case GTF_ICON_FIELD_HDL:
-                            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                            if (IsAot())
                             {
                                 printf(" field");
                             }
@@ -18348,7 +18348,7 @@ bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
 
     if (comp->opts.compReloc)
     {
-        // During Ngen JIT is always asked to generate relocatable code.
+        // During AOT JIT is always asked to generate relocatable code.
         // Hence JIT will try to encode only icon handles as pc-relative offsets.
         return IsIconHandle() && (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue()));
     }
@@ -18380,7 +18380,7 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 {
     if (comp->opts.compReloc)
     {
-        // During Ngen JIT is always asked to generate relocatable code.
+        // During AOT JIT is always asked to generate relocatable code.
         // Hence JIT will try to encode only icon handles as pc-relative offsets.
         return IsIconHandle() && (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue()));
     }

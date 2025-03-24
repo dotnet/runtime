@@ -385,7 +385,7 @@ public class BridgeTest
 
         RunGraphTest(SetupDeadList);
         RunGraphTest(SetupSelfLinks);
-//        RunGraphTest(NestedCycles); // Fixed by Filip
+        RunGraphTest(NestedCycles);
 //        RunGraphTest(Spider); // Crashes
         return 100;
     }

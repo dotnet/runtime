@@ -314,11 +314,11 @@ FCFuncStart(gJitInfoFuncs)
 FCFuncEnd()
 
 FCFuncStart(gMonitorFuncs)
-    FCFuncElement("Enter", JIT_MonEnter)
-    FCFuncElement("ReliableEnter", JIT_MonReliableEnter)
-    FCFuncElement("ReliableEnterTimeout", JIT_MonTryEnter)
-    FCFuncElement("Exit", JIT_MonExit)
     FCFuncElement("IsEnteredNative", ObjectNative::IsLockHeld)
+
+    FCFuncElement("TryEnter_FastPath", ObjectNative::Monitor_TryEnter_FastPath)
+    FCFuncElement("TryEnter_FastPath_WithTimeout", ObjectNative::Monitor_TryEnter_FastPath_WithTimeout)
+    FCFuncElement("Exit_FastPath", ObjectNative::Monitor_Exit_FastPath)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeHelpers)
