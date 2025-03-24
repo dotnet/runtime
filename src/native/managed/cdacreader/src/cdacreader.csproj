@@ -32,8 +32,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <DirectPInvoke Include="unwinder_cdac_amd64" />
-    <DirectPInvoke Include="unwinder_cdac_arm64" />
+    <DirectPInvoke Include="unwinder_cdac_amd64" Condition="'$(TargetArchitecture)' == 'x64'"/>
+    <DirectPInvoke Include="unwinder_cdac_arm64" Condition="'$(TargetArchitecture)' == 'arm64' or ('$(TargetsWindows)' == 'true' and '$(TargetArchitecture)' == 'x64')"/>
 
     <!-- unwinder_cdac_base is supported on all platforms -->
     <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\unwinder_cdac_base.lib" Condition="'$(TargetsWindows)' == 'true'"/>
