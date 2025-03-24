@@ -55,7 +55,7 @@ if (CLR_CMAKE_TARGET_WIN32)
   target_compile_options(unwinder_cdac_base PRIVATE -U_DEBUG)
 endif()
 
-install_clr(TARGETS unwinder_cdac_base DESTINATIONS cdaclibs COMPONENT debug)
+install_clr(TARGETS unwinder_cdac_base DESTINATIONS cdaclibs COMPONENT cdac)
 
 # Helper function for platform specific cDAC uwninder builds.
 function(create_platform_unwinder)
@@ -94,7 +94,7 @@ function(create_platform_unwinder)
   endif()
 
   # add the install targets
-  install_clr(TARGETS ${TARGETDETAILS_TARGET} DESTINATIONS ${TARGETDETAILS_DESTINATIONS} COMPONENT debug INSTALL_ALL_ARTIFACTS)
+  install_clr(TARGETS ${TARGETDETAILS_TARGET} DESTINATIONS ${TARGETDETAILS_DESTINATIONS} COMPONENT cdac INSTALL_ALL_ARTIFACTS)
 
   # Set the target to be built for the specified OS and ARCH
   set_target_definitions_to_custom_os_and_arch(TARGET ${TARGETDETAILS_TARGET} OS win ARCH ${TARGETDETAILS_ARCH})

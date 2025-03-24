@@ -153,6 +153,7 @@
     <_subset>$(_subset.Replace('+tools+', '+$(DefaultToolsSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+host+', '+$(DefaultHostSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+packs+', '+$(DefaultPacksSubsets)+'))</_subset>
+    <_subset>$(_subset.Replace('+tools.cdacreader+', '+tools.cdacreader+clr.cdac+'))</_subset>
 
     <!-- Surround _subset in dashes to simplify checks below -->
     <_subset>+$(_subset.Trim('+'))+</_subset>
@@ -305,6 +306,10 @@
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.iltools+'))">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrILToolsSubset=true</ClrRuntimeBuildSubsets>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(_subset.Contains('+clr.cdac+'))">
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrCdacSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.nativeaotruntime+')) and '$(NativeAotSupported)' == 'true'">
