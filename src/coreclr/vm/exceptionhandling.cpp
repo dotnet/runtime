@@ -895,7 +895,8 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
 #else
         // If we aren't setting up the frame for each P/Invoke (instead setting up once per method),
         // then ReadyToRun code is the only code using the per-P/Invoke logic.
-        if (ExecutionManager::IsReadyToRunCode(returnAddress))
+        // if (ExecutionManager::IsReadyToRunCode(returnAddress))
+        if (true)
 #endif
         {
             pFrame->ExceptionUnwind();

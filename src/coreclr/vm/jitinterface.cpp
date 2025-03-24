@@ -13003,6 +13003,10 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
 
 #endif
 
+#ifndef USE_PER_FRAME_PINVOKE_INIT
+    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_PINVOKE_HELPERS);
+#endif
+
     return flags;
 }
 
