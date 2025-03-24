@@ -806,7 +806,33 @@ namespace System.Security.Cryptography
         public static MLKem ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
             ThrowIfNotSupported();
-            return ImportSubjectPublicKeyInfoCore(source, MLKemImplementation.ImportEncapsulationKeyImpl);
+
+            unsafe
+            {
+                fixed (byte* pointer = source)
+                {
+                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
+                    {
+                        AsnValueReader reader = new(source, AsnEncodingRules.DER);
+                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
+                        MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(spki.Algorithm.Algorithm) ??
+                            throw new CryptographicException(
+                                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier,
+                                spki.Algorithm.Algorithm));
+
+                        // draft-ietf-lamps-kyber-certificates-07:
+                        // The parameters field of the AlgorithmIdentifier for the ML-KEM public key MUST be absent.
+                        if (spki.Algorithm.Parameters.HasValue)
+                        {
+                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                            spki.Algorithm.Encode(writer);
+                            throw Helpers.CreateAlgorithmUnknownException(writer);
+                        }
+
+                        return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, spki.SubjectPublicKey.Span);
+                    }
+                }
+            }
         }
 
         /// <inheritdoc cref="ImportSubjectPublicKeyInfo(ReadOnlySpan{byte})" />
@@ -842,38 +868,6 @@ namespace System.Security.Cryptography
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
-        }
-
-        private protected static MLKem ImportSubjectPublicKeyInfoCore(
-            ReadOnlySpan<byte> source,
-            ImportEncapsulationKeyCallback implementation)
-        {
-            unsafe
-            {
-                fixed (byte* pointer = source)
-                {
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        AsnValueReader reader = new(source, AsnEncodingRules.DER);
-                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-                        MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(spki.Algorithm.Algorithm) ??
-                            throw new CryptographicException(
-                                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier,
-                                spki.Algorithm.Algorithm));
-
-                        // draft-ietf-lamps-kyber-certificates-07:
-                        // The parameters field of the AlgorithmIdentifier for the ML-KEM public key MUST be absent.
-                        if (spki.Algorithm.Parameters.HasValue)
-                        {
-                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                            spki.Algorithm.Encode(writer);
-                            throw Helpers.CreateAlgorithmUnknownException(writer);
-                        }
-
-                        return implementation(algorithm, spki.SubjectPublicKey.Span);
-                    }
-                }
-            }
         }
 
         private AsnWriter ExportSubjectPublicKeyInfoCore()
@@ -931,7 +925,5 @@ namespace System.Security.Cryptography
             }
 #endif
         }
-
-        private protected delegate MLKem ImportEncapsulationKeyCallback(MLKemAlgorithm algorithm, ReadOnlySpan<byte> encapsulationKey);
     }
 }
