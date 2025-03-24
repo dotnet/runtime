@@ -231,7 +231,7 @@ namespace System.Threading.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Ctor_InvalidNames_Unix()
         {
-            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(false, new string('a', 1000), out bool createdNew));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(new string('a', 1000), options: default));
         }
 
         [Theory]
@@ -239,10 +239,10 @@ namespace System.Threading.Tests
         public void Ctor_ValidName(string name)
         {
             bool createdNew;
-            using (Mutex m1 = new Mutex(false, name, out createdNew))
+            using (Mutex m1 = new Mutex(false, name, options: default, out createdNew))
             {
                 Assert.True(createdNew);
-                using (Mutex m2 = new Mutex(false, name, out createdNew))
+                using (Mutex m2 = new Mutex(false, name, options: default, out createdNew))
                 {
                     Assert.False(createdNew);
                 }
@@ -250,39 +250,69 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
-        [Fact]
-        public void Ctor_NameUsedByOtherSynchronizationPrimitive_Windows()
+        [Theory]
+        [MemberData(nameof(NameOptionCombinations_MemberData))]
+        public void NameUsedByOtherSynchronizationPrimitive_Windows(bool currentUserOnly, bool currentSessionOnly)
         {
             string name = Guid.NewGuid().ToString("N");
-            using (Semaphore s = new Semaphore(1, 1, name))
+            NamedWaitHandleOptions options =
+                new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly };
+            using (Semaphore s = new Semaphore(1, 1, name, options))
             {
-                Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex(false, name));
+                Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex(name, options));
+                Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name, options));
+                Assert.False(Mutex.TryOpenExisting(name, options, out _));
             }
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't create global objects in appcontainer
-        public void Ctor_ImpersonateAnonymousAndTryCreateGlobalMutexTest()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't create global objects in appcontainer
+        [MemberData(nameof(NameOptionCombinations_MemberData))]
+        public void Ctor_ImpersonateAnonymousAndTryCreateGlobalMutexTest(bool currentUserOnly, bool currentSessionOnly)
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
             {
+                string initiallyCreatedName = Guid.NewGuid().ToString("N");
+                string name = Guid.NewGuid().ToString("N");
+                NamedWaitHandleOptions options =
+                    new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly };
+
+                using var m = new Mutex(initiallyCreatedName, options);
+
                 if (!ImpersonateAnonymousToken(GetCurrentThread()))
                 {
                     // Impersonation is not allowed in the current context, this test is inappropriate in such a case
                     return;
                 }
 
-                Assert.Throws<UnauthorizedAccessException>(() => new Mutex(false, $"Global\\{Guid.NewGuid():N}"));
-                Assert.True(RevertToSelf());
+                bool reverted;
+                try
+                {
+                    Assert.Throws<UnauthorizedAccessException>(() => new Mutex(name, options));
+                    Assert.Throws<UnauthorizedAccessException>(() => new Mutex(initiallyCreatedName, options));
+                    Assert.Throws<UnauthorizedAccessException>(() => new Mutex(initiallyCreatedName, options));
+                    Assert.Throws<UnauthorizedAccessException>(() => Mutex.OpenExisting(initiallyCreatedName, options));
+                    Assert.Throws<UnauthorizedAccessException>(
+                        () => Mutex.TryOpenExisting(initiallyCreatedName, options, out _));
+                }
+                finally
+                {
+                    reverted = RevertToSelf();
+                }
+
+                Assert.True(reverted);
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInAppContainer))] // Can't create global objects in appcontainer
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsInAppContainer))] // Can't create global objects in appcontainer
+        [MemberData(nameof(NameOptionCombinations_MemberData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void Ctor_TryCreateGlobalMutexTest_Uwp()
+        public void Ctor_TryCreateGlobalMutexTest_Uwp(bool currentUserOnly, bool currentSessionOnly)
         {
+            NamedWaitHandleOptions options =
+                new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly };
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
-                Assert.Throws<UnauthorizedAccessException>(() => new Mutex(false, $"Global\\{Guid.NewGuid():N}")));
+                Assert.Throws<UnauthorizedAccessException>(() => new Mutex(Guid.NewGuid().ToString("N"), options)));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -290,11 +320,11 @@ namespace System.Threading.Tests
         public void OpenExisting(string name)
         {
             Mutex resultHandle;
-            Assert.False(Mutex.TryOpenExisting(name, out resultHandle));
+            Assert.False(Mutex.TryOpenExisting(name, options: default, out resultHandle));
 
-            using (Mutex m1 = new Mutex(false, name))
+            using (Mutex m1 = new Mutex(name, options: default))
             {
-                using (Mutex m2 = Mutex.OpenExisting(name))
+                using (Mutex m2 = Mutex.OpenExisting(name, options: default))
                 {
                     m1.CheckedWait();
                     Assert.False(Task.Factory.StartNew(() => m2.WaitOne(0), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Result);
@@ -305,7 +335,7 @@ namespace System.Threading.Tests
                     m2.ReleaseMutex();
                 }
 
-                Assert.True(Mutex.TryOpenExisting(name, out resultHandle));
+                Assert.True(Mutex.TryOpenExisting(name, options: default, out resultHandle));
                 Assert.NotNull(resultHandle);
                 resultHandle.Dispose();
             }
@@ -315,36 +345,23 @@ namespace System.Threading.Tests
         [ActiveIssue("https://github.com/mono/mono/issues/15158", TestRuntimes.Mono)]
         public void OpenExisting_InvalidNames()
         {
-            AssertExtensions.Throws<ArgumentNullException>("name", () => Mutex.OpenExisting(null));
-            AssertExtensions.Throws<ArgumentException>("name", null, () => Mutex.OpenExisting(string.Empty));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => Mutex.OpenExisting(null, options: default));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => Mutex.OpenExisting(string.Empty, options: default));
         }
 
         [Fact]
         public void OpenExisting_UnavailableName()
         {
             string name = Guid.NewGuid().ToString("N");
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name, options: default));
             Mutex m;
-            Assert.False(Mutex.TryOpenExisting(name, out m));
+            Assert.False(Mutex.TryOpenExisting(name, options: default, out m));
             Assert.Null(m);
 
-            using (m = new Mutex(false, name)) { }
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
-            Assert.False(Mutex.TryOpenExisting(name, out m));
+            using (m = new Mutex(name, options: default)) { }
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name, options: default));
+            Assert.False(Mutex.TryOpenExisting(name, options: default, out m));
             Assert.Null(m);
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
-        [Fact]
-        public void OpenExisting_NameUsedByOtherSynchronizationPrimitive_Windows()
-        {
-            string name = Guid.NewGuid().ToString("N");
-            using (Semaphore sema = new Semaphore(1, 1, name))
-            {
-                Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
-                Mutex ignored;
-                Assert.False(Mutex.TryOpenExisting(name, out ignored));
-            }
         }
 
         public enum WaitHandleWaitType
@@ -354,11 +371,160 @@ namespace System.Threading.Tests
             WaitAll
         }
 
-        private static IEnumerable<string> GetNamePrefixes()
+        [Fact]
+        public void NamedWaitHandleOptionsTest()
         {
-            yield return string.Empty;
-            yield return "Local\\";
-            yield return "Global\\";
+            NamedWaitHandleOptions options = default;
+            Assert.True(options.CurrentUserOnly);
+            Assert.True(options.CurrentSessionOnly);
+
+            options.CurrentUserOnly = false;
+            Assert.False(options.CurrentUserOnly);
+            options.CurrentSessionOnly = false;
+            Assert.False(options.CurrentSessionOnly);
+        }
+
+        [Theory]
+        [MemberData(nameof(NamePrefixes_MemberData))]
+        public void NameOptionsApiCompatibilityTest(string namePrefix)
+        {
+            string name = Guid.NewGuid().ToString("N");
+            string prefixedName = namePrefix + name;
+            bool currentSessionOnly = namePrefix != @"Global\";
+
+            using (var m = new Mutex(initiallyOwned: false, prefixedName, out bool createdNew))
+            {
+                Assert.True(createdNew);
+
+                new Mutex(
+                    initiallyOwned: false,
+                    name,
+                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                    out createdNew).Dispose();
+                Assert.False(createdNew);
+
+                Mutex.OpenExisting(
+                    name,
+                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly }).Dispose();
+
+                Assert.True(
+                    Mutex.TryOpenExisting(
+                        name,
+                        new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                        out Mutex m2));
+                m2.Dispose();
+            }
+
+            using (var m =
+                new Mutex(
+                    initiallyOwned: false,
+                    name,
+                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                    out bool createdNew))
+            {
+                Assert.True(createdNew);
+
+                new Mutex(initiallyOwned: false, prefixedName, out createdNew).Dispose();
+                Assert.False(createdNew);
+
+                Mutex.OpenExisting(prefixedName).Dispose();
+
+                Assert.True(Mutex.TryOpenExisting(prefixedName, out Mutex m2));
+                m2.Dispose();
+            }
+        }
+
+        public static IEnumerable<object[]> NamePrefixAndOptionsCompatibilityTest_MemberData()
+        {
+            foreach (NamedWaitHandleOptions options in GetNameOptionCombinations())
+            {
+                foreach (string namePrefix in GetNamePrefixes())
+                {
+                    yield return new object[] { options.CurrentUserOnly, options.CurrentSessionOnly, namePrefix };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NamePrefixAndOptionsCompatibilityTest_MemberData))]
+        public void NamePrefixAndOptionsCompatibilityTest(bool currentUserOnly, bool currentSessionOnly, string namePrefix)
+        {
+            string name = namePrefix + Guid.NewGuid().ToString("N");
+            bool currentSessionOnlyBasedOnPrefix = namePrefix != @"Global\";
+            NamedWaitHandleOptions options =
+                new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly };
+
+            if (string.IsNullOrEmpty(namePrefix) || currentSessionOnlyBasedOnPrefix == currentSessionOnly)
+            {
+                new Mutex(name, options).Dispose();
+            }
+            else
+            {
+                AssertExtensions.Throws<ArgumentException>("name", () => new Mutex(name, options));
+            }
+        }
+
+        public static IEnumerable<object[]> NameNamespaceTests_MemberData()
+        {
+            foreach (NamedWaitHandleOptions o in GetNameOptionCombinations())
+            {
+                foreach (NamedWaitHandleOptions o2 in GetNameOptionCombinations())
+                {
+                    yield return
+                        new object[] { o.CurrentUserOnly, o.CurrentSessionOnly, o2.CurrentUserOnly, o2.CurrentSessionOnly };
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Windows Nano Server and Server Core apparently use the same namespace for the Local\ and Global\ prefixes
+        [MemberData(nameof(NameNamespaceTests_MemberData))]
+        public void NameNamespaceTest(
+            bool create_currentUserOnly,
+            bool create_currentSessionOnly,
+            bool open_currentUserOnly,
+            bool open_currentSessionOnly)
+        {
+            string name = Guid.NewGuid().ToString("N");
+            NamedWaitHandleOptions createOptions =
+                new() { CurrentUserOnly = create_currentUserOnly, CurrentSessionOnly = create_currentSessionOnly };
+            NamedWaitHandleOptions openOptions =
+                new() { CurrentUserOnly = open_currentUserOnly, CurrentSessionOnly = open_currentSessionOnly };
+
+            using (var m = new Mutex(name, createOptions))
+            {
+                if (PlatformDetection.IsWindows &&
+                    openOptions.CurrentSessionOnly == createOptions.CurrentSessionOnly &&
+                    !createOptions.CurrentUserOnly &&
+                    openOptions.CurrentUserOnly)
+                {
+                    Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex(name, openOptions));
+                    Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name, openOptions));
+                    Assert.False(Mutex.TryOpenExisting(name, openOptions, out _));
+                    return;
+                }
+
+                bool sameOptions =
+                    openOptions.CurrentUserOnly == createOptions.CurrentUserOnly &&
+                    openOptions.CurrentSessionOnly == createOptions.CurrentSessionOnly;
+                bool expectedCreatedNew =
+                    !sameOptions &&
+                    (!PlatformDetection.IsWindows || openOptions.CurrentSessionOnly != createOptions.CurrentSessionOnly);
+
+                new Mutex(initiallyOwned: false, name, openOptions, out bool createdNew).Dispose();
+                Assert.Equal(expectedCreatedNew, createdNew);
+
+                if (expectedCreatedNew)
+                {
+                    Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name, openOptions));
+                }
+                else
+                {
+                    Mutex.OpenExisting(name, openOptions).Dispose();
+                }
+
+                Assert.Equal(!expectedCreatedNew, Mutex.TryOpenExisting(name, openOptions, out Mutex m2));
+                m2?.Dispose();
+            }
         }
 
         public static IEnumerable<object[]> AbandonExisting_MemberData()
@@ -385,7 +551,9 @@ namespace System.Threading.Tests
                                     waitCount,
                                     notAbandonedWaitIndex,
                                     false, // isNotAbandonedWaitObjectSignaled
-                                    abandonDuringWait
+                                    abandonDuringWait,
+                                    true, // currentUserOnly
+                                    true // currentSessionOnly
                                 };
 
                             bool includeArgsForSignaledNotAbandonedWaitObject =
@@ -401,10 +569,12 @@ namespace System.Threading.Tests
 
                             if (waitCount == 1 || PlatformDetection.IsWindows)
                             {
-                                foreach (var namePrefix in GetNamePrefixes())
+                                foreach (NamedWaitHandleOptions options in GetNameOptionCombinations())
                                 {
                                     var newArgs = (object[])args.Clone();
-                                    newArgs[0] = namePrefix + nameGuidStr;
+                                    newArgs[0] = nameGuidStr;
+                                    newArgs[6] = options.CurrentUserOnly;
+                                    newArgs[7] = options.CurrentSessionOnly;
                                     yield return newArgs;
                                     if (includeArgsForSignaledNotAbandonedWaitObject)
                                     {
@@ -428,12 +598,17 @@ namespace System.Threading.Tests
             int waitCount,
             int notAbandonedWaitIndex,
             bool isNotAbandonedWaitObjectSignaled,
-            bool abandonDuringWait)
+            bool abandonDuringWait,
+            bool currentUserOnly,
+            bool currentSessionOnly)
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
             {
-                using (var m = new Mutex(false, name))
-                using (Mutex m2 = waitCount == 1 ? null : new Mutex(false, name == null ? null : name + "_2"))
+                NamedWaitHandleOptions options =
+                    new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly };
+
+                using (var m = new Mutex(name, options))
+                using (Mutex m2 = waitCount == 1 ? null : new Mutex(name == null ? null : name + "_2", options))
                 using (ManualResetEvent e = waitCount == 1 ? null : new ManualResetEvent(isNotAbandonedWaitObjectSignaled))
                 using (ManualResetEvent threadReadyForAbandon = abandonDuringWait ? new ManualResetEvent(false) : null)
                 using (ManualResetEvent abandonSoon = abandonDuringWait ? new ManualResetEvent(false) : null)
@@ -587,41 +762,49 @@ namespace System.Threading.Tests
             });
         }
 
-        public static IEnumerable<object[]> CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData()
-        {
-            foreach (var namePrefix in GetNamePrefixes())
-            {
-                yield return new object[] { namePrefix };
-            }
-        }
-
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36307", TestRuntimes.Mono)]
-        [MemberData(nameof(CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData))]
-        public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(string prefix)
+        [MemberData(nameof(NameOptionCombinations_MemberData))]
+        public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(bool currentUserOnly, bool currentSessionOnly)
         {
             string fileName = GetTestFilePath();
             try
             {
                 ThreadTestHelpers.RunTestInBackgroundThread(() =>
                 {
-                    string mutexName = prefix + Guid.NewGuid().ToString("N");
+                    string mutexName = Guid.NewGuid().ToString("N");
+                    NamedWaitHandleOptions options =
+                        new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly };
 
-                    Action<string, string> otherProcess = (m, f) =>
-                    {
-                        using (var mutex = Mutex.OpenExisting(m))
+                    Action<string, string, string, string> otherProcess =
+                        (mutexName, fileName, currentUserOnlyStr, currentSessionOnlyStr) =>
                         {
-                            mutex.CheckedWait();
-                            try
-                            { File.WriteAllText(f, "0"); }
-                            finally { mutex.ReleaseMutex(); }
+                            NamedWaitHandleOptions options =
+                                new()
+                                {
+                                    CurrentUserOnly = int.Parse(currentUserOnlyStr) != 0,
+                                    CurrentSessionOnly = int.Parse(currentSessionOnlyStr) != 0
+                                };
 
-                            IncrementValueInFileNTimes(mutex, f, 10);
-                        }
-                    };
+                            using (var mutex = Mutex.OpenExisting(mutexName, options))
+                            {
+                                mutex.CheckedWait();
+                                try
+                                { File.WriteAllText(fileName, "0"); }
+                                finally { mutex.ReleaseMutex(); }
 
-                    using (var mutex = new Mutex(false, mutexName))
-                    using (var remote = RemoteExecutor.Invoke(otherProcess, mutexName, fileName))
+                                IncrementValueInFileNTimes(mutex, fileName, 10);
+                            }
+                        };
+
+                    using (var mutex = new Mutex(mutexName, options))
+                    using (var remote =
+                        RemoteExecutor.Invoke(
+                            otherProcess,
+                            mutexName,
+                            fileName,
+                            options.CurrentUserOnly ? "1" : "0",
+                            options.CurrentSessionOnly ? "1" : "0"))
                     {
                         SpinWait.SpinUntil(
                             () =>
@@ -665,10 +848,11 @@ namespace System.Threading.Tests
         public void NamedMutex_ThreadExitDisposeRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
+            NamedWaitHandleOptions options = new() { CurrentUserOnly = false, CurrentSessionOnly = true };
 
             for (int i = 0; i < 1000; ++i)
             {
-                var m = new Mutex(false, mutexName);
+                var m = new Mutex(mutexName, options);
                 var startParallelTest = new ManualResetEvent(false);
 
                 var t0Ready = new AutoResetEvent(false);
@@ -683,7 +867,7 @@ namespace System.Threading.Tests
                 var t1Ready = new AutoResetEvent(false);
                 Thread t1 = ThreadTestHelpers.CreateGuardedThread(out Action waitForT1, () =>
                 {
-                    using (var m2 = Mutex.OpenExisting(mutexName))
+                    using (var m2 = Mutex.OpenExisting(mutexName, options))
                     {
                         m.Dispose();
                         t1Ready.Set();
@@ -709,7 +893,7 @@ namespace System.Threading.Tests
                 // destroyed and created new again.
                 SpinWait.SpinUntil(() =>
                 {
-                    using (m = new Mutex(true, mutexName, out bool createdNew))
+                    using (m = new Mutex(true, mutexName, options, out bool createdNew))
                     {
                         if (createdNew)
                         {
@@ -726,6 +910,7 @@ namespace System.Threading.Tests
         {
             var mutexName = Guid.NewGuid().ToString("N");
             var mutex2Name = mutexName + "_2";
+            NamedWaitHandleOptions options = new() { CurrentUserOnly = false, CurrentSessionOnly = true };
 
             var waitsForThread = new Action[Environment.ProcessorCount];
             for (int i = 0; i < waitsForThread.Length; ++i)
@@ -740,10 +925,10 @@ namespace System.Threading.Tests
                         // then release the last reference to the mutex. On some implementations T1 may not be able to destroy
                         // the mutex when it is still locked by T0, or there may be potential for races in the sequence. This
                         // test only looks for errors from race conditions.
-                        using (var mutex = new Mutex(true, mutexName))
+                        using (var mutex = new Mutex(true, mutexName, options))
                         {
                         }
-                        using (var mutex = new Mutex(true, mutex2Name))
+                        using (var mutex = new Mutex(true, mutex2Name, options))
                         {
                         }
                     }
@@ -766,6 +951,37 @@ namespace System.Threading.Tests
                 names.Add(Guid.NewGuid().ToString("N") + new string('a', 1000));
 
             return names;
+        }
+
+        private static IEnumerable<string> GetNamePrefixes()
+        {
+            yield return string.Empty;
+            yield return "Local\\";
+            yield return "Global\\";
+        }
+
+        public static IEnumerable<object[]> NamePrefixes_MemberData()
+        {
+            foreach (var namePrefix in GetNamePrefixes())
+            {
+                yield return new object[] { namePrefix };
+            }
+        }
+
+        public static IEnumerable<NamedWaitHandleOptions> GetNameOptionCombinations()
+        {
+            yield return new NamedWaitHandleOptions() { CurrentUserOnly = false, CurrentSessionOnly = false };
+            yield return new NamedWaitHandleOptions() { CurrentUserOnly = false, CurrentSessionOnly = true };
+            yield return new NamedWaitHandleOptions() { CurrentUserOnly = true, CurrentSessionOnly = false };
+            yield return new NamedWaitHandleOptions() { CurrentUserOnly = true, CurrentSessionOnly = true };
+        }
+
+        public static IEnumerable<object[]> NameOptionCombinations_MemberData()
+        {
+            foreach (NamedWaitHandleOptions options in GetNameOptionCombinations())
+            {
+                yield return new object[] { options.CurrentUserOnly, options.CurrentSessionOnly };
+            }
         }
 
         [DllImport("kernel32.dll")]

@@ -229,33 +229,6 @@ namespace Microsoft.Interop
             }
         }
 
-        public static IEnumerable<TypePositionInfo> GetDependentElementsOfMarshallingInfo(
-            MarshallingInfo elementMarshallingInfo)
-        {
-            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo nestedCollection)
-            {
-                if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
-                {
-                    // Do not include dependent elements with no managed or native index.
-                    // These values are dummy values that are inserted earlier to avoid emitting extra diagnostics.
-                    if (nestedCountElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedCountElement.NativeIndex != TypePositionInfo.UnsetIndex)
-                    {
-                        yield return nestedCountElement;
-                    }
-                }
-                foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in nestedCollection.Marshallers.Modes)
-                {
-                    foreach (TypePositionInfo nestedElement in GetDependentElementsOfMarshallingInfo(mode.Value.CollectionElementMarshallingInfo))
-                    {
-                        if (nestedElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedElement.NativeIndex != TypePositionInfo.UnsetIndex)
-                        {
-                            yield return nestedElement;
-                        }
-                    }
-                }
-            }
-        }
-
         // private static readonly InvocationExpressionSyntax SkipInitInvocation =
         public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubIdentifierContext context)
         {

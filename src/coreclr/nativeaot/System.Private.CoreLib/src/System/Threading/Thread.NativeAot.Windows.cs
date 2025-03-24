@@ -24,8 +24,6 @@ namespace System.Threading
 
         private ApartmentState _initialApartmentState = ApartmentState.Unknown;
 
-        private static volatile bool s_comInitializedOnFinalizerThread;
-
         partial void PlatformSpecificInitialize();
 
         // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
@@ -175,7 +173,7 @@ namespace System.Threading
             }
         }
 
-        private unsafe bool CreateThread(GCHandle thisThreadHandle)
+        private unsafe bool CreateThread(GCHandle<Thread> thisThreadHandle)
         {
             const int AllocationGranularity = 0x10000;  // 64 KiB
 
@@ -197,7 +195,7 @@ namespace System.Threading
             }
 
             _osHandle = Interop.Kernel32.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
-                &ThreadEntryPoint, (IntPtr)thisThreadHandle,
+                &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle),
                 Interop.Kernel32.CREATE_SUSPENDED | Interop.Kernel32.STACK_SIZE_PARAM_IS_A_RESERVATION,
                 out _);
 
@@ -301,27 +299,11 @@ namespace System.Threading
             InitializeCom(_initialApartmentState);
         }
 
-        internal static void InitializeComForFinalizerThread()
-        {
-            InitializeCom();
-
-            // Prevent re-initialization of COM model on finalizer thread
-            t_comState |= ComState.Locked;
-
-            s_comInitializedOnFinalizerThread = true;
-        }
-
         private static void InitializeComForThreadPoolThread()
         {
-            // Initialized COM - take advantage of implicit MTA initialized by the finalizer thread
-            SpinWait sw = default(SpinWait);
-            while (!s_comInitializedOnFinalizerThread)
-            {
-                RuntimeImports.RhInitializeFinalizerThread();
-                sw.SpinOnce(0);
-            }
-
-            // Prevent re-initialization of COM model on threadpool threads
+            // Process-wide COM is initialized very early before any managed code can run.
+            // Assume it is done.
+            // Prevent re-initialization of COM model on threadpool threads from the default one.
             t_comState |= ComState.Locked;
         }
 

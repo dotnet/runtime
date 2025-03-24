@@ -25,7 +25,15 @@ namespace
         iter++;
         path.Truncate(iter);
         path.Append(CDAC_LIB_NAME);
+
+#ifdef HOST_WINDOWS
+        // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR tells the native windows loader to load dependencies
+        // from the same directory as cdacreader.dll. Once the native portions of the cDAC
+        // are statically linked, this won't be required.
+        *phCDAC = CLRLoadLibraryEx(path.GetUnicode(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
+#else // !HOST_WINDOWS
         *phCDAC = CLRLoadLibrary(path.GetUnicode());
+#endif // HOST_WINDOWS
         if (*phCDAC == NULL)
             return false;
 
@@ -36,6 +44,26 @@ namespace
     {
         ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
         HRESULT hr = ReadFromDataTarget(target, addr, dest, count);
+        if (FAILED(hr))
+            return hr;
+
+        return S_OK;
+    }
+
+    int ReadThreadContext(uint32_t threadId, uint32_t contextFlags, uint32_t contextBufferSize, uint8_t* contextBuffer, void* context)
+    {
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        HRESULT hr = target->GetThreadContext(threadId, contextFlags, contextBufferSize, contextBuffer);
+        if (FAILED(hr))
+            return hr;
+
+        return S_OK;
+    }
+
+    int GetPlatform(uint32_t* platform, void* context)
+    {
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        HRESULT hr = target->GetPlatform((CorDebugPlatform*)platform);
         if (FAILED(hr))
             return hr;
 
@@ -53,7 +81,7 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
     _ASSERTE(init != nullptr);
 
     intptr_t handle;
-    if (init(descriptorAddr, &ReadFromTargetCallback, target, &handle) != 0)
+    if (init(descriptorAddr, &ReadFromTargetCallback, &ReadThreadContext, &GetPlatform, target, &handle) != 0)
     {
         ::FreeLibrary(cdacLib);
         return {};

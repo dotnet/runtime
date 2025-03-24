@@ -194,6 +194,8 @@ unsafe class Program
         int byteVectorLength = 16;
 #elif VECTORT256_INTRINSICS
         int byteVectorLength = 32;
+#elif VECTORT512_INTRINSICS
+        int byteVectorLength = 64;
 #else
 #error Who dis?
 #endif

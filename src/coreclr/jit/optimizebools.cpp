@@ -866,6 +866,23 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     m_comp->fgRemoveRefPred(oldFalseEdge);
     m_comp->fgRemoveBlock(m_b2, true);
 
+    // Update profile
+    if (m_b1->hasProfileWeight())
+    {
+        BasicBlock* const trueTarget  = m_b1->GetTrueTarget();
+        BasicBlock* const falseTarget = m_b1->GetFalseTarget();
+        trueTarget->setBBProfileWeight(trueTarget->computeIncomingWeight());
+        falseTarget->setBBProfileWeight(falseTarget->computeIncomingWeight());
+
+        if ((trueTarget->NumSucc() > 0) || (falseTarget->NumSucc() > 0))
+        {
+            JITDUMP("optOptimizeRangeTests: Profile needs to be propagated through " FMT_BB
+                    "'s successors. Data %s inconsistent.\n",
+                    m_b1->bbNum, m_comp->fgPgoConsistent ? "is now" : "was already");
+            m_comp->fgPgoConsistent = false;
+        }
+    }
+
     Statement* const stmt = m_b1->lastStmt();
     m_comp->gtSetStmtInfo(stmt);
     m_comp->fgSetStmtSeq(stmt);
@@ -1055,8 +1072,13 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_comp->fgSetStmtSeq(s2);
 
     // Update the flow.
-    m_comp->fgRemoveRefPred(m_b1->GetTrueEdge());
-    m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, m_b1->GetFalseEdge());
+    FlowEdge* const removedEdge  = m_b1->GetTrueEdge();
+    FlowEdge* const retainedEdge = m_b1->GetFalseEdge();
+    m_comp->fgRemoveRefPred(removedEdge);
+    m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+
+    // Repair profile.
+    m_comp->fgRepairProfileCondToUncond(m_b1, retainedEdge, removedEdge);
 
     // Fixup flags.
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
@@ -1338,6 +1360,23 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         // Fix B1 false edge likelihood
         //
         newB1FalseEdge->setLikelihood(1.0 - newB1TrueLikelihood);
+
+        // Update profile
+        if (m_b1->hasProfileWeight())
+        {
+            BasicBlock* const trueTarget  = origB1TrueEdge->getDestinationBlock();
+            BasicBlock* const falseTarget = newB1FalseEdge->getDestinationBlock();
+            trueTarget->setBBProfileWeight(trueTarget->computeIncomingWeight());
+            falseTarget->setBBProfileWeight(falseTarget->computeIncomingWeight());
+
+            if ((trueTarget->NumSucc() > 0) || (falseTarget->NumSucc() > 0))
+            {
+                JITDUMP("optOptimizeRangeTests: Profile needs to be propagated through " FMT_BB
+                        "'s successors. Data %s inconsistent.\n",
+                        m_b1->bbNum, m_comp->fgPgoConsistent ? "is now" : "was already");
+                m_comp->fgPgoConsistent = false;
+            }
+        }
     }
 
     // Get rid of the second block

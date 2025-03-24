@@ -6,6 +6,7 @@
     <EnableDefaultItems>false</EnableDefaultItems>
     <!-- setting WasmXHarnessMonoArgs doesn't work here, but see main.js -->
     <!-- <WasmXHarnessMonoArgs>- -setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug</WasmXHarnessMonoArgs> -->
+    <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
