@@ -83,25 +83,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                           SIZE_T *entry,
                           BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
-//
-// The legacy x86 monitor helpers do not need a state argument
-//
-#if !defined(TARGET_X86)
-
-#define FCDECL_MONHELPER(funcname, arg) FCDECL2(void, funcname, arg, BYTE* pbLockTaken)
-#define HCIMPL_MONHELPER(funcname, arg) HCIMPL2(void, funcname, arg, BYTE* pbLockTaken)
-#define MONHELPER_STATE(x) x
-#define MONHELPER_ARG pbLockTaken
-
-#else
-
-#define FCDECL_MONHELPER(funcname, arg) FCDECL1(void, funcname, arg)
-#define HCIMPL_MONHELPER(funcname, arg) HCIMPL1(void, funcname, arg)
-#define MONHELPER_STATE(x)
-#define MONHELPER_ARG NULL
-
-#endif // TARGET_X86
-
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
 EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
 EXTERN_C FCDECL1(void, JIT_PartialCompilationPatchpoint, int ilOffset);
@@ -113,42 +94,6 @@ EXTERN_C FCDECL1(void, JIT_PartialCompilationPatchpoint, int ilOffset);
 //
 
 EXTERN_C FCDECL0(void, JIT_PollGC);
-
-#ifndef JIT_MonEnter
-#define JIT_MonEnter JIT_MonEnter_Portable
-#endif
-EXTERN_C FCDECL1(void, JIT_MonEnter, Object *obj);
-EXTERN_C FCDECL1(void, JIT_MonEnter_Portable, Object *obj);
-
-#ifndef JIT_MonEnterWorker
-#define JIT_MonEnterWorker JIT_MonEnterWorker_Portable
-#endif
-EXTERN_C FCDECL_MONHELPER(JIT_MonEnterWorker, Object *obj);
-EXTERN_C FCDECL_MONHELPER(JIT_MonEnterWorker_Portable, Object *obj);
-
-#ifndef JIT_MonReliableEnter
-#define JIT_MonReliableEnter JIT_MonReliableEnter_Portable
-#endif
-EXTERN_C FCDECL2(void, JIT_MonReliableEnter, Object* obj, BYTE *tookLock);
-EXTERN_C FCDECL2(void, JIT_MonReliableEnter_Portable, Object* obj, BYTE *tookLock);
-
-#ifndef JIT_MonTryEnter
-#define JIT_MonTryEnter JIT_MonTryEnter_Portable
-#endif
-EXTERN_C FCDECL3(void, JIT_MonTryEnter, Object *obj, INT32 timeout, BYTE* pbLockTaken);
-EXTERN_C FCDECL3(void, JIT_MonTryEnter_Portable, Object *obj, INT32 timeout, BYTE* pbLockTaken);
-
-#ifndef JIT_MonExit
-#define JIT_MonExit JIT_MonExit_Portable
-#endif
-EXTERN_C FCDECL1(void, JIT_MonExit, Object *obj);
-EXTERN_C FCDECL1(void, JIT_MonExit_Portable, Object *obj);
-
-#ifndef JIT_MonExitWorker
-#define JIT_MonExitWorker JIT_MonExitWorker_Portable
-#endif
-EXTERN_C FCDECL_MONHELPER(JIT_MonExitWorker, Object *obj);
-EXTERN_C FCDECL_MONHELPER(JIT_MonExitWorker_Portable, Object *obj);
 
 #ifndef JIT_GetGCStaticBase
 #define JIT_GetGCStaticBase NULL
@@ -208,12 +153,8 @@ extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arra
 extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 
-EXTERN_C FCDECL_MONHELPER(JITutil_MonEnterWorker, Object* obj);
 EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
 EXTERN_C FCDECL3(void, JITutil_MonTryEnter, Object* obj, INT32 timeOut, BYTE* pbLockTaken);
-EXTERN_C FCDECL_MONHELPER(JITutil_MonExitWorker, Object* obj);
-EXTERN_C FCDECL_MONHELPER(JITutil_MonSignal, AwareLock* lock);
-EXTERN_C FCDECL_MONHELPER(JITutil_MonContention, AwareLock* awarelock);
 EXTERN_C FCDECL2(void, JITutil_MonReliableContention, AwareLock* awarelock, BYTE* pbLockTaken);
 
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase_Helper, MethodTable *pMT);
