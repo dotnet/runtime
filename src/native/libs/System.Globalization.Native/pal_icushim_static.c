@@ -216,6 +216,15 @@ int32_t GlobalizationNative_LoadICU(void)
     }
 #endif
 
+#if defined(EMBEDDED_ICU_DATA_HEADER)
+    #include EMBEDDED_ICU_DATA_HEADER
+
+    if (!load_icu_data(icu_data))
+    {
+        return 0;
+    }
+#endif
+
     UErrorCode status = 0;
     UVersionInfo version;
     // Request the CLDR version to perform basic ICU initialization and find out
