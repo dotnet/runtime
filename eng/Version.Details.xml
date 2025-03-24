@@ -402,9 +402,9 @@
       <Sha>bfe9d9f9059008d919d867fe5bdfabfe8b6ed69d</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="10.0.100-preview.3.25126.5">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="10.0.100-preview.3.25173.9">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>c921fd0a32c3e6001b10791dd0a30f8ef80f915f</Sha>
+      <Sha>5ebd5267376b61d01b4afc9d4cf9c832488312b2</Sha>
     </Dependency>
     <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.25104.10">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
