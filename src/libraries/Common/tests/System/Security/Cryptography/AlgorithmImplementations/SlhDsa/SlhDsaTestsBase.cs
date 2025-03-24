@@ -3,13 +3,21 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
     public abstract class SlhDsaTestsBase
     {
-        public static bool SupportedOnPlatform => PlatformDetection.OpenSslPresentOnSystem;
+        /// <summary>
+        /// Gets whether the platform has native support for SLH-DSA. Note that SLH-DSA may still be
+        /// used on the platform if it doesn't rely on native support (e.g. KeyVault keys).
+        /// </summary>
+        public static bool SupportedOnPlatform => false; // TODO: Once SLH-DSA is supported on a platform, set this to check for that platform.
+
+        /// <summary>
+        /// Gets whether the platform lacks native support for SLH-DSA. Note that SLH-DSA may still be
+        /// used on the platform if it doesn't rely on native support (e.g. KeyVault keys).
+        /// </summary>
         public static bool NotSupportedOnPlatform => !SupportedOnPlatform;
 
         public static IEnumerable<object[]> AlgorithmsData => AlgorithmsRaw.Select(a => new[] { a });

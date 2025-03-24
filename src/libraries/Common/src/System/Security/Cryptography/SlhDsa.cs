@@ -700,8 +700,8 @@ namespace System.Security.Cryptography
         /// </returns>
         public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm)
         {
-            ThrowIfNotSupported();
             ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNotSupported();
 
             return SlhDsaImplementation.GenerateKeyCore(algorithm);
         }
@@ -1012,8 +1012,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
             ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNotSupported();
 
             if (source.Length != algorithm.PublicKeySizeInBytes)
             {
@@ -1050,8 +1050,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
             ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNotSupported();
 
             if (source.Length != algorithm.SecretKeySizeInBytes)
             {
@@ -1088,8 +1088,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
             ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNotSupported();
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
             {
