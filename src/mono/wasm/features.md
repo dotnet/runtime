@@ -408,7 +408,7 @@ You can enable integration with the profiler in browser dev tools via following 
 </PropertyGroup>
 ```
 
-### Legacy Mono Log Profiling
+### Log Profiling for Memory Troubleshooting
 
 You can enable integration with log profiler via following elements in your .csproj:
 

@@ -1357,7 +1357,7 @@ sample_current_thread_stack_trace ()
 	data->stack_walk_data.runtime_invoke_frame = false;
 	ep_stack_contents_reset (&data->stack_contents);
 
-	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, NULL, MONO_UNWIND_NONE, &stack_walk_data);
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, NULL, MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
 	if (data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && (data->stack_walk_data.safe_point_frame || data->stack_walk_data.runtime_invoke_frame)) {
 		data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
 	}
@@ -1421,6 +1421,7 @@ static bool should_record_sample ()
 static void
 method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
+	sample_skip_counter++;
 	if (should_record_sample ()) {
 		sample_current_thread_stack_trace ();
 	}
@@ -1429,6 +1430,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 static void
 method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
+	sample_skip_counter++;
 	if (should_record_sample ()) {
 		sample_current_thread_stack_trace ();
 	}
@@ -1437,6 +1439,7 @@ method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallCont
 static void
 method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
+	sample_skip_counter++;
 	if (should_record_sample ()) {
 		sample_current_thread_stack_trace ();
 	}
@@ -1445,14 +1448,13 @@ method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 {
-	if (should_record_sample ()) {
-		sample_current_thread_stack_trace ();
-	}
+	sample_skip_counter++;
 }
 
 static void
 tail_call (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
 {
+	sample_skip_counter++;
 	if (should_record_sample ()) {
 		sample_current_thread_stack_trace ();
 	}
