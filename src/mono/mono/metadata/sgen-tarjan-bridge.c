@@ -368,16 +368,7 @@ static const char*
 safe_name_bridge (GCObject *obj)
 {
 	GCVTable vt = SGEN_LOAD_VTABLE (obj);
-	return vt->klass->name;
-}
-
-static ScanData*
-find_or_create_data (GCObject *obj)
-{
-	ScanData *entry = find_data (obj);
-	if (!entry)
-		entry = create_data (obj);
-	return entry;
+	return m_class_get_name (vt->klass);
 }
 #endif
 
@@ -668,11 +659,11 @@ compute_low_index (ScanData *data, GCObject *obj)
 	obj = bridge_object_forward (obj);
 	other = find_data (obj);
 
-#if DUMP_GRAPH
-	printf ("\tcompute low %p ->%p (%s) %p (%d / %d, color %p)\n", data->obj, obj, safe_name_bridge (obj), other, other ? other->index : -2, other ? other->low_index : -2, other->color);
-#endif
 	if (!other)
 		return;
+#if DUMP_GRAPH
+	printf ("\tcompute low %p ->%p (%s) %p (%d / %d, color %p)\n", data->obj, obj, safe_name_bridge (obj), other, other ? other->index : -2, other->low_index, other->color);
+#endif
 
 	g_assert (other->state != INITIAL);
 
@@ -762,7 +753,7 @@ create_scc (ScanData *data)
 #if DUMP_GRAPH
 	printf ("|SCC %p rooted in %s (%p) has bridge %d\n", color_data, safe_name_bridge (data->obj), data->obj, found_bridge);
 	printf ("\tloop stack: ");
-	for (int i = 0; i < dyn_array_ptr_size (&loop_stack); ++i) {
+	for (i = 0; i < dyn_array_ptr_size (&loop_stack); ++i) {
 		ScanData *other = dyn_array_ptr_get (&loop_stack, i);
 		printf ("(%d/%d)", other->index, other->low_index);
 	}
@@ -806,10 +797,12 @@ create_scc (ScanData *data)
 	g_assert (found);
 
 #if DUMP_GRAPH
-	printf ("\tpoints-to-colors: ");
-	for (int i = 0; i < dyn_array_ptr_size (&color_data->other_colors); i++)
-		printf ("%p ", dyn_array_ptr_get (&color_data->other_colors, i));
-	printf ("\n");
+    if (color_data) {
+        printf ("\tpoints-to-colors: ");
+        for (i = 0; i < dyn_array_ptr_size (&color_data->other_colors); i++)
+            printf ("%p ", dyn_array_ptr_get (&color_data->other_colors, i));
+        printf ("\n");
+    }
 #endif
 }
 
@@ -934,8 +927,11 @@ dump_color_table (const char *why, gboolean do_index)
 				printf (" bridges: ");
 				for (j = 0; j < dyn_array_ptr_size (&cd->bridges); ++j) {
 					GCObject *obj = dyn_array_ptr_get (&cd->bridges, j);
-					ScanData *data = find_or_create_data (obj);
-					printf ("%d ", data->index);
+					ScanData *data = find_data (obj);
+					if (!data)
+						printf ("%p ", obj);
+					else
+						printf ("%p(%d) ", obj, data->index);
 				}
 			}
 			printf ("\n");
@@ -995,7 +991,7 @@ processing_stw_step (void)
 #if defined (DUMP_GRAPH)
 	printf ("----summary----\n");
 	printf ("bridges:\n");
-	for (int i = 0; i < bridge_count; ++i) {
+	for (i = 0; i < bridge_count; ++i) {
 		ScanData *sd = find_data (dyn_array_ptr_get (&registered_bridges, i));
 		printf ("\t%s (%p) index %d color %p\n", safe_name_bridge (sd->obj), sd->obj, sd->index, sd->color);
 	}

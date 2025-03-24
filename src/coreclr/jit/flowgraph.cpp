@@ -48,6 +48,10 @@ static bool blockNeedsGCPoll(BasicBlock* block)
                         blockMayNeedGCPoll = true;
                     }
                 }
+                else if (tree->OperGet() == GT_GCPOLL)
+                {
+                    blockMayNeedGCPoll = true;
+                }
             }
         }
     }
@@ -2806,6 +2810,58 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// fgSimpleLowerBswap16 : Optimization to remove CAST nodes from operands of small ops that depents on
+// lower bits only (currently only BSWAP16).
+// Example:
+//      BSWAP16(CAST(x)) transforms to BSWAP16(x)
+//
+// Returns:
+//      True or false, representing changes were made.
+//
+// Notes:
+//      This optimization could be done in morph, but it cannot because there are correctness
+//      problems with NOLs (normalized-on-load locals) and how they are handled in VN.
+//      Simple put, you cannot remove a CAST from CAST(LCL_VAR{nol}) in HIR.
+//
+//      Because the optimization happens during rationalization, turning into LIR, it is safe to remove the CAST.
+//
+bool Compiler::fgSimpleLowerBswap16(LIR::Range& range, GenTree* op)
+{
+    assert(op->OperIs(GT_BSWAP16));
+
+    if (opts.OptimizationDisabled())
+        return false;
+
+    // When openrand is a integral cast
+    // When both source and target sizes are at least the operation size
+    bool madeChanges = false;
+
+    if (op->gtGetOp1()->OperIs(GT_CAST))
+    {
+        GenTreeCast* op1 = op->gtGetOp1()->AsCast();
+
+        if (!op1->gtOverflow() && (genTypeSize(op1->CastToType()) >= 2) &&
+            genActualType(op1->CastFromType()) == TYP_INT)
+        {
+            // This cast does not affect the lower 16 bits. It can be removed.
+            op->AsOp()->gtOp1 = op1->CastOp();
+            range.Remove(op1);
+            madeChanges = true;
+        }
+    }
+
+#ifdef DEBUG
+    if (madeChanges)
+    {
+        JITDUMP("Lower - Downcast of Small Op %s:\n", GenTree::OpName(op->OperGet()));
+        DISPTREE(op);
+    }
+#endif // DEBUG
+
+    return madeChanges;
 }
 
 //------------------------------------------------------------------------------
@@ -6140,14 +6196,30 @@ bool FlowGraphNaturalLoop::CanDuplicateWithEH(INDEBUG(const char** reason))
             // Check if this is an "outermost" try within the loop.
             // If so, we have more checking to do later on.
             //
-            const bool headerInTry         = header->hasTryIndex();
-            unsigned   blockIndex          = block->getTryIndex();
-            unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndex(blockIndex);
+            bool const     headerIsInTry     = header->hasTryIndex();
+            unsigned const blockTryIndex     = block->getTryIndex();
+            unsigned const enclosingTryIndex = comp->ehTrueEnclosingTryIndex(blockTryIndex);
 
-            if ((headerInTry && (outermostBlockIndex == header->getTryIndex())) ||
-                (!headerInTry && (outermostBlockIndex == EHblkDsc::NO_ENCLOSING_INDEX)))
+            if ((headerIsInTry && (enclosingTryIndex == header->getTryIndex())) ||
+                (!headerIsInTry && (enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)))
             {
-                tryRegionsToClone.Push(block);
+                // When we clone a try we also clone its handler.
+                //
+                // This try may be enclosed in a handler whose try begin is in the loop.
+                // If so we'll clone this try when we clone (the handler of) that try.
+                //
+                bool isInHandlerOfInLoopTry = false;
+                if (block->hasHndIndex())
+                {
+                    unsigned const    enclosingHndIndex = block->getHndIndex();
+                    BasicBlock* const associatedTryBeg  = comp->ehGetDsc(enclosingHndIndex)->ebdTryBeg;
+                    isInHandlerOfInLoopTry              = this->ContainsBlock(associatedTryBeg);
+                }
+
+                if (!isInHandlerOfInLoopTry)
+                {
+                    tryRegionsToClone.Push(block);
+                }
             }
         }
 

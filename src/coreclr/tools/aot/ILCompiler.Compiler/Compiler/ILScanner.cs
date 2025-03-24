@@ -636,8 +636,7 @@ namespace ILCompiler
                 }
 
                 if (baseType.IsCanonicalSubtype(CanonicalFormKind.Any)
-                    || baseType.ConvertToCanonForm(CanonicalFormKind.Specific) != baseType
-                    || baseType.Context.SupportsUniversalCanon)
+                    || baseType.ConvertToCanonForm(CanonicalFormKind.Specific) != baseType)
                 {
                     // If the interface has a canonical form, we might not have a full view of all implementers.
                     // E.g. if we have:

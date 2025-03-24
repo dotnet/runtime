@@ -191,7 +191,9 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 
     if (pwzILPath != NULL)
     {
-        pILImage = PEImage::OpenImage(pwzILPath);
+        pILImage = PEImage::OpenImage(pwzILPath,
+                                      MDInternalImport_Default,
+                                      BundleFileLocation::Invalid());
 
         // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())
