@@ -3413,16 +3413,3 @@ bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum)
 
     return true;
 }
-
-/*********************************************************************/
-// Initialize the part of the JIT helpers that require much of the
-// EE infrastructure to be in place.
-/*********************************************************************/
-void InitJITHelpers2()
-{
-    STANDARD_VM_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-    SetJitHelperFunction(CORINFO_HELP_INIT_PINVOKE_FRAME, (void *)GenerateInitPInvokeFrameHelper()->GetEntryPoint());
-#endif // TARGET_X86 || TARGET_ARM
-}
