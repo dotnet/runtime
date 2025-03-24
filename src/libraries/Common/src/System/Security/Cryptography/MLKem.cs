@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
@@ -467,7 +467,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
@@ -500,7 +500,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, byte[] source)
         {
@@ -526,7 +526,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
@@ -558,7 +558,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
@@ -583,7 +583,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
@@ -615,7 +615,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
@@ -801,7 +801,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
