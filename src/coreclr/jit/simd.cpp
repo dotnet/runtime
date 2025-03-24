@@ -169,7 +169,7 @@ unsigned Compiler::getFFRegisterVarNum()
 //    to determine if this api needs to be called.
 //
 //    The type handle passed here can only be used in a subset of JIT-EE calls
-//    since it may be called by promotion during prejit of a method that does
+//    since it may be called by promotion during AOT of a method that does
 //    not version with SPC. See CORINFO_TYPE_LAYOUT_NODE for the contract on
 //    the supported JIT-EE calls.
 //

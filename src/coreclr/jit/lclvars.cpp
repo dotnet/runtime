@@ -2466,7 +2466,7 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
     // In R2R we cannot query arbitrary information about struct fields, so
     // skip it there. Note that the getTypeLayout call above is enough to cover
     // us for promotion at least.
-    if (!opts.IsReadyToRun())
+    if (!IsAot())
     {
         for (unsigned int i = 0; i < fieldCnt; i++)
         {

@@ -1549,6 +1549,21 @@ void EEJitManager::SetCpuInfo()
     {
         g_arm64_atomics_present = true;
     }
+#elif defined(TARGET_RISCV64)
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
+    {
+        CPUCompileFlags.Set(InstructionSet_RiscV64Base);
+    }
+
+    if (((cpuFeatures & RiscV64IntrinsicConstants_Zba) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zba))
+    {
+        CPUCompileFlags.Set(InstructionSet_Zba);
+    }
+
+    if (((cpuFeatures & RiscV64IntrinsicConstants_Zbb) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zbb))
+    {
+        CPUCompileFlags.Set(InstructionSet_Zbb);
+    }
 #endif
 
     // These calls are very important as it ensures the flags are consistent with any

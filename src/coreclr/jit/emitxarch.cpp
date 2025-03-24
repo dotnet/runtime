@@ -14228,12 +14228,12 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 
 #ifdef DEBUG
     // For cases where 'align' was placed behind a 'jmp' in an IG that does not
-    // immediately preced the loop IG, we do not know in advance the offset of
+    // immediately precede the loop IG, we do not know in advance the offset of
     // IG having loop. For such cases, skip the padding calculation validation.
 
-    // For prejit, `dst` is not aliged as requested, but the final assembly will have them aligned.
+    // For AOT, `dst` is not aligned as requested, but the final assembly will have them aligned.
     // So, just calculate the offset of the current `dst` from the start.
-    size_t offset = emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) ? emitCurCodeOffs(dst) : (size_t)dst;
+    size_t offset          = emitComp->IsAot() ? emitCurCodeOffs(dst) : (size_t)dst;
     bool   validatePadding = !alignInstr->isPlacedAfterJmp;
 #endif
 
@@ -14802,7 +14802,7 @@ GOT_DSP:
                     }
 #else  // TARGET_AMD64
        // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
-       // This addr mode should never be used while generating relocatable ngen code nor if
+       // This addr mode should never be used while generating relocatable AOT code nor if
        // the addr can be encoded as pc-relative address.
                     noway_assert(!emitComp->opts.compReloc);
                     noway_assert(codeGen->genAddrRelocTypeHint((size_t)dsp) != IMAGE_REL_BASED_REL32);
@@ -18433,7 +18433,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     dst += emitOutputWord(dst, code | 0x0500);
 #else  // TARGET_AMD64
        // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
-       // This addr mode should never be used while generating relocatable ngen code nor if
+       // This addr mode should never be used while generating relocatable AOT code nor if
        // the addr can be encoded as pc-relative address.
                     noway_assert(!emitComp->opts.compReloc);
                     noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != IMAGE_REL_BASED_REL32);

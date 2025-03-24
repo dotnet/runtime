@@ -883,7 +883,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 if (curAssertion->op1.kind == O1K_EXACT_TYPE)
                 {
                     ssize_t iconVal = curAssertion->op2.u1.iconVal;
-                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                    if (IsAot())
                     {
                         printf("Exact Type MT(0x%p)", dspPtr(iconVal));
                     }
@@ -903,7 +903,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 else if (curAssertion->op1.kind == O1K_SUBTYPE)
                 {
                     ssize_t iconVal = curAssertion->op2.u1.iconVal;
-                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                    if (IsAot())
                     {
                         printf("MT(0x%p)", dspPtr(iconVal));
                     }
