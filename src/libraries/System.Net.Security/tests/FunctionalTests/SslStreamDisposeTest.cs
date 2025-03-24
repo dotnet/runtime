@@ -4,6 +4,7 @@
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Security.Authentication;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -115,7 +116,7 @@ namespace System.Net.Security.Tests
                 // use real Tcp streams to avoid specific behavior of ConnectedStreams when concurrently disposed
                 (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedTcpStreams();
 
-                using SslStream sslStream = new SslStream(clientStream);
+                using SslStream client = new SslStream(clientStream);
                 using SslStream server = new SslStream(serverStream);
                 using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
                 using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
