@@ -242,28 +242,28 @@ namespace System.Security.Cryptography.Tests
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        public static void SubjectPublicKeyInfo_MLKem512_Ietf(bool tryExport)
+        public static void SubjectPublicKeyInfo_MLKem512_Ietf(bool useTryExport)
         {
             using MLKem kem = MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem512, IncrementalSeed);
-            AssertSubjectPublicKeyInfo(kem, tryExport, MLKemTestData.IetfMlKem512Spki);
+            AssertSubjectPublicKeyInfo(kem, useTryExport, MLKemTestData.IetfMlKem512Spki);
         }
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        public static void SubjectPublicKeyInfo_MLKem768_Ietf(bool tryExport)
+        public static void SubjectPublicKeyInfo_MLKem768_Ietf(bool useTryExport)
         {
             using MLKem kem = MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem768, IncrementalSeed);
-            AssertSubjectPublicKeyInfo(kem, tryExport, MLKemTestData.IetfMlKem768Spki);
+            AssertSubjectPublicKeyInfo(kem, useTryExport, MLKemTestData.IetfMlKem768Spki);
         }
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        public static void SubjectPublicKeyInfo_MLKem1024_Ietf(bool tryExport)
+        public static void SubjectPublicKeyInfo_MLKem1024_Ietf(bool useTryExport)
         {
             using MLKem kem = MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem1024, IncrementalSeed);
-            AssertSubjectPublicKeyInfo(kem, tryExport, MLKemTestData.IetfMlKem1024Spki);
+            AssertSubjectPublicKeyInfo(kem, useTryExport, MLKemTestData.IetfMlKem1024Spki);
         }
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
