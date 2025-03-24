@@ -202,11 +202,7 @@ private:
             ThrowCallbackType& tct,
             Frame *pStartFrame);
 
-    friend EXCEPTION_DISPOSITION __cdecl
-    COMPlusFrameHandler(EXCEPTION_RECORD *pExceptionRecord,
-                        EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,
-                        CONTEXT *pContext,
-                        DISPATCHER_CONTEXT *pDispatcherContext);
+    friend _EXCEPTION_HANDLER_DECL(COMPlusFrameHandler);
 
     friend EXCEPTION_DISPOSITION __cdecl
     CPFH_RealFirstPassHandler(EXCEPTION_RECORD *pExceptionRecord,

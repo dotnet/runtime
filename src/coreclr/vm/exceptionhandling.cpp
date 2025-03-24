@@ -49,6 +49,12 @@ ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord,
                  UINT_PTR          TargetFrameSp);
 #endif // !TARGET_UNIX
 
+EXCEPTION_HANDLER_DECL(CallDescrWorkerUnwindFrameChainHandler);
+EXCEPTION_HANDLER_DECL(ReverseComUnwindFrameChainHandler);
+EXCEPTION_HANDLER_DECL(HijackHandler);
+EXCEPTION_HANDLER_DECL(FixRedirectContextHandler);
+EXCEPTION_HANDLER_DECL(UMEntryPrestubUnwindFrameChainHandler);
+
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
 VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartContext);
 #endif // TARGET_UNIX && !DACCESS_COMPILE

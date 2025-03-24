@@ -202,7 +202,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
     extern "C"  _EXCEPTION_HANDLER_DECL(funcname)
 
 #define EXCEPTION_HANDLER_IMPL(funcname) \
-    extern "C"  _EXCEPTION_HANDLER_DECL(funcname)
+    _EXCEPTION_HANDLER_DECL(funcname)
 
 #define EXCEPTION_HANDLER_FWD(funcname) \
     funcname(pExceptionRecord, pEstablisherFrame, pContext, pDispatcherContext)
