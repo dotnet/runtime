@@ -137,6 +137,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/113839", TestRuntimes.Mono)]
         public void DefineConstructor_ExplicitThisCallingConventionsForInstanceMethod_ThrowsTypeLoadExceptionOnCreation()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
