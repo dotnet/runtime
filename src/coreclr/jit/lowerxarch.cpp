@@ -9662,25 +9662,27 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (varTypeIsIntegral(simdBaseType) && op1->OperIsHWIntrinsic())
                         {
-                            GenTreeHWIntrinsic* childNode = op1->AsHWIntrinsic();
+                            GenTreeHWIntrinsic* childNode      = op1->AsHWIntrinsic();
+                            NamedIntrinsic      childIntrinsic = childNode->GetHWIntrinsicId();
 
-                            if (childNode->Op(1)->OperIsLong())
+                            if (HWIntrinsicInfo::IsVectorCreateScalar(childIntrinsic) ||
+                                HWIntrinsicInfo::IsVectorCreateScalarUnsafe(childIntrinsic))
                             {
-                                // Decomposed longs require special codegen
-                                return;
-                            }
-
-                            if (HWIntrinsicInfo::IsVectorCreateScalarUnsafe(childNode->GetHWIntrinsicId()))
-                            {
-                                // We have a very special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
+                                // We have a very special case of BroadcastScalarToVector(CreateScalar/Unsafe(op1))
                                 //
                                 // This is one of the only instructions where it supports taking integer types from
                                 // a SIMD register or directly as a scalar from memory. Most other instructions, in
                                 // comparison, take such values from general-purpose registers instead.
                                 //
-                                // Because of this, we're going to remove the CreateScalarUnsafe and try to contain
+                                // Because of this, we're going to remove the CreateScalar/Unsafe and try to contain
                                 // op1 directly, we'll then special case the codegen to materialize the value into a
                                 // SIMD register in the case it is marked optional and doesn't get spilled.
+
+                                if (childNode->Op(1)->OperIsLong())
+                                {
+                                    // Decomposed longs require special codegen
+                                    return;
+                                }
 
                                 node->Op(1) = childNode->Op(1);
                                 BlockRange().Remove(op1);
