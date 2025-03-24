@@ -416,8 +416,8 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
                     return false;
                 }
 
-                // Cannot contain the cast if it may contain or is already containing a memory operation.
-                if (IsContainableMemoryOp(castOp) || castOp->isContained())
+                // Cannot contain the cast if it already contains it's CastOp.
+                if (castOp->isContained())
                 {
                     return false;
                 }
