@@ -318,11 +318,15 @@ namespace System.Security.Cryptography.X509Certificates
                 if (publicKey == null)
                 {
                     string keyAlgorithmOid = GetKeyAlgorithm();
-                    byte[] parameters = Pal.KeyAlgorithmParameters;
+                    byte[]? parameters = Pal.KeyAlgorithmParameters;
                     byte[] keyValue = Pal.PublicKeyValue;
                     Oid oid = new Oid(keyAlgorithmOid);
                     // PublicKey can use skipCopy because AsnEncodedData creates a defensive copy of the values.
-                    publicKey = _lazyPublicKey = new PublicKey(oid, new AsnEncodedData(oid, parameters), new AsnEncodedData(oid, keyValue), skipCopy: true);
+                    publicKey = _lazyPublicKey = new PublicKey(
+                        oid,
+                        parameters is null ? null : new AsnEncodedData(oid, parameters),
+                        new AsnEncodedData(oid, keyValue),
+                        skipCopy: true);
                 }
 
                 return publicKey;
@@ -591,7 +595,11 @@ namespace System.Security.Cryptography.X509Certificates
 
                 sb.Append("  ");
                 sb.Append("Parameters: ");
-                sb.Append(pubKey.EncodedParameters.Format(true));
+
+                if (pubKey.EncodedParameters is AsnEncodedData parameters)
+                {
+                    sb.Append(parameters.Format(true));
+                }
             }
             catch (CryptographicException)
             {

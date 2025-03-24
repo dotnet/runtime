@@ -1015,6 +1015,9 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
             case PRECODE_STUB:
             case PRECODE_NDIRECT_IMPORT:
             case PRECODE_UMENTRY_THUNK:
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+            case PRECODE_THISPTR_RETBUF:
+#endif // HAS_THISPTR_RETBUF_PRECODE
                 return TRUE;
             default:
                 return FALSE;
@@ -1501,14 +1504,15 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
     switch (GetStubKind(stubStartAddress))
     {
-    case STUB_CODE_BLOCK_PRECODE:
     case STUB_CODE_BLOCK_JUMPSTUB:
     case STUB_CODE_BLOCK_STUBLINK:
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
     case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
     case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
     case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
         return TRUE;
     default:
         break;
@@ -1531,20 +1535,19 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 
     switch (GetStubKind(stubStartAddress))
     {
-    case STUB_CODE_BLOCK_PRECODE:
-        return PrecodeStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
-
     case STUB_CODE_BLOCK_JUMPSTUB:
         return JumpStubStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
 
     case STUB_CODE_BLOCK_STUBLINK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
     case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
     case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
     case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
         return VirtualCallStubManagerManager::GlobalManager()->DoTraceStub(stubStartAddress, trace);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
 #ifdef DACCESS_COMPILE
@@ -1568,9 +1571,6 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
 
     switch (GetStubKind(addr))
     {
-    case STUB_CODE_BLOCK_PRECODE:
-        return W("MethodDescPrestub");
-
     case STUB_CODE_BLOCK_JUMPSTUB:
         return W("JumpStub");
 
@@ -1580,6 +1580,7 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return W("MethodCallThunk");
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
         return W("VSD_DispatchStub");
 
@@ -1591,6 +1592,7 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
 
     case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
         return W("VSD_VTableStub");
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
     default:
         break;
@@ -2206,7 +2208,9 @@ VirtualCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p VirtualCallStubManager\n", dac_cast<TADDR>(this)));
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     GetCacheEntryRangeList()->EnumMemoryRegions(flags);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)

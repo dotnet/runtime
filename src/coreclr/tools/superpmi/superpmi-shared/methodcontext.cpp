@@ -1240,11 +1240,6 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_SOFTFP_ABI";
 #endif // defined(TARGET_ARM)
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_VECTOR512_THROTTLING:
-        return "CORJIT_FLAG_VECTOR512_THROTTLING";
-#endif // defined(TARGET_XARCH)
-
     default:
         return "<unknown>";
     }

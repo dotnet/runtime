@@ -50,15 +50,6 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_warn_about_blocking_wait,
 ];
 
-export const mono_wasm_diagnostic_imports = [
-    //event pipe
-    ds_rt_websocket_create,
-    ds_rt_websocket_send,
-    ds_rt_websocket_poll,
-    ds_rt_websocket_recv,
-    ds_rt_websocket_close,
-];
-
 export const mono_wasm_imports = [
     // mini-wasm.c
     mono_wasm_schedule_timer,
@@ -101,13 +92,18 @@ export const mono_wasm_imports = [
     mono_wasm_resolve_or_reject_promise,
     mono_wasm_cancel_promise,
     mono_wasm_get_locale_info,
+
+    //event pipe
+    ds_rt_websocket_create,
+    ds_rt_websocket_send,
+    ds_rt_websocket_poll,
+    ds_rt_websocket_recv,
+    ds_rt_websocket_close,
 ];
 
 // !!! Keep in sync with exports-linker.ts
 const wasmImports: Function[] = [
     ...mono_wasm_imports,
-    // diagnostic server exports, when enabled
-    ...mono_wasm_diagnostic_imports,
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
 ];

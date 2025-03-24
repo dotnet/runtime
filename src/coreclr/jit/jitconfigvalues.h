@@ -119,6 +119,9 @@ CONFIG_INTEGER(JitInlinePrintStats, "JitInlinePrintStats", 0)
 CONFIG_INTEGER(JitInlineSize, "JITInlineSize", DEFAULT_MAX_INLINE_SIZE)
 CONFIG_INTEGER(JitInlineDepth, "JITInlineDepth", DEFAULT_MAX_INLINE_DEPTH)
 CONFIG_INTEGER(JitForceInlineDepth, "JITForceInlineDepth", DEFAULT_MAX_FORCE_INLINE_DEPTH)
+RELEASE_CONFIG_INTEGER(JitInlineMethodsWithEH, "JitInlineMethodsWithEH", 1)
+CONFIG_STRING(JitInlineMethodsWithEHRange, "JitInlineMethodsWithEHRange")
+
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
 
@@ -380,8 +383,6 @@ CONFIG_INTEGER(JitStressPromotedEvexEncoding, "JitStressPromotedEvexEncoding", 0
 // Enable EVEX encoding for SIMD instructions when AVX-512VL is available.
 CONFIG_INTEGER(JitStressEvexEncoding, "JitStressEvexEncoding", 0)
 #endif
-
-RELEASE_CONFIG_INTEGER(PreferredVectorBitWidth,     "PreferredVectorBitWidth",   0) // The preferred decimal width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
 
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
@@ -797,9 +798,6 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, "JitEnablePhysicalPromotion",
 
 // Enable cross-block local assertion prop
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, "JitEnableCrossBlockLocalAssertionProp", 1)
-
-// Do greedy RPO-based layout in Compiler::fgReorderBlocks.
-RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, "JitDoReversePostOrderLayout", 1);
 
 // Enable strength reduction
 RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, "JitEnableStrengthReduction", 1)
