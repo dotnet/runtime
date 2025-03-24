@@ -142,7 +142,7 @@ bool emitter::IsPermuteVar2xInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsPermuteVar2xInstruction: Is this an Avx512 KMOV instruction?
+// IsKMOVInstruction: Is this an Avx512 KMOV instruction?
 //
 // Arguments:
 //    ins - The instruction to check.
