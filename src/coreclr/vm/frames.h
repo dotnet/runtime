@@ -729,6 +729,9 @@ public:
 #elif defined(TARGET_RISCV64)
             Object** firstIntReg = (Object**)&this->GetContext()->Gp;
             Object** lastIntReg  = (Object**)&this->GetContext()->T6;
+#elif defined(TARGET_WASM)
+            Object** firstIntReg = nullptr;
+            Object** lastIntReg  = nullptr;
 #else
             _ASSERTE(!"nyi for platform");
 #endif
@@ -742,6 +745,14 @@ public:
 
 protected:
     PTR_CONTEXT m_Regs;
+
+    friend struct cdac_data<ResumableFrame>;
+};
+
+template<>
+struct cdac_data<ResumableFrame>
+{
+    static constexpr size_t TargetContextPtr = offsetof(ResumableFrame, m_Regs);
 };
 
 
@@ -1011,6 +1022,16 @@ public:
     }
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
+
+    friend struct ::cdac_data<FaultingExceptionFrame>;
+};
+
+template<>
+struct cdac_data<FaultingExceptionFrame>
+{
+#ifdef FEATURE_EH_FUNCLETS
+    static constexpr size_t TargetContext = offsetof(FaultingExceptionFrame, m_ctx);
+#endif // FEATURE_EH_FUNCLETS
 };
 
 #ifdef FEATURE_EH_FUNCLETS
@@ -1152,6 +1173,14 @@ public:
 
         return m_showFrame;
     }
+
+    friend struct cdac_data<FuncEvalFrame>;
+};
+
+template<>
+struct cdac_data<FuncEvalFrame>
+{
+    static constexpr size_t DebuggerEvalPtr = offsetof(FuncEvalFrame, m_pDebuggerEval);
 };
 
 typedef DPTR(FuncEvalFrame) PTR_FuncEvalFrame;
@@ -1669,8 +1698,15 @@ public:
 #endif
         return dac_cast<PTR_VOID>(p);
     }
+
+    friend struct cdac_data<FramedMethodFrame>;
 };
 
+template<>
+struct cdac_data<FramedMethodFrame>
+{
+    static constexpr size_t TransitionBlockPtr = offsetof(FramedMethodFrame, m_pTransitionBlock);
+};
 
 #ifdef FEATURE_COMINTEROP
 
@@ -1963,6 +1999,15 @@ protected:
     TADDR               m_ReturnAddress;
     PTR_Thread          m_Thread;
     DPTR(HijackArgs)    m_Args;
+
+    friend struct ::cdac_data<HijackFrame>;
+};
+
+template<>
+struct cdac_data<HijackFrame>
+{
+    static constexpr size_t ReturnAddress = offsetof(HijackFrame, m_ReturnAddress);
+    static constexpr size_t HijackArgsPtr = offsetof(HijackFrame, m_Args);
 };
 
 #endif // FEATURE_HIJACK

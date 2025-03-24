@@ -417,46 +417,4 @@ struct HijackArgs
     };
 };
 
-// Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
-struct ThisPtrRetBufPrecode {
-
-    static const int Type = 0x93;
-
-    UINT32  m_rgCode[6];
-    TADDR   m_pTarget;
-    TADDR   m_pMethodDesc;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
-
-    TADDR GetMethodDesc()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pMethodDesc;
-    }
-
-    PCODE GetTarget()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pTarget;
-    }
-
-#ifndef DACCESS_COMPILE
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-
-        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode));
-        return (TADDR)InterlockedCompareExchange64(
-            (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
-    }
-#endif // !DACCESS_COMPILE
-};
-typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
-
 #endif // __cgencpu_h__

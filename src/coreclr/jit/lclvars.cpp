@@ -4771,7 +4771,7 @@ bool Compiler::lvaIsPreSpilled(unsigned lclNum, regMaskTP preSpillMask)
 //
 void Compiler::lvaUpdateArgWithInitialReg(LclVarDsc* varDsc)
 {
-    noway_assert(varDsc->lvIsParam);
+    assert(varDsc->lvIsParam || varDsc->lvIsParamRegTarget);
 
     if (varDsc->lvIsRegCandidate())
     {
@@ -4790,20 +4790,11 @@ void Compiler::lvaUpdateArgsWithInitialReg()
         return;
     }
 
-    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-        if (varDsc->lvPromoted)
-        {
-            for (unsigned fieldVarNum = varDsc->lvFieldLclStart;
-                 fieldVarNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++fieldVarNum)
-            {
-                LclVarDsc* fieldVarDsc = lvaGetDesc(fieldVarNum);
-                lvaUpdateArgWithInitialReg(fieldVarDsc);
-            }
-        }
-        else
+        if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
         {
             lvaUpdateArgWithInitialReg(varDsc);
         }

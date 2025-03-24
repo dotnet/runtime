@@ -18,7 +18,7 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A sequence of values to shuffle.</param>
         /// <returns>A sequence whose elements correspond to those of the input sequence in randomized order.</returns>
-        /// <remarks>Randomization is performed using a non-cryptographically-secure random number generator.</remarks>
+        /// <remarks>Randomization is performed using a non-cryptographically secure random number generator.</remarks>
         public static IAsyncEnumerable<TSource> Shuffle<TSource>(
             this IAsyncEnumerable<TSource> source)
         {
