@@ -856,7 +856,10 @@ namespace System.Security.Cryptography
                     {
                         AsnValueReader reader = new(source, AsnEncodingRules.DER);
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-                        MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(spki.Algorithm.Algorithm);
+                        MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(spki.Algorithm.Algorithm) ??
+                            throw new CryptographicException(
+                                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier,
+                                spki.Algorithm.Algorithm));
 
                         // draft-ietf-lamps-kyber-certificates-07:
                         // The parameters field of the AlgorithmIdentifier for the ML-KEM public key MUST be absent.

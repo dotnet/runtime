@@ -160,15 +160,14 @@ namespace System.Security.Cryptography
             return !(left == right);
         }
 
-        internal static MLKemAlgorithm FromOid(string oid)
+        internal static MLKemAlgorithm? FromOid(string? oid)
         {
             return oid switch
             {
                 Oids.MlKem512 => MLKem512,
                 Oids.MlKem768 => MLKem768,
                 Oids.MlKem1024 => MLKem1024,
-                string other => throw new CryptographicException(
-                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, other)),
+                _ => null,
             };
         }
     }
