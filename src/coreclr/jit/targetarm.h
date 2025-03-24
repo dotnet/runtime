@@ -194,14 +194,6 @@
   // JMP Indirect call register
   #define REG_INDIRECT_CALL_TARGET_REG REG_R12
 
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_R4
-  #define RBM_PINVOKE_FRAME        RBM_R4
-  #define REG_PINVOKE_TCB          REG_R5
-  #define RBM_PINVOKE_TCB          RBM_R5
-  #define REG_PINVOKE_SCRATCH      REG_R6
-  #define RBM_PINVOKE_SCRATCH      RBM_R6
-
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_R0
   #define REG_INT_FIRST            REG_R0
@@ -240,9 +232,6 @@
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper (JIT_RareDisableHelper).
   // See vm\arm\amshelpers.asm for more details.
   #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_LNGRET|RBM_R7|RBM_R8|RBM_R11|RBM_DOUBLERET|RBM_F2|RBM_F3|RBM_F4|RBM_F5|RBM_F6|RBM_F7))
-
-  // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
-  #define RBM_INIT_PINVOKE_FRAME_TRASH (RBM_CALLEE_TRASH | RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH)
 
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH)
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_R0

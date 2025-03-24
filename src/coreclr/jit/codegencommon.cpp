@@ -729,9 +729,6 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_STOP_FOR_GC:
             return RBM_STOP_FOR_GC_TRASH;
 
-        case CORINFO_HELP_INIT_PINVOKE_FRAME:
-            return RBM_INIT_PINVOKE_FRAME_TRASH;
-
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             return RBM_VALIDATE_INDIRECT_CALL_TRASH;
 

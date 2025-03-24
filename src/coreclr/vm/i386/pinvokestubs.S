@@ -28,16 +28,3 @@ LEAF_ENTRY JIT_PInvokeEnd, _TEXT
         int 3
         ret
 LEAF_END JIT_PInvokeEnd, _TEXT
-
-//
-// IN:
-// InlinedCallFrame (edi) = pointer to the InlinedCallFrame data
-// OUT:
-// Thread (esi) = pointer to Thread data
-//
-//
-LEAF_ENTRY JIT_InitPInvokeFrame, _TEXT
-        // Not called by JIT, we use CORJIT_FLAG_USE_PINVOKE_HELPERS
-        int 3
-        ret
-LEAF_END JIT_InitPInvokeFrame, _TEXT

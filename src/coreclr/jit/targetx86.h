@@ -254,15 +254,6 @@
   #define REG_VIRTUAL_STUB_TARGET  REG_EAX
   #define RBM_VIRTUAL_STUB_TARGET  RBM_EAX
 
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_EDI      // EDI is p/invoke "Frame" pointer argument to CORINFO_HELP_INIT_PINVOKE_FRAME helper
-  #define RBM_PINVOKE_FRAME        RBM_EDI
-  #define REG_PINVOKE_TCB          REG_ESI      // ESI is set to Thread Control Block (TCB) on return from
-                                                // CORINFO_HELP_INIT_PINVOKE_FRAME helper
-  #define RBM_PINVOKE_TCB          RBM_ESI
-  #define REG_PINVOKE_SCRATCH      REG_EAX      // EAX is trashed by CORINFO_HELP_INIT_PINVOKE_FRAME helper
-  #define RBM_PINVOKE_SCRATCH      RBM_EAX
-
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
   #define REG_INT_FIRST            REG_EAX
@@ -286,10 +277,6 @@
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
   #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH
-
-  // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper. On x86, this helper has a custom calling
-  // convention that takes EDI as argument (but doesn't trash it), trashes EAX, and returns ESI.
-  #define RBM_INIT_PINVOKE_FRAME_TRASH  (RBM_PINVOKE_SCRATCH | RBM_PINVOKE_TCB)
 
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~RBM_ECX)
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_ECX

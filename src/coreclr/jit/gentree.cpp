@@ -1570,11 +1570,6 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
 {
     switch (arg)
     {
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-        // The x86 and arm32 CORINFO_HELP_INIT_PINVOKE_FRAME helpers have a custom calling convention.
-        case WellKnownArg::PInvokeFrame:
-            return REG_PINVOKE_FRAME;
-#endif
 #if defined(TARGET_ARM)
         // A non-standard calling convention using wrapper delegate invoke is used
         // on ARM, only, for wrapper delegates. It is used for VSD delegate calls

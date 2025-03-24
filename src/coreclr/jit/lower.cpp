@@ -5998,10 +5998,6 @@ void Lowering::InsertPInvokeMethodProlog()
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
     DISPTREERANGE(firstBlockRange, store);
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM)
-    // For x86, this step is done at the call site (due to stack pointer not being static in the function).
-    // For arm32, CallSiteSP is set up by the call to CORINFO_HELP_INIT_PINVOKE_FRAME.
-
     // --------------------------------------------------------
     // InlinedCallFrame.m_pCallSiteSP = @RSP;
 
@@ -6012,11 +6008,6 @@ void Lowering::InsertPInvokeMethodProlog()
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeSP));
     DISPTREERANGE(firstBlockRange, storeSP);
 
-#endif // !defined(TARGET_X86) && !defined(TARGET_ARM)
-
-#if !defined(TARGET_ARM)
-    // For arm32, CalleeSavedFP is set up by the call to CORINFO_HELP_INIT_PINVOKE_FRAME.
-
     // --------------------------------------------------------
     // InlinedCallFrame.m_pCalleeSavedEBP = @RBP;
 
@@ -6026,14 +6017,7 @@ void Lowering::InsertPInvokeMethodProlog()
 
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeFP));
     DISPTREERANGE(firstBlockRange, storeFP);
-#endif // !defined(TARGET_ARM)
 
-    // --------------------------------------------------------
-    // On 32-bit targets, CORINFO_HELP_INIT_PINVOKE_FRAME initializes the PInvoke frame and then pushes it onto
-    // the current thread's Frame stack. On 64-bit targets, it only initializes the PInvoke frame.
-    // As a result, don't push the frame onto the frame stack here for any 64-bit targets
-
-#ifdef TARGET_64BIT
 #ifdef USE_PER_FRAME_PINVOKE_INIT
     // For IL stubs, we push the frame once even when we're doing per-pinvoke init.
     if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
@@ -6045,7 +6029,6 @@ void Lowering::InsertPInvokeMethodProlog()
         ContainCheckStoreIndir(frameUpd->AsStoreInd());
         DISPTREERANGE(firstBlockRange, frameUpd);
     }
-#endif // TARGET_64BIT
 }
 
 //------------------------------------------------------------------------

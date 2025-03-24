@@ -3397,13 +3397,7 @@ void CodeGen::genCall(GenTreeCall* call)
         else
         {
 #ifdef TARGET_ARM
-            if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
-            {
-                // The CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
-                // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
-                returnReg = REG_PINVOKE_TCB;
-            }
-            else if (compiler->opts.compUseSoftFP)
+            if (compiler->opts.compUseSoftFP)
             {
                 returnReg = REG_INTRET;
             }

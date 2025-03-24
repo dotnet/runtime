@@ -98,17 +98,4 @@ RarePath:
 
 _JIT_PInvokeEnd@4 ENDP
 
-;
-; in:
-; InlinedCallFrame (edi) = pointer to the InlinedCallFrame data
-; out:
-; Thread (esi) = pointer to Thread data
-;
-;
-_JIT_InitPInvokeFrame@4 PROC public
-        ;; Not called by JIT, we use CORJIT_FLAG_USE_PINVOKE_HELPERS
-        int 3
-        ret
-_JIT_InitPInvokeFrame@4 ENDP
-
         end

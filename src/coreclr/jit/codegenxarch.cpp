@@ -6151,24 +6151,14 @@ void CodeGen::genCall(GenTreeCall* call)
             }
             else
             {
-#ifdef TARGET_X86
-                if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+                if (varTypeIsFloating(returnType))
                 {
-                    // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
-                    // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
-                    // correct argument registers.
-                    returnReg = REG_PINVOKE_TCB;
+                    returnReg = REG_FLOATRET;
                 }
                 else
-#endif // TARGET_X86
-                    if (varTypeIsFloating(returnType))
-                    {
-                        returnReg = REG_FLOATRET;
-                    }
-                    else
-                    {
-                        returnReg = REG_INTRET;
-                    }
+                {
+                    returnReg = REG_INTRET;
+                }
 
                 inst_Mov(returnType, call->GetRegNum(), returnReg, /* canSkip */ true);
             }

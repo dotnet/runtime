@@ -1236,41 +1236,31 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     // Set destination candidates for return value of the call.
 
-#ifdef TARGET_X86
-    if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+    if (!hasMultiRegRetVal)
     {
-        // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
-        // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
-        // correct argument registers.
-        singleDstCandidates = RBM_PINVOKE_TCB.GetIntRegSet();
-    }
-    else
-#endif // TARGET_X86
-        if (!hasMultiRegRetVal)
+        if (varTypeUsesFloatReg(registerType))
         {
-            if (varTypeUsesFloatReg(registerType))
-            {
 #ifdef TARGET_X86
-                // The return value will be on the X87 stack, and we will need to move it.
-                singleDstCandidates = allRegs(registerType);
+            // The return value will be on the X87 stack, and we will need to move it.
+            singleDstCandidates = allRegs(registerType);
 #else  // !TARGET_X86
             singleDstCandidates = RBM_FLOATRET.GetFloatRegSet();
 #endif // !TARGET_X86
+        }
+        else
+        {
+            assert(varTypeUsesIntReg(registerType));
+
+            if (registerType == TYP_LONG)
+            {
+                singleDstCandidates = RBM_LNGRET.GetIntRegSet();
             }
             else
             {
-                assert(varTypeUsesIntReg(registerType));
-
-                if (registerType == TYP_LONG)
-                {
-                    singleDstCandidates = RBM_LNGRET.GetIntRegSet();
-                }
-                else
-                {
-                    singleDstCandidates = RBM_INTRET.GetIntRegSet();
-                }
+                singleDstCandidates = RBM_INTRET.GetIntRegSet();
             }
         }
+    }
 
     bool callHasFloatRegArgs = false;
 

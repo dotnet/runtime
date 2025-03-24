@@ -10422,12 +10422,6 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             break;
 #endif // !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
-#if defined(TARGET_X86)
-        case CORINFO_HELP_INIT_PINVOKE_FRAME:
-            result = RBM_INIT_PINVOKE_FRAME_TRASH;
-            break;
-#endif // defined(TARGET_X86)
-
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             result = RBM_VALIDATE_INDIRECT_CALL_TRASH;
             break;
