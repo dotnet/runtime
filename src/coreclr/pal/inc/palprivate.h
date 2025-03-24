@@ -23,15 +23,6 @@ CreateFileA(
 PALIMPORT
 BOOL
 PALAPI
-CopyFileA(
-      IN LPCSTR lpExistingFileName,
-      IN LPCSTR lpNewFileName,
-      IN BOOL bFailIfExists);
-
-
-PALIMPORT
-BOOL
-PALAPI
 DeleteFileA(
         IN LPCSTR lpFileName);
 
@@ -77,15 +68,6 @@ GetFullPathNameA(
          IN DWORD nBufferLength,
          OUT LPSTR lpBuffer,
          OUT LPSTR *lpFilePart);
-
-PALIMPORT
-UINT
-PALAPI
-GetTempFileNameA(
-         IN LPCSTR lpPathName,
-         IN LPCSTR lpPrefixString,
-         IN UINT uUnique,
-         OUT LPSTR lpTempFileName);
 
 PALIMPORT
 DWORD

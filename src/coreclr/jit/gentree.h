@@ -483,7 +483,7 @@ enum GenTreeFlags : unsigned int
                                               //           This flag is useful in cases where it is required to generate register
                                               //           indirect addressing mode. One such case is virtual stub calls on xarch.
     GTF_IND_UNALIGNED           = 0x02000000, // OperIsIndir() -- the load or store is unaligned (we assume worst case alignment of 1 byte)
-    GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
+    GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (an AOT indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
     GTF_IND_INITCLASS           = 0x00200000, // OperIsIndir() -- the indirection requires preceding static cctor
     GTF_IND_ALLOW_NON_ATOMIC    = 0x00100000, // GT_IND -- this memory access does not need to be atomic
@@ -3261,7 +3261,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 
     /* The InitializeArray intrinsic needs to go back to the newarray statement
        to find the class handle of the array so that we can get its size.  However,
-       in ngen mode, the handle in that statement does not correspond to the compile
+       in AOT mode, the handle in that statement does not correspond to the compile
        time handle (rather it lets you get a handle at run-time).  In that case, we also
        need to store a compile time handle, which goes in this gtCompileTimeHandle field.
     */
@@ -6434,7 +6434,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryStoreOrBarrier() const;
     bool OperIsEmbBroadcastCompatible() const;
     bool OperIsBroadcastScalar() const;
-    bool OperIsCreateScalarUnsafe() const;
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
 
@@ -6788,26 +6787,25 @@ struct GenTreeVecCon : public GenTree
             case TYP_LONG:
             case TYP_ULONG:
             {
-#if defined(TARGET_64BIT)
-                if (arg->IsCnsIntOrI())
+                if (arg->IsIntegralConst())
                 {
-                    simdVal.i64[argIdx] = static_cast<int64_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i64[argIdx] = arg->AsIntConCommon()->IntegralValue();
                     return true;
                 }
-#else
-                if (arg->OperIsLong() && arg->AsOp()->gtOp1->IsCnsIntOrI() && arg->AsOp()->gtOp2->IsCnsIntOrI())
+#if !defined(TARGET_64BIT)
+                else if (arg->OperIsLong() && arg->gtGetOp1()->IsCnsIntOrI() && arg->gtGetOp2()->IsCnsIntOrI())
                 {
-                    // 32-bit targets will decompose GT_CNS_LNG into two GT_CNS_INT
+                    // 32-bit targets may decompose GT_CNS_LNG into two GT_CNS_INT
                     // We need to reconstruct the 64-bit value in order to handle this
 
-                    INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+                    INT64 gtLconVal = arg->gtGetOp2()->AsIntCon()->gtIconVal;
                     gtLconVal <<= 32;
-                    gtLconVal |= arg->AsOp()->gtOp1->AsIntCon()->gtIconVal;
+                    gtLconVal |= static_cast<uint32_t>(arg->gtGetOp1()->AsIntCon()->gtIconVal);
 
                     simdVal.i64[argIdx] = gtLconVal;
                     return true;
                 }
-#endif // TARGET_64BIT
+#endif // !TARGET_64BIT
                 else
                 {
                     // We expect the constant to have been already zeroed

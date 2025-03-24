@@ -630,7 +630,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
     else
     {
-        // Ngen case - GS cookie constant needs to be accessed through an indirection.
+        // AOT case - GS cookie constant needs to be accessed through an indirection.
         instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr,
                                INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_GSCookieCheck) DEBUGARG(GTF_EMPTY));
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, regGSConst, regGSConst, 0);
@@ -4622,7 +4622,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // - Generate fully interruptible code for loops that contains calls
     // - Generate fully interruptible code for leaf methods
     //
-    // Given the limited benefit from this optimization (<10k for CoreLib NGen image), the extra complexity
+    // Given the limited benefit from this optimization (<10k for CoreLib AOT image), the extra complexity
     // is not worth it.
     //
     rsPushRegs |= RBM_LR; // We must save the return address (in the LR register)

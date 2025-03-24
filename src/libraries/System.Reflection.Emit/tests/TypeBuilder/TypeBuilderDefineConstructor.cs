@@ -27,7 +27,6 @@ namespace System.Reflection.Emit.Tests
 
             // Ignores any CallingConventions, sets to CallingConventions.Standard
             yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.Any };
-            yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.ExplicitThis };
             yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.HasThis };
             yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.Standard };
             yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.VarArgs };
@@ -134,6 +133,23 @@ namespace System.Reflection.Emit.Tests
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Static, conventions, new Type[0]);
             constructor.GetILGenerator().Emit(OpCodes.Ret);
 
+            Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/113839", TestRuntimes.Mono)]
+        public void DefineConstructor_ExplicitThisCallingConventionsForInstanceMethod_ThrowsTypeLoadExceptionOnCreation()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+
+            ConstructorBuilder constructor = type.DefineConstructor(
+                MethodAttributes.Public,
+                CallingConventions.HasThis | CallingConventions.ExplicitThis,
+                new Type[0]);
+
+            constructor.GetILGenerator().Emit(OpCodes.Ret);
+
+            // ExplicitThis is not valid on definitions; it is only used when calling.
             Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
         }
 

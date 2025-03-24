@@ -294,6 +294,8 @@ namespace System.Net.Primitives.Functional.Tests
             Cookie c14 = new Cookie("name", "value", "path", "domain") { Version = 5 };
             Cookie c15 = new Cookie("name", "value", "path", "domain") { Version = 100 };
 
+            Cookie c9dot = new Cookie("name", "value", "path", ".domain");
+
             Assert.False(c2.Equals(null));
             Assert.False(c2.Equals(""));
 
@@ -329,6 +331,9 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.NotEqual(c13, c15);
             Assert.Equal(c13.GetHashCode(), c14.GetHashCode());
             Assert.NotEqual(c13.GetHashCode(), c15.GetHashCode());
+
+            Assert.Equal(c9, c9dot);
+            Assert.Equal(c9.GetHashCode(), c9dot.GetHashCode());
         }
 
         [Fact]
