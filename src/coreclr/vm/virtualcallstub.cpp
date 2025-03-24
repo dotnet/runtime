@@ -67,8 +67,10 @@ UINT32 g_mono_miss_counter = 0;         //# of times expected MT did not match a
 UINT32 g_poly_call_counter = 0;         //# of times resolve stubs entered
 UINT32 g_poly_miss_counter = 0;         //# of times cache missed (resolve stub)
 
-EXTERN_C UINT32 g_chained_lookup_call_counter = 0;   //# of hits in a chained lookup
-EXTERN_C UINT32 g_chained_lookup_miss_counter = 0;   //# of misses in a chained lookup
+EXTERN_C UINT32 g_chained_lookup_call_counter;
+EXTERN_C UINT32 g_chained_lookup_miss_counter;
+UINT32 g_chained_lookup_call_counter = 0;   //# of hits in a chained lookup
+UINT32 g_chained_lookup_miss_counter = 0;   //# of misses in a chained lookup
 
 UINT32 g_chained_lookup_external_call_counter = 0;   //# of hits in an external chained lookup
 UINT32 g_chained_lookup_external_miss_counter = 0;   //# of misses in an external chained lookup
