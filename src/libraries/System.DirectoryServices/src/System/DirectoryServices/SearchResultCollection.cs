@@ -217,7 +217,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Supports a simple type-specific wrapper for the underlying cached list
         /// </devdoc>
-        private sealed class AlreadyReadResultsEnumerator : IEnumerator
+        private struct AlreadyReadResultsEnumerator : IEnumerator
         {
             private readonly IEnumerator _innerEnumerator;
 

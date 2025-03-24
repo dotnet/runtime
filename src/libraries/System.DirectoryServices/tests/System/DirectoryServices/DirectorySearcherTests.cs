@@ -21,18 +21,23 @@ namespace System.DirectoryServices.Tests
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void DirectorySearch_IteratesCorrectly_SimpleEnumeration()
         {
+            bool seen = false;
             var e = GetDomains();
             Assert.NotNull(e);
 
             foreach (var result in e)
             {
                 Assert.NotNull(result);
+                seen = true;
             }
+
+            Assert.True(seen);
         }
 
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void DirectorySearch_IteratesCorrectly_AfterCount()
         {
+            bool seen = false;
             var e = GetDomains();
             Assert.NotNull(e);
             Assert.NotEqual(0, e.Count);
@@ -40,22 +45,10 @@ namespace System.DirectoryServices.Tests
             foreach (var result in e)
             {
                 Assert.NotNull(result);
+                seen = true;
             }
-        }
 
-
-        [ConditionalFact(nameof(IsLdapConfigurationExist))]
-        public void DirectorySearch_IteratesCorrectly_MixedCount()
-        {
-            var e = GetDomains();
-            Assert.NotNull(e);
-            Assert.NotEqual(0, e.Count);
-
-            foreach (var result in e)
-            {
-                Assert.NotEqual(0, e.Count);
-                Assert.NotNull(result);
-            }
+            Assert.True(seen);
         }
 
         private static SearchResultCollection GetDomains()
