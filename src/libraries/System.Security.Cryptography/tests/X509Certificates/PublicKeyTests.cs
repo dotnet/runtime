@@ -756,16 +756,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             Span<byte> algSpki = kem.ExportSubjectPublicKeyInfo();
             AssertExtensions.SequenceEqual(algSpki, key.ExportSubjectPublicKeyInfo().AsSpan());
+            int expectedSize = algSpki.Length;
 
             // Just right
             algSpki.Clear();
             Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out int written), nameof(key.TryExportSubjectPublicKeyInfo));
-            Assert.Equal(algSpki.Length, written);
+            Assert.Equal(expectedSize, written);
             AssertExtensions.SequenceEqual(algSpki, key.ExportSubjectPublicKeyInfo().AsSpan());
 
+            // Bigger than needed
+            algSpki = new byte[expectedSize + 42];
+            Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(expectedSize, written);
+            AssertExtensions.SequenceEqual(algSpki.Slice(0, written), key.ExportSubjectPublicKeyInfo().AsSpan());
+
             // Too small
-            Assert.False(key.TryExportSubjectPublicKeyInfo(algSpki.Slice(1), out written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.False(key.TryExportSubjectPublicKeyInfo(algSpki.Slice(0, 1), out written), nameof(key.TryExportSubjectPublicKeyInfo));
             Assert.Equal(0, written);
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void ExportSubjectPublicKeyInfo_MLKem_Independent(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.GenerateKey(algorithm);
+            PublicKey key = new(kem);
+
+            byte[] spki1 = kem.ExportSubjectPublicKeyInfo();
+            byte[] spki2 = kem.ExportSubjectPublicKeyInfo();
+            Assert.NotSame(spki1, spki2);
         }
 
         [Fact]

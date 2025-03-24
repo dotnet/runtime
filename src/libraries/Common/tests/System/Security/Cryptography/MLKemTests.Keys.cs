@@ -266,12 +266,24 @@ namespace System.Security.Cryptography.Tests
             AssertSubjectPublicKeyInfo(kem, tryExport, MLKemTestData.IetfMlKem1024Spki);
         }
 
-        private static void AssertSubjectPublicKeyInfo(MLKem kem, bool tryExport, ReadOnlySpan<byte> expectedSpki)
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void SubjectPublicKeyInfo_Allocated_Independent(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.ImportPrivateSeed(algorithm, IncrementalSeed);
+            kem.ExportSubjectPublicKeyInfo().AsSpan().Clear();
+            byte[] spki1 = kem.ExportSubjectPublicKeyInfo();
+            byte[] spki2 = kem.ExportSubjectPublicKeyInfo();
+            Assert.NotSame(spki1, spki2);
+            AssertExtensions.SequenceEqual(spki1, spki2);
+        }
+
+        private static void AssertSubjectPublicKeyInfo(MLKem kem, bool useTryExport, ReadOnlySpan<byte> expectedSpki)
         {
             byte[] spki;
             int written;
 
-            if (tryExport)
+            if (useTryExport)
             {
                 spki = new byte[kem.Algorithm.EncapsulationKeySizeInBytes + 22]; // 22 bytes of ASN.1 overhead.
                 Assert.True(kem.TryExportSubjectPublicKeyInfo(spki, out written), nameof(kem.TryExportSubjectPublicKeyInfo));

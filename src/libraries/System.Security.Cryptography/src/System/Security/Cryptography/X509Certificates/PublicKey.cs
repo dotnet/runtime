@@ -314,7 +314,6 @@ namespace System.Security.Cryptography.X509Certificates
             return MLKem.ImportSubjectPublicKeyInfo(ExportSubjectPublicKeyInfo());
         }
 
-
         internal AsnWriter EncodeSubjectPublicKeyInfo()
         {
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
