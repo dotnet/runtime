@@ -4076,14 +4076,13 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
                     var_types unsignedType = varTypeToUnsigned(simdBaseType);
 
-                    if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
+                    if (op1->OperIs(GT_CAST) && !op1->gtOverflow() &&
+                        (genTypeSize(op1->CastToType()) == genTypeSize(simdBaseType)))
                     {
-                        assert(op1->TypeIs(TYP_INT) && (genTypeSize(op1->CastToType()) == genTypeSize(simdBaseType)));
                         op1->AsCast()->gtCastType = unsignedType;
                     }
-                    else if (op1->OperIs(GT_IND, GT_LCL_FLD))
+                    else if (op1->OperIs(GT_IND, GT_LCL_FLD) && (genTypeSize(op1) == genTypeSize(simdBaseType)))
                     {
-                        assert(genTypeSize(op1) == genTypeSize(simdBaseType));
                         op1->gtType = unsignedType;
                     }
                     else if (!op1->OperIs(GT_CAST) || (op1->AsCast()->CastToType() != unsignedType))
