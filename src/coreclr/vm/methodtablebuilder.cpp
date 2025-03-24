@@ -5067,7 +5067,7 @@ MethodTableBuilder::ValidateMethods()
                 if (IsMiNative(it.ImplFlags()))
                 {
                     // For now simply disallow managed native code if you turn this on you have to at least
-                    // insure that we have SkipVerificationPermission or equivalent
+                    // ensure that we have SkipVerificationPermission or equivalent
                     BuildMethodTableThrowException(BFA_MANAGED_NATIVE_NYI, it.Token());
                 }
                 else
@@ -5219,9 +5219,8 @@ MethodTableBuilder::InitNewMethodDesc(
         }
     }
 
-    // Turn off inlining for any calls
-    // that are marked in the metadata as not being inlineable.
-    if(IsMiNoInlining(pMethod->GetImplAttrs()))
+    // Turn off inlining for any calls that are marked in the metadata as NoInlining or NoOptimization.
+    if (IsMiNoInlining(pMethod->GetImplAttrs()) || IsMiNoOptimization(pMethod->GetImplAttrs()))
     {
         pNewMD->SetNotInline(true);
     }
@@ -8678,30 +8677,19 @@ MethodTableBuilder::HandleExplicitLayout(
             else
             {
                 MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
-                if (pByValueMT->IsByRefLike() || pByValueMT->ContainsGCPointers())
+                if (pByValueMT->ContainsGCPointers() || pByValueMT->IsByRefLike())
                 {
-                    if ((pFD->GetOffset() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
-                    {
-                        // If we got here, then a ByRefLike valuetype or a valuetype containing an OREF was misaligned.
-                        badOffset = pFD->GetOffset();
-                        fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
-                        break;
-                    }
-
-                    ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset()]);
+                    ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset()], pFD->GetOffset());
                     fieldTrust.SetTrust(trust);
 
-                    if (trust != ExplicitFieldTrust::kNone)
-                    {
-                        continue;
-                    }
-                    else
+                    if (trust == ExplicitFieldTrust::kNone)
                     {
                         // If we got here, then an OREF/BYREF inside the valuetype illegally overlapped a non-OREF field. THROW.
                         badOffset = pFD->GetOffset();
                         break;
                     }
-                    break;
+
+                    continue;
                 }
                 // no pointers so fall through to do standard checking
                 fieldSize = pByValueMT->GetNumInstanceFieldBytes();
@@ -8856,13 +8844,13 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 // make sure that no object fields are overlapped incorrectly, returns the trust level
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout, UINT fieldBaseOffset)
 {
     STANDARD_VM_CONTRACT;
 
     // ByRefLike types need to be checked for ByRef fields.
     if (pMT->IsByRefLike())
-        return CheckByRefLikeValueClassLayout(pMT, pFieldLayout);
+        return CheckByRefLikeValueClassLayout(pMT, pFieldLayout, fieldBaseOffset);
 
     // Build a layout of the value class (vc). Don't know the sizes of all the fields easily, but
     // do know (a) vc is already consistent so don't need to check it's overlaps and
@@ -8874,10 +8862,18 @@ MethodTableBuilder::HandleExplicitLayout(
     bmtFieldLayoutTag *vcLayout = (bmtFieldLayoutTag*) qb.AllocThrows(fieldSize * sizeof(bmtFieldLayoutTag));
     memset((void*)vcLayout, nonoref, fieldSize);
 
-    // If the type contains pointers fill it out from the GC data
+    // If the type contains pointers fill it out from the GC data and validate OREF alignment.
     if (pMT->ContainsGCPointers())
     {
-        // use pointer series to locate the orefs
+        // If the type contains pointers, it has to start at an aligned offset.
+        // The alignment of the pointer series itself was checked earlier.
+        if (fieldBaseOffset % TARGET_POINTER_SIZE != 0)
+        {
+            // If we got here, then an OREF is misaligned.
+            return ExplicitFieldTrust::kNone;
+        }
+
+        // Use pointer series to locate the OREFs
         CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
         CGCDescSeries *pSeries = map->GetLowestSeries();
 
@@ -8885,6 +8881,7 @@ MethodTableBuilder::HandleExplicitLayout(
         {
             CONSISTENCY_CHECK(pSeries <= map->GetHighestSeries());
 
+            // Get offset into the value class of the first pointer field (includes a +Object)
             memset((void*)&vcLayout[pSeries->GetSeriesOffset() - OBJECT_SIZE], oref, pSeries->GetSeriesSize() + pMT->GetBaseSize());
             pSeries++;
         }
@@ -8948,7 +8945,7 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 // make sure that no byref/object fields are overlapped, returns the trust level
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout, UINT fieldBaseOffset)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pMT->IsByRefLike());
@@ -8965,17 +8962,21 @@ MethodTableBuilder::HandleExplicitLayout(
         if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
         {
             MethodTable *pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-            trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex]);
+            trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex], fieldBaseOffset + fieldStartIndex);
         }
         else if (pFD->IsObjRef())
         {
-            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
-            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, oref);
+            UINT absOffset = fieldBaseOffset + fieldStartIndex;
+            trust = (absOffset % TARGET_POINTER_SIZE == 0)
+                ? MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, oref)
+                : ExplicitFieldTrust::kNone;
         }
         else if (pFD->IsByRef())
         {
-            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
-            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, byref);
+            UINT absOffset = fieldBaseOffset + fieldStartIndex;
+            trust = (absOffset % TARGET_POINTER_SIZE == 0)
+                ? MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, byref)
+                : ExplicitFieldTrust::kNone;
         }
         else
         {
@@ -10180,6 +10181,8 @@ void MethodTableBuilder::CheckForSystemTypes()
             // although applying 16 byte alignment is consistent with treatment of 128 bit SSE types
             // even on X86
             pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
+#elif defined(TARGET_WASM)
+            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(v128)
 #else
 #error Unknown architecture
 #endif // TARGET_64BIT

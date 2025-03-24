@@ -13,7 +13,7 @@
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'linux-musl'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'win'">$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'osx'">$(runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
-    <MonoLLVMSDKDebugSuffix Condition="'$(MonoLLVMHostOS)' == 'win' and '$(Configuration)' == 'Debug'" >.Debug</MonoLLVMSDKDebugSuffix>
+    <MonoLLVMSDKDebugSuffix Condition="'$(MonoLLVMHostOS)' == 'win' and '$(Configuration)' == 'Debug' and '$(ContinuousIntegrationBuild)' == 'true'" >.Debug</MonoLLVMSDKDebugSuffix>
   </PropertyGroup>
 
   <ItemGroup>
@@ -92,7 +92,11 @@
       <LLVMFiles Include="$(_LocalLLVMArtifacts)\obj\InstallRoot-$(BuildArchitecture)\**"
                  FileArch="%(PackageReference.PackageArch)"  Condition="'$(_LocalLLVMArtifacts)' != ''" />
     </ItemGroup>
-    <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)">
+    <PropertyGroup>
+      <_CopyLLVMWithHardlinks>false</_CopyLLVMWithHardlinks>
+      <_CopyLLVMWithHardlinks Condition="'$(_LocalLLVMArtifacts)' == ''">true</_CopyLLVMWithHardlinks>
+    </PropertyGroup>
+    <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)" UseHardlinksIfPossible="$(_CopyLLVMWithHardlinks)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
   </Target>

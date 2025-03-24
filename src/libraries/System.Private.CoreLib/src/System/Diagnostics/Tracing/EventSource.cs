@@ -1426,12 +1426,12 @@ namespace System.Diagnostics.Tracing
 
                     if (m_Dispatchers != null && metadata.EnabledForAnyListener)
                     {
-#if MONO && !TARGET_BROWSER && !TARGET_WASI
+#if MONO && !TARGET_WASI
                         // On Mono, managed events from NativeRuntimeEventSource are written using WriteEventCore which can be
                         // written doubly because EventPipe tries to pump it back up to EventListener via NativeRuntimeEventSource.ProcessEvents.
                         // So we need to prevent this from getting written directly to the Listeners.
                         if (this.GetType() != typeof(NativeRuntimeEventSource))
-#endif // MONO && !TARGET_BROWSER && !TARGET_WASI
+#endif // MONO && !TARGET_WASI
                         {
                             var eventCallbackArgs = new EventWrittenEventArgs(this, eventId, pActivityId, relatedActivityId);
                             WriteToAllListeners(eventCallbackArgs, eventDataCount, data);
@@ -1672,7 +1672,7 @@ namespace System.Diagnostics.Tracing
                 // Register the provider with ETW
                 Func<EventSource?> eventSourceFactory = () => this;
                 OverrideEventProvider? etwProvider = EventSourceInitHelper.TryGetPreregisteredEtwProvider(eventSourceGuid);
-                if(etwProvider == null)
+                if (etwProvider == null)
                 {
                     etwProvider = new OverrideEventProvider(eventSourceFactory, EventProviderType.ETW);
                     etwProvider.Register(eventSourceGuid, eventSourceName);
@@ -3879,7 +3879,7 @@ namespace System.Diagnostics.Tracing
 #endif
         internal static void InitializeDefaultEventSources()
         {
-            if(!EventSource.IsSupported)
+            if (!EventSource.IsSupported)
             {
                 return;
             }
@@ -3888,7 +3888,9 @@ namespace System.Diagnostics.Tracing
 // it to mean other aspects of tracing such as these EventSources.
 #if FEATURE_PERFTRACING
             _ = NativeRuntimeEventSource.Log;
+#if !TARGET_BROWSER
             _ = RuntimeEventSource.Log;
+#endif
 #endif
             // System.Diagnostics.MetricsEventSource allows listening to Meters and indirectly
             // also creates the System.Runtime Meter.
@@ -5261,7 +5263,7 @@ namespace System.Diagnostics.Tracing
         internal readonly EventListener m_Listener;   // The dispatcher this entry is for
         internal bool[]? m_EventEnabled;              // For every event in a the eventSource, is it enabled?
 
-        // Only guaranteed to exist after a InsureInit()
+        // Only guaranteed to exist after a EnsureInit()
         internal EventDispatcher? m_Next;              // These form a linked list in code:EventSource.m_Dispatchers
         // Of all listeners for that eventSource.
     }

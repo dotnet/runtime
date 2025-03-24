@@ -18,8 +18,11 @@
 #include "nativeimage.h"
 
 #ifndef DACCESS_COMPILE
-static PCODE g_pMethodWithSlotAndModule = (PCODE)NULL;
-static PCODE g_pClassWithSlotAndModule = (PCODE)NULL;
+extern "C" PCODE g_pMethodWithSlotAndModule;
+extern "C" PCODE g_pClassWithSlotAndModule;
+
+PCODE g_pMethodWithSlotAndModule = (PCODE)NULL;
+PCODE g_pClassWithSlotAndModule = (PCODE)NULL;
 
 PCODE DynamicHelpers::GetDictionaryLookupHelper(CorInfoHelpFunc jitHelper)
 {
@@ -485,7 +488,7 @@ static bool AcquireImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_H
 
         // Found an eager fixup section. Check the signature of each fixup in this section.
         PVOID *pFixups = (PVOID *)((PBYTE)pLayout->GetBase() + pCurSection->Section.VirtualAddress);
-        DWORD nFixups = pCurSection->Section.Size / TARGET_POINTER_SIZE;
+        DWORD nFixups = pCurSection->Section.Size / pCurSection->EntrySize;
         DWORD *pSignatures = (DWORD *)((PBYTE)pLayout->GetBase() + pCurSection->Signatures);
         for (DWORD i = 0; i < nFixups; i++)
         {
@@ -1981,3 +1984,323 @@ bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResu
     return false;
 }
 
+
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+
+PCODE CreateDynamicHelperPrecode(LoaderAllocator *pAllocator, AllocMemTracker *pamTracker, PCODE DynamicHelper, TADDR DynamicHelperArg)
+{
+    STANDARD_VM_CONTRACT;
+
+    size_t size = sizeof(StubPrecode);
+    StubPrecode *pPrecode = (StubPrecode *)pamTracker->Track(pAllocator->GetDynamicHelpersStubHeap()->AllocAlignedMem(size, 1));
+    pPrecode->Init(pPrecode, DynamicHelperArg, pAllocator, PRECODE_DYNAMIC_HELPERS, DynamicHelper);
+    return ((Precode*)pPrecode)->GetEntryPoint();
+}
+
+extern "C" void DynamicHelper_CallHelper_1Arg();
+extern "C" void DynamicHelper_CallHelper_AddSecondArg();
+extern "C" void DynamicHelper_CallHelper_2Arg();
+extern "C" void DynamicHelper_CallHelper_ArgMove();
+extern "C" void DynamicHelper_Return();
+extern "C" void DynamicHelper_ReturnConst();
+extern "C" void DynamicHelper_ReturnIndirConst();
+extern "C" void DynamicHelper_ReturnIndirConstWithOffset();
+extern "C" void DynamicHelper_CallHelper_AddThirdArg();
+extern "C" void DynamicHelper_CallHelper_AddThirdAndFourthArg();
+
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_TestForNull();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_0_0();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_0_1();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_0_2();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_0_3();
+
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_TestForNull();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_0();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_1();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_2();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_3();
+
+PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    DynamicHelperStubArgs * pArgs = (DynamicHelperStubArgs *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicHelperStubArgs))));
+
+    pArgs->Constant1 = arg;
+    pArgs->Helper = (TADDR)target;
+    PCODE result =  CreateDynamicHelperPrecode(pAllocator, &amTracker, (PCODE)DynamicHelper_CallHelper_1Arg, (TADDR)pArgs);
+    amTracker.SuppressRelease();
+    return result;
+}
+
+PCODE EmitDynamicHelperWithArg(LoaderAllocator * pAllocator, AllocMemTracker *pamTracker, TADDR arg, PCODE target)
+{
+    STANDARD_VM_CONTRACT;
+    DynamicHelperStubArgs * pArgs = (DynamicHelperStubArgs *)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicHelperStubArgs))));
+
+    pArgs->Constant1 = arg;
+    pArgs->Helper = (TADDR)target;
+    PCODE result =  CreateDynamicHelperPrecode(pAllocator, pamTracker, (PCODE)DynamicHelper_CallHelper_AddSecondArg, (TADDR)pArgs);
+    return result;
+}
+
+PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    PCODE result = EmitDynamicHelperWithArg(pAllocator, &amTracker, arg, target);
+    amTracker.SuppressRelease();
+    return result;
+}
+
+PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    DynamicHelperStubArgs * pArgs = (DynamicHelperStubArgs *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicHelperStubArgs))));
+
+    pArgs->Constant1 = arg;
+    pArgs->Constant2 = arg2;
+    pArgs->Helper = (TADDR)target;
+    PCODE result =  CreateDynamicHelperPrecode(pAllocator, &amTracker, (PCODE)DynamicHelper_CallHelper_2Arg, (TADDR)pArgs);
+    amTracker.SuppressRelease();
+    return result;
+}
+
+PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    DynamicHelperStubArgs * pArgs = (DynamicHelperStubArgs *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicHelperStubArgs))));
+
+    pArgs->Constant1 = arg;
+    pArgs->Helper = (TADDR)target;
+    PCODE result =  CreateDynamicHelperPrecode(pAllocator, &amTracker, (PCODE)DynamicHelper_CallHelper_ArgMove, (TADDR)pArgs);
+    amTracker.SuppressRelease();
+    return result;
+}
+
+PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
+{
+    LIMITED_METHOD_CONTRACT;
+    return (PCODE)DynamicHelper_Return;
+}
+
+PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    PCODE result =  CreateDynamicHelperPrecode(pAllocator, &amTracker, (PCODE)DynamicHelper_ReturnConst, arg);
+    amTracker.SuppressRelease();
+    return result;
+}
+
+PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR arg, INT8 offset)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    PCODE result;
+    if (offset == 0)
+    {
+        result = CreateDynamicHelperPrecode(pAllocator, &amTracker, (PCODE)DynamicHelper_ReturnIndirConst, arg);
+    }
+    else
+    {
+        DynamicHelperStubArgs * pArgs = (DynamicHelperStubArgs *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicHelperStubArgs))));
+
+        pArgs->Constant1 = arg;
+        pArgs->Constant2 = (TADDR)offset;
+        result =  CreateDynamicHelperPrecode(pAllocator, &amTracker, (PCODE)DynamicHelper_ReturnIndirConstWithOffset, (TADDR)pArgs);
+    }
+    amTracker.SuppressRelease();
+    return result;
+}
+
+PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    DynamicHelperStubArgs * pArgs = (DynamicHelperStubArgs *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicHelperStubArgs))));
+
+    pArgs->Constant1 = arg;
+    pArgs->Helper = (TADDR)target;
+    PCODE result =  CreateDynamicHelperPrecode(pAllocator, &amTracker, (PCODE)DynamicHelper_CallHelper_AddThirdArg, (TADDR)pArgs);
+    amTracker.SuppressRelease();
+    return result;
+}
+
+PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    DynamicHelperStubArgs * pArgs = (DynamicHelperStubArgs *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicHelperStubArgs))));
+
+    pArgs->Constant1 = arg;
+    pArgs->Constant2 = arg2;
+    pArgs->Helper = (TADDR)target;
+    PCODE result =  CreateDynamicHelperPrecode(pAllocator, &amTracker, (PCODE)DynamicHelper_CallHelper_AddThirdAndFourthArg, (TADDR)pArgs);
+    amTracker.SuppressRelease();
+    return result;
+}
+
+PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+
+    PCODE helperAddress = GetDictionaryLookupHelper(pLookup->helper);
+
+    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
+
+    // It's available only via the run-time helper function
+    PCODE helper = (PCODE)NULL;
+    if (pLookup->indirections == CORINFO_USEHELPER)
+    {
+        GenericHandleArgs * pArgs = (GenericHandleArgs *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(GenericHandleArgs))));
+        pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
+        pArgs->signature = pLookup->signature;
+        pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
+        PCODE result = EmitDynamicHelperWithArg(pAllocator, &amTracker, (TADDR)pArgs, helperAddress);
+        amTracker.SuppressRelease();
+        return result;
+    }
+    else
+    {
+        PCODE result;
+        GenericDictionaryDynamicHelperStubData dictLookupData = {0};
+        dictLookupData.SizeOffset = (UINT32)pLookup->sizeOffset;
+        dictLookupData.SlotOffset = slotOffset;
+        bool needsDictLookupData = false;
+
+        if (pLookup->indirections == 3)
+        {
+            // Class!
+            _ASSERTE(helperAddress == g_pClassWithSlotAndModule);
+            _ASSERTE(pLookup->offsets[0] == offsetof(MethodTable, m_pPerInstInfo));
+            dictLookupData.SecondIndir = (UINT32)pLookup->offsets[1];
+            dictLookupData.LastIndir = (UINT32)pLookup->offsets[2];
+            if (pLookup->testForNull && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            {
+                helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull;
+                needsDictLookupData = true;
+            }
+            else if (pLookup->testForNull)
+            {
+                helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Class_TestForNull;
+                needsDictLookupData = true;
+            }
+            else
+            {
+                _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
+                if ((dictLookupData.SecondIndir == 0) && (dictLookupData.LastIndir <= sizeof(TADDR) * 3))
+                {
+                    needsDictLookupData = false;
+                    switch (dictLookupData.LastIndir / sizeof(TADDR))
+                    {
+                        case 0:
+                            helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Class_0_0;
+                            break;
+                        case 1:
+                            helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Class_0_1;
+                            break;
+                        case 2:
+                            helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Class_0_2;
+                            break;
+                        case 3:
+                            helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Class_0_3;
+                            break;
+                    }
+                }
+                else
+                {
+                    helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Class;
+                    needsDictLookupData = true;
+                }
+            }
+        }
+        else if (pLookup->indirections == 2)
+        {
+            // Method!
+            _ASSERTE(helperAddress == g_pMethodWithSlotAndModule);
+            _ASSERTE(pLookup->offsets[0] == offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
+            dictLookupData.LastIndir = (UINT32)pLookup->offsets[1];
+            if (pLookup->testForNull && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            {
+                helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull;
+                needsDictLookupData = true;
+            }
+            else if (pLookup->testForNull)
+            {
+                helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_TestForNull;
+                needsDictLookupData = true;
+            }
+            else
+            {
+                _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
+                if ((dictLookupData.SecondIndir == 0) && (dictLookupData.LastIndir <= sizeof(TADDR) * 3))
+                {
+                    needsDictLookupData = false;
+                    switch (dictLookupData.LastIndir / sizeof(TADDR))
+                    {
+                        case 0:
+                            helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_0;
+                            break;
+                        case 1:
+                            helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_1;
+                            break;
+                        case 2:
+                            helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_2;
+                            break;
+                        case 3:
+                            helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_3;
+                            break;
+                    }
+                }
+                else
+                {
+                    helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method;
+                    needsDictLookupData = true;
+                }
+            }
+        }
+
+        if (needsDictLookupData)
+        {
+            GenericHandleArgs * pArgs = (GenericHandleArgs *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(GenericHandleArgs))));
+            pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
+            pArgs->signature = pLookup->signature;
+            pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
+
+            dictLookupData.HandleArgs = pArgs;
+
+            GenericDictionaryDynamicHelperStubData *pDictLookupData = (GenericDictionaryDynamicHelperStubData *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(GenericDictionaryDynamicHelperStubData))));
+            *pDictLookupData = dictLookupData;
+
+            _ASSERTE(helper != (PCODE)NULL);
+            result =  CreateDynamicHelperPrecode(pAllocator, &amTracker, helper, (TADDR)pDictLookupData);
+        }
+        else
+        {
+            result = helper;
+        }
+
+        amTracker.SuppressRelease();
+        return result;
+    }
+}
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+#endif // DACCESS_COMPILE

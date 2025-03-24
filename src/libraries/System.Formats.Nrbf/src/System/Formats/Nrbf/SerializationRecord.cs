@@ -11,10 +11,8 @@ namespace System.Formats.Nrbf;
 /// Abstract class that represents the serialization record.
 /// </summary>
 /// <remarks>
-///  <para>
 ///   Every instance returned to the end user can be either <see cref="PrimitiveTypeRecord{T}"/>,
 ///   a <see cref="ClassRecord"/>, or an <see cref="ArrayRecord"/>.
-///  </para>
 /// </remarks>
 [DebuggerDisplay("{RecordType}, {Id}")]
 public abstract class SerializationRecord
@@ -39,6 +37,10 @@ public abstract class SerializationRecord
     /// Gets the name of the serialized type.
     /// </summary>
     /// <value>The name of the serialized type.</value>
+    /// <remarks>
+    /// Since the provided type name might originate from untrusted input,
+    /// don't use it for type loading, as it could potentially load a malicious type.
+    /// </remarks>
     public abstract TypeName TypeName { get; }
 
     /// <summary>
@@ -150,7 +152,7 @@ public abstract class SerializationRecord
     /// <summary>
     /// Gets the primitive, string, or null record value.
     /// For reference records, it returns the referenced record.
-    /// For other records, it returns the records themselves.
+    /// For other records, it returns the record itself.
     /// </summary>
     /// <remarks>
     /// Overrides of this method should take care not to allow

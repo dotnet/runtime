@@ -1,0 +1,236 @@
+parameters:
+- name: runPrivateJobs
+  displayName: Upload artifacts to blob storage
+  type: boolean
+  default: false
+- name: mauiFramework
+  type: string
+  default: 'net9.0'
+- name: coreclr_arm64_linux
+  displayName: Build Coreclr Arm64 Linux
+  type: boolean
+  default: true
+- name: coreclr_arm64_windows
+  displayName: Build Coreclr Arm64 Windows
+  type: boolean
+  default: true
+- name: coreclr_muslx64_linux
+  displayName: Build Coreclr Musl x64 Linux
+  type: boolean
+  default: true
+- name: coreclr_x64_linux
+  displayName: Build Coreclr x64 Linux
+  type: boolean
+  default: true
+- name: coreclr_x64_windows
+  displayName: Build Coreclr x64 Windows
+  type: boolean
+  default: true
+- name: coreclr_x86_windows
+  displayName: Build Coreclr x86 Windows
+  type: boolean
+  default: true
+- name: coreclr_arm64_android
+  displayName: Build Coreclr Arm64 Android
+  type: boolean
+  default: true
+- name: wasm
+  displayName: Build WebAssembly (wasm)
+  type: boolean
+  default: true
+- name: monoAot_arm64_linux
+  displayName: Build Mono AOT Arm64 Linux
+  type: boolean
+  default: true
+- name: monoAot_x64_linux
+  displayName: Build Mono AOT x64 Linux
+  type: boolean
+  default: true
+- name: mono_x64_linux
+  displayName: Build Mono x64 Linux
+  type: boolean
+  default: true
+- name: mono_arm64_linux
+  displayName: Build Mono Arm64 Linux
+  type: boolean
+  default: true
+- name: mono_arm64_android
+  displayName: Build Mono Arm64 Android
+  type: boolean
+  default: true
+- name: mono_arm64_ios
+  displayName: Build Mono Arm64 iOS
+  type: boolean
+  default: true
+- name: monoBDN_arm64_android
+  displayName: Build Mono Arm64 Android BDN (Not working)
+  type: boolean
+  default: false # currently not working
+- name: nativeAot_arm64_ios
+  displayName: Build native AOT Arm64 iOS
+  type: boolean
+  default: true
+
+trigger:
+  batch: false # we want to build every single commit
+  branches:
+    include:
+    - main
+    - release/9.0
+    - release/8.0
+  paths:
+    include:
+    - '*'
+    exclude:
+    - '**.md'
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
+
+resources:
+  repositories:
+    - repository: performance
+      type: git
+      name: internal/dotnet-performance
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(eq(variables['Build.Reason'], 'IndividualCI'), parameters.runPrivateJobs)) }}:
+      - stage: RegisterBuild
+        displayName: 'Register Build'
+        jobs:
+        - template: /eng/pipelines/register-build-jobs.yml@performance
+          parameters:
+            runtimeRepoAlias: self
+            performanceRepoAlias: performance
+            buildType:
+              - ${{ if eq(parameters.coreclr_arm64_linux, true) }}:
+                - coreclr_arm64_linux
+              - ${{ if eq(parameters.coreclr_arm64_windows, true) }}:
+                - coreclr_arm64_windows
+              - ${{ if eq(parameters.coreclr_muslx64_linux, true) }}:
+                - coreclr_muslx64_linux
+              - ${{ if eq(parameters.coreclr_x64_linux, true) }}:
+                - coreclr_x64_linux
+              - ${{ if eq(parameters.coreclr_x64_windows, true) }}:
+                - coreclr_x64_windows
+              - ${{ if eq(parameters.coreclr_x86_windows, true) }}:
+                - coreclr_x86_windows
+              - ${{ if eq(parameters.coreclr_arm64_android, true) }}:
+                - coreclr_arm64_android
+              - ${{ if eq(parameters.wasm, true) }}:
+                - wasm
+              - ${{ if eq(parameters.monoAot_arm64_linux, true) }}:
+                - monoAot_arm64_linux
+              - ${{ if eq(parameters.monoAot_x64_linux, true) }}:
+                - monoAot_x64_linux
+              - ${{ if eq(parameters.mono_x64_linux, true) }}:
+                - mono_x64_linux
+              - ${{ if eq(parameters.mono_arm64_linux, true) }}:
+                - mono_arm64_linux
+              - ${{ if eq(parameters.mono_arm64_android, true) }}:
+                - mono_arm64_android
+              - ${{ if eq(parameters.mono_arm64_ios, true) }}:
+                - mono_arm64_ios
+              - ${{ if eq(parameters.monoBDN_arm64_android, true) }}:
+                - monoBDN_arm64_android
+              - ${{ if eq(parameters.nativeAot_arm64_ios, true) }}:
+                - nativeAot_arm64_ios
+
+    - stage: Build
+      displayName: 'Build'
+      dependsOn: [] # so it runs in parallel with the RegisterBuild stage
+      jobs:
+      - template: /eng/pipelines/runtime-perf-build-jobs.yml@performance
+        parameters:
+          runtimeRepoAlias: self
+          performanceRepoAlias: performance
+          buildType:
+            - ${{ if eq(parameters.coreclr_arm64_linux, true) }}:
+              - coreclr_arm64_linux
+            - ${{ if eq(parameters.coreclr_arm64_windows, true) }}:
+              - coreclr_arm64_windows
+            - ${{ if eq(parameters.coreclr_muslx64_linux, true) }}:
+              - coreclr_muslx64_linux
+            - ${{ if eq(parameters.coreclr_x64_linux, true) }}:
+              - coreclr_x64_linux
+            - ${{ if eq(parameters.coreclr_x64_windows, true) }}:
+              - coreclr_x64_windows
+            - ${{ if eq(parameters.coreclr_x86_windows, true) }}:
+              - coreclr_x86_windows
+            - ${{ if eq(parameters.coreclr_arm64_android, true) }}:
+              - coreclr_arm64_android
+            - ${{ if eq(parameters.wasm, true) }}:
+              - wasm
+            - ${{ if eq(parameters.monoAot_arm64_linux, true) }}:
+              - monoAot_arm64_linux
+            - ${{ if eq(parameters.monoAot_x64_linux, true) }}:
+              - monoAot_x64_linux
+            - ${{ if eq(parameters.mono_x64_linux, true) }}:
+              - mono_x64_linux
+            - ${{ if eq(parameters.mono_arm64_linux, true) }}:
+              - mono_arm64_linux
+            - ${{ if eq(parameters.mono_arm64_android, true) }}:
+              - mono_arm64_android
+            - ${{ if eq(parameters.mono_arm64_ios, true) }}:
+              - mono_arm64_ios
+            - ${{ if eq(parameters.monoBDN_arm64_android, true) }}:
+              - monoBDN_arm64_android
+            - ${{ if eq(parameters.nativeAot_arm64_ios, true) }}:
+              - nativeAot_arm64_ios
+          ${{ if parameters.mauiFramework }}:
+            mauiFramework: ${{ parameters.mauiFramework }}
+            
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(eq(variables['Build.Reason'], 'IndividualCI'), parameters.runPrivateJobs)) }}:
+      - stage: UploadArtifacts
+        displayName: 'Upload Artifacts'
+        condition: always()
+        dependsOn:
+          - Build
+          - RegisterBuild
+        jobs:
+        - template: /eng/pipelines/upload-build-artifacts-jobs.yml@performance
+          parameters:
+            runtimeRepoAlias: self
+            performanceRepoAlias: performance
+            buildType:
+              - ${{ if eq(parameters.coreclr_arm64_linux, true) }}:
+                - coreclr_arm64_linux
+              - ${{ if eq(parameters.coreclr_arm64_windows, true) }}:
+                - coreclr_arm64_windows
+              - ${{ if eq(parameters.coreclr_muslx64_linux, true) }}:
+                - coreclr_muslx64_linux
+              - ${{ if eq(parameters.coreclr_x64_linux, true) }}:
+                - coreclr_x64_linux
+              - ${{ if eq(parameters.coreclr_x64_windows, true) }}:
+                - coreclr_x64_windows
+              - ${{ if eq(parameters.coreclr_x86_windows, true) }}:
+                - coreclr_x86_windows
+              - ${{ if eq(parameters.coreclr_arm64_android, true) }}:
+                - coreclr_arm64_android
+              - ${{ if eq(parameters.wasm, true) }}:
+                - wasm
+              - ${{ if eq(parameters.monoAot_arm64_linux, true) }}:
+                - monoAot_arm64_linux
+              - ${{ if eq(parameters.monoAot_x64_linux, true) }}:
+                - monoAot_x64_linux
+              - ${{ if eq(parameters.mono_x64_linux, true) }}:
+                - mono_x64_linux
+              - ${{ if eq(parameters.mono_arm64_linux, true) }}:
+                - mono_arm64_linux
+              - ${{ if eq(parameters.mono_arm64_android, true) }}:
+                - mono_arm64_android
+              - ${{ if eq(parameters.mono_arm64_ios, true) }}:
+                - mono_arm64_ios
+              - ${{ if eq(parameters.monoBDN_arm64_android, true) }}:
+                - monoBDN_arm64_android
+              - ${{ if eq(parameters.nativeAot_arm64_ios, true) }}:
+                - nativeAot_arm64_ios

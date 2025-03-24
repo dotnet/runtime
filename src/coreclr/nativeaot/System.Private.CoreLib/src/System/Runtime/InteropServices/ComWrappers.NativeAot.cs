@@ -40,37 +40,36 @@ namespace System.Runtime.InteropServices
         private static readonly Guid IID_IInspectable = new Guid(0xAF86E2E0, 0xB12D, 0x4c6a, 0x9C, 0x5A, 0xD7, 0xAA, 0x65, 0x10, 0x1E, 0x90);
         private static readonly Guid IID_IWeakReferenceSource = new Guid(0x00000038, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 
-        private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
+        private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_nativeObjectWrapperTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
         private static readonly GCHandleSet s_referenceTrackerNativeObjectWrapperCache = new GCHandleSet();
 
-        private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _ccwTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
-        private readonly Lock _lock = new Lock(useTrivialWaits: true);
-        private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
+        private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _managedObjectWrapperTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
+        private readonly RcwCache _rcwCache = new();
 
         internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out long wrapperId)
         {
             if (obj == null
-                || !s_rcwTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
+                || !s_nativeObjectWrapperTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
             {
                 unknown = IntPtr.Zero;
                 wrapperId = 0;
                 return false;
             }
 
-            wrapperId = wrapper._comWrappers.id;
-            return Marshal.QueryInterface(wrapper._externalComObject, iid, out unknown) == HResults.S_OK;
+            wrapperId = wrapper.ComWrappers.id;
+            return Marshal.QueryInterface(wrapper.ExternalComObject, iid, out unknown) == HResults.S_OK;
         }
 
         public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
         {
             unknown = IntPtr.Zero;
             if (obj == null
-                || !s_rcwTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
+                || !s_nativeObjectWrapperTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
             {
                 return false;
             }
 
-            return Marshal.QueryInterface(wrapper._externalComObject, IID_IUnknown, out unknown) == HResults.S_OK;
+            return Marshal.QueryInterface(wrapper.ExternalComObject, IID_IUnknown, out unknown) == HResults.S_OK;
         }
 
         public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
@@ -484,9 +483,6 @@ namespace System.Runtime.InteropServices
                     // There are still outstanding references on the COM side.
                     // This case should only be hit when an outstanding
                     // tracker refcount exists from AddRefFromReferenceTracker.
-                    // When implementing IReferenceTrackerHost, this should be
-                    // reconsidered.
-                    // https://github.com/dotnet/runtime/issues/85137
                     GC.ReRegisterForFinalize(this);
                 }
             }
@@ -494,12 +490,13 @@ namespace System.Runtime.InteropServices
 
         internal unsafe class NativeObjectWrapper
         {
-            internal IntPtr _externalComObject;
+            private IntPtr _externalComObject;
             private IntPtr _inner;
-            internal ComWrappers _comWrappers;
-            internal readonly GCHandle _proxyHandle;
-            internal readonly GCHandle _proxyHandleTrackingResurrection;
-            internal readonly bool _aggregatedManagedObjectWrapper;
+            private ComWrappers _comWrappers;
+            private GCHandle _proxyHandle;
+            private GCHandle _proxyHandleTrackingResurrection;
+            private readonly bool _aggregatedManagedObjectWrapper;
+            private readonly bool _uniqueInstance;
 
             static NativeObjectWrapper()
             {
@@ -509,31 +506,46 @@ namespace System.Runtime.InteropServices
                 ComAwareWeakReference.InitializeCallbacks(&ComWeakRefToObject, &PossiblyComObject, &ObjectToComWeakRef);
             }
 
-            public static NativeObjectWrapper Create(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
+            public static NativeObjectWrapper Create(
+                IntPtr externalComObject,
+                IntPtr inner,
+                ComWrappers comWrappers,
+                object comProxy,
+                CreateObjectFlags flags,
+                ref IntPtr referenceTrackerMaybe)
             {
-                if (flags.HasFlag(CreateObjectFlags.TrackerObject) &&
-                    Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
+                if (flags.HasFlag(CreateObjectFlags.TrackerObject))
                 {
-                    return new ReferenceTrackerNativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags, trackerObject);
+                    IntPtr trackerObject = referenceTrackerMaybe;
+
+                    // We're taking ownership of this reference tracker object, so reset the reference
+                    referenceTrackerMaybe = IntPtr.Zero;
+
+                    // If we already have a reference tracker (that will be the case in aggregation scenarios), then reuse it.
+                    // Otherwise, do the 'QueryInterface' call for it here. This allows us to only ever query for this IID once.
+                    if (trackerObject != IntPtr.Zero ||
+                        Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out trackerObject) == HResults.S_OK)
+                    {
+                        return new ReferenceTrackerNativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags, trackerObject);
+                    }
                 }
-                else
-                {
-                    return new NativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags);
-                }
+
+                return new NativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags);
             }
 
-            public NativeObjectWrapper(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
+            protected NativeObjectWrapper(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
             {
                 _externalComObject = externalComObject;
                 _inner = inner;
                 _comWrappers = comWrappers;
+                _uniqueInstance = flags.HasFlag(CreateObjectFlags.UniqueInstance);
                 _proxyHandle = GCHandle.Alloc(comProxy, GCHandleType.Weak);
 
                 // We have a separate handle tracking resurrection as we want to make sure
                 // we clean up the NativeObjectWrapper only after the RCW has been finalized
                 // due to it can access the native object in the finalizer. At the same time,
-                // we want other callers which are using _proxyHandle such as the RCW cache to
-                // see the object as not alive once it is eligible for finalization.
+                // we want other callers which are using ProxyHandle such as the reference tracker runtime
+                // to see the object as not alive once it is eligible for finalization.
                 _proxyHandleTrackingResurrection = GCHandle.Alloc(comProxy, GCHandleType.WeakTrackResurrection);
 
                 // If this is an aggregation scenario and the identity object
@@ -548,11 +560,17 @@ namespace System.Runtime.InteropServices
                 }
             }
 
+            internal IntPtr ExternalComObject => _externalComObject;
+            internal ComWrappers ComWrappers => _comWrappers;
+            internal GCHandle ProxyHandle => _proxyHandle;
+            internal bool IsUniqueInstance => _uniqueInstance;
+            internal bool IsAggregatedWithManagedObjectWrapper => _aggregatedManagedObjectWrapper;
+
             public virtual void Release()
             {
-                if (_comWrappers != null)
+                if (!_uniqueInstance && _comWrappers is not null)
                 {
-                    _comWrappers.RemoveRCWFromCache(_externalComObject, _proxyHandle);
+                    _comWrappers._rcwCache.Remove(_externalComObject, this);
                     _comWrappers = null;
                 }
 
@@ -697,6 +715,13 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        // Custom type instead of a value tuple to avoid rooting 'ITuple' and other value tuple stuff
+        private struct GetOrCreateComInterfaceForObjectParameters
+        {
+            public ComWrappers? This;
+            public CreateComInterfaceFlags Flags;
+        }
+
         /// <summary>
         /// Create a COM representation of the supplied object that can be passed to a non-managed environment.
         /// </summary>
@@ -712,23 +737,17 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(instance);
 
-            ManagedObjectWrapperHolder? ccwValue;
-            if (_ccwTable.TryGetValue(instance, out ccwValue))
+            ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, items) =>
             {
-                ccwValue.AddRef();
-                return ccwValue.ComIp;
-            }
-
-            ccwValue = _ccwTable.GetValue(instance, (c) =>
-            {
-                ManagedObjectWrapper* value = CreateCCW(c, flags);
+                ManagedObjectWrapper* value = items.This!.CreateManagedObjectWrapper(c, items.Flags);
                 return new ManagedObjectWrapperHolder(value, c);
-            });
-            ccwValue.AddRef();
-            return ccwValue.ComIp;
+            }, new GetOrCreateComInterfaceForObjectParameters { This = this, Flags = flags });
+
+            managedObjectWrapper.AddRef();
+            return managedObjectWrapper.ComIp;
         }
 
-        private unsafe ManagedObjectWrapper* CreateCCW(object instance, CreateComInterfaceFlags flags)
+        private unsafe ManagedObjectWrapper* CreateManagedObjectWrapper(object instance, CreateComInterfaceFlags flags)
         {
             ComInterfaceEntry* userDefined = ComputeVtables(instance, flags, out int userDefinedCount);
             if ((userDefined == null && userDefinedCount != 0) || userDefinedCount < 0)
@@ -799,7 +818,7 @@ namespace System.Runtime.InteropServices
             if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, IntPtr.Zero, flags, null, out obj))
                 throw new ArgumentNullException(nameof(externalComObject));
 
-            return obj!;
+            return obj;
         }
 
         /// <summary>
@@ -841,7 +860,7 @@ namespace System.Runtime.InteropServices
             if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, inner, flags, wrapper, out obj))
                 throw new ArgumentNullException(nameof(externalComObject));
 
-            return obj!;
+            return obj;
         }
 
         private static unsafe ComInterfaceDispatch* TryGetComInterfaceDispatch(IntPtr comObject)
@@ -876,7 +895,8 @@ namespace System.Runtime.InteropServices
             IntPtr innerMaybe,
             CreateObjectFlags flags,
             out IntPtr identity,
-            out IntPtr inner)
+            out IntPtr inner,
+            out IntPtr referenceTrackerMaybe)
         {
             inner = innerMaybe;
 
@@ -897,13 +917,15 @@ namespace System.Runtime.InteropServices
                 // to get identity from an inner is through a non-IUnknown
                 // interface QI. Once we have the IReferenceTracker
                 // instance we can be sure the QI for IUnknown will really
-                // be the true identity.
-                using ComHolder referenceTracker = new ComHolder(referenceTrackerPtr);
+                // be the true identity. This allows us to keep the reference tracker
+                // reference alive, so we can reuse it later.
                 checkForIdentity = referenceTrackerPtr;
+                referenceTrackerMaybe = referenceTrackerPtr;
                 Marshal.ThrowExceptionForHR(Marshal.QueryInterface(checkForIdentity, IID_IUnknown, out identity));
             }
             else
             {
+                referenceTrackerMaybe = IntPtr.Zero;
                 Marshal.ThrowExceptionForHR(Marshal.QueryInterface(externalComObject, IID_IUnknown, out identity));
             }
 
@@ -917,7 +939,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-#pragma warning disable IDE0060
         /// <summary>
         /// Get the currently registered managed object or creates a new managed object and registers it.
         /// </summary>
@@ -932,7 +953,7 @@ namespace System.Runtime.InteropServices
             IntPtr innerMaybe,
             CreateObjectFlags flags,
             object? wrapperMaybe,
-            out object? retValue)
+            [NotNullWhen(true)] out object? retValue)
         {
             if (externalComObject == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(externalComObject));
@@ -945,56 +966,45 @@ namespace System.Runtime.InteropServices
                 innerMaybe,
                 flags,
                 out IntPtr identity,
-                out IntPtr inner);
+                out IntPtr inner,
+                out IntPtr referenceTrackerMaybe);
 
-            using ComHolder releaseIdentity = new ComHolder(identity);
-
-            if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
+            try
             {
-                using (_lock.EnterScope())
+                // If the user has requested a unique instance,
+                // we will immediately create the object, register it,
+                // and return.
+                if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
                 {
-                    if (_rcwCache.TryGetValue(identity, out GCHandle handle))
-                    {
-                        object? cachedWrapper = handle.Target;
-                        if (cachedWrapper is not null)
-                        {
-                            retValue = cachedWrapper;
-                            return true;
-                        }
-                        else
-                        {
-                            // The GCHandle has been clear out but the NativeObjectWrapper
-                            // finalizer has not yet run to remove the entry from _rcwCache
-                            _rcwCache.Remove(identity);
-                        }
-                    }
-
-                    if (wrapperMaybe is not null)
-                    {
-                        retValue = wrapperMaybe;
-                        NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
-                            identity,
-                            inner,
-                            this,
-                            retValue,
-                            flags);
-                        if (!s_rcwTable.TryAdd(retValue, wrapper))
-                        {
-                            wrapper.Release();
-                            throw new NotSupportedException();
-                        }
-                        _rcwCache.Add(identity, wrapper._proxyHandle);
-                        AddWrapperToReferenceTrackerHandleCache(wrapper);
-                        return true;
-                    }
+                    retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, ref referenceTrackerMaybe);
+                    return retValue is not null;
                 }
+
+                // If we have a live cached wrapper currently,
+                // return that.
+                if (_rcwCache.FindProxyForComInstance(identity) is object liveCachedWrapper)
+                {
+                    retValue = liveCachedWrapper;
+                    return true;
+                }
+
+                // If the user tried to provide a pre-created managed wrapper, try to register
+                // that object as the wrapper.
+                if (wrapperMaybe is not null)
+                {
+                    retValue = RegisterObjectForComInstance(identity, inner, wrapperMaybe, flags, ref referenceTrackerMaybe);
+                    return retValue is not null;
+                }
+
+                // Check if the provided COM instance is actually a managed object wrapper from this
+                // ComWrappers instance, and use it if it is.
                 if (flags.HasFlag(CreateObjectFlags.Unwrap))
                 {
                     ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
                     if (comInterfaceDispatch != null)
                     {
                         // If we found a managed object wrapper in this ComWrappers instance
-                        // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
+                        // and it has the same identity pointer as the one we're creating a NativeObjectWrapper for,
                         // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
                         //
                         // A managed object can have multiple managed object wrappers, with a max of one per context.
@@ -1003,7 +1013,7 @@ namespace System.Runtime.InteropServices
                         // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
                         // we will create a new wrapper. In this scenario, we'll only unwrap B2.
                         object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
-                        if (_ccwTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
+                        if (_managedObjectWrapperTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
                         {
                             // The unwrapped object has a CCW in this context. Compare with identity
                             // so we can see if it's the CCW for the unwrapped object in this context.
@@ -1015,71 +1025,111 @@ namespace System.Runtime.InteropServices
                         }
                     }
                 }
-            }
 
-            retValue = CreateObject(identity, flags);
-            if (retValue == null)
+                // If the user didn't provide a wrapper and couldn't unwrap a managed object wrapper,
+                // create a new wrapper.
+                retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, ref referenceTrackerMaybe);
+                return retValue is not null;
+            }
+            finally
+            {
+                // Releasing a native object can never throw (it's a native call, so exceptions can't
+                // go through the ABI, it'd just crash the whole process). So we can use a single
+                // 'finally' block to release both native pointers we're holding in this scope.
+                Marshal.Release(identity);
+
+                if (referenceTrackerMaybe != IntPtr.Zero)
+                {
+                    Marshal.Release(referenceTrackerMaybe);
+                }
+            }
+        }
+
+        private object? CreateAndRegisterObjectForComInstance(
+            IntPtr identity,
+            IntPtr inner,
+            CreateObjectFlags flags,
+            ref IntPtr referenceTrackerMaybe)
+        {
+            object? retValue = CreateObject(identity, flags);
+            if (retValue is null)
             {
                 // If ComWrappers instance cannot create wrapper, we can do nothing here.
-                return false;
+                return null;
             }
 
-            if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
-            {
-                NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
-                    identity,
-                    inner,
-                    null, // No need to cache NativeObjectWrapper for unique instances. They are not cached.
-                    retValue,
-                    flags);
-                if (!s_rcwTable.TryAdd(retValue, wrapper))
-                {
-                    wrapper.Release();
-                    throw new NotSupportedException();
-                }
-                AddWrapperToReferenceTrackerHandleCache(wrapper);
-                return true;
-            }
-
-            using (_lock.EnterScope())
-            {
-                object? cachedWrapper = null;
-                if (_rcwCache.TryGetValue(identity, out var existingHandle))
-                {
-                    cachedWrapper = existingHandle.Target;
-                    if (cachedWrapper is null)
-                    {
-                        // The GCHandle has been clear out but the NativeObjectWrapper
-                        // finalizer has not yet run to remove the entry from _rcwCache
-                        _rcwCache.Remove(identity);
-                    }
-                }
-
-                if (cachedWrapper is not null)
-                {
-                    retValue = cachedWrapper;
-                }
-                else
-                {
-                    NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
-                        identity,
-                        inner,
-                        this,
-                        retValue,
-                        flags);
-                    if (!s_rcwTable.TryAdd(retValue, wrapper))
-                    {
-                        wrapper.Release();
-                        throw new NotSupportedException();
-                    }
-                    _rcwCache.Add(identity, wrapper._proxyHandle);
-                    AddWrapperToReferenceTrackerHandleCache(wrapper);
-                }
-            }
-
-            return true;
+            return RegisterObjectForComInstance(identity, inner, retValue, flags, ref referenceTrackerMaybe);
         }
-#pragma warning restore IDE0060
+
+        private object RegisterObjectForComInstance(
+            IntPtr identity,
+            IntPtr inner,
+            object comProxy,
+            CreateObjectFlags flags,
+            ref IntPtr referenceTrackerMaybe)
+        {
+            NativeObjectWrapper nativeObjectWrapper = NativeObjectWrapper.Create(
+                identity,
+                inner,
+                this,
+                comProxy,
+                flags,
+                ref referenceTrackerMaybe);
+
+            object actualProxy = comProxy;
+            NativeObjectWrapper actualWrapper = nativeObjectWrapper;
+            if (!nativeObjectWrapper.IsUniqueInstance)
+            {
+                // Add our entry to the cache here, using an already existing entry if someone else beat us to it.
+                (actualWrapper, actualProxy) = _rcwCache.GetOrAddProxyForComInstance(identity, nativeObjectWrapper, comProxy);
+                if (actualWrapper != nativeObjectWrapper)
+                {
+                    // We raced with another thread to map identity to nativeObjectWrapper
+                    // and lost the race. We will use the other thread's nativeObjectWrapper, so we can release ours.
+                    nativeObjectWrapper.Release();
+                }
+            }
+
+            // At this point, actualProxy is the RCW object for the identity
+            // and actualWrapper is the NativeObjectWrapper that is in the RCW cache (if not unique) that associates the identity with actualProxy.
+            // Register the NativeObjectWrapper to handle lifetime tracking of the references to the COM object.
+            RegisterWrapperForObject(actualWrapper, actualProxy);
+
+            return actualProxy;
+        }
+
+        private void RegisterWrapperForObject(NativeObjectWrapper wrapper, object comProxy)
+        {
+            // When we call into RegisterWrapperForObject, there is only one valid non-"unique instance" wrapper for a given
+            // COM instance, which is already registered in the RCW cache.
+            // If we find a wrapper in the table that is a different NativeObjectWrapper instance
+            // then it must be for a different COM instance.
+            // It's possible that we could race here with another thread that is trying to register the same comProxy
+            // for the same COM instance, but in that case we'll be passed the same NativeObjectWrapper instance
+            // for both threads. In that case, it doesn't matter which thread adds the entry to the NativeObjectWrapper table
+            // as the entry is always the same pair.
+            Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
+            Debug.Assert(wrapper.IsUniqueInstance || _rcwCache.FindProxyForComInstance(wrapper.ExternalComObject) == comProxy);
+
+            // Add the input wrapper bound to the COM proxy, if there isn't one already. If another thread raced
+            // against this one and this lost, we'd get the wrapper added from that thread instead.
+            NativeObjectWrapper registeredWrapper = s_nativeObjectWrapperTable.GetOrAdd(comProxy, wrapper);
+
+            // We lost the race, so we cannot register the incoming wrapper with the target object
+            if (registeredWrapper != wrapper)
+            {
+                Debug.Assert(registeredWrapper.ExternalComObject != wrapper.ExternalComObject);
+                wrapper.Release();
+                throw new NotSupportedException();
+            }
+
+            // Always register our wrapper to the reference tracker handle cache here.
+            // We may not be the thread that registered the handle, but we need to ensure that the wrapper
+            // is registered before we return to user code. Otherwise the wrapper won't be walked by the
+            // TrackerObjectManager and we could end up missing a section of the object graph.
+            // This cache deduplicates, so it is okay that the wrapper will be registered multiple times.
+            AddWrapperToReferenceTrackerHandleCache(registeredWrapper);
+        }
 
         private static void AddWrapperToReferenceTrackerHandleCache(NativeObjectWrapper wrapper)
         {
@@ -1089,16 +1139,94 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private void RemoveRCWFromCache(IntPtr comPointer, GCHandle expectedValue)
+        private sealed class RcwCache
         {
-            using (_lock.EnterScope())
+            private readonly Lock _lock = new Lock(useTrivialWaits: true);
+            private readonly Dictionary<object, GCHandle> _cache = [];
+
+            /// <summary>
+            /// Gets the current RCW proxy object for <paramref name="comPointer"/> if it exists in the cache or inserts a new entry with <paramref name="comProxy"/>.
+            /// </summary>
+            /// <param name="comPointer">The com instance we want to get or record an RCW for.</param>
+            /// <param name="wrapper">The <see cref="NativeObjectWrapper"/> for <paramref name="comProxy"/>.</param>
+            /// <param name="comProxy">The proxy object that is associated with <paramref name="wrapper"/>.</param>
+            /// <returns>The proxy object currently in the cache for <paramref name="comPointer"/> or the proxy object owned by <paramref name="wrapper"/> if no entry exists and the corresponding native wrapper.</returns>
+            public (NativeObjectWrapper actualWrapper, object actualProxy) GetOrAddProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper, object comProxy)
             {
-                // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
-                // in the time between the GC cleared the contents of the GC handle but before the
-                // NativeObjectWrapper finalizer ran.
-                if (_rcwCache.TryGetValue(comPointer, out GCHandle cachedValue) && expectedValue.Equals(cachedValue))
+                lock (_lock)
                 {
-                    _rcwCache.Remove(comPointer);
+                    Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
+                    ref GCHandle rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
+                    if (!exists)
+                    {
+                        // Someone else didn't beat us to adding the entry to the cache.
+                        // Add our entry here.
+                        rcwEntry = GCHandle.Alloc(wrapper, GCHandleType.Weak);
+                    }
+                    else if (rcwEntry.Target is not (NativeObjectWrapper cachedWrapper))
+                    {
+                        Debug.Assert(rcwEntry.IsAllocated);
+                        // The target was collected, so we need to update the cache entry.
+                        rcwEntry.Target = wrapper;
+                    }
+                    else
+                    {
+                        object? existingProxy = cachedWrapper.ProxyHandle.Target;
+                        // The target NativeObjectWrapper was not collected, but we need to make sure
+                        // that the proxy object is still alive.
+                        if (existingProxy is not null)
+                        {
+                            // The existing proxy object is still alive, we will use that.
+                            return (cachedWrapper, existingProxy);
+                        }
+
+                        // The proxy object was collected, so we need to update the cache entry.
+                        rcwEntry.Target = wrapper;
+                    }
+
+                    // We either added an entry to the cache or updated an existing entry that was dead.
+                    // Return our target object.
+                    return (wrapper, comProxy);
+                }
+            }
+
+            public object? FindProxyForComInstance(IntPtr comPointer)
+            {
+                lock (_lock)
+                {
+                    if (_cache.TryGetValue(comPointer, out GCHandle existingHandle))
+                    {
+                        if (existingHandle.Target is NativeObjectWrapper { ProxyHandle.Target: object cachedProxy })
+                        {
+                            // The target exists and is still alive. Return it.
+                            return cachedProxy;
+                        }
+
+                        // The target was collected, so we need to remove the entry from the cache.
+                        _cache.Remove(comPointer);
+                        existingHandle.Free();
+                    }
+
+                    return null;
+                }
+            }
+
+            public void Remove(IntPtr comPointer, NativeObjectWrapper wrapper)
+            {
+                lock (_lock)
+                {
+                    // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
+                    // in the time between the GC cleared the contents of the GC handle but before the
+                    // NativeObjectWrapper finalizer ran.
+                    // Only remove the entry if the target of the GC handle is the NativeObjectWrapper
+                    // or is null (indicating that the corresponding NativeObjectWrapper has been scheduled for finalization).
+                    if (_cache.TryGetValue(comPointer, out GCHandle cachedRef)
+                        && (wrapper == cachedRef.Target
+                            || cachedRef.Target is null))
+                    {
+                        _cache.Remove(comPointer);
+                        cachedRef.Free();
+                    }
                 }
             }
         }
@@ -1233,7 +1361,7 @@ namespace System.Runtime.InteropServices
                     if (nativeObjectWrapper != null &&
                         nativeObjectWrapper._contextToken == contextToken)
                     {
-                        object? target = nativeObjectWrapper._proxyHandle.Target;
+                        object? target = nativeObjectWrapper.ProxyHandle.Target;
                         if (target != null)
                         {
                             objects.Add(target);
@@ -1260,7 +1388,7 @@ namespace System.Runtime.InteropServices
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero)
                 {
-                    FindReferenceTargetsCallback.s_currentRootObjectHandle = nativeObjectWrapper._proxyHandle;
+                    FindReferenceTargetsCallback.s_currentRootObjectHandle = nativeObjectWrapper.ProxyHandle;
                     if (IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, TrackerObjectManager.s_findReferencesTargetCallback) != HResults.S_OK)
                     {
                         walkFailed = true;
@@ -1287,7 +1415,7 @@ namespace System.Runtime.InteropServices
                 ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero &&
-                    !RuntimeImports.RhIsPromoted(nativeObjectWrapper._proxyHandle.Target))
+                    !RuntimeImports.RhIsPromoted(nativeObjectWrapper.ProxyHandle.Target))
                 {
                     // Notify the wrapper it was not promoted and is being collected.
                     TrackerObjectManager.BeforeWrapperFinalized(nativeObjectWrapper.TrackerObject);
@@ -1608,7 +1736,7 @@ namespace System.Runtime.InteropServices
             // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown
             // as the outer IUnknown wraps the managed object. In this case, don't create a weak reference backed
             // by a COM weak reference.
-            return s_rcwTable.TryGetValue(target, out NativeObjectWrapper? wrapper) && !wrapper._aggregatedManagedObjectWrapper;
+            return s_nativeObjectWrapperTable.TryGetValue(target, out NativeObjectWrapper? wrapper) && !wrapper.IsAggregatedWithManagedObjectWrapper;
         }
 
         private static unsafe IntPtr ObjectToComWeakRef(object target, out long wrapperId)

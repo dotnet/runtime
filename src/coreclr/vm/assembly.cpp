@@ -1513,7 +1513,7 @@ MethodDesc* Assembly::GetEntryPoint()
         // This code needs a class init frame, because without it, the
         // debugger will assume any code that results from searching for a
         // type handle (ie, loading an assembly) is the first line of a program.
-        FrameWithCookie<DebuggerClassInitMarkFrame> __dcimf;
+        DebuggerClassInitMarkFrame __dcimf;
 
         MethodTable * pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
                                                                        ClassLoader::ThrowIfNotFound,
@@ -2418,7 +2418,7 @@ HRESULT Assembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
     ULONG size;
     BYTE *blob;
     IMDInternalImport* mdImport = GetPEAssembly()->GetMDImport();
-    mdAssembly asTK = TokenFromRid(mdtAssembly, 1);
+    mdAssembly asTK = TokenFromRid(1, mdtAssembly);
 
     HRESULT hr = mdImport->GetCustomAttributeByName(asTK,
                                             DEBUGGABLE_ATTRIBUTE_TYPE,

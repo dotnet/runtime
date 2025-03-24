@@ -239,43 +239,31 @@ namespace System.Numerics.Tensors.Tests
                 T[] data = new T[length];
 
                 FillTensor<T>(data);
-                Tensor<T> x = Tensor.Create<T>(data, tensorLength, []);
+                Tensor<T> tensor = Tensor.Create<T>(data, tensorLength, []);
                 T expectedOutput = tensorPrimitivesOperation((ReadOnlySpan<T>)data);
-                T results = tensorOperation(x);
+                T results = tensorOperation(tensor);
 
                 Assert.Equal(expectedOutput, results);
-
-                float[] testData = [49.788437f, 32.736755f, -0.25761032f, -46.402596f, 4.5581512f, 21.813591f, 44.976646f, 12.691814f, -44.188023f, 40.35988f, -6.999405f, 4.713642f, 5.274975f, 21.312515f, -12.536407f, -34.888573f, -1.90839f, 28.734451f, -38.64155f, -28.840702f, 7.373543f, 18.600182f, 26.007828f, 0.71430206f, -6.8293495f, -13.327972f, -25.149017f, 9.331852f, 40.87751f, 28.321632f, 42.918175f, 25.213333f, -41.392017f, 36.727768f, 26.49012f, 3.8807983f, 24.933182f, -43.050568f, -42.6283f, 18.01947f, -47.62874f, -49.94487f, -1.036602f, -37.086433f, 32.77098f, -12.903477f, -45.100212f, -20.596504f, 33.67714f, 46.864395f, 44.437485f, -44.092155f, 37.122124f, 25.220505f, 41.994873f, -13.3394165f, -28.193134f, -21.329712f, -36.623306f, 3.3981133f, -26.475079f, 16.339478f, -44.07065f, 36.321762f, -24.63433f, 28.652397f, 4.096817f, 33.29615f, -2.3503838f, -7.509815f, 42.943604f, -32.52115f, -0.20326233f, 29.554626f, 18.044052f];
-                nint[] testLengths = [5, 3, 5];
-                Tensor<float> testTensor = Tensor.Create<float>(testData, testLengths, []);
-                float[] testSliceData = new float[75];
-                testTensor.FlattenTo(testSliceData);
-                float testExpectedOutput = TensorPrimitives.Sum((ReadOnlySpan<float>)testSliceData);
-                float testResults = Tensor.Sum<float>(testTensor);
-
 
                 // Now test if the source is sliced to be non contiguous that it still gives expected result.
                 NRange[] sliceLengths = Helpers.TensorSliceShapes[index].Select(i => new NRange(0, i)).ToArray();
                 nint sliceFlattenedLength = CalculateTotalLength(Helpers.TensorSliceShapes[index]);
-                x = x.Slice(sliceLengths);
+                tensor = tensor.Slice(sliceLengths);
                 T[] sliceData = new T[sliceFlattenedLength];
-                x.FlattenTo(sliceData);
+                tensor.FlattenTo(sliceData);
 
-                IEnumerator<T> enumerator = x.GetEnumerator();
+                IEnumerator<T> enumerator = tensor.GetEnumerator();
                 bool cont = enumerator.MoveNext();
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x.AsReadOnlyTensorSpan()._reference, (int)x.FlattenedLength);
                 int i = 0;
-                Assert.True(span.SequenceEqual(sliceData));
+                Assert.True(tensor.SequenceEqual(sliceData));
                 while (cont)
                 {
-                    Assert.Equal(sliceData[i], enumerator.Current);
-                    Assert.Equal(span[i], enumerator.Current);
-                    Assert.Equal(span[i], sliceData[i++]);
+                    Assert.Equal(sliceData[i++], enumerator.Current);
                     cont = enumerator.MoveNext();
                 }
 
                 expectedOutput = tensorPrimitivesOperation((ReadOnlySpan<T>)sliceData);
-                results = tensorOperation(x);
+                results = tensorOperation(tensor);
 
                 Assert.Equal(expectedOutput, results);
             });
@@ -482,7 +470,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         public delegate T TensorPrimitivesTwoSpanInTOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo);
-        public delegate T TensorTwoSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> inputTwo);
+        public delegate T TensorTwoSpanInTOut<T>(in ReadOnlyTensorSpan<T> input, in ReadOnlyTensorSpan<T> inputTwo);
         public static IEnumerable<object[]> TwoSpanInFloatOutData()
         {
             yield return Create<float>(TensorPrimitives.Distance, Tensor.Distance);

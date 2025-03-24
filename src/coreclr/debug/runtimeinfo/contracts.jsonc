@@ -17,8 +17,10 @@
   "Loader": 1,
   "Object": 1,
   "PlatformMetadata": 1,
-  "PrecodeStubs": 1,
+  "PrecodeStubs": 2,
   "ReJIT": 1,
   "RuntimeTypeSystem": 1,
+  "StackWalk": 1,
+  "StressLog": 2,
   "Thread": 1
 }

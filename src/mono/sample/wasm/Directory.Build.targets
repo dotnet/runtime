@@ -1,5 +1,8 @@
 <Project>
   <Import Project="../Directory.Build.targets" />
+  <PropertyGroup>
+    <WasmPerfTracing Condition="'$(WasmPerfTracing)' == '' and '$(WasmProfilers)' == '' and '$(WasmBuildNative)' != 'false'">true</WasmPerfTracing>
+  </PropertyGroup>
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
 
   <PropertyGroup>
@@ -19,6 +22,21 @@
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .js=text/javascript</_ServeMimeTypes>
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .webcil=application/octet-stream</_ServeMimeTypes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <NestedBuildProperty Include="EnableAggressiveTrimming" />
+    <NestedBuildProperty Include="EventSourceSupport" />
+    <NestedBuildProperty Include="InvariantGlobalization" />
+    <NestedBuildProperty Include="InvariantTimezone" />
+    <NestedBuildProperty Include="PublishTrimmed" />
+    <NestedBuildProperty Include="RunAOTCompilation" />
+    <NestedBuildProperty Include="UsingNativeAOT" />
+    <NestedBuildProperty Include="WasmBuildNative" />
+    <NestedBuildProperty Include="WasmEmitSourceMap" />
+    <NestedBuildProperty Include="WasmEmitSymbolMap" />
+    <NestedBuildProperty Include="WasmEnableThreads" />
+    <NestedBuildProperty Include="WasmPerfTracing" />
+  </ItemGroup>
 
   <Target Name="BuildSampleInTree"
       Inputs="
@@ -41,21 +59,17 @@
       <_SampleAssembly Condition="'$(_SampleAssembly)' == ''">$(TargetFileName)</_SampleAssembly>
     </PropertyGroup>
     <ItemGroup>
-      <NestedBuildProperty Include="RunAOTCompilation" />
-      <NestedBuildProperty Include="InvariantGlobalization" />
-      <NestedBuildProperty Include="UsingNativeAOT" />
-      <NestedBuildProperty Include="WasmEnableThreads" />
-      <NestedBuildProperty Include="MonoDiagnosticsMock" />
-      <NestedBuildPropertyValue Include="/p:%(NestedBuildProperty.Identity)=$(%(NestedBuildProperty.Identity))" Condition="'$(%(NestedBuildProperty.Identity))' != '%(NestedBuildProperty.DefaultValue)'" />
+      <NestedBuildPropertyValue Include="/p:Nested_%(NestedBuildProperty.Identity)=$(%(NestedBuildProperty.Identity))" Condition="'$(%(NestedBuildProperty.Identity))' != '%(NestedBuildProperty.DefaultValue)'" />
     </ItemGroup>
-    <Exec Command="$(_Dotnet) publish -bl:publish-browser.binlog /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser @(NestedBuildPropertyValue, ' ') $(_SampleProject) $(BuildAdditionalArgs)" />
+    <Exec Command="$(_Dotnet) publish -bl:publish-browser.binlog /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser /p:ExpandNested=true @(NestedBuildPropertyValue, ' ') $(_SampleProject) $(BuildAdditionalArgs)" />
   </Target>
-  <Target Name="_ComputeMainJSFileName">
-    <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
-    <PropertyGroup>
-      <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
-    </PropertyGroup>
+
+  <Target Name="_ExpandNestedProps" BeforeTargets="PrepareForBuild" Condition="'$(ExpandNested)' == 'true'">
+    <CreateProperty Value="$(Nested_%(NestedBuildProperty.Identity))" Condition="'$(Nested_%(NestedBuildProperty.Identity))' != ''">
+      <Output TaskParameter="Value" PropertyName="%(NestedBuildProperty.Identity)" />
+    </CreateProperty>
   </Target>
+
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
     <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm --module $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>

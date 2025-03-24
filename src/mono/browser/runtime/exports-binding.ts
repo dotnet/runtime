@@ -6,17 +6,13 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_bind_js_import_ST, mono_wasm_invoke_js_function, mono_wasm_invoke_jsimport_MT, mono_wasm_invoke_jsimport_ST } from "./invoke-js";
-import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js } from "./jiterpreter";
+import { mono_interp_tier_prepare_jiterpreter, mono_wasm_free_method_data } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
 import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
-import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
-import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pipe_early_startup_callback } from "./diagnostics";
-import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diagnostics/server_pthread/stream-queue";
 import { mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger } from "./logging";
-import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
@@ -27,7 +23,10 @@ import {
 } from "./pthreads";
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
-import { mono_wasm_js_globalization_imports } from "./globalization";
+import { mono_wasm_get_locale_info } from "./globalization-locale";
+
+import { mono_wasm_profiler_record, mono_wasm_profiler_now } from "./profiler";
+import { ds_rt_websocket_create, ds_rt_websocket_send, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_close } from "./diagnostics";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -43,10 +42,6 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
 
     // mono-threads.c
     mono_wasm_dump_threads,
-    // diagnostics_server.c
-    mono_wasm_diagnostic_server_on_server_thread_created,
-    mono_wasm_diagnostic_server_on_runtime_server_init,
-    mono_wasm_diagnostic_server_stream_signal_work_available,
 
     // corebindings.c
     mono_wasm_install_js_worker_interop,
@@ -75,15 +70,15 @@ export const mono_wasm_imports = [
     mono_interp_jit_wasm_jit_call_trampoline,
     mono_interp_invoke_wasm_jit_call_trampoline,
     mono_interp_flush_jitcall_queue,
-    mono_jiterp_free_method_data_js,
+    mono_wasm_free_method_data,
 
-    mono_wasm_profiler_enter,
-    mono_wasm_profiler_leave,
+    // browser.c
+    mono_wasm_profiler_now,
+    mono_wasm_profiler_record,
 
     // driver.c
     mono_wasm_trace_logger,
     mono_wasm_set_entrypoint_breakpoint,
-    mono_wasm_event_pipe_early_startup_callback,
 
     // src/native/minipal/random.c
     mono_wasm_browser_entropy,
@@ -96,15 +91,21 @@ export const mono_wasm_imports = [
     mono_wasm_invoke_jsimport_ST,
     mono_wasm_resolve_or_reject_promise,
     mono_wasm_cancel_promise,
+    mono_wasm_get_locale_info,
+
+    //event pipe
+    ds_rt_websocket_create,
+    ds_rt_websocket_send,
+    ds_rt_websocket_poll,
+    ds_rt_websocket_recv,
+    ds_rt_websocket_close,
 ];
 
-
+// !!! Keep in sync with exports-linker.ts
 const wasmImports: Function[] = [
     ...mono_wasm_imports,
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
-    // globalization exports
-    ...mono_wasm_js_globalization_imports,
 ];
 
 export function replace_linker_placeholders (imports: WebAssembly.Imports) {
