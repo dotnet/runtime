@@ -29,16 +29,29 @@ using std::nothrow;
 #define _DEBUG_IMPL 1
 #endif
 
+struct PreserveLastErrorHolder
+{
+    PreserveLastErrorHolder()
+    {
+        m_dwLastError = ::GetLastError();
+    }
+
+    ~PreserveLastErrorHolder()
+    {
+        ::SetLastError(m_dwLastError);
+    }
+private:
+    DWORD m_dwLastError;
+};
+
+
 #define BEGIN_PRESERVE_LAST_ERROR \
     { \
-        DWORD __dwLastError = ::GetLastError(); \
-        DEBUG_ASSURE_NO_RETURN_BEGIN(PRESERVE_LAST_ERROR); \
-            {
+        PreserveLastErrorHolder __preserveLastErrorHolder; \
+        {
 
 #define END_PRESERVE_LAST_ERROR \
-            } \
-        DEBUG_ASSURE_NO_RETURN_END(PRESERVE_LAST_ERROR); \
-        ::SetLastError(__dwLastError); \
+        } \
     }
 
 //
