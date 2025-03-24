@@ -30,9 +30,9 @@ public class Runtime_113829 // minopts
     }
 
     [Fact]
-    public static Vector256<short> Problem2()
+    public static void Problem2()
     {
         var vr7 = Vector128.CreateScalar(2263564149047927034UL);
-        return Vector256.CreateScalar((short)(sbyte)Sse41.X64.Extract(vr7, 0));
+        Vector256.CreateScalar((short)(sbyte)Sse41.X64.Extract(vr7, 0));
     }
 }
