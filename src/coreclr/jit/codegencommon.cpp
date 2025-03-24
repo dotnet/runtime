@@ -1768,9 +1768,9 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);
 
 #ifdef DEBUG
-    // For R2R/NAOT not all these helpers are implemented. So don't ask for them.
+    // For AOT not all these helpers are implemented. So don't ask for them.
     //
-    if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->opts.IsReadyToRun())
+    if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->IsAot())
     {
         void* ignored;
         for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_BULK_WRITEBARRIER; i++)
@@ -1944,13 +1944,16 @@ void CodeGen::genGenerateMachineCode()
 
         printf("; %s code\n", compiler->compGetTieringName(false));
 
-        if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        if (compiler->IsAot())
         {
-            printf("; NativeAOT compilation\n");
-        }
-        else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN))
-        {
-            printf("; ReadyToRun compilation\n");
+            if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                printf("; NativeAOT compilation\n");
+            }
+            else
+            {
+                printf("; ReadyToRun compilation\n");
+            }
         }
 
         if (compiler->opts.IsOSR())
@@ -2031,8 +2034,7 @@ void CodeGen::genGenerateMachineCode()
     GetEmitter()->emitBegFN(isFramePointerUsed()
 #if defined(DEBUG)
                                 ,
-                            (compiler->compCodeOpt() != Compiler::SMALL_CODE) &&
-                                !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
+                            (compiler->compCodeOpt() != Compiler::SMALL_CODE) && !compiler->IsAot()
 #endif
     );
 

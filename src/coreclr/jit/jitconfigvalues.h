@@ -601,7 +601,7 @@ RELEASE_CONFIG_INTEGER(JitVNMapSelBudget, "JitVNMapSelBudget", DEFAULT_MAP_SELEC
 
 RELEASE_CONFIG_INTEGER(TailCallLoopOpt, "TailCallLoopOpt", 1) // Convert recursive tail calls to loops
 RELEASE_CONFIG_METHODSET(AltJit, "AltJit")         // Enables AltJit and selectively limits it to the specified methods.
-RELEASE_CONFIG_METHODSET(AltJitNgen, "AltJitNgen") // Enables AltJit for NGEN and selectively limits it
+RELEASE_CONFIG_METHODSET(AltJitNgen, "AltJitNgen") // Enables AltJit for AOT and selectively limits it
                                                    // to the specified methods.
 
 // Do not use AltJit on this semicolon-delimited list of assemblies.

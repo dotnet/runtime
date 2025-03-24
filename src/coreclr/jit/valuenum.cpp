@@ -4633,7 +4633,7 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
     //
     // Note that VN actually tracks the value of embedded handle;
     // we need to pass the VM the associated the compile time handles,
-    // in case they differ (say for prejitting or AOT).
+    // in case they differ (say for AOT).
     //
     ValueNum handle0 = arg0Func.m_args[0];
     if (!IsVNHandle(handle0))
@@ -9138,7 +9138,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it during ReadyToRun. This minimizes precision loss.
 
-    if (IsVNConstant(arg0VN) && (!m_pComp->opts.IsReadyToRun() || m_pComp->IsTargetIntrinsic(gtMathFN)))
+    if (IsVNConstant(arg0VN) && (!m_pComp->IsAot() || m_pComp->IsTargetIntrinsic(gtMathFN)))
     {
         assert(varTypeIsFloating(TypeOfVN(arg0VN)));
 
@@ -9526,8 +9526,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it during ReadyToRun. This minimizes precision loss.
 
-    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) &&
-        (!m_pComp->opts.IsReadyToRun() || m_pComp->IsTargetIntrinsic(gtMathFN)))
+    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) && (!m_pComp->IsAot() || m_pComp->IsTargetIntrinsic(gtMathFN)))
     {
         if (typ == TYP_DOUBLE)
         {
@@ -9856,7 +9855,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
         ssize_t            val         = ConstantValue<ssize_t>(vn);
         const GenTreeFlags handleFlags = GetHandleFlags(vn);
         printf("Hnd const: 0x%p %s", dspPtr(val), GenTree::gtGetHandleKindString(handleFlags));
-        if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && !comp->opts.IsReadyToRun())
+        if (!comp->IsAot())
         {
             switch (handleFlags & GTF_ICON_HDL_MASK)
             {
@@ -13828,11 +13827,11 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_NEWFAST_MAYBEFROZEN:
-            vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNew : VNF_JitNew;
+            vnf = IsAot() ? VNF_JitReadyToRunNew : VNF_JitNew;
             break;
 
         case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
-            vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNewArr : VNF_JitNewArr;
+            vnf = IsAot() ? VNF_JitReadyToRunNewArr : VNF_JitNewArr;
             break;
 
         case CORINFO_HELP_GET_GCSTATIC_BASE:
