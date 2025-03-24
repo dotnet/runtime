@@ -387,13 +387,12 @@ CONFIG_INTEGER(JitStressEvexEncoding, "JitStressEvexEncoding", 0)
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
 //
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64)
 //TODO: should implement LoongArch64's features.
-//TODO-RISCV64-CQ: should implement RISCV64's features.
 RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",         0) // Allows Base+ hardware intrinsics to be disabled
 #else
 RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",         1) // Allows Base+ hardware intrinsics to be disabled
-#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 RELEASE_CONFIG_INTEGER(EnableAES,                   "EnableAES",                 1) // Allows AES+ hardware intrinsics to be disabled
@@ -439,6 +438,9 @@ RELEASE_CONFIG_INTEGER(EnableArm64Rdm,              "EnableArm64Rdm",           
 RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             "EnableArm64Sha1",           1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           "EnableArm64Sha256",         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sve,              "EnableArm64Sve",            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
+#elif defined(TARGET_RISCV64)
+RELEASE_CONFIG_INTEGER(EnableRiscV64Zba,            "EnableRiscV64Zba",          1) // Allows RiscV64 Zba hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",          1) // Allows RiscV64 Zbb hardware intrinsics to be disabled
 #endif
 
 RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",   1) // Allows embedded broadcasts to be disabled
