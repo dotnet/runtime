@@ -1774,8 +1774,14 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
 
     // Decrease the weight of the return blocks since we no longer have edges to them.
     // Although, they still might be reachable from other blocks (at least one of them).
-    retTrueBb->decreaseBBProfileWeight(block->GetTrueEdge()->getLikelyWeight());
-    retFalseBb->decreaseBBProfileWeight(block->GetFalseEdge()->getLikelyWeight());
+    if (retTrueBb->hasProfileWeight())
+    {
+        retTrueBb->decreaseBBProfileWeight(block->GetTrueEdge()->getLikelyWeight());
+    }
+    if (retFalseBb->hasProfileWeight())
+    {
+        retFalseBb->decreaseBBProfileWeight(block->GetFalseEdge()->getLikelyWeight());
+    }
 
     // Unlink the return blocks
     fgRemoveRefPred(block->GetTrueEdge());
