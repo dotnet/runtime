@@ -7890,6 +7890,25 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         }
     }
 
+    // If the root level caller and callee modules do not have the same runtime
+    // wrapped exception behavior, and the callee has EH, we cannot inline.
+    _ASSERTE(!pCallee->IsDynamicMethod());
+    {
+        COR_ILMETHOD_DECODER header(pCallee->GetILHeader(), pCallee->GetMDImport(), NULL);
+        if (header.EHCount() > 0)
+        {
+            Module* pCalleeModule = pCallee->GetModule();
+            Module* pRootModule = pOrigCaller->GetModule();
+
+            if (pRootModule->IsRuntimeWrapExceptions() != pCalleeModule->IsRuntimeWrapExceptions())
+            {
+                result = INLINE_FAIL;
+                szFailReason = "Inlinee and root method have different wrapped exception behavior";
+                goto exit;
+            }
+        }
+    }
+
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerPresent())
     {
