@@ -5526,7 +5526,21 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // dest = base + (index << scale)
         if (node->gtElemSize <= 64)
         {
-            genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale, tempReg);
+            // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+            if ((scale > 0) && (scale <= 3))
+            {
+                bool useUnsignedShxaddVariant = false;
+                if (index->OperGet() == GT_CAST && ((index->gtFlags & GTF_CAST_DEFER_TO_SHXADD_UW) != 0))
+                {
+                    useUnsignedShxaddVariant = true;
+                }
+                instruction shxaddIns = emitter::getShxaddVariant(scale, useUnsignedShxaddVariant);
+                GetEmitter()->emitIns_R_R_R(shxaddIns, attr, node->GetRegNum(), index->GetRegNum(), base->GetRegNum());
+            }
+            else
+            {
+                genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale, tempReg);
+            }
         }
         else
         {
@@ -6558,17 +6572,32 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         GenTree* memBase = lea->Base();
         GenTree* index   = lea->Index();
 
+        bool useUnsignedShxaddVariant = false;
+        if (index->OperGet() == GT_CAST && ((index->gtFlags & GTF_CAST_DEFER_TO_SHXADD_UW) != 0))
+        {
+            useUnsignedShxaddVariant = true;
+        }
+
         DWORD scale;
 
         assert(isPow2(lea->gtScale));
         BitScanForward(&scale, lea->gtScale);
         assert(scale <= 4);
-        regNumber scaleTempReg = scale ? internalRegisters.Extract(lea) : REG_NA;
+        regNumber scaleTempReg = (scale > 3) ? internalRegisters.Extract(lea) : REG_NA;
 
         if (offset == 0)
         {
             // Then compute target reg from [base + index*scale]
-            genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale, scaleTempReg);
+            // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+            if ((scale > 0) && (scale <= 3))
+            {
+                instruction shxaddIns = emitter::getShxaddVariant(scale, useUnsignedShxaddVariant);
+                emit->emitIns_R_R_R(shxaddIns, size, lea->GetRegNum(), index->GetRegNum(), memBase->GetRegNum());
+            }
+            else
+            {
+                genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale, scaleTempReg);
+            }
         }
         else
         {
@@ -6578,7 +6607,16 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 
             if (!useLargeOffsetSeq && emitter::isValidSimm12(offset))
             {
-                genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale, scaleTempReg);
+                // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+                if ((scale > 0) && (scale <= 3))
+                {
+                    instruction shxaddIns = emitter::getShxaddVariant(scale, useUnsignedShxaddVariant);
+                    emit->emitIns_R_R_R(shxaddIns, size, lea->GetRegNum(), index->GetRegNum(), memBase->GetRegNum());
+                }
+                else
+                {
+                    genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale, scaleTempReg);
+                }
                 instruction ins = size == EA_4BYTE ? INS_addiw : INS_addi;
                 emit->emitIns_R_R_I(ins, size, lea->GetRegNum(), lea->GetRegNum(), offset);
             }
@@ -6592,7 +6630,16 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
                 // compute the large offset.
                 instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
 
-                genScaledAdd(EA_PTRSIZE, tmpReg, tmpReg, index->GetRegNum(), scale, scaleTempReg);
+                // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+                if ((scale > 0) && (scale <= 3))
+                {
+                    instruction shxaddIns = emitter::getShxaddVariant(scale, useUnsignedShxaddVariant);
+                    emit->emitIns_R_R_R(shxaddIns, EA_PTRSIZE, tmpReg, index->GetRegNum(), tmpReg);
+                }
+                else
+                {
+                    genScaledAdd(EA_PTRSIZE, tmpReg, tmpReg, index->GetRegNum(), scale, scaleTempReg);
+                }
 
                 instruction ins = size == EA_4BYTE ? INS_addw : INS_add;
                 emit->emitIns_R_R_R(ins, size, lea->GetRegNum(), tmpReg, memBase->GetRegNum());

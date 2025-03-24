@@ -75,6 +75,8 @@ emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/) const;
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + offset]
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 
+static instruction getShxaddVariant(int scale, bool useUnsignedVariant);
+
 // Emit the 32-bit RISCV64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code) const;
 

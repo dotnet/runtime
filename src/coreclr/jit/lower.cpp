@@ -10043,17 +10043,22 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 #endif
 
 #ifdef TARGET_RISCV64
+    if (!ind->Addr()->isContained() || !ind->Addr()->OperIsAddrMode())
+    {
+        return next;
+    }
+    GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
+
     // Defer cast to SH(X)ADD_UW instruction.
     // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
-    GenTree* addr = ind->Addr();
-    if (ind->HasIndex() && ind->Index()->OperGet() == GT_CAST && addr->isContained() && addr->OperIsAddrMode())
+    if (addr->HasIndex() && addr->Index()->OperGet() == GT_CAST && isPow2(addr->gtScale))
     {
         DWORD lsl;
-        BitScanForward(&lsl, addr->AsAddrMode()->gtScale);
+        BitScanForward(&lsl, addr->gtScale);
 
         if (lsl > 0 && lsl <= 3)
         {
-            GenTree* const     index        = ind->Index();
+            GenTree* const     index        = addr->Index();
             GenTreeCast* const cast         = index->AsCast();
             GenTree* const     src          = cast->CastOp();
             const var_types    srcType      = genActualType(src);

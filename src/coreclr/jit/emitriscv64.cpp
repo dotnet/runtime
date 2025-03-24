@@ -4579,44 +4579,33 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
 #endif // DEBUG
 
-instruction getShxaddVariant(int scale, bool useUnsignedVariant)
+instruction emitter::getShxaddVariant(int scale, bool useUnsignedVariant)
 {
-    assert((1 <= scale) && (scale <= 3));
-
-    instruction shxaddIns;
-
     if (useUnsignedVariant)
     {
         switch (scale)
         {
             case 1:
-                shxaddIns = INS_sh1add_uw;
-                break;
+                return INS_sh1add_uw;
             case 2:
-                shxaddIns = INS_sh2add_uw;
-                break;
+                return INS_sh2add_uw;
             case 3:
-                shxaddIns = INS_sh3add_uw;
-                break;
+                return INS_sh3add_uw;
         }
     }
     else
     {
-
         switch (scale)
         {
             case 1:
-                shxaddIns = INS_sh1add;
-                break;
+                return INS_sh1add;
             case 2:
-                shxaddIns = INS_sh2add;
-                break;
+                return INS_sh2add;
             case 3:
-                shxaddIns = INS_sh3add;
-                break;
+                return INS_sh3add;
         }
     }
-    return shxaddIns;
+    return INS_none;
 }
 
 // Generate code for a load or store operation with a potentially complex addressing mode
