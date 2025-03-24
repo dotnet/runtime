@@ -3,10 +3,17 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("android")]
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("osx")]
+    [UnsupportedOSPlatform("tvos")]
+    [UnsupportedOSPlatform("windows")]
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
     public sealed class MLKemOpenSsl : MLKem
     {

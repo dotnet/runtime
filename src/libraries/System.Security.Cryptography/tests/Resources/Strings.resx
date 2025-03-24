@@ -78,6 +78,9 @@
   <data name="Cryptography_KeyNotExtractable" xml:space="preserve">
     <value>The key does not permit being exported.</value>
   </data>
+  <data name="Cryptography_NotRetrievable" xml:space="preserve">
+    <value>The key contents are not retrievable.</value>
+  </data>
   <data name="Cryptography_X509Store_WouldModifyUserTrust" xml:space="preserve">
     <value>Removing the requested certificate would modify user trust settings, and has been denied.</value>
   </data>

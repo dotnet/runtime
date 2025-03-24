@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
@@ -21,6 +22,12 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
+    [UnsupportedOSPlatform("android")]
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("osx")]
+    [UnsupportedOSPlatform("tvos")]
+    [UnsupportedOSPlatform("windows")]
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
     public sealed class MLKemOpenSsl : MLKem
     {
@@ -44,7 +51,8 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   The handle in <paramref name="pkeyHandle" /> is already disposed.
         /// </exception>
-        public MLKemOpenSsl(SafeEvpPKeyHandle pkeyHandle) : base(AlgorithmFromHandle(pkeyHandle, out SafeEvpPKeyHandle upRefHandle))
+        public MLKemOpenSsl(SafeEvpPKeyHandle pkeyHandle)
+            : base(AlgorithmFromHandle(pkeyHandle, out SafeEvpPKeyHandle upRefHandle))
         {
             _key = upRefHandle;
         }
@@ -58,15 +66,15 @@ namespace System.Security.Cryptography
             {
                 string name = Interop.Crypto.EvpKemGetName(upRefHandle);
 
-                if (name == Interop.Crypto.EvpKemAlgs.MlKem512)
+                if (name == MLKemAlgorithm.MLKem512.Name)
                 {
                     return MLKemAlgorithm.MLKem512;
                 }
-                if (name == Interop.Crypto.EvpKemAlgs.MlKem768)
+                if (name == MLKemAlgorithm.MLKem768.Name)
                 {
                     return MLKemAlgorithm.MLKem768;
                 }
-                if (name == Interop.Crypto.EvpKemAlgs.MlKem1024)
+                if (name == MLKemAlgorithm.MLKem1024.Name)
                 {
                     return MLKemAlgorithm.MLKem1024;
                 }
