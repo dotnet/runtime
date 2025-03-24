@@ -268,7 +268,7 @@ namespace System.Security.Cryptography.Tests
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemAlgorithms))]
-        public static void SubjectPublicKeyInfo_Allocated_Independent(MLKemAlgorithm algorithm)
+        public static void ExportSubjectPublicKeyInfo_Allocated_Independent(MLKemAlgorithm algorithm)
         {
             using MLKem kem = MLKem.ImportPrivateSeed(algorithm, IncrementalSeed);
             kem.ExportSubjectPublicKeyInfo().AsSpan().Clear();
