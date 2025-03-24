@@ -825,7 +825,7 @@ void Compiler::fgSetPreferredInitCctor()
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #ifdef FEATURE_READYTORUN
-    if (opts.IsReadyToRun())
+    if (IsAot())
     {
         CORINFO_RESOLVED_TOKEN resolvedToken;
         memset(&resolvedToken, 0, sizeof(resolvedToken));
@@ -1075,7 +1075,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
-    if (opts.IsReadyToRun())
+    if (IsAot())
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {

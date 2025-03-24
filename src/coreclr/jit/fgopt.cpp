@@ -2637,12 +2637,10 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 
     //
-    // We we are ngen-ing:
-    // If the uncondional branch is a rarely run block then
-    // we are willing to have more code expansion since we
-    // won't be running code from this page
+    // If we are AOT compiling: if the unconditional branch is a rarely run block then we are willing to have
+    // more code expansion since we won't be running code from this page.
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    if (IsAot())
     {
         if (rareJump)
         {
