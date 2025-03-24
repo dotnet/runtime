@@ -53,10 +53,10 @@ namespace System.DirectoryServices.Tests
 
         private static SearchResultCollection GetDomains()
         {
-            using var entry = new DirectoryEntry("LDAP://rootDSE");
-            var namingContext = entry.Properties["configurationNamingContext"][0]!.ToString();
-            using var searchRoot = new DirectoryEntry($"LDAP://CN=Partitions,{namingContext}");
-            using var ds = new DirectorySearcher(searchRoot)
+            using DirectoryEntry entry = new DirectoryEntry("LDAP://rootDSE");
+            string namingContext = entry.Properties["configurationNamingContext"][0]!.ToString();
+            using DirectoryEntry searchRoot = new DirectoryEntry($"LDAP://CN=Partitions,{namingContext}");
+            using DirectorySearcher ds = new DirectorySearcher(searchRoot)
             {
                 PageSize = 1000,
                 CacheResults = false
