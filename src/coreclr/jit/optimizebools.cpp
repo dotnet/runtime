@@ -1773,7 +1773,7 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     modified = true;
 
     // Decrease the weight of the return blocks since we no longer have edges to them.
-    // Although, they still might be reachable from other blocks (at least one of them).
+    // Although one might still be reachable from other blocks.
     if (retTrueBb->hasProfileWeight())
     {
         retTrueBb->decreaseBBProfileWeight(block->GetTrueEdge()->getLikelyWeight());
