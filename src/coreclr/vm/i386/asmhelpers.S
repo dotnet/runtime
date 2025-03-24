@@ -663,7 +663,7 @@ DYNAMICHELPER (DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Objec
 //    siteAddrForRegisterIndirect (used only if this is a RegisterIndirect dispatch call)
 //    return address of caller to stub
 //
-// Please see vm/i386/virtualcallstubcpu.hpp for details
+// Please see asmhelpers.asm for details
 //
 NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     //
