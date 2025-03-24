@@ -1924,7 +1924,40 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 //
 void CodeGen::genCodeForBswap(GenTree* tree)
 {
-    NYI_LOONGARCH64("genCodeForBswap unimpleement yet");
+    assert(tree->OperIs(GT_BSWAP, GT_BSWAP16));
+
+    emitAttr  attr      = emitActualTypeSize(tree);
+    regNumber targetReg = tree->GetRegNum();
+    emitter*  emit      = GetEmitter();
+
+    GenTree* operand = tree->gtGetOp1();
+    assert(!operand->isContained());
+    // The src must be a register.
+    regNumber   operandReg = genConsumeReg(operand);
+    instruction ins;
+
+    if (tree->OperIs(GT_BSWAP16))
+    {
+        ins = INS_revb_4h;
+    }
+    else if (attr == EA_8BYTE)
+    {
+        ins = INS_revb_d;
+    }
+    else
+    {
+        assert(attr == EA_4BYTE);
+        ins = INS_revb_2w;
+    }
+
+    emit->emitIns_R_R(ins, attr, targetReg, operandReg);
+
+    if (tree->OperIs(GT_BSWAP16) && !genCanOmitNormalizationForBswap16(tree))
+    {
+        emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, targetReg, targetReg, 15, 0);
+    }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -4713,7 +4746,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     if (treeNode->putInIncomingArgArea())
     {
         varNumOut    = getFirstArgWithStackSlot();
-        argOffsetMax = compiler->compArgSize;
+        argOffsetMax = compiler->lvaParameterStackSize;
 #if FEATURE_FASTTAILCALL
         // This must be a fast tail call.
         assert(treeNode->gtCall->IsFastTailCall());
@@ -4841,8 +4874,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 assert(varDsc->lvType == TYP_STRUCT);
                 assert(varDsc->lvOnFrame && !varDsc->lvRegister);
 
-                srcSize = varDsc->lvSize(); // This yields the roundUp size, but that is fine
-                                            // as that is how much stack is allocated for this LclVar
+                srcSize = compiler->lvaLclStackHomeSize(varNode->GetLclNum());
+
                 layout = varDsc->GetLayout();
             }
             else // we must have a GT_BLK
@@ -4870,8 +4903,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 if (varNode != nullptr)
                 {
                     // If we have a varNode, even if it was casted using `OBJ`, we can read its original memory size.
-                    const LclVarDsc* varDsc       = compiler->lvaGetDesc(varNode);
-                    const unsigned   varStackSize = varDsc->lvSize();
+                    const unsigned varStackSize = compiler->lvaLclStackHomeSize(varNode->GetLclNum());
                     if (varStackSize >= srcSize)
                     {
                         srcSize = varStackSize;
@@ -6043,9 +6075,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
+            for (unsigned i = 0; i < arg.AbiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                const ABIPassingSegment& seg = arg.AbiInfo.Segment(i);
                 if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
                 {
                     JITDUMP("Tail call node:\n");
@@ -7166,7 +7198,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     if (leftFrameSize != 0)
     {
-        genStackPointerAdjustment(-leftFrameSize, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+        // We've already established the frame pointer, so no need to report the stack pointer change to unwind info.
+        genStackPointerAdjustment(-leftFrameSize, initReg, pInitRegZeroed, /* reportUnwindData */ false);
     }
 }
 

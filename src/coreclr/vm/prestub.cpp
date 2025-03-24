@@ -23,6 +23,11 @@
 #include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
 
+#include "CachedInterfaceDispatchPal.h"
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif
+
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
 #endif
@@ -827,21 +832,23 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     else
     {
         SString namespaceOrClassName, methodName, methodSignature;
-
+#ifdef FEATURE_EVENT_TRACE
         ETW::MethodLog::MethodJitting(this,
             pilHeader,
             &namespaceOrClassName,
             &methodName,
             &methodSignature);
+#endif //FEATURE_EVENT_TRACE
 
         pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
-
+#ifdef FEATURE_EVENT_TRACE
         ETW::MethodLog::MethodJitted(this,
             &namespaceOrClassName,
             &methodName,
             &methodSignature,
             pCode,
             pConfig);
+#endif //FEATURE_EVENT_TRACE
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -2736,14 +2743,17 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 #ifdef FEATURE_INTERPRETER
 extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
 {
-    CodeHeader* pCodeHeader = EEJitManager::GetCodeHeaderFromStartAddress(byteCodeAddr);
-
-    EEJitManager *pManager = ExecutionManager::GetEEJitManager();
-    MethodDesc *pMD = pCodeHeader->GetMethodDesc();
-
-    // TODO-Interp: call the interpreter method execution entry point
     // Argument registers are in the TransitionBlock
     // The stack arguments are right after the pTransitionBlock
+    InterpThreadContext *threadContext = InterpGetThreadContext();
+    int8_t *sp = threadContext->pStackPointer;
+
+    InterpMethodContextFrame interpFrame = {0};
+    interpFrame.startIp = (int32_t*)byteCodeAddr;
+    interpFrame.pStack = sp;
+    interpFrame.pRetVal = sp;
+
+    InterpExecMethod(&interpFrame, threadContext);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -3213,8 +3223,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         }
         _ASSERTE(pImportSection != NULL);
 
-        _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
-        COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
+        COUNT_T index;
+
+        index = (rva - pImportSection->Section.VirtualAddress) / pImportSection->EntrySize;
+        _ASSERTE((pImportSection->EntrySize == sizeof(TADDR)) || (pImportSection->EntrySize == 2*sizeof(TADDR)));
 
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
@@ -3333,15 +3345,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 goto VirtualEntry;
             }
 
-        case ENCODE_VIRTUAL_ENTRY_SLOT:
-            {
-                slot = CorSigUncompressData(pBlob);
-                pMT =  ZapSig::DecodeType(pModule, pInfoModule, pBlob).GetMethodTable();
-
-                fVirtual = true;
-                break;
-            }
-
         default:
             _ASSERTE(!"Unexpected CORCOMPILE_FIXUP_BLOB_KIND");
             ThrowHR(COR_E_BADIMAGEFORMAT);
@@ -3360,22 +3363,75 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 COMPlusThrow(kNullReferenceException);
             }
 
-            DispatchToken token;
-            if (pMT->IsInterface())
+#if defined(FEATURE_VIRTUAL_STUB_DISPATCH) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+            if (UseCachedInterfaceDispatch())
+#endif
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH)
             {
-                if (pMT->IsInterface())
-                    token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
-                else
-                    token = DispatchToken::CreateDispatchToken(slot);
+                if (ALIGN_UP(rva, sizeof(TADDR) * 2) == rva && pImportSection->EntrySize == sizeof(TADDR) * 2)
+                {
+                    // The entry is aligned and the size is correct, so we can use the cached interface dispatch mechanism
+                    // to speed up further uses of this interface dispatch slot
+                    DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(pMT, slot);
 
-                StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
-                pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
+                    uintptr_t addr = (uintptr_t)RhpInitialInterfaceDispatch;
+                    uintptr_t pCache = (uintptr_t)DispatchToken::ToCachedInterfaceDispatchToken(token);
+#ifdef TARGET_64BIT
+                    int64_t rgComparand[2] = { *(volatile int64_t*)pIndirection , *(((volatile int64_t*)pIndirection) + 1) };
+                    // We need to only update if the indirection cell is still pointing to the initial R2R stub
+                    // But we don't have the address of the initial R2R stub, as that is part of the R2R image
+                    // However, we can rely on the detail that the cache value will never be 0 once it is updated
+                    // So we read the indirection cell data, and if the cache portion is 0, we attempt to update the complete cell
+                    if (rgComparand[1] == 0 && PalInterlockedCompareExchange128((int64_t*)pIndirection, rgComparand[1], rgComparand[0], rgComparand) && rgComparand[1] == 0)
+                    {
+                        PalInterlockedCompareExchange128((int64_t*)pIndirection, pCache, addr, rgComparand);
+                    }
+#else
+                    // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
+                    uint64_t oldValue = *(volatile uint64_t*)pIndirection;
+                    if ((oldValue >> 32) == 0)
+                    {
+                        // The cache portion is 0, so we attempt to update the complete cell
+                        int64_t iNewValue = (int64_t)((uint64_t)(uintptr_t)addr | ((uint64_t)(uintptr_t)pCache << 32));
+                        PalInterlockedCompareExchange64((int64_t*)pIndirection, iNewValue, oldValue);
+                    }
+#endif
+                }
+
+                // We lost the race or the R2R image was generated without cached interface dispatch support, simply do the resolution in pure C++
+                DispatchToken token;
+                if (pMT->IsInterface())
+                {
+                    token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
+                    MethodTable* objectType = (*protectedObj)->GetMethodTable();
+                    VirtualCallStubManager::Resolver(objectType, token, protectedObj, &pCode, TRUE /* throwOnConflict */);
+                }
+                else
+                {
+                    pCode = (*protectedObj)->GetMethodTable()->GetRestoredSlot(slot); // Ensure that the target slot has an entrypoint
+                }
             }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+#if defined(FEATURE_VIRTUAL_STUB_DISPATCH) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
             else
+#endif
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
             {
-                pCode = pMgr->GetVTableCallStub(slot);
-                *(TADDR *)pIndirection = pCode;
+                DispatchToken token;
+                if (pMT->IsInterface())
+                {
+                    token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
+
+                    StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
+                    pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
+                }
+                else
+                {
+                    pCode = pMgr->GetVTableCallStub(slot);
+                    *(TADDR *)pIndirection = pCode;
+                }
             }
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
             _ASSERTE(pCode != (PCODE)NULL);
         }
         else
@@ -3772,7 +3828,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
 
-    COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
+    COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / pImportSection->EntrySize;
 
     PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 

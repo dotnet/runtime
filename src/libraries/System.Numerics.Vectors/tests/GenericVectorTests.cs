@@ -3115,6 +3115,19 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void ConvertUInt32ToSingleWithReflection()
+        {
+            MethodInfo method = typeof(Vector).GetMethod(nameof(Vector.ConvertToSingle), [typeof(Vector<uint>)]);
+            uint[] source = GenerateRandomValuesForVector<uint>();
+            Vector<uint> sourceVec = new Vector<uint>(source);
+            Vector<float> targetVec = (Vector<float>)method.Invoke(null, [sourceVec]);
+            for (int i = 0; i < Vector<float>.Count; i++)
+            {
+                Assert.Equal(unchecked((float)source[i]), targetVec[i]);
+            }
+        }
+
+        [Fact]
         public void ConvertInt64ToDouble()
         {
             long[] source = GenerateRandomValuesForVector<long>();
@@ -3127,11 +3140,37 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void ConvertInt64ToDoubleWithReflection()
+        {
+            MethodInfo method = typeof(Vector).GetMethod(nameof(Vector.ConvertToDouble), [typeof(Vector<long>)]);
+            long[] source = GenerateRandomValuesForVector<long>();
+            Vector<long> sourceVec = new Vector<long>(source);
+            Vector<double> targetVec = (Vector<double>)method.Invoke(null, [sourceVec]);
+            for (int i = 0; i < Vector<double>.Count; i++)
+            {
+                Assert.Equal(unchecked((double)source[i]), targetVec[i]);
+            }
+        }
+
+        [Fact]
         public void ConvertUInt64ToDouble()
         {
             ulong[] source = GenerateRandomValuesForVector<ulong>();
             Vector<ulong> sourceVec = new Vector<ulong>(source);
             Vector<double> targetVec = Vector.ConvertToDouble(sourceVec);
+            for (int i = 0; i < Vector<double>.Count; i++)
+            {
+                Assert.Equal(unchecked((double)source[i]), targetVec[i]);
+            }
+        }
+
+        [Fact]
+        public void ConvertUInt64ToDoubleWithReflection()
+        {
+            MethodInfo method = typeof(Vector).GetMethod(nameof(Vector.ConvertToDouble), [typeof(Vector<ulong>)]);
+            ulong[] source = GenerateRandomValuesForVector<ulong>();
+            Vector<ulong> sourceVec = new Vector<ulong>(source);
+            Vector<double> targetVec = (Vector<double>)method.Invoke(null, [sourceVec]);
             for (int i = 0; i < Vector<double>.Count; i++)
             {
                 Assert.Equal(unchecked((double)source[i]), targetVec[i]);

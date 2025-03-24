@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
@@ -14,7 +14,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Convention\src\System.Composition.Convention.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <!-- S.C.DataAnnotations targeting .NET Framework isn't live built anymore. -->
     <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
 </Project>

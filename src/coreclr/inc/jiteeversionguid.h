@@ -32,26 +32,16 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 
-#ifndef GUID_DEFINED
-typedef struct _GUID {
-    uint32_t   Data1;    // NOTE: diff from Win32, for LP64
-    uint16_t   Data2;
-    uint16_t   Data3;
-    uint8_t    Data4[ 8 ];
-} GUID;
-typedef const GUID *LPCGUID;
-#define GUID_DEFINED
-#endif // !GUID_DEFINED
+#ifndef JIT_EE_VERSIONING_GUID_H
+#define JIT_EE_VERSIONING_GUID_H
 
-constexpr GUID JITEEVersionIdentifier = { /* a116647a-3f80-4fd6-9c80-95156c7e9923 */
-    0xa116647a,
-    0x3f80,
-    0x4fd6,
-    {0x9c, 0x80, 0x95, 0x15, 0x6c, 0x7e, 0x99, 0x23}
-};
+#include <minipal/guid.h>
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// END JITEEVersionIdentifier
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+constexpr GUID JITEEVersionIdentifier = { /* 27f02512-bc1c-44b7-8d96-cf1a3beadfbe */
+    0x27f02512,
+    0xbc1c,
+    0x44b7,
+    {0x8d, 0x96, 0xcf, 0x1a, 0x3b, 0xea, 0xdf, 0xbe}
+  };
+
+#endif // JIT_EE_VERSIONING_GUID_H

@@ -14,7 +14,7 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of source.</typeparam>
         /// <param name="source">The <see cref="IAsyncEnumerable{T}"/> to check for emptiness.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
-        /// <returns>true if the source sequence contains any elements; otherwise, false.</returns>
+        /// <returns><see langword="true"/> if the source sequence contains any elements; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         public static ValueTask<bool> AnyAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
@@ -46,8 +46,8 @@ namespace System.Linq
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>
-        /// true if the source sequence is not empty and at least one of its elements passes
-        /// the test in the specified predicate; otherwise, false.
+        /// <see langword="true"/> if the source sequence is not empty and at least one of its elements passes
+        /// the test in the specified predicate; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null"/>.</exception>
@@ -83,8 +83,8 @@ namespace System.Linq
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>
-        /// true if the source sequence is not empty and at least one of its elements passes
-        /// the test in the specified predicate; otherwise, false.
+        /// <see langword="true"/> if the source sequence is not empty and at least one of its elements passes
+        /// the test in the specified predicate; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null"/>.</exception>

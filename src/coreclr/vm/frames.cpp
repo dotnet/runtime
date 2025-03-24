@@ -431,19 +431,16 @@ bool isLegalManagedCodeCaller(PCODE retAddr) {
 #endif //0
 
 
-#if defined (_DEBUG_IMPL)   // _DEBUG and !DAC
-
 //-----------------------------------------------------------------------
-// Implementation of the global table of names.  On the DAC side, just the global pointer.
-//  On the runtime side, the array of names.
-    #define FRAME_TYPE_NAME(x) #x,
-    static PTR_CSTR FrameTypeNameTable[] = {
-    #include "frames.h"
-    };
+// Implementation of the global table of names
+#define FRAME_TYPE_NAME(x) #x,
+static const LPCSTR FrameTypeNameTable[] = {
+#include "frames.h"
+};
 
 
 /* static */
-PTR_CSTR Frame::GetFrameTypeName(FrameIdentifier frameIdentifier)
+LPCSTR Frame::GetFrameTypeName(FrameIdentifier frameIdentifier)
 {
     LIMITED_METHOD_CONTRACT;
     if ((frameIdentifier == FrameIdentifier::None) || frameIdentifier >= FrameIdentifier::CountPlusOne)
@@ -453,6 +450,8 @@ PTR_CSTR Frame::GetFrameTypeName(FrameIdentifier frameIdentifier)
     return FrameTypeNameTable[(int)frameIdentifier - 1];
 } // char* Frame::FrameTypeName()
 
+
+#if defined (_DEBUG_IMPL)   // _DEBUG and !DAC
 
 //-----------------------------------------------------------------------
 
@@ -1552,13 +1551,6 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
             (fn)(PTR_PTR_Object(pThis), sc, CHECK_APP_DOMAIN);
     }
 
-    if (argit.HasRetBuffArg())
-    {
-        PTR_PTR_VOID pRetBuffArg = dac_cast<PTR_PTR_VOID>(pTransitionBlock + argit.GetRetBuffArgOffset());
-        LOG((LF_GC, INFO3, "    ret buf Argument promoted from" FMT_ADDR "\n", DBG_ADDR(*pRetBuffArg) ));
-        PromoteCarefully(fn, PTR_PTR_Object(pRetBuffArg), sc, GC_CALL_INTERIOR|CHECK_APP_DOMAIN);
-    }
-
     int argOffset;
     while ((argOffset = argit.GetNextOffset()) != TransitionBlock::InvalidOffset)
     {
@@ -2145,13 +2137,6 @@ void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE *
 
         // We are done for varargs - the remaining arguments are reported via vasig cookie
         return;
-    }
-
-    // Also if the method has a return buffer, then it is the first argument, and could be an interior ref,
-    // so always promote it.
-    if (argit.HasRetBuffArg())
-    {
-        FakePromote((Object **)(pFrame + argit.GetRetBuffArgOffset()), &sc, GC_CALL_INTERIOR);
     }
 
     //

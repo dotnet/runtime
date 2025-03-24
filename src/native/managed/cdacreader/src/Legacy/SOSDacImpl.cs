@@ -844,7 +844,6 @@ internal sealed unsafe partial class SOSDacImpl
             data->metadataSize = readOnlyMetadata.Size;
 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle);
-            data->ThunkHeap = contract.GetThunkHeap(handle);
 
             Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
             ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[Constants.FieldNames.ModuleLookupMap.TableData].Offset;
@@ -861,6 +860,7 @@ internal sealed unsafe partial class SOSDacImpl
             data->dwModuleID = 0;
             data->dwBaseClassIndex = 0;
             data->dwModuleIndex = 0;
+            data->ThunkHeap = 0;
         }
         catch (global::System.Exception e)
         {
@@ -1194,8 +1194,23 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetStackLimits(threadPtr, lower, upper, fp) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetStackReferences(int osThreadID, void** ppEnum)
         => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
+
     int ISOSDacInterface.GetStressLogAddress(ulong* stressLog)
-        => _legacyImpl is not null ? _legacyImpl.GetStressLogAddress(stressLog) : HResults.E_NOTIMPL;
+    {
+        ulong stressLogAddress = _target.ReadGlobalPointer(Constants.Globals.StressLog);
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ulong legacyStressLog;
+            Debug.Assert(HResults.S_OK == _legacyImpl.GetStressLogAddress(&legacyStressLog));
+            Debug.Assert(legacyStressLog == stressLogAddress);
+        }
+#endif
+        *stressLog = stressLogAddress;
+        return HResults.S_OK;
+    }
+
     int ISOSDacInterface.GetSyncBlockCleanupData(ulong addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockCleanupData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetSyncBlockData(uint number, void* data)

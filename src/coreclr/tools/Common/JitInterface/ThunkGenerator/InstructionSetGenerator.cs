@@ -118,6 +118,8 @@ namespace Thunkerator
         {
             if (arch == "X64")
                 return "AMD64";
+            if (arch == "RiscV64")
+                return "RISCV64";
             return arch;
         }
 
@@ -545,7 +547,7 @@ namespace Internal.JitInterface
 
         public static InstructionSet ConvertToImpliedInstructionSetForVectorInstructionSets(TargetArchitecture architecture, InstructionSet input)
         {
-            switch(architecture)
+            switch (architecture)
             {
 ");
             foreach (string architecture in _architectures)
@@ -554,7 +556,7 @@ namespace Internal.JitInterface
                     continue;
 
                 tr.Write($@"            case TargetArchitecture.{architecture}:
-                switch(input)
+                switch (input)
                 {{
 ");
                 foreach (var vectorInstructionSet in _architectureVectorInstructionSetJitNames[architecture])
@@ -635,7 +637,7 @@ namespace Internal.JitInterface
             do
             {
                 oldflags = resultflags;
-                switch(architecture)
+                switch (architecture)
                 {
 ");
             foreach (string architecture in _architectures)

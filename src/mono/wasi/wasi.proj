@@ -164,6 +164,8 @@
       { "identity": "InvariantGlobalization", "defaultValueInRuntimePack": "$(InvariantGlobalization)" },
       { "identity": "WasmNativeStrip",        "defaultValueInRuntimePack": "$(WasmNativeStrip)" },
       { "identity": "WasmSingleFileBundle",   "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
+      { "identity": "WasmPerfTracing",        "defaultValueInRuntimePack": "$(WasmPerfTracing)" },
+      { "identity": "WasmProfilers",          "defaultValueInRuntimePack": "$(WasmProfilers)" },
       { "identity": "WasmEnableSIMD",         "defaultValueInRuntimePack": "$(WasmEnableSIMD)" }
     ]
   }

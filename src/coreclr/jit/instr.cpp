@@ -920,6 +920,9 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     break;
                 }
 
+                case NI_Vector128_CreateScalar:
+                case NI_Vector256_CreateScalar:
+                case NI_Vector512_CreateScalar:
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
                 case NI_Vector512_CreateScalarUnsafe:
@@ -927,7 +930,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     // The hwintrinsic should be contained and its
                     // op1 should be either contained or spilled. This
                     // allows us to transparently "look through" the
-                    // CreateScalarUnsafe and treat it directly like
+                    // CreateScalar/Unsafe and treat it directly like
                     // a load from memory.
 
                     assert(hwintrinsic->isContained());
@@ -2420,6 +2423,11 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 //
 instruction CodeGen::ins_FloatConv(var_types to, var_types from)
 {
+    // AVX: Supports following conversions
+    //   srcType = int16/int64                     castToType = float
+    // AVX512: Supports following conversions
+    //   srcType = ulong                           castToType = double/float
+    bool isAvx10v2 = false;
     switch (from)
     {
         case TYP_INT:
@@ -2471,40 +2479,52 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
             break;
 
         case TYP_FLOAT:
+            if (to == TYP_FLOAT)
+            {
+                return ins_Move_Extend(TYP_FLOAT, false);
+            }
+            else if (to == TYP_DOUBLE)
+            {
+                return INS_cvtss2sd;
+            }
+            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
+
             switch (to)
             {
                 case TYP_INT:
-                    return INS_cvttss2si32;
+                    return isAvx10v2 ? INS_vcvttss2sis32 : INS_cvttss2si32;
                 case TYP_LONG:
-                    return INS_cvttss2si64;
-                case TYP_FLOAT:
-                    return ins_Move_Extend(TYP_FLOAT, false);
-                case TYP_DOUBLE:
-                    return INS_cvtss2sd;
+                    return isAvx10v2 ? INS_vcvttss2sis64 : INS_cvttss2si64;
                 case TYP_ULONG:
-                    return INS_vcvttss2usi64;
+                    return isAvx10v2 ? INS_vcvttss2usis64 : INS_vcvttss2usi64;
                 case TYP_UINT:
-                    return INS_vcvttss2usi32;
+                    return isAvx10v2 ? INS_vcvttss2usis32 : INS_vcvttss2usi32;
                 default:
                     unreached();
             }
             break;
 
         case TYP_DOUBLE:
+            if (to == TYP_FLOAT)
+            {
+                return INS_cvtsd2ss;
+            }
+            else if (to == TYP_DOUBLE)
+            {
+                return ins_Move_Extend(TYP_DOUBLE, false);
+            }
+            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
+
             switch (to)
             {
                 case TYP_INT:
-                    return INS_cvttsd2si32;
+                    return isAvx10v2 ? INS_vcvttsd2sis32 : INS_cvttsd2si32;
                 case TYP_LONG:
-                    return INS_cvttsd2si64;
-                case TYP_FLOAT:
-                    return INS_cvtsd2ss;
-                case TYP_DOUBLE:
-                    return ins_Move_Extend(TYP_DOUBLE, false);
+                    return isAvx10v2 ? INS_vcvttsd2sis64 : INS_cvttsd2si64;
                 case TYP_ULONG:
-                    return INS_vcvttsd2usi64;
+                    return isAvx10v2 ? INS_vcvttsd2usis64 : INS_vcvttsd2usi64;
                 case TYP_UINT:
-                    return INS_vcvttsd2usi32;
+                    return isAvx10v2 ? INS_vcvttsd2usis32 : INS_vcvttsd2usi32;
                 default:
                     unreached();
             }

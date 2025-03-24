@@ -36,4 +36,11 @@ namespace System.Runtime.Loader.Tests
         {
         }
     }
+
+    // Used to test LoaderAllocator used for a generic type instance allocation
+    public class GenericTestClass<T>
+    {
+        // Allow to store a static reference (either an instance of the ALC or an instance outside of it)
+        public static T StaticObjectRef;
+    }
 }

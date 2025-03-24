@@ -741,15 +741,16 @@ public:
     void updateMaxSpill(RefPosition* refPosition);
     void recordMaxSpill();
 
+private:
     // max simultaneous spill locations used of every type
     unsigned int maxSpill[TYP_COUNT];
     unsigned int currentSpill[TYP_COUNT];
     bool         needFloatTmpForFPCall;
     bool         needDoubleTmpForFPCall;
     bool         needNonIntegerRegisters;
+    bool         needToKillFloatRegs;
 
 #ifdef DEBUG
-private:
     //------------------------------------------------------------------------
     // Should we stress lsra? This uses the DOTNET_JitStressRegs variable.
     //
@@ -1004,8 +1005,10 @@ private:
 
     // Record variable locations at start/end of block
     void processBlockStartLocations(BasicBlock* current);
-    void processBlockEndLocations(BasicBlock* current);
-    void resetAllRegistersState();
+
+    FORCEINLINE void handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBase, VarToRegMap inVarToRegMap);
+    void             processBlockEndLocations(BasicBlock* current);
+    void             resetAllRegistersState();
 
 #ifdef TARGET_ARM
     bool       isSecondHalfReg(RegRecord* regRec, Interval* interval);
@@ -1078,9 +1081,10 @@ private:
     SingleTypeRegSet lowSIMDRegs();
     SingleTypeRegSet internalFloatRegCandidates();
 
-    void makeRegisterInactive(RegRecord* physRegRecord);
-    void freeRegister(RegRecord* physRegRecord);
-    void freeRegisters(regMaskTP regsToFree);
+    void             makeRegisterInactive(RegRecord* physRegRecord);
+    void             freeRegister(RegRecord* physRegRecord);
+    void             freeRegisters(regMaskTP regsToFree);
+    FORCEINLINE void freeRegistersSingleType(SingleTypeRegSet regsToFree, int regBase);
 
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
@@ -1191,8 +1195,12 @@ private:
     void setIntervalAsSplit(Interval* interval);
     void spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition));
 
-    void processKills(RefPosition* killRefPosition);
-    void spillGCRefs(RefPosition* killRefPosition);
+    void             processKills(RefPosition* killRefPosition);
+    FORCEINLINE void freeKilledRegs(RefPosition*     killRefPosition,
+                                    SingleTypeRegSet killedRegs,
+                                    RefPosition*     nextKill,
+                                    int              regBase);
+    void             spillGCRefs(RefPosition* killRefPosition);
 
     /*****************************************************************************
      * Register selection

@@ -862,52 +862,6 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 
 #ifndef DACCESS_COMPILE
 
-Stub *GenerateInitPInvokeFrameHelper()
-{
-    CONTRACT(Stub*)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    CPUSTUBLINKER sl;
-    CPUSTUBLINKER *psl = &sl;
-
-    CORINFO_EE_INFO::InlinedCallFrameInfo FrameInfo;
-    InlinedCallFrame::GetEEInfo(&FrameInfo);
-
-    // EDI contains address of the frame on stack
-
-    // mov esi, GetThread()
-    psl->X86EmitCurrentThreadFetch(kESI, (1 << kEDI) | (1 << kEBX) | (1 << kECX) | (1 << kEDX));
-
-    // mov [edi], InlinedCallFrame::GetFrameVtable()
-    psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, 0);
-    psl->Emit32((DWORD)FrameIdentifier::InlinedCallFrame);
-
-    // mov eax, [esi + offsetof(Thread, m_pFrame)]
-    // mov [edi + FrameInfo.offsetOfFrameLink], eax
-    psl->X86EmitIndexRegLoad(kEAX, kESI, offsetof(Thread, m_pFrame));
-    psl->X86EmitIndexRegStore(kEDI, FrameInfo.offsetOfFrameLink, kEAX);
-
-    // mov [edi + FrameInfo.offsetOfCalleeSavedEbp], ebp
-    psl->X86EmitIndexRegStore(kEDI, FrameInfo.offsetOfCalleeSavedFP, kEBP);
-
-    // mov [edi + FrameInfo.offsetOfReturnAddress], 0
-    psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, FrameInfo.offsetOfReturnAddress);
-    psl->Emit32(0);
-
-    // mov [esi + offsetof(Thread, m_pFrame)], edi
-    psl->X86EmitIndexRegStore(kESI, offsetof(Thread, m_pFrame), kEDI);
-
-    // leave current Thread in ESI
-    psl->X86EmitReturn(0);
-
-    // A single process-wide stub that will never unload
-    RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-}
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // JITInterface
@@ -971,49 +925,6 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 }
 #pragma warning (default : 4731)
 #endif // !FEATURE_METADATA_UPDATER
-
-
-void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef _DEBUG
-    m_alignpad[0] = X86_INSTR_INT3;
-    m_alignpad[1] = X86_INSTR_INT3;
-#endif // _DEBUG
-    m_movEAX     = X86_INSTR_MOV_EAX_IMM32;
-    m_uet        = pvSecretParam;
-    m_jmp        = X86_INSTR_JMP_REL32;
-    m_execstub   = (BYTE*) ((pTargetCode) - (4+((BYTE*)&pEntryThunkCodeRX->m_execstub)));
-
-    ClrFlushInstructionCache(pEntryThunkCodeRX->GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset(), /* hasCodeExecutedBefore */ true);
-}
-
-void UMEntryThunkCode::Poison()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
-    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
-
-    pThisRW->m_execstub = (BYTE*) ((BYTE*)UMEntryThunk::ReportViolation - (4+((BYTE*)&m_execstub)));
-
-    // mov ecx, imm32
-    pThisRW->m_movEAX = 0xb9;
-
-    ClrFlushInstructionCache(GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset(), /* hasCodeExecutedBefore */ true);
-}
-
-UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (*((BYTE*)pCallback) != X86_INSTR_MOV_EAX_IMM32 ||
-        ( ((size_t)pCallback) & 3) != 2) {
-        return NULL;
-    }
-    return *(UMEntryThunk**)( 1 + (BYTE*)pCallback );
-}
 
 #ifdef FEATURE_READYTORUN
 
