@@ -94,7 +94,7 @@ function(create_platform_unwinder)
   endif()
 
   # add the install targets
-  install_clr(TARGETS ${TARGETDETAILS_TARGET} DESTINATIONS ${TARGETDETAILS_DESTINATIONS} COMPONENT cdac INSTALL_ALL_ARTIFACTS)
+  install_clr(TARGETS ${TARGETDETAILS_TARGET} DESTINATIONS ${TARGETDETAILS_DESTINATIONS} COMPONENT cdac)
 
   # Set the target to be built for the specified OS and ARCH
   set_target_definitions_to_custom_os_and_arch(TARGET ${TARGETDETAILS_TARGET} OS win ARCH ${TARGETDETAILS_ARCH})
