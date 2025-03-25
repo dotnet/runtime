@@ -1715,7 +1715,7 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
         modified = true;
     }
     // Same here - bail out if the block is no longer BBJ_COND after compacting.
-    if (!block->KindIs(BBJ_COND))
+    if (block->HasFlag(BBF_REMOVED) || !block->KindIs(BBJ_COND))
     {
         return modified;
     }

@@ -4946,6 +4946,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Conditional to switch conversion, and switch peeling
+        //
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
+
         // Optimize boolean conditions
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
@@ -4953,10 +4957,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // If conversion
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
-
-        // Conditional to switch conversion, and switch peeling
-        //
-        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
 
         // Run flow optimizations before reordering blocks
         //

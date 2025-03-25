@@ -32,6 +32,29 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             continue;
         }
 
+        // Before we start, let's optimize possible fallthrough blocks for BBJ_COND's successors.
+        if (block->KindIs(BBJ_COND))
+        {
+            BasicBlock* retFalseBb = block->GetFalseTarget();
+            BasicBlock* retTrueBb  = block->GetTrueTarget();
+            if (fgCanCompactBlock(retTrueBb))
+            {
+                fgCompactBlock(retTrueBb);
+                modified = true;
+            }
+            // fgCompactBlock could have removed retFalseBb and the block, so we
+            // need to check BBF_REMOVED flag for both.
+            if (!retFalseBb->HasFlag(BBF_REMOVED) && fgCanCompactBlock(retFalseBb))
+            {
+                fgCompactBlock(retFalseBb);
+                modified = true;
+            }
+            if (block->HasFlag(BBF_REMOVED))
+            {
+                block = block->Next();
+            }
+        }
+
 // Limit to XARCH, ARM is already doing a great job with such comparisons using
 // a series of ccmp instruction (see ifConvert phase).
 #ifdef TARGET_XARCH
