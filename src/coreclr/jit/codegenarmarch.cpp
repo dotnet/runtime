@@ -4763,6 +4763,9 @@ void CodeGen::genPushCalleeSavedRegisters()
     }
 #endif // DEBUG
 
+    // Sign LR as part of Pointer Authentication (PAC) support
+    GetEmitter()->emitPacInProlog();
+
     // The frameType number is arbitrary, is defined below, and corresponds to one of the frame styles we
     // generate based on various sizes.
     int frameType = 0;
