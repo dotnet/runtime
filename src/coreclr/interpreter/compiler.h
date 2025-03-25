@@ -89,7 +89,7 @@ struct InterpInst
     {
         InterpBasicBlock *pTargetBB; // target basic block for branch instructions
         InterpBasicBlock **ppTargetBBTable; // basic block table for switch instruction
-        InterpCallInfo *pCallInfo; // additional information for call instructions 
+        InterpCallInfo *pCallInfo; // additional information for call instructions
     } info;
 
     int32_t opcode;
@@ -259,8 +259,12 @@ struct Reloc
 
 typedef class ICorJitInfo* COMP_HANDLE;
 
+class InterpIAllocator;
+
 class InterpCompiler
 {
+    friend class InterpIAllocator;
+
 private:
     CORINFO_METHOD_HANDLE m_methodHnd;
     CORINFO_MODULE_HANDLE m_compScopeHnd;
@@ -430,6 +434,7 @@ public:
     InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
 
     InterpMethod* CompileMethod();
+    void BuildGCInfo(InterpMethod *pInterpMethod);
 
     int32_t* GetCode(int32_t *pCodeSize);
 };
