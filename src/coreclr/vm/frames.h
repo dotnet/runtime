@@ -2870,6 +2870,65 @@ public:
 #endif
 };
 
+#ifdef FEATURE_INTERPRETER
+typedef DPTR(class InterpreterExitFrame) PTR_InterpreterExitFrame;
+struct InterpMethodContextFrame;
+typedef DPTR(struct InterpMethodContextFrame) PTR_InterpMethodContextFrame;
+
+class InterpreterExitFrame : public Frame
+{
+public:
+#ifndef DACCESS_COMPILE
+    InterpreterExitFrame(InterpMethodContextFrame* pContextFrame) : Frame(FrameIdentifier::InterpreterExitFrame),
+                                                                    m_pInterpMethodContextFrame(pContextFrame)
+    {
+        WRAPPER_NO_CONTRACT;
+        Push();
+    }
+#endif // DACCESS_COMPILE
+
+    PTR_InterpMethodContextFrame GetInterpMethodContextFrame()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pInterpMethodContextFrame;
+    }
+
+    BOOL NeedsUpdateRegDisplay_Impl()
+    {
+        return TRUE;
+    }
+
+    TADDR GetReturnAddress_Impl();
+
+    void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats);
+
+private:
+    PTR_InterpMethodContextFrame m_pInterpMethodContextFrame;
+};
+
+typedef DPTR(class InterpreterEntryFrame) PTR_InterpreterEntryFrame;
+
+class InterpreterEntryFrame : public FramedMethodFrame
+{
+public:
+#ifndef DACCESS_COMPILE
+    InterpreterEntryFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame) 
+        : FramedMethodFrame(FrameIdentifier::InterpreterEntryFrame, pTransitionBlock, NULL),
+        m_pInterpMethodContextFrame(pContextFrame)
+    {
+        WRAPPER_NO_CONTRACT;
+        Push();
+    }
+#endif // DACCESS_COMPILE
+    PTR_InterpMethodContextFrame GetInterpMethodTopmostContextFrame();
+
+private:
+    PTR_InterpMethodContextFrame m_pInterpMethodContextFrame;
+    
+};
+
+#endif // FEATURE_INTERPRETER
+
 //------------------------------------------------------------------------
 // These macros GC-protect OBJECTREF pointers on the EE's behalf.
 // In between these macros, the GC can move but not discard the protected

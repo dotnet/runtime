@@ -1876,7 +1876,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
     ExceptionTracker::InitializeCrawlFrame(&cfThisFrame, pThread, sf, &regdisp, pDispatcherContext, ControlPc, &uMethodStartPC, this);
 
 #ifndef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
-    uCallerSP = EECodeManager::GetCallerSp(cfThisFrame.pRD);
+    uCallerSP = cfThisFrame.GetCodeManager()->GetCallerSp(cfThisFrame.pRD);
 #else // !ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
     uCallerSP = sf.SP;
 #endif // ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
@@ -3091,7 +3091,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                         m_dwIndexClauseForCatch = i + 1;
                                         m_sfEstablisherOfActualHandlerFrame = sfEstablisherFrame;
 #ifndef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
-                                        m_sfCallerOfActualHandlerFrame = EECodeManager::GetCallerSp(pcfThisFrame->pRD);
+                                        m_sfCallerOfActualHandlerFrame = pcfThisFrame->GetCodeManager()->GetCallerSp(pcfThisFrame->pRD);
 #else // !ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
                                         // On ARM & ARM64, the EstablisherFrame is the value of SP at the time a function was called and before it's prolog
                                         // executed. Effectively, it is the SP of the caller.
@@ -3377,7 +3377,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                             m_sfEstablisherOfActualHandlerFrame = sfEstablisherFrame;
 
 #ifndef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
-                            m_sfCallerOfActualHandlerFrame = EECodeManager::GetCallerSp(pcfThisFrame->pRD);
+                            m_sfCallerOfActualHandlerFrame = pcfThisFrame->GetCodeManager()->GetCallerSp(pcfThisFrame->pRD);
 #else // !ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
                             m_sfCallerOfActualHandlerFrame = sfEstablisherFrame.SP;
 #endif // ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
@@ -7811,7 +7811,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 
     if (pHandlerIP != NULL)
     {
-        _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == EECodeManager::GetCallerSp(pvRegDisplay));
+        _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == exInfo->m_frameIter.m_crawl.GetCodeManager()->GetCallerSp(pvRegDisplay));
         OBJECTREF throwable = exceptionObj.Get();
         throwable = PossiblyUnwrapThrowable(throwable, exInfo->m_frameIter.m_crawl.GetAssembly());
 
@@ -8057,7 +8057,7 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     pExInfo->m_ScannedStackRange.ExtendUpperBound(targetSp);
 
-    EECodeManager::EnsureCallerContextIsValid(pvRegDisplay);
+    pExInfo->m_frameIter.m_crawl.GetCodeManager()->EnsureCallerContextIsValid(pvRegDisplay);
     PopExplicitFrames(pThread, (void*)targetSp, (void*)CallerStackFrame::FromRegDisplay(pvRegDisplay).SP);
 
     // This must be done before we pop the ExInfos.
@@ -8411,7 +8411,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
         pExInfo->m_csfEnclosingClause.Clear();
         if (pExInfo->m_idxCurClause != 0xffffffff) //  the reverse pinvoke case doesn't have the m_idxCurClause set
         {
-            EECodeManager::EnsureCallerContextIsValid(pRD, NULL);
+            pExInfo->m_frameIter.m_crawl.GetCodeManager()->EnsureCallerContextIsValid(pRD, NULL);
             pExInfo->m_sfCallerOfActualHandlerFrame = CallerStackFrame::FromRegDisplay(pRD);
 
             // the 1st pass has just ended, so the m_CurrentClause is the catch clause

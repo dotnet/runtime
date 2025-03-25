@@ -2662,11 +2662,7 @@ public:
 
     virtual TADDR JitTokenToStartAddress(const METHODTOKEN& MethodToken);
 
-    virtual void JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo)
-    {
-        // Not used for the interpreter
-        _ASSERTE(FALSE);
-    }
+    virtual void JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo);
 
     static InterpreterCodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
     static InterpreterCodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
@@ -2701,12 +2697,7 @@ public:
         return PTR_NULL;
     }
 
-    virtual TADDR GetFuncletStartAddress(EECodeInfo * pCodeInfo)
-    {
-        // Not used for the interpreter
-        _ASSERTE(FALSE);
-        return 0;
-    }
+    virtual TADDR GetFuncletStartAddress(EECodeInfo * pCodeInfo);
 
     virtual DWORD GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
     {

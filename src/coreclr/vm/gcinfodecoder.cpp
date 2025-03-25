@@ -19,7 +19,11 @@
 
 
 #ifndef GET_CALLER_SP
-#define GET_CALLER_SP(pREGDISPLAY) EECodeManager::GetCallerSp(pREGDISPLAY)
+inline size_t GET_CALLER_SP(PREGDISPLAY pREGDISPLAY)
+{
+    _ASSERTE(pREGDISPLAY->IsCallerContextValid);
+    return (size_t)GetSP(pREGDISPLAY->pCallerContext);
+}
 #endif // !GET_CALLER_SP
 
 #ifndef VALIDATE_OBJECTREF
@@ -2140,6 +2144,9 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
     }
     else if( GC_CALLER_SP_REL == spBase )
     {
+#ifndef FEATURE_NATIVEAOT
+        _ASSERTE(pRD->IsCallerContextValid);
+#endif
         pObjRef = (OBJECTREF*) (GET_CALLER_SP(pRD) + spOffset);
     }
     else

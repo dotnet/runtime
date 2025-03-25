@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "interpexec.h"
 #include <math.h>
 
 #ifdef FEATURE_INTERPRETER
+
+#include "interpexec.h"
 
 thread_local InterpThreadContext *t_pThreadContext = NULL;
 
@@ -46,6 +47,13 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
 MAIN_LOOP:
     while (true)
     {
+        // Interpreter-TODO: This is only needed to enable SOS see the exact location in the interpreted method.
+        // Neither the GC nor the managed debugger needs that as they walk the stack when the runtime is suspended
+        // and we can save the IP to the frame at the suspension time.
+        // It will be useful for testing e.g. the debug info at various locations in the current method, so let's
+        // keep it for such purposes until we don't need it anymore.
+        pFrame->ip = (int32_t*)ip;
+
         switch (*ip)
         {
             case INTOP_LDC_I4:
@@ -698,9 +706,13 @@ MAIN_LOOP:
                     MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_DESC_TAG);
                     PCODE code = pMD->GetNativeCode();
                     if (!code) {
-                        GCX_PREEMP();
-                        pMD->PrepareInitialCode(CallerGCMode::Coop);
-                        code = pMD->GetNativeCode();
+                        InterpreterExitFrame exitFrame(pFrame);
+                        {
+                            GCX_PREEMP();
+                            pMD->PrepareInitialCode(CallerGCMode::Coop);
+                            code = pMD->GetNativeCode();
+                        }
+                        exitFrame.Pop();
                     }
                     pMethod->pDataItems[ip[3]] = (void*)code;
                     targetIp = (const int32_t*)code;
