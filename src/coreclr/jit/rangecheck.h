@@ -558,6 +558,7 @@ struct RangeOps
         // Example: <..., $bnd + 10> U <..., $bnd + 20> = <..., $bnd + 20>
         if (r1hi.IsBinOpArray() && r2hi.IsBinOpArray() && r1hi.vn == r2hi.vn)
         {
+            result.uLimit = r1hi;
             result.uLimit.cns = max(r1hi.cns, r2hi.cns);
         }
 
@@ -566,6 +567,7 @@ struct RangeOps
         // Example: <$bnd + 10, ...> U <$bnd + 20, ...> = <$bnd + 10, ...>
         if (r1lo.IsBinOpArray() && r2lo.IsBinOpArray() && r1lo.vn == r2lo.vn)
         {
+            result.lLimit = r1hi;
             result.lLimit.cns = min(r1lo.cns, r2lo.cns);
         }
         return result;
