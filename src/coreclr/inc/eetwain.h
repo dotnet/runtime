@@ -201,10 +201,14 @@ virtual ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo) = 0;
     (if UpdateAllRegs), callee-UNsaved registers are trashed)
     Returns success of operation.
 */
-virtual bool UnwindStackFrame(PREGDISPLAY     pContext,
+virtual bool UnwindStackFrame(PREGDISPLAY     pRD,
                               EECodeInfo     *pCodeInfo,
                               unsigned        flags,
                               CodeManState   *pState) = 0;
+
+#ifdef FEATURE_EH_FUNCLETS
+virtual void EnsureCallerContextIsValid(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0) = 0;
+#endif // FEATURE_EH_FUNCLETS
 
 /*
     Is the function currently at a "GC safe point" ?
@@ -338,6 +342,9 @@ virtual HRESULT FixContextForEnC(PCONTEXT        pCtx,
 
 #endif // #ifndef DACCESS_COMPILE
 
+#ifdef FEATURE_EH_FUNCLETS
+    size_t GetCallerSp( PREGDISPLAY  pRD );
+#endif
 
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
@@ -409,7 +416,7 @@ ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
 */
 virtual
 bool UnwindStackFrame(
-                PREGDISPLAY     pContext,
+                PREGDISPLAY     pRD,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags,
                 CodeManState   *pState);
@@ -586,8 +593,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_EH_FUNCLETS
-    static void EnsureCallerContextIsValid( PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
-    static size_t GetCallerSp( PREGDISPLAY  pRD );
+    virtual void EnsureCallerContextIsValid( PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0) override;
 #ifdef TARGET_X86
     static size_t GetResumeSp( PCONTEXT  pContext );
 #endif // TARGET_X86
@@ -663,17 +669,20 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
 virtual
 ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo)
 {
-    // Interpreter-TODO: Implement this if needed
-    _ASSERTE(FALSE);
     return 0;
 }
 
 virtual
 bool UnwindStackFrame(
-                PREGDISPLAY     pContext,
+                PREGDISPLAY     pRD,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags,
                 CodeManState   *pState);
+
+#ifdef FEATURE_EH_FUNCLETS
+virtual 
+void EnsureCallerContextIsValid(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0) override;
+#endif // FEATURE_EH_FUNCLETS
 
 virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
@@ -714,8 +723,6 @@ void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        unsigned        flags,
                        CodeManState  * pState)
 {
-    // Interpreter-TODO: Implement this if needed
-    _ASSERTE(FALSE);
     return NULL;
 }
 

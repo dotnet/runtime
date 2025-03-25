@@ -35,6 +35,10 @@
 
 #include "argdestination.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 #define CHECK_APP_DOMAIN    0
 
 #ifdef DACCESS_COMPILE
@@ -2078,6 +2082,40 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress_Impl()
     }
 }
 #endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_INTERPRETER
+PTR_InterpMethodContextFrame InterpreterEntryFrame::GetInterpMethodTopmostContextFrame()
+{
+    LIMITED_METHOD_CONTRACT;
+    PTR_InterpMethodContextFrame pFrame = m_pInterpMethodContextFrame;
+    _ASSERTE(pFrame != NULL && pFrame->ip != NULL);
+
+    // The frames of a method are linked in a reverse order (from bottom to top of the part of the stack)
+    // via the pNext pointer. But only frames with non-null ip are active. The ip is zeroed out
+    // after returning from an interpreted method, making the frame inactive and ready for reuse.
+    while ((pFrame->pNext != NULL) && (pFrame->pNext->ip != NULL))
+    {
+        pFrame = pFrame->pNext;
+    }
+
+    return pFrame;
+}
+
+void InterpreterExitFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    SetIP(pRD->pCurrentContext, (TADDR)m_pInterpMethodContextFrame->ip);
+    SetSP(pRD->pCurrentContext, dac_cast<TADDR>(m_pInterpMethodContextFrame));
+    SyncRegDisplayToCurrentContext(pRD);
+}
+
+TADDR InterpreterExitFrame::GetReturnAddress_Impl()
+{
+    return (TADDR)m_pInterpMethodContextFrame->ip;
+}
+
+#endif // FEATURE_INTERPRETER
 
 #ifndef DACCESS_COMPILE
 //=================================================================================
