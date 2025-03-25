@@ -98,16 +98,24 @@ internal static partial class Interop
         internal static string EvpKemGetName(SafeEvpPKeyHandle key)
         {
             const int BufferSize = 32;// All known KEM names are much shorter like ML-KEM-1024.
+            const int Success = 1;
+            const int Fail = 0;
             Span<byte> buffer = stackalloc byte[BufferSize + 1]; // Add one for the null terminator.
             int size = BufferSize;
             int result = CryptoNative_EvpKemGetName(key, buffer, ref size);
 
             return result switch
             {
-                1 => System.Text.Encoding.UTF8.GetString(buffer.Slice(0, size)),
-                0 => throw CreateOpenSslCryptographicException(),
-                int what => throw new CryptographicException($"{what}"),
+                Success => System.Text.Encoding.UTF8.GetString(buffer.Slice(0, size)),
+                Fail => throw CreateOpenSslCryptographicException(),
+                int other => throw FailThrow(other),
             };
+
+            static Exception FailThrow(int result)
+            {
+                Debug.Fail($"Unexpected return value {result} from {nameof(CryptoNative_EvpKemGetName)}.");
+                return new CryptographicException();
+            }
         }
 
         internal static void EvpKemDecapsulate(SafeEvpPKeyHandle key, ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)

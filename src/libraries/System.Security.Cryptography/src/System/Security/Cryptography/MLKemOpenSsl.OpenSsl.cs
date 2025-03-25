@@ -90,7 +90,7 @@ namespace System.Security.Cryptography
                     return MLKemAlgorithm.MLKem1024;
                 }
 
-                throw new CryptographicException(SR.Format(SR.Argument_KemInvalidAlgorithmHandle, name));
+                throw new CryptographicException(SR.Format(SR.Cryptography_KemInvalidAlgorithmHandle, name));
             }
             catch
             {
