@@ -1001,7 +1001,7 @@ void emitter::emitIns_R_C(
     id->idSmallCns(offs); // usually is 0.
     id->idInsOpt(INS_OPTS_RC);
 
-    if (emitComp->compCurBB != nullptr && emitComp->fgIsBlockCold(emitComp->compCurBB))
+    if (emitComp->fgIsBlockCold(emitComp->compCurBB))
     {
         // Loading constant from cold section might be arbitrarily far,
         // use emitOutputInstr_OptsRcNoPcRel
@@ -1350,12 +1350,24 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
      *       b  <-a
      * */
 
-    constexpr int maxTotalInsCount = 5;
-    bool          utilizeSRLI      = false;
-    int           maxInsCount      = maxTotalInsCount;
-    int           srliShiftAmount;
-    uint64_t      originalImm = imm;
-    bool          cond1       = (y - x) > 31;
+    constexpr int absMaxInsCount  = 8;
+    constexpr int prefMaxInsCount = 5;
+    assert(prefMaxInsCount <= absMaxInsCount);
+
+    // If we generate more instructions than the prefered maximum instruction count, we'll instead use emitDataConst +
+    // emitIns_R_C combination.
+    int insCountLimit = prefMaxInsCount;
+    // If we are currently generating prolog, we are currently not inside a method block, therefore, we should not use
+    // the emitDataConst + emitIns_R_C combination.
+    if (emitComp->compGeneratingProlog)
+    {
+        insCountLimit = absMaxInsCount;
+    }
+
+    bool     utilizeSRLI = false;
+    int      srliShiftAmount;
+    uint64_t originalImm = imm;
+    bool     cond1       = (y - x) > 31;
     if ((((uint64_t)imm >> 63) & 0b1) == 0 && cond1)
     {
         srliShiftAmount  = BitOperations::LeadingZeroCount((uint64_t)imm);
@@ -1371,7 +1383,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             y           = b;
             x           = a;
             utilizeSRLI = true;
-            maxInsCount -= 1;
+            insCountLimit -= 1;
         }
     }
 
@@ -1437,10 +1449,10 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         high32 = (high32 + 1) & WordMask(32);
     }
 
-    assert(maxTotalInsCount >= 2);
+    assert(absMaxInsCount >= 2);
     int         numberOfInstructions = 0;
-    instruction ins[maxTotalInsCount];
-    int32_t     values[maxTotalInsCount];
+    instruction ins[absMaxInsCount];
+    int32_t     values[absMaxInsCount];
 
     // STEP 4: Generate instructions to load high32
 
@@ -1489,7 +1501,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             }
 
             numberOfInstructions += 2;
-            if (numberOfInstructions > maxInsCount)
+            if (numberOfInstructions > insCountLimit)
             {
                 break;
             }
@@ -1518,7 +1530,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     if (shift > 0)
     {
         numberOfInstructions += 1;
-        if (numberOfInstructions <= maxInsCount)
+        if (numberOfInstructions <= insCountLimit)
         {
             ins[numberOfInstructions - 1]    = INS_slli;
             values[numberOfInstructions - 1] = shift;
@@ -1527,7 +1539,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     // STEP 6: Determine whether to use emitDataConst or emit generated instructions
 
-    if (numberOfInstructions <= maxInsCount)
+    if (numberOfInstructions <= insCountLimit)
     {
         for (int i = 0; i < numberOfInstructions; i++)
         {
@@ -1559,6 +1571,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     }
     else if (size == EA_PTRSIZE)
     {
+        assert(!emitComp->compGeneratingProlog);
         auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
         emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr), 0);
     }
