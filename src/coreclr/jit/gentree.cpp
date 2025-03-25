@@ -28804,6 +28804,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
             case NI_AdvSimd_Arm64_Add:
                 sveId = NI_Sve_Add;
                 break;
+            case NI_AdvSimd_And:
+                sveId = NI_Sve_And;
+                break;
+            case NI_AdvSimd_Not:
+                sveId = NI_Sve_Not;
+                break;
             default:
                 sveId = id;
         }
@@ -28835,6 +28841,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
     assert(varTypeIsArithmetic(simdBaseType));
     assert(varTypeIsSIMD(simdType));
 
+#if defined(TARGET_ARM64)
+    assert(!isScalar || (simdSize == 8));
+    assert(!isScalar || varTypeIsFloating(simdBaseType));
+    assert(comp->IsBaselineSimdIsaSupportedDebugOnly());
+    assert((simdSize <= 16) || (simdSize == Compiler::compVectorTLength));
+#else
     if (simdSize == 64)
     {
         assert(!isScalar);
@@ -28847,13 +28859,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
     }
     else
     {
-#if defined(TARGET_ARM64)
-        assert(!isScalar || (simdSize == 8));
-#endif // TARGET_ARM64
-
         assert(!isScalar || varTypeIsFloating(simdBaseType));
         assert(comp->IsBaselineSimdIsaSupportedDebugOnly());
     }
+#endif
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(simdType));
@@ -28903,6 +28912,9 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
         }
     }
 
+#if defined(TARGET_ARM64)
+    id = GetScalableHWIntrinsicId(simdSize, id);
+#endif
     return id;
 }
 

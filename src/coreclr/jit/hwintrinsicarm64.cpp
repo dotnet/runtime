@@ -722,6 +722,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_AdvSimd_BitwiseClear:
+        case NI_Vector_AndNot:
         case NI_Vector64_AndNot:
         case NI_Vector128_AndNot:
         {
