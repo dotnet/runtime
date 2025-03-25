@@ -3648,8 +3648,7 @@ void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
     STRESS_LOG0(LF_SYNC, LL_INFO1000, "ResumeAllThreads() - End\n");
 }
 
-#ifndef TARGET_UNIX
-#ifdef TARGET_X86
+#if defined(TARGET_WINDOWS) && defined(TARGET_X86)
 //****************************************************************************************
 // This will resume the thread at the location of redirection.
 //
@@ -3711,17 +3710,27 @@ int RedirectedThrowControlExceptionFilter(
     // Resume execution at point where thread was originally redirected
     return (EXCEPTION_CONTINUE_EXECUTION);
 }
-#endif
-#endif // !TARGET_UNIX
+
+void RedirectedThrowControl()
+{
+    __try{
+        RaiseException(BOOTUP_EXCEPTION_COMPLUS,0,0,NULL);
+    }
+    __except(RedirectedThrowControlExceptionFilter(GetExceptionInformation()))
+    {
+        _ASSERTE(!"Should not reach here");
+    }
+}
+#endif // TARGET_WINDOWS && TARGET_X86
 
 // Resume a thread at this location, to persuade it to throw a ThreadStop.  The
 // exception handler needs a reasonable idea of how large this method is, so don't
 // add lots of arbitrary code here.
 void
 ThrowControlForThread(
-#ifdef FEATURE_EH_FUNCLETS
-        FaultingExceptionFrame *pfef
-#endif // FEATURE_EH_FUNCLETS
+#if !defined(TARGET_X86)
+    FaultingExceptionFrame *pfef
+#endif // !TARGET_X86
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
         , TADDR ssp
 #endif // TARGET_AMD64 && TARGET_WINDOWS
@@ -3748,29 +3757,24 @@ ThrowControlForThread(
             STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread resume\n");
             pThread->ResetThrowControlForThread();
             // Thread abort is not allowed at this point
-#ifndef FEATURE_EH_FUNCLETS
-            __try{
-                RaiseException(BOOTUP_EXCEPTION_COMPLUS,0,0,NULL);
-            }
-            __except(RedirectedThrowControlExceptionFilter(GetExceptionInformation()))
-            {
-                _ASSERTE(!"Should not reach here");
-            }
-#else // FEATURE_EH_FUNCLETS
+            // Thread abort is not allowed at this point
             __asan_handle_no_return();
+#if defined(TARGET_WINDOWS) && defined(TARGET_X86)
+            RedirectedThrowControl();
+#else // TARGET_WINDOWS && TARGET_X86
             RtlRestoreContext(pThread->m_OSContext, NULL);
-#endif // !FEATURE_EH_FUNCLETS
+#endif // TARGET_WINDOWS && TARGET_X86
             _ASSERTE(!"Should not reach here");
         }
         pThread->SetThrowControlForThread(Thread::InducedThreadStop);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
+#if !defined(TARGET_X86)
     ((Frame*)pfef)->Init(FrameIdentifier::FaultingExceptionFrame);
-#else // FEATURE_EH_FUNCLETS
+#else // !TARGET_X86
     FaultingExceptionFrame fef;
     FaultingExceptionFrame *pfef = &fef;
-#endif // FEATURE_EH_FUNCLETS
+#endif // !TARGET_X86
     pfef->InitAndLink(pThread->m_OSContext);
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
