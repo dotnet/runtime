@@ -38,7 +38,7 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     : Phase(comp, PHASE_ALLOCATE_OBJECTS)
     , m_IsObjectStackAllocationEnabled(false)
     , m_AnalysisDone(false)
-    , m_isR2R(comp->opts.IsReadyToRun() && !comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    , m_isR2R(comp->IsReadyToRun())
     , m_bvCount(0)
     , m_bitVecTraits(BitVecTraits(comp->lvaCount, comp))
     , m_unknownSourceLocalNum(BAD_VAR_NUM)
@@ -670,8 +670,9 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         }
 
         // Parameters have unknown initial values.
+        // OSR locals have unknown initial values.
         //
-        if (lclDsc->lvIsParam)
+        if (lclDsc->lvIsParam || lclDsc->lvIsOSRLocal)
         {
             AddConnGraphEdge(lclNum, m_unknownSourceLocalNum);
         }
@@ -809,31 +810,15 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
                 // We discovered a new pointer that may point to the stack.
                 MarkLclVarAsPossiblyStackPointing(lclNum);
 
-                // Check if this pointer always points to the stack.
-                // For OSR the reference may be pointing at the heap-allocated Tier0 version.
+                // If all locals assignable to this local are stack pointing, so is this local.
                 //
-                if (!comp->opts.IsOSR())
-                {
-                    // Check if we know what is assigned to this pointer.
-                    //
-                    bool            isStackPointing = true;
-                    bool            isAssigned      = false;
-                    unsigned        rhsLclIndex     = 0;
-                    BitVecOps::Iter iter(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclIndex]);
-                    while (isStackPointing && iter.NextElem(&rhsLclIndex))
-                    {
-                        isAssigned               = true;
-                        const unsigned rhsLclNum = IndexToLocal(rhsLclIndex);
-                        isStackPointing          = DoesLclVarPointToStack(rhsLclNum);
-                    }
+                const bool isStackPointing = BitVecOps::IsSubset(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclIndex],
+                                                                 m_DefinitelyStackPointingPointers);
 
-                    if (isAssigned && isStackPointing)
-                    {
-                        // The only stores to lclNum local are definitely-stack-pointing
-                        // so lclNum local is also definitely-stack-pointing.
-                        MarkLclVarAsDefinitelyStackPointing(lclNum);
-                        JITDUMP("V%02u is stack pointing\n", lclNum);
-                    }
+                if (isStackPointing)
+                {
+                    MarkLclVarAsDefinitelyStackPointing(lclNum);
+                    JITDUMP("V%02u is stack pointing\n", lclNum);
                 }
 
                 changed = true;
