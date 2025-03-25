@@ -30,6 +30,7 @@ parameters:
   runtimeVariant: ''
   shouldContinueOnError: false
   SuperPmiCollect: ''
+  SuperPmiReplayType: ''
   SuperPmiDiffType: ''
   SuperPmiBaseJitOptions: ''
   SuperPmiDiffJitOptions: ''
@@ -65,6 +66,7 @@ steps:
       RuntimeFlavor: ${{ parameters.runtimeFlavor }}
       _RuntimeVariant: ${{ parameters.runtimeVariant }}
       _SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+      _SuperPmiReplayType: ${{ parameters.SuperPmiReplayType }}
       _SuperPmiDiffType: ${{ parameters.SuperPmiDiffType }}
       _SuperPmiBaseJitOptions: ${{ parameters.SuperPmiBaseJitOptions }}
       _SuperPmiDiffJitOptions: ${{ parameters.SuperPmiDiffJitOptions }}

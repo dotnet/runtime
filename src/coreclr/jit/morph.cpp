@@ -5207,7 +5207,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     // R2R requires different handling but we don't support tailcall via
     // helpers in R2R yet, so just leave it for now.
     // TODO: R2R: TailCallViaHelper
-    assert(!opts.IsReadyToRun());
+    assert(!IsAot());
 
     JITDUMP("fgMorphTailCallViaHelpers (before):\n");
     DISPTREE(call);
@@ -13441,7 +13441,7 @@ GenTree* Compiler::fgInitThisClass()
     {
 #ifdef FEATURE_READYTORUN
         // Only NativeAOT understands CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE. Don't do this on CoreCLR.
-        if (opts.IsReadyToRun() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        if (IsNativeAot())
         {
             CORINFO_RESOLVED_TOKEN resolvedToken;
             memset(&resolvedToken, 0, sizeof(resolvedToken));
@@ -14486,7 +14486,7 @@ bool Compiler::fgCanTailCallViaJitHelper(GenTreeCall* call)
 #else
     // For R2R make sure we go through portable mechanism that the 'EE' side
     // will properly turn into a runtime JIT.
-    if (opts.IsReadyToRun())
+    if (IsAot())
     {
         return false;
     }

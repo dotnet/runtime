@@ -53,6 +53,18 @@ namespace Internal.ReadyToRunConstants
                         }
                     }
 
+                case TargetArchitecture.RiscV64:
+                    {
+                        switch (instructionSet)
+                        {
+                            case InstructionSet.RiscV64_RiscV64Base: return ReadyToRunInstructionSet.RiscV64Base;
+                            case InstructionSet.RiscV64_Zba: return ReadyToRunInstructionSet.Zba;
+                            case InstructionSet.RiscV64_Zbb: return ReadyToRunInstructionSet.Zbb;
+
+                            default: throw new Exception("Unknown instruction set");
+                        }
+                    }
+
                 case TargetArchitecture.X64:
                     {
                         switch (instructionSet)

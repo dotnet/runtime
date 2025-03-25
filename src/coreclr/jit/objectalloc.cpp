@@ -944,7 +944,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
     bool didStackAllocate             = false;
     m_PossiblyStackPointingPointers   = BitVecOps::MakeEmpty(&m_bitVecTraits);
     m_DefinitelyStackPointingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
-    const bool isReadyToRun           = comp->opts.IsReadyToRun() && !comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    const bool isReadyToRun           = comp->IsReadyToRun();
 
     for (BasicBlock* const block : comp->Blocks())
     {
@@ -1243,7 +1243,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 #ifdef FEATURE_READYTORUN
     if (entryPoint.addr != nullptr)
     {
-        assert(comp->opts.IsReadyToRun());
+        assert(comp->IsAot());
         helperCall->AsCall()->setEntryPoint(entryPoint);
     }
     else
@@ -3415,7 +3415,8 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     newEnumeratorDsc->lvTracked  = 1;
     newEnumeratorDsc->lvVarIndex = (unsigned short)m_nextLocalIndex; // grr
     assert(newEnumeratorDsc->lvVarIndex < comp->lvaTrackedToVarNumSize);
-    comp->lvaTrackedToVarNum[newEnumeratorDsc->lvVarIndex] = newEnumeratorLocal;
+    comp->lvaTrackedToVarNum[newEnumeratorDsc->lvVarIndex]   = newEnumeratorLocal;
+    m_ConnGraphAdjacencyMatrix[newEnumeratorDsc->lvVarIndex] = BitVecOps::MakeEmpty(&m_bitVecTraits);
     m_nextLocalIndex++;
     assert(m_maxPseudoLocals > 0);
     assert(newEnumeratorDsc->lvVarIndex < m_firstPseudoLocalIndex);
