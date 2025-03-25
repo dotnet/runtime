@@ -7,23 +7,6 @@
 #ifdef FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
-// Arm64VersionOfIsa: Gets the corresponding 64-bit only InstructionSet for a given InstructionSet
-//
-// Arguments:
-//    isa -- The InstructionSet ID
-//
-// Return Value:
-//    The 64-bit only InstructionSet associated with isa
-static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
-{
-    switch (isa)
-    {
-        default:
-            return InstructionSet_NONE;
-    }
-}
-
-//------------------------------------------------------------------------
 // lookupInstructionSet: Gets the InstructionSet for a given class name
 //
 // Arguments:
@@ -37,9 +20,20 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 
     if (className[0] == 'R')
     {
-        if (strcmp(className, "RiscVBase") == 0)
+        if (strcmp(className, "RiscV64Base") == 0)
         {
-            // return InstructionSet_RiscVBase;
+            return InstructionSet_RiscV64Base;
+        }
+    }
+    else if (className[0] == 'Z')
+    {
+        if (strcmp(className, "Zba") == 0)
+        {
+            return InstructionSet_Zba;
+        }
+        if (strcmp(className, "Zbb") == 0)
+        {
+            return InstructionSet_Zbb;
         }
     }
 
@@ -72,15 +66,7 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
     // Since lookupId is only called for the xplat intrinsics
     // or intrinsics in the platform specific namespace, we assume
     // that it will be one we can handle and don't try to early out.
-
-    CORINFO_InstructionSet enclosingIsa = lookupIsa(innerEnclosingClassName, outerEnclosingClassName, nullptr);
-
-    if (strcmp(className, "Arm64") == 0)
-    {
-        return Arm64VersionOfIsa(enclosingIsa);
-    }
-
-    return InstructionSet_ILLEGAL;
+    return lookupIsa(innerEnclosingClassName, outerEnclosingClassName, nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -95,9 +81,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {
-        // These ISAs are fully implemented
-        // case InstructionSet_RiscVBase:
-        case InstructionSet_NONE:
+        case InstructionSet_RiscV64Base:
             return true;
 
         default:
@@ -117,8 +101,9 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {
-        // case InstructionSet_RiscVBase:
-        case InstructionSet_NONE:
+        case InstructionSet_RiscV64Base:
+        case InstructionSet_Zba:
+        case InstructionSet_Zbb:
             return true;
 
         default:

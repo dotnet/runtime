@@ -24,8 +24,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     assert(category == HW_Category_Scalar);
 
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
-    // TODO: uncomment when RiscV64Base
-    // assert(compiler->compIsaSupportedDebugOnly(HWIntrinsicInfo::lookupIsa(id)));
+    assert(compiler->compIsaSupportedDebugOnly(HWIntrinsicInfo::lookupIsa(id)));
 
     size_t opCount = node->GetOperandCount();
     assert(opCount <= 3);
@@ -48,10 +47,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (id)
     {
-        case NI_NONE_FusedMultiplyAddScalar:
-        case NI_NONE_FusedMultiplySubtractScalar:
-        case NI_NONE_FusedNegatedMultiplyAddScalar:
-        case NI_NONE_FusedNegatedMultiplySubtractScalar:
+        case NI_RiscV64Base_FusedMultiplyAddScalar:
+        case NI_RiscV64Base_FusedMultiplySubtractScalar:
+        case NI_RiscV64Base_FusedNegatedMultiplyAddScalar:
+        case NI_RiscV64Base_FusedNegatedMultiplySubtractScalar:
             assert(opCount == 3);
             GetEmitter()->emitIns_R_R_R_R(ins, emitSize, destReg, op1Reg, op2Reg, op3Reg);
             break;

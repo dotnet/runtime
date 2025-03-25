@@ -4310,14 +4310,15 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     break;
                 }
 #elif defined(TARGET_RISCV64)
-                // if (compOpportunisticallyDependsOn(InstructionSet_RiscV64Base))
+                if (compOpportunisticallyDependsOn(InstructionSet_RiscV64Base))
                 {
                     assert(varTypeIsFloating(callType));
                     GenTree* op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
                     GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
                     GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
 
-                    retNode = gtNewScalarHWIntrinsicNode(callType, op1, op2, op3, NI_NONE_FusedMultiplyAddScalar);
+                    retNode =
+                        gtNewScalarHWIntrinsicNode(callType, op1, op2, op3, NI_RiscV64Base_FusedMultiplyAddScalar);
                 }
 #endif
 

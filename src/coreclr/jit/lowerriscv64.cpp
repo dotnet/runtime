@@ -515,7 +515,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     switch (node->GetHWIntrinsicId())
     {
-        case NI_NONE_FusedMultiplyAddScalar:
+        case NI_RiscV64Base_FusedMultiplyAddScalar:
         {
             auto removeNegation = [this, node](size_t operandIndex) {
                 GenTree*& operand   = node->Op(operandIndex);
@@ -533,11 +533,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             bool isSubtract = (removeNegation(3) != isNegated);         // negation flips add/subtract op3.
             assert(node->GetOperandCount() == 3);
 
-            static const NamedIntrinsic base = NI_NONE_FusedMultiplyAddScalar;
-            static_assert((base + (0 << 1) + 0) == NI_NONE_FusedMultiplyAddScalar, "");
-            static_assert((base + (0 << 1) + 1) == NI_NONE_FusedMultiplySubtractScalar, "");
-            static_assert((base + (1 << 1) + 0) == NI_NONE_FusedNegatedMultiplyAddScalar, "");
-            static_assert((base + (1 << 1) + 1) == NI_NONE_FusedNegatedMultiplySubtractScalar, "");
+            static const NamedIntrinsic base = NI_RiscV64Base_FusedMultiplyAddScalar;
+            static_assert((base + (0 << 1) + 0) == NI_RiscV64Base_FusedMultiplyAddScalar, "");
+            static_assert((base + (0 << 1) + 1) == NI_RiscV64Base_FusedMultiplySubtractScalar, "");
+            static_assert((base + (1 << 1) + 0) == NI_RiscV64Base_FusedNegatedMultiplyAddScalar, "");
+            static_assert((base + (1 << 1) + 1) == NI_RiscV64Base_FusedNegatedMultiplySubtractScalar, "");
             int index = ((int)isNegated << 1) + (int)isSubtract;
             if (index != 0)
             {
