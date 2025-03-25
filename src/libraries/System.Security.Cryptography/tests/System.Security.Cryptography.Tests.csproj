@@ -6,6 +6,7 @@
     <NoWarn>$(NoWarn);SYSLIB0021;SYSLIB0026;SYSLIB0027;SYSLIB0028;SYSLIB0057</NoWarn>
     <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -609,6 +610,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"

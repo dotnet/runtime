@@ -21,17 +21,6 @@ namespace System.Security.Cryptography.Tests
                 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
             ];
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
-        public static void SafeEvpPKeyHandle()
-        {
-            using MLKem kem = MLKem.GenerateKey(MLKemAlgorithm.MLKem768);
-            FieldInfo info = kem.GetType().GetField("_key", BindingFlags.Instance | BindingFlags.NonPublic);
-            SafeEvpPKeyHandle handle = (SafeEvpPKeyHandle)info.GetValue(kem);
-
-            using MLKemOpenSsl ossl = new(handle);
-        }
-
-
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemAlgorithms))]
         public static void Generate_Roundtrip(MLKemAlgorithm algorithm)
@@ -211,19 +200,7 @@ namespace System.Security.Cryptography.Tests
                 new Span<byte>(new byte[algorithm.DecapsulationKeySizeInBytes])));
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
-        public static void ExportPrivateSeed_OnlyHasDecapsulationKey()
-        {
-            MLKemGenerateTestVector vector = MLKemGenerateTestVectors.First();
-            using MLKem kem = MLKem.ImportDecapsulationKey(
-                vector.Algorithm,
-                vector.DecapsulationKey.HexToByteArray());
 
-            Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
-            Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed(
-                new byte[vector.Algorithm.PrivateSeedSizeInBytes]));
-
-        }
 
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void ExportPrivateSeed_OnlyHasEncapsulationKey()

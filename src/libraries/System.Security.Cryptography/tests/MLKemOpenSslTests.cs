@@ -22,16 +22,23 @@ namespace System.Security.Cryptography.Tests
             using SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(algorithm.Name, seed);
             return new MLKemOpenSsl(key);
         }
+
+        public override MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            using SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: true);
+            return new MLKemOpenSsl(key);
+        }
     }
 
     public abstract class MLKemBaseTests
     {
         public abstract MLKem Generate(MLKemAlgorithm algorithm);
         public abstract MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> seed);
+        public abstract MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source);
 
         [Theory]
         [MemberData(nameof(MLKemAlgorithms))]
-        public void Generate_Roundtrip(MLKemAlgorithm algorithm)
+        public void ExportPrivateSeed_Roundtrip(MLKemAlgorithm algorithm)
         {
             using MLKem kem = Generate(algorithm);
             Assert.Equal(algorithm, kem.Algorithm);
@@ -43,12 +50,23 @@ namespace System.Security.Cryptography.Tests
             Assert.True(seed.ContainsAnyExcept((byte)0));
             AssertExtensions.SequenceEqual(seed, allocatedSeed1.AsSpan());
 
-            using MLKem kem2 = MLKem.ImportPrivateSeed(algorithm, seed);
+            using MLKem kem2 = ImportPrivateSeed(algorithm, seed);
             Span<byte> seed2 = new byte[algorithm.PrivateSeedSizeInBytes];
             kem2.ExportPrivateSeed(seed2);
             byte[] allocatedSeed2 = kem2.ExportPrivateSeed();
             AssertExtensions.SequenceEqual(seed, seed2);
             AssertExtensions.SequenceEqual(seed2, allocatedSeed2.AsSpan());
+        }
+
+        [Fact]
+        public static void ExportPrivateSeed_OnlyHasDecapsulationKey()
+        {
+            using MLKem kem = MLKem.ImportDecapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512DecapsulationKey);
+
+            Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
+            Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed(
+                new byte[vector.Algorithm.PrivateSeedSizeInBytes]));
+
         }
 
         public static IEnumerable<object[]> MLKemAlgorithms
