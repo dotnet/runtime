@@ -98,9 +98,9 @@ namespace ILCompiler
             return _nodeFactory.NecessaryTypeSymbol(type);
         }
 
-        public bool CanInline(MethodDesc caller, MethodDesc callee)
+        public bool CanInline(MethodDesc root, MethodDesc caller, MethodDesc callee)
         {
-            return _inliningPolicy.CanInline(caller, callee);
+            return _inliningPolicy.CanInline(root, caller, callee);
         }
 
         public bool CanReferenceConstructedMethodTable(TypeDesc type)

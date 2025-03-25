@@ -7,6 +7,6 @@ namespace ILCompiler
 {
     public interface IInliningPolicy
     {
-        bool CanInline(MethodDesc caller, MethodDesc callee);
+        bool CanInline(MethodDesc root, MethodDesc caller, MethodDesc callee);
     }
 }

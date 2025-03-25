@@ -74,7 +74,7 @@ namespace ILCompiler
 
         protected abstract void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj);
 
-        public bool CanInline(MethodDesc caller, MethodDesc callee)
+        public bool CanInline(MethodDesc root, MethodDesc caller, MethodDesc callee)
         {
             if (JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_DEBUG_CODE))
             {
@@ -107,9 +107,25 @@ namespace ILCompiler
                 }
             }
 
+            EcmaModule rootModule = (root.OwningType as MetadataType)?.Module as EcmaModule;
+            EcmaModule calleeModule = (callee.OwningType as MetadataType)?.Module as EcmaModule;
+
+            if ((rootModule != null) && (calleeModule != null))
+            {
+                //if (rootModule.IsRuntimeWrapExceptions != calleeModule.IsRuntimeWrapExceptions)
+                //{
+                //    var calleeIL = GetMethodIL(callee);
+                //    if (calleeIL.GetExceptionRegions().Length != 0)
+                //    {
+                //        // Fail inlining if root method and callee have different exception wrapping behavior
+                //        return false;
+                //    }
+                //}
+            }
+
             _nodeFactory.DetectGenericCycles(caller, callee);
 
-            return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
+            return NodeFactory.CompilationModuleGroup.CanInline(root, caller, callee);
         }
 
         public virtual MethodIL GetMethodIL(MethodDesc method)
