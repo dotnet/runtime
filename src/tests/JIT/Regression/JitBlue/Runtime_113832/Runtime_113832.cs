@@ -19,15 +19,18 @@ public class Runtime_113832
     [Fact]
     public static void Problem()
     {
-        var vr9 = Vector128.Create<ulong>(0);
-        var vr10 = (ulong)s_4;
-        var vr11 = Vector128.CreateScalar(vr10);
-        var vr12 = Avx2.BroadcastScalarToVector128(vr11);
-        var vr13 = (byte)0;
-        var vr14 = Vector256.CreateScalar(vr13);
-        var vr15 = (ulong)Avx2.MoveMask(vr14);
-        var vr16 = Vector128.Create<ulong>(vr15);
-        var vr17 = Avx512F.VL.TernaryLogic(vr9, vr12, vr16, 1);
-        Console.WriteLine(vr17);
+        if (Avx512F.VL.IsSupported)
+        {
+            var vr9 = Vector128.Create<ulong>(0);
+            var vr10 = (ulong)s_4;
+            var vr11 = Vector128.CreateScalar(vr10);
+            var vr12 = Avx2.BroadcastScalarToVector128(vr11);
+            var vr13 = (byte)0;
+            var vr14 = Vector256.CreateScalar(vr13);
+            var vr15 = (ulong)Avx2.MoveMask(vr14);
+            var vr16 = Vector128.Create<ulong>(vr15);
+            var vr17 = Avx512F.VL.TernaryLogic(vr9, vr12, vr16, 1);
+            Console.WriteLine(vr17);
+        }
     }
 }

@@ -35,7 +35,10 @@ public class Runtime_113829
     [Fact]
     public static void Problem2()
     {
-        var vr7 = Vector128.CreateScalar(2263564149047927034UL);
-        Vector256.CreateScalar((short)(sbyte)Sse41.X64.Extract(vr7, 0));
+        if (Sse41.X64.IsSupported)
+        {
+            var vr7 = Vector128.CreateScalar(2263564149047927034UL);
+            Vector256.CreateScalar((short)(sbyte)Sse41.X64.Extract(vr7, 0));
+        }
     }
 }
