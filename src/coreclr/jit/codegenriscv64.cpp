@@ -2453,7 +2453,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     e->emitIns_R_R_R(is4 ? INS_lr_w : INS_lr_d, size, target, loc, REG_R0); // load original value
     e->emitIns_J_cond_la(INS_bne, fail, target, comparand);                 // fail if doesn’t match
     e->emitIns_R_R_R(is4 ? INS_sc_w : INS_sc_d, size, storeErr, loc, val);  // try to update
-    e->emitIns_J(INS_bnez, retry, 0, storeErr);                                // retry if update failed
+    e->emitIns_J(INS_bnez, retry, storeErr);                                // retry if update failed
     genDefineTempLabel(fail);
 
     gcInfo.gcMarkRegSetNpt(locOp->gtGetRegMask());
@@ -3510,14 +3510,12 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
     emitter*    emit = GetEmitter();
     instruction ins  = INS_invalid;
+    int         regs = 0;
 
     GenCondition cond = tree->gtCondition;
 
-    emitAttr  cmpSize   = EA_ATTR(genTypeSize(op1Type));
-    regNumber regOp1    = op1->GetRegNum();
-    regNumber regOp2    = REG_ZERO;
-    regNumber tmpRegOp1 = REG_ZERO;
-    regNumber tmpRegOp2 = REG_ZERO;
+    emitAttr  cmpSize = EA_ATTR(genTypeSize(op1Type));
+    regNumber regOp1  = op1->GetRegNum();
 
     if (op2->isContainedIntOrIImmed())
     {
@@ -3529,7 +3527,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             {
                 case EA_4BYTE:
                 {
-                    tmpRegOp1 = rsGetRsvdReg();
+                    regNumber tmpRegOp1 = rsGetRsvdReg();
                     assert(regOp1 != tmpRegOp1);
                     if (cond.IsUnsigned())
                     {
@@ -3571,13 +3569,13 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             instGen_Set_Reg_To_Imm(attr, REG_RA, imm,
                                    INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(REG_RA);
-            regOp1 = REG_RA;
+            regs = (int)REG_RA << 5;
         }
         else
         {
             if (cmpSize == EA_4BYTE)
             {
-                tmpRegOp1 = rsGetRsvdReg();
+                regNumber tmpRegOp1 = rsGetRsvdReg();
                 assert(regOp1 != tmpRegOp1);
                 if (cond.IsUnsigned())
                 {
@@ -3595,45 +3593,31 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
         switch (cond.GetCode())
         {
             case GenCondition::EQ:
+                regs |= ((int)regOp1);
                 ins = INS_beq;
                 break;
             case GenCondition::NE:
+                regs |= ((int)regOp1);
                 ins = INS_bne;
                 break;
             case GenCondition::UGE:
             case GenCondition::SGE:
+                regs |= ((int)regOp1);
                 ins = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             case GenCondition::UGT:
             case GenCondition::SGT:
-                if (imm)
-                {
-                    regOp2 = regOp1;
-                    regOp1 = REG_RA;
-                }
-                else
-                {
-                    regOp2 = regOp1;
-                    regOp1 = REG_ZERO;
-                }
+                regs = imm ? ((((int)regOp1) << 5) | (int)REG_RA) : (((int)regOp1) << 5);
                 ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULT:
             case GenCondition::SLT:
+                regs |= ((int)regOp1);
                 ins = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULE:
             case GenCondition::SLE:
-                if (imm)
-                {
-                    regOp2 = regOp1;
-                    regOp1 = REG_RA;
-                }
-                else
-                {
-                    regOp2 = regOp1;
-                    regOp1 = REG_ZERO;
-                }
+                regs = imm ? ((((int)regOp1) << 5) | (int)REG_RA) : (((int)regOp1) << 5);
                 ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             default:
@@ -3643,11 +3627,11 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     }
     else
     {
-        regOp2 = op2->GetRegNum();
+        regNumber regOp2 = op2->GetRegNum();
         if (cmpSize == EA_4BYTE)
         {
-            tmpRegOp1 = REG_RA;
-            tmpRegOp2 = rsGetRsvdReg();
+            regNumber tmpRegOp1 = REG_RA;
+            regNumber tmpRegOp2 = rsGetRsvdReg();
             assert(regOp1 != tmpRegOp2);
             assert(regOp2 != tmpRegOp2);
 
@@ -3671,37 +3655,31 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
         switch (cond.GetCode())
         {
             case GenCondition::EQ:
-                tmpRegOp1 = regOp1;
-                regOp1 = regOp2;
-                regOp2 = tmpRegOp1;
+                regs = (((int)regOp1) << 5) | (int)regOp2;
                 ins  = INS_beq;
                 break;
             case GenCondition::NE:
-                tmpRegOp1 = regOp1;
-                regOp1 = regOp2;
-                regOp2 = tmpRegOp1;
+                regs = (((int)regOp1) << 5) | (int)regOp2;
                 ins  = INS_bne;
                 break;
             case GenCondition::UGE:
             case GenCondition::SGE:
+                regs = ((int)regOp1 | ((int)regOp2 << 5));
                 ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             case GenCondition::UGT:
             case GenCondition::SGT:
-                tmpRegOp1 = regOp1;
-                regOp1 = regOp2;
-                regOp2 = tmpRegOp1;
+                regs = (((int)regOp1) << 5) | (int)regOp2;
                 ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULT:
             case GenCondition::SLT:
+                regs = ((int)regOp1 | ((int)regOp2 << 5));
                 ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULE:
             case GenCondition::SLE:
-                tmpRegOp1 = regOp1;
-                regOp1 = regOp2;
-                regOp2 = tmpRegOp1;
+                regs = (((int)regOp1) << 5) | (int)regOp2;
                 ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             default:
@@ -3710,8 +3688,9 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
         }
     }
     assert(ins != INS_invalid);
+    assert(regs != 0);
 
-    emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), 0, regOp1, regOp2); // 5-bits;
+    emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs); // 5-bits;
 
     // If we cannot fall into the false target, emit a jump to it
     BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
@@ -5868,7 +5847,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         // tempReg = tempReg - 8
         GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -8);
         // if (tempReg != dstReg) goto loop;
-        GetEmitter()->emitIns_J(INS_bne, loop, 0, tempReg, dstReg);
+        GetEmitter()->emitIns_J(INS_bne, loop, tempReg | (dstReg << 5));
         GetEmitter()->emitEnableGC();
 
         gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
@@ -6721,7 +6700,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
         noway_assert(excpRaisingBlock != nullptr);
 
         // Jump to the exception-throwing block on error.
-        emit->emitIns_J(ins, excpRaisingBlock, 0, reg1, reg2); // 5-bits;
+        emit->emitIns_J(ins, excpRaisingBlock, reg1 | (reg2 << 5)); // 5-bits;
     }
     else
     {

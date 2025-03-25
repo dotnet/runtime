@@ -294,7 +294,7 @@ inline static bool isJumpInstruction(instruction ins)
 /*                   Output target-independent instructions             */
 /************************************************************************/
 
-void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0, regNumber reg1 = REG_ZERO, regNumber reg2 = REG_ZERO);
+void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 
 /************************************************************************/
 /*           The public entry points to output instructions             */
