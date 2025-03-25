@@ -169,6 +169,226 @@ static insOpts AddEmbMaskingMode(insOpts instOptions, regNumber maskReg, bool me
 }
 
 //------------------------------------------------------------------------
+// GetImmediateMaxAndMask: Returns the max valid value and a bit mask for
+//    a full-range immediate of an instruction that has documented
+//    masking or clamping of the immediate.
+//
+// Arguments:
+//    instruction   - The instruction to look up
+//    simdSize      - The vector size for the instruction
+//    maskOut       - A pointer to the location to return the mask
+//
+// Return Value:
+//    The max useful immediate value
+//
+static unsigned GetImmediateMaxAndMask(instruction ins, unsigned simdSize, unsigned* maskOut)
+{
+    assert(maskOut != nullptr);
+    assert((simdSize >= 16) && (simdSize <= 64));
+
+    unsigned lanes = simdSize / genTypeSize(TYP_SIMD16);
+    unsigned mask  = 0xFF;
+    unsigned max   = 0;
+
+    switch (ins)
+    {
+        // These byte-wise shift instructions are documented to return a zero vector
+        // for shift amounts 16 or greater.
+        case INS_pslldq:
+        case INS_psrldq:
+        {
+            max = 16;
+            break;
+        }
+
+        // palignr concatenates two 16-byte lanes and shifts the result by imm8 bytes.
+        // It is documented to return a zero vector for shift amounts 32 or greater.
+        case INS_palignr:
+        {
+            max = 32;
+            break;
+        }
+
+        // The following groups of instructions extract/insert a scalar value from/to a
+        // 128-bit vector and use a documented range of bits for element index.
+        case INS_pextrq:
+        case INS_pinsrq:
+        {
+            mask = 0b00000001;
+            max  = mask;
+            break;
+        }
+
+        case INS_extractps:
+        case INS_pextrd:
+        case INS_pinsrd:
+        {
+            mask = 0b00000011;
+            max  = mask;
+            break;
+        }
+
+        case INS_pextrw:
+        case INS_pinsrw:
+        {
+            mask = 0b00000111;
+            max  = mask;
+            break;
+        }
+
+        case INS_pextrb:
+        case INS_pinsrb:
+        {
+            mask = 0b00001111;
+            max  = mask;
+            break;
+        }
+
+        // The following instructions concatenate 128- or 256-bit vectors and shift the
+        // result right by imm8 elements. The number of bits used depends on the
+        // vector size / element size.
+        case INS_valignd:
+        {
+            mask = (simdSize / genTypeSize(TYP_INT)) - 1;
+            max  = mask;
+            break;
+        }
+
+        case INS_valignq:
+        {
+            mask = (simdSize / genTypeSize(TYP_LONG)) - 1;
+            max  = mask;
+            break;
+        }
+
+        // The following groups of instructions operate in 128-bit lanes but use a
+        // different range of bits from the immediate for each lane.
+        case INS_blendpd:
+        case INS_shufpd:
+        case INS_vpermilpd:
+        {
+            assert(lanes <= 4);
+
+            // two bits per lane
+            mask = (1 << (lanes * 2)) - 1;
+            max  = mask;
+            break;
+        }
+
+        case INS_blendps:
+        case INS_vpblendd:
+        {
+            assert(lanes <= 2);
+
+            // four bits per lane
+            mask = (1 << (lanes * 4)) - 1;
+            max  = mask;
+            break;
+        }
+
+        case INS_mpsadbw:
+        {
+            assert(lanes <= 2);
+
+            // three bits per lane
+            mask = (1 << (lanes * 3)) - 1;
+            max  = mask;
+            break;
+        }
+
+        // These instructions extract/insert a 128-bit vector from/to either a 256-bit or
+        // 512-bit vector. The number of positions is equal to the number of 128-bit lanes.
+        case INS_vextractf128:
+        case INS_vextracti128:
+        case INS_vextractf64x2:
+        case INS_vextracti64x2:
+        case INS_vinsertf128:
+        case INS_vinserti128:
+        case INS_vinsertf64x2:
+        case INS_vinserti64x2:
+        {
+            assert(lanes >= 2);
+
+            mask = lanes - 1;
+            max  = mask;
+            break;
+        }
+
+        // These instructions shuffle 128-bit lanes within a larger vector.
+        // The number of bits used depends on the number of possible lanes.
+        case INS_vshuff32x4:
+        case INS_vshufi32x4:
+        case INS_vshuff64x2:
+        case INS_vshufi64x2:
+        {
+            assert(lanes >= 2);
+
+            // log2(lanes) bits per lane for src selection
+            mask = (1 << (lanes * BitOperations::Log2(lanes))) - 1;
+            max  = mask;
+            break;
+        }
+
+        // These instructions extract/insert a 256-bit vector from/to a 512-bit vector
+        // and therefore only have two possible positions.
+        case INS_vextractf32x8:
+        case INS_vextracti32x8:
+        case INS_vextractf64x4:
+        case INS_vextracti64x4:
+        case INS_vinsertf32x8:
+        case INS_vinserti32x8:
+        case INS_vinsertf64x4:
+        case INS_vinserti64x4:
+        {
+            assert(simdSize == 64);
+
+            mask = 0b00000001;
+            max  = mask;
+            break;
+        }
+
+        // The following instructions use documented ranges of bits with gaps in them.
+        case INS_dppd:
+        {
+            // bits [1:0] are the result broadcast mask
+            // bits [5:4] are the element selection mask
+            mask = 0b00110011;
+            max  = mask;
+            break;
+        }
+
+        case INS_pclmulqdq:
+        {
+            // bit 0 selects the src1 qword
+            // bit 4 selects the src2 qword
+            mask = 0b00010001;
+            max  = mask;
+            break;
+        }
+
+        case INS_vperm2f128:
+        case INS_vperm2i128:
+        {
+            // bits [1:0] select the src index for the low lane result
+            // bits [5:4] select the src index for the high lane result
+            // bits 3 and 7, if set, will zero the low or high lane, respectively
+            mask = 0b10111011;
+            max  = mask;
+            break;
+        }
+
+        default:
+        {
+            max = 255;
+            break;
+        }
+    }
+
+    *maskOut = mask;
+    return max;
+}
+
+//------------------------------------------------------------------------
 // genHWIntrinsic: Generates the code for a given hardware intrinsic node.
 //
 // Arguments:
@@ -332,8 +552,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             };
                             regNumber baseReg = internalRegisters.Extract(node);
                             regNumber offsReg = internalRegisters.GetSingle(node);
-                            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
-                                                            emitSwCase);
+                            genHWIntrinsicJumpTableFallback(intrinsicId, ins, simdSize, lastOp->GetRegNum(), baseReg,
+                                                            offsReg, emitSwCase);
                             break;
                         }
                         case 2:
@@ -344,8 +564,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             };
                             regNumber baseReg = internalRegisters.Extract(node);
                             regNumber offsReg = internalRegisters.GetSingle(node);
-                            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
-                                                            emitSwCase);
+                            genHWIntrinsicJumpTableFallback(intrinsicId, ins, simdSize, lastOp->GetRegNum(), baseReg,
+                                                            offsReg, emitSwCase);
                             break;
                         }
 
@@ -533,7 +753,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // constant value.
                         regNumber baseReg = internalRegisters.Extract(node);
                         regNumber offsReg = internalRegisters.GetSingle(node);
-                        genHWIntrinsicJumpTableFallback(intrinsicId, op2Reg, baseReg, offsReg, emitSwCase);
+                        genHWIntrinsicJumpTableFallback(intrinsicId, ins, simdSize, op2Reg, baseReg, offsReg,
+                                                        emitSwCase);
                     }
                 }
                 else if (node->TypeGet() == TYP_VOID)
@@ -583,7 +804,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // can also occur if the consumer calls it directly and just doesn't pass a constant value.
                         regNumber baseReg = internalRegisters.Extract(node);
                         regNumber offsReg = internalRegisters.GetSingle(node);
-                        genHWIntrinsicJumpTableFallback(intrinsicId, op3Reg, baseReg, offsReg, emitSwCase);
+                        genHWIntrinsicJumpTableFallback(intrinsicId, ins, simdSize, op3Reg, baseReg, offsReg,
+                                                        emitSwCase);
                     }
                 }
                 else if (category == HW_Category_MemoryStore)
@@ -681,7 +903,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // can also occur if the consumer calls it directly and just doesn't pass a constant value.
                         regNumber baseReg = internalRegisters.Extract(node);
                         regNumber offsReg = internalRegisters.GetSingle(node);
-                        genHWIntrinsicJumpTableFallback(intrinsicId, op4Reg, baseReg, offsReg, emitSwCase);
+                        genHWIntrinsicJumpTableFallback(intrinsicId, ins, simdSize, op4Reg, baseReg, offsReg,
+                                                        emitSwCase);
                     }
                 }
                 else
@@ -857,7 +1080,7 @@ void CodeGen::genHWIntrinsic_R_RM(
 
     if (((instOptions & INS_OPTS_EVEX_b_MASK) != 0) && (rmOpDesc.GetKind() == OperandKind::Reg))
     {
-        // As embedded rounding only appies in R_R case, we can skip other checks for different paths.
+        // As embedded rounding only applies in R_R case, we can skip other checks for different paths.
         regNumber op1Reg = rmOp->GetRegNum();
         assert(op1Reg != REG_NA);
 
@@ -948,7 +1171,7 @@ void CodeGen::genHWIntrinsic_R_RM(
                         // that failed and we either didn't get marked regOptional or we did and didn't get spilled
                         //
                         // As such, we need to emulate the removed CreateScalarUnsafe to ensure that op1 is in a
-                        // SIMD register so the broadcast instruction can execute succesfully. We'll just move
+                        // SIMD register so the broadcast instruction can execute successfully. We'll just move
                         // the value into the target register and then broadcast it out from that.
 
                         emitAttr movdAttr = emitActualTypeSize(node->GetSimdBaseType());
@@ -1212,7 +1435,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(instruction ins,
 
     if (((instOptions & INS_OPTS_EVEX_b_MASK) != 0) && (op3Desc.GetKind() == OperandKind::Reg))
     {
-        // As embedded rounding only appies in R_R case, we can skip other checks for different paths.
+        // As embedded rounding only applies in R_R case, we can skip other checks for different paths.
         regNumber op3Reg = op3->GetRegNum();
         assert(op3Reg != REG_NA);
 
@@ -1368,6 +1591,8 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
 //
 // Arguments:
 //    intrinsic      - intrinsic ID
+//    ins            - the instruction chosen for the intrinsic and base type
+//    attr           - the emit attributes for the instruction
 //    nonConstImmReg - the register contains non-constant imm8 argument
 //    baseReg        - a register for the start of the switch table
 //    offsReg        - a register for the offset into the switch table
@@ -1382,6 +1607,8 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
 //
 template <typename HWIntrinsicSwitchCaseBody>
 void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsic,
+                                              instruction               ins,
+                                              emitAttr                  attr,
                                               regNumber                 nonConstImmReg,
                                               regNumber                 baseReg,
                                               regNumber                 offsReg,
@@ -1389,18 +1616,44 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
 {
     assert(nonConstImmReg != REG_NA);
     // AVX2 Gather intrinsics use managed non-const fallback since they have discrete imm8 value range
-    // that does work with the current compiler generated jump-table fallback
+    // that does not work with the current compiler generated jump-table fallback
     assert(!HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic));
     emitter* emit = GetEmitter();
 
-    const unsigned maxByte = (unsigned)HWIntrinsicInfo::lookupImmUpperBound(intrinsic) + 1;
-    assert(maxByte <= 256);
-    BasicBlock* jmpTable[256];
+    unsigned maxByte = (unsigned)HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
+    unsigned mask    = 0xFF;
 
-    unsigned jmpTableBase = emit->emitBBTableDataGenBeg(maxByte, true);
+    // Some instructions allow full-range immediates but are documented to ignore ranges of bits
+    // or to clamp the value. We can implement the same masking/clamping here in order to reduce
+    // the size of the generated code and jump table.
+
+    if (HWIntrinsicInfo::HasFullRangeImm(intrinsic))
+    {
+        maxByte = GetImmediateMaxAndMask(ins, EA_SIZE(attr), &mask);
+
+        if (mask != 0xFF)
+        {
+            emit->emitIns_R_I(INS_and, EA_4BYTE, nonConstImmReg, mask);
+        }
+        else if (maxByte < 255)
+        {
+            emit->emitIns_R_I(INS_cmp, EA_4BYTE, nonConstImmReg, maxByte);
+
+            BasicBlock* skipLabel = genCreateTempLabel();
+            inst_JMP(EJ_jbe, skipLabel);
+
+            instGen_Set_Reg_To_Imm(EA_4BYTE, nonConstImmReg, maxByte);
+
+            genDefineTempLabel(skipLabel);
+        }
+    }
+
+    assert(maxByte <= 255);
+    BasicBlock* jmpTable[256];
+    unsigned    jmpTableBase = emit->emitBBTableDataGenBeg(maxByte + 1, true);
 
     // Emit the jump table
-    for (unsigned i = 0; i < maxByte; i++)
+    for (unsigned i = 0; i <= maxByte; i++)
     {
         jmpTable[i] = genCreateTempLabel();
         emit->emitDataGenData(i, jmpTable[i]);
@@ -1423,9 +1676,18 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
 
     genDefineTempLabel(switchTableBeg);
 
-    for (unsigned i = 0; i < maxByte; i++)
+    for (unsigned i = 0; i <= maxByte; i++)
     {
         genDefineTempLabel(jmpTable[i]);
+
+        if ((i & mask) != i)
+        {
+            // This is a jump table entry that won't be hit, because the value can't exist after
+            // masking. We define the labels for these values in order to pad out the jump table
+            // so that the valid entries fall at the correct offsets, but we don't emit any code.
+            continue;
+        }
+
         emitSwCase((int8_t)i);
         emit->emitIns_J(INS_jmp, switchTableEnd);
     }
@@ -1463,7 +1725,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
             };
             regNumber baseReg = internalRegisters.Extract(node);
             regNumber offsReg = internalRegisters.GetSingle(node);
-            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
             break;
         }
 
@@ -1488,7 +1750,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
             };
             regNumber baseReg = internalRegisters.Extract(node);
             regNumber offsReg = internalRegisters.GetSingle(node);
-            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
             break;
         }
 
@@ -1504,7 +1766,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
             };
             regNumber baseReg = internalRegisters.Extract(node);
             regNumber offsReg = internalRegisters.GetSingle(node);
-            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
             break;
         }
 
@@ -1540,7 +1802,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
             };
             regNumber baseReg = internalRegisters.Extract(node);
             regNumber offsReg = internalRegisters.GetSingle(node);
-            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
             break;
         }
 
@@ -1581,13 +1843,67 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     switch (intrinsicId)
     {
+        case NI_Vector128_CreateScalar:
+        case NI_Vector256_CreateScalar:
+        case NI_Vector512_CreateScalar:
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
         case NI_Vector512_CreateScalarUnsafe:
         {
             if (varTypeIsIntegral(baseType))
             {
-                genHWIntrinsic_R_RM(node, ins, emitActualTypeSize(baseType), targetReg, op1, instOptions);
+                emitAttr baseAttr = emitActualTypeSize(baseType);
+
+#if defined(TARGET_X86)
+                if (varTypeIsLong(baseType))
+                {
+                    assert(op1->isContained());
+
+                    if (op1->OperIsLong())
+                    {
+                        node->SetSimdBaseJitType(CORINFO_TYPE_INT);
+
+                        bool     canCombineLoad = false;
+                        GenTree* loPart         = op1->gtGetOp1();
+                        GenTree* hiPart         = op1->gtGetOp2();
+
+                        if ((loPart->isContained() && hiPart->isContained()) &&
+                            (loPart->OperIs(GT_LCL_FLD) && hiPart->OperIs(GT_LCL_FLD)))
+                        {
+                            GenTreeLclFld* loFld = loPart->AsLclFld();
+                            GenTreeLclFld* hiFld = hiPart->AsLclFld();
+
+                            canCombineLoad = (hiFld->GetLclNum() == loFld->GetLclNum()) &&
+                                             (hiFld->GetLclOffs() == (loFld->GetLclOffs() + 4));
+                        }
+
+                        if (!canCombineLoad)
+                        {
+                            if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                            {
+                                genHWIntrinsic_R_RM(node, ins, baseAttr, targetReg, loPart, instOptions);
+                                inst_RV_RV_TT_IV(INS_pinsrd, EA_16BYTE, targetReg, targetReg, hiPart, 0x01,
+                                                 !compiler->canUseVexEncoding(), instOptions);
+                            }
+                            else
+                            {
+                                regNumber tmpReg = internalRegisters.GetSingle(node);
+                                genHWIntrinsic_R_RM(node, ins, baseAttr, targetReg, loPart, instOptions);
+                                genHWIntrinsic_R_RM(node, ins, baseAttr, tmpReg, hiPart, instOptions);
+                                emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, targetReg, tmpReg, instOptions);
+                            }
+                            break;
+                        }
+
+                        op1 = loPart;
+                    }
+
+                    ins      = INS_movq;
+                    baseAttr = EA_8BYTE;
+                }
+#endif // TARGET_X86
+
+                genHWIntrinsic_R_RM(node, ins, baseAttr, targetReg, op1, instOptions);
             }
             else
             {
@@ -1602,6 +1918,45 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 else
                 {
                     assert(instOptions == INS_OPTS_NONE);
+
+                    if (HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId))
+                    {
+                        // If this is CreateScalar, we need to ensure the upper elements are zeroed.
+                        // Scalar integer loads and loads from memory always zero the upper elements,
+                        // so reg to reg copies of floating types are the only place we need to
+                        // do anything different.
+
+                        if (baseType == TYP_FLOAT)
+                        {
+                            if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                            {
+                                // insertps imm8 is:
+                                //  * Bits 0-3: zmask
+                                //  * Bits 4-5: count_d
+                                //  * Bits 6-7: count_s (register form only)
+                                //
+                                // We want zmask 0b1110 (0xE) to zero elements 1/2/3
+                                // We want count_d 0b00 (0x0) to insert the value to element 0
+                                // We want count_s 0b00 (0x0) as we're just taking element 0 of the source
+
+                                emit->emitIns_SIMD_R_R_R_I(INS_insertps, attr, targetReg, targetReg, op1Reg, 0x0E,
+                                                           instOptions);
+                            }
+                            else
+                            {
+                                assert(targetReg != op1Reg);
+                                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg, instOptions);
+                                emit->emitIns_Mov(INS_movss, attr, targetReg, op1Reg, /* canSkip */ false);
+                            }
+                        }
+                        else
+                        {
+                            // `movq xmm xmm` zeroes the upper 64 bits.
+                            genHWIntrinsic_R_RM(node, INS_movq, attr, targetReg, op1, instOptions);
+                        }
+                        break;
+                    }
+
                     // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
                     emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
                 }
@@ -1782,6 +2137,20 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                     attr = emitTypeSize(baseType);
                 }
                 genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
+            }
+            else if (varTypeIsIntegral(baseType))
+            {
+                assert(!varTypeIsLong(baseType) || TargetArchitecture::Is64Bit);
+                assert(HWIntrinsicInfo::IsVectorToScalar(intrinsicId));
+
+                attr = emitActualTypeSize(baseType);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
+
+                if (varTypeIsSmall(baseType))
+                {
+                    emit->emitIns_Mov(ins_Move_Extend(baseType, /* srcInReg */ true), emitTypeSize(baseType), targetReg,
+                                      targetReg, /* canSkip */ false);
+                }
             }
             else
             {
@@ -2251,7 +2620,8 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 // can also occur if the consumer calls it directly and just doesn't pass a constant value.
                 regNumber baseReg = internalRegisters.Extract(node);
                 regNumber offsReg = internalRegisters.GetSingle(node);
-                genHWIntrinsicJumpTableFallback(intrinsicId, op2->GetRegNum(), baseReg, offsReg, emitSwCase);
+                genHWIntrinsicJumpTableFallback(intrinsicId, ins, EA_16BYTE, op2->GetRegNum(), baseReg, offsReg,
+                                                emitSwCase);
             }
             break;
         }

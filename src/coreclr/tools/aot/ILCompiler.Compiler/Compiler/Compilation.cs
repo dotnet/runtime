@@ -374,9 +374,7 @@ namespace ILCompiler
             if (lookupKind == ReadyToRunHelperId.TypeHandleForCasting)
             {
                 var type = (TypeDesc)targetOfLookup;
-                if (!type.IsRuntimeDeterminedType ||
-                    (!((RuntimeDeterminedType)type).CanonicalType.IsCanonicalDefinitionType(CanonicalFormKind.Universal) &&
-                    !((RuntimeDeterminedType)type).CanonicalType.IsNullable))
+                if (!type.IsRuntimeDeterminedType || !((RuntimeDeterminedType)type).CanonicalType.IsNullable)
                 {
                     if (type.IsNullable)
                     {

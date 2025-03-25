@@ -414,7 +414,7 @@ namespace Internal.Runtime.TypeLoader
         {
             if (type is DefType defType)
             {
-                CanonicallyEquivalentEntryLocator canonHelperSpecific = new CanonicallyEquivalentEntryLocator(defType, CanonicalFormKind.Specific);
+                CanonicallyEquivalentEntryLocator canonHelperSpecific = new CanonicallyEquivalentEntryLocator(defType);
 
                 foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                 {
@@ -436,7 +436,7 @@ namespace Internal.Runtime.TypeLoader
         /// <returns>Function pointer representing the constructor, IntPtr.Zero when not found</returns>
         public IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle)
         {
-            CanonicallyEquivalentEntryLocator canonHelperSpecific = new CanonicallyEquivalentEntryLocator(runtimeTypeHandle, CanonicalFormKind.Specific);
+            CanonicallyEquivalentEntryLocator canonHelperSpecific = new CanonicallyEquivalentEntryLocator(runtimeTypeHandle);
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(runtimeTypeHandle)))
             {
@@ -521,9 +521,7 @@ namespace Internal.Runtime.TypeLoader
             // of the method's containing type instead of the open type definition.
             //
 
-            CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(
-                methodHandleDeclaringType,
-                CanonicalFormKind.Specific);
+            CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(methodHandleDeclaringType);
 
             var lookup = invokeHashtable.Lookup(canonHelper.LookupHashCode);
 
@@ -601,14 +599,12 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="declaringTypeHandle">Declaring type for the method</param>
         /// <param name="methodHandle">Method handle</param>
         /// <param name="genericMethodTypeArgumentHandles">Handles of generic argument types</param>
-        /// <param name="canonFormKind">Canonical form to use</param>
         /// <param name="methodInvokeMetadata">Output - metadata information for method invoker construction</param>
         /// <returns>true when found, false otherwise</returns>
         public static bool TryGetMethodInvokeMetadata(
             RuntimeTypeHandle declaringTypeHandle,
             QMethodDefinition methodHandle,
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
-            CanonicalFormKind canonFormKind,
             out MethodInvokeMetadata methodInvokeMetadata)
         {
             if (methodHandle.IsNativeFormatMetadataBased)
@@ -618,7 +614,6 @@ namespace Internal.Runtime.TypeLoader
                     declaringTypeHandle,
                     methodHandle.NativeFormatHandle,
                     genericMethodTypeArgumentHandles,
-                    canonFormKind,
                     out methodInvokeMetadata))
                 {
                     return true;
@@ -636,7 +631,6 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="declaringTypeHandle">Declaring type for the method</param>
         /// <param name="methodHandle">Method handle</param>
         /// <param name="genericMethodTypeArgumentHandles">Handles of generic argument types</param>
-        /// <param name="canonFormKind">Canonical form to use</param>
         /// <param name="methodInvokeMetadata">Output - metadata information for method invoker construction</param>
         /// <returns>true when found, false otherwise</returns>
         private static bool TryGetMethodInvokeMetadataFromInvokeMap(
@@ -644,10 +638,9 @@ namespace Internal.Runtime.TypeLoader
             RuntimeTypeHandle declaringTypeHandle,
             MethodHandle methodHandle,
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
-            CanonicalFormKind canonFormKind,
             out MethodInvokeMetadata methodInvokeMetadata)
         {
-            CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle, canonFormKind);
+            CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle);
             TypeManagerHandle methodHandleModule = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
@@ -667,7 +660,6 @@ namespace Internal.Runtime.TypeLoader
                 var lookup = invokeHashtable.Lookup(canonHelper.LookupHashCode);
                 var entryData = new InvokeMapEntryDataEnumerator<PreloadedTypeComparator, IntPtr>(
                     new PreloadedTypeComparator(declaringTypeHandle, genericMethodTypeArgumentHandles),
-                    canonFormKind,
                     module.Handle,
                     methodHandle,
                     methodHandleModule);
@@ -764,7 +756,6 @@ namespace Internal.Runtime.TypeLoader
         {
             // Read-only inputs
             private TLookupMethodInfo _lookupMethodInfo;
-            private readonly CanonicalFormKind _canonFormKind;
             private readonly TypeManagerHandle _moduleHandle;
             private readonly TypeManagerHandle _moduleForMethodHandle;
             private readonly MethodHandle _methodHandle;
@@ -782,13 +773,11 @@ namespace Internal.Runtime.TypeLoader
 
             public InvokeMapEntryDataEnumerator(
                 TLookupMethodInfo lookupMethodInfo,
-                CanonicalFormKind canonFormKind,
                 TypeManagerHandle moduleHandle,
                 MethodHandle methodHandle,
                 TypeManagerHandle moduleForMethodHandle)
             {
                 _lookupMethodInfo = lookupMethodInfo;
-                _canonFormKind = canonFormKind;
                 _moduleHandle = moduleHandle;
                 _methodHandle = methodHandle;
                 _moduleForMethodHandle = moduleForMethodHandle;
@@ -816,10 +805,6 @@ namespace Internal.Runtime.TypeLoader
                 _dynamicInvokeCookie = 0xffffffff;
                 _methodInstantiation = null;
 
-                // If the current entry is not a canonical entry of the same canonical form kind we are looking for, then this cannot be a match
-                if (((_flags & InvokeTableFlags.IsUniversalCanonicalEntry) != 0) != (_canonFormKind == CanonicalFormKind.Universal))
-                    return;
-
                 // Metadata handles are not known cross module, and cannot be compared across modules.
                 if (_moduleHandle != _moduleForMethodHandle)
                     return;
@@ -844,10 +829,7 @@ namespace Internal.Runtime.TypeLoader
                 if ((_flags & InvokeTableFlags.IsGenericMethod) == 0)
                     return;
 
-                if ((_flags & InvokeTableFlags.IsUniversalCanonicalEntry) == 0)
-                {
-                    _methodInstantiation = GetTypeSequence(ref extRefTable, ref entryParser);
-                }
+                _methodInstantiation = GetTypeSequence(ref extRefTable, ref entryParser);
             }
 
             public bool IsMatchingOrCompatibleEntry()
@@ -860,14 +842,7 @@ namespace Internal.Runtime.TypeLoader
                 if ((_flags & InvokeTableFlags.IsGenericMethod) == 0)
                     return true;
 
-                // A universal canonical method entry can share code with any method instantiation (no need to call CanInstantiationsShareCode())
-                if ((_flags & InvokeTableFlags.IsUniversalCanonicalEntry) != 0)
-                {
-                    Debug.Assert(_canonFormKind == CanonicalFormKind.Universal);
-                    return true;
-                }
-
-                return _lookupMethodInfo.CanInstantiationsShareCode(_methodInstantiation, _canonFormKind);
+                return _lookupMethodInfo.CanInstantiationsShareCode(_methodInstantiation, CanonicalFormKind.Specific);
             }
 
             public bool GetMethodEntryPoint(out IntPtr methodEntrypoint, out TDictionaryComponentType dictionaryComponent, out IntPtr rawMethodEntrypoint)
@@ -908,10 +883,7 @@ namespace Internal.Runtime.TypeLoader
                 if (_lookupMethodInfo.IsUninterestingDictionaryComponent(dictionaryComponent))
                     return true;
 
-                // Do not use a fat function-pointer for universal canonical methods because the converter data block already holds the
-                // dictionary pointer so it serves as its own instantiating stub
-                if ((_flags & InvokeTableFlags.IsUniversalCanonicalEntry) == 0)
-                    methodEntrypoint = _lookupMethodInfo.ProduceFatFunctionPointerMethodEntryPoint(_methodEntrypoint, dictionaryComponent);
+                methodEntrypoint = _lookupMethodInfo.ProduceFatFunctionPointerMethodEntryPoint(_methodEntrypoint, dictionaryComponent);
 
                 return true;
             }

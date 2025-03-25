@@ -104,8 +104,8 @@ namespace System
             Vector128<byte> lowNibbles = Vector128.UnpackLow(shiftedSrc, src);
             Vector128<byte> highNibbles = Vector128.UnpackHigh(shiftedSrc, src);
 
-            return (Vector128.ShuffleUnsafe(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
-                Vector128.ShuffleUnsafe(hexMap, highNibbles & Vector128.Create((byte)0xF)));
+            return (Vector128.ShuffleNative(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
+                Vector128.ShuffleNative(hexMap, highNibbles & Vector128.Create((byte)0xF)));
         }
 
         [CompExactlyDependsOn(typeof(Ssse3))]
