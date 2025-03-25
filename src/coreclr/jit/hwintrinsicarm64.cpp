@@ -3248,7 +3248,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 }
 
 //------------------------------------------------------------------------
-// gtNewSimdEmbeddedMaskNode: Create an embedded mask
+// gtNewSimdAllTrueMaskNode: Create an embedded mask with all bits set to true
 //
 // Arguments:
 //    simdBaseJitType -- the base jit type of the nodes being masked
@@ -3260,6 +3260,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize)
 {
     return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateTrueMaskAll, simdBaseJitType, simdSize);
+}
+
+//------------------------------------------------------------------------
+// gtNewSimdAllFalseMaskNode: Create an embedded mask with all bits set to false
+//
+// Arguments:
+//    simdSize        -- the simd size of the nodes being masked
+//
+// Return Value:
+//    The mask
+//
+GenTree* Compiler::gtNewSimdAllFalseMaskNode(unsigned simdSize)
+{
+    return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateFalseMaskByte, CORINFO_TYPE_BYTE, simdSize);
 }
 
 #endif // FEATURE_HW_INTRINSICS
