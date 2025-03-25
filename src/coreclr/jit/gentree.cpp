@@ -28789,21 +28789,28 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 //------------------------------------------------------------------------------
 // GetScalableHWIntrinsicId: Returns SVE equivalent of given intrinsic ID, if applicable
 //
-NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(var_types simdType, NamedIntrinsic id)
+NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, NamedIntrinsic id)
 {
-    // TODO-VL: Convert this in single check when we introduce TYP_SIMDVL
-    if ((simdType == TYP_SIMD16) || (simdType == TYP_SIMD8))
+    NamedIntrinsic sveId = id;
+    if (simdSize > 16)
     {
-        return id;
+        switch (id)
+        {
+            case NI_AdvSimd_Abs:
+            case NI_AdvSimd_Arm64_Abs:
+                sveId = NI_Sve_Abs;
+                break;
+            case NI_AdvSimd_Add:
+            case NI_AdvSimd_Arm64_Add:
+                sveId = NI_Sve_Add;
+                break;
+            default:
+                sveId = id;
+        }
     }
-    switch (id)
-    {
-        case NI_AdvSimd_Abs:
-        case NI_AdvSimd_Arm64_Abs:
-            return NI_Sve_Abs;
-        default:
-            return id;
-    }
+    // Make sure if we are using VL SIMD, we are not generating AdvSimd/NEON intrinsics
+    assert((simdSize <= 16) || (sveId < FIRST_NI_AdvSimd) || (sveId > LAST_NI_AdvSimd));
+    return sveId;
 }
 
 //------------------------------------------------------------------------------
@@ -28931,6 +28938,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
     assert(op1->TypeIs(simdType));
     assert(op2 != nullptr);
 
+#if defined(TARGET_ARM64)
+    assert(!isScalar || (simdSize == 8));
+    assert(!isScalar || varTypeIsFloating(simdBaseType));
+    assert(comp->IsBaselineSimdIsaSupportedDebugOnly());
+    assert((simdSize <= 16) || (simdSize == Compiler::compVectorTLength));
+#else
     if (simdSize == 64)
     {
         assert(!isScalar);
@@ -28943,13 +28956,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
     }
     else
     {
-#if defined(TARGET_ARM64)
-        assert(!isScalar || (simdSize == 8));
-#endif // TARGET_ARM64
-
         assert(!isScalar || varTypeIsFloating(simdBaseType));
         assert(comp->IsBaselineSimdIsaSupportedDebugOnly());
     }
+#endif // TARGET_ARM64
 
     NamedIntrinsic id = NI_Illegal;
 
@@ -29683,6 +29693,9 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         }
     }
 
+#ifdef TARGET_ARM64
+    id = GetScalableHWIntrinsicId(simdSize, id);
+#endif
     return id;
 }
 

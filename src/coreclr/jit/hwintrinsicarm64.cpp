@@ -707,6 +707,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_Add:
+        case NI_Vector_op_Addition:
         case NI_Vector64_op_Addition:
         case NI_Vector128_op_Addition:
         {
