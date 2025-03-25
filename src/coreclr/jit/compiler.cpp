@@ -492,7 +492,8 @@ Compiler::Compiler(ArenaAllocator*       arena,
     info.compIsVarArgs          = false;
 
 #if defined(TARGET_ARM64)
-    Compiler::compVectorTLength = 32; // TODO-VL: This should come from runtime itself
+    // TODO-VL: This should come from runtime itself and then override with this environment variable
+    Compiler::compVectorTLength = ReinterpretHexAsDecimal(JitConfig.VariableVectorLength());
     //genTypeSizes[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength;
     //emitTypeSizes[TYP_SIMDVL]     = (unsigned short)Compiler::compVectorTLength;
     //emitTypeActSz[TYP_SIMDVL]     = EA_SCALABLE;
