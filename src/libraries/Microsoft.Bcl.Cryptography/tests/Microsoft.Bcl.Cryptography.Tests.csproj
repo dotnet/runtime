@@ -24,6 +24,8 @@
              Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemAlgorithmTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemTestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.ArgValidation.cs"

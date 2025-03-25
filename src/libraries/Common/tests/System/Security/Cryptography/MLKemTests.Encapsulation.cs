@@ -25,15 +25,28 @@ namespace System.Security.Cryptography.Tests
 
                 byte[] sharedSecretBuffer = new byte[vector.Algorithm.SharedSecretSizeInBytes];
                 byte[] expectedSharedSecret = vector.SharedSecret.HexToByteArray();
-                kem.Decapsulate(vector.Ciphertext.HexToByteArray(), sharedSecretBuffer);
+                byte[] ciphertextBytes = vector.Ciphertext.HexToByteArray();
 
+                // Exact buffers
+                kem.Decapsulate(ciphertextBytes, sharedSecretBuffer);
                 AssertExtensions.SequenceEqual(expectedSharedSecret, sharedSecretBuffer);
+
+                // Large enough buffers
+                sharedSecretBuffer.AsSpan().Clear();
+                kem.Decapsulate(ciphertextBytes, sharedSecretBuffer, out int sharedSecretWritten);
+                AssertExtensions.SequenceEqual(expectedSharedSecret, sharedSecretBuffer);
+                Assert.Equal(vector.Algorithm.SharedSecretSizeInBytes, sharedSecretWritten);
+
+                // Allocating return
+                byte[] sharedSecret = kem.Decapsulate(ciphertextBytes);
+                AssertExtensions.SequenceEqual(expectedSharedSecret, sharedSecret);
             }
         }
+
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        public static void DecapsulateVectors_OverlappingBuffers(bool partial)
+        public static void DecapsulateVectors_OverlappingBuffers_ExactBuffers(bool partial)
         {
             foreach (MLKemTestDecapsulationVector vector in MLKemDecapsulationTestVectors)
             {
@@ -52,6 +65,27 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void DecapsulateVectors_OverlappingBuffers_LargeEnoughBuffers(bool partial)
+        {
+            foreach (MLKemTestDecapsulationVector vector in MLKemDecapsulationTestVectors)
+            {
+                byte[] decapsulationKeyBytes = vector.DecapsulationKey.HexToByteArray();
+                byte[] ciphertextBytes = vector.Ciphertext.HexToByteArray();
+                using MLKem kem = MLKem.ImportDecapsulationKey(vector.Algorithm, decapsulationKeyBytes);
+
+                Span<byte> sharedSecretBuffer = ciphertextBytes.AsSpan(partial ? 1 : 0);
+
+                ReadOnlySpan<byte> expectedSharedSecret = vector.SharedSecret.HexToByteArray();
+
+                kem.Decapsulate(ciphertextBytes, sharedSecretBuffer, out int sharedSecretWritten);
+                Assert.Equal(vector.Algorithm.SharedSecretSizeInBytes, sharedSecretWritten);
+                AssertExtensions.SequenceEqual(expectedSharedSecret, sharedSecretBuffer.Slice(0, sharedSecretWritten));
+            }
+        }
+
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void Decapsulate_OnlyEncapsulationKey()
         {
@@ -61,9 +95,19 @@ namespace System.Security.Cryptography.Tests
                 using MLKem kem = MLKem.ImportEncapsulationKey(vector.Algorithm, encapsulationKeyBytes);
                 byte[] sharedSecretBuffer = new byte[vector.Algorithm.SharedSecretSizeInBytes];
 
+                // Exact buffer
                 Assert.ThrowsAny<CryptographicException>(() => kem.Decapsulate(
                     vector.Ciphertext.HexToByteArray(),
                     sharedSecretBuffer));
+
+                // Large enough buffer
+                Assert.ThrowsAny<CryptographicException>(() => kem.Decapsulate(
+                    vector.Ciphertext.HexToByteArray(),
+                    sharedSecretBuffer,
+                    out _));
+
+                // Allocating
+                Assert.ThrowsAny<CryptographicException>(() => kem.Decapsulate(vector.Ciphertext.HexToByteArray()));
             }
         }
 
@@ -75,20 +119,32 @@ namespace System.Security.Cryptography.Tests
                 byte[] decapsulationKeyBytes = vector.DecapsulationKey.HexToByteArray();
                 using MLKem kem = MLKem.ImportDecapsulationKey(vector.Algorithm, decapsulationKeyBytes);
 
-                byte[] sharedSecretBuffer = new byte[vector.Algorithm.SharedSecretSizeInBytes];
+                byte[] sharedSecretBuffer = new byte[vector.Algorithm.SharedSecretSizeInBytes + 10];
                 byte[] expectedSharedSecret = vector.SharedSecret.HexToByteArray();
                 byte[] ciphertext = vector.Ciphertext.HexToByteArray();
 
                 Tamper(ciphertext);
-                kem.Decapsulate(ciphertext, sharedSecretBuffer);
 
-                AssertExtensions.SequenceNotEqual(expectedSharedSecret, sharedSecretBuffer);
+                // Exact buffer
+                Span<byte> sharedSecretExact = sharedSecretBuffer.AsSpan(0, vector.Algorithm.SharedSecretSizeInBytes);
+                kem.Decapsulate(ciphertext, sharedSecretExact);
+                AssertExtensions.SequenceNotEqual(expectedSharedSecret, sharedSecretExact);
+
+                // Large enough buffer
+                sharedSecretBuffer.AsSpan().Clear();
+                kem.Decapsulate(ciphertext, sharedSecretBuffer, out int sharedSecretWritten);
+                Assert.Equal(vector.Algorithm.SharedSecretSizeInBytes, sharedSecretWritten);
+                AssertExtensions.SequenceNotEqual(expectedSharedSecret, sharedSecretBuffer.AsSpan(0, sharedSecretWritten));
+
+                // Allocating
+                byte[] sharedSecret = kem.Decapsulate(ciphertext);
+                AssertExtensions.SequenceNotEqual(expectedSharedSecret, sharedSecret);
             }
         }
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemAlgorithms))]
-        public static void Encapsulate_NonDeterministic(MLKemAlgorithm algorithm)
+        public static void Encapsulate_NonDeterministic_Exact(MLKemAlgorithm algorithm)
         {
             using MLKem kem = MLKem.GenerateKey(algorithm);
 
@@ -103,9 +159,123 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Encapsulate_NonDeterministic_LargeEnough(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.GenerateKey(algorithm);
+
+            byte[] ciphertext1 = new byte[algorithm.CiphertextSizeInBytes + 10];
+            byte[] sharedSecret1 = new byte[algorithm.SharedSecretSizeInBytes + 10];
+            byte[] ciphertext2 = new byte[algorithm.CiphertextSizeInBytes + 10];
+            byte[] sharedSecret2 = new byte[algorithm.SharedSecretSizeInBytes + 10];
+            kem.Encapsulate(ciphertext1, sharedSecret1, out int ciphertext1Written, out int sharedSecret1Written);
+            kem.Encapsulate(ciphertext2, sharedSecret2, out int ciphertext2Written, out int sharedSecret2Written);
+
+            AssertExtensions.SequenceNotEqual(
+                ciphertext1.AsSpan(0, ciphertext1Written),
+                ciphertext2.AsSpan(0, ciphertext2Written));
+
+            AssertExtensions.SequenceNotEqual(
+                sharedSecret1.AsSpan(0, sharedSecret1Written),
+                sharedSecret2.AsSpan(0, sharedSecret2Written));
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Encapsulate_NonDeterministic_Allocating(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.GenerateKey(algorithm);
+
+            byte[] ciphertext1 = kem.Encapsulate(out byte[] sharedSecret1);
+            byte[] ciphertext2 = kem.Encapsulate(out byte[] sharedSecret2);
+            AssertExtensions.SequenceNotEqual(ciphertext1, ciphertext2);
+            AssertExtensions.SequenceNotEqual(sharedSecret1, sharedSecret2);
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Encapsulate_NonDeterministic_WriteSharedSecretReturnCiphertext(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.GenerateKey(algorithm);
+            Span<byte> sharedSecret1 = new byte[algorithm.SharedSecretSizeInBytes];
+            Span<byte> sharedSecret2 = new byte[algorithm.SharedSecretSizeInBytes];
+
+            byte[] ciphertext1 = kem.Encapsulate(sharedSecret1);
+            byte[] ciphertext2 = kem.Encapsulate(sharedSecret2);
+            AssertExtensions.SequenceNotEqual(ciphertext1, ciphertext2);
+            AssertExtensions.SequenceNotEqual(sharedSecret1, sharedSecret2);
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Encapsulate_Roundtrip_ExactBuffers(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem1 = MLKem.GenerateKey(algorithm);
+            using MLKem kem2 = MLKem.ImportEncapsulationKey(algorithm, kem1.ExportEncapsulationKey());
+
+            Span<byte> ciphertext = new byte[algorithm.CiphertextSizeInBytes];
+            Span<byte> sharedSecret = new byte[algorithm.SharedSecretSizeInBytes];
+            kem2.Encapsulate(ciphertext, sharedSecret);
+
+            Span<byte> decapsulatedSharedSecret = new byte[algorithm.SharedSecretSizeInBytes];
+            kem1.Decapsulate(ciphertext, decapsulatedSharedSecret);
+            AssertExtensions.SequenceEqual(sharedSecret, decapsulatedSharedSecret);
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Encapsulate_Roundtrip_LargeBuffers(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem1 = MLKem.GenerateKey(algorithm);
+            using MLKem kem2 = MLKem.ImportEncapsulationKey(algorithm, kem1.ExportEncapsulationKey());
+
+            Span<byte> ciphertext = new byte[algorithm.CiphertextSizeInBytes + 10];
+            Span<byte> sharedSecret = new byte[algorithm.SharedSecretSizeInBytes + 10];
+            kem2.Encapsulate(ciphertext, sharedSecret, out int ciphertextWritten, out int sharedSecretWritten);
+
+            Span<byte> decapsulatedSharedSecret = new byte[algorithm.SharedSecretSizeInBytes + 10];
+
+            kem1.Decapsulate(
+                ciphertext.Slice(0, ciphertextWritten),
+                decapsulatedSharedSecret,
+                out int decapsulatedSharedSecretWritten);
+
+            AssertExtensions.SequenceEqual(
+                sharedSecret.Slice(0, sharedSecretWritten),
+                decapsulatedSharedSecret.Slice(0, decapsulatedSharedSecretWritten));
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Encapsulate_Roundtrip_Allocating(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem1 = MLKem.GenerateKey(algorithm);
+            using MLKem kem2 = MLKem.ImportEncapsulationKey(algorithm, kem1.ExportEncapsulationKey());
+
+            byte[] ciphertext = kem2.Encapsulate(out byte[] sharedSecret);
+            byte[] decapsulatedSharedSecret = kem1.Decapsulate(ciphertext);
+
+            AssertExtensions.SequenceEqual(sharedSecret, decapsulatedSharedSecret);
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void Encapsulate_Roundtrip_WriteSharedSecretReturnCiphertext(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem1 = MLKem.GenerateKey(algorithm);
+            using MLKem kem2 = MLKem.ImportEncapsulationKey(algorithm, kem1.ExportEncapsulationKey());
+
+            Span<byte> sharedSecret = new byte[algorithm.SharedSecretSizeInBytes];
+            byte[] ciphertext = kem2.Encapsulate(sharedSecret);
+            byte[] decapsulatedSharedSecret = kem1.Decapsulate(ciphertext);
+
+            AssertExtensions.SequenceEqual(sharedSecret, new ReadOnlySpan<byte>(decapsulatedSharedSecret));
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        public static void Encapsulate_Overlaps(bool partial)
+        public static void Encapsulate_Overlaps_Fail(bool partial)
         {
             using MLKem kem = MLKem.GenerateKey(MLKemAlgorithm.MLKem512);
             byte[] buffer = new byte[MLKemAlgorithm.MLKem512.CiphertextSizeInBytes];
@@ -116,6 +286,54 @@ namespace System.Security.Cryptography.Tests
                 Span<byte> ciphertext = buffer.AsSpan(0, MLKemAlgorithm.MLKem512.CiphertextSizeInBytes);
                 kem.Encapsulate(ciphertext, sharedSecret);
             });
+
+            Assert.Throws<CryptographicException>(() =>
+            {
+                Span<byte> sharedSecret = buffer.AsSpan(partial ? 1 : 0, MLKemAlgorithm.MLKem512.SharedSecretSizeInBytes);
+                Span<byte> ciphertext = buffer.AsSpan(0, MLKemAlgorithm.MLKem512.CiphertextSizeInBytes);
+                kem.Encapsulate(ciphertext, sharedSecret, out _, out _);
+            });
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void Encapsulate_Overlaps_SameBuffer_Works()
+        {
+            MLKemAlgorithm algorithm = MLKemAlgorithm.MLKem512;
+            using MLKem kem = MLKem.GenerateKey(algorithm);
+            byte[] buffer = new byte[algorithm.SharedSecretSizeInBytes + algorithm.CiphertextSizeInBytes];
+            Span<byte> sharedSecret = buffer.AsSpan(0, algorithm.SharedSecretSizeInBytes);
+            Span<byte> ciphertext = buffer.AsSpan(algorithm.SharedSecretSizeInBytes);
+
+            kem.Encapsulate(ciphertext, sharedSecret, out int ciphertextWritten, out int sharedSecretWritten);
+            Assert.Equal(algorithm.CiphertextSizeInBytes, ciphertextWritten);
+            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecretWritten);
+
+            Span<byte> decapsulated = new byte[algorithm.SharedSecretSizeInBytes];
+            kem.Decapsulate(ciphertext, decapsulated);
+            AssertExtensions.SequenceEqual(sharedSecret, decapsulated);
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void Encapsulate_Overlaps_WhenTrimmed_Works()
+        {
+            MLKemAlgorithm algorithm = MLKemAlgorithm.MLKem512;
+            using MLKem kem = MLKem.GenerateKey(algorithm);
+
+            // sharedSecret does overlap ciphertext in this test. However, the part that overlaps will never
+            // be written to because it is trimmed to the exact size, which ends up with the buffers beside each
+            // other, which should work.
+            byte[] buffer = new byte[algorithm.SharedSecretSizeInBytes + algorithm.CiphertextSizeInBytes + 10];
+            Span<byte> sharedSecret = buffer.AsSpan(0, algorithm.SharedSecretSizeInBytes + 10);
+            Span<byte> ciphertext = buffer.AsSpan(algorithm.SharedSecretSizeInBytes);
+            Assert.True(sharedSecret.Overlaps(ciphertext), "sharedSecret.Overlaps(ciphertext)");
+
+            kem.Encapsulate(ciphertext, sharedSecret, out int ciphertextWritten, out int sharedSecretWritten);
+            Assert.Equal(algorithm.CiphertextSizeInBytes, ciphertextWritten);
+            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecretWritten);
+
+            Span<byte> decapsulated = new byte[algorithm.SharedSecretSizeInBytes];
+            kem.Decapsulate(ciphertext.Slice(0, ciphertextWritten), decapsulated);
+            AssertExtensions.SequenceEqual(sharedSecret.Slice(0, sharedSecretWritten), decapsulated);
         }
 
         private static void Tamper(Span<byte> buffer)

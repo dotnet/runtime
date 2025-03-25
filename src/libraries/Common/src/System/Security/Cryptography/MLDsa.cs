@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 // The type being internal is making unused parameter warnings fire for
 // not-implemented methods. Suppress those warnings.
@@ -832,8 +833,7 @@ namespace System.Security.Cryptography
                         {
                             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                             spki.Algorithm.Encode(writer);
-                            ThrowAlgorithmUnknown(writer);
-                            Debug.Fail("Execution should have halted in the throw-helper.");
+                            throw Helpers.CreateAlgorithmUnknownException(writer);
                         }
 
                         return MLDsaImplementation.ImportPublicKey(info, spki.SubjectPublicKey.Span);
@@ -883,8 +883,7 @@ namespace System.Security.Cryptography
                         {
                             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                             pki.PrivateKeyAlgorithm.Encode(writer);
-                            ThrowAlgorithmUnknown(writer);
-                            Debug.Fail("Execution should have halted in the throw-helper.");
+                            throw Helpers.CreateAlgorithmUnknownException(writer);
                         }
 
                         return MLDsaImplementation.ImportPkcs8PrivateKeyValue(info, pki.PrivateKey.Span);
@@ -1364,19 +1363,6 @@ namespace System.Security.Cryptography
             {
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
             }
-        }
-
-        [DoesNotReturn]
-        private static void ThrowAlgorithmUnknown(AsnWriter encodedId)
-        {
-#if NET9_0_OR_GREATER
-            throw encodedId.Encode(static encoded =>
-                new CryptographicException(
-                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, Convert.ToHexString(encoded))));
-#else
-            throw new CryptographicException(
-                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, Convert.ToHexString(encodedId.Encode())));
-#endif
         }
 
         [DoesNotReturn]

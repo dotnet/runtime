@@ -88,7 +88,7 @@ namespace System.Tests
 
         private class FinalizerTest
         {
-            [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private static void MakeAndDropTest()
             {
                 new TestObject();
@@ -145,7 +145,7 @@ namespace System.Tests
 
         private class KeepAliveTest
         {
-            [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private static void MakeAndDropDNKA()
             {
                 new DoNotKeepAliveObject();
@@ -195,7 +195,7 @@ namespace System.Tests
 
         private class KeepAliveNullTest
         {
-            [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private static void MakeAndNull()
             {
                 var obj = new TestObject();
@@ -373,6 +373,7 @@ namespace System.Tests
                 Assert.True(TestObject.Finalized);
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private static void CreateObject()
             {
                 using (var obj = new TestObject())

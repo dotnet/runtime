@@ -71,9 +71,9 @@
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="10.0.616401">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="10.0.617002">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>c3d4c372a15c2de79a2f26fe2b6b3644996d8550</Sha>
+      <Sha>cf30e8fd726730aa4b142275fb2fc0503528b7dd</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
@@ -336,17 +336,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>088d199063dd1bf7fa00a445d23f93f915f84b31</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="10.0.0-prerelease.25164.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="10.0.0-prerelease.25167.4">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>6df4f3a2cd57adbde1607bba67f50613102d8bd9</Sha>
+      <Sha>132fdfbd9c8f09f8c51179c1e7742f048f94734c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="10.0.0-prerelease.25164.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="10.0.0-prerelease.25167.4">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>6df4f3a2cd57adbde1607bba67f50613102d8bd9</Sha>
+      <Sha>132fdfbd9c8f09f8c51179c1e7742f048f94734c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="10.0.0-prerelease.25164.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="10.0.0-prerelease.25167.4">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>6df4f3a2cd57adbde1607bba67f50613102d8bd9</Sha>
+      <Sha>132fdfbd9c8f09f8c51179c1e7742f048f94734c</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="10.0.0-beta.25157.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
