@@ -271,13 +271,8 @@ internal unsafe partial class MachObjectFile
 
     public static long GetSignatureSizeEstimate(uint fileSize, string identifier)
     {
-        return CodeSignature.GetCodeSignatureSize(fileSize, identifier) + (AlignUp(fileSize, 0x10) - fileSize);
-    }
-
-    public static long GetSignedFileSizeEstimate(string filePath)
-    {
-        var fi = new FileInfo(filePath);
-        return fi.Length + GetSignatureSizeEstimate((uint)fi.Length, Path.GetFileName(filePath));
+        const int CodeSignatureSizeAlignment = 0x10;
+        return CodeSignature.GetCodeSignatureSize(fileSize, identifier) + (AlignUp(fileSize, CodeSignatureSizeAlignment) - fileSize);
     }
 
     /// <summary>

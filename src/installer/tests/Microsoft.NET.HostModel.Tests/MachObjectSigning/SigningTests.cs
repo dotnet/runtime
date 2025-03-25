@@ -35,9 +35,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                     return false;
                 }
             }
-            if (Codesign.IsAvailable
-                && Codesign.Run("--verify", filePath).ExitCode != 0) {
-                    return false;
+            if (Codesign.IsAvailable && Codesign.Run("--verify", filePath).ExitCode != 0)
+            {
+                return false;
             }
             return true;
         }

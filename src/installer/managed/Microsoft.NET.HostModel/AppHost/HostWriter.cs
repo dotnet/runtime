@@ -218,6 +218,9 @@ namespace Microsoft.NET.HostModel.AppHost
                 string tmpFile = null;
                 try
                 {
+                    // MacOS keeps a cache of file signatures. To avoid using the cached value,
+                    // we need to create a new inode with the contents of the old file, sign it,
+                    // and copy it the original file path.
                     tmpFile = Path.GetTempFileName();
                     using (FileStream newBundleStream = new FileStream(tmpFile, FileMode.Create, FileAccess.ReadWrite))
                     {
@@ -330,22 +333,21 @@ namespace Microsoft.NET.HostModel.AppHost
 
         private static void Chmod755(string pathName)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+            var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
+            const int EINTR = 4;
+            int chmodReturnCode;
+
+            do
             {
-                var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
-                const int EINTR = 4;
-                int chmodReturnCode;
+                chmodReturnCode = chmod(pathName, filePermissionOctal);
+            }
+            while (chmodReturnCode == -1 && Marshal.GetLastWin32Error() == EINTR);
 
-                do
-                {
-                    chmodReturnCode = chmod(pathName, filePermissionOctal);
-                }
-                while (chmodReturnCode == -1 && Marshal.GetLastWin32Error() == EINTR);
-
-                if (chmodReturnCode == -1)
-                {
-                    throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {pathName}.");
-                }
+            if (chmodReturnCode == -1)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {pathName}.");
             }
         }
 
