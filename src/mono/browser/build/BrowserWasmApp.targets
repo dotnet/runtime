@@ -5,7 +5,6 @@
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
     <!-- we are not triggering WasmPerfTracing in Debug automatically, because it would trigger re-link, making dev-loop slow -->
     <WasmPerfTracing Condition="'$(WasmPerfTracing)' == ''">false</WasmPerfTracing>
-    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == '' and '$(WasmPerfTracing)' == 'true'">true</FeaturePerfTracing>
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />

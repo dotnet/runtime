@@ -483,7 +483,7 @@ enum GenTreeFlags : unsigned int
                                               //           This flag is useful in cases where it is required to generate register
                                               //           indirect addressing mode. One such case is virtual stub calls on xarch.
     GTF_IND_UNALIGNED           = 0x02000000, // OperIsIndir() -- the load or store is unaligned (we assume worst case alignment of 1 byte)
-    GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
+    GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (an AOT indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
     GTF_IND_INITCLASS           = 0x00200000, // OperIsIndir() -- the indirection requires preceding static cctor
     GTF_IND_ALLOW_NON_ATOMIC    = 0x00100000, // GT_IND -- this memory access does not need to be atomic
@@ -3261,7 +3261,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 
     /* The InitializeArray intrinsic needs to go back to the newarray statement
        to find the class handle of the array so that we can get its size.  However,
-       in ngen mode, the handle in that statement does not correspond to the compile
+       in AOT mode, the handle in that statement does not correspond to the compile
        time handle (rather it lets you get a handle at run-time).  In that case, we also
        need to store a compile time handle, which goes in this gtCompileTimeHandle field.
     */
