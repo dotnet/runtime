@@ -6012,10 +6012,13 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         // needing to have the hardware in question.
 
 #if defined(TARGET_ARM64)
-        // Keep the existing VectorT* ISAs.
-        if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
+        if (info.compMatchedVM)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
+            // Keep the existing VectorT* ISAs.
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
+            }
         }
 
         if (JitConfig.EnableHWIntrinsic() != 0)
@@ -6073,18 +6076,21 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
         }
 #elif defined(TARGET_XARCH)
-        // Keep the existing VectorT* ISAs.
-        if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
+        if (info.compMatchedVM)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
-        }
-        if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT256))
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_VectorT256);
-        }
-        if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT512))
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_VectorT512);
+            // Keep the existing VectorT* ISAs.
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
+            }
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT256))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT256);
+            }
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT512))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT512);
+            }
         }
 
         if (JitConfig.EnableHWIntrinsic() != 0)
