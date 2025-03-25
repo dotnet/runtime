@@ -518,6 +518,7 @@ struct RangeOps
         // This is correct if k >= 0 and n >= k, since $bnd always >= 0
         // ($bnd + n) could overflow, but the result ($bnd + n) also
         // preserves the overflow.
+        //
         if (r1hi.IsConstant() && r1hi.GetConstant() >= 0 && r2hi.IsBinOpArray() &&
             r2hi.GetConstant() >= r1hi.GetConstant())
         {
@@ -542,26 +543,13 @@ struct RangeOps
             result.lLimit = Limit(Limit::keConstant, min(r2lo.cns, r1lo.cns));
         }
 
-        // Rule: <$bnd + cns1, ...> U <cns2, ...> = <$bnd + cns1, ...> when cns1 >= cns2
-        //
-        // Example: <$bnd + 10, ...> U <1, ...> = <$bnd + 10, ...>
-        //
-        if (r1lo.IsBinOpArray() && r2lo.IsConstant() && (r1lo.cns >= r2lo.cns))
-        {
-            result.lLimit = r1lo;
-        }
-        if (r2lo.IsBinOpArray() && r1lo.IsConstant() && (r2lo.cns >= r1lo.cns))
-        {
-            result.lLimit = r2lo;
-        }
-
         // Rule: <..., $bnd + cns1> U <..., $bnd + cns2> = <..., $bnd + max(cns1, cns2)>
         //
         // Example: <..., $bnd + 10> U <..., $bnd + 20> = <..., $bnd + 20>
         //
         if (r1hi.IsBinOpArray() && r2hi.IsBinOpArray() && r1hi.vn == r2hi.vn)
         {
-            result.uLimit     = r1hi;
+            result.uLimit     = r1hi; // copy $bnd and kind info
             result.uLimit.cns = max(r1hi.cns, r2hi.cns);
         }
 
@@ -571,7 +559,7 @@ struct RangeOps
         //
         if (r1lo.IsBinOpArray() && r2lo.IsBinOpArray() && r1lo.vn == r2lo.vn)
         {
-            result.lLimit     = r1hi;
+            result.lLimit     = r1hi; // copy $bnd and kind info
             result.lLimit.cns = min(r1lo.cns, r2lo.cns);
         }
         return result;
