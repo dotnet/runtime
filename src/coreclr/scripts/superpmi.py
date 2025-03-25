@@ -1618,8 +1618,10 @@ def report_replay_asserts(asserts, output_mch_file):
 
     if asserts:
         logging.info("============================== Assertions:")
+        assertion_num = 0
         for assertion_key, assertion_value in asserts.items():
-            logging.info("%s", assertion_key)
+            assertion_num += 1
+            logging.info("=== Assertion #%s: %s", assertion_num, assertion_key)
             # Sort the values by increasing il size
             sorted_instances = sorted(assertion_value, key=lambda d: d['il'])
             for instance in sorted_instances:
@@ -4566,6 +4568,9 @@ def setup_args(args):
         logger.addHandler(file_handler)
         logging.critical("================ Logging to %s", log_file)
 
+    # Log the original command-line
+    logging.debug("Command line: %s", " ".join(sys.argv))
+
     # Finish verifying the arguments
 
     def setup_jit_ee_version_arg(jit_ee_version):
@@ -5526,7 +5531,6 @@ def main(args):
 ################################################################################
 # __main__
 ################################################################################
-
 
 if __name__ == "__main__":
     args = parser.parse_args()
