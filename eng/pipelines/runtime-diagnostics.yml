@@ -53,7 +53,6 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
           buildConfig: release
-          runtimeFlavor: mono
           platforms:
           - windows_x64
           jobParameters:
