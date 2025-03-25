@@ -73,6 +73,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
+            var semaphore = new SemaphoreSlim(0);
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
 
@@ -85,6 +86,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
                 }
+                await semaphore.WaitAsync();
             },
             async server =>
             {
@@ -97,6 +99,10 @@ namespace System.Net.Http.Functional.Tests
 #if !WINHTTPHANDLER_TEST
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
 #endif
+                finally
+                {
+                    semaphore.Release();
+                }
             });
         }
 
@@ -108,6 +114,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(int.MaxValue / 800, 100 * 1024)] // Capped at int.MaxValue
         public async Task ThresholdExceeded_ThrowsException(int? maxResponseHeadersLength, int headersLengthEstimate)
         {
+            var semaphore = new SemaphoreSlim(0);
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
@@ -131,6 +138,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
                     }
                 }
+                await semaphore.WaitAsync();
             },
             async server =>
             {
@@ -149,6 +157,10 @@ namespace System.Net.Http.Functional.Tests
 #if !WINHTTPHANDLER_TEST
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
 #endif
+                finally
+                {
+                    semaphore.Release();
+                }
             });
         }
     }

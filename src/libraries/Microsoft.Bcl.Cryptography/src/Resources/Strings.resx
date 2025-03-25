@@ -60,11 +60,29 @@
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>
+  <data name="Argument_DestinationImprecise" xml:space="preserve">
+    <value>Destination must be exactly {0} bytes.</value>
+  </data>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
+  </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
+  </data>
+  <data name="Argument_KemInvalidCiphertextLength" xml:space="preserve">
+    <value>The specified ciphertext is not the correct length for the ML-KEM algorithm.</value>
+  </data>
+  <data name="Argument_KemInvalidDecapsulationKeyLength" xml:space="preserve">
+    <value>The specified decapsulation key is not the correct length for the ML-KEM algorithm.</value>
+  </data>
+  <data name="Argument_KemInvalidEncapsulationKeyLength" xml:space="preserve">
+    <value>The specified encapsulation key is not the correct length for the ML-KEM algorithm.</value>
+  </data>
+  <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
+    <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
     <value>{0} ('{1}') must be a non-negative and non-zero value.</value>
@@ -84,14 +102,32 @@
   <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
     <value>Algorithm '{0}' is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_AuthTagMismatch" xml:space="preserve">
+    <value>The computed authentication tag did not match the input authentication tag.</value>
+  </data>
   <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
     <value>ASN1 corrupted data.</value>
   </data>
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
   </data>
+  <data name="Cryptography_IncorrectTagLength" xml:space="preserve">
+    <value>The size of the specified tag does not match the expected size of {0}.</value>
+  </data>
+  <data name="Cryptography_InvalidKeySize" xml:space="preserve">
+    <value>Specified key is not a valid size for this algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidTagLength" xml:space="preserve">
+    <value>The specified tag is not a valid size for this algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidNonceLength" xml:space="preserve">
+    <value>The specified nonce is not a valid size for this algorithm.</value>
+  </data>
   <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
     <value>Key is not a valid public or private key.</value>
+  </data>
+  <data name="Cryptography_OverlappingBuffers" xml:space="preserve">
+    <value>One or more provided buffers overlap.</value>
   </data>
   <data name="Cryptography_Pfx_BadPassword" xml:space="preserve">
     <value>The certificate data cannot be read with the provided password, the password may be incorrect.</value>
@@ -101,6 +137,9 @@
   </data>
   <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
     <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
+  </data>
+  <data name="Cryptography_PlaintextCiphertextLengthMismatch" xml:space="preserve">
+    <value>Plaintext and ciphertext must have the same length.</value>
   </data>
   <data name="Cryptography_UnknownAlgorithmIdentifier" xml:space="preserve">
     <value>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</value>

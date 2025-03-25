@@ -163,7 +163,7 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
     {
         // spDelta is negative in the prolog, positive in the epilog,
         // but we always tell the unwind codes the positive value.
-        ssize_t  spDeltaAbs    = abs(spDelta);
+        ssize_t  spDeltaAbs    = std::abs(spDelta);
         unsigned unwindSpDelta = (unsigned)spDeltaAbs;
         assert((ssize_t)unwindSpDelta == spDeltaAbs); // make sure that it fits in a unsigned
 
@@ -1090,29 +1090,36 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             emitAttr size       = emitActualTypeSize(tree);
             double   constValue = tree->AsDblCon()->DconValue();
 
-            // Make sure we use "fmv.w.x reg, zero" only for positive zero (0.0)
-            // and not for negative zero (-0.0)
-            if (FloatingPointUtils::isPositiveZero(constValue))
+            assert(emitter::isFloatReg(targetReg));
+            int64_t bits;
+            if (emitter::isSingleInstructionFpImm(constValue, size, &bits))
             {
-                // A faster/smaller way to generate 0.0
-                // We will just zero out the entire vector register for both float and double
-                emit->emitIns_R_R(size == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, size, targetReg, REG_R0);
+                regNumber temp = REG_ZERO;
+                if (bits != 0)
+                {
+                    temp = internalRegisters.GetSingle(tree);
+                    if (emitter::isValidSimm12(bits))
+                    {
+                        emit->emitIns_R_R_I(INS_addi, size, temp, REG_ZERO, bits);
+                    }
+                    else
+                    {
+                        int64_t upperBits = bits >> 12;
+                        assert((upperBits << 12) == bits);
+                        emit->emitIns_R_I(INS_lui, size, temp, upperBits);
+                    }
+                }
+
+                emit->emitIns_R_R(size == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, size, targetReg, temp);
+                break;
             }
-            else
-            {
-                // Get a temp integer register to compute long address.
-                // regNumber addrReg = internalRegisters.GetSingle(tree);
 
-                // We must load the FP constant from the constant pool
-                // Emit a data section constant for the float or double constant.
-                CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
+            // We must load the FP constant from the constant pool
+            // Emit a data section constant for the float or double constant.
+            CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
 
-                // Load the FP constant.
-                assert(emit->isFloatReg(targetReg));
-
-                // Compute the address of the FP constant and load the data.
-                emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd, 0);
-            }
+            // Compute the address of the FP constant and load the data.
+            emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd, 0);
         }
         break;
 
@@ -1620,7 +1627,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             // The SP might already be in the guard page, so we must touch it BEFORE
             // the alloc, not after.
 
-            // ld_w r0, 0(SP)
+            // tickle the page - this triggers a page fault when on the guard page
             emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, REG_SP, 0);
 
             lastTouchDelta = amount;
@@ -1665,8 +1672,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // and localloc size is a multiple of STACK_ALIGN.
 
         // Loop:
-        ssize_t imm = -16;
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, imm);
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -16);
 
         emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, 8);
         emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, 0);
@@ -1678,8 +1684,8 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         emit->emitIns_R_R_I(INS_addi, emitActualTypeSize(type), regCnt, regCnt, -16);
 
-        assert(imm == (-4 << 2)); // goto loop.
-        emit->emitIns_R_R_I(INS_bne, EA_PTRSIZE, regCnt, REG_R0, (-4 << 2));
+        // goto Loop
+        emit->emitIns_R_R_I(INS_bne, EA_PTRSIZE, regCnt, REG_R0, -4 << 2);
 
         lastTouchDelta = 0;
     }
@@ -1693,7 +1699,6 @@ void CodeGen::genLclHeap(GenTree* tree)
         // case SP is on the last byte of the guard page.  Thus you must
         // touch SP-0 first not SP-0x1000.
         //
-        // This is similar to the prolog code in CodeGen::genAllocLclFrame().
         //
         // Note that we go through a few hoops so that SP never points to
         // illegal pages at any time during the tickling process.
@@ -1704,22 +1709,19 @@ void CodeGen::genLclHeap(GenTree* tree)
         //       addi     regCnt, REG_R0, 0
         //
         //  Skip:
-        //       lui      regTmp, eeGetPageSize()>>12
+        //       lui      regPageSize, eeGetPageSize()>>12
+        //       addi     regTmp, SP, 0
         //  Loop:
-        //       lw       r0, 0(SP)               // tickle the page - read from the page
-        //       sub      RA, SP, regTmp          // decrement SP by eeGetPageSize()
-        //       bltu     RA, regCnt, Done
-        //       sub      SP, SP,regTmp
-        //       j        Loop
+        //       lw       r0, 0(regTmp)           // tickle the page - read from the page
+        //       sub      regTmp, regTmp, regPageSize
+        //       bgeu     regTmp, regCnt, Loop
         //
         //  Done:
-        //       mov      SP, regCnt
+        //       addi     SP, regCnt, 0
         //
 
         if (tempReg == REG_NA)
             tempReg = internalRegisters.Extract(tree);
-
-        regNumber rPageSize = internalRegisters.GetSingle(tree);
 
         assert(regCnt != tempReg);
         emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
@@ -1731,35 +1733,24 @@ void CodeGen::genLclHeap(GenTree* tree)
         emit->emitIns_R_R_I(INS_beq, EA_PTRSIZE, tempReg, REG_R0, 2 << 2);
         emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regCnt, REG_R0, 0);
 
+        regNumber rPageSize = internalRegisters.GetSingle(tree);
+
+        noway_assert(rPageSize != tempReg);
+
         emit->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
+        regSet.verifyRegUsed(rPageSize);
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_SPBASE, 0);
 
-        // genDefineTempLabel(loop);
+        // tickle the page - this triggers a page fault when on the guard page
+        emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, tempReg, 0);
+        emit->emitIns_R_R_R(INS_sub, EA_4BYTE, tempReg, tempReg, rPageSize);
 
-        // tickle the page - Read from the updated SP - this triggers a page fault when on the guard page
-        emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, REG_SPBASE, 0);
-
-        // decrement SP by eeGetPageSize()
-        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, tempReg, REG_SPBASE, rPageSize);
-
-        assert(rPageSize != tempReg);
-
-        ssize_t imm = 3 << 2; // goto done.
-        emit->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, tempReg, regCnt, imm);
-
-        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, rPageSize);
-
-        imm = -4 << 2;
-        // Jump to loop and tickle new stack address
-        emit->emitIns_I(INS_j, EA_PTRSIZE, imm);
-
-        // Done with stack tickle loop
-        // genDefineTempLabel(done);
-
-        // Now just move the final value to SP
-        emit->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_SPBASE, regCnt, 0);
+        emit->emitIns_R_R_I(INS_bgeu, EA_PTRSIZE, tempReg, regCnt, -2 << 2);
 
         // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
         // we're going to assume the worst and probe.
+        // Move the final value to SP
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, regCnt, 0);
     }
 
 ALLOC_DONE:
@@ -2153,8 +2144,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack =
-        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -2357,12 +2347,12 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
     GenTree*  data      = treeNode->AsOp()->gtOp2;
     GenTree*  addr      = treeNode->AsOp()->gtOp1;
-    regNumber dataReg   = data->GetRegNum();
+    regNumber dataReg   = !data->isContained() ? data->GetRegNum() : REG_ZERO;
     regNumber addrReg   = addr->GetRegNum();
     regNumber targetReg = treeNode->GetRegNum();
     if (targetReg == REG_NA)
     {
-        targetReg = REG_R0;
+        targetReg = REG_ZERO;
     }
 
     genConsumeAddress(addr);
@@ -2370,8 +2360,6 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
     emitAttr dataSize = emitActualTypeSize(data);
     bool     is4      = (dataSize == EA_4BYTE);
-
-    assert(!data->isContainedIntOrIImmed());
 
     instruction ins = INS_none;
     switch (treeNode->gtOper)
@@ -2393,7 +2381,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     }
     GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
 
-    if (targetReg != REG_R0)
+    if (targetReg != REG_ZERO)
     {
         genProduceReg(treeNode);
     }
@@ -2416,9 +2404,19 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
     regNumber target    = treeNode->GetRegNum();
     regNumber loc       = locOp->GetRegNum();
-    regNumber val       = valOp->GetRegNum();
-    regNumber comparand = comparandOp->GetRegNum();
-    regNumber storeErr  = internalRegisters.Extract(treeNode, RBM_ALLINT);
+    regNumber val       = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
+    regNumber comparand = REG_ZERO;
+    if (!comparandOp->isContained())
+    {
+        comparand = comparandOp->GetRegNum();
+        if (comparandOp->TypeIs(TYP_INT, TYP_UINT))
+        {
+            regNumber signExtendedComparand = internalRegisters.Extract(treeNode);
+            GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, signExtendedComparand, comparand);
+            comparand = signExtendedComparand;
+        }
+    }
+    regNumber storeErr = internalRegisters.GetSingle(treeNode);
 
     // Register allocator should have extended the lifetimes of all input and internal registers
     // They should all be different
@@ -2429,15 +2427,11 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     noway_assert(loc != val);
     noway_assert(loc != comparand);
     noway_assert(loc != storeErr);
-    noway_assert(val != comparand);
+    noway_assert((val != comparand) || (val == REG_ZERO));
     noway_assert(val != storeErr);
     noway_assert(comparand != storeErr);
     noway_assert(target != REG_NA);
     noway_assert(storeErr != REG_NA);
-
-    assert(locOp->isUsedFromReg());
-    assert(valOp->isUsedFromReg());
-    assert(!comparandOp->isUsedFromMemory());
 
     genConsumeAddress(locOp);
     genConsumeRegs(valOp);
@@ -3226,7 +3220,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
         if (isUnordered)
         {
-            BasicBlock* skipLabel = nullptr;
             if (tree->OperIs(GT_LT))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2, regOp1);
@@ -3234,19 +3227,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             else if (tree->OperIs(GT_LE))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2, regOp1);
-            }
-            else if (tree->OperIs(GT_EQ))
-            {
-                regNumber tempReg = internalRegisters.GetSingle(tree);
-                skipLabel         = genCreateTempLabel();
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, targetReg, regOp1);
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, tempReg, regOp2);
-                emit->emitIns_R_R_R(INS_or, EA_8BYTE, tempReg, targetReg, tempReg);
-                emit->emitIns_R_R_I(INS_andi, EA_8BYTE, tempReg, tempReg, 0x300);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, REG_R0, 1);
-                emit->emitIns_J(INS_bnez, skipLabel, tempReg);
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
-                genDefineTempLabel(skipLabel);
             }
             else if (tree->OperIs(GT_NE))
             {
@@ -3260,11 +3240,11 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp1, regOp2);
             }
-            if (skipLabel == nullptr)
+            else
             {
-                emit->emitIns_R_R_R(INS_sub, EA_8BYTE, targetReg, REG_R0, targetReg);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, targetReg, 1);
+                unreached();
             }
+            emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
         }
         else
         {
@@ -3280,21 +3260,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
             }
-            else if (tree->OperIs(GT_NE))
-            {
-                regNumber tempReg = internalRegisters.GetSingle(tree);
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, targetReg, regOp1);
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, tempReg, regOp2);
-                emit->emitIns_R_R_R(INS_or, EA_8BYTE, tempReg, targetReg, tempReg);
-                emit->emitIns_R_R_I(INS_andi, EA_8BYTE, tempReg, tempReg, 0x300);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, REG_R0, 0);
-                BasicBlock* skipLabel = genCreateTempLabel();
-                emit->emitIns_J(INS_bnez, skipLabel, tempReg);
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
-                emit->emitIns_R_R_R(INS_sub, EA_8BYTE, targetReg, REG_R0, targetReg);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, targetReg, 1);
-                genDefineTempLabel(skipLabel);
-            }
             else if (tree->OperIs(GT_GT))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2, regOp1);
@@ -3302,6 +3267,10 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             else if (tree->OperIs(GT_GE))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2, regOp1);
+            }
+            else
+            {
+                unreached();
             }
         }
     }
@@ -3582,7 +3551,24 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
                     unreached();
             }
 
-            emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
+            GenTreeIntCon* con = op2->AsIntCon();
+
+            emitAttr attr = emitActualTypeSize(op2Type);
+            // TODO-CQ: Currently we cannot do this for all handles because of
+            // https://github.com/dotnet/runtime/issues/60712
+            if (con->ImmedValNeedsReloc(compiler))
+            {
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
+            }
+
+            if (op2Type == TYP_BYREF)
+            {
+                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+            }
+
+            instGen_Set_Reg_To_Imm(attr, REG_RA, imm,
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+            regSet.verifyRegUsed(REG_RA);
             regs = (int)REG_RA << 5;
         }
         else
@@ -4666,8 +4652,6 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-    assert(GetEmitter()->emitGCDisabled());
-
     // We need two temporary registers, to load the GS cookie values and compare them. We can't use
     // any argument registers if 'pushReg' is true (meaning we have a JMP call). They should be
     // callee-trash registers, which should not contain anything interesting at this point.
@@ -4685,7 +4669,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
     else
     {
-        //// Ngen case - GS cookie constant needs to be accessed through an indirection.
+        // AOT case - GS cookie constant needs to be accessed through an indirection.
         // instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         // GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, regGSConst, regGSConst, 0);
         if (compiler->opts.compReloc)
@@ -4772,7 +4756,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     if (treeNode->putInIncomingArgArea())
     {
         varNumOut    = getFirstArgWithStackSlot();
-        argOffsetMax = compiler->compArgSize;
+        argOffsetMax = compiler->lvaParameterStackSize;
 #if FEATURE_FASTTAILCALL
         // This must be a fast tail call.
         assert(treeNode->gtCall->IsFastTailCall());
@@ -6069,9 +6053,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
+            for (unsigned i = 0; i < arg.AbiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                const ABIPassingSegment& seg = arg.AbiInfo.Segment(i);
                 if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
                 {
                     JITDUMP("Tail call node:\n");
@@ -6333,8 +6317,6 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 
     if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
     {
-        instruction ins;
-
         switch (desc.ExtendKind())
         {
             case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
@@ -6674,175 +6656,6 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
     };
 }
 
-//------------------------------------------------------------------------
-// genStackProbe: Probe the stack without changing it
-//
-// Notes:
-//      This function is using loop to probe each memory page.
-//
-// Arguments:
-//    frameSize - total frame size
-//    rOffset - usually initial register number
-//    rLimit - an extra register for comparison
-//    rPageSize - register for storing page size
-//
-void CodeGen::genStackProbe(ssize_t frameSize, regNumber rOffset, regNumber rLimit, regNumber rPageSize)
-{
-    // make sure frameSize safely fits within 4 bytes
-    noway_assert((ssize_t)(int)frameSize == (ssize_t)frameSize);
-
-    const target_size_t pageSize = compiler->eeGetPageSize();
-
-    // According to RISC-V Privileged ISA page size should be equal 4KiB
-    noway_assert(pageSize == 0x1000);
-
-    emitter* emit = GetEmitter();
-
-    emit->emitLoadImmediate(EA_PTRSIZE, rLimit, -frameSize);
-    regSet.verifyRegUsed(rLimit);
-
-    emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, rLimit, rLimit, REG_SPBASE);
-
-    emit->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
-    regSet.verifyRegUsed(rPageSize);
-
-    emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, rOffset, REG_SPBASE, rPageSize);
-
-    // Loop:
-    // tickle the page - Read from the updated SP - this triggers a page fault when on the guard page
-    emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, rOffset, 0);
-    emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, rOffset, rOffset, rPageSize);
-
-    // each instr is 4 bytes
-    // if (rOffset >= rLimit) goto Loop;
-    emit->emitIns_R_R_I(INS_bge, EA_PTRSIZE, rOffset, rLimit, -2 << 2);
-}
-
-//------------------------------------------------------------------------
-// genAllocLclFrame: Probe the stack.
-//
-// Notes:
-//      This only does the probing; allocating the frame is done when callee-saved registers are saved.
-//      This is done before anything has been pushed. The previous frame might have a large outgoing argument
-//      space that has been allocated, but the lowest addresses have not been touched. Our frame setup might
-//      not touch up to the first 504 bytes. This means we could miss a guard page. On Windows, however,
-//      there are always three guard pages, so we will not miss them all. On Linux, there is only one guard
-//      page by default, so we need to be more careful. We do an extra probe if we might not have probed
-//      recently enough. That is, if a call and prolog establishment might lead to missing a page. We do this
-//      on Windows as well just to be consistent, even though it should not be necessary.
-//
-// Arguments:
-//      frameSize         - the size of the stack frame being allocated.
-//      initReg           - register to use as a scratch register.
-//      pInitRegZeroed    - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
-//                          this call sets 'initReg' to a non-zero value. Otherwise, it is unchanged.
-//      maskArgRegsLiveIn - incoming argument registers that are currently live.
-//
-// Return value:
-//      None
-//
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
-{
-    assert(compiler->compGeneratingProlog);
-
-    if (frameSize == 0)
-    {
-        return;
-    }
-
-    // According to RISC-V Privileged ISA page size should be equal 4KiB
-    const target_size_t pageSize = compiler->eeGetPageSize();
-
-    assert(!compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
-
-    target_size_t lastTouchDelta = 0;
-
-    emitter* emit = GetEmitter();
-
-    // Emit the following sequence to 'tickle' the pages.
-    // Note it is important that stack pointer not change until this is complete since the tickles
-    // could cause a stack overflow, and we need to be able to crawl the stack afterward
-    // (which means the stack pointer needs to be known).
-
-    if (frameSize < pageSize)
-    {
-        // no probe needed
-        lastTouchDelta = frameSize;
-    }
-    else if (frameSize < 3 * pageSize)
-    {
-        // between 1 and 3 pages we will probe each page without a loop,
-        // because it is faster that way and doesn't cost us much
-        lastTouchDelta = frameSize;
-
-        for (target_size_t probeOffset = pageSize; probeOffset <= frameSize; probeOffset += pageSize)
-        {
-            emit->emitIns_R_I(INS_lui, EA_PTRSIZE, initReg, probeOffset >> 12);
-            regSet.verifyRegUsed(initReg);
-
-            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, initReg, REG_SPBASE, initReg);
-            emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, initReg, 0);
-
-            lastTouchDelta -= pageSize;
-        }
-
-        assert(pInitRegZeroed != nullptr);
-        *pInitRegZeroed = false; // The initReg does not contain zero
-
-        assert(lastTouchDelta == frameSize % pageSize);
-        compiler->unwindPadding();
-    }
-    else
-    {
-        // probe each page, that we need to allocate large stack frame
-        assert(frameSize >= 3 * pageSize);
-
-        regMaskTP availMask = RBM_ALLINT & (regSet.rsGetModifiedRegsMask() | ~RBM_INT_CALLEE_SAVED);
-        availMask &= ~maskArgRegsLiveIn;   // Remove all of the incoming argument registers
-                                           // as they are currently live
-        availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg
-
-        noway_assert(availMask != RBM_NONE);
-
-        regMaskTP regMask = genFindLowestBit(availMask);
-        regNumber rLimit  = genRegNumFromMask(regMask);
-
-        availMask &= ~regMask; // Remove rLimit register
-
-        noway_assert(availMask != RBM_NONE);
-
-        regMask             = genFindLowestBit(availMask);
-        regNumber rPageSize = genRegNumFromMask(regMask);
-
-        genStackProbe((ssize_t)frameSize, initReg, rLimit, rPageSize);
-
-        assert(pInitRegZeroed != nullptr);
-        *pInitRegZeroed = false; // The initReg does not contain zero
-
-        lastTouchDelta = frameSize % pageSize;
-        compiler->unwindPadding();
-    }
-
-#if STACK_PROBE_BOUNDARY_THRESHOLD_BYTES != 0
-    // if the last page was too far, we will make an extra probe at the bottom
-    if (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
-    {
-        assert(lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES < pageSize << 1);
-
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, initReg, REG_R0, frameSize);
-        regSet.verifyRegUsed(initReg);
-
-        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, initReg, REG_SPBASE, initReg);
-        emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, initReg, 0);
-
-        assert(pInitRegZeroed != nullptr);
-        *pInitRegZeroed = false; // The initReg does not contain zero
-
-        compiler->unwindPadding();
-    }
-#endif
-}
-
 void CodeGen::genJumpToThrowHlpBlk_la(
     SpecialCodeKind codeKind, instruction ins, regNumber reg1, BasicBlock* failBlk, regNumber reg2)
 {
@@ -7101,7 +6914,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     // - Generate fully interruptible code for loops that contains calls
     // - Generate fully interruptible code for leaf methods
     //
-    // Given the limited benefit from this optimization (<10k for SPCL NGen image), the extra complexity
+    // Given the limited benefit from this optimization (<10k for SPCL AOT image), the extra complexity
     // is not worth it.
     //
 
@@ -7196,7 +7009,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     if (leftFrameSize != 0)
     {
-        genStackPointerAdjustment(-leftFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+        genStackPointerAdjustment(-leftFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ false);
     }
 }
 

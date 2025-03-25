@@ -40,38 +40,6 @@
  *     which colors. The color graph then becomes the reduced SCC graph.
  */
 
-// Is this class bridged or not, and should its dependencies be scanned or not?
-// The result of this callback will be cached for use by is_opaque_object later.
-static MonoGCBridgeObjectKind
-class_kind (MonoClass *klass)
-{
-	MonoGCBridgeObjectKind res = mono_bridge_callbacks.bridge_class_kind (klass);
-
-	/* If it's a bridge, nothing we can do about it. */
-	if (res == GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS || res == GC_BRIDGE_OPAQUE_BRIDGE_CLASS)
-		return res;
-
-	/* Non bridge classes with no pointers will never point to a bridge, so we can savely ignore them. */
-	if (!m_class_has_references (klass)) {
-		SGEN_LOG (6, "class %s is opaque\n", m_class_get_name (klass));
-		return GC_BRIDGE_OPAQUE_CLASS;
-	}
-
-	/* Some arrays can be ignored */
-	if (m_class_get_rank (klass) == 1) {
-		MonoClass *elem_class = m_class_get_element_class (klass);
-
-		/* FIXME the bridge check can be quite expensive, cache it at the class level. */
-		/* An array of a sealed type that is not a bridge will never get to a bridge */
-		if ((mono_class_get_flags (elem_class) & TYPE_ATTRIBUTE_SEALED) && !m_class_has_references (elem_class) && !mono_bridge_callbacks.bridge_class_kind (elem_class)) {
-			SGEN_LOG (6, "class %s is opaque\n", m_class_get_name (klass));
-			return GC_BRIDGE_OPAQUE_CLASS;
-		}
-	}
-
-	return GC_BRIDGE_TRANSPARENT_CLASS;
-}
-
 //enable usage logging
 // #define DUMP_GRAPH 1
 
@@ -400,16 +368,7 @@ static const char*
 safe_name_bridge (GCObject *obj)
 {
 	GCVTable vt = SGEN_LOAD_VTABLE (obj);
-	return vt->klass->name;
-}
-
-static ScanData*
-find_or_create_data (GCObject *obj)
-{
-	ScanData *entry = find_data (obj);
-	if (!entry)
-		entry = create_data (obj);
-	return entry;
+	return m_class_get_name (vt->klass);
 }
 #endif
 
@@ -700,11 +659,11 @@ compute_low_index (ScanData *data, GCObject *obj)
 	obj = bridge_object_forward (obj);
 	other = find_data (obj);
 
-#if DUMP_GRAPH
-	printf ("\tcompute low %p ->%p (%s) %p (%d / %d, color %p)\n", data->obj, obj, safe_name_bridge (obj), other, other ? other->index : -2, other ? other->low_index : -2, other->color);
-#endif
 	if (!other)
 		return;
+#if DUMP_GRAPH
+	printf ("\tcompute low %p ->%p (%s) %p (%d / %d, color %p)\n", data->obj, obj, safe_name_bridge (obj), other, other ? other->index : -2, other->low_index, other->color);
+#endif
 
 	g_assert (other->state != INITIAL);
 
@@ -777,10 +736,16 @@ create_scc (ScanData *data)
 	gboolean found = FALSE;
 	gboolean found_bridge = FALSE;
 	ColorData *color_data = NULL;
+	gboolean can_reduce_color = TRUE;
 
 	for (i = dyn_array_ptr_size (&loop_stack) - 1; i >= 0; --i) {
 		ScanData *other = (ScanData *)dyn_array_ptr_get (&loop_stack, i);
 		found_bridge |= other->is_bridge;
+		if (dyn_array_ptr_size (&other->xrefs) > 0) {
+			// This scc will have more xrefs than the ones from the color_merge_array,
+			// we will need to create a new color to store this information.
+			can_reduce_color = FALSE;
+		}
 		if (found_bridge || other == data)
 			break;
 	}
@@ -788,13 +753,15 @@ create_scc (ScanData *data)
 	if (found_bridge) {
 		color_data = new_color (TRUE);
 		++num_colors_with_bridges;
-	} else {
+	} else if (can_reduce_color) {
 		color_data = reduce_color ();
+	} else {
+		color_data = new_color (FALSE);
 	}
 #if DUMP_GRAPH
 	printf ("|SCC %p rooted in %s (%p) has bridge %d\n", color_data, safe_name_bridge (data->obj), data->obj, found_bridge);
 	printf ("\tloop stack: ");
-	for (int i = 0; i < dyn_array_ptr_size (&loop_stack); ++i) {
+	for (i = 0; i < dyn_array_ptr_size (&loop_stack); ++i) {
 		ScanData *other = dyn_array_ptr_get (&loop_stack, i);
 		printf ("(%d/%d)", other->index, other->low_index);
 	}
@@ -826,8 +793,11 @@ create_scc (ScanData *data)
 
 		// Maybe we should make sure we are not adding duplicates here. It is not really a problem
 		// since we will get rid of duplicates before submitting the SCCs to the client in gather_xrefs
-		if (color_data)
+		if (color_data) {
 			add_other_colors (color_data, &other->xrefs);
+		} else {
+			g_assert (dyn_array_ptr_size (&other->xrefs) == 0);
+		}
 		dyn_array_ptr_uninit (&other->xrefs);
 
 		if (other == data) {
@@ -838,10 +808,12 @@ create_scc (ScanData *data)
 	g_assert (found);
 
 #if DUMP_GRAPH
-	printf ("\tpoints-to-colors: ");
-	for (int i = 0; i < dyn_array_ptr_size (&color_data->other_colors); i++)
-		printf ("%p ", dyn_array_ptr_get (&color_data->other_colors, i));
-	printf ("\n");
+    if (color_data) {
+        printf ("\tpoints-to-colors: ");
+        for (i = 0; i < dyn_array_ptr_size (&color_data->other_colors); i++)
+            printf ("%p ", dyn_array_ptr_get (&color_data->other_colors, i));
+        printf ("\n");
+    }
 #endif
 }
 
@@ -966,8 +938,11 @@ dump_color_table (const char *why, gboolean do_index)
 				printf (" bridges: ");
 				for (j = 0; j < dyn_array_ptr_size (&cd->bridges); ++j) {
 					GCObject *obj = dyn_array_ptr_get (&cd->bridges, j);
-					ScanData *data = find_or_create_data (obj);
-					printf ("%d ", data->index);
+					ScanData *data = find_data (obj);
+					if (!data)
+						printf ("%p ", obj);
+					else
+						printf ("%p(%d) ", obj, data->index);
 				}
 			}
 			printf ("\n");
@@ -1027,7 +1002,7 @@ processing_stw_step (void)
 #if defined (DUMP_GRAPH)
 	printf ("----summary----\n");
 	printf ("bridges:\n");
-	for (int i = 0; i < bridge_count; ++i) {
+	for (i = 0; i < bridge_count; ++i) {
 		ScanData *sd = find_data (dyn_array_ptr_get (&registered_bridges, i));
 		printf ("\t%s (%p) index %d color %p\n", safe_name_bridge (sd->obj), sd->obj, sd->index, sd->color);
 	}
@@ -1260,7 +1235,6 @@ sgen_tarjan_bridge_init (SgenBridgeProcessor *collector)
 	collector->processing_stw_step = processing_stw_step;
 	collector->processing_build_callback_data = processing_build_callback_data;
 	collector->processing_after_callback = processing_after_callback;
-	collector->class_kind = class_kind;
 	collector->register_finalized_object = register_finalized_object;
 	collector->describe_pointer = describe_pointer;
 	collector->set_config = set_config;

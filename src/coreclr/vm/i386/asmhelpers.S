@@ -180,7 +180,7 @@ LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
 #ifdef _DEBUG
     nop     // This is a tag that we use in an assert.  Fcalls expect to
             // be called from Jitted code or from certain blessed call sites like
-            // this one.  (See HelperMethodFrame::InsureInit)
+            // this one.  (See HelperMethodFrame::EnsureInit)
 #endif
 
     // Save FP return value if necessary
@@ -1081,3 +1081,14 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+//edi -This pointer
+//esi -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    mov  eax, [eax + ThisPtrRetBufPrecodeData__Target]
+    // Use XOR swap technique to set avoid the need to spill to the stack
+    xor edi, esi
+    xor esi, edi
+    xor edi, esi
+    jmp eax
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT

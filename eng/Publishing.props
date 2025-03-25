@@ -1,137 +1,68 @@
-<Project InitialTargets="ValidateDownloadedAssets">
-
+<Project>
   <PropertyGroup>
     <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
     <!-- This avoids creating VS.*.symbols.nupkg packages that are identical to the original package. -->
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
-    <!-- Set PlatformName to TargetArchitecture to create unique build manifest files. -->
-    <PlatformName Condition="'$(TargetArchitecture)' != ''">$(TargetArchitecture)</PlatformName>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuild)' != 'true'">
+    <PushToLocalStorage>true</PushToLocalStorage>
+    <ArtifactsStagingDir>$(ArtifactsDir)staging/</ArtifactsStagingDir>
+    <SourceBuiltPdbArtifactsDir>$(ArtifactsStagingDir)SymStore</SourceBuiltPdbArtifactsDir>
+    <!-- Put blobs where we put packages so our regular globbing in our publish join job finds them. -->
+    <SourceBuiltAssetsDir>$(ArtifactsStagingDir)</SourceBuiltAssetsDir>
+    <SourceBuiltShippingPackagesDir>$(ArtifactsStagingDir)packages/$(Configuration)/Shipping</SourceBuiltShippingPackagesDir>
+    <SourceBuiltNonShippingPackagesDir>$(ArtifactsStagingDir)packages/$(Configuration)/NonShipping</SourceBuiltNonShippingPackagesDir>
+    <PublishingUseHardlinksIfPossible>true</PublishingUseHardlinksIfPossible>
+    <!-- We don't use the asset manifest from the vertical dotnet/runtime legs outside of the VMR. Just dump it in a temp dir. -->
+    <SourceBuiltAssetManifestsDir>$(ArtifactsTmpDir)/manifests/$(Configuration)</SourceBuiltAssetManifestsDir>
+    <AssetManifestName>VerticalManifest.xml</AssetManifestName>
+  </PropertyGroup>
+
+  <!-- In the runtime official build, we only sign a subset of files. Add all of our blob artifacts here again for publishing -->
+  <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true'">
+    <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
+                       $(ArtifactsPackagesDir)**\*.zip;
+                       $(ArtifactsPackagesDir)**\*.deb;
+                       $(ArtifactsPackagesDir)**\*.rpm;
+                       $(ArtifactsPackagesDir)**\*.pkg;
+                       $(ArtifactsPackagesDir)**\*.exe;
+                       $(ArtifactsPackagesDir)**\*.msi;"
+              Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
+              Kind="Blob"
+              IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
+      <!-- Exclude wixpack.zip files from checksum generation -->
+      <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
+    </Artifact>
+  </ItemGroup>
+
   <!--
-    Look through the downloaded artifacts to figure out how to ship them. Creates item groups for
-    other types of publishing to use.
-
-    DownloadDirectory is expected to have some directory inside, which then contains a dir for each
-    build job name. For example, this nupkg would be found:
-
-      $(DownloadDirectory)IntermediateArtifacts\windows_x64\Shipping\a.nupkg
+    Mark host-RID-targeting assets as Vertical visibility when building in the VMR.
+    We can't use NETCoreSdkRuntimeIdentifier here as the Arcade SDK projects don't import the .NET SDK.
+    Instead, just make sure we include the assets targeting "not the output rid", which will catch the host assets.
   -->
-  <ItemGroup Condition="'$(DotNetBuildRepo)' != 'true'">
-    <DownloadedArtifactFile Include="$(DownloadDirectory)**" />
-    <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
-    <DownloadedWixPdbFile Include="$(DownloadDirectory)**\*.wixpdb" />
-    <DownloadedWixpackFile Include="$(DownloadDirectory)**\*.wixpack.zip" Condition="'$(PostBuildSign)' != 'true'" />
-    <DownloadedWorkloadsVSInsertionFile Include="$(DownloadDirectory)*\workloads-vs\**\*" />
-    <DownloadedNupkgFile Include="$(DownloadDirectory)**\*.nupkg" Exclude="@(DownloadedSymbolNupkgFile)" />
+  <ItemGroup Condition="'$(EnableDefaultRidSpecificArtifacts)' != 'true' and '$(DotNetBuildOrchestrator)' == 'true'">
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILAsm.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILAsm.*.nupkg" />
 
-    <!-- Exclude symbol packages from have a NuGet signature. These are never pushed to NuGet.org or
-          other feeds (in fact, that have identical identity to their non-symbol variant) -->
-    <DownloadedSymbolPackagesWithoutPaths Include="@(DownloadedSymbolNupkgFile->'%(Filename)%(Extension)')" />
-    <FileSignInfo Include="@(DownloadedSymbolPackagesWithoutPaths->Distinct())" CertificateName="None" />
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILDAsm.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILDAsm.*.nupkg" />
 
-    <!-- Add files that are not affected by filtering and create checksum for them. -->
-    <UploadToBlobStorageFile
-      Include="@(DownloadedArtifactFile)"
-      Exclude="@(DownloadedSymbolNupkgFile);
-                @(DownloadedNupkgFile);
-                @(DownloadedWixPdbFile);
-                @(DownloadedWorkloadsVSInsertionFile);
-                @(DownloadedWixpackFile)" />
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.DotNet.ILCompiler.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.DotNet.ILCompiler.*.nupkg" />
 
-    <!--
-      Filter out the RID-specific (Runtime) nupkgs and RID-agnostic nupkgs. RID-specific packages
-      are published from every job. RID-agnostic nupkgs are built with the same ID/version by
-      every job, so one specific job's outputs must be picked to sign and publish.
-    -->
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(OutputRID).*.nupkg" />
 
-    <!-- RID-specific framework packs. -->
-    <RuntimeNupkgFile
-      Include="
-        $(DownloadDirectory)**\Microsoft.*.Runtime.*.nupkg;
-        $(DownloadDirectory)**\Microsoft.*.App.Host.*.nupkg;
-        $(DownloadDirectory)**\Microsoft.*.App.Crossgen2.*.nupkg"
-      Exclude="@(DownloadedSymbolNupkgFile)" />
-
-    <!-- VS insertion packages, carrying RID-specific installers. -->
-    <RuntimeNupkgFile
-      Include="$(DownloadDirectory)**\VS.Redist.Common.*.nupkg"
-      Exclude="@(DownloadedSymbolNupkgFile)" />
-
-    <!--
-      Workloads VS insertion artifacts produced by src/workloads/workloads.csproj. Only grab
-      the zip artifacts as they're grouped by SDK feature band which correlates with specific VS versions.
-    -->
-    <WorkloadsVSInsertionFile Include="$(DownloadDirectory)*\workloads-vs\**\*.zip" />
-
-    <!--
-      Runtime packages associated with some identity packages. Need to exclude "runtime.native.*"
-      because Libraries produces some "runtime.native.Foo" packages with
-      "runtime.<rid>.runtime.native.Foo" identity packages.
-    -->
-    <RuntimeNupkgFile
-      Include="$(DownloadDirectory)**\runtime.*.nupkg"
-      Exclude="
-        $(DownloadDirectory)**\runtime.native.*.nupkg;
-        @(DownloadedSymbolNupkgFile)" />
-
-    <!--
-      Packages that aren't matched above as RID-specific are considered RID-agnostic. Also include
-      the AllConfigurations packages from the Libraries build.
-    -->
-    <RidAgnosticNupkgToPublishFile
-      Include="
-        $(DownloadDirectory)**\Microsoft.NET.Workload.Mono.Toolchain.*Manifest-*.nupkg;
-        $(DownloadDirectory)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
-        $(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromPlatform)\**\*.nupkg;
-        $(DownloadDirectory)*\*AllConfigurations\**\*.nupkg"
-      Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
-
-    <TransportPackagesToPublishFile
-      Include="$(DownloadDirectory)**\*Transport*.nupkg"
-      Exclude="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile);@(DownloadedSymbolNupkgFile)" />
-
-    <NupkgToPublishFile Include="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile);@(TransportPackagesToPublishFile)" />
-
-    <!--
-      Assuming all symbol packages ship and can be found by turning .nupkg => .symbols.nupkg, find
-      them. Don't check for missing symbol packages here: some nupkgs don't have them for valid
-      reasons, such as the VS insertion packages that transport MSIs. Symbol package validation
-      will check for symbol completeness with file-by-file granularity rather than looking for
-      missing symbols.nupkg files: https://github.com/dotnet/arcade/issues/2499.
-
-      Handles several conventions:
-      * NonShipping packages have symbol nupkgs that are Shipping.
-      * Shipping packages have symbol packages in a "symbols" subdirectory.
-    -->
-    <PotentialSymbolNupkgToPublishFile
-      Include="
-        @(NupkgToPublishFile->Replace('\NonShipping\', '\Shipping\')->Replace('.nupkg', '.symbols.nupkg'));
-        @(NupkgToPublishFile->Replace('\NonShipping\', '\NonShipping\symbols\')->Replace('.nupkg', '.symbols.nupkg'));
-        @(NupkgToPublishFile->Replace('\Shipping\', '\Shipping\symbols\')->Replace('.nupkg', '.symbols.nupkg'))" />
-
-    <SymbolNupkgToPublishFile Include="@(PotentialSymbolNupkgToPublishFile->Distinct()->Exists())" />
-
-    <!-- Packages -->
-    <Artifact Include="@(NupkgToPublishFile)"
-              IsShipping="$([System.String]::new('%(Identity)').Contains('\Shipping\'))"
-              PublishFlatContainer="false" />
-    <Artifact Include="@(SymbolNupkgToPublishFile)" PublishFlatContainer="false" />
-
-    <!-- Blob storage -->
-    <Artifact Include="@(UploadToBlobStorageFile)"
-              Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)"
-              IsShipping="$([System.String]::new('%(Identity)').Contains('\Shipping\'))"
-              ChecksumPath="%(FullPath).sha512" />
-    <Artifact Include="@(WorkloadsVSInsertionFile)"
-              SubBlobFolder="workloads/"
-              IsShipping="$([System.String]::new('%(Identity)').Contains('\Shipping\'))" />
+    <Artifact Update="@(_HostArtifact)"
+              Visibility="Vertical"
+              IsShipping="false" />
   </ItemGroup>
 
   <Target Name="GetNonStableProductVersion">
     <!-- Retrieve the non-stable runtime pack product version.
          Don't stabilize the package version in order to retrieve the VersionSuffix. -->
-    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
              Targets="ReturnProductVersion"
              Properties="IsShipping=false;
                          Crossgen2SdkOverridePropsPath=;
@@ -146,17 +77,17 @@
     This ensures that we don't produce these files in the "Repo source build" builds,
     but we do produce them in both the VMR and the runtime official build.
   -->
-  <PropertyGroup>
-    <_ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildRepo)' == 'true' and '$(DotNetBuildOrchestrator)' == 'true'">true</_ShouldGenerateProductVersionFiles>
-    <_ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildRepo)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">true</_ShouldGenerateProductVersionFiles>
+  <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
+    <ShouldGenerateProductVersionFiles Condition="'$(PackageRID)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
+    <ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ShouldGenerateProductVersionFiles>
   </PropertyGroup>
 
   <Target Name="GenerateProductVersionFiles"
           DependsOnTargets="GetNonStableProductVersion"
           BeforeTargets="PublishToAzureDevOpsArtifacts"
-          Condition="'$(_ShouldGenerateProductVersionFiles)' == 'true'">
+          Condition="'$(ShouldGenerateProductVersionFiles)' == 'true'">
     <!-- Retrieve the runtime pack product version. -->
-    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
              Targets="ReturnProductVersion"
              Properties="Crossgen2SdkOverridePropsPath=;
                          Crossgen2SdkOverrideTargetsPath=">
@@ -184,23 +115,23 @@
           DependsOnTargets="GetNonStableProductVersion"
           BeforeTargets="PublishToAzureDevOpsArtifacts"
           AfterTargets="GenerateChecksumsFromArtifacts">
-    <ItemGroup>
-      <Artifact Condition="'%(Artifact.PublishFlatContainer)' == 'true' and '%(Artifact.RelativeBlobPath)' == ''"
+    <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true' or '$(DotNetBuildOrchestrator)' == 'true'">
+      <Artifact Condition="'%(Artifact.Kind)' != 'Package' and '%(Artifact.RelativeBlobPath)' == ''"
                 RelativeBlobPath="Runtime/$(NonStableProductVersion)/%(Artifact.SubBlobFolder)%(Filename)%(Extension)" />
     </ItemGroup>
+    <!-- In vertical dotnet/runtime legs outside of the VMR, set the "relative blob path" to shipping vs non-shipping to make our download/upload work. -->
+    <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">
+      <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' == 'true'"
+                RelativeBlobPath="packages/$(Configuration)/Shipping/%(Filename)%(Extension)" />
+      <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' != 'true'"
+                RelativeBlobPath="packages/$(Configuration)/NonShipping/%(Filename)%(Extension)" />
+      <ItemsToPushToBlobFeed Condition="'%(ItemsToPushToBlobFeed.Kind)' == 'Blob' and '%(ItemsToPushToBlobFeed.IsShipping)' == 'true'"
+                             RelativeBlobPath="packages/$(Configuration)/Shipping/%(Filename)%(Extension)" />
+      <ItemsToPushToBlobFeed Condition="'%(ItemsToPushToBlobFeed.Kind)' == 'Blob' and '%(ItemsToPushToBlobFeed.IsShipping)' != 'true'"
+                             RelativeBlobPath="packages/$(Configuration)/NonShipping/%(Filename)%(Extension)" />
+
+      <Artifact Condition="'%(Artifact.IsVSSetup)' == 'true'"
+                RelativeBlobPath="VSSetup/%(Filename)%(Extension)" />
+    </ItemGroup>
   </Target>
-
-  <Target Name="ValidateDownloadedAssets" Condition="'$(DotNetBuildRepo)' != 'true'">
-    <Error Text="DownloadDirectory is not set." Condition="'$(DownloadDirectory)' == ''" />
-    <Error Condition="'@(SymbolNupkgToPublishFile)' == ''" Text="No symbol packages found." />
-
-    <!--
-      Duplicate RuntimeNupkgFile items mean artifact upload will fail, but only after another hour
-      of signing. Detect this early. It's possible to automatically "fix" this with Distinct(),
-      however the patterns should be fairly specific: this is likely a build infra mistake that
-      should be corrected.
-    -->
-    <Error Text="Duplicate RuntimeNupkgFile entries for: %(RuntimeNupkgFile.Identity)" Condition="@(RuntimeNupkgFile->Count()) &gt; 1" />
-  </Target>
-
 </Project>

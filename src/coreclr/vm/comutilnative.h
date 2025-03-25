@@ -74,6 +74,10 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     MethodTable* pInterfaceMT,
     MethodDesc* pInterfaceMD);
 
+extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc* caller, MethodDesc* callee);
+extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee);
+extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee);
+
 //
 // Buffer
 //
@@ -83,8 +87,8 @@ public:
     static FCDECL3(VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
 };
 
-extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length);
 extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length);
+extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length);
 
 const UINT MEM_PRESSURE_COUNT = 4;
 

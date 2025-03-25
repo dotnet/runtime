@@ -132,7 +132,6 @@ internal partial class MockDescriptors
             new(nameof(Data.Module.Flags), DataType.uint32),
             new(nameof(Data.Module.Base), DataType.pointer),
             new(nameof(Data.Module.LoaderAllocator), DataType.pointer),
-            new(nameof(Data.Module.ThunkHeap), DataType.pointer),
             new(nameof(Data.Module.DynamicMetadata), DataType.pointer),
             new(nameof(Data.Module.Path), DataType.pointer),
             new(nameof(Data.Module.FileName), DataType.pointer),
@@ -195,6 +194,17 @@ internal partial class MockDescriptors
             new(nameof(Data.ThreadStore.BackgroundCount), DataType.uint32),
             new(nameof(Data.ThreadStore.PendingCount), DataType.uint32),
             new(nameof(Data.ThreadStore.DeadCount), DataType.uint32),
+        ]
+    };
+
+    private static readonly TypeFields GCCoverageInfoFields = new TypeFields()
+    {
+        DataType = DataType.GCCoverageInfo,
+        Fields =
+        [
+            // Add DummyField to ensure the offset of SavedCode is not added to the TargetPointer.Null
+            new("DummyField", DataType.pointer),
+            new("SavedCode", DataType.pointer),
         ]
     };
 

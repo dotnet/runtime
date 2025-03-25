@@ -6,7 +6,7 @@
 
 //
 //
-// Currently represents a logical and physical COM+ thread. Later, these concepts will be separated.
+// Currently represents a logical and physical CLR thread. Later, these concepts will be separated.
 //
 
 //
@@ -381,8 +381,6 @@ EXTERN_C void ThrowControlForThread(
 BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId );
 #endif
 
-typedef DWORD (*AppropriateWaitFunc) (void *args, DWORD timeout, DWORD option);
-
 // The Thread class represents a managed thread.  This thread could be internal
 // or external (i.e. it wandered in from outside the runtime).  For internal
 // threads, it could correspond to an exposed System.Thread object or it
@@ -678,7 +676,7 @@ public:
     };
 
 public:
-    HRESULT DetachThread(BOOL fDLLThreadDetach);
+    HRESULT DetachThread(BOOL inTerminationCallback);
 
     void SetThreadState(ThreadState ts)
     {
@@ -2192,16 +2190,12 @@ public:
                                      DWORD millis, WaitMode mode,
                                      PendingSync *syncInfo = 0);
 
-    DWORD          DoAppropriateWait(AppropriateWaitFunc func, void *args, DWORD millis,
-                                     WaitMode mode, PendingSync *syncInfo = 0);
     DWORD          DoSignalAndWait(HANDLE *handles, DWORD millis, BOOL alertable,
                                      PendingSync *syncState = 0);
 private:
     void           DoAppropriateWaitWorkerAlertableHelper(WaitMode mode);
     DWORD          DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL waitAll,
                                            DWORD millis, WaitMode mode, void *associatedObjectForMonitorWait);
-    DWORD          DoAppropriateWaitWorker(AppropriateWaitFunc func, void *args,
-                                           DWORD millis, WaitMode mode);
     DWORD          DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable);
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
     DWORD          DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis);
@@ -2672,7 +2666,7 @@ public:
 
 private:
 #ifdef FEATURE_HIJACK
-    void    HijackThread(ReturnKind returnKind, ExecutionState *esb);
+    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
@@ -2812,8 +2806,8 @@ private:
 
 private:
     // Stores the most recently thrown exception. We need to have a handle in case a GC occurs before
-    // we catch so we don't lose the object. Having a static allows others to catch outside of COM+ w/o leaking
-    // a handler and allows rethrow outside of COM+ too.
+    // we catch so we don't lose the object. Having a static allows others to catch outside of CLR w/o leaking
+    // a handler and allows rethrow outside of CLR too.
     // Differs from m_pThrowable in that it doesn't stack on nested exceptions.
     OBJECTHANDLE m_LastThrownObjectHandle;      // Unsafe to use directly.  Use accessors instead.
 
@@ -3843,15 +3837,14 @@ public:
 #endif // FEATURE_PERFTRACING
 
 #ifdef FEATURE_HIJACK
-private:
 
+#ifdef TARGET_X86
+private:
     // By the time a frame is scanned by the runtime, m_pHijackReturnKind always
     // identifies the gc-ness of the return register(s)
-
     ReturnKind m_HijackReturnKind;
 
 public:
-
     ReturnKind GetHijackReturnKind()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3865,6 +3858,7 @@ public:
 
         m_HijackReturnKind = returnKind;
     }
+#endif
 #endif // FEATURE_HIJACK
 
 public:
@@ -4428,19 +4422,19 @@ public:
         return result;
     }
 
-    Thread *IdToThreadWithValidation(DWORD id)
+    PTR_Thread IdToThreadWithValidation(DWORD id)
     {
         WRAPPER_NO_CONTRACT;
 
         CrstHolder ch(&m_Crst);
 
-        Thread *result = NULL;
+        PTR_Thread result = NULL;
         if (id <= m_highestId)
             result = m_idToThread[id];
         // m_idToThread may have Thread*, or the next free slot
-        if ((size_t)result <= m_idToThreadCapacity)
+        if (dac_cast<size_t>(result) <= m_idToThreadCapacity)
             result = NULL;
-        _ASSERTE(result == NULL || ((size_t)result & 0x3) == 0 || ((Thread*)result)->GetThreadId() == id);
+        _ASSERTE(result == NULL || (dac_cast<size_t>(result) & 0x3) == 0 || ((Thread*)result)->GetThreadId() == id);
         return result;
     }
 };
@@ -5669,7 +5663,7 @@ inline BOOL IsWriteBarrierCopyEnabled()
 #ifdef DACCESS_COMPILE
     return FALSE;
 #else // DACCESS_COMPILE
-#ifdef HOST_OSX
+#ifdef HOST_APPLE
     return TRUE;
 #else
     return ExecutableAllocator::IsWXORXEnabled();

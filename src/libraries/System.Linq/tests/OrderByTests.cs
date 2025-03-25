@@ -52,7 +52,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceEmpty()
         {
-            int[] source = { };
+            int[] source = [];
             Assert.Empty(source.OrderBy(e => e));
         }
 
@@ -67,8 +67,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SurviveBadComparerAlwaysReturnsNegative()
         {
-            int[] source = { 1 };
-            int[] expected = { 1 };
+            int[] source = [1];
+            int[] expected = [1];
 
             Assert.Equal(expected, source.OrderBy(e => e, new BadComparer2()));
         }
@@ -76,8 +76,8 @@ namespace System.Linq.Tests
         [Fact]
         public void KeySelectorReturnsNull()
         {
-            int?[] source = { null, null, null };
-            int?[] expected = { null, null, null };
+            int?[] source = [null, null, null];
+            int?[] expected = [null, null, null];
 
             Assert.Equal(expected, source.OrderBy(e => e));
         }
@@ -85,8 +85,8 @@ namespace System.Linq.Tests
         [Fact]
         public void ElementsAllSameKey()
         {
-            int?[] source = { 9, 9, 9, 9, 9, 9 };
-            int?[] expected = { 9, 9, 9, 9, 9, 9 };
+            int?[] source = [9, 9, 9, 9, 9, 9];
+            int?[] expected = [9, 9, 9, 9, 9, 9];
 
             Assert.Equal(expected, source.OrderBy(e => e));
         }
@@ -113,8 +113,8 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstAndLastAreDuplicatesCustomComparer()
         {
-            string[] source = { "Prakash", "Alpha", "dan", "DAN", "Prakash" };
-            string[] expected = { "Alpha", "dan", "DAN", "Prakash", "Prakash" };
+            string[] source = ["Prakash", "Alpha", "dan", "DAN", "Prakash"];
+            string[] expected = ["Alpha", "dan", "DAN", "Prakash", "Prakash"];
 
             Assert.Equal(expected, source.OrderBy(e => e, StringComparer.OrdinalIgnoreCase));
         }
@@ -122,8 +122,8 @@ namespace System.Linq.Tests
         [Fact]
         public void RunOnce()
         {
-            string[] source = { "Prakash", "Alpha", "dan", "DAN", "Prakash" };
-            string[] expected = { "Alpha", "dan", "DAN", "Prakash", "Prakash" };
+            string[] source = ["Prakash", "Alpha", "dan", "DAN", "Prakash"];
+            string[] expected = ["Alpha", "dan", "DAN", "Prakash", "Prakash"];
 
             Assert.Equal(expected, source.RunOnce().OrderBy(e => e, StringComparer.OrdinalIgnoreCase));
         }
@@ -131,8 +131,8 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstAndLastAreDuplicatesNullPassedAsComparer()
         {
-            int[] source = { 5, 1, 3, 2, 5 };
-            int[] expected = { 1, 2, 3, 5, 5 };
+            int[] source = [5, 1, 3, 2, 5];
+            int[] expected = [1, 2, 3, 5, 5];
 
             Assert.Equal(expected, source.OrderBy(e => e, null));
         }
@@ -140,8 +140,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceReverseOfResultNullPassedAsComparer()
         {
-            int?[] source = { 100, 30, 9, 5, 0, -50, -75, null };
-            int?[] expected = { null, -75, -50, 0, 5, 9, 30, 100 };
+            int?[] source = [100, 30, 9, 5, 0, -50, -75, null];
+            int?[] expected = [null, -75, -50, 0, 5, 9, 30, 100];
 
             Assert.Equal(expected, source.OrderBy(e => e, null));
         }
@@ -237,8 +237,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SurviveBadComparerAlwaysReturnsPositive()
         {
-            int[] source = { 1 };
-            int[] expected = { 1 };
+            int[] source = [1];
+            int[] expected = [1];
 
             Assert.Equal(expected, source.OrderBy(e => e, new BadComparer1()));
         }
@@ -374,7 +374,7 @@ namespace System.Linq.Tests
         [Fact]
         public void LastOnOrderedMatchingCases()
         {
-            object[] boxedInts = new object[] {0, 1, 2, 9, 1, 2, 3, 9, 4, 5, 7, 8, 9, 0, 1};
+            object[] boxedInts = [0, 1, 2, 9, 1, 2, 3, 9, 4, 5, 7, 8, 9, 0, 1];
             Assert.Same(boxedInts[12], boxedInts.OrderBy(o => (int)o).Last());
             Assert.Same(boxedInts[12], boxedInts.OrderBy(o => (int)o).LastOrDefault());
             Assert.Same(boxedInts[12], boxedInts.OrderBy(o => (int)o).Last(o => (int)o % 2 == 1));
@@ -399,7 +399,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EnumeratorDoesntContinue()
         {
-            var enumerator = NumberRangeGuaranteedNotCollectionType(0, 3).Shuffle().OrderBy(i => i).GetEnumerator();
+            using var enumerator = NumberRangeGuaranteedNotCollectionType(0, 3).Shuffle().OrderBy(i => i).GetEnumerator();
             while (enumerator.MoveNext()) { }
             Assert.False(enumerator.MoveNext());
         }
@@ -511,7 +511,7 @@ namespace System.Linq.Tests
         [Fact]
         public void CultureOrderBy()
         {
-            string[] source = new[] { "Apple0", "\uFFFDble0", "Apple1", "\uFFFDble1", "Apple2", "\uFFFDble2" };
+            string[] source = ["Apple0", "\uFFFDble0", "Apple1", "\uFFFDble1", "Apple2", "\uFFFDble2"];
 
             CultureInfo dk = new CultureInfo("da-DK");
             CultureInfo au = new CultureInfo("en-AU");
@@ -544,7 +544,7 @@ namespace System.Linq.Tests
 
             using (new ThreadCultureChange(dk)) // "dk" whilst GetEnumerator
             {
-                IEnumerator<string> s = source.OrderBy(x => x).GetEnumerator(); 
+                using IEnumerator<string> s = source.OrderBy(x => x).GetEnumerator();
                 using (new ThreadCultureChange(au)) // but "au" whilst accessing...
                 {
                     int idx = 0;
@@ -558,7 +558,7 @@ namespace System.Linq.Tests
             using (new ThreadCultureChange(au))
             {
                 // "au" whilst GetEnumerator
-                IEnumerator<string> s = source.OrderBy(x => x).GetEnumerator(); 
+                using IEnumerator<string> s = source.OrderBy(x => x).GetEnumerator(); 
                 
                 using (new ThreadCultureChange(dk)) 
                 {
@@ -583,7 +583,7 @@ namespace System.Linq.Tests
         [Fact]
         public void CultureOrderByElementAt()
         {
-            string[] source = new[] { "Apple0", "\uFFFDble0", "Apple1", "\uFFFDble1", "Apple2", "\uFFFDble2" };
+            string[] source = ["Apple0", "\uFFFDble0", "Apple1", "\uFFFDble1", "Apple2", "\uFFFDble2"];
 
             CultureInfo dk = new CultureInfo("da-DK");
             CultureInfo au = new CultureInfo("en-AU");

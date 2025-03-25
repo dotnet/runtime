@@ -60,7 +60,6 @@ __IntermediatesDir="$__RootBinDir/obj/$__OutputRid.$__BuildType"
 export __BinDir __IntermediatesDir __RuntimeFlavor
 
 __CMakeArgs="-DCLI_CMAKE_PKG_RID=\"$__OutputRid\" -DCLI_CMAKE_FALLBACK_OS=\"$__HostFallbackOS\" -DCLI_CMAKE_COMMIT_HASH=\"$__commit_hash\" $__CMakeArgs"
-__CMakeArgs="-DRUNTIME_FLAVOR=\"$__RuntimeFlavor\" $__CMakeArgs"
 __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.

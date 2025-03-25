@@ -425,7 +425,7 @@ donestack:
 ifdef _DEBUG
         nop     ; This is a tag that we use in an assert.  Fcalls expect to
                 ; be called from Jitted code or from certain blessed call sites like
-                ; this one.  (See HelperMethodFrame::InsureInit)
+                ; this one.  (See HelperMethodFrame::EnsureInit)
 endif
 
         ; Save FP return value if necessary
@@ -1155,7 +1155,7 @@ _TheUMEntryPrestub@0 proc public
     push        ecx
     push        edx
 
-    push    eax     ; UMEntryThunk*
+    push    eax     ; UMEntryThunkData*
     call    _TheUMEntryPrestubWorker@4
 
     ; pop argument registers
@@ -1222,14 +1222,12 @@ _GenericComCallStub@0 proc public
     push        edi
 
     push        eax         ; UnmanagedToManagedFrame::m_pvDatum = ComCallMethodDesc*
-    sub         esp, (SIZEOF_GSCookie + OFFSETOF__UnmanagedToManagedFrame__m_pvDatum)
+    sub         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
 
-    lea         eax, [esp+SIZEOF_GSCookie]
-
-    push        eax
+    push        esp
     call        _COMToCLRWorker@4
 
-    add         esp, (SIZEOF_GSCookie + OFFSETOF__UnmanagedToManagedFrame__m_pvDatum)
+    add         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
 
     ; pop the ComCallMethodDesc*
     pop         ecx
@@ -1272,10 +1270,10 @@ _ComCallPreStub@0 proc public
     push        edi
 
     push        eax         ; ComCallMethodDesc*
-    sub         esp, 5*4    ; next, vtable, gscookie, 64-bit error return
+    sub         esp, 4*4    ; next, vtable, 64-bit error return
 
-    lea     edi, [esp]
-    lea     esi, [esp+3*4]
+    lea     edi, [esp]      ; Point at the 64-bit error return
+    lea     esi, [esp+2*4]  ; Leave space for the 64-bit error return
 
     push    edi                 ; pErrorReturn
     push    esi                 ; pFrame
@@ -1285,7 +1283,7 @@ _ComCallPreStub@0 proc public
     cmp eax, 0
     je nostub                   ; oops we could not create a stub
 
-    add     esp, 6*4
+    add     esp, 5*4            ; Pop off 64-bit error return, vtable, next and ComCallMethodDesc*
 
     ; pop CalleeSavedRegisters
     pop edi
@@ -1308,7 +1306,7 @@ nostub:
     mov     eax, [edi]
     mov     edx, [edi+4]
 
-    add     esp, 6*4
+    add     esp, 5*4            ; Pop off 64-bit error return, vtable, next and ComCallMethodDesc*
 
     ; pop CalleeSavedRegisters
     pop edi
@@ -1395,5 +1393,16 @@ _OnCallCountThresholdReachedStub@0 proc public
 _OnCallCountThresholdReachedStub@0 endp
 
 endif ; FEATURE_TIERED_COMPILATION
+
+; rcx -This pointer
+; rdx -ReturnBuffer
+_ThisPtrRetBufPrecodeWorker@0 proc public
+    mov  eax, [eax + ThisPtrRetBufPrecodeData__Target]
+    ; Use XOR swap technique to set avoid the need to spill to the stack
+    xor ecx, edx
+    xor edx, ecx
+    xor ecx, edx
+    jmp eax
+_ThisPtrRetBufPrecodeWorker@0 endp
 
     end

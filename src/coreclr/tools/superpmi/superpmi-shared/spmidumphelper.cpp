@@ -233,11 +233,9 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(OSR);
     AddFlag(ALT_JIT);
     AddFlag(FROZEN_ALLOC_ALLOWED);
-    AddFlag(MAKEFINALCODE);
-    AddFlag(READYTORUN);
+    AddFlag(AOT);
     AddFlag(PROF_ENTERLEAVE);
     AddFlag(PROF_NO_PINVOKE_INLINE);
-    AddFlag(PREJIT);
     AddFlag(RELOC);
     AddFlag(IL_STUB);
     AddFlag(PROCSPLIT);
@@ -257,10 +255,6 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     //
     AddFlagNumeric(RELATIVE_CODE_RELOCS, 29);
     AddFlagNumeric(SOFTFP_ABI, 30);
-
-    // xarch only
-    //
-    AddFlagNumeric(VECTOR512_THROTTLING, 31);
 
     // "Extra jit flag" support
     //

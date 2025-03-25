@@ -1090,9 +1090,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // currently all ComObjects except
-        // for __ComObject have dynamic Interface maps
-        return GetNumInterfaces() > 0 && IsComObjectType() && !ParentEquals(g_pObjectClass);
+        // All ComObjects except for __ComObject
+        // have dynamic Interface maps
+        return GetNumInterfaces() > 0
+            && IsComObjectType()
+            && !ParentEquals(g_pObjectClass)
+            && this != g_pBaseCOMObject;
     }
 #endif // FEATURE_COMINTEROP
 
@@ -1622,9 +1625,11 @@ public:
     typedef DPTR(VTableIndir2_t) VTableIndir_t;
 
     static DWORD GetIndexOfVtableIndirection(DWORD slotNum);
+
     static DWORD GetStartSlotForVtableIndirection(UINT32 indirectionIndex, DWORD wNumVirtuals);
     static DWORD GetEndSlotForVtableIndirection(UINT32 indirectionIndex, DWORD wNumVirtuals);
     static UINT32 GetIndexAfterVtableIndirection(UINT32 slotNum);
+    static UINT32 IndexAfterVtableIndirectionToSlot(UINT32 slotNum);
     static DWORD GetNumVtableIndirections(DWORD wNumVirtuals);
     DPTR(VTableIndir_t) GetVtableIndirections();
     DWORD GetNumVtableIndirections();
@@ -2676,8 +2681,8 @@ public:
     // This flavor of Allocate is more efficient, but can only be used
     // if CheckInstanceActivated(), IsClassInited() are known to be true.
     // A sufficient condition is that another instance of the exact same type already
-    // exists in the same appdomain. It's currently called only from Delegate.Combine
-    // via COMDelegate::InternalAllocLike.
+    // exists in the same ALC. It's currently called only from Delegate.Combine
+    // via RuntimeTypeHandle_InternalAllocNoChecks.
     OBJECTREF AllocateNoChecks();
 
     OBJECTREF Box(void* data);
@@ -3915,18 +3920,17 @@ private:
     // JITed code and JIT helpers. The space used by m_pPerInstInfo is used to represent the array
     // element type handle for array MethodTables.
 
+    public:
     union
     {
         PerInstInfo_t m_pPerInstInfo;
         TADDR         m_ElementTypeHnd;
     };
-    public:
-    union 
+    union
     {
         PTR_InterfaceInfo   m_pInterfaceMap;
         TADDR               m_encodedNullableUnboxData; // Used for Nullable<T> to represent the offset to the value field, and the size of the value field
     };
-    
 
     // VTable slots go here
 

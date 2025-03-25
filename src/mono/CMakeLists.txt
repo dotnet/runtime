@@ -245,7 +245,7 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "emscripten")
   set(HAVE_SYS_RANDOM_H 1)
 elseif(CLR_CMAKE_HOST_OS STREQUAL "wasi")
   set(HOST_WASI 1)
-  add_definitions(-D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -DHOST_WASI)
+  add_definitions(-D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_PTHREAD -DHOST_WASI)
   add_definitions(-D_THREAD_SAFE)
   add_definitions(-DDISABLE_EGD_SOCKET)
   add_definitions(-DDISABLE_EVENTPIPE)
@@ -882,7 +882,6 @@ endif()
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
-add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
 
 if(NOT DISABLE_LIBS)
   set(INSTALL_MONO_API 1)

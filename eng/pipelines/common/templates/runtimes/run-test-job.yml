@@ -58,18 +58,18 @@ jobs:
 
     ${{ if eq(parameters.dependsOn[0], '') }}:
       dependsOn:
-      - ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+      - ${{ if in(parameters.testGroup, 'innerloop') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-      - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+      - ${{ if notIn(parameters.testGroup, 'innerloop') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.unifiedArtifactsName, '')}}:
         - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
 
     # Compute job name from template parameters
-    ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+    ${{ if in(parameters.testGroup, 'innerloop') }}:
       name: 'run_test_p0_${{ parameters.runtimeFlavor }}${{ parameters.runtimeVariant }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
       displayName: '${{ parameters.runtimeFlavor }} ${{ parameters.runtimeVariant}} Pri0 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
-    ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+    ${{ if notIn(parameters.testGroup, 'innerloop') }}:
       name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
       displayName: '${{ parameters.runtimeFlavor }} ${{ parameters.runtimeVariant }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
@@ -188,7 +188,7 @@ jobs:
       timeoutInMinutes: 480
     ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
       timeoutInMinutes: 390
-    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo', 'pgostress', 'jit-experimental') }}:
+    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'pgo', 'pgostress', 'jit-experimental') }}:
       timeoutInMinutes: 510
     ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstress-isas-sve') }}:
       timeoutInMinutes: 960
@@ -326,7 +326,7 @@ jobs:
         #
         # We only need to do this for a testGroup with more than one or two scenarios, though it isn't functionally
         # a problem to always do it. Thus, we only exempt this setting for a few cases.
-        ${{ if notIn(parameters.testGroup, 'innerloop', 'outerloop', 'clrinterpreter', 'ilasm', 'gc-longrunning', 'gc-simulator', 'gc-standalone', 'gc-standalone-server') }}:
+        ${{ if notIn(parameters.testGroup, 'innerloop', 'outerloop', 'ilasm', 'gc-longrunning', 'gc-simulator', 'gc-standalone', 'gc-standalone-server') }}:
           msbuildParallelism: '/maxcpucount:55'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
@@ -386,6 +386,9 @@ jobs:
           - jitstress_isas_x86_nosse41
           - jitstress_isas_x86_nosse42
           - jitstress_isas_x86_nossse3
+          - jitstress_isas_x86_vectort128
+          - jitstress_isas_x86_vectort512
+          - jitstress_isas_x86_noavx512_vectort128
           - jitstress_isas_1_x86_noaes
           - jitstress_isas_1_x86_noavx
           - jitstress_isas_1_x86_noavx2
@@ -540,7 +543,6 @@ jobs:
             - jitpartialcompilation_pgo
             - jitpartialcompilation_pgo_stress_random
             - jitoptrepeat
-            - jitoldlayout
           ${{ else }}:
             scenarios:
             - jitosr_stress
@@ -554,7 +556,6 @@ jobs:
             - jitphysicalpromotion_full
             - jitrlcse
             - jitoptrepeat
-            - jitoldlayout
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:
           - jitcfg
@@ -564,9 +565,6 @@ jobs:
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip
-        ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
-          scenarios:
-          - clrinterpreter
 
     ########################################################################################################
     #

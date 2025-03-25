@@ -51,6 +51,14 @@
 #include <sys/sysctl.h>
 #endif
 
+#if HAVE_HWPROBE_H
+
+#include <asm/hwprobe.h>
+#include <asm/unistd.h>
+#include <unistd.h>
+
+#endif // HAVE_HWPROBE_H
+
 #endif // !HOST_WINDOWS
 
 #if defined(HOST_UNIX)
@@ -58,6 +66,11 @@
 
 static uint32_t xmmYmmStateSupport()
 {
+#if defined(HOST_X86)
+    // We don't support saving XState context on linux-x86 platforms yet, so we
+    // need to disable any AVX support that uses the extended registers.
+    return 0;
+#else
     uint32_t eax;
     __asm("  xgetbv\n" \
         : "=a"(eax) /*output in eax*/\
@@ -66,6 +79,7 @@ static uint32_t xmmYmmStateSupport()
       );
     // check OS has enabled both XMM and YMM state support
     return ((eax & 0x06) == 0x06) ? 1 : 0;
+#endif // HOST_X86
 }
 
 #ifndef XSTATE_MASK_AVX512
@@ -323,7 +337,7 @@ int minipal_getcpufeatures(void)
                                         {
                                             result |= XArchIntrinsicConstants_Apx;
                                         }
-                                    }                                    
+                                    }
 
                                     if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
                                     {
@@ -340,7 +354,7 @@ int minipal_getcpufeatures(void)
                                             {
                                                 result |= XArchIntrinsicConstants_Avx10v2;
                                             }
-                                            
+
                                             // We assume that the Avx10/V512 support can be inferred from
                                             // both Avx10v1 and Avx512 being present.
                                             assert(((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0) ==                 // Avx10/V512
@@ -495,6 +509,17 @@ int minipal_getcpufeatures(void)
     if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Dp;
+
+        // IsProcessorFeaturePresent does not have a dedicated flag for RDM, so we enable it by implication.
+        // 1) DP is an optional instruction set for Armv8.2, which may be included only in processors implementing at least Armv8.1.
+        // 2) Armv8.1 requires RDM when AdvSIMD is implemented, and AdvSIMD is a baseline requirement of .NET.
+        //
+        // Therefore, by documented standard, DP cannot exist here without RDM. In practice, there is only one CPU supported
+        // by Windows that includes RDM without DP, so this implication also has little practical chance of a false negative.
+        //
+        // See: https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/Learn%20the%20Architecture/Understanding%20the%20Armv8.x%20extensions.pdf
+        //      https://developer.arm.com/documentation/109697/2024_09/Feature-descriptions/The-Armv8-1-architecture-extension
+        result |= ARM64IntrinsicConstants_Rdm;
     }
 
     if (IsProcessorFeaturePresent(PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE))
@@ -512,6 +537,37 @@ int minipal_getcpufeatures(void)
 #endif // HOST_WINDOWS
 
 #endif // HOST_ARM64
+
+#if defined(HOST_RISCV64)
+
+#if defined(HOST_UNIX)
+
+#if HAVE_HWPROBE_H
+
+    struct riscv_hwprobe pairs[1] = {{RISCV_HWPROBE_KEY_IMA_EXT_0, 0}};
+
+    if (syscall(__NR_riscv_hwprobe, pairs, 1, 0, NULL, 0) == 0)
+    {
+        // Our baseline support is for RV64GC (see #73437)
+        assert(pairs[0].value & RISCV_HWPROBE_IMA_FD);
+        assert(pairs[0].value & RISCV_HWPROBE_IMA_C);
+
+        if (pairs[0].value & RISCV_HWPROBE_EXT_ZBA)
+        {
+            result |= RiscV64IntrinsicConstants_Zba;
+        }
+
+        if (pairs[0].value & RISCV_HWPROBE_EXT_ZBB)
+        {
+            result |= RiscV64IntrinsicConstants_Zbb;
+        }
+    }
+
+#endif // HAVE_HWPROBE_H
+
+#endif // HOST_UNIX
+
+#endif // HOST_RISCV64
 
     return result;
 }

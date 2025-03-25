@@ -752,6 +752,8 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 
 #if defined(TARGET_AMD64)
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
+    rbmIntCalleeTrash = emitComp->rbmIntCalleeTrash;
+    rbmAllInt         = emitComp->rbmAllInt;
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
@@ -1620,7 +1622,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     //     ARM - This is currently broken on TARGET_ARM
     //     When nopSize is odd we misalign emitCurIGsize
     //
-    if (!emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !emitInInstrumentation &&
+    if (!emitComp->IsAot() && !emitInInstrumentation &&
         !emitIGisInProlog(emitCurIG) && // don't do this in prolog or epilog
         !emitIGisInEpilog(emitCurIG) &&
         emitRandomNops // sometimes we turn off where exact codegen is needed (pinvoke inline)
@@ -1753,7 +1755,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         id->idOpSize(EA_SIZE(opsz));
     }
 
-    // Amd64: ip-relative addressing is supported even when not generating relocatable ngen code
+    // Amd64: ip-relative addressing is supported even when not generating relocatable AOT code
     if (EA_IS_DSP_RELOC(opsz)
 #ifndef TARGET_AMD64
         && emitComp->opts.compReloc
@@ -6764,9 +6766,9 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     // These are the heuristics we use to decide whether or not to force the
     // code to be 16-byte aligned.
     //
-    // 1. For ngen code with IBC data, use 16-byte alignment if the method
+    // 1. For AOT code with IBC data, use 16-byte alignment if the method
     //    has been called more than ScenarioHotWeight times.
-    // 2. For JITed code and ngen code without IBC data, use 16-byte alignment
+    // 2. For JITed code and AOT code without IBC data, use 16-byte alignment
     //    when the code is 16 bytes or smaller. We align small getters/setters
     //    because of they are penalized heavily on certain hardware when not 16-byte
     //    aligned (VSWhidbey #373938). To minimize size impact of this optimization,
@@ -6862,9 +6864,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #ifdef DEBUG
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
-        // For prejit, codeBlock will not be necessarily aligned, but it is aligned
-        // in final obj file.
-        assert((((size_t)codeBlock & 31) == 0) || emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
+        // For AOT, codeBlock will not be necessarily aligned, but it is aligned in final obj file.
+        assert((((size_t)codeBlock & 31) == 0) || emitComp->IsAot());
     }
 #if 0
     // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
@@ -9981,7 +9982,6 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
 
     unsigned argStkCnt;
     S_UINT16 argRecCnt(0); // arg count for ESP, ptr-arg count for EBP
-    unsigned gcrefRegs, byrefRegs;
 
 #ifdef JIT32_GCENCODER
     // For the general encoder, we always need to record calls, so we make this call
@@ -10023,26 +10023,19 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
         return;
 #endif
 
-    // Do we have any interesting (i.e., callee-saved) registers live here?
+    // Do we have any interesting registers live here?
 
-    gcrefRegs = byrefRegs = 0;
+    unsigned gcrefRegs = emitThisGCrefRegs.GetIntRegSet() >> REG_INT_FIRST;
+    unsigned byrefRegs = emitThisByrefRegs.GetIntRegSet() >> REG_INT_FIRST;
 
-    // We make a bitmask whose bits correspond to callee-saved register indices (in the sequence
-    // of callee-saved registers only).
-    for (unsigned calleeSavedRegIdx = 0; calleeSavedRegIdx < CNT_CALL_GC_REGS; calleeSavedRegIdx++)
-    {
-        regMaskTP calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
-        if (emitThisGCrefRegs & calleeSavedRbm)
-        {
-            gcrefRegs |= (1 << calleeSavedRegIdx);
-        }
-        if (emitThisByrefRegs & calleeSavedRbm)
-        {
-            byrefRegs |= (1 << calleeSavedRegIdx);
-        }
-    }
+    assert(regMaskTP::FromIntRegSet(SingleTypeRegSet(gcrefRegs << REG_INT_FIRST)) == emitThisGCrefRegs);
+    assert(regMaskTP::FromIntRegSet(SingleTypeRegSet(byrefRegs << REG_INT_FIRST)) == emitThisByrefRegs);
 
 #ifdef JIT32_GCENCODER
+    // x86 does not report GC refs/byrefs in return registers at call sites
+    gcrefRegs &= ~(1u << (REG_INTRET - REG_INT_FIRST));
+    byrefRegs &= ~(1u << (REG_INTRET - REG_INT_FIRST));
+
     // For the general encoder, we always have to record calls, so we don't take this early return.    /* Are there any
     // args to pop at this call site?
 

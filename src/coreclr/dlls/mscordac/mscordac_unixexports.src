@@ -61,7 +61,6 @@ nativeStringResourceTable_mscorrc
 #memcpy_s
 #sscanf_s
 
-#CopyFileW
 #CreateFileMappingW
 #CreateFileA
 #CreateFileW
@@ -77,9 +76,6 @@ nativeStringResourceTable_mscorrc
 #DeleteCriticalSection
 #DuplicateHandle
 #EnterCriticalSection
-#FindClose
-#FindFirstFileW
-#FindNextFileW
 #FlushFileBuffers
 #FlushInstructionCache
 #FormatMessageW
@@ -104,7 +100,6 @@ nativeStringResourceTable_mscorrc
 #GetSystemInfo
 #GetSystemTime
 #GetSystemTimeAsFileTime
-#GetTempFileNameW
 #GetTempPathA
 #GetTempPathW
 #InitializeCriticalSection

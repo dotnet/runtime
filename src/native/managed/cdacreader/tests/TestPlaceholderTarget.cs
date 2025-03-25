@@ -29,6 +29,7 @@ internal class TestPlaceholderTarget : Target
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
+        Platform = Target.CorDebugPlatform.CORDB_PLATFORM_MAC_AMD64;
         _contractRegistry = new Mock<ContractRegistry>().Object;
         _dataCache = new DefaultDataCache(this);
         _typeInfoCache = types ?? [];
@@ -43,6 +44,7 @@ internal class TestPlaceholderTarget : Target
 
     public override int PointerSize { get; }
     public override bool IsLittleEndian { get; }
+    public override CorDebugPlatform Platform { get; }
 
     public override bool IsAlignedToPointerSize(TargetPointer pointer)
     {
@@ -226,23 +228,23 @@ internal class TestPlaceholderTarget : Target
         throw new NotImplementedException();
     }
 
+    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => throw new NotImplementedException();
+
     public override Target.IDataCache ProcessedData => _dataCache;
     public override ContractRegistry Contracts => _contractRegistry;
 
     // A data cache that stores data in a dictionary and calls IData.Create to construct the data.
-    private class DefaultDataCache : Target.IDataCache
+    private sealed class DefaultDataCache : Target.IDataCache
     {
-        protected readonly Target _target;
-        protected readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
+        private readonly Target _target;
+        private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
 
         public DefaultDataCache(Target target)
         {
             _target = target;
         }
 
-        public virtual T GetOrAdd<T>(TargetPointer address) where T : Data.IData<T> => DefaultGetOrAdd<T>(address);
-
-        protected T DefaultGetOrAdd<T>(TargetPointer address) where T : Data.IData<T>
+        public T GetOrAdd<T>(TargetPointer address) where T : Data.IData<T>
         {
             if (TryGet(address, out T? result))
                 return result;
@@ -258,9 +260,7 @@ internal class TestPlaceholderTarget : Target
             return result!;
         }
 
-        public virtual bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data) => DefaultTryGet<T>(address, out data);
-
-        protected bool DefaultTryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
+        public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
         {
             data = default;
             if (!_readDataByAddress.TryGetValue((address, typeof(T)), out object? dataObj))
@@ -272,6 +272,11 @@ internal class TestPlaceholderTarget : Target
                 return true;
             }
             return false;
+        }
+
+        public void Clear()
+        {
+            _readDataByAddress.Clear();
         }
     }
 

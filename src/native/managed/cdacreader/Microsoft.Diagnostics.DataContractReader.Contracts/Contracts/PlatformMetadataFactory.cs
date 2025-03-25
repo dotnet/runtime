@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class PlatformMetadataFactory : IContractFactory<IPlatformMetadata>
+public sealed class PlatformMetadataFactory : IContractFactory<IPlatformMetadata>
 {
     IPlatformMetadata IContractFactory<IPlatformMetadata>.CreateContract(Target target, int version)
     {

@@ -535,6 +535,8 @@ static const regMaskTP LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | R
 static const regMaskTP LsraLimitUpperSimdSet =
     (RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 |
      RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31);
+static const regMaskTP LsraLimitExtGprSet =
+    (RBM_R16 | RBM_R17 | RBM_R18 | RBM_R19 | RBM_R20 | RBM_R21 | RBM_R22 | RBM_R23 | RBM_ETW_FRAMED_EBP);
 #elif defined(TARGET_ARM)
 // On ARM, we may need two registers to set up the target register for a virtual call, so we need
 // to have at least the maximum number of arg registers, plus 2.
@@ -625,6 +627,13 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
                 {
                     mask = getConstrainedRegMask(refPosition, regType, mask,
                                                  LsraLimitUpperSimdSet.GetRegSetForType(regType), minRegCount);
+                }
+                break;
+            case LSRA_LIMIT_EXT_GPR_SET:
+                if ((mask & LsraLimitExtGprSet) != RBM_NONE)
+                {
+                    mask = getConstrainedRegMask(refPosition, regType, mask,
+                                                 LsraLimitExtGprSet.GetRegSetForType(regType), minRegCount);
                 }
                 break;
 #endif
@@ -787,6 +796,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+    rbmAllInt         = compiler->rbmAllInt;
+    rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
+    regIntLast        = compiler->regIntLast;
+    isApxSupported    = compiler->canUseApxEncoding();
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
@@ -902,7 +915,14 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableRegs[static_cast<int>(TYP_##tn)] = &regFld;
 #include "typelist.h"
 #undef DEF_TP
-
+    // Updating lowGprRegs with final value
+#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
+    lowGprRegs = (availableIntRegs & RBM_LOWINT.GetIntRegSet());
+#else
+    lowGprRegs = availableIntRegs;
+#endif // TARGET_AMD64
+#endif // TARGET_XARCH
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
 
@@ -936,7 +956,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 // Notes:
 //    On return, the blockSequence array contains the blocks in reverse post-order.
 //    This method clears the bbVisitedSet on LinearScan, and when it returns the set
-//    contains all the bbNums for the block.
+//    contains all the bbPostorderNums for the block.
 //
 void LinearScan::setBlockSequence()
 {
@@ -947,27 +967,33 @@ void LinearScan::setBlockSequence()
     bbVisitedSet = BitVecOps::MakeEmpty(traits);
 
     assert((blockSequence == nullptr) && (bbSeqCount == 0));
-    FlowGraphDfsTree* const dfsTree = compiler->fgComputeDfs</* useProfile */ true>();
-    blockSequence                   = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
+    blockSequence = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
 
-    if (compiler->opts.OptimizationEnabled() && dfsTree->HasCycle())
+    if (compiler->opts.OptimizationEnabled())
     {
-        // Ensure loop bodies are compact in the visitation order
-        FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
-        unsigned                     index = 0;
+        // If optimizations are enabled, allocate blocks in reverse post-order.
+        // This ensures each block's predecessors are visited first.
+        // Also, ensure loop bodies are compact in the visitation order.
+        compiler->m_dfsTree                = compiler->fgComputeDfs</* useProfile */ true>();
+        compiler->m_loops                  = FlowGraphNaturalLoops::Find(compiler->m_dfsTree);
+        FlowGraphNaturalLoops* const loops = compiler->m_loops;
 
-        auto addToSequence = [this, &index](BasicBlock* block) {
-            blockSequence[index++] = block;
+        auto addToSequence = [this](BasicBlock* block) {
+            blockSequence[bbSeqCount++] = block;
         };
 
-        compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+        compiler->fgVisitBlocksInLoopAwareRPO(compiler->m_dfsTree, loops, addToSequence);
     }
     else
     {
-        // TODO: Just use lexical block order in MinOpts
-        for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+        // If we aren't optimizing, we won't have any cross-block live registers,
+        // so the order of blocks allocated shouldn't matter.
+        // Just use the linear order.
+        for (BasicBlock* const block : compiler->Blocks())
         {
-            blockSequence[i] = dfsTree->GetPostOrder(dfsTree->GetPostOrderCount() - i - 1);
+            // Give this block a unique post-order number that can be used as a key into bbVisitedSet
+            block->bbPostorderNum       = bbSeqCount;
+            blockSequence[bbSeqCount++] = block;
         }
     }
 
@@ -1071,30 +1097,29 @@ void LinearScan::setBlockSequence()
     };
 
     JITDUMP("Start LSRA Block Sequence: \n");
-    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    for (unsigned i = 0; i < bbSeqCount; i++)
     {
         visitBlock(blockSequence[i]);
     }
 
-    // If the DFS didn't visit any blocks, add them to the end of blockSequence
-    if (dfsTree->GetPostOrderCount() < compiler->fgBBcount)
+    // If any blocks remain unvisited, add them to the end of blockSequence.
+    // Unvisited blocks are more likely to be at the back of the list, so iterate backwards.
+    for (BasicBlock* block = compiler->fgLastBB; bbSeqCount < compiler->fgBBcount; block = block->Prev())
     {
-        // Unvisited blocks are more likely to be at the back of the list, so iterate backwards
-        unsigned i = dfsTree->GetPostOrderCount();
-        for (BasicBlock* block = compiler->fgLastBB; i < compiler->fgBBcount; block = block->Prev())
+        assert(compiler->opts.OptimizationEnabled());
+        assert(block != nullptr);
+        assert(compiler->m_dfsTree != nullptr);
+
+        if (!compiler->m_dfsTree->Contains(block))
         {
-            assert(block != nullptr);
-            if (!dfsTree->Contains(block))
-            {
-                // Give this block a unique post-order number that can be used as a key into bbVisitedSet
-                block->bbPostorderNum = i;
-                visitBlock(block);
-                blockSequence[i++] = block;
-            }
+            // Give this block a unique post-order number that can be used as a key into bbVisitedSet
+            block->bbPostorderNum = bbSeqCount;
+            visitBlock(block);
+            blockSequence[bbSeqCount++] = block;
         }
     }
 
-    bbSeqCount          = compiler->fgBBcount;
+    assert(bbSeqCount == compiler->fgBBcount);
     blockSequencingDone = true;
 
 #ifdef DEBUG
@@ -1309,6 +1334,14 @@ PhaseStatus LinearScan::doLinearScan()
 
     compiler->compLSRADone = true;
 
+    // If edge resolution didn't create new blocks,
+    // we can reuse the current flowgraph annotations during block layout.
+    if (compiler->fgBBcount != bbSeqCount)
+    {
+        assert(compiler->fgBBcount > bbSeqCount);
+        compiler->fgInvalidateDfsTree();
+    }
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -1453,7 +1486,8 @@ void LinearScan::identifyCandidatesExceptionDataflow()
 
         assert(varDsc->lvLiveInOutOfHndlr);
 
-        if (varTypeIsGC(varDsc) && VarSetOps::IsMember(compiler, finallyVars, varIndex) && !varDsc->lvIsParam)
+        if (varTypeIsGC(varDsc) && VarSetOps::IsMember(compiler, finallyVars, varIndex) && !varDsc->lvIsParam &&
+            !varDsc->lvIsParamRegTarget)
         {
             assert(varDsc->lvMustInit);
         }
@@ -1587,13 +1621,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
             // vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
             // but if the variable is tracked the prolog generator would expect it to be in liveIn set,
             // so an assert in `genFnProlog` will fire.
-            bool isRegCandidate = compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // The LoongArch64's ABI which the float args within a struct maybe passed by integer register
-            // when no float register left but free integer register.
-            isRegCandidate &= !genIsValidFloatReg(varDsc->GetOtherArgReg());
-#endif
-            return isRegCandidate;
+            return compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
         }
 
         case TYP_UNDEF:
@@ -1790,9 +1818,9 @@ void LinearScan::identifyCandidates()
             if (varDsc->lvIsStructField)
             {
                 LclVarDsc* parentVarDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
-                if (parentVarDsc->lvIsMultiRegRet && !parentVarDsc->lvDoNotEnregister)
+                if (parentVarDsc->lvIsMultiRegDest && !parentVarDsc->lvDoNotEnregister)
                 {
-                    JITDUMP("Setting multi-reg struct V%02u as not enregisterable:", varDsc->lvParentLcl);
+                    JITDUMP("Setting multi-reg-dest struct V%02u as not enregisterable:", varDsc->lvParentLcl);
                     compiler->lvaSetVarDoNotEnregister(varDsc->lvParentLcl DEBUGARG(DoNotEnregisterReason::BlockOp));
                     for (unsigned int i = 0; i < parentVarDsc->lvFieldCnt; i++)
                     {
@@ -3828,9 +3856,36 @@ void LinearScan::processKills(RefPosition* killRefPosition)
     RefPosition* nextKill = killRefPosition->nextRefPosition;
 
     regMaskTP killedRegs = killRefPosition->getKilledRegisters();
-    while (killedRegs.IsNonEmpty())
+
+    freeKilledRegs(killRefPosition, killedRegs.getLow(), nextKill, REG_LOW_BASE);
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    freeKilledRegs(killRefPosition, killedRegs.getHigh(), nextKill, REG_HIGH_BASE);
+#endif
+
+    regsBusyUntilKill &= ~killRefPosition->getKilledRegisters();
+    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE,
+                                    killRefPosition->getKilledRegisters()));
+}
+
+//------------------------------------------------------------------------
+// freeKilledRegs: Handle  registers that are being killed.
+//
+// Arguments:
+//   killRefPosition - The RefPosition for the kill
+//   killedRegs - Registers to kill
+//   nextKill - The RefPosition for next kill
+//   regBase - `0` or `64` based on the `killedRegs` being processed
+//
+void LinearScan::freeKilledRegs(RefPosition*     killRefPosition,
+                                SingleTypeRegSet killedRegs,
+                                RefPosition*     nextKill,
+                                int              regBase)
+{
+
+    while (killedRegs != RBM_NONE)
     {
-        regNumber  killedReg        = genFirstRegNumFromMaskAndToggle(killedRegs);
+        regNumber  killedReg        = (regNumber)(genFirstRegNumFromMaskAndToggle(killedRegs) + regBase);
         RegRecord* regRecord        = getRegisterRecord(killedReg);
         Interval*  assignedInterval = regRecord->assignedInterval;
         if (assignedInterval != nullptr)
@@ -3846,10 +3901,6 @@ void LinearScan::processKills(RefPosition* killRefPosition)
                                          : regRecord->recentRefPosition->nextRefPosition;
         updateNextFixedRef(regRecord, regNextRefPos, nextKill);
     }
-
-    regsBusyUntilKill &= ~killRefPosition->getKilledRegisters();
-    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE,
-                                    killRefPosition->getKilledRegisters()));
 }
 
 //------------------------------------------------------------------------
@@ -4527,14 +4578,34 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         }
     }
 #else
+
     regMaskTP deadCandidates = ~liveRegs;
 
     // Only focus on actual registers present
     deadCandidates &= actualRegistersMask;
+    handleDeadCandidates(deadCandidates.getLow(), REG_LOW_BASE, inVarToRegMap);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    handleDeadCandidates(deadCandidates.getHigh(), REG_HIGH_BASE, inVarToRegMap);
+#endif // HAS_MORE_THAN_64_REGISTERS
+#endif // TARGET_ARM
+}
 
-    while (deadCandidates.IsNonEmpty())
+//------------------------------------------------------------------------
+// handleDeadCandidates: Handle registers that are assigned to local variables.
+//
+// Arguments:
+//    deadCandidates - mask of registers.
+//    regBase - base register number.
+//    inVarToRegMap - variable to register map.
+//
+// Return Value:
+//    None
+//
+void LinearScan::handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBase, VarToRegMap inVarToRegMap)
+{
+    while (deadCandidates != RBM_NONE)
     {
-        regNumber  reg           = genFirstRegNumFromMaskAndToggle(deadCandidates);
+        regNumber  reg           = (regNumber)(genFirstRegNumFromMaskAndToggle(deadCandidates) + regBase);
         RegRecord* physRegRecord = getRegisterRecord(reg);
 
         makeRegAvailable(reg, physRegRecord->registerType);
@@ -4564,7 +4635,6 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
             }
         }
     }
-#endif // TARGET_ARM
 }
 
 //------------------------------------------------------------------------
@@ -4717,6 +4787,22 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
 // LinearScan::freeRegisters: Free the registers in 'regsToFree'
 //
 // Arguments:
+//    regsToFree         - the mask of registers to free, separated into low and high parts.
+//    regBase            - `0` or `64` depending on if the registers to be freed are in the lower or higher bank.
+//
+void LinearScan::freeRegistersSingleType(SingleTypeRegSet regsToFree, int regBase)
+{
+    while (regsToFree != RBM_NONE)
+    {
+        regNumber  nextReg   = (regNumber)(genFirstRegNumFromMaskAndToggle(regsToFree) + regBase);
+        RegRecord* regRecord = getRegisterRecord(nextReg);
+        freeRegister(regRecord);
+    }
+}
+//------------------------------------------------------------------------
+// LinearScan::freeRegisters: Free the registers in 'regsToFree'
+//
+// Arguments:
 //    regsToFree         - the mask of registers to free
 //
 void LinearScan::freeRegisters(regMaskTP regsToFree)
@@ -4728,20 +4814,26 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FREE_REGS));
     makeRegsAvailable(regsToFree);
+#ifdef TARGET_ARM
     while (regsToFree.IsNonEmpty())
     {
         regNumber nextReg = genFirstRegNumFromMaskAndToggle(regsToFree);
 
         RegRecord* regRecord = getRegisterRecord(nextReg);
-#ifdef TARGET_ARM
         if (regRecord->assignedInterval != nullptr && (regRecord->assignedInterval->registerType == TYP_DOUBLE))
         {
             assert(genIsValidDoubleReg(nextReg));
             regsToFree.RemoveRegNumFromMask(regNumber(nextReg + 1));
         }
-#endif
         freeRegister(regRecord);
     }
+#else
+    freeRegistersSingleType(regsToFree.getLow(), REG_LOW_BASE);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    freeRegistersSingleType(regsToFree.getHigh(), REG_HIGH_BASE);
+#endif
+
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -5409,7 +5501,7 @@ void LinearScan::allocateRegisters()
         if (currentInterval->isLocalVar && !stressInitialParamReg())
         {
             LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
-            if (varDsc->lvIsRegArg && currentInterval->firstRefPosition != nullptr)
+            if (varDsc->lvIsRegArg && (currentInterval->firstRefPosition != nullptr) && !compiler->opts.IsOSR())
             {
                 currentInterval->isActive = true;
             }
@@ -8190,7 +8282,7 @@ void LinearScan::resolveRegisters()
 
                 // Determine initial position for parameters
 
-                if (varDsc->lvIsParam)
+                if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
                 {
                     SingleTypeRegSet initialRegMask = interval->firstRefPosition->registerAssignment;
                     regNumber        initialReg = (initialRegMask == RBM_NONE || interval->firstRefPosition->spillAfter)
@@ -8359,7 +8451,7 @@ void LinearScan::insertMove(
 
     var_types typ = varDsc->TypeGet();
 #if defined(FEATURE_SIMD)
-    if ((typ == TYP_SIMD12) && compiler->lvaMapSimd12ToSimd16(varDsc))
+    if ((typ == TYP_SIMD12) && compiler->lvaMapSimd12ToSimd16(lclNum))
     {
         typ = TYP_SIMD16;
     }
@@ -10749,7 +10841,21 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 const LclVarDsc* varDsc = compiler->lvaGetDesc(interval->varNum);
                 printf("(");
                 regNumber assignedReg = varDsc->GetRegNum();
-                regNumber argReg      = (varDsc->lvIsRegArg) ? varDsc->GetArgReg() : REG_STK;
+
+                regNumber argReg = REG_STK;
+                if (varDsc->lvIsParamRegTarget)
+                {
+                    const ParameterRegisterLocalMapping* mapping =
+                        compiler->FindParameterRegisterLocalMappingByLocal(interval->varNum, 0);
+                    assert(mapping != nullptr);
+                    argReg = mapping->RegisterSegment->GetRegister();
+                }
+                else if (varDsc->lvIsRegArg && !varDsc->lvIsStructField)
+                {
+                    const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(
+                        varDsc->lvIsStructField ? varDsc->lvParentLcl : interval->varNum);
+                    argReg = abiInfo.Segment(0).GetRegister();
+                }
 
                 assert(reg == assignedReg || varDsc->lvRegister == false);
                 if (reg != argReg)

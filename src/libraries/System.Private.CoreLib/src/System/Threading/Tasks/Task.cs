@@ -3060,26 +3060,21 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
-#if CORECLR
-                if (ThreadPoolWorkQueue.s_prioritizationExperiment)
-                {
-                    // We're about to block waiting for the task to complete, which is expensive, and if
-                    // the task being waited on depends on some other work to run, this thread could end up
-                    // waiting for some other thread to do work. If the two threads are part of the same scheduler,
-                    // such as the thread pool, that could lead to a (temporary) deadlock. This is made worse by
-                    // it also leading to a possible priority inversion on previously queued work. Each thread in
-                    // the thread pool has a local queue. A key motivator for this local queue is it allows this
-                    // thread to create work items that it will then prioritize above all other work in the
-                    // pool. However, while this thread makes its own local queue the top priority, that queue is
-                    // every other thread's lowest priority. If this thread blocks, all of its created work that's
-                    // supposed to be high priority becomes low priority, and work that's typically part of a
-                    // currently in-flight operation gets deprioritized relative to new requests coming into the
-                    // pool, which can lead to the whole system slowing down or even deadlocking. To address that,
-                    // just before we block, we move all local work into a global queue, so that it's at least
-                    // prioritized by other threads more fairly with respect to other work.
-                    ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue();
-                }
-#endif
+                // We're about to block waiting for the task to complete, which is expensive, and if
+                // the task being waited on depends on some other work to run, this thread could end up
+                // waiting for some other thread to do work. If the two threads are part of the same scheduler,
+                // such as the thread pool, that could lead to a (temporary) deadlock. This is made worse by
+                // it also leading to a possible priority inversion on previously queued work. Each thread in
+                // the thread pool has a local queue. A key motivator for this local queue is it allows this
+                // thread to create work items that it will then prioritize above all other work in the
+                // pool. However, while this thread makes its own local queue the top priority, that queue is
+                // every other thread's lowest priority. If this thread blocks, all of its created work that's
+                // supposed to be high priority becomes low priority, and work that's typically part of a
+                // currently in-flight operation gets deprioritized relative to new requests coming into the
+                // pool, which can lead to the whole system slowing down or even deadlocking. To address that,
+                // just before we block, we move all local work into a global queue, so that it's at least
+                // prioritized by other threads more fairly with respect to other work.
+                ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue();
 
                 var mres = new SetOnInvokeMres();
                 try
@@ -5937,6 +5932,7 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
+            int? count = null;
             if (tasks is ICollection<Task> taskCollection)
             {
                 if (tasks is Task[] taskArray)
@@ -5949,19 +5945,23 @@ namespace System.Threading.Tasks
                     return WhenAll(CollectionsMarshal.AsSpan(taskList));
                 }
 
-                taskArray = new Task[taskCollection.Count];
-                taskCollection.CopyTo(taskArray, 0);
-                return WhenAll((ReadOnlySpan<Task>)taskArray);
+                count = taskCollection.Count;
             }
-            else
+
+            // Buffer the tasks into a temporary span. Small sets of tasks are common,
+            // so for <= 8 we stack allocate.
+            ValueListBuilder<Task> builder = count is > 8 ?
+                new ValueListBuilder<Task>(count.Value) :
+                new ValueListBuilder<Task>([null, null, null, null, null, null, null, null]);
+            foreach (Task task in tasks)
             {
-                var taskList = new List<Task>();
-                foreach (Task task in tasks)
-                {
-                    taskList.Add(task);
-                }
-                return WhenAll(CollectionsMarshal.AsSpan(taskList));
+                builder.Append(task);
             }
+
+            Task t = WhenAll(builder.AsSpan());
+
+            builder.Dispose();
+            return t;
         }
 
         /// <summary>
