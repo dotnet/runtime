@@ -45,6 +45,7 @@ pr:
       - src/mono/mono/mini/decompose.c
       - src/mono/mono/mini/method-to-ir.c
       - src/mono/mono/mini/mini.c
+      - eng/pipelines/runtime-llvm.yml
 
 variables:
   - template: /eng/pipelines/common/variables.yml
