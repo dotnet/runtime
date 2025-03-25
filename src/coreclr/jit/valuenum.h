@@ -692,7 +692,6 @@ public:
     // It has an unreached() for a "typ" that has no all bits set value, such as TYP_VOID.
     ValueNum VNAllBitsForType(var_types typ);
 
-#ifdef FEATURE_SIMD
     // Returns the value number broadcast of the given "simdType" and "simdBaseType".
     ValueNum VNBroadcastForSimdType(var_types simdType, var_types simdBaseType, ValueNum valVN);
 
@@ -702,6 +701,7 @@ public:
     // A helper function for constructing VNF_SimdType VNs.
     ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
 
+#ifdef FEATURE_SIMD
     // Returns if a value number represents NaN in all elements
     bool VNIsVectorNaN(var_types simdType, var_types simdBaseType, ValueNum valVN);
 

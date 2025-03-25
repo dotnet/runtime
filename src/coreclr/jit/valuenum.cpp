@@ -2354,15 +2354,6 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
     return VNBroadcastForSimdType(simdType, simdBaseType, oneVN);
 }
 
-ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType)
-{
-    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseJitType));
-    ValueNum sizeVN     = VNForIntCon(simdSize);
-    ValueNum simdTypeVN = VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
-
-    return simdTypeVN;
-}
-
 bool ValueNumStore::VNIsVectorNaN(var_types simdType, var_types simdBaseType, ValueNum valVN)
 {
     assert(varTypeIsSIMD(simdType));
@@ -2495,6 +2486,15 @@ bool ValueNumStore::VNIsVectorNegativeZero(var_types simdType, var_types simdBas
     return true;
 }
 #endif // FEATURE_SIMD
+
+ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType)
+{
+    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseJitType));
+    ValueNum sizeVN     = VNForIntCon(simdSize);
+    ValueNum simdTypeVN = VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
+
+    return simdTypeVN;
+}
 
 class Object* ValueNumStore::s_specialRefConsts[] = {nullptr, nullptr, nullptr};
 
@@ -12956,7 +12956,6 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair = ValueNumPair();
 
-#ifdef FEATURE_SIMD
     const size_t opCount = tree->GetOperandCount();
     if ((opCount > 3) || ((JitConfig.JitDisableSimdVN() & 2) == 2) ||
         HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
@@ -13065,7 +13064,6 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
         }
     }
-#endif // FEATURE_SIMD
 
     // Some intrinsics should always be unique
     bool makeUnique = false;
