@@ -526,6 +526,129 @@ namespace System
             return (quotient, left - (quotient * right));
         }
 
+        /// <summary>Produces the quotient and the remainder of two signed 32-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <param name="rounding">The rounding type.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (int Quotient, int Remainder) DivRem(int left, int right, DivisionRounding rounding)
+        {
+            switch (rounding)
+            {
+                case DivisionRounding.Truncate:
+                    return DivRem(left, right);
+                case DivisionRounding.Floor:
+                    return DivRemFloor(left, right);
+                case DivisionRounding.Ceiling:
+                    return DivRemCeiling(left, right);
+                case DivisionRounding.AwayFromZero:
+                    return DivRemAwayFromZero(left, right);
+                case DivisionRounding.Euclidean:
+                    return DivRemEuclidean(left, right);
+                default:
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(rounding);
+                    return default;
+            };
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (int quotient, int remainder) DivRemFloor(int left, int right)
+        {
+            int quotient = left / right;
+            int remainder = left - (quotient * right);
+
+            if (remainder != 0)
+            {
+                return FloorRounding(left, right, quotient, remainder);
+            }
+
+            return (quotient, remainder);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (int quotient, int remainder) FloorRounding(int left, int right, int quotient, int remainder)
+        {
+            if (Sign(left) != Sign(right))
+            {
+                quotient--;
+                remainder += right;
+            }
+
+            return (quotient, remainder);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (int Quotient, int Remainder) DivRemCeiling(int left, int right)
+        {
+            int quotient = left / right;
+            int remainder = left - (quotient * right);
+
+            if (remainder != 0)
+            {
+                return CeilingRounding(left, right, quotient, remainder);
+            }
+
+            return (quotient, remainder);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (int quotient, int remainder) CeilingRounding(int left, int right, int quotient, int remainder)
+        {
+            if (Sign(left) == Sign(right))
+            {
+                quotient++;
+                remainder -= right;
+            }
+
+            return (quotient, remainder);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (int Quotient, int Remainder) DivRemAwayFromZero(int left, int right)
+        {
+            int quotient = left / right;
+            int remainder = left - (quotient * right);
+
+            if (remainder != 0)
+            {
+                if (Sign(left) == Sign(right))
+                {
+                    quotient++;
+                }
+                else
+                {
+                    quotient--;
+                }
+            }
+
+            remainder = left - (quotient * right);
+
+            return (quotient, remainder);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (int Quotient, int Remainder) DivRemEuclidean(int left, int right)
+        {
+            int quotient = left / right;
+            int remainder = left - (quotient * right);
+
+            if (remainder != 0)
+            {
+                if (right > 0)
+                {
+                    return FloorRounding(left, right, quotient, remainder);
+                }
+                else
+                {
+                    return CeilingRounding(left, right, quotient, remainder);
+                }
+            }
+
+            return (quotient, remainder);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Ceiling(decimal d)
         {
