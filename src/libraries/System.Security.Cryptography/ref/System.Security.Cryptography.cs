@@ -2773,6 +2773,7 @@ namespace System.Security.Cryptography
     {
         internal SlhDsaAlgorithm() { }
         public string Name { get { throw null; } }
+        public int PrivateSeedSizeInBytes { get { throw null; } }
         public int PublicKeySizeInBytes { get { throw null; } }
         public int SecretKeySizeInBytes { get { throw null; } }
         public int SignatureSizeInBytes { get { throw null; } }

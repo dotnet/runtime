@@ -51,7 +51,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///  The size of the private seed in bytes for this algorithm.
         /// </value>
-        internal int PrivateSeedSizeInBytes { get; }
+        public int PrivateSeedSizeInBytes { get; }
 
         /// <summary>
         ///  Gets the Object Identifier (OID) for this algorithm.

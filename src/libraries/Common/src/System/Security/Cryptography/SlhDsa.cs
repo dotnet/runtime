@@ -71,9 +71,12 @@ namespace System.Security.Cryptography
         /// </summary>
         public void Dispose()
         {
-            Dispose(true);
-            _disposed = true;
-            GC.SuppressFinalize(this);
+            if (!_disposed)
+            {
+                _disposed = true;
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
         }
 
         /// <summary>
@@ -109,8 +112,6 @@ namespace System.Security.Cryptography
         /// </exception>
         public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
-            ThrowIfDisposed();
-
             if (context.Length > MaxContextLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -125,6 +126,8 @@ namespace System.Security.Cryptography
             {
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
+
+            ThrowIfDisposed();
 
             SignDataCore(data, context, destination.Slice(0, signatureSizeInBytes));
             return signatureSizeInBytes;
@@ -160,8 +163,6 @@ namespace System.Security.Cryptography
         /// </exception>
         public bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> context = default)
         {
-            ThrowIfDisposed();
-
             if (context.Length > MaxContextLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -169,6 +170,8 @@ namespace System.Security.Cryptography
                     context.Length,
                     SR.Argument_SignatureContextTooLong255);
             }
+
+            ThrowIfDisposed();
 
             if (signature.Length != Algorithm.SignatureSizeInBytes)
             {
@@ -351,8 +354,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
 
@@ -394,8 +397,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
 
@@ -447,8 +450,8 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
 
@@ -500,8 +503,8 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
 
@@ -542,8 +545,8 @@ namespace System.Security.Cryptography
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
         {
-            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
 
@@ -588,8 +591,8 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
 
@@ -619,14 +622,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public int ExportSlhDsaPublicKey(Span<byte> destination)
         {
-            ThrowIfDisposed();
-
             int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
 
             if (destination.Length < publicKeySizeInBytes)
             {
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
+
+            ThrowIfDisposed();
 
             ExportSlhDsaPublicKeyCore(destination.Slice(0, publicKeySizeInBytes));
             return publicKeySizeInBytes;
@@ -649,14 +652,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public int ExportSlhDsaSecretKey(Span<byte> destination)
         {
-            ThrowIfDisposed();
-
             int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
 
             if (destination.Length < secretKeySizeInBytes)
             {
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
+
+            ThrowIfDisposed();
 
             ExportSlhDsaSecretKeyCore(destination.Slice(0, secretKeySizeInBytes));
             return secretKeySizeInBytes;
@@ -679,14 +682,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public int ExportSlhDsaPrivateSeed(Span<byte> destination)
         {
-            ThrowIfDisposed();
-
             int privateSeedSizeInBytes = Algorithm.PrivateSeedSizeInBytes;
 
             if (destination.Length < privateSeedSizeInBytes)
             {
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
+
+            ThrowIfDisposed();
 
             ExportSlhDsaPrivateSeedCore(destination.Slice(0, privateSeedSizeInBytes));
             return privateSeedSizeInBytes;
@@ -1013,12 +1016,13 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
-            ThrowIfNotSupported();
 
             if (source.Length != algorithm.PublicKeySizeInBytes)
             {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+                throw new ArgumentException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
             }
+
+            ThrowIfNotSupported();
 
             return SlhDsaImplementation.ImportPublicKey(algorithm, source);
         }
@@ -1051,12 +1055,13 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
-            ThrowIfNotSupported();
 
             if (source.Length != algorithm.SecretKeySizeInBytes)
             {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+                throw new ArgumentException(SR.Argument_SecretKeyWrongSizeForAlgorithm);
             }
+
+            ThrowIfNotSupported();
 
             return SlhDsaImplementation.ImportSecretKey(algorithm, source);
         }
@@ -1089,12 +1094,13 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
-            ThrowIfNotSupported();
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
             {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+                throw new ArgumentException(SR.Argument_PrivateSeedWrongSizeForAlgorithm);
             }
+
+            ThrowIfNotSupported();
 
             return SlhDsaImplementation.ImportSeed(algorithm, source);
         }
@@ -1175,8 +1181,6 @@ namespace System.Security.Cryptography
 
         private AsnWriter ExportSubjectPublicKeyInfoCore()
         {
-            ThrowIfDisposed();
-
             byte[] rented = CryptoPool.Rent(Algorithm.PublicKeySizeInBytes);
 
             try
@@ -1207,8 +1211,6 @@ namespace System.Security.Cryptography
 
         private AsnWriter ExportEncryptedPkcs8PrivateKeyCore(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ThrowIfDisposed();
-
             // TODO: Determine a more appropriate maximum size once the format is actually known.
             int size = Algorithm.SecretKeySizeInBytes * 2;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully
@@ -1239,8 +1241,6 @@ namespace System.Security.Cryptography
 
         private AsnWriter ExportEncryptedPkcs8PrivateKeyCore(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ThrowIfDisposed();
-
             // TODO: Determine a more appropriate maximum size once the format is actually known.
             int initialSize = Algorithm.SecretKeySizeInBytes * 2;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully

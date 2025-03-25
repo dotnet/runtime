@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         /// </summary>
         /// <param name="algorithm">Specifies the algorithm used for the test implementation.</param>
         /// <returns>Returns a configured instance of SlhDsaTestImplementation.</returns>
-        internal static SlhDsaTestImplementation CreateOverriddenMethodsFail(SlhDsaAlgorithm algorithm)
+        internal static SlhDsaTestImplementation CreateOverriddenCoreMethodsFail(SlhDsaAlgorithm algorithm)
         {
             return new SlhDsaTestImplementation(algorithm)
             {
@@ -46,5 +46,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         public Func<ReadOnlySpan<byte>, ReadOnlySpan<byte>, ReadOnlySpan<byte>, bool> VerifyDataCoreHook { get; set; } = (_, _, _) => false;
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) => VerifyDataCoreHook(data, context, signature);
+
+        public Action<bool> DisposeHook { get; set; } = _ => { };
+        protected override void Dispose(bool disposing) => DisposeHook(disposing);
     }
 }

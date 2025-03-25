@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -8,13 +9,25 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 {
     public class SlhDsaBaseClassTests : SlhDsaTestsBase
     {
-        [Theory]
-        [MemberData(nameof(AlgorithmsData))]
-        public static void NullArgumentValidation(SlhDsaAlgorithm algorithm)
-        {
-            SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenMethodsFail(algorithm);
+        public static IEnumerable<object[]> ArgumentValidationData =>
+            from algorithm in AlgorithmsRaw
+            from shouldDispose in new[] { true, false }
+            select new object[] { algorithm, shouldDispose };
 
+        [Theory]
+        [MemberData(nameof(ArgumentValidationData))]
+        public static void NullArgumentValidation(SlhDsaAlgorithm algorithm, bool shouldDispose)
+        {
+            using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
+
+            if (shouldDispose)
+            {
+                // Test that argument validation exceptions take precedence over ObjectDisposedException
+                slhDsa.Dispose();
+            }
+            
             Assert.Throws<ArgumentNullException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, null));
+            Assert.Throws<ArgumentNullException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, null));
             Assert.Throws<ArgumentNullException>(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte>.Empty, null));
             Assert.Throws<ArgumentNullException>(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char>.Empty, null));
             Assert.Throws<ArgumentNullException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, null, Span<byte>.Empty, out _));
@@ -22,15 +35,21 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AlgorithmsData))]
-        public static void ArgumentValidation(SlhDsaAlgorithm algorithm)
+        [MemberData(nameof(ArgumentValidationData))]
+        public static void ArgumentValidation(SlhDsaAlgorithm algorithm, bool shouldDispose)
         {
-            SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenMethodsFail(algorithm);
+            using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
             int publicKeySize = algorithm.PublicKeySizeInBytes;
             int secretKeySize = algorithm.SecretKeySizeInBytes;
-            int privateSeedSize = algorithm.SecretKeySizeInBytes / 4 * 3;
+            int privateSeedSize = algorithm.PrivateSeedSizeInBytes;
             int signatureSize = algorithm.SignatureSizeInBytes;
+
+            if (shouldDispose)
+            {
+                // Test that argument validation exceptions take precedence over ObjectDisposedException
+                slhDsa.Dispose();
+            }
 
             Assert.Throws<ArgumentException>(() => slhDsa.ExportSlhDsaPublicKey(new byte[publicKeySize - 1]));
             Assert.Throws<ArgumentException>(() => slhDsa.ExportSlhDsaSecretKey(new byte[secretKeySize - 1]));
@@ -46,19 +65,24 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(AlgorithmsData))]
         public static void UseAfterDispose(SlhDsaAlgorithm algorithm)
         {
-            SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenMethodsFail(algorithm);
+            using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
+
+            // The private seed and public key sizes are both smaller so this can be used for all three:
+            byte[] input = new byte[algorithm.SecretKeySizeInBytes];
+            PbeParameters pbeParameters = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32);
+
             slhDsa.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, null));
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte>.Empty, null));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pbeParameters));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte>.Empty, pbeParameters));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKey());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKeyPem());
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPrivateSeed(Span<byte>.Empty));
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPublicKey(Span<byte>.Empty));
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaSecretKey(Span<byte>.Empty));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPrivateSeed(input));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPublicKey(input));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaSecretKey(input));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfo());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfoPem());
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, null, Span<byte>.Empty, out _));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pbeParameters, Span<byte>.Empty, out _));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportPkcs8PrivateKey(Span<byte>.Empty, out _));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportSubjectPublicKeyInfo(Span<byte>.Empty, out _));
         }
@@ -67,12 +91,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(AlgorithmsData))]
         public static void CallsExportSlhDsaPublicKeyCore(SlhDsaAlgorithm algorithm)
         {
-            SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenMethodsFail(algorithm);
+            using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
             int publicKeySize = algorithm.PublicKeySizeInBytes;
             byte[] publicKey = new byte[publicKeySize + 2];
 
-            Action<Span<byte>> exportPublicKeyCoreHook = slhDsa.ExportSlhDsaPublicKeyCoreHook;
             slhDsa.ExportSlhDsaPublicKeyCoreHook = (Span<byte> destination) =>
             {
                 Assert.Equal(publicKeySize, destination.Length);
@@ -98,7 +121,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(AlgorithmsData))]
         public static void CallsExportSlhDsaSecretKeyCore(SlhDsaAlgorithm algorithm)
         {
-            SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenMethodsFail(algorithm);
+            using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
             int secretKeySize = algorithm.SecretKeySizeInBytes;
             byte[] secretKey = new byte[secretKeySize + 2];
@@ -128,9 +151,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(AlgorithmsData))]
         public static void CallsExportSlhDsaPrivateSeedCore(SlhDsaAlgorithm algorithm)
         {
-            SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenMethodsFail(algorithm);
+            using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
-            int privateSeedSize = algorithm.SecretKeySizeInBytes / 4 * 3;
+            int privateSeedSize = algorithm.PrivateSeedSizeInBytes;
             byte[] privateSeed = new byte[privateSeedSize + 2];
 
             slhDsa.ExportSlhDsaPrivateSeedCoreHook = (Span<byte> destination) =>
@@ -158,7 +181,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(AlgorithmsData))]
         public static void CallsSignDataCore(SlhDsaAlgorithm algorithm)
         {
-            SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenMethodsFail(algorithm);
+            using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
             int signatureSize = algorithm.SignatureSizeInBytes;
             byte[] signature = new byte[signatureSize + 2];
@@ -193,7 +216,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(AlgorithmsData))]
         public static void CallsVerifyDataCore(SlhDsaAlgorithm algorithm)
         {
-            SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenMethodsFail(algorithm);
+            using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
             int signatureSize = algorithm.SignatureSizeInBytes;
             byte[] testSignature = new byte[signatureSize + 1];
@@ -220,6 +243,30 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             returnValue = false;
             Assert.False(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize), testContext));
+        }
+
+        [Theory]
+        [MemberData(nameof(AlgorithmsData))]
+        public static void CallsVirtualDispose(SlhDsaAlgorithm algorithm)
+        {
+            SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
+            bool disposeCalled = false;
+
+            // First Dispose call should invoke overridden Dispose should be called
+            slhDsa.DisposeHook = (bool disposing) =>
+            {
+                Assert.True(disposing);
+                disposeCalled = true;
+            };
+
+            slhDsa.Dispose();
+            Assert.True(disposeCalled);
+
+            // Subsequent Dispose calls should be a no-op
+            slhDsa.DisposeHook = _ => Assert.Fail();
+
+            slhDsa.Dispose();
+            slhDsa.Dispose();
         }
     }
 }

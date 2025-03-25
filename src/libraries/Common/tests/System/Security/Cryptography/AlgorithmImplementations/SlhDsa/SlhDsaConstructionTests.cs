@@ -22,35 +22,25 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             int publicKeySize = algorithm.PublicKeySizeInBytes;
             int secretKeySize = algorithm.SecretKeySizeInBytes;
-            int privateSeedSize = algorithm.SecretKeySizeInBytes / 4 * 3;
+            int privateSeedSize = algorithm.PrivateSeedSizeInBytes;
 
-            if (SupportedOnPlatform)
-            {
-                Impl<CryptographicException>();
-            }
-            else
-            {
-                Impl<PlatformNotSupportedException>();
-            }
+            Assert.Throws<ArgumentException>(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, new byte[publicKeySize - 1]));
+            Assert.Throws<ArgumentException>(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, new byte[publicKeySize + 1]));
+            Assert.Throws<ArgumentException>(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, new byte[secretKeySize - 1]));
+            Assert.Throws<ArgumentException>(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, new byte[secretKeySize + 1]));
+            Assert.Throws<ArgumentException>(() => SlhDsa.ImportSlhDsaPrivateSeed(algorithm, new byte[privateSeedSize - 1]));
+            Assert.Throws<ArgumentException>(() => SlhDsa.ImportSlhDsaPrivateSeed(algorithm, new byte[privateSeedSize + 1]));
 
-            void Impl<TException>()
-                where TException : Exception
-            {
-                Assert.Throws<TException>(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, new byte[publicKeySize - 1]));
-                Assert.Throws<TException>(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, new byte[publicKeySize + 1]));
-                Assert.Throws<TException>(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, new byte[secretKeySize - 1]));
-                Assert.Throws<TException>(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, new byte[secretKeySize + 1]));
-                Assert.Throws<TException>(() => SlhDsa.ImportSlhDsaPrivateSeed(algorithm, new byte[privateSeedSize - 1]));
-                Assert.Throws<TException>(() => SlhDsa.ImportSlhDsaPrivateSeed(algorithm, new byte[privateSeedSize + 1]));
-
-                // TODO add remaining imports
-            }
+            // TODO add remaining imports
         }
 
         [ConditionalTheory(nameof(NotSupportedOnPlatform))]
         [MemberData(nameof(AlgorithmsData))]
         public static void ThrowIfNotSupported_NonNullArguments(SlhDsaAlgorithm algorithm)
         {
+            // The private seed and public key sizes are both smaller so this can be used for all three:
+            byte[] input = new byte[algorithm.SecretKeySizeInBytes];
+
             Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.GenerateKey(algorithm));
             Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty));
             Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, ReadOnlySpan<byte>.Empty));
@@ -58,9 +48,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportFromEncryptedPem(ReadOnlySpan<char>.Empty, ReadOnlySpan<char>.Empty));
             Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportFromPem(ReadOnlySpan<char>.Empty));
             Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportPkcs8PrivateKey(ReadOnlySpan<byte>.Empty));
-            Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportSlhDsaPrivateSeed(algorithm, ReadOnlySpan<byte>.Empty));
-            Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, ReadOnlySpan<byte>.Empty));
-            Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, ReadOnlySpan<byte>.Empty));
+            Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportSlhDsaPrivateSeed(algorithm, input.AsSpan(0, algorithm.PrivateSeedSizeInBytes)));
+            Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, input.AsSpan(0, algorithm.PublicKeySizeInBytes)));
+            Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, input.AsSpan(0, algorithm.SecretKeySizeInBytes)));
             Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportSubjectPublicKeyInfo(ReadOnlySpan<byte>.Empty));
         }
 
