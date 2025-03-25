@@ -41,7 +41,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         };
 
         if (assertOptions.BuildOptions.BootConfigFileName.EndsWith(".js"))
-            result[assertOptions.BuildOptions.BootConfigFileName] = false;
+            result[assertOptions.BuildOptions.BootConfigFileName] = true;
 
         return result;
     }
