@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef FEATURE_INTERPRETER
+
 #include "threads.h"
 #include "gcenv.h"
 #include <math.h>
-
-#ifdef FEATURE_INTERPRETER
-
 #include "interpexec.h"
 
 thread_local InterpThreadContext *t_pThreadContext = NULL;
