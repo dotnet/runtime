@@ -886,7 +886,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     // When it is 10 or greater, we will emit a loop containing a sd instruction.
     // In both of these cases the sd instruction will write two zeros to memory
     // and we will use a single str instruction at the end whenever we have an odd count.
-    if (uCntSlots >= 10)
+    if (uCntSlots >= 12)
         useLoop = true;
 
     if (useLoop)
@@ -900,19 +900,75 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         noway_assert(uCntSlots >= 2);
         assert((genRegMask(rCnt) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rCnt is not a live incoming
                                                                                 // argument reg
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
+
+        //
+        // ; base isa (+C extension)
+        //       addi      rCnt, zero, uCntSlots / 2
+        // Loop:
+        //      sd         zero, (8 + padding)rAddr           ; store first elem of block
+        //      sd         zero, (0 + padding)rAddr           ; store second elem of block
+        //      addi       rCnt, rCnt, -1
+        //      addi       rAddr, rAddr, 2 * REGSIZE_BYTES    ; go to the next block
+        //      bnez       rCnt, Loop                         ; Anything left?
+        //
+        // TODO-RISCV64: maybe use V or cmo extension?
+        //
+        // ; V-extension:
+        //
+        //      vsetvli    t0, zero, e64, m1, ta, ma          ; SEW=64b LMUL=1
+        //      vmv.v.i    v0, 0                              ; fill v0 with zeros
+        // Loop:
+        //      vsd        v0, (padding)rAddr                 ; store 2 * 8 = 16 bytes of zero
+        //      addi       rAddr, rAddr, 2 * REGSIZE_BYTES    ; advance by block size (16 bytes)
+        //      addi       rCnt, rCnt, -1
+        //      bnez       rCnt, Loop
+        //
+        // ; cmo-extension:
+        //
+        //      addi       rCnt, zero, uCntSlots
+        //      addi       rAddr, rAddr, padding
+        // Loop:
+        //      cbo.zero   rAddr                             ; Store zeros to the full set of bytes
+        //                                                   ; corresponding to a cache block
+        //      addi       rAddr, rAddr, REGSIZE_BYTES + padding
+        //      addi       rCnt, rCnt, -1
+        //      bnez       rCnt, Loop
+        //
 
         BasicBlock* loop = genCreateTempLabel();
-        genDefineTempLabel(loop);
 
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
+        if (uCntSlots % 4 == 0)
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 4);
 
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES);
-        GetEmitter()->emitIns_J(INS_bnez, loop, rCnt);
+            genDefineTempLabel(loop);
 
-        uCntBytes %= REGSIZE_BYTES * 2;
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 16 + padding);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 24 + padding);
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
+
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES + 3 * padding);
+            GetEmitter()->emitIns_J(INS_bnez, loop, rCnt);
+
+            uCntBytes %= REGSIZE_BYTES * 4;
+        }
+        else
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
+
+            genDefineTempLabel(loop);
+
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
+
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES + padding);
+            GetEmitter()->emitIns_J(INS_bnez, loop, rCnt);
+
+            uCntBytes %= REGSIZE_BYTES * 2;
+        }
     }
     else
     {
