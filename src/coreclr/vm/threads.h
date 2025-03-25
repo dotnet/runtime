@@ -5235,6 +5235,7 @@ public:
         : m_pFrame(pThread->m_pFrame)
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!std::uncaught_exception());
     }
 
     ~CoopTransitionHolder()
