@@ -2264,7 +2264,8 @@ Exit: ;
 
 void Thread::HandleThreadAbort ()
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    // Only preserve the last error when we aren't throwing an exception for ThreadAbort.
+    DWORD lastError = GetLastError();
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2322,7 +2323,7 @@ void Thread::HandleThreadAbort ()
         }
     }
 
-    END_PRESERVE_LAST_ERROR;
+    ::SetLastError(lastError);
 }
 
 void Thread::PreWorkForThreadAbort()
@@ -5731,7 +5732,7 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
 
     // The criteria for safe activation is to be running managed code.
     // Also we are not interested in handling interruption if we are already in preemptive mode nor if we are single stepping
-    BOOL isActivationSafePoint = pThread != NULL && 
+    BOOL isActivationSafePoint = pThread != NULL &&
         (pThread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0 &&
         pThread->PreemptiveGCDisabled() &&
         ExecutionManager::IsManagedCode(ip);
