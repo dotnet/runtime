@@ -3757,7 +3757,6 @@ ThrowControlForThread(
             STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread resume\n");
             pThread->ResetThrowControlForThread();
             // Thread abort is not allowed at this point
-            // Thread abort is not allowed at this point
             __asan_handle_no_return();
 #if defined(TARGET_WINDOWS) && defined(TARGET_X86)
             RedirectedThrowControl();
