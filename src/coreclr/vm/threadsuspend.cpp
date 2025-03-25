@@ -2105,7 +2105,7 @@ extern void WaitForEndOfShutdown();
 // why we Enable GC here!
 void Thread::RareDisablePreemptiveGC()
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     CONTRACTL {
         NOTHROW;
@@ -2115,7 +2115,7 @@ void Thread::RareDisablePreemptiveGC()
 
     if (IsAtProcessExit())
     {
-        goto Exit;
+        return;
     }
 
     _ASSERTE (m_fPreemptiveGCDisabled);
@@ -2127,7 +2127,7 @@ void Thread::RareDisablePreemptiveGC()
 
     if (!GCHeapUtilities::IsGCHeapInitialized())
     {
-        goto Exit;
+        return;
     }
 
     if (ThreadStore::HoldingThreadStore(this))
@@ -2138,7 +2138,7 @@ void Thread::RareDisablePreemptiveGC()
         // may want to enter coop mode, but we have a number of other scenarios where TSL is acquired
         // in coop mode or when TSL-owning thread tries to swtch to coop.
         // We will handle all cases in the same way - by allowing the thread into coop mode without a wait.
-        goto Exit;
+        return;
     }
 
     STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
@@ -2257,9 +2257,6 @@ void Thread::RareDisablePreemptiveGC()
     }
 
     STRESS_LOG0(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: leaving\n");
-
-Exit: ;
-    END_PRESERVE_LAST_ERROR;
 }
 
 void Thread::HandleThreadAbort ()
@@ -2642,9 +2639,8 @@ extern "C" PCONTEXT __stdcall GetCurrentSavedRedirectContext()
 
     PCONTEXT pContext;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
     pContext = GetThread()->GetSavedRedirectContext();
-    END_PRESERVE_LAST_ERROR;
 
     return pContext;
 }
@@ -2689,7 +2685,8 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 
     // We must preserve this in case we've interrupted an IL pinvoke stub before it
     // was able to save the error.
-    DWORD dwLastError = GetLastError(); // BEGIN_PRESERVE_LAST_ERROR
+    // Manually preserve it as we don't return from this function normally.
+    DWORD dwLastError = GetLastError();
 
     Thread *pThread = GetThread();
 
@@ -2775,7 +2772,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     pThread->UnmarkRedirectContextInUse(pCtx);
 
     LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
-    SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
+    SetLastError(dwLastError);
 
     __asan_handle_no_return();
 #ifdef TARGET_X86
@@ -4869,7 +4866,7 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
     CONTRACTL_END;
 
 #ifdef HIJACK_NONINTERRUPTIBLE_THREADS
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread         *thread = GetThread();
 
@@ -4902,8 +4899,6 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // _DEBUG
 
     frame.Pop();
-
-    END_PRESERVE_LAST_ERROR;
 #else
     PORTABILITY_ASSERT("OnHijackWorker not implemented on this platform.");
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS

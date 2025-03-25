@@ -5235,14 +5235,22 @@ public:
         : m_pFrame(pThread->m_pFrame)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(!std::uncaught_exception());
     }
 
     ~CoopTransitionHolder()
     {
         WRAPPER_NO_CONTRACT;
-        if (std::uncaught_exception())
+        _ASSERTE(m_pFrame == nullptr || std::uncaught_exception());
+        if (m_pFrame != nullptr)
             COMPlusCooperativeTransitionHandler(m_pFrame);
+    }
+
+    void SuppressRelease()
+    {
+        LIMITED_METHOD_CONTRACT;
+        // FRAME_TOP and NULL must be distinct values.
+        // static_assert_no_msg(FRAME_TOP_VALUE != NULL);
+        m_pFrame = nullptr;
     }
 };
 

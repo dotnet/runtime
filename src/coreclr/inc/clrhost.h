@@ -44,16 +44,6 @@ private:
     DWORD m_dwLastError;
 };
 
-
-#define BEGIN_PRESERVE_LAST_ERROR \
-    { \
-        PreserveLastErrorHolder __preserveLastErrorHolder; \
-        {
-
-#define END_PRESERVE_LAST_ERROR \
-        } \
-    }
-
 //
 // TRASH_LASTERROR macro sets bogus last error in debug builds to help find places that fail to save it
 //

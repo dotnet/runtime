@@ -501,6 +501,7 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
         CoopTransitionHolder __CoopTransition(CURRENT_THREAD);
 
 #define COOPERATIVE_TRANSITION_END()                \
+        __CoopTransition.SuppressRelease();         \
     }                                               \
     END_GCX_ASSERT_PREEMP;                          \
   }
