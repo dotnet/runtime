@@ -258,6 +258,9 @@
     <_MonoComponent Include="debugger" />
     <_MonoComponent Include="hot_reload" />
   </ItemGroup>
+  <ItemGroup Condition="'$(WasmPerfTracing)' == 'true'">
+    <_MonoComponent Include="diagnostics_tracing" />
+  </ItemGroup>
   <!-- PUBLISH -->
 
   <!-- public top-level target for Build -->

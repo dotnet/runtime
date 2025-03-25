@@ -90,8 +90,17 @@ public enum DataType
     MethodImpl,
     NativeCodeSlot,
     GCCoverageInfo,
+    TransitionBlock,
+    DebuggerEval,
+    CalleeSavedRegisters,
+    HijackArgs,
 
     Frame,
     InlinedCallFrame,
     SoftwareExceptionFrame,
+    FramedMethodFrame,
+    FuncEvalFrame,
+    ResumableFrame,
+    FaultingExceptionFrame,
+    HijackFrame,
 }

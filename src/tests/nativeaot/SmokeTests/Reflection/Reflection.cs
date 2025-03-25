@@ -74,7 +74,7 @@ internal static class ReflectionTest
         TestCompilerGeneratedCode.Run();
         Test105034Regression.Run();
         TestMethodsNeededFromNativeLayout.Run();
-
+        TestFieldAndParamMetadata.Run();
 
         //
         // Mostly functionality tests
@@ -830,6 +830,29 @@ internal static class ReflectionTest
             if (parameters[0].GetCustomAttributes(inherit: true).Length != 0)
                 throw new Exception("Attributes");
 #endif
+        }
+    }
+
+    class TestFieldAndParamMetadata
+    {
+        public class FieldType;
+
+        public FieldType TheField;
+
+        public class ParameterType;
+
+        public static void TheMethod(ParameterType p) { }
+
+        public static void Run()
+        {
+            Type fieldType = typeof(TestFieldAndParamMetadata).GetField(nameof(TheField)).FieldType;
+
+            if (fieldType.Name != nameof(FieldType))
+                throw new Exception();
+
+            Type parameterType = typeof(TestFieldAndParamMetadata).GetMethod(nameof(TheMethod)).GetParameters()[0].ParameterType;
+            if (parameterType.Name != nameof(ParameterType))
+                throw new Exception();
         }
     }
 

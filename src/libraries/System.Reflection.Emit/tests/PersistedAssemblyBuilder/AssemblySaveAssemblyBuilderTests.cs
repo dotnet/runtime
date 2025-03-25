@@ -303,6 +303,90 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/113789", TestRuntimes.Mono)]
+        [InlineData(true)] 
+        [InlineData(false)]
+        public unsafe void AssemblyWithInstanceBasedFunctionPointer(bool useExplicitThis)
+        {
+            byte[] assemblyData = GenerateMethodInPersistedAssembly(useExplicitThis);
+
+            using MemoryStream stream = new MemoryStream(assemblyData);
+            TestAssemblyLoadContext testAssemblyLoadContext = new();
+
+            // Verify the assembly is properly generated and the runtime supports the IL.
+            try
+            {
+                Assembly assembly = testAssemblyLoadContext.LoadFromStream(stream);
+                Type generatedType = assembly.GetType("MyGeneratedType")!;
+                Assert.NotNull(generatedType);
+                MethodInfo generatedMethod = generatedType.GetMethod("GetGuid")!;
+                Assert.NotNull(generatedMethod);
+                var generatedMethodToCall = generatedMethod.CreateDelegate<Func<object, IntPtr, Guid>>();
+
+                // Call the property getter through the generated method.
+                IntPtr fn = typeof(MyClassWithGuidProperty).GetProperty(nameof(MyClassWithGuidProperty.MyGuid))!.GetGetMethod().MethodHandle.GetFunctionPointer();
+                Guid guid = Guid.NewGuid();
+                MyClassWithGuidProperty obj = new (guid);
+                Assert.Equal(guid, generatedMethodToCall(obj, fn));
+            }
+            finally
+            {
+                testAssemblyLoadContext.Unload();
+            }
+
+            static unsafe byte[] GenerateMethodInPersistedAssembly(bool useExplicitThis)
+            {
+                AssemblyName assemblyName = new("MyAssembly");
+                PersistedAssemblyBuilder ab = new(assemblyName, typeof(object).Assembly);
+                ModuleBuilder moduleBuilder = ab.DefineDynamicModule("MyModule");
+
+                // Define a type with a method that calls the instance-based function pointer through calli.
+                TypeBuilder typeBuilder = moduleBuilder.DefineType("MyGeneratedType", TypeAttributes.Public | TypeAttributes.Class);
+                MethodBuilder methodBuilder = typeBuilder.DefineMethod(
+                    "GetGuid",
+                    MethodAttributes.Public | MethodAttributes.Static,
+                    returnType: typeof(Guid),
+
+                    // In this test, we use typeof(object) for the "this" pointer to ensure the IL could be re-used for other
+                    // reference types, but normally this would be the appropriate type such as typeof(MyClassWithGuidProperty).
+                    parameterTypes: [typeof(object), typeof(IntPtr)]); 
+
+                ILGenerator il = methodBuilder.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0); // this
+                il.Emit(OpCodes.Ldarg_1); // fn
+
+                if (useExplicitThis)
+                {
+                    il.EmitCalli(OpCodes.Calli, CallingConventions.HasThis | CallingConventions.ExplicitThis,
+                        returnType: typeof(Guid), parameterTypes: [typeof(object)], null);
+                }
+                else
+                {
+                    il.EmitCalli(OpCodes.Calli, CallingConventions.HasThis,
+                        returnType: typeof(Guid), parameterTypes: null, null);
+                }
+
+                il.Emit(OpCodes.Ret);
+                typeBuilder.CreateType();
+                MetadataBuilder metadataBuilder = ab.GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder _);
+                ManagedPEBuilder peBuilder = new ManagedPEBuilder(PEHeaderBuilder.CreateLibraryHeader(), new MetadataRootBuilder(metadataBuilder), ilStream);
+                BlobBuilder blob = new BlobBuilder();
+                peBuilder.Serialize(blob);
+                return blob.ToArray();
+            }
+        }
+
+        private class MyClassWithGuidProperty
+        {
+            public MyClassWithGuidProperty(Guid guid)
+            {
+                MyGuid = guid;
+            }
+
+            public Guid MyGuid { get; init; }
+        }
+
         void CheckCattr(IList<CustomAttributeData> attributes)
         {
             CustomAttributeData cattr = attributes.First(a => a.AttributeType.Name == nameof(AttributeUsageAttribute));

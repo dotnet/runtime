@@ -738,6 +738,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
             break;
 
+        case GT_GCPOLL:
+        {
+            // GCPOLL is essentially a no-op, we used it as a hint for fgCreateGCPoll
+            node->gtBashToNOP();
+            return Compiler::WALK_CONTINUE;
+        }
+
         case GT_COMMA:
         {
             GenTree*           op1         = node->gtGetOp1();
@@ -807,6 +814,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             if (node->AsCast()->CastOp()->OperIsSimple())
             {
                 comp->fgSimpleLowerCastOfSmpOp(BlockRange(), node->AsCast());
+            }
+            break;
+
+        case GT_BSWAP16:
+            if (node->gtGetOp1()->OperIs(GT_CAST))
+            {
+                comp->fgSimpleLowerBswap16(BlockRange(), node);
             }
             break;
 

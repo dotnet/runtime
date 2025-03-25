@@ -52,9 +52,6 @@ struct ArgLocDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
-// CPU-dependent functions
-Stub * GenerateInitPInvokeFrameHelper();
-
 EXTERN_C void checkStack(void);
 
 #define THUMB_CODE      1
@@ -554,8 +551,6 @@ public:
         // bx lr
         ThumbEmitJumpRegister(thumbRegLr);
     }
-
-    void ThumbEmitGetThread(ThumbReg dest);
 
     void ThumbEmitNop()
     {
