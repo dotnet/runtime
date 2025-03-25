@@ -992,7 +992,30 @@ void emitter::emitIns_R_R_I_I(
 void emitter::emitIns_R_R_R_R(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4)
 {
-    NYI_RISCV64("emitIns_R_R_R_R-----unimplemented/unused on RISCV64 yet----");
+    NYI_IF(!(INS_fmadd_s <= ins && ins <= INS_fnmadd_s) && !(INS_fmadd_d <= ins && ins <= INS_fnmadd_d),
+           "illegal ins within emitIns_R_R_R_R!");
+
+    assert(isFloatReg(reg1));
+    assert(isFloatReg(reg2));
+    assert(isFloatReg(reg3));
+    assert(isFloatReg(reg4));
+
+    code_t code = emitInsCode(ins);
+    code |= (reg1 & 0x1f) << 7;
+    code |= (reg2 & 0x1f) << 15;
+    code |= (reg3 & 0x1f) << 20;
+    code |= (reg4 & 0x1f) << 27;
+    code |= 0b111 << 12;
+
+    instrDesc* id = emitNewInstr(attr);
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
+    id->idReg4(reg4);
+    id->idAddr()->iiaSetInstrEncode(code);
+    id->idCodeSize(4);
+    appendToCurIG(id);
 }
 
 /*****************************************************************************
@@ -3512,7 +3535,8 @@ void emitter::emitDispInsName(
 
     printf("      ");
 
-    switch (GetMajorOpcode(code))
+    MajorOpcode opcode = GetMajorOpcode(code);
+    switch (opcode)
     {
         case MajorOpcode::Lui:
         {
@@ -4349,6 +4373,33 @@ void emitter::emitDispInsName(
                     NYI_RISCV64("illegal ins within emitDisInsName!");
                     return;
             }
+            return;
+        }
+        case MajorOpcode::MAdd:
+        case MajorOpcode::MSub:
+        case MajorOpcode::NmSub:
+        case MajorOpcode::NmAdd:
+        {
+            unsigned int opcode2 = (code >> 25) & 0b11;
+            if (opcode2 > 1)
+                return emitDispIllegalInstruction(code);
+            char width = "sdhq"[opcode2];
+
+            unsigned int opcode4 = (code >> 12) & 0b111;
+            if (opcode4 != 0b111)
+                return emitDispIllegalInstruction(code);
+
+            static const char* names[] = {"fmadd", "fmsub", "fnmsub", "fnmadd"};
+
+            unsigned    idx  = (unsigned)opcode & 0b11;
+            const char* name = names[idx];
+            const char* pad  = (idx < 2) ? " " : "";
+
+            const char* fd  = RegNames[((code >> 7) & 0x1f) | 0x20];
+            const char* fs1 = RegNames[((code >> 15) & 0x1f) | 0x20];
+            const char* fs2 = RegNames[((code >> 20) & 0x1f) | 0x20];
+            const char* fs3 = RegNames[((code >> 27) & 0x1f) | 0x20];
+            printf("%s.%c%s       %s, %s, %s, %s\n", name, width, pad, fd, fs1, fs2, fs3);
             return;
         }
         case MajorOpcode::StoreFp:

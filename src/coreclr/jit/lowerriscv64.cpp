@@ -513,7 +513,44 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 //
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_RISCV64("LowerHWIntrinsic");
+    switch (node->GetHWIntrinsicId())
+    {
+        case NI_NONE_FusedMultiplyAddScalar:
+        {
+            auto removeNegation = [this, node](size_t operandIndex) {
+                GenTree*& operand   = node->Op(operandIndex);
+                bool      isNegated = operand->OperIs(GT_NEG);
+                if (isNegated)
+                {
+                    BlockRange().Remove(operand);
+                    operand = operand->gtGetOp1();
+                }
+                return isNegated;
+            };
+
+            // "Negated" on RISC-V refers to the whole (op1 * op2 + op3) expression so:
+            bool isNegated  = (removeNegation(1) != removeNegation(2)); // product sign determines negation,
+            bool isSubtract = (removeNegation(3) != isNegated);         // negation flips add/subtract op3.
+            assert(node->GetOperandCount() == 3);
+
+            static const NamedIntrinsic base = NI_NONE_FusedMultiplyAddScalar;
+            static_assert((base + (0 << 1) + 0) == NI_NONE_FusedMultiplyAddScalar, "");
+            static_assert((base + (0 << 1) + 1) == NI_NONE_FusedMultiplySubtractScalar, "");
+            static_assert((base + (1 << 1) + 0) == NI_NONE_FusedNegatedMultiplyAddScalar, "");
+            static_assert((base + (1 << 1) + 1) == NI_NONE_FusedNegatedMultiplySubtractScalar, "");
+            int index = ((int)isNegated << 1) + (int)isSubtract;
+            if (index != 0)
+            {
+                node->ChangeHWIntrinsicId((NamedIntrinsic)(base + index));
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    // ContainCheckHWIntrinsic(node);
     return node->gtNext;
 }
 
@@ -805,7 +842,9 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_RISCV64("ContainCheckHWIntrinsic");
+    NamedIntrinsic id = node->GetHWIntrinsicId();
+    assert(!HWIntrinsicInfo::HasImmediateOperand(id));
+    assert(!HWIntrinsicInfo::SupportsContainment(id));
 }
 #endif // FEATURE_HW_INTRINSICS
 

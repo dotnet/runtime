@@ -28031,6 +28031,8 @@ GenTree* Compiler::gtNewSimdWithUpperNode(
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseJitType, simdSize);
 }
+#endif // FEATURE_SIMD
+
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID)
 {
     return new (this, GT_HWINTRINSIC)
@@ -28039,7 +28041,9 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, NamedIn
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)
 {
+#ifdef FEATURE_SIMD
     SetOpLclRelatedToSIMDIntrinsic(op1);
+#endif
 
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, CORINFO_TYPE_UNDEF, 0, op1);
@@ -28050,9 +28054,10 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
                                                          GenTree*       op2,
                                                          NamedIntrinsic hwIntrinsicID)
 {
+#ifdef FEATURE_SIMD
     SetOpLclRelatedToSIMDIntrinsic(op1);
     SetOpLclRelatedToSIMDIntrinsic(op2);
-
+#endif
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, CORINFO_TYPE_UNDEF, 0, op1, op2);
 }
@@ -28060,14 +28065,16 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
     var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID)
 {
+#ifdef FEATURE_SIMD
     SetOpLclRelatedToSIMDIntrinsic(op1);
     SetOpLclRelatedToSIMDIntrinsic(op2);
     SetOpLclRelatedToSIMDIntrinsic(op3);
+#endif
 
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, CORINFO_TYPE_UNDEF, 0, op1, op2, op3);
 }
-#endif // FEATURE_SIMD
+
 //------------------------------------------------------------------------
 // OperIsHWIntrinsic: Is this a hwintrinsic with the specified id
 //

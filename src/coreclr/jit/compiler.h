@@ -9638,7 +9638,7 @@ private:
     // support/nonsupport for an instruction set
     bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
     {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         return opts.compSupportsISA.HasInstructionSet(isa);
 #else
         return false;
