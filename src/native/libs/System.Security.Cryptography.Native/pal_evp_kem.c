@@ -3,6 +3,7 @@
 
 #include "openssl.h"
 #include "pal_evp_kem.h"
+#include "pal_evp_pkey.h"
 #include "pal_utilities.h"
 
 #include <assert.h>
@@ -187,6 +188,7 @@ done:
 }
 
 int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
+                                       void* extraHandle,
                                        uint8_t* ciphertext,
                                        int32_t ciphertextLength,
                                        uint8_t* sharedSecret,
@@ -203,7 +205,7 @@ int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
         ERR_clear_error();
 
         EVP_PKEY_CTX* ctx = NULL;
-        ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
+        ctx = EvpPKeyCtxCreateFromPKey(pKey, extraHandle);
         int32_t ret = 0;
 
         if (ctx == NULL)
@@ -251,6 +253,7 @@ done:
 }
 
 int32_t CryptoNative_EvpKemDecapsulate(EVP_PKEY* pKey,
+                                       void* extraHandle,
                                        const uint8_t* ciphertext,
                                        int32_t ciphertextLength,
                                        uint8_t* sharedSecret,
@@ -267,7 +270,7 @@ int32_t CryptoNative_EvpKemDecapsulate(EVP_PKEY* pKey,
         ERR_clear_error();
 
         EVP_PKEY_CTX* ctx = NULL;
-        ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
+        ctx = EvpPKeyCtxCreateFromPKey(pKey, extraHandle);
         int32_t ret = 0;
 
         if (ctx == NULL)

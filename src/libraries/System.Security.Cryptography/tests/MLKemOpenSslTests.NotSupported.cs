@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void MLKemOpenSsl_NotSupportedOnNonUnixPlatforms()
         {
-            Assert.Throw<PlatformNotSupportedException>(() => new MLKemOpenSsl(new SafeEvpPKeyHandle()));
+            Assert.Throws<PlatformNotSupportedException>(() => new MLKemOpenSsl(new SafeEvpPKeyHandle()));
         }
     }
 }

@@ -11,9 +11,12 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        private static partial IntPtr GetExtraHandle(SafeEvpPKeyHandle handle);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemDecapsulate")]
         private static partial int CryptoNative_EvpKemDecapsulate(
             SafeEvpPKeyHandle kem,
+            IntPtr extraHandle,
             ReadOnlySpan<byte> ciphertext,
             int ciphertextLength,
             Span<byte> sharedSecret,
@@ -52,6 +55,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemEncapsulate")]
         private static partial int CryptoNative_EvpKemEncapsulate(
             SafeEvpPKeyHandle kem,
+            IntPtr extraHandle,
             Span<byte> ciphertext,
             int ciphertextLength,
             Span<byte> sharedSecret,
@@ -111,7 +115,7 @@ internal static partial class Interop
             const int Success = 1;
             const int Fail = 0;
 
-            int ret = CryptoNative_EvpKemDecapsulate(key, ciphertext, ciphertext.Length, sharedSecret, sharedSecret.Length);
+            int ret = CryptoNative_EvpKemDecapsulate(key, GetExtraHandle(key), ciphertext, ciphertext.Length, sharedSecret, sharedSecret.Length);
 
             switch (ret)
             {
@@ -141,7 +145,7 @@ internal static partial class Interop
             const int Success = 1;
             const int Fail = 0;
 
-            int ret = CryptoNative_EvpKemEncapsulate(key, ciphertext, ciphertext.Length, sharedSecret, sharedSecret.Length);
+            int ret = CryptoNative_EvpKemEncapsulate(key, GetExtraHandle(key), ciphertext, ciphertext.Length, sharedSecret, sharedSecret.Length);
 
             switch (ret)
             {

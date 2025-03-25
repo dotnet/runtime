@@ -873,6 +873,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kdf.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.ExtraHandle.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.ExtraHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.KdfAlgs.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.KdfAlgs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.KemAlgs.cs"
