@@ -1454,8 +1454,7 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 
 #endif // __FORCE_NORUNTIME_CONTRACTS__
 
-#define CONTRACT_END   CONTRACTL_END                                                        \
-   DEBUG_ASSURE_NO_RETURN_END(CONTRACT)                                                     \
+#define CONTRACT_END   CONTRACTL_END
 
 
 // The final expression in the RETURN macro deserves special explanation (or something.)
@@ -1680,7 +1679,6 @@ public:
         __violationHolder_onlyOneAllowedPerScope.Leave();                   \
 
 #define END_CONTRACT_VIOLATION                                              \
-        DEBUG_ASSURE_NO_RETURN_END(CONTRACT)                                \
         __violationHolder_onlyOneAllowedPerScope.Leave();                   \
     }                                                                       \
 
