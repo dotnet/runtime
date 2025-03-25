@@ -2278,4 +2278,8 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportSt
 // Instantiate the decoder so other files can use it
 template class TGcInfoDecoder<TargetGcInfoEncoding>;
 
+#ifdef FEATURE_INTERPRETER
+template class TGcInfoDecoder<InterpreterGcInfoEncoding>;
+#endif // FEATURE_INTERPRETER
+
 #endif // USE_GC_INFO_DECODER

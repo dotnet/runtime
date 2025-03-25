@@ -4,6 +4,10 @@
 #ifndef _BITPOSITION_H_
 #define _BITPOSITION_H_
 
+#ifndef _BITPOSITION_ASSERTE
+#define _BITPOSITION_ASSERTE(x) _ASSERTE(x)
+#endif
+
 //------------------------------------------------------------------------
 // BitPosition: Return the position of the single bit that is set in 'value'.
 //
@@ -17,7 +21,7 @@
 inline
 unsigned            BitPosition(unsigned value)
 {
-    _ASSERTE((value != 0) && ((value & (value-1)) == 0));
+    _BITPOSITION_ASSERTE((value != 0) && ((value & (value-1)) == 0));
     DWORD index;
     BitScanForward(&index, value);
     return index;
@@ -38,7 +42,7 @@ unsigned            BitPosition(unsigned value)
 inline
 unsigned            BitPosition(uint64_t value)
 {
-    _ASSERTE((value != 0) && ((value & (value-1)) == 0));
+    _BITPOSITION_ASSERTE((value != 0) && ((value & (value-1)) == 0));
     DWORD index;
     BitScanForward64(&index, value);
     return index;
