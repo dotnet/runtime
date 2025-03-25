@@ -789,7 +789,6 @@ void emitter::emitIns_R_R_I(
         code |= ((imm >> 1) & 0xf) << 8;
         code |= ((imm >> 5) & 0x3f) << 25;
         code |= ((imm >> 12) & 0x1) << 31;
-        // TODO-RISCV64: Move jump logic to emitIns_J
         id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
     }
     else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
@@ -1206,7 +1205,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount, regNumber reg1, regNumber reg2)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 {
     assert(isCondJumpInstruction(ins) || isJumpInstruction(ins));
 
@@ -1215,23 +1214,10 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount, regNum
         assert(dst->HasFlag(BBF_HAS_LABEL));
     }
 
-    if (!isCondJumpInstruction(ins) && ins != INS_jalr)
-    {
-
-    }
-    else if (ins == INS_jalr)
-    {
-
-    }
-    else
-    {
-
-    }
-
     instrDescJmp* id = emitNewInstrJmp();
     id->idIns(ins);
-    id->idReg1(reg1);
-    id->idReg2(reg2);
+    id->idReg1((regNumber)(instrCount & 0x1f));
+    id->idReg2((regNumber)((instrCount >> 5) & 0x1f));
 
     id->idInsOpt(INS_OPTS_J);
     emitCounts_INS_OPTS_J++;
@@ -1252,8 +1238,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount, regNum
 
     id->idjShort = false;
 
-    // long jumps only possible by using auipc+jalr
-    id->idjKeepLong = false;
 #ifdef DEBUG
     if (emitComp->opts.compLongAddress) // Force long branches
         id->idjKeepLong = 1;
@@ -2817,7 +2801,7 @@ unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs
 unsigned emitter::emitOutput_BTypeInstr_InvertComparation(
     BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, unsigned imm13) const
 {
-    unsigned insCode = emitInsCode(ins) ^ 0x1000;
+    unsigned insCode = emitInsCode(emitReverseJumpIns(ins));
 #ifdef DEBUG
     emitOutput_BTypeInstr_SanityCheck(ins, rs1, rs2);
 #endif // DEBUG
