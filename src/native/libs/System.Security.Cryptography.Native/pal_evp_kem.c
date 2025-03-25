@@ -245,6 +245,7 @@ done:
 #endif
 
     (void)pKey;
+    (void)extraHandle;
     (void)ciphertext;
     (void)ciphertextLength;
     (void)sharedSecret;
@@ -310,6 +311,7 @@ done:
 #endif
 
     (void)pKey;
+    (void)extraHandle;
     (void)ciphertext;
     (void)ciphertextLength;
     (void)sharedSecret;
