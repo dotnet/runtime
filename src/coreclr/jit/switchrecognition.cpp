@@ -51,7 +51,7 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             }
             if (block->HasFlag(BBF_REMOVED))
             {
-                block = block->Next();
+                continue;
             }
         }
 
