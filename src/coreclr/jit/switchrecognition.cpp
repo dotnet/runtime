@@ -33,7 +33,7 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
         }
 
         // Before we start, let's optimize possible fallthrough blocks for BBJ_COND's successors.
-        if (block->KindIs(BBJ_COND))
+        /*if (block->KindIs(BBJ_COND))
         {
             BasicBlock* retFalseBb = block->GetFalseTarget();
             BasicBlock* retTrueBb  = block->GetTrueTarget();
@@ -53,7 +53,7 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             {
                 continue;
             }
-        }
+        }*/
 
 // Limit to XARCH, ARM is already doing a great job with such comparisons using
 // a series of ccmp instruction (see ifConvert phase).
