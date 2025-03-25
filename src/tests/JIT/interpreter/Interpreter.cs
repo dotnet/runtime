@@ -27,7 +27,6 @@ public class InterpreterTest
             Environment.FailFast(null);
 
         // Console.WriteLine("Collect Garbage");
-        System.GC.Collect();
     }
 
     public static int Mul4(int a, int b, int c, int d)
@@ -71,8 +70,10 @@ public class InterpreterTest
     public static bool PowLoop(int n, long nr, int expected)
     {
         long ret = 1;
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < n; i++) {
+            System.GC.Collect();
             ret *= nr;
+        }
         return (int)ret == expected;
     }
 }

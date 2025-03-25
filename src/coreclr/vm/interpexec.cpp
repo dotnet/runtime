@@ -755,6 +755,7 @@ MAIN_LOOP:
                 // FIXME: currently hangs and stack walk does not ever reach the interpreter code manager
                 GCX_COOP();
                 GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, 0x00000002);
+                ip++;
                 break;
             }
             case INTOP_FAILFAST:
