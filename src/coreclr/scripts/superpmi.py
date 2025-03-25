@@ -1619,16 +1619,26 @@ def report_replay_asserts(asserts, output_mch_file):
     if asserts:
         logging.info("============================== Assertions:")
         assertion_num = 0
+        assertion_count = len(asserts.items())
         for assertion_key, assertion_value in asserts.items():
             assertion_num += 1
-            logging.info("=== Assertion #%s: %s", assertion_num, assertion_key)
+            assertion_instance_count = len(assertion_value)
+            logging.info("=== Assertion #%s/%s (count: %s): %s", assertion_num, assertion_count, assertion_instance_count, assertion_key)
             # Sort the values by increasing il size
             sorted_instances = sorted(assertion_value, key=lambda d: d['il'])
+            instance_num = 0
+            # Arbitrary maximum number of instances to show to avoid too much output. Note that all the assertions are in the log file,
+            # just not summarized.
+            instance_max = 25
             for instance in sorted_instances:
                 if output_mch_file:
                     logging.info("  %s # %s : IL size %s", instance['mch_file'], instance['mc_num'], instance['il'])
                 else:
                     logging.info("  # %s : IL size %s", instance['mc_num'], instance['il'])
+                instance_num += 1
+                if instance_num >= instance_max:
+                    logging.info("  ... omitting %s instances", assertion_instance_count - instance_num)
+                    break
 
 
 ################################################################################
