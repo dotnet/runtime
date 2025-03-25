@@ -939,6 +939,35 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         compInlineResult->Note(InlineObservation::CALLEE_BEGIN_OPCODE_SCAN);
     }
 
+    auto doesMethodLookLikeWrapper = [](const BYTE* codeAddrNext, const BYTE* codeEndp) -> bool {
+        OPCODE opcodeNext = (OPCODE)getU1LittleEndian(codeAddrNext);
+        if (opcodeNext == CEE_LDLOC_0 || opcodeNext == CEE_LDLOC_1 || opcodeNext == CEE_LDLOC_2 ||
+            opcodeNext == CEE_LDLOC_3 || opcodeNext == CEE_LDLOC_S)
+        {
+            codeAddrNext += opcodeSizes[opcodeNext] + sizeof(int8_t);
+            if (codeAddrNext >= codeEndp)
+            {
+                return false;
+            }
+            opcodeNext = (OPCODE)getU1LittleEndian(codeAddrNext);
+        }
+        if (opcodeNext == CEE_BOX)
+        {
+            codeAddrNext += opcodeSizes[opcodeNext] + sizeof(int8_t);
+            if (codeAddrNext >= codeEndp)
+            {
+                return false;
+            }
+            opcodeNext = (OPCODE)getU1LittleEndian(codeAddrNext);
+        }
+        if (opcodeNext == CEE_RET)
+        {
+            // Assume it is a wrapper method if it is followed by {ldloc, box}, ret.
+            return true;
+        }
+        return false;
+    };
+
     CORINFO_RESOLVED_TOKEN resolvedToken;
 
     OPCODE opcode     = CEE_NOP;
@@ -1578,10 +1607,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
                 }
 
-                if ((codeAddr < codeEndp - sz) && (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
+                if ((codeAddr < codeEndp - sz) && doesMethodLookLikeWrapper(codeAddr + sz, codeEndp))
                 {
-                    // If the method has a call followed by a ret, assume that
-                    // it is a wrapper method.
                     compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
 
@@ -1593,6 +1620,18 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 }
             }
             break;
+
+            case CEE_NEWARR:
+            case CEE_NEWOBJ:
+            case CEE_INITOBJ:
+            {
+                if (makeInlineObservations && (codeAddr < codeEndp - sz) &&
+                    doesMethodLookLikeWrapper(codeAddr + sz, codeEndp))
+                {
+                    compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
+                }
+                break;
+            }
 
             case CEE_LDIND_I1:
             case CEE_LDIND_U1:
