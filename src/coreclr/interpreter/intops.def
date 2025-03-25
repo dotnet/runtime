@@ -195,3 +195,4 @@ OPDEF(INTOP_CLT_UN_R8, "clt.un.r8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodToken)
 
 OPDEF(INTOP_FAILFAST, "failfast", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_COLLECT, "gc.collect", 1, 0, 0, InterpOpNoArgs)

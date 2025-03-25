@@ -15,7 +15,7 @@ public class InterpreterTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void RunInterpreterTests()
     {
-//      Console.WriteLine("Run interp tests");
+        // Console.WriteLine("Run interp tests");
         if (SumN(50) != 1275)
             Environment.FailFast(null);
         if (Mul4(53, 24, 13, 131) != 2166216)
@@ -25,6 +25,9 @@ public class InterpreterTest
 
         if (!PowLoop(20, 10, 1661992960))
             Environment.FailFast(null);
+
+        // Console.WriteLine("Collect Garbage");
+        System.GC.Collect();
     }
 
     public static int Mul4(int a, int b, int c, int d)

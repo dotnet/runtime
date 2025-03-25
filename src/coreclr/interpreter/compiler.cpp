@@ -1359,6 +1359,11 @@ bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SI
             if (methodName && !strcmp(methodName, "FailFast"))
                 opcode = INTOP_FAILFAST; // to be removed, not really an intrisic
         }
+        else if (className && !strcmp(className, "GC"))
+        {
+            if (methodName && !strcmp(methodName, "Collect"))
+                opcode = INTOP_COLLECT; // to be removed, not really an intrisic
+        }
     }
 
     if (opcode != -1)
