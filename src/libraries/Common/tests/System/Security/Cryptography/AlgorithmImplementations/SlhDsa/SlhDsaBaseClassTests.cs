@@ -235,12 +235,15 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 return returnValue;
             };
 
+            // Since `returnValue` is true, this shows the Core method doesn't get called for the wrong sized signature.
             returnValue = true;
             Assert.False(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize - 1), testContext));
             Assert.False(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize + 1), testContext));
 
+            // But does for the right one.
             Assert.True(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize), testContext));
 
+            // And just to prove that the Core method controls the answer...
             returnValue = false;
             Assert.False(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize), testContext));
         }
