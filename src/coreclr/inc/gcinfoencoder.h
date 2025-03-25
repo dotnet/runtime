@@ -561,4 +561,8 @@ private:
 
 typedef TGcInfoEncoder<TargetGcInfoEncoding> GcInfoEncoder;
 
+#ifdef FEATURE_INTERPRETER
+typedef TGcInfoEncoder<InterpreterGcInfoEncoding> InterpreterGcInfoEncoder;
+#endif // FEATURE_INTERPRETER
+
 #endif // !__GCINFOENCODER_H__

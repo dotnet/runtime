@@ -2622,3 +2622,7 @@ int BitStreamWriter::EncodeVarLengthSigned( SSIZE_T n, UINT32 base )
 
 // Instantiate the encoder so other files can use it
 template class TGcInfoEncoder<TargetGcInfoEncoding>;
+
+#ifdef FEATURE_INTERPRETER
+template class TGcInfoEncoder<InterpreterGcInfoEncoding>;
+#endif // FEATURE_INTERPRETER
