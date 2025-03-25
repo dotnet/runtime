@@ -2545,7 +2545,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert((targetReg == op2Reg) || (targetReg != op1Reg));
                     assert((targetReg == op2Reg) || (targetReg != op3Reg));
                     GetEmitter()->emitIns_Mov(INS_mov, emitSize, targetReg, op2Reg,
-                        /* canSkip */ true);
+                                              /* canSkip */ true);
                     GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op3Reg, opt,
                                                    INS_SCALABLE_OPTS_NONE);
                     break;
