@@ -697,6 +697,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_Vector_Abs:
         case NI_Vector64_Abs:
         case NI_Vector128_Abs:
         {

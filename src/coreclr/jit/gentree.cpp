@@ -20857,7 +20857,6 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
     }
 #elif defined(TARGET_ARM64)
     NamedIntrinsic intrinsic = NI_AdvSimd_Abs;
-
     if (simdBaseType == TYP_DOUBLE)
     {
         intrinsic = (simdSize == 8) ? NI_AdvSimd_AbsScalar : NI_AdvSimd_Arm64_Abs;
@@ -20866,6 +20865,8 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
     {
         intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_AbsScalar : NI_AdvSimd_Arm64_Abs;
     }
+
+    intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(type, intrinsic);
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
@@ -28781,6 +28782,27 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         {
             return GT_NONE;
         }
+    }
+}
+
+
+//------------------------------------------------------------------------------
+// GetScalableHWIntrinsicId: Returns SVE equivalent of given intrinsic ID, if applicable
+//
+NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(var_types simdType, NamedIntrinsic id)
+{
+    // TODO-VL: Convert this in single check when we introduce TYP_SIMDVL
+    if ((simdType == TYP_SIMD16) || (simdType == TYP_SIMD8))
+    {
+        return id;
+    }
+    switch (id)
+    {
+        case NI_AdvSimd_Abs:
+        case NI_AdvSimd_Arm64_Abs:
+            return NI_Sve_Abs;
+        default:
+            return id;
     }
 }
 
