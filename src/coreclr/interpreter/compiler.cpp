@@ -604,6 +604,30 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
             *ip++ = (int32_t)0xdeadbeef;
         }
     }
+    else if (opcode == INTOP_MOV_SRC_OFF)
+    {
+        // This opcode reuses the MOV opcodes, which are normally used to copy the
+        // contents of one var to the other, in order to copy a containing field
+        // of the source var (which is a vt) to another var.
+        int32_t fOffset = ins->data[0];
+        InterpType fType = (InterpType)ins->data[1];
+        int32_t fSize = ins->data[2];
+        // Revert opcode emit
+        ip--;
+
+        int destOffset = m_pVars[ins->dVar].offset;
+        int srcOffset = m_pVars[ins->sVars[0]].offset;
+        srcOffset += fOffset;
+        if (fSize)
+            opcode = INTOP_MOV_VT;
+        else
+            opcode = InterpGetMovForType(fType, true);
+        *ip++ = opcode;
+        *ip++ = destOffset;
+        *ip++ = srcOffset;
+        if (opcode == INTOP_MOV_VT)
+            *ip++ = fSize;
+    }
     else
     {
         // Default code emit for an instruction. The opcode was already emitted above.
@@ -1382,6 +1406,15 @@ bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SI
     return false;
 }
 
+void InterpCompiler::ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken)
+{
+    pResolvedToken->tokenScope = m_compScopeHnd;
+    pResolvedToken->tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+    pResolvedToken->token = token;
+    pResolvedToken->tokenType = tokenKind;
+    m_compHnd->resolveToken(pResolvedToken);
+}
+
 CORINFO_METHOD_HANDLE InterpCompiler::ResolveMethodToken(uint32_t token)
 {
     CORINFO_RESOLVED_TOKEN resolvedToken;
@@ -1459,10 +1492,135 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
     m_ip += 5;
 }
 
+static int32_t GetLdindForType(InterpType interpType)
+{
+    switch (interpType) {
+        case InterpTypeI1: return INTOP_LDIND_I1;
+        case InterpTypeU1: return INTOP_LDIND_U1;
+        case InterpTypeI2: return INTOP_LDIND_I2;
+        case InterpTypeU2: return INTOP_LDIND_U2;
+        case InterpTypeI4: return INTOP_LDIND_I4;
+        case InterpTypeI8: return INTOP_LDIND_I8;
+        case InterpTypeR4: return INTOP_LDIND_R4;
+        case InterpTypeR8: return INTOP_LDIND_R8;
+        case InterpTypeO: return INTOP_LDIND_I;
+        case InterpTypeVT: return INTOP_LDIND_VT;
+        case InterpTypeByRef: return INTOP_LDIND_I;
+        default:
+            assert(0);
+    }
+    return -1;
+}
+
+static int32_t GetStindForType(InterpType interpType)
+{
+    switch (interpType) {
+        case InterpTypeI1: return INTOP_STIND_I1;
+        case InterpTypeU1: return INTOP_STIND_U1;
+        case InterpTypeI2: return INTOP_STIND_I2;
+        case InterpTypeU2: return INTOP_STIND_U2;
+        case InterpTypeI4: return INTOP_STIND_I4;
+        case InterpTypeI8: return INTOP_STIND_I8;
+        case InterpTypeR4: return INTOP_STIND_R4;
+        case InterpTypeR8: return INTOP_STIND_R8;
+        case InterpTypeO: return INTOP_STIND_I;
+        case InterpTypeVT: return INTOP_STIND_VT;
+        case InterpTypeByRef: return INTOP_STIND_I;
+        default:
+            assert(0);
+    }
+    return -1;
+}
+
+void InterpCompiler::EmitLdind(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int32_t offset)
+{
+    // Address is at the top of the stack
+    m_pStackPointer--;
+    int32_t opcode = GetLdindForType(interpType);
+    AddIns(opcode);
+    m_pLastIns->SetSVar(m_pStackPointer[0].var);
+    m_pLastIns->data[0] = offset;
+    if (interpType == InterpTypeVT)
+    {
+        int size = m_compHnd->getClassSize(clsHnd);
+        m_pLastIns->data[1] = size;
+        PushTypeVT(clsHnd, size);
+    }
+    else
+    {
+        PushInterpType(interpType, NULL);
+    }
+    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+}
+
+void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder)
+{
+    // stack contains address and then the value to be stored
+    // or in the reverse order if the flag is set
+    if (interpType == InterpTypeVT)
+    {
+        if (m_compHnd->getClassAttribs(clsHnd) & CORINFO_FLG_CONTAINS_GC_PTR)
+        {
+            AddIns(INTOP_STIND_VT);
+            m_pLastIns->data[1] = GetDataItemIndex(clsHnd);
+        }
+        else
+        {
+            AddIns(INTOP_STIND_VT_NOREF);
+            m_pLastIns->data[1] = m_compHnd->getClassSize(clsHnd);
+        }
+    }
+    else
+    {
+        AddIns(GetStindForType(interpType));
+    }
+
+    m_pLastIns->data[0] = offset;
+
+    m_pStackPointer -= 2;
+    if (reverseSVarOrder)
+        m_pLastIns->SetSVars2(m_pStackPointer[1].var, m_pStackPointer[0].var);
+    else
+        m_pLastIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+
+}
+
+void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo)
+{
+    switch (pFieldInfo->fieldAccessor)
+    {
+        case CORINFO_FIELD_STATIC_ADDRESS:
+        case CORINFO_FIELD_STATIC_RVA_ADDRESS:
+        {
+            // const field address
+            assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
+            AddIns(INTOP_LDPTR);
+            PushInterpType(InterpTypeByRef, NULL);
+            m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+            m_pLastIns->data[0] = GetDataItemIndex(pFieldInfo->fieldLookup.addr);
+            break;
+        }
+        default:
+            // TODO
+            assert(0);
+            break;
+    }
+}
+
+void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, bool isLoad)
+{
+    EmitStaticFieldAddress(pFieldInfo);
+    if (isLoad)
+        EmitLdind(interpFieldType, pFieldInfo->structType, 0);
+    else
+        EmitStind(interpFieldType, pFieldInfo->structType, 0, true);
+}
+
 int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
     bool readonly = false;
     bool tailcall = false;
+    bool volatile_ = false;
     CORINFO_CLASS_HANDLE constrainedClass = NULL;
     uint8_t *codeEnd;
     int numArgs = m_methodInfo->args.hasThis() + m_methodInfo->args.numArgs;
@@ -2305,6 +2463,173 @@ retry_emit:
                 m_pStackPointer--;
                 m_ip++;
                 break;
+            case CEE_LDFLDA:
+            {
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                CORINFO_FIELD_INFO fieldInfo;
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_ADDRESS, &fieldInfo);
+
+                bool isStatic = !!(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC);
+
+                if (isStatic)
+                {
+                    // Pop unused object reference
+                    m_pStackPointer--;
+                    EmitStaticFieldAddress(&fieldInfo);
+                }
+                else
+                {
+                    assert(fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE);
+                    m_pStackPointer--;
+                    AddIns(INTOP_LDFLDA);
+                    m_pLastIns->data[0] = (int32_t)fieldInfo.offset;
+                    m_pLastIns->SetSVar(m_pStackPointer[0].var);
+                    PushInterpType(InterpTypeByRef, NULL);
+                    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                }
+
+                m_ip += 5;
+                break;
+            }
+            case CEE_LDFLD:
+            {
+                CHECK_STACK(1);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                CORINFO_FIELD_INFO fieldInfo;
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+
+                CorInfoType fieldType = fieldInfo.fieldType;
+                bool isStatic = !!(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC);
+                InterpType interpFieldType = GetInterpType(fieldType);
+
+                if (isStatic)
+                {
+                    // Pop unused object reference
+                    m_pStackPointer--;
+                    EmitStaticFieldAccess(interpFieldType, &fieldInfo, true);
+                }
+                else
+                {
+                    assert(fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE);
+                    m_pStackPointer--;
+                    int sizeDataIndexOffset = 0;
+                    if (m_pStackPointer[0].type == StackTypeVT)
+                    {
+                        sizeDataIndexOffset = 1;
+                        AddIns(INTOP_MOV_SRC_OFF);
+                        m_pLastIns->data[1] = interpFieldType;
+                    }
+                    else
+                    {
+                        int32_t opcode = GetLdindForType(interpFieldType);
+                        AddIns(opcode);
+                    }
+                    m_pLastIns->SetSVar(m_pStackPointer[0].var);
+                    m_pLastIns->data[0] = (int32_t)fieldInfo.offset;
+                    if (interpFieldType == InterpTypeVT)
+                    {
+                        CORINFO_CLASS_HANDLE fieldClass = fieldInfo.structType;
+                        int size = m_compHnd->getClassSize(fieldClass);
+                        m_pLastIns->data[1 + sizeDataIndexOffset] = size;
+                        PushTypeVT(fieldClass, size);
+                    }
+                    else
+                    {
+                        PushInterpType(interpFieldType, NULL);
+                    }
+                    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                }
+
+                m_ip += 5;
+                if (volatile_)
+                    assert(0); // FIXME Acquire membar
+                break;
+            }
+            case CEE_STFLD:
+            {
+                CHECK_STACK(2);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                CORINFO_FIELD_INFO fieldInfo;
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+
+                CorInfoType fieldType = fieldInfo.fieldType;
+                bool isStatic = !!(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC);
+                InterpType interpFieldType = GetInterpType(fieldType);
+
+                if (volatile_)
+                    assert(0); // FIXME Release membar
+
+                if (isStatic)
+                {
+                    EmitStaticFieldAccess(interpFieldType, &fieldInfo, false);
+                    // Pop the unused object reference
+                    m_pStackPointer--;
+                }
+                else
+                {
+                    assert(fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE);
+                    EmitStind(interpFieldType, fieldInfo.structType, fieldInfo.offset, false);
+                }
+                m_ip += 5;
+
+                break;
+            }
+            case CEE_LDSFLDA:
+            {
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                CORINFO_FIELD_INFO fieldInfo;
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+
+                EmitStaticFieldAddress(&fieldInfo);
+
+                m_ip += 5;
+                break;
+            }
+            case CEE_LDSFLD:
+            {
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                CORINFO_FIELD_INFO fieldInfo;
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+
+                CorInfoType fieldType = fieldInfo.fieldType;
+                InterpType interpFieldType = GetInterpType(fieldType);
+
+                EmitStaticFieldAccess(interpFieldType, &fieldInfo, true);
+
+                if (volatile_)
+                    assert(0); // FIXME Acquire membar
+                m_ip += 5;
+                break;
+            }
+            case CEE_STSFLD:
+            {
+                CHECK_STACK(1);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                CORINFO_FIELD_INFO fieldInfo;
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+
+                CorInfoType fieldType = fieldInfo.fieldType;
+                InterpType interpFieldType = GetInterpType(fieldType);
+
+                if (volatile_)
+                    assert(0); // FIXME Release membar
+
+                EmitStaticFieldAccess(interpFieldType, &fieldInfo, false);
+                m_ip += 5;
+                break;
+            }
             case CEE_PREFIX1:
                 m_ip++;
                 switch (*m_ip + 256)
@@ -2365,6 +2690,10 @@ retry_emit:
                         break;
                     case CEE_TAILCALL:
                         tailcall = true;
+                        m_ip++;
+                        break;
+                    case CEE_VOLATILE:
+                        volatile_ = true;
                         m_ip++;
                         break;
                     default:
@@ -2511,6 +2840,12 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
             break;
         case InterpOpInt:
             printf(" %d", *pData);
+            break;
+        case InterpOpTwoInts:
+            printf(" %d,%d", *pData, *(pData + 1));
+            break;
+        case InterpOpThreeInts:
+            printf(" %d,%d,%d", *pData, *(pData + 1), *(pData + 2));
             break;
         case InterpOpBranch:
             if (ins)

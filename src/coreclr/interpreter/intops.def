@@ -14,6 +14,8 @@ OPDEF(INTOP_LDC_I4, "ldc.i4", 3, 1, 0, InterpOpInt)
 OPDEF(INTOP_LDC_I4_0, "ldc.i4.0", 2, 1, 0, InterpOpNoArgs)
 OPDEF(INTOP_LDC_I8_0, "ldc.i8.0", 2, 1, 0, InterpOpNoArgs)
 
+OPDEF(INTOP_LDPTR, "ldptr", 3, 1, 0, InterpOpInt)
+
 OPDEF(INTOP_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_MOV_I4_I2, "mov.i4.i2", 3, 1, 1, InterpOpNoArgs)
@@ -190,6 +192,32 @@ OPDEF(INTOP_CLT_UN_R4, "clt.un.r4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_CLT_UN_R8, "clt.un.r8", 4, 1, 2, InterpOpNoArgs)
 // Binary operations end
 
+// Fields
+OPDEF(INTOP_LDIND_I1, "ldind.i1", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_LDIND_U1, "ldind.u1", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_LDIND_I2, "ldind.i2", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_LDIND_U2, "ldind.u2", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_LDIND_I4, "ldind.i4", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_LDIND_I8, "ldind.i8", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_LDIND_R4, "ldind.r4", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_LDIND_R8, "ldind.r8", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_LDIND_O, "ldind.o", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_LDIND_VT, "ldind.vt", 5, 1, 1, InterpOpTwoInts)
+
+OPDEF(INTOP_STIND_I1, "stind.i1", 4, 0, 2, InterpOpInt)
+OPDEF(INTOP_STIND_U1, "stind.u1", 4, 0, 2, InterpOpInt)
+OPDEF(INTOP_STIND_I2, "stind.i2", 4, 0, 2, InterpOpInt)
+OPDEF(INTOP_STIND_U2, "stind.u2", 4, 0, 2, InterpOpInt)
+OPDEF(INTOP_STIND_I4, "stind.i4", 4, 0, 2, InterpOpInt)
+OPDEF(INTOP_STIND_I8, "stind.i8", 4, 0, 2, InterpOpInt)
+OPDEF(INTOP_STIND_R4, "stind.r4", 4, 0, 2, InterpOpInt)
+OPDEF(INTOP_STIND_R8, "stind.r8", 4, 0, 2, InterpOpInt)
+OPDEF(INTOP_STIND_O, "stind.o", 4, 0, 2, InterpOpInt)
+OPDEF(INTOP_STIND_VT, "stind.vt", 5, 0, 2, InterpOpTwoInts)
+OPDEF(INTOP_STIND_VT_NOREF, "stind.vt.noref", 5, 0, 2, InterpOpTwoInts)
+
+OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
+
 // Calls
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodToken)
 OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodToken)
@@ -200,3 +228,4 @@ OPDEF(INTOP_FAILFAST, "failfast", 1, 0, 0, InterpOpNoArgs)
 // All instructions after this point are IROPS, instructions that are not emitted/executed
 OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)
 OPDEF(INTOP_DEF, "def", 2, 1, 0, InterpOpNoArgs)
+OPDEF(INTOP_MOV_SRC_OFF, "mov.src.off", 6, 1, 1, InterpOpThreeInts)

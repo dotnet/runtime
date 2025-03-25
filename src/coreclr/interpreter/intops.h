@@ -13,6 +13,8 @@ typedef enum
 {
     InterpOpNoArgs,
     InterpOpInt,
+    InterpOpTwoInts,
+    InterpOpThreeInts,
     InterpOpBranch,
     InterpOpSwitch,
     InterpOpMethodToken,
@@ -39,14 +41,18 @@ int CEEOpcodeSize(const uint8_t *ip, const uint8_t *codeEnd);
 #ifdef TARGET_64BIT
 #define INTOP_MOV_P INTOP_MOV_8
 #define INTOP_LDNULL INTOP_LDC_I8_0
+#define INTOP_LDIND_I INTOP_LDIND_I8
+#define INTOP_STIND_I INTOP_STIND_I8
 #else
 #define INTOP_MOV_P INTOP_MOV_4
 #define INTOP_LDNULL INTOP_LDC_I4_0
+#define INTOP_LDIND_I INTOP_LDIND_I4
+#define INTOP_STIND_I INTOP_STIND_I4
 #endif
 
 static inline bool InterpOpIsEmitNop(int32_t opcode)
 {
-    return opcode >= INTOP_NOP;
+    return opcode >= INTOP_NOP && opcode != INTOP_MOV_SRC_OFF;
 }
 
 static inline bool InterpOpIsUncondBranch(int32_t opcode)

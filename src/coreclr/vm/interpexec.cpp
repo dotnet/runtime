@@ -31,6 +31,8 @@ InterpThreadContext* InterpGetThreadContext()
 
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
+// TODO once we have basic EH support
+#define NULL_CHECK(o)
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext)
 {
@@ -67,6 +69,10 @@ MAIN_LOOP:
             case INTOP_LDC_I8_0:
                 LOCAL_VAR(ip[1], int64_t) = 0;
                 ip += 2;
+                break;
+            case INTOP_LDPTR:
+                LOCAL_VAR(ip[1], void*) = pMethod->pDataItems[ip[2]];
+                ip += 3;
                 break;
             case INTOP_RET:
                 // Return stack slot sized value
@@ -691,6 +697,119 @@ MAIN_LOOP:
             case INTOP_CLT_UN_R8:
                 CMP_BINOP_FP(double, <, 1);
                 break;
+
+#define LDIND(dtype, ftype)                                 \
+    do {                                                    \
+        char *src = LOCAL_VAR(ip[2], char*);                \
+        NULL_CHECK(src);                                    \
+        LOCAL_VAR(ip[1], dtype) = *(ftype*)(src + ip[3]);   \
+        ip += 4;                                            \
+    } while (0)
+
+            case INTOP_LDIND_I1:
+                LDIND(int32_t, int8_t);
+                break;
+            case INTOP_LDIND_U1:
+                LDIND(int32_t, uint8_t);
+                break;
+            case INTOP_LDIND_I2:
+                LDIND(int32_t, int16_t);
+                break;
+            case INTOP_LDIND_U2:
+                LDIND(int32_t, uint16_t);
+                break;
+            case INTOP_LDIND_I4:
+                LDIND(int32_t, int32_t);
+                break;
+            case INTOP_LDIND_I8:
+                LDIND(int64_t, int64_t);
+                break;
+            case INTOP_LDIND_R4:
+                LDIND(float, float);
+                break;
+            case INTOP_LDIND_R8:
+                LDIND(double, double);
+                break;
+            case INTOP_LDIND_O:
+                LDIND(OBJECTREF, OBJECTREF);
+                break;
+
+            case INTOP_LDIND_VT:
+            {
+                char *src = LOCAL_VAR(ip[2], char*);
+                NULL_CHECK(obj);
+                memcpy(stack + ip[1], (char*)src + ip[3], ip[4]);
+                ip += 5;
+                break;
+            }
+
+#define STIND(dtype, ftype)                                         \
+    do                                                              \
+    {                                                               \
+        char *dst = LOCAL_VAR(ip[1], char*);                        \
+        NULL_CHECK(dst);                                            \
+        *(ftype*)(dst + ip[3]) = (ftype)(LOCAL_VAR(ip[2], dtype));  \
+        ip += 4;                                                    \
+    } while (0)
+
+            case INTOP_STIND_I1:
+                STIND(int32_t, int8_t);
+                break;
+            case INTOP_STIND_U1:
+                STIND(int32_t, uint8_t);
+                break;
+            case INTOP_STIND_I2:
+                STIND(int32_t, int16_t);
+                break;
+            case INTOP_STIND_U2:
+                STIND(int32_t, uint16_t);
+                break;
+            case INTOP_STIND_I4:
+                STIND(int32_t, int32_t);
+                break;
+            case INTOP_STIND_I8:
+                STIND(int64_t, int64_t);
+                break;
+            case INTOP_STIND_R4:
+                STIND(float, float);
+                break;
+            case INTOP_STIND_R8:
+                STIND(double, double);
+                break;
+            case INTOP_STIND_O:
+            {
+                char *dst = LOCAL_VAR(ip[1], char*);
+                OBJECTREF storeObj = LOCAL_VAR(ip[2], OBJECTREF);
+                NULL_CHECK(obj);
+                SetObjectReferenceUnchecked((OBJECTREF*)(dst + ip[3]), storeObj);
+                ip += 4;
+                break;
+            }
+            case INTOP_STIND_VT_NOREF:
+            {
+                char *dest = LOCAL_VAR(ip[1], char*);
+                NULL_CHECK(dest);
+                memcpyNoGCRefs(dest + ip[3], stack + ip[2], ip[4]);
+                ip += 5;
+                break;
+            }
+            case INTOP_STIND_VT:
+            {
+                MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
+                char *dest = LOCAL_VAR(ip[1], char*);
+                NULL_CHECK(dest);
+                CopyValueClassUnchecked(dest + ip[3], stack + ip[2], pMT);
+                ip += 5;
+                break;
+            }
+            case INTOP_LDFLDA:
+            {
+                char *src = LOCAL_VAR(ip[2], char*);
+                NULL_CHECK(src);
+                LOCAL_VAR(ip[1], char*) = src + ip[3];
+                ip += 4;
+                break;
+            }
 
             case INTOP_CALL:
             {
