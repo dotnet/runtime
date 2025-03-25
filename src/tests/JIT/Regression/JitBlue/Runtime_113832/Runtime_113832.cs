@@ -7,6 +7,11 @@
 // Reduced from 63.4 KiB to 0.7 KiB in 00:02:21
 // Hits JIT assert in Release:
 // Assertion failed '(consume == 0) || (ComputeAvailableSrcCount(tree) == consume)' in 'Program:Main(Fuzzlyn.ExecutionServer.IRuntime)' during 'Linear scan register alloc' (IL size 68; hash 0xade6b36b; FullOpts)
+using System;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using Xunit;
+
 public class Runtime_113832
 {
     public static byte s_4;
