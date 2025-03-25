@@ -559,7 +559,7 @@ struct RangeOps
         //
         if (r1lo.IsBinOpArray() && r2lo.IsBinOpArray() && r1lo.vn == r2lo.vn)
         {
-            result.lLimit     = r1hi; // copy $bnd and kind info
+            result.lLimit     = r1lo; // copy $bnd and kind info
             result.lLimit.cns = min(r1lo.cns, r2lo.cns);
         }
         return result;
