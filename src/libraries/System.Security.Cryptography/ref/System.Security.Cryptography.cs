@@ -1821,6 +1821,7 @@ namespace System.Security.Cryptography
         public byte[] ExportPrivateSeed() { throw null; }
         public void ExportPrivateSeed(System.Span<byte> destination) { }
         protected abstract void ExportPrivateSeedCore(System.Span<byte> destination);
+        public byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public static System.Security.Cryptography.MLKem GenerateKey(System.Security.Cryptography.MLKemAlgorithm algorithm) { throw null; }
         public static System.Security.Cryptography.MLKem ImportDecapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportDecapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
@@ -1828,7 +1829,10 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.MLKem ImportEncapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
         protected void ThrowIfDisposed() { }
+        public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
     public sealed partial class MLKemAlgorithm : System.IEquatable<System.Security.Cryptography.MLKemAlgorithm>
@@ -2996,6 +3000,8 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed partial class PublicKey
     {
         public PublicKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+        public PublicKey(System.Security.Cryptography.MLKem key) { }
         public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData? parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
         public System.Security.Cryptography.AsnEncodedData EncodedKeyValue { get { throw null; } }
         public System.Security.Cryptography.AsnEncodedData? EncodedParameters { get { throw null; } }
@@ -3012,6 +3018,9 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.ECDiffieHellman? GetECDiffieHellmanPublicKey() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Security.Cryptography.ECDsa? GetECDsaPublicKey() { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public System.Security.Cryptography.MLKem? GetMLKemPublicKey() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Security.Cryptography.RSA? GetRSAPublicKey() { throw null; }
         public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }

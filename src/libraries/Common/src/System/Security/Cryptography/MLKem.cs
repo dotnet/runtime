@@ -2,8 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -74,7 +79,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
@@ -462,7 +467,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
@@ -495,7 +500,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, byte[] source)
         {
@@ -521,7 +526,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
@@ -553,7 +558,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
@@ -578,7 +583,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
@@ -610,7 +615,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports MK-KEM.
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
@@ -728,6 +733,119 @@ namespace System.Security.Cryptography
         protected abstract void ExportEncapsulationKeyCore(Span<byte> destination);
 
         /// <summary>
+        ///   Attempts to export the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format
+        ///   into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the X.509 SubjectPublicKeyInfo value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten)
+        {
+            ThrowIfDisposed();
+            return ExportSubjectPublicKeyInfoCore().TryEncode(destination, out bytesWritten);
+        }
+
+        /// <summary>
+        ///  Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
+        /// </summary>
+        /// <returns>
+        ///   A byte array containing the X.509 SubjectPublicKeyInfo representation of the public-key portion of this key.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public byte[] ExportSubjectPublicKeyInfo()
+        {
+            ThrowIfDisposed();
+            return ExportSubjectPublicKeyInfoCore().Encode();
+        }
+
+        /// <summary>
+        ///  Imports an ML-KEM encapsulation key from an X.509 SubjectPublicKeyInfo structure.
+        /// </summary>
+        /// <param name="source">
+        ///  The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-DER-encoded X.509 SubjectPublicKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The SubjectPublicKeyInfo value does not represent an ML-KEM key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports ML-KEM.
+        /// </exception>
+        public static MLKem ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
+        {
+            ThrowIfNotSupported();
+
+            unsafe
+            {
+                fixed (byte* pointer = source)
+                {
+                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
+                    {
+                        AsnValueReader reader = new(source, AsnEncodingRules.DER);
+                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
+                        MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(spki.Algorithm.Algorithm) ??
+                            throw new CryptographicException(
+                                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier,
+                                spki.Algorithm.Algorithm));
+
+                        // draft-ietf-lamps-kyber-certificates-07:
+                        // The parameters field of the AlgorithmIdentifier for the ML-KEM public key MUST be absent.
+                        if (spki.Algorithm.Parameters.HasValue)
+                        {
+                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                            spki.Algorithm.Encode(writer);
+                            throw Helpers.CreateAlgorithmUnknownException(writer);
+                        }
+
+                        return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, spki.SubjectPublicKey.Span);
+                    }
+                }
+            }
+        }
+
+        /// <inheritdoc cref="ImportSubjectPublicKeyInfo(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />
+        /// </exception>
+        public static MLKem ImportSubjectPublicKeyInfo(byte[] source)
+        {
+            ThrowIfNull(source);
+            return ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(source));
+        }
+
+        /// <summary>
         ///  Releases all resources used by the <see cref="MLKem"/> class.
         /// </summary>
         public void Dispose()
@@ -750,6 +868,40 @@ namespace System.Security.Cryptography
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
+        }
+
+        private AsnWriter ExportSubjectPublicKeyInfoCore()
+        {
+            int encapsulationKeySize = Algorithm.EncapsulationKeySizeInBytes;
+            byte[] encapsulationKeyBuffer = CryptoPool.Rent(encapsulationKeySize);
+            Memory<byte> encapsulationKey = encapsulationKeyBuffer.AsMemory(0, encapsulationKeySize);
+
+            try
+            {
+                ExportEncapsulationKeyCore(encapsulationKey.Span);
+
+                SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
+                {
+                    Algorithm = new AlgorithmIdentifierAsn
+                    {
+                        Algorithm = Algorithm.Oid,
+                        Parameters = default(ReadOnlyMemory<byte>?),
+                    },
+                    SubjectPublicKey = encapsulationKey,
+                };
+
+                // The ASN.1 overhead of a SubjectPublicKeyInfo encoding an encapsulation key is 22 bytes.
+                // Round it off to 32. This checked operation should never throw because the inputs are not
+                // user provided.
+                int capacity = checked(32 + encapsulationKeySize);
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
+                spki.Encode(writer);
+                return writer;
+            }
+            finally
+            {
+                CryptoPool.Return(encapsulationKeyBuffer, clearSize: 0); // SPKI is public info, skip clear.
+            }
         }
 
         private protected static void ThrowIfNotSupported()
