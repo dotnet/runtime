@@ -16,6 +16,7 @@ import logging
 import os
 import subprocess
 import sys
+import time
 
 def main(argv):
     logging.basicConfig(format="[%(asctime)s] %(message)s", datefmt="%H:%M:%S")
@@ -106,9 +107,11 @@ def main(argv):
 
             bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/main/" + bootstrapFilename
             bootstrapPath = os.path.join(temp_location, bootstrapFilename)
-            if not jitutil.download_one_url(bootstrapUrl, bootstrapPath) or not os.path.isfile(bootstrapPath):
-                logging.error("Did not download bootstrap!")
-                return -1
+            # if not jitutil.download_one_url(bootstrapUrl, bootstrapPath) or not os.path.isfile(bootstrapPath):
+            #     logging.error("Did not download bootstrap!")
+            #     return -1
+            print(temp_location)
+            time.sleep(60)
 
             if platform == 'windows':
                 # Need to ensure we have Windows line endings on the downloaded script file,
