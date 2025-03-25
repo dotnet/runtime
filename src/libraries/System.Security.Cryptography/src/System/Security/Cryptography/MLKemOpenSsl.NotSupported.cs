@@ -22,6 +22,12 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
+        public SafeEvpPKeyHandle DuplicateKeyHandle()
+        {
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
             Debug.Fail("Caller should have checked platform availability.");

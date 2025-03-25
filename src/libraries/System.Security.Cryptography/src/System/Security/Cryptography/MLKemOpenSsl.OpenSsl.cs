@@ -57,6 +57,17 @@ namespace System.Security.Cryptography
             _key = upRefHandle;
         }
 
+        /// <summary>
+        /// Creates a duplicate handle.
+        /// </summary>
+        /// <returns>A SafeHandle for the ML-KEM key in OpenSSL.</returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public SafeEvpPKeyHandle DuplicateKeyHandle()
+        {
+            ThrowIfDisposed();
+            return _key.DuplicateHandle();
+        }
+
         private static MLKemAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle)
         {
             ArgumentNullException.ThrowIfNull(pkeyHandle);
