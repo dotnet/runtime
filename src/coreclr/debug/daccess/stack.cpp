@@ -10,7 +10,9 @@
 //*****************************************************************************
 
 #include "stdafx.h"
-
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
 //----------------------------------------------------------------------------
 //
 // ClrDataStackWalk.
@@ -465,10 +467,24 @@ ClrDataStackWalk::Init(void)
         return E_FAIL;
     }
 
+#ifdef FEATURE_INTERPRETER
+    PTR_Frame pTopFrame = m_thread->GetFrame();
+#endif // FEATURE_INTERPRETER
+
     if (m_thread->GetFilterContext())
     {
         m_context = *m_thread->GetFilterContext();
     }
+#ifdef FEATURE_INTERPRETER
+    else if ((pTopFrame != FRAME_TOP) && (pTopFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterEntryFrame))
+    {
+        InterpreterEntryFrame *pEntryFrame = dac_cast<PTR_InterpreterEntryFrame>(pTopFrame);
+        PTR_InterpMethodContextFrame pTOSInterpMethodContextFrame = pEntryFrame->GetInterpMethodTopmostContextFrame();
+        SetIP(&m_context, (TADDR)pTOSInterpMethodContextFrame->ip);
+        SetSP(&m_context, dac_cast<TADDR>(pTOSInterpMethodContextFrame));
+        m_context.ContextFlags = CONTEXT_CONTROL;
+    }
+#endif // FEATURE_INTERPRETER
     else
     {
         DacGetThreadContext(m_thread, &m_context);
