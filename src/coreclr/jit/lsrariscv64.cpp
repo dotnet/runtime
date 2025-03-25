@@ -679,7 +679,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 DWORD scale;
                 BitScanForward(&scale, lea->gtScale);
-                if (scale > 3)
+                if (scale > 0 && !emitter::canUseShxaddIns(scale, compiler))
                     buildInternalIntRegisterDefForNode(tree); // scaleTempReg
             }
 

@@ -5526,8 +5526,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // dest = base + (index << scale)
         if (node->gtElemSize <= 64)
         {
-            // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
-            if ((scale > 0) && (scale <= 3))
+            if (emitter::canUseShxaddIns(scale, compiler))
             {
                 bool useUnsignedShxaddVariant = false;
                 if (index->OperGet() == GT_CAST && ((index->gtFlags & GTF_CAST_DEFER_TO_SHXADD_UW) != 0))
@@ -6583,13 +6582,13 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         assert(isPow2(lea->gtScale));
         BitScanForward(&scale, lea->gtScale);
         assert(scale <= 4);
-        regNumber scaleTempReg = (scale > 3) ? internalRegisters.Extract(lea) : REG_NA;
+        regNumber scaleTempReg =
+            (scale > 0 && !emitter::canUseShxaddIns(scale, compiler)) ? internalRegisters.Extract(lea) : REG_NA;
 
         if (offset == 0)
         {
             // Then compute target reg from [base + index*scale]
-            // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
-            if ((scale > 0) && (scale <= 3))
+            if (emitter::canUseShxaddIns(scale, compiler))
             {
                 instruction shxaddIns = emitter::getShxaddVariant(scale, useUnsignedShxaddVariant);
                 emit->emitIns_R_R_R(shxaddIns, size, lea->GetRegNum(), index->GetRegNum(), memBase->GetRegNum());
@@ -6607,8 +6606,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 
             if (!useLargeOffsetSeq && emitter::isValidSimm12(offset))
             {
-                // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
-                if ((scale > 0) && (scale <= 3))
+                if (emitter::canUseShxaddIns(scale, compiler))
                 {
                     instruction shxaddIns = emitter::getShxaddVariant(scale, useUnsignedShxaddVariant);
                     emit->emitIns_R_R_R(shxaddIns, size, lea->GetRegNum(), index->GetRegNum(), memBase->GetRegNum());
@@ -6630,8 +6628,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
                 // compute the large offset.
                 instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
 
-                // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
-                if ((scale > 0) && (scale <= 3))
+                if (emitter::canUseShxaddIns(scale, compiler))
                 {
                     instruction shxaddIns = emitter::getShxaddVariant(scale, useUnsignedShxaddVariant);
                     emit->emitIns_R_R_R(shxaddIns, EA_PTRSIZE, tmpReg, index->GetRegNum(), tmpReg);

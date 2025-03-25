@@ -403,6 +403,9 @@ private:
     void     LowerPutArgStk(GenTreePutArgStk* putArgStk);
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
+#ifdef TARGET_RISCV64
+    bool TrySetDeferCastToShxaddUwFlag(GenTreeAddrMode* addr);
+#endif // TARGET_RISCV64
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 

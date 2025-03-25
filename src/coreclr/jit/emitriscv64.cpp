@@ -4651,8 +4651,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
                 if (isValidSimm12(offset))
                 {
-                    // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
-                    if (0 < lsl && lsl <= 3)
+                    if (canUseShxaddIns(lsl, emitComp))
                     {
                         instruction shxaddIns = getShxaddVariant(lsl, useUnsignedShxaddVariant);
                         emitIns_R_R_R(shxaddIns, addType, tmpReg, index->GetRegNum(), memBase->GetRegNum());
@@ -4687,8 +4686,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     noway_assert(tmpReg != index->GetRegNum());
 
                     // Then load/store dataReg from/to [tmpReg + index*scale]
-                    // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
-                    if (0 < lsl && lsl <= 3)
+                    if (canUseShxaddIns(lsl, emitComp))
                     {
                         instruction shxaddIns = getShxaddVariant(lsl, useUnsignedShxaddVariant);
                         emitIns_R_R_R(shxaddIns, addType, tmpReg, index->GetRegNum(), tmpReg);
@@ -4768,8 +4766,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                         NO_WAY("illegal ins within emitInsLoadStoreOp!");
                 }
 
-                // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
-                if (0 < lsl && lsl <= 3)
+                if (canUseShxaddIns(lsl, emitComp))
                 {
                     instruction shxaddIns = getShxaddVariant(lsl, useUnsignedShxaddVariant);
                     emitIns_R_R_R(shxaddIns, addType, codeGen->rsGetRsvdReg(), index->GetRegNum(),
@@ -4845,6 +4842,11 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         // Then load/store dataReg from/to [addrReg]
         emitIns_R_R_I(ins, attr, dataReg, addr->GetRegNum(), 0);
     }
+}
+
+bool emitter::canUseShxaddIns(int scale, Compiler* comp)
+{
+    return comp->compOpportunisticallyDependsOn(InstructionSet_Zba) && jitIsScaleIndexShift(scale);
 }
 
 // The callee must call genConsumeReg() for any non-contained srcs

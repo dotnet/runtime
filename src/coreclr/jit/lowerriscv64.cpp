@@ -219,6 +219,7 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 
 //------------------------------------------------------------------------
 // LowerStoreIndir: Determine addressing mode for an indirection, and whether operands are contained.
+// Additionally, try to defer cast to SH(X)ADD instruction.
 //
 // Arguments:
 //    node       - The indirect store node (GT_STORE_IND) of interest
@@ -230,20 +231,33 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     ContainCheckStoreIndir(node);
 
-    if (!node->Addr()->isContained() || !node->Addr()->OperIsAddrMode())
+    if (node->Addr()->isContained() && node->Addr()->OperIsAddrMode())
     {
-        return node->gtNext;
+        GenTreeAddrMode* addr = node->Addr()->AsAddrMode();
+        TrySetDeferCastToShxaddUwFlag(addr);
     }
-    GenTreeAddrMode* addr = node->Addr()->AsAddrMode();
 
-    // Defer cast to SH(X)ADD_UW instruction.
-    // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
+    return node->gtNext;
+}
+
+//------------------------------------------------------------------------
+// TrySetDeferCastToShxaddUwFlag: Sets GTF_CAST_DEFER_TO_SHXADD_UW flag on the index of the address node if the address
+// can utilize SH(X)ADD instruction and the index is a zero extend GT_CAST node.
+//
+// Arguments:
+//    addr       - The address node (GT_LEA)
+//
+// Return Value:
+//    True if flag successfully set, false otherwise.
+//
+bool Lowering::TrySetDeferCastToShxaddUwFlag(GenTreeAddrMode* addr)
+{
     if (addr->HasIndex() && addr->Index()->OperGet() == GT_CAST && isPow2(addr->gtScale))
     {
         DWORD lsl;
         BitScanForward(&lsl, addr->gtScale);
 
-        if (lsl > 0 && lsl <= 3)
+        if (emitter::canUseShxaddIns(lsl, comp))
         {
             GenTree* const     index        = addr->Index();
             GenTreeCast* const cast         = index->AsCast();
@@ -260,11 +274,11 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
             if (isZeroExtendIntToLong)
             {
                 index->gtFlags |= GTF_CAST_DEFER_TO_SHXADD_UW;
+                return true;
             }
         }
     }
-
-    return node->gtNext;
+    return false;
 }
 
 //------------------------------------------------------------------------

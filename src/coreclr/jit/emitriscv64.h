@@ -267,6 +267,8 @@ inline static bool isFloatReg(regNumber reg)
     return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
 }
 
+static bool canUseShxaddIns(int scale, Compiler* comp);
+
 /************************************************************************/
 /*                   Output target-independent instructions             */
 /************************************************************************/

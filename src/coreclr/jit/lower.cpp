@@ -10043,38 +10043,10 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 #endif
 
 #ifdef TARGET_RISCV64
-    if (!ind->Addr()->isContained() || !ind->Addr()->OperIsAddrMode())
+    if (ind->Addr()->isContained() && ind->Addr()->OperIsAddrMode())
     {
-        return next;
-    }
-    GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
-
-    // Defer cast to SH(X)ADD_UW instruction.
-    // TODO: Use emitComp->compOpportunisticallyDependsOn(InstructionSet_Zba)
-    if (addr->HasIndex() && addr->Index()->OperGet() == GT_CAST && isPow2(addr->gtScale))
-    {
-        DWORD lsl;
-        BitScanForward(&lsl, addr->gtScale);
-
-        if (lsl > 0 && lsl <= 3)
-        {
-            GenTree* const     index        = addr->Index();
-            GenTreeCast* const cast         = index->AsCast();
-            GenTree* const     src          = cast->CastOp();
-            const var_types    srcType      = genActualType(src);
-            const bool         srcUnsigned  = cast->IsUnsigned();
-            const unsigned     srcSize      = genTypeSize(srcType);
-            const var_types    castType     = cast->gtCastType;
-            const bool         castUnsigned = varTypeIsUnsigned(castType);
-            const unsigned     castSize     = genTypeSize(castType);
-
-            bool isZeroExtendIntToLong = srcSize == 4 && castSize > 4 && (castUnsigned || srcUnsigned);
-
-            if (isZeroExtendIntToLong)
-            {
-                index->gtFlags |= GTF_CAST_DEFER_TO_SHXADD_UW;
-            }
-        }
+        GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
+        TrySetDeferCastToShxaddUwFlag(addr);
     }
 #endif
 
