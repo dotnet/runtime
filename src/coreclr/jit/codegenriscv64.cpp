@@ -902,15 +902,15 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
                                                                                 // argument reg
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
 
-        // TODO-RISCV64: maybe optimize further
+        BasicBlock* loop = genCreateTempLabel();
+        genDefineTempLabel(loop);
+
         GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
         GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
         GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
 
-        // bne rCnt, zero, -4 * 4
-        ssize_t imm = -16;
         GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES);
-        GetEmitter()->emitIns_R_R_I(INS_bne, EA_PTRSIZE, rCnt, REG_R0, imm);
+        GetEmitter()->emitIns_J(INS_bnez, loop, rCnt);
 
         uCntBytes %= REGSIZE_BYTES * 2;
     }
