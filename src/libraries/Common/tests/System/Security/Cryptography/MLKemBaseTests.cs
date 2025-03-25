@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Tests
         public abstract MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source);
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void ExportPrivateSeed_Roundtrip(MLKemAlgorithm algorithm)
         {
             using MLKem kem = GenerateKey(algorithm);
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void ExportSubjectPublicKeyInfo_Allocated_Independent(MLKemAlgorithm algorithm)
         {
             using MLKem kem = ImportPrivateSeed(algorithm, MLKemTestData.IncrementalSeed);
@@ -108,7 +108,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void TryExportSubjectPublicKeyInfo_Buffers(MLKemAlgorithm algorithm)
         {
             using MLKem kem = ImportPrivateSeed(algorithm, MLKemTestData.IncrementalSeed);
@@ -267,7 +267,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void Encapsulate_NonDeterministic_Exact(MLKemAlgorithm algorithm)
         {
             using MLKem kem = GenerateKey(algorithm);
@@ -283,7 +283,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void Encapsulate_NonDeterministic_LargeEnough(MLKemAlgorithm algorithm)
         {
             using MLKem kem = GenerateKey(algorithm);
@@ -305,7 +305,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void Encapsulate_NonDeterministic_Allocating(MLKemAlgorithm algorithm)
         {
             using MLKem kem = GenerateKey(algorithm);
@@ -317,7 +317,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void Encapsulate_NonDeterministic_WriteSharedSecretReturnCiphertext(MLKemAlgorithm algorithm)
         {
             using MLKem kem = GenerateKey(algorithm);
@@ -331,7 +331,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void Encapsulate_Roundtrip_ExactBuffers(MLKemAlgorithm algorithm)
         {
             using MLKem kem1 = GenerateKey(algorithm);
@@ -347,7 +347,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void Encapsulate_Roundtrip_LargeBuffers(MLKemAlgorithm algorithm)
         {
             using MLKem kem1 = GenerateKey(algorithm);
@@ -370,7 +370,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void Encapsulate_Roundtrip_Allocating(MLKemAlgorithm algorithm)
         {
             using MLKem kem1 = GenerateKey(algorithm);
@@ -383,7 +383,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void Encapsulate_Roundtrip_WriteSharedSecretReturnCiphertext(MLKemAlgorithm algorithm)
         {
             using MLKem kem1 = GenerateKey(algorithm);
@@ -459,9 +459,6 @@ namespace System.Security.Cryptography.Tests
             kem.Decapsulate(ciphertext.Slice(0, ciphertextWritten), decapsulated);
             AssertExtensions.SequenceEqual(sharedSecret.Slice(0, sharedSecretWritten), decapsulated);
         }
-
-        public static IEnumerable<object[]> MLKemAlgorithms =>
-            [[MLKemAlgorithm.MLKem512], [MLKemAlgorithm.MLKem768], [MLKemAlgorithm.MLKem1024]];
 
         private static void Tamper(Span<byte> buffer)
         {

@@ -34,6 +34,8 @@
              Link="CommonTest\System\Security\Cryptography\MLKemBaseTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemKeyTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemKeyTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemNotSupportedTests.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemNotSupportedTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs"

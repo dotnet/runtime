@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Tests
     public static class MLKemKeyTests
     {
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public static void Generate_Roundtrip(MLKemAlgorithm algorithm)
         {
             using MLKem kem = MLKem.GenerateKey(algorithm);
@@ -72,34 +72,6 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        // [ConditionalTheory(nameof(IsNotSupported))]
-        // [MemberData(nameof(MLKemAlgorithms))]
-        // public static void Generate_NotSupported(MLKemAlgorithm algorithm)
-        // {
-        //     Assert.Throws<PlatformNotSupportedException>(() => MLKem.GenerateKey(algorithm));
-        // }
-
-        // [ConditionalTheory(nameof(IsNotSupported))]
-        // [MemberData(nameof(MLKemAlgorithms))]
-        // public static void ImportPrivateSeed_NotSupported(MLKemAlgorithm algorithm)
-        // {
-        //     Assert.Throws<PlatformNotSupportedException>(() =>
-        //         MLKem.ImportPrivateSeed(algorithm, new byte[algorithm.PrivateSeedSizeInBytes]));
-
-        //     Assert.Throws<PlatformNotSupportedException>(() =>
-        //         MLKem.ImportPrivateSeed(algorithm, new ReadOnlySpan<byte>(new byte[algorithm.PrivateSeedSizeInBytes])));
-        // }
-
-        // [ConditionalFact(nameof(IsNotSupported))]
-        // public static void ImportSubjectPublicKeyInfo_NotSupported()
-        // {
-        //     Assert.Throws<PlatformNotSupportedException>(() =>
-        //         MLKem.ImportSubjectPublicKeyInfo(Array.Empty<byte>()));
-
-        //     Assert.Throws<PlatformNotSupportedException>(() =>
-        //         MLKem.ImportSubjectPublicKeyInfo(ReadOnlySpan<byte>.Empty));
-        // }
-
         [Fact]
         public static void ImportEncapsulationKey_Array_Roundtrip()
         {
@@ -128,19 +100,6 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.SequenceEqual(encapsulationKeyBytes, exportedEncapsulationKey);
             }
         }
-
-        // [ConditionalTheory(nameof(IsNotSupported))]
-        // [MemberData(nameof(MLKemAlgorithms))]
-        // public static void ImportEncapsulationKey_NotSupported(MLKemAlgorithm algorithm)
-        // {
-        //     Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncapsulationKey(
-        //         algorithm,
-        //         new byte[algorithm.EncapsulationKeySizeInBytes]));
-
-        //     Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncapsulationKey(
-        //         algorithm,
-        //         new Span<byte>(new byte[algorithm.EncapsulationKeySizeInBytes])));
-        // }
 
         [Fact]
         public static void ImportDecapsulationKey_Span_Roundtrip()
@@ -177,32 +136,6 @@ namespace System.Security.Cryptography.Tests
 
                 byte[] exportedEncapsulationKey = kem.ExportEncapsulationKey();
                 AssertExtensions.SequenceEqual(encapsulationKeyBytes, exportedEncapsulationKey);
-            }
-        }
-
-        // [ConditionalTheory(nameof(IsNotSupported))]
-        // [MemberData(nameof(MLKemAlgorithms))]
-        // public static void ImportDecapsulationKey_NotSupported(MLKemAlgorithm algorithm)
-        // {
-        //     Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportDecapsulationKey(
-        //         algorithm,
-        //         new byte[algorithm.DecapsulationKeySizeInBytes]));
-
-        //     Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportDecapsulationKey(
-        //         algorithm,
-        //         new Span<byte>(new byte[algorithm.DecapsulationKeySizeInBytes])));
-        // }
-
-        public static IEnumerable<object[]> MLKemAlgorithms
-        {
-            get
-            {
-                return
-                [
-                    [ MLKemAlgorithm.MLKem512 ],
-                    [ MLKemAlgorithm.MLKem768 ],
-                    [ MLKemAlgorithm.MLKem1024 ],
-                ];
             }
         }
 

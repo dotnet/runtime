@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Test.Cryptography;
 
 namespace System.Security.Cryptography.Tests
 {
-    internal static class MLKemTestData
+    public static class MLKemTestData
     {
         internal static ReadOnlySpan<byte> IncrementalSeed =>
             [
@@ -13,6 +14,13 @@ namespace System.Security.Cryptography.Tests
                 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
                 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F,
                 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
+            ];
+
+        public static IEnumerable<object[]> MLKemAlgorithms =>
+            [
+                [MLKemAlgorithm.MLKem512],
+                [MLKemAlgorithm.MLKem768],
+                [MLKemAlgorithm.MLKem1024],
             ];
 
         internal static readonly byte[] IetfMlKem512Spki = Convert.FromBase64String(@"
