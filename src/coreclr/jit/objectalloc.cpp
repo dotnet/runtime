@@ -3415,7 +3415,8 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     newEnumeratorDsc->lvTracked  = 1;
     newEnumeratorDsc->lvVarIndex = (unsigned short)m_nextLocalIndex; // grr
     assert(newEnumeratorDsc->lvVarIndex < comp->lvaTrackedToVarNumSize);
-    comp->lvaTrackedToVarNum[newEnumeratorDsc->lvVarIndex] = newEnumeratorLocal;
+    comp->lvaTrackedToVarNum[newEnumeratorDsc->lvVarIndex]   = newEnumeratorLocal;
+    m_ConnGraphAdjacencyMatrix[newEnumeratorDsc->lvVarIndex] = BitVecOps::MakeEmpty(&m_bitVecTraits);
     m_nextLocalIndex++;
     assert(m_maxPseudoLocals > 0);
     assert(newEnumeratorDsc->lvVarIndex < m_firstPseudoLocalIndex);
