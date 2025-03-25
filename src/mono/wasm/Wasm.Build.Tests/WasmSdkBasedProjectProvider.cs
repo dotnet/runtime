@@ -28,7 +28,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     {
         var result = new SortedDictionary<string, bool>()
         {
-            { "dotnet.js", false },
+            { "dotnet.js", true },
             { "dotnet.js.map", false },
             { "dotnet.native.js", true },
             { "dotnet.native.js.symbols", false },
