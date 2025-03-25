@@ -172,9 +172,13 @@ jobs:
           demands: ImageOverride -equals 1es-ubuntu-2204
           os: linux
 
-        # OSX Public Build Pool (we don't have on-prem OSX BuildPool).
-        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(variables['System.TeamProject'], 'public')) }}:
+        # OSX x64 Public Build Pool (we don't have on-prem OSX BuildPool).
+        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'),  eq(parameters.archType, 'x64'), eq(variables['System.TeamProject'], 'public')) }}:
           vmImage: 'macos-13'
+
+        # OSX arm64 Public Build Pool (we don't have on-prem OSX BuildPool).
+        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(parameters.archType, 'arm64'), eq(variables['System.TeamProject'], 'public')) }}:
+          vmImage: 'macos-13-arm64'
 
         # Official build OSX pool
         ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), ne(variables['System.TeamProject'], 'public')) }}:
