@@ -550,7 +550,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
     }
 
-    // ContainCheckHWIntrinsic(node);
+    ContainCheckHWIntrinsic(node);
     return node->gtNext;
 }
 

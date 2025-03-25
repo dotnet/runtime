@@ -7933,6 +7933,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return false;
         }
 
+        case NI_System_Math_FusedMultiplyAdd:
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
             return true;
@@ -9389,7 +9390,16 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
 
                 swapOp1AndOp3 = true;
             }
-#endif // TARGET_ARM64
+#elif defined(TARGET_RISCV64)
+            if (compOpportunisticallyDependsOn(InstructionSet_RiscV64Base))
+            {
+                assert(varTypeIsFloating(callType));
+                GenTree* op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                return gtNewScalarHWIntrinsicNode(callType, op1, op2, op3, NI_RiscV64Base_FusedMultiplyAddScalar);
+            }
+#endif // TARGET_RISCV64
             break;
         }
 
