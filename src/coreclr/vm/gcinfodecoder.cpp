@@ -88,8 +88,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::SetIsInt
 // returns true if we decoded all that was asked;
 template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::PredecodeFatHeader(int remainingFlags)
 {
-    int numFlagBits = (m_Version == 1) ? GC_INFO_FLAGS_BIT_SIZE_VERSION_1 : GC_INFO_FLAGS_BIT_SIZE;
-    m_headerFlags = (GcInfoHeaderFlags)m_Reader.Read(numFlagBits);
+    m_headerFlags = (GcInfoHeaderFlags)m_Reader.Read(GC_INFO_FLAGS_BIT_SIZE);
 
 #ifdef DECODE_OLD_FORMATS
     if (Version() < 4)
