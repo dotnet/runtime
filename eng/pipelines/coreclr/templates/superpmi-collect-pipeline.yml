@@ -1,10 +1,5 @@
-# This job definition automates the SuperPMI collection process.
-
-parameters:
-  # `productionPipeline` is `true` for the main pipeline, `false` for the test pipeline.
-  - name: productionPipeline
-    type: string
-    default: true
+# This template definition automates the SuperPMI collection process,
+# and is used by the SuperPMI pipeline definitions.
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -160,7 +155,6 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: pmi
             collectionName: libraries
-            collectionUpload: ${{ parameters.productionPipeline }}
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -181,7 +175,6 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: crossgen2
             collectionName: libraries
-            collectionUpload: ${{ parameters.productionPipeline }}
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -202,7 +195,6 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: run
             collectionName: realworld
-            collectionUpload: ${{ parameters.productionPipeline }}
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -223,7 +215,6 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: run
             collectionName: benchmarks
-            collectionUpload: ${{ parameters.productionPipeline }}
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -244,7 +235,6 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: run_pgo
             collectionName: benchmarks
-            collectionUpload: ${{ parameters.productionPipeline }}
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -265,7 +255,6 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: run_pgo_optrepeat
             collectionName: benchmarks
-            collectionUpload: ${{ parameters.productionPipeline }}
 
       #
       # Collection of coreclr test run
@@ -288,7 +277,6 @@ extends:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
             SuperPmiCollect: true
-            SuperPmiCollectionUpload: ${{ parameters.productionPipeline }}
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -307,7 +295,6 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: nativeaot
             collectionName: smoke_tests
-            collectionUpload: ${{ parameters.productionPipeline }}
 
       #
       # Collection of libraries test run: normal
@@ -336,7 +323,6 @@ extends:
             - normal
             SuperPmiCollect: true
             SuperPmiCollectionName: libraries_tests
-            SuperPmiCollectionUpload: ${{ parameters.productionPipeline }}
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildConfigOverride: checked
@@ -368,7 +354,6 @@ extends:
             - no_tiered_compilation
             SuperPmiCollect: true
             SuperPmiCollectionName: libraries_tests_no_tiered_compilation
-            SuperPmiCollectionUpload: ${{ parameters.productionPipeline }}
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildConfigOverride: checked

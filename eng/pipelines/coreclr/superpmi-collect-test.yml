@@ -6,6 +6,4 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 extends:
-  template:  /eng/pipelines/coreclr/templates/superpmi-collect-pipeline.yml
-  parameters:
-    productionPipeline: false
+  template: /eng/pipelines/coreclr/templates/superpmi-collect-pipeline.yml
