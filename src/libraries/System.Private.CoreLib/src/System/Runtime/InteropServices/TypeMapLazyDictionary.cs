@@ -1,0 +1,308 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
+using System.Text;
+
+namespace System.Runtime.InteropServices
+{
+    [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
+    internal sealed partial class TypeMapLazyDictionary
+    {
+        private readonly LazyExternalTypeDictionary _externalTypeMap;
+        private readonly LazyProxyTypeDictionary _proxyTypeMap;
+
+        private ref struct CallbackContext
+        {
+            [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
+            public CallbackContext()
+            {
+                ExternalTypeMap = new LazyExternalTypeDictionary();
+                ProxyTypeMap = new LazyProxyTypeDictionary();
+            }
+
+            public LazyExternalTypeDictionary ExternalTypeMap;
+            public LazyProxyTypeDictionary ProxyTypeMap;
+        }
+
+        // See assemblynative.hpp for native version.
+        public unsafe struct CallbackArg
+        {
+            public void* Utf8String1;
+            public void* Utf8String2;
+            public void* Utf8String3;
+            public int StringLen1;
+            public int StringLen2;
+            public int StringLen3;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
+        private static unsafe partial void ProcessAttributes(
+            QCallAssembly assembly,
+            QCallTypeHandle typeGroup,
+            delegate* unmanaged<CallbackContext*, CallbackArg*, void> newExternalTypeEntry,
+            delegate* unmanaged<CallbackContext*, CallbackArg*, void> newProxyTypeEntry,
+            CallbackContext* context);
+
+        private static TypeName CreateNewTypeName(string typeName, string assemblyName)
+        {
+            AssemblyNameInfo asmNameInfo = AssemblyNameInfo.Parse(assemblyName);
+            TypeName parsedType = new TypeName(typeName, asmNameInfo);
+            Debug.Assert(parsedType.AssemblyName != null);
+            return parsedType;
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void NewExternalTypeEntry(CallbackContext* context, CallbackArg* arg)
+        {
+            Debug.Assert(context != null);
+            Debug.Assert(arg != null);
+            Debug.Assert(arg->Utf8String1 != null);
+            Debug.Assert(arg->Utf8String2 != null);
+
+            string externalTypeName = new((sbyte*)arg->Utf8String1, 0, arg->StringLen1, Encoding.UTF8);
+            string targetType = new((sbyte*)arg->Utf8String2, 0, arg->StringLen2, Encoding.UTF8);
+
+            TypeName parsedTarget = TypeNameParser.Parse(targetType, throwOnError: true)!;
+            if (parsedTarget.AssemblyName is null)
+            {
+                // The assembly name is not included in the type name, so use the fallback assembly name.
+                Debug.Assert(arg->Utf8String3 != null);
+                string fallbackAssemblyName = new((sbyte*)arg->Utf8String3, 0, arg->StringLen3, Encoding.UTF8);
+                parsedTarget = CreateNewTypeName(targetType, fallbackAssemblyName);
+            }
+            context->ExternalTypeMap.Add(externalTypeName, parsedTarget);
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void NewProxyTypeEntry(CallbackContext* context, CallbackArg* arg)
+        {
+            Debug.Assert(context != null);
+            Debug.Assert(arg != null);
+            Debug.Assert(arg->Utf8String1 != null);
+            Debug.Assert(arg->Utf8String2 != null);
+
+            string sourceType = new((sbyte*)arg->Utf8String1, 0, arg->StringLen1, Encoding.UTF8);
+            string proxyType = new((sbyte*)arg->Utf8String2, 0, arg->StringLen2, Encoding.UTF8);
+
+            TypeName parsedSource = TypeNameParser.Parse(sourceType, throwOnError: true)!;
+            TypeName parsedProxy = TypeNameParser.Parse(proxyType, throwOnError: true)!;
+            if (parsedSource.AssemblyName is null || parsedProxy.AssemblyName is null)
+            {
+                // The assembly name is not included in the type name, so use the fallback assembly name.
+                Debug.Assert(arg->Utf8String3 != null);
+                string fallbackAssemblyName = new((sbyte*)arg->Utf8String3, 0, arg->StringLen3, Encoding.UTF8);
+                if (parsedSource.AssemblyName is null)
+                {
+                    parsedSource = CreateNewTypeName(sourceType, fallbackAssemblyName);
+                }
+                if (parsedProxy.AssemblyName is null)
+                {
+                    parsedProxy = CreateNewTypeName(proxyType, fallbackAssemblyName);
+                }
+            }
+            context->ProxyTypeMap.Add(parsedSource, parsedProxy);
+        }
+
+        public unsafe TypeMapLazyDictionary(RuntimeType typeGroup, RuntimeAssembly startingAssembly)
+        {
+            CallbackContext context = new();
+            ProcessAttributes(
+                new QCallAssembly(ref startingAssembly),
+                new QCallTypeHandle(ref typeGroup),
+                &NewExternalTypeEntry,
+                &NewProxyTypeEntry,
+                &context);
+
+            _externalTypeMap = context.ExternalTypeMap;
+            _proxyTypeMap = context.ProxyTypeMap;
+        }
+
+        public IReadOnlyDictionary<string, Type> GetExternalTypeMap() => _externalTypeMap;
+        public IReadOnlyDictionary<Type, Type> GetProxyTypeMap() => _proxyTypeMap;
+
+        private abstract class LazyTypeLoadDictionary<TKey> : IReadOnlyDictionary<TKey, Type> where TKey : notnull
+        {
+            protected abstract bool TryGetOrLoadType(TKey key, [NotNullWhen(true)] out Type? type);
+
+            public Type this[TKey key]
+            {
+                get
+                {
+                    if (!TryGetOrLoadType(key, out Type? type))
+                    {
+                        ThrowHelper.ThrowKeyNotFoundException(key);
+                    }
+
+                    return type;
+                }
+            }
+
+            public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out Type value) => TryGetOrLoadType(key, out value);
+
+            // Not supported to avoid exposing TypeMap entries in a manner that
+            // would violate invariants the Trimmer is attempting to enforce.
+            public IEnumerable<TKey> Keys => throw new NotSupportedException();
+            public IEnumerable<Type> Values => throw new NotSupportedException();
+            public int Count => throw new NotSupportedException();
+            public bool ContainsKey(TKey key) => throw new NotSupportedException();
+            public IEnumerator<KeyValuePair<TKey, Type>> GetEnumerator() => throw new NotSupportedException();
+            IEnumerator IEnumerable.GetEnumerator() => throw new NotSupportedException();
+        }
+
+        [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
+        private sealed class DelayedType
+        {
+            private Type? _type;
+            public DelayedType(string assemblyName, string typeName)
+            {
+                AssemblyName = assemblyName;
+                TypeName = typeName;
+                _type = null;
+            }
+
+            public string AssemblyName { get; }
+            public string TypeName { get; }
+
+            public Type GetOrLoadType()
+            {
+                if (_type is null)
+                {
+                    lock (this)
+                    {
+                        Assembly targetAssembly = Assembly.Load(AssemblyName);
+                        _type = targetAssembly.GetType(TypeName, throwOnError: true)!;
+                    }
+                }
+                return _type;
+            }
+
+            public bool RepresentsSameType(DelayedType other)
+            {
+                return string.Equals(AssemblyName, other.AssemblyName, StringComparison.Ordinal)
+                        && string.Equals(TypeName, other.TypeName, StringComparison.Ordinal);
+            }
+        }
+
+        [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
+        private sealed class LazyExternalTypeDictionary : LazyTypeLoadDictionary<string>
+        {
+            private static int ComputeHashCode(string key) => key.GetHashCode();
+
+            private readonly Dictionary<int, DelayedType> _lazyData = new();
+
+            protected override bool TryGetOrLoadType(string key, [NotNullWhen(true)] out Type? type)
+            {
+                int hash = ComputeHashCode(key);
+                if (!_lazyData.TryGetValue(hash, out DelayedType? value))
+                {
+                    type = null;
+                    return false;
+                }
+
+                type = value.GetOrLoadType();
+                return true;
+            }
+
+            public void Add(string key, TypeName parsedTarget)
+            {
+                int hash = ComputeHashCode(key);
+                if (_lazyData.ContainsKey(hash))
+                {
+                    ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                }
+
+                _lazyData.Add(hash, new DelayedType(parsedTarget.AssemblyName!.FullName, parsedTarget.FullName));
+            }
+        }
+
+        [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
+        private sealed class LazyProxyTypeDictionary : LazyTypeLoadDictionary<Type>
+        {
+            private static int ComputeHashCode(string key) => key.GetHashCode();
+
+            private sealed class DelayedTypeCollection
+            {
+                public required Tuple<DelayedType, DelayedType> First { get; init; }
+                public List<Tuple<DelayedType, DelayedType>>? Others { get; set; }
+
+                public bool Add(Tuple<DelayedType, DelayedType> newEntryMaybe)
+                {
+                    Others ??= new List<Tuple<DelayedType, DelayedType>>();
+                    foreach (Tuple<DelayedType, DelayedType> entry in Others)
+                    {
+                        if (entry.Item1.RepresentsSameType(newEntryMaybe.Item1))
+                        {
+                            return false;
+                        }
+                    }
+
+                    Others.Add(newEntryMaybe);
+                    return true;
+                }
+            }
+
+            private readonly Dictionary<int, DelayedTypeCollection> _lazyData = new();
+
+            protected override bool TryGetOrLoadType(Type key, [NotNullWhen(true)] out Type? type)
+            {
+                int hash = ComputeHashCode(key.FullName!);
+
+                if (_lazyData.TryGetValue(hash, out DelayedTypeCollection? value))
+                {
+                    // The common case, no duplicate mappings.
+                    if (value.First.Item1.GetOrLoadType() == key)
+                    {
+                        type = value.First.Item2.GetOrLoadType();
+                        return true;
+                    }
+                    else if (value.Others != null)
+                    {
+                        // Common case failed, look at alternate mappings.
+                        foreach (Tuple<DelayedType, DelayedType> entry in value.Others)
+                        {
+                            if (entry.Item1.GetOrLoadType() == key)
+                            {
+                                type = entry.Item2.GetOrLoadType();
+                                return true;
+                            }
+                        }
+                    }
+                }
+                type = null;
+                return false;
+            }
+
+            public void Add(TypeName parsedSource, TypeName parsedProxy)
+            {
+                // We don't use the assembly name for the hash code since it is not
+                // guaranteed to be the same for the same type due to type forwarding.
+                int hash = ComputeHashCode(parsedSource.FullName);
+
+                Tuple<DelayedType, DelayedType> newEntryMaybe = new(
+                    new(parsedSource.AssemblyName!.FullName, parsedSource.FullName),
+                    new(parsedProxy.AssemblyName!.FullName, parsedProxy.FullName));
+
+                if (!_lazyData.TryGetValue(hash, out DelayedTypeCollection? types))
+                {
+                    types = new DelayedTypeCollection() { First = newEntryMaybe };
+                    _lazyData.Add(hash, types);
+                }
+                else
+                {
+                    if (!types.Add(newEntryMaybe))
+                    {
+                        ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(parsedSource.AssemblyQualifiedName);
+                    }
+                }
+            }
+        }
+    }
+}

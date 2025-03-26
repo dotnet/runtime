@@ -266,6 +266,7 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyNative_GetAssemblyCount)
     DllImportEntry(AssemblyNative_GetEntryAssembly)
     DllImportEntry(AssemblyNative_GetExecutingAssembly)
+    DllImportEntry(TypeMapLazyDictionary_ProcessAttributes)
 #if defined(FEATURE_MULTICOREJIT)
     DllImportEntry(MultiCoreJIT_InternalSetProfileRoot)
     DllImportEntry(MultiCoreJIT_InternalStartProfile)

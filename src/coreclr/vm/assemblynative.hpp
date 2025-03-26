@@ -144,4 +144,22 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported();
 
 extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec);
 
+// See TypeMapLazyDictionary.cs for managed version.
+struct ProcessAttributesCallbackArg final
+{
+    char const* Utf8String1;
+    char const* Utf8String2;
+    char const* Utf8String3;
+    int32_t StringLen1;
+    int32_t StringLen2;
+    int32_t StringLen3;
+};
+
+extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
+    QCall::AssemblyHandle pAssembly,
+    QCall::TypeHandle pTypeGroup,
+    void (*newExternalTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
+    void (*newProxyTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
+    void* context);
+
 #endif
