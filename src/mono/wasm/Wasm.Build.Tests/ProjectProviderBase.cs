@@ -507,8 +507,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
         else
         {
-            bootJsonPath = Path.Combine(binFrameworkDir, options.BuildOptions.BootConfigFileName);
+            bootJsonPath = Path.Combine(binFrameworkDir, bootConfigFileName);
         }
+
+        return bootJsonPath;
     }
 
     public BootJsonData AssertBootJson(AssertBundleOptions options)
