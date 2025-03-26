@@ -36,26 +36,6 @@
     <PackageRID Condition="'$(PackageRID)' == ''">$(_packageOS)-$(TargetArchitecture)</PackageRID>
   </PropertyGroup>
 
-  <!-- ToolsRID is used for packages needed on the build host. -->
-  <PropertyGroup Label="CalculateToolsRID">
-    <!-- _portableHostOS is the portable rid-OS corresponding to the build host platform.
-
-         To determine _portableHostOS we use _hostOS, similar to how _portableOS is calculated from TargetOS.
-
-         When we're not cross-building we can detect linux flavors by looking at _portableOS
-         because the target platform and the build host platform are the same.
-         For cross-builds, we're currently unable to detect the flavors. -->
-    <_portableHostOS>$(_hostOS)</_portableHostOS>
-    <_portableHostOS Condition="'$(_portableHostOS)' == 'windows'">win</_portableHostOS>
-    <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_portableHostOS>
-
-    <!-- source-build sets ToolsOS to build with non-portable rid packages that were source-built previously. -->
-    <ToolsRID Condition="'$(ToolsOS)' != ''">$(ToolsOS)-$(_hostArch)</ToolsRID>
-    <ToolsRID Condition="'$(ToolsRID)' == ''">$(_portableHostOS)-$(_hostArch)</ToolsRID>
-
-    <!-- Microsoft.NET.Sdk.IL SDK defaults to the portable host rid. Match it to ToolsRID (for source-build). -->
-    <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
-  </PropertyGroup>
 
   <!-- OutputRID is used to name the target platform.
        For portable builds, OutputRID matches _portableOS.

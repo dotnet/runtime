@@ -14,7 +14,7 @@
         We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
       - Mono AOT LLVM builds only publish LLVM-specific packages always.
 
-      VMR jobs can control whether or not a vertical has EnableDefaultRidSpecificArtifacts set to true or false in DotNetBuild.props.
+      The VMR orchestrator will set EnableDefaultRidSpecificArtifacts=true as a global property based on its configuration.
 
       Packages that do not meet the above rules are added with Vertical visibility in the VMR and excluded in non-VMR builds.
     -->
@@ -27,7 +27,7 @@
 
     <!-- The final stage of the runtime official build should publish everything. -->
     <EnableDefaultRidSpecificArtifacts Condition="'$(DotNetFinalPublish)' != ''">false</EnableDefaultRidSpecificArtifacts>
-    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == ''">true</EnableDefaultRidSpecificArtifacts>
+    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildOrchestrator)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
 
     <UseDotNetCertificate>true</UseDotNetCertificate>
   </PropertyGroup>
