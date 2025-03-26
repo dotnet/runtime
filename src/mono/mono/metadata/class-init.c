@@ -2274,11 +2274,13 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 				
 				int idx = first_field_idx + i;
-				guint32 offset;
-				mono_metadata_field_info (klass->image, idx, &offset, NULL, NULL);
-				if (offset != (guint32)-1) {
-					mono_class_set_type_load_failure (klass, "Can't load type %s. A non-explicit type layout cannot have explicit field offsets.", m_class_get_name (klass));
-					break;
+				if (layout == TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT) {
+					guint32 offset;
+					mono_metadata_field_info (klass->image, idx, &offset, NULL, NULL);
+					if (offset != (guint32)-1) {
+						mono_class_set_type_load_failure (klass, "Can't load type %s. A non-explicit type layout cannot have explicit field offsets.", m_class_get_name (klass));
+						break;
+					}
 				}
 
 				ftype = mono_type_get_underlying_type (field->type);

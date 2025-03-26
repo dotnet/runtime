@@ -4299,25 +4299,6 @@ IS_VALUETYPE:
                 pwalk++;
             }
         }
-        else
-        {
-            ULONG fieldOffset = 0;
-            if (pInternalImport->GetFieldOffset(bmtMetaData->pFields[i], &fieldOffset) == S_OK)
-            {
-                // This is a field with an explicit offset.
-                // This is illegal in an auto-layout class.
-                LPCUTF8 szFieldName;
-                if (FAILED(pInternalImport->GetNameOfFieldDef(bmtMetaData->pFields[i], &szFieldName)))
-                {
-                    szFieldName = "Invalid FieldDef record";
-                }
-
-                GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport,
-                    GetCl(),
-                    szFieldName,
-                    IDS_CLASSLOAD_STRUCT_EXPLICIT_OFFSET);
-            }
-        }
 
         LPCSTR pszFieldName = NULL;
 #ifdef _DEBUG

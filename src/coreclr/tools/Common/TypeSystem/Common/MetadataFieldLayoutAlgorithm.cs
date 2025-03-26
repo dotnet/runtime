@@ -565,9 +565,6 @@ namespace Internal.TypeSystem
                 if (field.IsStatic)
                     continue;
 
-                if (field.MetadataOffset != LayoutInt.Indeterminate)
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
-
                 TypeDesc fieldType = field.FieldType;
 
                 if (IsByValueClass(fieldType))

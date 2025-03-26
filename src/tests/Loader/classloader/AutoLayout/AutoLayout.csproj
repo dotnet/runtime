@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <Compile Include="AutoLayout.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="AutoLayoutInvalidCSharp.ilproj" />
-  </ItemGroup>
-</Project>
