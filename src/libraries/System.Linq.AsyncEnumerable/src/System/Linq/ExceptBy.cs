@@ -44,35 +44,29 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> firstEnumerator = first.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> firstEnumerator = first.GetAsyncEnumerator(cancellationToken);
+
+                if (!await firstEnumerator.MoveNextAsync())
                 {
-                    if (!await firstEnumerator.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        yield break;
-                    }
-
-                    HashSet<TKey> set = new(comparer);
-
-                    await foreach (TKey key in second.WithCancellation(cancellationToken).ConfigureAwait(false))
-                    {
-                        set.Add(key);
-                    }
-
-                    do
-                    {
-                        TSource firstElement = firstEnumerator.Current;
-                        if (set.Add(keySelector(firstElement)))
-                        {
-                            yield return firstElement;
-                        }
-                    }
-                    while (await firstEnumerator.MoveNextAsync().ConfigureAwait(false));
+                    yield break;
                 }
-                finally
+
+                HashSet<TKey> set = new(comparer);
+
+                await foreach (TKey key in second.WithCancellation(cancellationToken))
                 {
-                    await firstEnumerator.DisposeAsync().ConfigureAwait(false);
+                    set.Add(key);
                 }
+
+                do
+                {
+                    TSource firstElement = firstEnumerator.Current;
+                    if (set.Add(keySelector(firstElement)))
+                    {
+                        yield return firstElement;
+                    }
+                }
+                while (await firstEnumerator.MoveNextAsync());
             }
         }
 
@@ -110,35 +104,29 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> firstEnumerator = first.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> firstEnumerator = first.GetAsyncEnumerator(cancellationToken);
+
+                if (!await firstEnumerator.MoveNextAsync())
                 {
-                    if (!await firstEnumerator.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        yield break;
-                    }
-
-                    HashSet<TKey> set = new(comparer);
-
-                    await foreach (TKey key in second.WithCancellation(cancellationToken).ConfigureAwait(false))
-                    {
-                        set.Add(key);
-                    }
-
-                    do
-                    {
-                        TSource firstElement = firstEnumerator.Current;
-                        if (set.Add(await keySelector(firstElement, cancellationToken).ConfigureAwait(false)))
-                        {
-                            yield return firstElement;
-                        }
-                    }
-                    while (await firstEnumerator.MoveNextAsync().ConfigureAwait(false));
+                    yield break;
                 }
-                finally
+
+                HashSet<TKey> set = new(comparer);
+
+                await foreach (TKey key in second.WithCancellation(cancellationToken))
                 {
-                    await firstEnumerator.DisposeAsync().ConfigureAwait(false);
+                    set.Add(key);
                 }
+
+                do
+                {
+                    TSource firstElement = firstEnumerator.Current;
+                    if (set.Add(await keySelector(firstElement, cancellationToken)))
+                    {
+                        yield return firstElement;
+                    }
+                }
+                while (await firstEnumerator.MoveNextAsync());
             }
         }
     }
