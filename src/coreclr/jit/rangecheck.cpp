@@ -1017,10 +1017,20 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         JITDUMP("Tightening pRange: [%s] with assertedRange: [%s] into ", pRange->ToString(comp),
                 assertedRange.ToString(comp));
 
-        pRange->lLimit = tightenLimit(assertedRange.lLimit, pRange->lLimit, preferredBoundVN, true);
-        pRange->uLimit = tightenLimit(assertedRange.uLimit, pRange->uLimit, preferredBoundVN, false);
+        Range copy  = *pRange;
+        copy.lLimit = tightenLimit(assertedRange.lLimit, copy.lLimit, preferredBoundVN, true);
+        copy.uLimit = tightenLimit(assertedRange.uLimit, copy.uLimit, preferredBoundVN, false);
 
-        JITDUMP("[%s]\n", pRange->ToString(comp));
+        JITDUMP("[%s]\n", copy.ToString(comp));
+        if (copy.IsValid())
+        {
+            *pRange = copy;
+        }
+        else
+        {
+            JITDUMP("invalid range after tightening\n");
+            return;
+        }
     }
 }
 
