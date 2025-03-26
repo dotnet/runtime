@@ -78,7 +78,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public void Dispose()
         {
-            if (_disposed)
+            if (!_disposed)
             {
                 Dispose(true);
                 _disposed = true;
