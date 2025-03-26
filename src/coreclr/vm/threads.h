@@ -111,6 +111,7 @@
 #ifndef __threads_h__
 #define __threads_h__
 
+#include <exception>
 #include "vars.hpp"
 #include "util.hpp"
 #include "eventstore.hpp"
@@ -5233,7 +5234,8 @@ public:
     ~CoopTransitionHolder()
     {
         WRAPPER_NO_CONTRACT;
-        if (m_pFrame != NULL)
+        _ASSERTE_MSG(m_pFrame == nullptr || std::uncaught_exception(), "Early return from JIT/EE interface method");
+        if (m_pFrame != nullptr)
             COMPlusCooperativeTransitionHandler(m_pFrame);
     }
 
@@ -5242,7 +5244,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         // FRAME_TOP and NULL must be distinct values.
         // static_assert_no_msg(FRAME_TOP_VALUE != NULL);
-        m_pFrame = NULL;
+        m_pFrame = nullptr;
     }
 };
 

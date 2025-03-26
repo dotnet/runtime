@@ -5874,9 +5874,10 @@ bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
         {
             // GCStress processing can disturb last error, so preserve it.
             BOOL res;
-            BEGIN_PRESERVE_LAST_ERROR;
-            res = OnGcCoverageInterrupt(pContext);
-            END_PRESERVE_LAST_ERROR;
+            {
+                PreserveLastErrorHolder preserveLastError;
+                res = OnGcCoverageInterrupt(pContext);
+            }
             if (res)
             {
                 return true;
