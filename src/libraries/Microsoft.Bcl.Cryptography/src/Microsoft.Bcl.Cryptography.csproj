@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;netstandard2.1;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for some cryptographic primitives for .NET Framework and .NET Standard.</PackageDescription>
@@ -72,6 +72,13 @@
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PbeEncryptionAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\PbeEncryptionAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PbeParameters.cs"
+             Link="Common\System\Security\Cryptography\PbeParameters.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildX509Loader)' == 'true' or '$(BuildPqc)' == 'true' ">
@@ -284,15 +291,11 @@
              Link="Common\System\Security\Cryptography\IncrementalHash.netfx.cs" />
 
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
-    <Compile Include="System\Security\Cryptography\PbeEncryptionAlgorithm.netstandard.cs" />
-    <Compile Include="System\Security\Cryptography\PbeParameters.netstandard.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.netfx.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.ProcessedPkcs12.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildX509Loader)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
-    <Compile Include="System\Security\Cryptography\PbeEncryptionAlgorithm.netstandard.cs" />
-    <Compile Include="System\Security\Cryptography\PbeParameters.netstandard.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.netstandard.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.ProcessedPkcs12.cs" />
   </ItemGroup>
