@@ -154,9 +154,6 @@ internal sealed class FrameIterator
                     return frameType;
                 }
             }
-            catch (InvalidOperationException)
-            {
-            }
         }
 
         return FrameType.Unknown;
