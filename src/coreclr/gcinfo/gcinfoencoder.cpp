@@ -2541,6 +2541,21 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
 
 }
 
+inline void BitStreamWriter::AllocMemoryBlock()
+{
+    // FIXME: Causes linker error in interpreter because IS_ALIGNED calls _ASSERTE
+    // GCINFO_ASSERT( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
+    MemoryBlock* pMemBlock = m_MemoryBlocks.AppendNew(m_pAllocator, m_MemoryBlockSize);
+
+    m_pCurrentSlot = pMemBlock->Contents;
+    m_OutOfBlockSlot = m_pCurrentSlot + m_MemoryBlockSize / sizeof( size_t );
+
+#ifdef _DEBUG
+       m_MemoryBlocksCount++;
+#endif
+}
+
+
 void BitStreamWriter::Dispose()
 {
     m_MemoryBlocks.Dispose(m_pAllocator);

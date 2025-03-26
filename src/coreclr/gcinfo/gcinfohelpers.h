@@ -35,4 +35,7 @@ static bool __gcinfo_assert_hack_global = false;
 #define LL_FATALERROR   1
 #define LL_ALWAYS   	0		// impossible to turn off (log level never negative)
 
+// Needed by bitposition.h
+#define _BITPOSITION_ASSERTE(x) GCINFO_ASSERT(x)
+
 #endif // _GCINFOHELPERS_H_
