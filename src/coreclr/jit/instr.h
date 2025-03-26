@@ -221,6 +221,12 @@ enum insFlags : uint64_t
     // APX: REX2 prefix:
     Encoding_REX2  = 1ULL << 44,
 
+    // APX: EVEX.ND:
+    INS_Flags_Has_NDD  = 1ULL << 45,    
+    
+    // APX: EVEX.NF:
+    INS_Flags_Has_NF  = 1ULL << 46,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
@@ -259,6 +265,27 @@ enum insOpts: unsigned
     INS_OPTS_EVEX_z_MASK = 0x20,    // mask for EVEX.z related features
 
     INS_OPTS_EVEX_em_zero = 1 << 5, // Embedded mask merges with zero
+
+    // One-bit:  0b0100_0000
+    INS_OPTS_EVEX_nd_MASK = 0x40,   // mask for APX-EVEX.nd related features
+
+    INS_OPTS_EVEX_nd = 1 << 6,      // NDD form for legacy instructions
+
+    // One-bit:  0b1000_0000
+    INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
+
+    INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
+    INS_OPTS_EVEX_dfv_byte_offset = 8, // save the bit offset for first dfv flag pos
+
+    INS_OPTS_EVEX_dfv_cf = 1 << 8,
+    INS_OPTS_EVEX_dfv_zf = 1 << 9,
+    INS_OPTS_EVEX_dfv_sf = 1 << 10,
+    INS_OPTS_EVEX_dfv_of = 1 << 11,
+
+    INS_OPTS_EVEX_dfv_MASK = 0xF00,
+
+    INS_OPTS_EVEX_NoApxPromotion = 1 << 12,    // Do not promote to APX-EVEX
+
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -505,7 +532,6 @@ enum insOpts : unsigned
     INS_OPTS_JALR,   // see ::emitIns_J_R().
     INS_OPTS_J,      // see ::emitIns_J().
     INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
-    INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
 };

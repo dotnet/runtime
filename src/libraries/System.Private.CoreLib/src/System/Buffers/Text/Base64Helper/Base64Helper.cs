@@ -159,27 +159,6 @@ namespace System.Buffers.Text
             // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
             return zeroIsAscii != Vector512<ushort>.Zero;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
-        {
-            if (Ssse3.IsSupported)
-            {
-                return Ssse3.Shuffle(vector, indices);
-            }
-
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                return AdvSimd.Arm64.VectorTableLookup(vector, indices);
-            }
-
-            if (PackedSimd.IsSupported)
-            {
-                return PackedSimd.Swizzle(vector, indices);
-            }
-
-            return Vector128.Shuffle(vector, indices);
-        }
 #endif
 
         [DoesNotReturn]

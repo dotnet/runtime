@@ -19,13 +19,15 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                TSource[] array = await source.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+                TSource[] array = await source.ToArrayAsync(cancellationToken);
                 for (int i = array.Length - 1; i >= 0; i--)
                 {
                     yield return array[i];

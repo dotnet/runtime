@@ -374,6 +374,11 @@ namespace System.Threading
         internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
 #endif
 
+#if !MONO
+        [Intrinsic]
+        internal static void FastPollGC() => FastPollGC();
+#endif
+
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
         public string? Name

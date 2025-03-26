@@ -26,13 +26,15 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<object?> source,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (object? item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (object? item in source.WithCancellation(cancellationToken))
                 {
                     if (item is TResult target)
                     {

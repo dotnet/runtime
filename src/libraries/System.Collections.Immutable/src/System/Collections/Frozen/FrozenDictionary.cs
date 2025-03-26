@@ -122,6 +122,13 @@ namespace System.Collections.Frozen
             // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
             if (typeof(TKey).IsValueType && ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
             {
+#if NET
+                if (DenseIntegralFrozenDictionary.CreateIfValid(source) is { } denseResult)
+                {
+                    return denseResult;
+                }
+#endif
+
                 if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
                 {
                     // If the key is a something we know we can efficiently compare, use a specialized implementation

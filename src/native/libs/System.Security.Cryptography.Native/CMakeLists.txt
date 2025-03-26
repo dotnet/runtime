@@ -21,6 +21,7 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 set(NATIVECRYPTO_SOURCES
     apibridge.c
     apibridge_30.c
+    memory_debug.c
     openssl.c
     pal_asn1.c
     pal_bignum.c
@@ -32,6 +33,7 @@ set(NATIVECRYPTO_SOURCES
     pal_evp.c
     pal_evp_cipher.c
     pal_evp_kdf.c
+    pal_evp_kem.c
     pal_evp_mac.c
     pal_evp_pkey.c
     pal_evp_pkey_dsa.c

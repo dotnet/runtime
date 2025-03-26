@@ -744,7 +744,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     fastPathBb->inheritWeight(prevBb);
 
     // fallback will just execute first time
-    fallbackBb->bbSetRunRarely();
+    fallbackBb->inheritWeightPercentage(tlsRootNullCondBB, 0);
 
     fgRedirectTargetEdge(prevBb, tlsRootNullCondBB);
 
@@ -789,7 +789,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 //
 bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    assert(!opts.IsReadyToRun());
+    assert(!IsAot());
 
     BasicBlock* block = *pBlock;
 
@@ -801,7 +801,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     {
         return false;
     }
-    assert(!opts.IsReadyToRun());
 
     if (TargetOS::IsUnix)
     {
@@ -1180,7 +1179,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         fastPathBb->inheritWeight(prevBb);
 
         // fallback will just execute first time
-        fallbackBb->bbSetRunRarely();
+        fallbackBb->inheritWeightPercentage(prevBb, 0);
 
         // All blocks are expected to be in the same EH region
         assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1545,7 +1544,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     block->inheritWeight(prevBb);
     isInitedBb->inheritWeight(prevBb);
-    helperCallBb->bbSetRunRarely();
+    helperCallBb->inheritWeightPercentage(isInitedBb, 0);
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1605,7 +1604,7 @@ PhaseStatus Compiler::fgVNBasedIntrinsicExpansion()
 //
 bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0)
+    if (!call->IsSpecialIntrinsic())
     {
         return false;
     }
@@ -1847,6 +1846,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     //
     // Redirect prevBb to lengthCheckBb
     fgRedirectTargetEdge(prevBb, lengthCheckBb);
+    lengthCheckBb->inheritWeight(prevBb);
     assert(prevBb->JumpsToNext());
 
     {
@@ -1859,6 +1859,11 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         // review: we assume length check always succeeds??
         trueEdge->setLikelihood(1.0);
         falseEdge->setLikelihood(0.0);
+
+        if (lengthCheckBb->hasProfileWeight())
+        {
+            fastpathBb->setBBProfileWeight(falseEdge->getLikelyWeight());
+        }
     }
 
     {
@@ -1869,10 +1874,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     }
 
     //
-    // Re-distribute weights
+    // Ensure all flow out of prevBb converges into block
     //
-    lengthCheckBb->inheritWeight(prevBb);
-    fastpathBb->inheritWeight(lengthCheckBb);
     block->inheritWeight(prevBb);
 
     // All blocks are expected to be in the same EH region
@@ -2551,11 +2554,18 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         trueEdge->setLikelihood(nullcheckTrueLikelihood);
     }
 
+    // Set nullcheckBb's weight here, so we can propagate it to its successors below
+    nullcheckBb->inheritWeight(firstBb);
+
     if (typeCheckNotNeeded)
     {
         FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, nullcheckBb);
         nullcheckBb->SetFalseEdge(falseEdge);
         falseEdge->setLikelihood(nullcheckFalseLikelihood);
+        fallbackBb->inheritWeight(nullcheckBb);
+        fallbackBb->scaleBBWeight(nullcheckFalseLikelihood);
+        lastBb->inheritWeight(nullcheckBb);
+        lastBb->scaleBBWeight(nullcheckTrueLikelihood);
 
         typeCheckSucceedBb = nullptr;
     }
@@ -2631,7 +2641,6 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // The same goes for inherited weights -- the block where we test for B will have
     // the weight of A times the likelihood that A's test fails, etc.
     //
-    nullcheckBb->inheritWeight(firstBb);
     weight_t sumOfPreviousLikelihood = 0;
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
     {
@@ -2666,27 +2675,21 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         sumOfPreviousLikelihood += likelihood;
     }
 
-    if (fallbackBb->KindIs(BBJ_THROW))
+    fallbackBb->inheritWeight(lastTypeCheckBb);
+    fallbackBb->scaleBBWeight(lastTypeCheckBb->GetFalseEdge()->getLikelihood());
+
+    if (fallbackBb->KindIs(BBJ_ALWAYS))
     {
-        fallbackBb->bbSetRunRarely();
-    }
-    else
-    {
-        assert(fallbackBb->KindIs(BBJ_ALWAYS));
         FlowEdge* const newEdge = fgAddRefPred(lastBb, fallbackBb);
         fallbackBb->SetTargetEdge(newEdge);
-        fallbackBb->inheritWeight(lastTypeCheckBb);
-        weight_t lastTypeCheckFailedLikelihood = lastTypeCheckBb->GetFalseEdge()->getLikelihood();
-        fallbackBb->scaleBBWeight(lastTypeCheckFailedLikelihood);
     }
 
     if (!typeCheckNotNeeded)
     {
         typeCheckSucceedBb->inheritWeight(typeChecksBbs[0]);
         typeCheckSucceedBb->scaleBBWeight(sumOfPreviousLikelihood);
+        lastBb->inheritWeight(firstBb);
     }
-
-    lastBb->inheritWeight(firstBb);
 
     //
     // Validate EH regions
@@ -2723,6 +2726,14 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
                 block->setBBProfileWeight(block->computeIncomingWeight());
             }
         }
+    }
+
+    if (fallbackBb->KindIs(BBJ_THROW) && (fallbackBb->bbWeight != BB_ZERO_WEIGHT))
+    {
+        // This flow is disappearing.
+        JITDUMP("fgLateCastExpansionForCall: fallback " FMT_BB " throws and has flow into it. Data %s inconsistent.\n",
+                fallbackBb->bbNum, fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
@@ -2810,6 +2821,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     const CorInfoHelpFunc helper         = eeGetHelperNum(call->gtCallMethHnd);
     int                   lengthArgIndex = -1;
+    int                   typeArgIndex   = -1;
 
     switch (helper)
     {
@@ -2818,10 +2830,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         case CORINFO_HELP_NEWARR_1_OBJ:
         case CORINFO_HELP_NEWARR_1_ALIGN8:
             lengthArgIndex = 1;
-            break;
-
-        case CORINFO_HELP_READYTORUN_NEWARR_1:
-            lengthArgIndex = 0;
+            typeArgIndex   = 0;
             break;
 
         default:
@@ -2859,9 +2868,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Initialize the array method table pointer.
     //
-    CORINFO_CLASS_HANDLE arrayHnd = (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;
-
-    GenTree* const   mt      = gtNewIconEmbClsHndNode(arrayHnd);
+    GenTree* const   mt      = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
     GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
     Statement* const mtStmt  = fgNewStmtFromTree(mtStore);
 

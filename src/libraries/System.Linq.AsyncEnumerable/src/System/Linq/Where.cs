@@ -24,7 +24,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -55,7 +57,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -64,7 +68,7 @@ namespace System.Linq
             {
                 await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    if (await predicate(element, cancellationToken).ConfigureAwait(false))
+                    if (await predicate(element, cancellationToken))
                     {
                         yield return element;
                     }
@@ -92,7 +96,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -130,7 +136,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -140,7 +148,7 @@ namespace System.Linq
                 int index = -1;
                 await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    if (await predicate(element, checked(++index), cancellationToken).ConfigureAwait(false))
+                    if (await predicate(element, checked(++index), cancellationToken))
                     {
                         yield return element;
                     }

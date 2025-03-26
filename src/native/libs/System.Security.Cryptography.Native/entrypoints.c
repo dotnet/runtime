@@ -5,6 +5,7 @@
 
 // Include System.Security.Cryptography.Native headers
 #include "openssl.h"
+#include "memory_debug.h"
 #include "pal_asn1.h"
 #include "pal_bignum.h"
 #include "pal_bio.h"
@@ -15,6 +16,7 @@
 #include "pal_evp.h"
 #include "pal_evp_cipher.h"
 #include "pal_evp_kdf.h"
+#include "pal_evp_kem.h"
 #include "pal_evp_mac.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_dsa.h"
@@ -144,6 +146,13 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_KbkdfHmacOneShot)
     DllImportEntry(CryptoNative_EvpKdfFetch)
     DllImportEntry(CryptoNative_EvpKdfFree)
+    DllImportEntry(CryptoNative_EvpKemAvailable)
+    DllImportEntry(CryptoNative_EvpKemEncapsulate)
+    DllImportEntry(CryptoNative_EvpKemDecapsulate)
+    DllImportEntry(CryptoNative_EvpKemExportDecapsulationKey)
+    DllImportEntry(CryptoNative_EvpKemExportEncapsulationKey)
+    DllImportEntry(CryptoNative_EvpKemExportPrivateSeed)
+    DllImportEntry(CryptoNative_EvpKemGeneratePkey)
     DllImportEntry(CryptoNative_EvpMacCtxDup)
     DllImportEntry(CryptoNative_EvpMacCtxNew)
     DllImportEntry(CryptoNative_EvpMacCtxFree)
@@ -164,11 +173,15 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EvpPKeyCreateRsa)
     DllImportEntry(CryptoNative_EvpPKeyDeriveSecretAgreement)
     DllImportEntry(CryptoNative_EvpPkeyDestroy)
+    DllImportEntry(CryptoNative_EvpPKeyFromData)
     DllImportEntry(CryptoNative_EvpPkeyGetDsa)
     DllImportEntry(CryptoNative_EvpPkeyGetEcKey)
     DllImportEntry(CryptoNative_EvpPkeySetDsa)
     DllImportEntry(CryptoNative_EvpPkeySetEcKey)
     DllImportEntry(CryptoNative_EvpPKeyBits)
+    DllImportEntry(CryptoNative_EvpPKeyGetEcKeyParameters)
+    DllImportEntry(CryptoNative_EvpPKeyGetEcGroupNid)
+    DllImportEntry(CryptoNative_EvpPKeyGetEcCurveParameters)
     DllImportEntry(CryptoNative_EvpRC2Cbc)
     DllImportEntry(CryptoNative_EvpRC2Ecb)
     DllImportEntry(CryptoNative_EvpSha1)
@@ -188,6 +201,9 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_GetECKeyParameters)
     DllImportEntry(CryptoNative_GetMaxMdSize)
     DllImportEntry(CryptoNative_GetMemoryBioSize)
+    DllImportEntry(CryptoNative_GetMemoryUse)
+    DllImportEntry(CryptoNative_EnableMemoryTracking)
+    DllImportEntry(CryptoNative_ForEachTrackedAllocation)
     DllImportEntry(CryptoNative_GetObjectDefinitionByName)
     DllImportEntry(CryptoNative_GetOcspRequestDerSize)
     DllImportEntry(CryptoNative_GetPkcs7Certificates)

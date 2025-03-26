@@ -32,6 +32,15 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("func", () => AsyncEnumerable.AggregateBy(AsyncEnumerable.Empty<int>(), async (x, ct) => x, async (x, ct) => x, (Func<int, int, CancellationToken, ValueTask<int>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<int, int>>(), AsyncEnumerable.Empty<int>().AggregateBy(x => x, x => x, (x, y) => x + y));
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<int, int>>(), AsyncEnumerable.Empty<int>().AggregateBy(x => x, 42, (x, y) => x + y));
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<int, int>>(), AsyncEnumerable.Empty<int>().AggregateBy(async (x, ct) => x, async (x, ct) => x, async (x, y, ct) => x + y));
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<int, int>>(), AsyncEnumerable.Empty<int>().AggregateBy(async (x, ct) => x, 42, async (x, y, ct) => x + y));
+        }
+
         public static IEnumerable<object[]> VariousValues_MatchesEnumerable_String_MemberData()
         {
             yield return new object[] { new string[0] };
@@ -176,6 +185,33 @@ namespace System.Linq.Tests
                 Assert.Equal(2, seedSelectorCount);
                 Assert.Equal(4, funcCount);
             }
+        }
+
+        [Fact]
+        public async Task Callbacks_InvokedOnOriginalContext()
+        {
+            await Task.Run(async () =>
+            {
+                TrackingSynchronizationContext ctx = new();
+                SynchronizationContext.SetSynchronizationContext(ctx);
+
+                await ConsumeAsync(CreateSource(2, 4, 8, 16).Yield().AggregateBy(
+                    i =>
+                    {
+                        Assert.Same(ctx, SynchronizationContext.Current);
+                        return i;
+                    },
+                    i =>
+                    {
+                        Assert.Same(ctx, SynchronizationContext.Current);
+                        return i;
+                    },
+                    (x, y) =>
+                    {
+                        Assert.Same(ctx, SynchronizationContext.Current);
+                        return x + y;
+                    }));
+            });
         }
     }
 }

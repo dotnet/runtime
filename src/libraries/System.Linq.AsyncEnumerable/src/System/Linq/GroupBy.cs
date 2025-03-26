@@ -32,7 +32,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(keySelector);
 
-            return Impl(source, keySelector, comparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<IGrouping<TKey, TSource>>() :
+                Impl(source, keySelector, comparer, default);
 
             static async IAsyncEnumerable<IGrouping<TKey, TSource>> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -40,7 +42,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -67,7 +69,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(keySelector);
 
-            return Impl(source, keySelector, comparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<IGrouping<TKey, TSource>>() :
+                Impl(source, keySelector, comparer, default);
 
             static async IAsyncEnumerable<IGrouping<TKey, TSource>> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -75,7 +79,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -111,7 +115,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
             ThrowHelper.ThrowIfNull(elementSelector);
 
-            return Impl(source, keySelector, elementSelector, comparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<IGrouping<TKey, TElement>>() :
+                Impl(source, keySelector, elementSelector, comparer, default);
 
             static async IAsyncEnumerable<IGrouping<TKey, TElement>> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -120,7 +126,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -156,7 +162,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
             ThrowHelper.ThrowIfNull(elementSelector);
 
-            return Impl(source, keySelector, elementSelector, comparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<IGrouping<TKey, TElement>>() :
+                Impl(source, keySelector, elementSelector, comparer, default);
 
             static async IAsyncEnumerable<IGrouping<TKey, TElement>> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -165,7 +173,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -200,7 +208,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(source, keySelector, resultSelector, comparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, keySelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -209,10 +219,12 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                var lookup = (AsyncLookup<TKey, TSource>)await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false);
-                foreach (TResult item in lookup.ApplyResultSelector(resultSelector))
+                if (await ToLookupAsync(source, keySelector, comparer, cancellationToken) is AsyncLookup<TKey, TSource> lookup)
                 {
-                    yield return item;
+                    foreach (TResult item in lookup.ApplyResultSelector(resultSelector))
+                    {
+                        yield return item;
+                    }
                 }
             }
         }
@@ -245,7 +257,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(source, keySelector, resultSelector, comparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, keySelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -254,10 +268,12 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                var lookup = (AsyncLookup<TKey, TSource>)await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false);
-                await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken).ConfigureAwait(false))
+                if (await ToLookupAsync(source, keySelector, comparer, cancellationToken) is AsyncLookup<TKey, TSource> lookup)
                 {
-                    yield return item;
+                    await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken))
+                    {
+                        yield return item;
+                    }
                 }
             }
         }
@@ -294,7 +310,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(elementSelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(source, keySelector, elementSelector, resultSelector, comparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, keySelector, elementSelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -304,10 +322,12 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                var lookup = (AsyncLookup<TKey, TElement>)await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false);
-                foreach (TResult item in lookup.ApplyResultSelector(resultSelector))
+                if (await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken) is AsyncLookup<TKey, TElement> lookup)
                 {
-                    yield return item;
+                    foreach (TResult item in lookup.ApplyResultSelector(resultSelector))
+                    {
+                        yield return item;
+                    }
                 }
             }
         }
@@ -344,7 +364,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(elementSelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(source, keySelector, elementSelector, resultSelector, comparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, keySelector, elementSelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -354,10 +376,12 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                var lookup = (AsyncLookup<TKey, TElement>)await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false);
-                await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken).ConfigureAwait(false))
+                if (await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken) is AsyncLookup<TKey, TElement> lookup)
                 {
-                    yield return item;
+                    await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken))
+                    {
+                        yield return item;
+                    }
                 }
             }
         }
