@@ -557,7 +557,6 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Initialization.cs" />
     <Compile Include="DefaultECDsaProvider.Android.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Android.cs" />
-    <Compile Include="MLKemOpenSslTests.NotSupported.cs" />
     <Compile Include="X509Certificates\X509StoreMutableTests.Android.cs" />
     <Compile Include="X509Certificates\RevocationTests\DynamicRevocationTests.Android.cs" />
   </ItemGroup>

@@ -2,27 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Versioning;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-    [UnsupportedOSPlatform("android")]
-    [UnsupportedOSPlatform("browser")]
-    [UnsupportedOSPlatform("ios")]
-    [UnsupportedOSPlatform("osx")]
-    [UnsupportedOSPlatform("tvos")]
-    [UnsupportedOSPlatform("windows")]
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-    public sealed class MLKemOpenSsl : MLKem
+    public sealed partial class MLKemOpenSsl : MLKem
     {
-        public MLKemOpenSsl(SafeEvpPKeyHandle pkeyHandle) : base(MLKemAlgorithm.MLKem512)
+#pragma warning disable CA1822 // Member does not access instance data and can be marked static
+        private partial void Initialize(SafeEvpPKeyHandle upRefHandle)
+#pragma warning restore CA1822
         {
             throw new PlatformNotSupportedException();
         }
 
-        public SafeEvpPKeyHandle DuplicateKeyHandle()
+        private static partial MLKemAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public partial SafeEvpPKeyHandle DuplicateKeyHandle()
+        {
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
+        protected override void Dispose(bool disposing)
         {
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();

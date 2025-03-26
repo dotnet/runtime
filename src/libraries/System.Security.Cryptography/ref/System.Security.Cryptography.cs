@@ -1854,16 +1854,17 @@ namespace System.Security.Cryptography
         public static bool operator !=(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
     public sealed partial class MLKemOpenSsl : System.Security.Cryptography.MLKem
     {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public MLKemOpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) : base (default(System.Security.Cryptography.MLKemAlgorithm)) { }
         protected override void DecapsulateCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected override void Dispose(bool disposing) { }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateKeyHandle() { throw null; }
         protected override void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
         protected override void ExportDecapsulationKeyCore(System.Span<byte> destination) { }

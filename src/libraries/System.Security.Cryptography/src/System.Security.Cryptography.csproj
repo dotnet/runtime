@@ -564,6 +564,7 @@
     <Compile Include="System\Security\Cryptography\MaskGenerationMethod.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\MD5CryptoServiceProvider.cs" />
+    <Compile Include="System\Security\Cryptography\MLKemOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\Oid.cs" />
     <Compile Include="System\Security\Cryptography\OidCollection.cs" />
     <Compile Include="System\Security\Cryptography\OidEnumerator.cs" />
