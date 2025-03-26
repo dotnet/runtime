@@ -14,6 +14,7 @@ namespace System
 
         internal static object? ComWeakRefToObject(IntPtr pComWeakRef, object? context)
         {
+#if FEATURE_COMINTEROP
             if (context is null)
             {
                 // This wrapper was not created by ComWrappers, so we try to rehydrate using built-in COM.
@@ -21,6 +22,7 @@ namespace System
                 ComWeakRefToObject(pComWeakRef, ObjectHandleOnStack.Create(ref retRcw));
                 return retRcw;
             }
+#endif // FEATURE_COMINTEROP
 
             return ComWeakRefToComWrappersObject(pComWeakRef, context);
         }
@@ -56,12 +58,14 @@ namespace System
                 return IntPtr.Zero;
             }
 
+#if FEATURE_COMINTEROP
             if (target is __ComObject)
             {
                 // This object is using built-in COM, so use built-in COM to create the weak reference.
                 context = null;
                 return ObjectToComWeakRef(ObjectHandleOnStack.Create(ref target));
             }
+#endif // FEATURE_COMINTEROP
 
             return ComWrappersObjectToComWeakRef(target, out context);
         }
