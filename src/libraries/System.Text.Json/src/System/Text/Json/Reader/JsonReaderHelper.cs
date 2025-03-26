@@ -79,6 +79,32 @@ namespace System.Text.Json
         // Otherwise, return false.
         public static bool IsHexDigit(byte nextByte) => HexConverter.IsHexChar(nextByte);
 
+        public static bool TryGetValue(ReadOnlySpan<byte> segment, bool isEscaped, out DateTime value)
+        {
+            if (!JsonHelpers.IsValidDateTimeOffsetParseLength(segment.Length))
+            {
+                value = default;
+                return false;
+            }
+
+            // Segment needs to be unescaped
+            if (isEscaped)
+            {
+                return TryGetEscapedDateTime(segment, out value);
+            }
+
+            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+
+            if (JsonHelpers.TryParseAsISO(segment, out DateTime tmp))
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
         public static bool TryGetEscapedDateTime(ReadOnlySpan<byte> source, out DateTime value)
         {
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
@@ -92,6 +118,32 @@ namespace System.Text.Json
 
             if (JsonHelpers.IsValidUnescapedDateTimeOffsetParseLength(sourceUnescaped.Length)
                 && JsonHelpers.TryParseAsISO(sourceUnescaped, out DateTime tmp))
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        public static bool TryGetValue(ReadOnlySpan<byte> segment, bool isEscaped, out DateTimeOffset value)
+        {
+            if (!JsonHelpers.IsValidDateTimeOffsetParseLength(segment.Length))
+            {
+                value = default;
+                return false;
+            }
+
+            // Segment needs to be unescaped
+            if (isEscaped)
+            {
+                return TryGetEscapedDateTimeOffset(segment, out value);
+            }
+
+            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+
+            if (JsonHelpers.TryParseAsISO(segment, out DateTimeOffset tmp))
             {
                 value = tmp;
                 return true;

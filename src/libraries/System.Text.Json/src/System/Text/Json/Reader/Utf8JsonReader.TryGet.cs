@@ -1260,30 +1260,10 @@ namespace System.Text.Json
             }
             else
             {
-                if (!JsonHelpers.IsInRangeInclusive(ValueSpan.Length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength))
-                {
-                    value = default;
-                    return false;
-                }
-
                 span = ValueSpan;
             }
 
-            if (ValueIsEscaped)
-            {
-                return JsonReaderHelper.TryGetEscapedDateTime(span, out value);
-            }
-
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (JsonHelpers.TryParseAsISO(span, out DateTime tmp))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(span, ValueIsEscaped, out value);
         }
 
         /// <summary>
@@ -1325,30 +1305,10 @@ namespace System.Text.Json
             }
             else
             {
-                if (!JsonHelpers.IsInRangeInclusive(ValueSpan.Length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength))
-                {
-                    value = default;
-                    return false;
-                }
-
                 span = ValueSpan;
             }
 
-            if (ValueIsEscaped)
-            {
-                return JsonReaderHelper.TryGetEscapedDateTimeOffset(span, out value);
-            }
-
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (JsonHelpers.TryParseAsISO(span, out DateTimeOffset tmp))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(span, ValueIsEscaped, out value);
         }
 
         /// <summary>
