@@ -5,6 +5,7 @@
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep-rt.h>
 #include <eventpipe/ep.h>
+#include <eventpipe/ep-sample-profiler.h>
 
 #include <eglib/gmodule.h>
 #include <mono/metadata/profiler.h>
@@ -1359,7 +1360,8 @@ sample_current_thread_stack_trace ()
 	data->stack_walk_data.runtime_invoke_frame = false;
 	ep_stack_contents_reset (&data->stack_contents);
 
-	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, &ctx, MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
+	// because this is single threaded, MONO_UNWIND_NONE is safe to use
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, &ctx, MONO_UNWIND_NONE, &stack_walk_data);
 	if (data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && (data->stack_walk_data.safe_point_frame || data->stack_walk_data.runtime_invoke_frame)) {
 		data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
 	}
@@ -1395,12 +1397,8 @@ static double profiler_now ()
 #error "Not implemented"
 #endif
 
-static bool should_record_sample ()
+static void update_sample_frequency ()
 {
-	if (sample_skip_counter < skips_per_period) {
-		return FALSE;
-	}
-
 	// timer resolution in non-isolated contexts: 100 microseconds (decimal number)
 	double now = profiler_now ();
 	double ms_since_last_sample = now - last_sample_time;
@@ -1416,53 +1414,36 @@ static bool should_record_sample ()
 	}
 	last_sample_time = now;
 	sample_skip_counter = 0;
-
-	return TRUE;
 }
 
 static void
 method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
 	sample_skip_counter++;
-	if (should_record_sample ()) {
-		sample_current_thread_stack_trace ();
-	}
+	if (G_LIKELY(sample_skip_counter < skips_per_period))
+		return;
+	update_sample_frequency ();
+	sample_current_thread_stack_trace ();
 }
 
 static void
 method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
 	sample_skip_counter++;
-	if (should_record_sample ()) {
-		sample_current_thread_stack_trace ();
-	}
-}
-
-static void
-method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
-{
-	sample_skip_counter++;
-	if (should_record_sample ()) {
-		sample_current_thread_stack_trace ();
-	}
+	if (G_LIKELY(sample_skip_counter < skips_per_period))
+		return;
+	update_sample_frequency ();
+	sample_current_thread_stack_trace ();
 }
 
 static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 {
 	sample_skip_counter++;
-	if (should_record_sample ()) {
-		sample_current_thread_stack_trace ();
-	}
-}
-
-static void
-tail_call (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
-{
-	sample_skip_counter++;
-	if (should_record_sample ()) {
-		sample_current_thread_stack_trace ();
-	}
+	if (G_LIKELY(sample_skip_counter < skips_per_period))
+		return;
+	update_sample_frequency ();
+	sample_current_thread_stack_trace ();
 }
 
 #ifdef HOST_BROWSER
@@ -1477,8 +1458,6 @@ method_filter (MonoProfiler *prof, MonoMethod *method)
 
 	return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
 			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
-			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
-			MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL |
 			MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
 }
 
@@ -1506,7 +1485,7 @@ ep_rt_mono_sampling_provider_component_fini (void)
 void
 ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
-	desired_sample_interval_ms = 5;// ms
+	desired_sample_interval_ms = ((double)ep_sample_profiler_get_sampling_rate ()) * 1000000.0;
 
 	current_sampling_event = sampling_event;
 	current_sampling_thread = ep_rt_thread_get_handle ();
@@ -1519,8 +1498,6 @@ ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 
 	mono_profiler_set_method_samplepoint_callback (_ep_rt_mono_sampling_profiler_provider, method_samplepoint);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, method_enter);
-	mono_profiler_set_method_leave_callback (_ep_rt_mono_sampling_profiler_provider, method_leave);
-	mono_profiler_set_method_tail_call_callback (_ep_rt_mono_sampling_profiler_provider, tail_call);
 	mono_profiler_set_method_exception_leave_callback (_ep_rt_mono_sampling_profiler_provider, method_exc_leave);
 }
 
@@ -1530,8 +1507,6 @@ ep_rt_mono_sample_profiler_disabled (void)
 	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
 	mono_profiler_set_method_samplepoint_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
-	mono_profiler_set_method_leave_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
-	mono_profiler_set_method_tail_call_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
 	mono_profiler_set_method_exception_leave_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
 }
 
