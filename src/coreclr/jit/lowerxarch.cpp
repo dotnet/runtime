@@ -338,7 +338,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 }
 
 #ifdef TARGET_AMD64
-
 //------------------------------------------------------------------------
 // TryLowerAndOrToCCMP : Lower AND/OR of two conditions into test + CCMP + SETCC nodes.
 //
@@ -378,11 +377,6 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     // For the other operand we can allow more arbitrary operations that set
     // the condition flags; the final transformation into the flags def is done
     // by TryLowerConditionToFlagsNode.
-    //
-    //
-    // On X86, a FP compare is implemented as a fallthrough, which requires two flag checks; hence,
-    // we cannot simply get a single output condition to feed into a ccmp. Might be possible to chain
-    // this, but skipping those cases for now
     GenCondition cond1;
     if (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1()) && IsInvariantInRange(op2, tree) &&
         TryLowerConditionToFlagsNode(tree, op1, &cond1, false))
@@ -485,29 +479,6 @@ insCflags Lowering::TruthifyingFlags(GenCondition condition)
             return INS_FLAGS_NONE;
     }
 }
-
-//------------------------------------------------------------------------
-// ContainCheckConditionalCompare: determine whether the source of a compare within a compare chain should be contained.
-//
-// Arguments:
-//    node - pointer to the node
-//
-void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
-{
-    GenTree* op2 = cmp->gtOp2;
-
-    if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
-    {
-        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
-
-        // TODO-XArch-APX: make this check work
-        // if (emitter::emitIns_valid_imm_for_ccmp(immVal))
-        //{
-        MakeSrcContained(cmp, op2);
-        //}
-    }
-}
-
 #endif // TARGET_AMD64
 
 //------------------------------------------------------------------------

@@ -9012,7 +9012,7 @@ insOpts CodeGen::OptsFromCFlags(insCflags flags)
 //    None.
 //
 // Notes:
-//    This function generates code for a conditional compare operation. On X86, it supports integer 
+//    This function generates code for a conditional compare operation. On X86,
 //    comparisons using the extended EVEX encoding and ccmp instruction.
 void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
 {

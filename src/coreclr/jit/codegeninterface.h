@@ -871,5 +871,4 @@ private:
 };
 #endif // !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
-
 #endif // _CODEGEN_INTERFACE_H_

@@ -859,7 +859,7 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
  *                          and LinearCodeGen will be responsible to generate downstream).
  *
  *     This way there are no implicit temporaries.
- 
+
  * b) For small-sized switches, we will actually morph them into a series of conditionals of the form
  *     if (case falls into the default){ goto jumpTable[size]; // last entry in the jump table is the default case }
  *     (For the default case conditional, we'll be constructing the exact same code as the jump table case one).
@@ -4528,6 +4528,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
 
         *cond = condition->AsCC()->gtCondition;
 
+#ifdef TARGET_XARCH
         if (!allowMultipleFlagsChecks)
         {
             const GenConditionDesc& desc = GenConditionDesc::Get(*cond);
@@ -4537,6 +4538,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                 return false;
             }
         }
+#endif
 
         LIR::Range range = BlockRange().Remove(flagsDef, condition->gtPrev);
         BlockRange().InsertBefore(parent, std::move(range));
@@ -11078,6 +11080,29 @@ bool Lowering::TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode)
 
     return true;
 }
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+//------------------------------------------------------------------------
+// ContainCheckConditionalCompare: determine whether the source of a compare within a compare chain should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
+{
+    GenTree* op2 = cmp->gtOp2;
+
+    if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+    {
+        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
+
+        if (emitter::emitIns_valid_imm_for_ccmp(immVal))
+        {
+            MakeSrcContained(cmp, op2);
+        }
+    }
+}
+#endif
 
 #if defined(FEATURE_HW_INTRINSICS)
 //----------------------------------------------------------------------------------------------
