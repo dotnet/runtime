@@ -2,6 +2,42 @@
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Queryable.MaxBy``2(System.Linq.IQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}},System.Collections.Generic.IComparer{``0})</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Queryable.MinBy``2(System.Linq.IQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}},System.Collections.Generic.IComparer{``0})</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Queryable.MaxBy``2(System.Linq.IQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}},System.Collections.Generic.IComparer{``0})</Target>
+    <Left>net9.0/System.Core.dll</Left>
+    <Right>net10.0/System.Core.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Queryable.MinBy``2(System.Linq.IQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}},System.Collections.Generic.IComparer{``0})</Target>
+    <Left>net9.0/System.Core.dll</Left>
+    <Right>net10.0/System.Core.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Queryable.MaxBy``2(System.Linq.IQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}},System.Collections.Generic.IComparer{``0})</Target>
+    <Left>net9.0/System.Linq.Queryable.dll</Left>
+    <Right>net10.0/System.Linq.Queryable.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Linq.Queryable.MinBy``2(System.Linq.IQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}},System.Collections.Generic.IComparer{``0})</Target>
+    <Left>net9.0/System.Linq.Queryable.dll</Left>
+    <Right>net10.0/System.Linq.Queryable.dll</Right>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Delegate.#ctor(System.Type,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net9.0/mscorlib.dll</Left>

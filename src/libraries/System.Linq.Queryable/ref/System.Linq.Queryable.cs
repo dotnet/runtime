@@ -128,12 +128,12 @@ namespace System.Linq
         public static long LongCount<TSource>(this System.Linq.IQueryable<TSource> source) { throw null; }
         public static long LongCount<TSource>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, bool>> predicate) { throw null; }
         public static TSource? MaxBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector) { throw null; }
-        public static TSource? MaxBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Collections.Generic.IComparer<TSource>? comparer) { throw null; }
+        public static TSource? MaxBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Collections.Generic.IComparer<TKey>? comparer) { throw null; }
         public static TSource? Max<TSource>(this System.Linq.IQueryable<TSource> source) { throw null; }
         public static TSource? Max<TSource>(this System.Linq.IQueryable<TSource> source, System.Collections.Generic.IComparer<TSource>? comparer) { throw null; }
         public static TResult? Max<TSource, TResult>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TResult>> selector) { throw null; }
         public static TSource? MinBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector) { throw null; }
-        public static TSource? MinBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Collections.Generic.IComparer<TSource>? comparer) { throw null; }
+        public static TSource? MinBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Collections.Generic.IComparer<TKey>? comparer) { throw null; }
         public static TSource? Min<TSource>(this System.Linq.IQueryable<TSource> source) { throw null; }
         public static TSource? Min<TSource>(this System.Linq.IQueryable<TSource> source, System.Collections.Generic.IComparer<TSource>? comparer) { throw null; }
         public static TResult? Min<TSource, TResult>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TResult>> selector) { throw null; }

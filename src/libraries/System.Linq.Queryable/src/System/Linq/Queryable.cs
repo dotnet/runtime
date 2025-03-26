@@ -1785,7 +1785,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TKey}" /> interface.</exception>
         [DynamicDependency("MinBy`2", typeof(Enumerable))]
-        public static TSource? MinBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TSource>? comparer)
+        public static TSource? MinBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(keySelector);
@@ -1793,10 +1793,10 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TSource>, TSource?>(MinBy).Method,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, TSource?>(MinBy).Method,
                     source.Expression,
                     Expression.Quote(keySelector),
-                    Expression.Constant(comparer, typeof(IComparer<TSource>))));
+                    Expression.Constant(comparer, typeof(IComparer<TKey>))));
         }
 
         [DynamicDependency("Max`1", typeof(Enumerable))]
@@ -1875,7 +1875,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TKey}" /> interface.</exception>
         [DynamicDependency("MaxBy`2", typeof(Enumerable))]
-        public static TSource? MaxBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TSource>? comparer)
+        public static TSource? MaxBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(keySelector);
@@ -1883,10 +1883,10 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TSource>, TSource?>(MaxBy).Method,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, TSource?>(MaxBy).Method,
                     source.Expression,
                     Expression.Quote(keySelector),
-                    Expression.Constant(comparer, typeof(IComparer<TSource>))));
+                    Expression.Constant(comparer, typeof(IComparer<TKey>))));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]
