@@ -7753,6 +7753,7 @@ VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int
 // from the target context without removing the frames from the stack. Those frames
 // can contain e.g. a C++ exception object that needs to be preserved during the exception
 // propagation.
+#if !defined(HOST_X86)
 EXTERN_C EXCEPTION_DISPOSITION
 PropagateForeignExceptionThroughNativeFrames(IN     PEXCEPTION_RECORD   pExceptionRecord,
                     IN     PVOID               pEstablisherFrame,
@@ -7770,6 +7771,19 @@ PropagateForeignExceptionThroughNativeFrames(IN     PEXCEPTION_RECORD   pExcepti
     RaiseException(pExceptionToPropagateRecord->ExceptionCode, pExceptionToPropagateRecord->ExceptionFlags, pExceptionToPropagateRecord->NumberParameters, pExceptionToPropagateRecord->ExceptionInformation);
     UNREACHABLE();
 }
+#else
+EXTERN_C void __fastcall
+PropagateForeignExceptionThroughNativeFrames(IN PEXCEPTION_RECORD pExceptionToPropagateRecord)
+{
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_THROWS;
+
+    GCX_PREEMP_NO_DTOR();
+    RaiseException(pExceptionToPropagateRecord->ExceptionCode, pExceptionToPropagateRecord->ExceptionFlags, pExceptionToPropagateRecord->NumberParameters, pExceptionToPropagateRecord->ExceptionInformation);
+    UNREACHABLE();
+}
+#endif
 
 #endif // HOST_WINDOWS
 
@@ -7944,9 +7958,17 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #endif // HOST_UNIX
         // Throw exception from the caller context
 
-#if defined(HOST_WINDOWS) && !defined(HOST_X86)
+#if defined(HOST_WINDOWS)
         if ((pLongJmpBuf == NULL) && !IsComPlusException(&lastExceptionRecord) && MapWin32FaultToCOMPlusException(&lastExceptionRecord) == kSEHException)
         {
+#if defined(HOST_X86)
+            PopSEHRecords((void *)GetSP(pvRegDisplay->pCurrentContext));
+            SetSP(pvRegDisplay->pCurrentContext, (TADDR)GetCurrentSP());
+            SetIP(pvRegDisplay->pCurrentContext, (PCODE)PropagateForeignExceptionThroughNativeFrames);
+            pvRegDisplay->pCurrentContext->Ecx = (size_t)&lastExceptionRecord;
+            ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
+            UNREACHABLE();
+#else
             // Propagate an external exception to the caller context. This is done in a special way, since the native stack
             // frames below the caller context may contain e.g. C++ exception object that the external exception references.
             // So we rely on a special mode of the RtlRestoreContext with EXCEPTION_RECORD passed in with STATUS_UNWIND_CONSOLIDATE
@@ -7957,6 +7979,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
             exceptionRecord.ExceptionInformation[0] = (ULONG_PTR)PropagateForeignExceptionThroughNativeFrames;
             exceptionRecord.ExceptionInformation[1] = (ULONG_PTR)&lastExceptionRecord;
             RtlRestoreContext(pvRegDisplay->pCurrentContext, &exceptionRecord);
+#endif
         }
 #endif // HOST_WINDOWS && !HOST_X86
 
