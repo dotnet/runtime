@@ -591,6 +591,9 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             code |= ((imm >> 1) & 0x3ff) << 21;
             code |= ((imm >> 20) & 0x1) << 31;
             break;
+        case INS_bnez:
+        case INS_beqz:
+            return emitIns_R_R_I(ins, attr, reg, REG_ZERO, imm, opt);
         default:
             NO_WAY("illegal ins within emitIns_R_I!");
             break;
@@ -601,6 +604,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     id->idIns(ins);
     id->idReg1(reg);
     id->idAddr()->iiaSetInstrEncode(code);
+
     id->idCodeSize(4);
 
     appendToCurIG(id);
