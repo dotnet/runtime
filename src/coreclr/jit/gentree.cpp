@@ -8672,8 +8672,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
     {
         unsigned   lclNum = addr->AsLclFld()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        if ((varDsc->TypeGet() == type) &&
-            ((type != TYP_STRUCT) || ClassLayout::AreCompatible(layout, varDsc->GetLayout())))
+        if ((varDsc->TypeGet() == type) && ((type != TYP_STRUCT) || layout->CanAssignFrom(varDsc->GetLayout())))
         {
             return gtNewLclvNode(lclNum, type);
         }
@@ -8697,7 +8696,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
 GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags)
 {
     assert((indirFlags & GTF_IND_INVARIANT) == 0);
-    assert(value->IsInitVal() || ClassLayout::AreCompatible(layout, value->GetLayout(this)));
+    assert(value->IsInitVal() || layout->CanAssignFrom(value->GetLayout(this)));
 
     GenTreeBlk* store = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, addr, value, layout);
     store->gtFlags |= GTF_ASG;
@@ -8754,8 +8753,7 @@ GenTree* Compiler::gtNewStoreValueNode(
     {
         unsigned   lclNum = addr->AsLclFld()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        if ((varDsc->TypeGet() == type) &&
-            ((type != TYP_STRUCT) || ClassLayout::AreCompatible(layout, varDsc->GetLayout())))
+        if ((varDsc->TypeGet() == type) && ((type != TYP_STRUCT) || varDsc->GetLayout()->CanAssignFrom(layout)))
         {
             return gtNewStoreLclVarNode(lclNum, value);
         }
