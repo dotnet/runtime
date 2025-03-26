@@ -156,7 +156,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
     else
     {
-        // Ngen case - GS cookie value needs to be accessed through an indirection.
+        // AOT case - GS cookie value needs to be accessed through an indirection.
 
         pushedRegs = genPushRegs(regMaskGSCheck, &byrefPushedRegs, &norefPushedRegs);
 
@@ -9821,7 +9821,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // RCX = ProfilerMethHnd
     if (compiler->compProfilerMethHndIndirected)
     {
-        // Profiler hooks enabled during Ngen time.
+        // Profiler hooks enabled during AOT.
         // Profiler handle needs to be accessed through an indirection of a pointer.
         GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
@@ -9900,7 +9900,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // R14 = ProfilerMethHnd
     if (compiler->compProfilerMethHndIndirected)
     {
-        // Profiler hooks enabled during Ngen time.
+        // Profiler hooks enabled during AOT.
         // Profiler handle needs to be accessed through an indirection of a pointer.
         GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_PROFILER_ENTER_ARG_0,
                                    (ssize_t)compiler->compProfilerMethHnd);
@@ -9982,7 +9982,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     // RCX = ProfilerMethHnd
     if (compiler->compProfilerMethHndIndirected)
     {
-        // Profiler hooks enabled during Ngen time.
+        // Profiler hooks enabled during AOT.
         // Profiler handle needs to be accessed through an indirection of an address.
         GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
@@ -11718,7 +11718,7 @@ bool CodeGenInterface::genCodeIndirAddrCanBeEncodedAsZeroRelOffset(size_t addr)
 //
 bool CodeGenInterface::genCodeIndirAddrNeedsReloc(size_t addr)
 {
-    // If generating relocatable ngen code, then all code addr should go through relocation
+    // If generating relocatable AOT code, then all code addr should go through relocation
     if (compiler->opts.compReloc)
     {
         return true;
@@ -11751,7 +11751,7 @@ bool CodeGenInterface::genCodeIndirAddrNeedsReloc(size_t addr)
 //
 bool CodeGenInterface::genCodeAddrNeedsReloc(size_t addr)
 {
-    // If generating relocatable ngen code, then all code addr should go through relocation
+    // If generating relocatable AOT code, then all code addr should go through relocation
     if (compiler->opts.compReloc)
     {
         return true;
