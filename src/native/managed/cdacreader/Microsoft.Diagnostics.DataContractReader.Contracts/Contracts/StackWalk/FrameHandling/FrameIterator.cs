@@ -138,7 +138,7 @@ internal sealed class FrameIterator
             try
             {
                 // not all Frames are in all builds, so we need to catch the exception
-                typeVptr = target.ReadGlobalPointer(frameType.ToString() + "Identifier");
+                typeVptr = new(target.ReadGlobal<ulong>(frameType.ToString() + "Identifier"));
                 if (frame.Identifier == typeVptr)
                 {
                     return frameType;
