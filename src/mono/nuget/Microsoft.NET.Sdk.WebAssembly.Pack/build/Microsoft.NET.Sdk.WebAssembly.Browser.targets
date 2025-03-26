@@ -204,6 +204,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true'">dotnet.boot.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == ''">blazor.boot.json</_WasmBootConfigFileName>
       <_WasmPublishBootConfigFileName>publish.$(_WasmBootConfigFileName)</_WasmPublishBootConfigFileName>
+      <_WasmPreloadAssets>$(WasmPreloadAssets)</_WasmPreloadAssets>
+      <_WasmPreloadAssets Condition="'$(_WasmPreloadAssets)' == ''">true</_WasmPreloadAssets>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
@@ -433,7 +435,118 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="Endpoints" ItemName="_WasmBuildBootConfigStaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
+  </Target>
 
+  <Target Name="_WasmConfigurePreload">
+    <ItemGroup>
+      <AppendPreloadRelPreloadProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadRel</Name>
+        <Value>preload</Value>
+      </AppendPreloadRelPreloadProperty>
+      <AppendPreloadRelPrefetchProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadRel</Name>
+        <Value>prefetch</Value>
+      </AppendPreloadRelPrefetchProperty>
+      <AppendPreloadAsFetchProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadAs</Name>
+        <Value>fetch</Value>
+      </AppendPreloadAsFetchProperty>
+      <AppendPreloadAsScriptProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadAs</Name>
+        <Value>script</Value>
+      </AppendPreloadAsScriptProperty>
+      <AppendPreloadPriorityHighProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadPriority</Name>
+        <Value>high</Value>
+      </AppendPreloadPriorityHighProperty>
+      <AppendPreloadPriorityLowProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadPriority</Name>
+        <Value>low</Value>
+      </AppendPreloadPriorityLowProperty>
+      <AppendPreloadCrossoriginAnonymousProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadCrossorigin</Name>
+        <Value>anonymous</Value>
+      </AppendPreloadCrossoriginAnonymousProperty>
+      <AppendPreloadOrder1Property Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadOrder</Name>
+        <Value>1</Value>
+      </AppendPreloadOrder1Property>
+      <AppendPreloadOrder2Property Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadOrder</Name>
+        <Value>2</Value>
+      </AppendPreloadOrder2Property>
+      <AppendPreloadOrder3Property Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadOrder</Name>
+        <Value>3</Value>
+      </AppendPreloadOrder3Property>
+    </ItemGroup>
+  </Target>
+  <Target Name="_AddWasmPreloadBuildProperties" DependsOnTargets="_WasmConfigurePreload;_AddWasmStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
+    <ItemGroup>
+      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'%(FileName)%(Extension)' == 'dotnet.js' or '%(FileName)%(Extension)' == '$(WasmBootConfigFileName)' or '%(FileName)%(Extension)' == 'dotnet.runtime.js' or '%(FileName)%(Extension)' == 'dotnet.native.js'" />
+      <_WasmPreloadBuildFetchAsset1 Include="@(StaticWebAsset)" Condition="'%(FileName)%(Extension)' == 'dotnet.native.wasm'" />
+      <_WasmPreloadBuildFetchAsset2 Include="@(StaticWebAsset)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.wasm' or '%(FileName)%(Extension)' == 'System.Runtime.InteropServices.JavaScript.wasm'" />
+      <_WasmPreloadEndpointFilter Include="Property" Name="Label" Mode="Include" Condition="'$(WasmFingerprintAssets)' == 'true' and ('$(StaticWebAssetProjectMode)' == 'Default' or '$(WriteImportMapToHtml)' == 'true')" />
+      <_WasmPreloadEndpointFilter Include="Property" Name="Label" Mode="Exclude" Condition="'@(_WasmPreloadEndpointFilter)' == ''" />
+    </ItemGroup>
+
+    <FilterStaticWebAssetEndpoints
+      Endpoints="@(StaticWebAssetEndpoint)"
+      Assets="@(_WasmPreloadBuildScriptAsset)"
+      Filters="@(_WasmPreloadEndpointFilter)"
+    >
+      <Output TaskParameter="FilteredEndpoints" ItemName="_WasmPreloadBuildScriptAssetEndpoint" />
+    </FilterStaticWebAssetEndpoints>
+    <FilterStaticWebAssetEndpoints
+      Endpoints="@(StaticWebAssetEndpoint)"
+      Assets="@(_WasmPreloadBuildFetchAsset1)"
+      Filters="@(_WasmPreloadEndpointFilter)"
+    >
+      <Output TaskParameter="FilteredEndpoints" ItemName="_WasmPreloadBuildFetchAssetEndpoint1" />
+    </FilterStaticWebAssetEndpoints>
+    <FilterStaticWebAssetEndpoints
+      Endpoints="@(StaticWebAssetEndpoint)"
+      Assets="@(_WasmPreloadBuildFetchAsset2)"
+      Filters="@(_WasmPreloadEndpointFilter)"
+    >
+      <Output TaskParameter="FilteredEndpoints" ItemName="_WasmPreloadBuildFetchAssetEndpoint2" />
+    </FilterStaticWebAssetEndpoints>
+
+    <UpdateStaticWebAssetEndpoints
+      EndpointsToUpdate="@(_WasmPreloadBuildScriptAssetEndpoint)"
+      AllEndpoints="@(_WasmPreloadBuildScriptAssetEndpoint)"
+      Operations="@(AppendPreloadRelPreloadProperty);@(AppendPreloadAsScriptProperty);@(AppendPreloadPriorityHighProperty);@(AppendPreloadCrossoriginAnonymousProperty);@(AppendPreloadOrder1Property)"
+    >
+      <Output TaskParameter="UpdatedEndpoints" ItemName="_UpdatedWasmStaticWebAssetEndpoint" />
+    </UpdateStaticWebAssetEndpoints>
+    <UpdateStaticWebAssetEndpoints
+      EndpointsToUpdate="@(_WasmPreloadBuildFetchAssetEndpoint1)"
+      AllEndpoints="@(_WasmPreloadBuildFetchAssetEndpoint1)"
+      Operations="@(AppendPreloadRelPreloadProperty);@(AppendPreloadAsFetchProperty);@(AppendPreloadPriorityHighProperty);@(AppendPreloadCrossoriginAnonymousProperty);@(AppendPreloadOrder2Property)"
+    >
+      <Output TaskParameter="UpdatedEndpoints" ItemName="_UpdatedWasmStaticWebAssetEndpoint" />
+    </UpdateStaticWebAssetEndpoints>
+    <UpdateStaticWebAssetEndpoints
+      EndpointsToUpdate="@(_WasmPreloadBuildFetchAssetEndpoint2)"
+      AllEndpoints="@(_WasmPreloadBuildFetchAssetEndpoint2)"
+      Operations="@(AppendPreloadRelPreloadProperty);@(AppendPreloadAsFetchProperty);@(AppendPreloadPriorityLowProperty);@(AppendPreloadCrossoriginAnonymousProperty);@(AppendPreloadOrder3Property)"
+    >
+      <Output TaskParameter="UpdatedEndpoints" ItemName="_UpdatedWasmStaticWebAssetEndpoint" />
+    </UpdateStaticWebAssetEndpoints>
+    <ItemGroup>
+      <StaticWebAssetEndpoint Remove="@(_WasmPreloadBuildScriptAssetEndpoint);@(_WasmPreloadBuildFetchAssetEndpoint1);@(_WasmPreloadBuildFetchAssetEndpoint2)" />
+      <StaticWebAssetEndpoint Include="@(_UpdatedWasmStaticWebAssetEndpoint)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="ProvideDefaultUserRuntimeConfig" BeforeTargets="_GenerateRuntimeConfigurationFilesInputCache" Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'">
