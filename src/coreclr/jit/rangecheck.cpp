@@ -143,6 +143,7 @@ int RangeCheck::GetArrLength(ValueNum vn)
 bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
 {
 #ifdef DEBUG
+    assert(range.IsValid() || !"BetweenBounds: range is invalid");
     if (m_pCompiler->verbose)
     {
         printf("%s BetweenBounds <%d, ", range.ToString(m_pCompiler), 0);
@@ -354,6 +355,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             Range arrLenRange = GetRangeWorker(block, bndsChk->GetArrayLength(), false DEBUGARG(0));
             if (arrLenRange.LowerLimit().IsConstant())
             {
+                assert(arrLenRange.IsValid() || !"OptimizeRangeCheck: range is invalid");
+
                 // Lower known limit of ArrLen:
                 const int lenLowerLimit = arrLenRange.LowerLimit().GetConstant();
 
@@ -393,6 +396,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         JITDUMP("Failed to get range\n");
         return;
     }
+
+    assert(range.IsValid() || !"OptimizeRangeCheck: range is invalid");
 
     // If upper or lower limit is found to be unknown (top), or it was found to
     // be unknown because of over budget or a deep search, then return early.
@@ -1002,6 +1007,12 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             }
             unreached();
         };
+
+        if (!assertedRange.IsValid())
+        {
+            JITDUMP("assertedRange is invalid: [%s] - bail out\n", assertedRange.ToString(comp));
+            return;
+        }
 
         JITDUMP("Tightening pRange: [%s] with assertedRange: [%s] into ", pRange->ToString(comp),
                 assertedRange.ToString(comp));

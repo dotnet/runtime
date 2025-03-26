@@ -217,7 +217,7 @@ struct Limit
         return false;
     }
 #ifdef DEBUG
-    const char* ToString(Compiler* comp)
+    const char* ToString(Compiler* comp) const
     {
         switch (type)
         {
@@ -283,9 +283,29 @@ struct Range
     }
 
 #ifdef DEBUG
-    const char* ToString(Compiler* comp)
+    const char* ToString(Compiler* comp) const
     {
         return comp->printfAlloc("<%s, %s>", lLimit.ToString(comp), uLimit.ToString(comp));
+    }
+
+    bool IsValid() const
+    {
+        // Lower limit should be less than or equal to upper limit.
+        // In case of Checked Bounds, we have assumptions that a Checked Bound is never negative,
+        // e.g. <$bnd + 10, 5> is not a valid range.
+        if ((lLimit.IsConstant() && uLimit.IsConstant()) || (lLimit.IsBinOpArray() && uLimit.IsConstant()) ||
+            (lLimit.IsConstant() && uLimit.IsBinOpArray()))
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        // When both limits are BinOpArray, we check if their offsets are valid
+        if (lLimit.IsBinOpArray() && uLimit.IsBinOpArray() && lLimit.vn == uLimit.vn)
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        return true;
     }
 #endif
 };
@@ -452,6 +472,9 @@ struct RangeOps
     // then ignore the dependent variables for the lower bound but not for the upper bound.
     static Range Merge(const Range& r1, const Range& r2, bool monIncreasing)
     {
+        assert(r1.IsValid() || !"Merge: r1 is invalid");
+        assert(r2.IsValid() || !"Merge: r2 is invalid");
+
         const Limit& r1lo = r1.LowerLimit();
         const Limit& r1hi = r1.UpperLimit();
         const Limit& r2lo = r2.LowerLimit();
