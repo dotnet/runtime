@@ -124,8 +124,6 @@
       <InnerBuildArgs Condition="'$(NetCoreAppToolCurrentVersion)' != ''">$(InnerBuildArgs) /p:NetCoreAppToolCurrentVersion=$(NetCoreAppToolCurrentVersion)</InnerBuildArgs>
 
       <InnerBuildArgs Condition="'$(EnableDefaultRidSpecificArtifacts)' != ''">$(InnerBuildArgs) /p:EnableDefaultRidSpecificArtifacts=$(EnableDefaultRidSpecificArtifacts)</InnerBuildArgs>
-
-      <InnerBuildArgs Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'tvos'">$(InnerBuildArgs) /p:BuildDarwinFrameworks=true</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
