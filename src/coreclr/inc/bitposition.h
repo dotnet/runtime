@@ -17,7 +17,8 @@
 inline
 unsigned            BitPosition(unsigned value)
 {
-    _ASSERTE((value != 0) && ((value & (value-1)) == 0));
+    // FIXME
+    // _ASSERTE((value != 0) && ((value & (value-1)) == 0));
     DWORD index;
     BitScanForward(&index, value);
     return index;
@@ -38,7 +39,8 @@ unsigned            BitPosition(unsigned value)
 inline
 unsigned            BitPosition(uint64_t value)
 {
-    _ASSERTE((value != 0) && ((value & (value-1)) == 0));
+    // FIXME
+    // _ASSERTE((value != 0) && ((value & (value-1)) == 0));
     DWORD index;
     BitScanForward64(&index, value);
     return index;

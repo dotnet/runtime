@@ -35,7 +35,8 @@
 inline UINT32 CeilOfLog2(size_t x)
 {
     // it is ok to use bsr or clz unconditionally
-    _ASSERTE(x > 0);
+    // FIXME
+    // _ASSERTE(x > 0);
 
     x = (x << 1) - 1;
 

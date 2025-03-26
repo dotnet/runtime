@@ -292,7 +292,8 @@ private:
 
     inline void AllocMemoryBlock()
     {
-        _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
+        // FIXME: using _ASSERTE causes the interpreter to fail to link, but GCINFO_ASSERT isn't available here.
+        // _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
         MemoryBlock* pMemBlock = m_MemoryBlocks.AppendNew(m_pAllocator, m_MemoryBlockSize);
 
         m_pCurrentSlot = pMemBlock->Contents;
