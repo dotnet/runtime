@@ -7750,11 +7750,6 @@ public:
     struct AssertionDsc
     {
         optAssertionKind assertionKind;
-        struct SsaVar
-        {
-            unsigned lclNum; // assigned to or property of this local var number
-            unsigned ssaNum;
-        };
         struct ArrBnd
         {
             ValueNum vnIdx;
@@ -7766,8 +7761,8 @@ public:
             ValueNum   vn;
             union
             {
-                SsaVar lcl;
-                ArrBnd bnd;
+                unsigned lclNum;
+                ArrBnd   bnd;
             };
         } op1;
         struct AssertionDscOp2
@@ -7784,7 +7779,7 @@ public:
             };
             union
             {
-                SsaVar        lcl;
+                unsigned      lclNum;
                 IntVal        u1;
                 double        dconVal;
                 IntegralRange u2;
@@ -7910,8 +7905,7 @@ public:
             }
             else
             {
-                return ((vnBased && (op1.vn == that->op1.vn)) ||
-                        (!vnBased && (op1.lcl.lclNum == that->op1.lcl.lclNum)));
+                return ((vnBased && (op1.vn == that->op1.vn)) || (!vnBased && (op1.lclNum == that->op1.lclNum)));
             }
         }
 
@@ -7935,8 +7929,7 @@ public:
                     return true;
 
                 case O2K_LCLVAR_COPY:
-                    return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
-                           (!vnBased || (op2.lcl.ssaNum == that->op2.lcl.ssaNum));
+                    return op2.lclNum == that->op2.lclNum;
 
                 case O2K_SUBRANGE:
                     return op2.u2.Equals(that->op2.u2);
@@ -8130,7 +8123,6 @@ public:
     // Implied assertion functions.
     void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
     void optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions);
-    void optImpliedByCopyAssertion(AssertionDsc* copyAssertion, AssertionDsc* depAssertion, ASSERT_TP& result);
     void optImpliedByConstAssertion(AssertionDsc* curAssertion, ASSERT_TP& result);
 
 #ifdef DEBUG
