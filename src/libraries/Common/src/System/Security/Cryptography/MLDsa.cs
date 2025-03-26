@@ -61,7 +61,7 @@ namespace System.Security.Cryptography
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(nameof(MLDsa));
+                throw new ObjectDisposedException(typeof(MLDsa).FullName);
             }
         }
 
