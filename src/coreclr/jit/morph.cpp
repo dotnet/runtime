@@ -3181,17 +3181,21 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     }
 #endif
 
+    // Note the array reference may now be TYP_I_IMPL, TYP_BYREF, or TYP_REF
+    //
+    var_types const arrPtrType = arrRef->TypeIs(TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
+
     // First element's offset
     GenTree* elemOffset = gtNewIconNode(elemOffs, TYP_I_IMPL);
     if (groupArrayRefWithElemOffset)
     {
-        GenTree* basePlusOffset = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, elemOffset);
-        addr                    = gtNewOperNode(GT_ADD, TYP_BYREF, basePlusOffset, addr);
+        GenTree* basePlusOffset = gtNewOperNode(GT_ADD, arrPtrType, arrRef, elemOffset);
+        addr                    = gtNewOperNode(GT_ADD, arrPtrType, basePlusOffset, addr);
     }
     else
     {
         addr = gtNewOperNode(GT_ADD, TYP_I_IMPL, addr, elemOffset);
-        addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
+        addr = gtNewOperNode(GT_ADD, arrPtrType, arrRef, addr);
     }
 
     // TODO-Throughput: bash the INDEX_ADDR to ARR_ADDR here instead of creating a new node.

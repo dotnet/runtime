@@ -96,16 +96,32 @@ struct ManagedObjectWrapper
     }
 };
 
+template<typename T>
+struct Span
+{
+    T* _pointer;
+    int _length;
+};
+
 // This structure mirrors the managed type System.Runtime.InteropServices.ComWrappers.InternalComInterfaceDispatch.
 struct InternalComInterfaceDispatch
 {
-    void* Vtable;
     ManagedObjectWrapper* _thisPtr;
+    Span<void*> Vtables;
 };
+
+#ifdef TARGET_64BIT
+constexpr uintptr_t DispatchAlignment = 64;
+#else
+constexpr uintptr_t DispatchAlignment = 16;
+#endif
+
+constexpr uintptr_t DispatchAlignmentMask = ~(DispatchAlignment - 1);
 
 static ManagedObjectWrapper* ToManagedObjectWrapper(void* dispatchPtr)
 {
-    return ((InternalComInterfaceDispatch*)dispatchPtr)->_thisPtr;
+    uintptr_t dispatch = reinterpret_cast<uintptr_t>(dispatchPtr) & DispatchAlignmentMask;
+    return ((InternalComInterfaceDispatch*)dispatch)->_thisPtr;
 }
 
 //
