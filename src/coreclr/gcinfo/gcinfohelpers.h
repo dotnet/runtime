@@ -5,23 +5,24 @@
 // NOTE: This needs to actually do something with expr or crossgen will crash in safemath.h
 //  because safemath verifies that you've actually performed overflow checks and there's a load-bearing assert somewhere in GcInfoEncoder
 static bool __gcinfo_assert_hack_global = false;
-#define GCINFO_ASSERT(expr) (__gcinfo_assert_hack_global = expr)
+#define GCINFO_ASSERT(expr) if (!(__gcinfo_assert_hack_global = (expr))) { \
+    _DbgBreak();\
+}
 #else
 #define GCINFO_ASSERT(expr) (void)0
 #endif
 
-// If you want to enable general GCINFO logging you'll need to replace this macro with an appropriate definition.
+// If you want GcInfoEncoder logging to work, replace this macro with an appropriate definition.
 // This previously relied on our common logging infrastructure, but that caused linker failures in the interpreter.
-#define GCINFO_LOG(arglist) (void)0;
+// Example implementation:
+// #define GCINFO_LOG(level, format, ...) (printf(format, __VA_ARGS__), true)
+#define GCINFO_LOG(level, format, ...) false
 
-// If you want to enable GcInfoSize::Log to work, replace these two macros with appropriate definitions.
-// These previously relied on our common logging infrastructure, but that causes linker failures in the interpreter.
-#define GCINFO_LOGSPEW(arglist) (void)0;
-// TODO: Can we use ICorJitInfo::logMsg's return value to sense whether logging is enabled, and remove this macro?
-#define GCINFO_LOGGINGON(level) false
+// If you want to enable GcInfoSize::Log to work, replace this macro with an appropriate definition.
+#define GCINFO_LOGSPEW(level, format, ...) false
 
 // Duplicated from log.h
-// ICorJitInfo::logMsg appears to accept these same levels
+// NOTE: ICorJitInfo::logMsg appears to accept these same levels and is accessible from GcInfoEncoder.
 #define LL_EVERYTHING  10
 #define LL_INFO1000000  9       // can be expected to generate 1,000,000 logs per small but not trivial run
 #define LL_INFO100000   8       // can be expected to generate 100,000 logs per small but not trivial run

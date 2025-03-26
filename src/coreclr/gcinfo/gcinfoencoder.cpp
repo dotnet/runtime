@@ -382,50 +382,48 @@ GcInfoSize& GcInfoSize::operator+=(const GcInfoSize& other)
 
 void GcInfoSize::Log(DWORD level, const char * header)
 {
-    if(GCINFO_LOGGINGON( level))
+    if (GCINFO_LOGSPEW(level, header))
     {
-        GCINFO_LOGSPEW(( level, header));
+        GCINFO_LOGSPEW( level, "---COUNTS---\n");
+        GCINFO_LOGSPEW( level, "NumMethods: %zu\n", NumMethods);
+        GCINFO_LOGSPEW( level, "NumCallSites: %zu\n", NumCallSites);
+        GCINFO_LOGSPEW( level, "NumRanges: %zu\n", NumRanges);
+        GCINFO_LOGSPEW( level, "NumRegs: %zu\n", NumRegs);
+        GCINFO_LOGSPEW( level, "NumStack: %zu\n", NumStack);
+        GCINFO_LOGSPEW( level, "NumUntracked: %zu\n", NumUntracked);
+        GCINFO_LOGSPEW( level, "NumTransitions: %zu\n", NumTransitions);
+        GCINFO_LOGSPEW( level, "SizeOfCode: %zu\n", SizeOfCode);
+        GCINFO_LOGSPEW( level, "EncInfoSize: %zu\n", EncInfoSize);
 
-        GCINFO_LOGSPEW(( level, "---COUNTS---\n"));
-        GCINFO_LOGSPEW(( level, "NumMethods: %zu\n", NumMethods));
-        GCINFO_LOGSPEW(( level, "NumCallSites: %zu\n", NumCallSites));
-        GCINFO_LOGSPEW(( level, "NumRanges: %zu\n", NumRanges));
-        GCINFO_LOGSPEW(( level, "NumRegs: %zu\n", NumRegs));
-        GCINFO_LOGSPEW(( level, "NumStack: %zu\n", NumStack));
-        GCINFO_LOGSPEW(( level, "NumUntracked: %zu\n", NumUntracked));
-        GCINFO_LOGSPEW(( level, "NumTransitions: %zu\n", NumTransitions));
-        GCINFO_LOGSPEW(( level, "SizeOfCode: %zu\n", SizeOfCode));
-        GCINFO_LOGSPEW(( level, "EncInfoSize: %zu\n", EncInfoSize));
-
-        GCINFO_LOGSPEW(( level, "---SIZES(bits)---\n"));
-        GCINFO_LOGSPEW(( level, "Total: %zu\n", TotalSize));
-        GCINFO_LOGSPEW(( level, "UntrackedSlot: %zu\n", UntrackedSlotSize));
-        GCINFO_LOGSPEW(( level, "NumUntracked: %zu\n", NumUntrackedSize));
-        GCINFO_LOGSPEW(( level, "Flags: %zu\n", FlagsSize));
-        GCINFO_LOGSPEW(( level, "CodeLength: %zu\n", CodeLengthSize));
-        GCINFO_LOGSPEW(( level, "Prolog/Epilog: %zu\n", ProEpilogSize));
-        GCINFO_LOGSPEW(( level, "SecObj: %zu\n", SecObjSize));
-        GCINFO_LOGSPEW(( level, "GsCookie: %zu\n", GsCookieSize));
-        GCINFO_LOGSPEW(( level, "PspSym: %zu\n", PspSymSize));
-        GCINFO_LOGSPEW(( level, "GenericsCtx: %zu\n", GenericsCtxSize));
-        GCINFO_LOGSPEW(( level, "StackBase: %zu\n", StackBaseSize));
-        GCINFO_LOGSPEW(( level, "FixedArea: %zu\n", FixedAreaSize));
-        GCINFO_LOGSPEW(( level, "ReversePInvokeFrame: %zu\n", ReversePInvokeFrameSize));
-        GCINFO_LOGSPEW(( level, "NumCallSites: %zu\n", NumCallSitesSize));
-        GCINFO_LOGSPEW(( level, "NumRanges: %zu\n", NumRangesSize));
-        GCINFO_LOGSPEW(( level, "CallSiteOffsets: %zu\n", CallSitePosSize));
-        GCINFO_LOGSPEW(( level, "Ranges: %zu\n", RangeSize));
-        GCINFO_LOGSPEW(( level, "NumRegs: %zu\n", NumRegsSize));
-        GCINFO_LOGSPEW(( level, "NumStack: %zu\n", NumStackSize));
-        GCINFO_LOGSPEW(( level, "RegSlots: %zu\n", RegSlotSize));
-        GCINFO_LOGSPEW(( level, "StackSlots: %zu\n", StackSlotSize));
-        GCINFO_LOGSPEW(( level, "CallSiteStates: %zu\n", CallSiteStateSize));
-        GCINFO_LOGSPEW(( level, "EhOffsets: %zu\n", EhPosSize));
-        GCINFO_LOGSPEW(( level, "EhStates: %zu\n", EhStateSize));
-        GCINFO_LOGSPEW(( level, "ChunkPointers: %zu\n", ChunkPtrSize));
-        GCINFO_LOGSPEW(( level, "ChunkMasks: %zu\n", ChunkMaskSize));
-        GCINFO_LOGSPEW(( level, "ChunkFinalStates: %zu\n", ChunkFinalStateSize));
-        GCINFO_LOGSPEW(( level, "Transitions: %zu\n", ChunkTransitionSize));
+        GCINFO_LOGSPEW( level, "---SIZES(bits)---\n");
+        GCINFO_LOGSPEW( level, "Total: %zu\n", TotalSize);
+        GCINFO_LOGSPEW( level, "UntrackedSlot: %zu\n", UntrackedSlotSize);
+        GCINFO_LOGSPEW( level, "NumUntracked: %zu\n", NumUntrackedSize);
+        GCINFO_LOGSPEW( level, "Flags: %zu\n", FlagsSize);
+        GCINFO_LOGSPEW( level, "CodeLength: %zu\n", CodeLengthSize);
+        GCINFO_LOGSPEW( level, "Prolog/Epilog: %zu\n", ProEpilogSize);
+        GCINFO_LOGSPEW( level, "SecObj: %zu\n", SecObjSize);
+        GCINFO_LOGSPEW( level, "GsCookie: %zu\n", GsCookieSize);
+        GCINFO_LOGSPEW( level, "PspSym: %zu\n", PspSymSize);
+        GCINFO_LOGSPEW( level, "GenericsCtx: %zu\n", GenericsCtxSize);
+        GCINFO_LOGSPEW( level, "StackBase: %zu\n", StackBaseSize);
+        GCINFO_LOGSPEW( level, "FixedArea: %zu\n", FixedAreaSize);
+        GCINFO_LOGSPEW( level, "ReversePInvokeFrame: %zu\n", ReversePInvokeFrameSize);
+        GCINFO_LOGSPEW( level, "NumCallSites: %zu\n", NumCallSitesSize);
+        GCINFO_LOGSPEW( level, "NumRanges: %zu\n", NumRangesSize);
+        GCINFO_LOGSPEW( level, "CallSiteOffsets: %zu\n", CallSitePosSize);
+        GCINFO_LOGSPEW( level, "Ranges: %zu\n", RangeSize);
+        GCINFO_LOGSPEW( level, "NumRegs: %zu\n", NumRegsSize);
+        GCINFO_LOGSPEW( level, "NumStack: %zu\n", NumStackSize);
+        GCINFO_LOGSPEW( level, "RegSlots: %zu\n", RegSlotSize);
+        GCINFO_LOGSPEW( level, "StackSlots: %zu\n", StackSlotSize);
+        GCINFO_LOGSPEW( level, "CallSiteStates: %zu\n", CallSiteStateSize);
+        GCINFO_LOGSPEW( level, "EhOffsets: %zu\n", EhPosSize);
+        GCINFO_LOGSPEW( level, "EhStates: %zu\n", EhStateSize);
+        GCINFO_LOGSPEW( level, "ChunkPointers: %zu\n", ChunkPtrSize);
+        GCINFO_LOGSPEW( level, "ChunkMasks: %zu\n", ChunkMaskSize);
+        GCINFO_LOGSPEW( level, "ChunkFinalStates: %zu\n", ChunkFinalStateSize);
+        GCINFO_LOGSPEW( level, "Transitions: %zu\n", ChunkTransitionSize);
     }
 }
 
@@ -634,7 +632,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::DefineIn
         }
     }
 
-    GCINFO_LOG(( LL_INFO1000000, "interruptible at %x length %x\n", startInstructionOffset, length));
+    GCINFO_LOG( LL_INFO1000000, "interruptible at %x length %x\n", startInstructionOffset, length);
 }
 
 
@@ -659,7 +657,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetSlotS
 
     *( m_LifetimeTransitions.Append() ) = transition;
 
-    GCINFO_LOG(( LL_INFO1000000, LOG_GCSLOTDESC_FMT " %s at %x\n", LOG_GCSLOTDESC_ARGS(&m_SlotTable[slotId]), slotState == GC_SLOT_LIVE ? "live" : "dead", instructionOffset));
+    GCINFO_LOG( LL_INFO1000000, LOG_GCSLOTDESC_FMT " %s at %x\n", LOG_GCSLOTDESC_ARGS(&m_SlotTable[slotId]), slotState == GC_SLOT_LIVE ? "live" : "dead", instructionOffset);
 }
 
 
@@ -921,9 +919,9 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     char className[256];
     m_pCorJitInfo->printClassName(m_pCorJitInfo->getMethodClass(m_pMethodInfo->ftn), className, sizeof(className));
 
-    GCINFO_LOG(( LL_INFO100,
+    GCINFO_LOG( LL_INFO100,
          "Entering GcInfoEncoder::Build() for method %s:%s\n",
-         className, methodName));
+         className, methodName);
 #endif
 
 
@@ -1023,9 +1021,9 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     {
         GCINFO_ASSERT(!slimHeader);
 #ifdef _DEBUG
-        GCINFO_LOG(( LL_INFO1000, "GS cookie at " FMT_STK "\n",
+        GCINFO_LOG( LL_INFO1000, "GS cookie at " FMT_STK "\n",
              DBG_STK(m_GSCookieStackSlot)
-             ));
+             );
 #endif
 
         GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_GSCookieStackSlot), GcInfoEncoding::GS_COOKIE_STACK_SLOT_ENCBASE, GsCookieSize);
@@ -1038,7 +1036,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     {
         GCINFO_ASSERT(!slimHeader);
 #ifdef _DEBUG
-        GCINFO_LOG(( LL_INFO1000, "Parent PSP at " FMT_STK "\n", DBG_STK(m_PSPSymStackSlot)));
+        GCINFO_LOG( LL_INFO1000, "Parent PSP at " FMT_STK "\n", DBG_STK(m_PSPSymStackSlot));
 #endif
         GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_PSPSymStackSlot), GcInfoEncoding::PSP_SYM_STACK_SLOT_ENCBASE, PspSymSize);
     }
@@ -1048,9 +1046,9 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     {
         GCINFO_ASSERT(!slimHeader);
 #ifdef _DEBUG
-        GCINFO_LOG(( LL_INFO1000, "Generics instantiation context at " FMT_STK "\n",
+        GCINFO_LOG( LL_INFO1000, "Generics instantiation context at " FMT_STK "\n",
              DBG_STK(m_GenericsInstContextStackSlot)
-             ));
+             );
 #endif
         GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_GenericsInstContextStackSlot), GcInfoEncoding::GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE, GenericsCtxSize);
     }
@@ -1960,7 +1958,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         // Encode transitions
         //------------------------------------------------------------------
 
-        GCINFO_LOG(( LL_INFO1000, "Encoding %i lifetime transitions.\n", pEndTransitions - pTransitions));
+        GCINFO_LOG( LL_INFO1000, "Encoding %i lifetime transitions.\n", pEndTransitions - pTransitions);
 
 
         liveState.ClearAll();
@@ -2009,11 +2007,11 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             // Write couldBeLive slot map
             GCINFO_WRITE_VAR_VECTOR(m_Info2, couldBeLive, GcInfoEncoding::LIVESTATE_RLE_SKIP_ENCBASE, GcInfoEncoding::LIVESTATE_RLE_RUN_ENCBASE, ChunkMaskSize);
 
-            GCINFO_LOG(( LL_INFO100000,
+            GCINFO_LOG( LL_INFO100000,
                          "Chunk %d couldBeLive (%04x-%04x):\n", currentChunk,
                          currentChunk * GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK,
                          ((currentChunk + 1) * GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK) - 1
-                         ));
+                         );
 
             // Write final state
             // For all the bits set in couldBeLive.
@@ -2030,10 +2028,10 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
                                     ChunkFinalStateSize
                                     );
 
-                    GCINFO_LOG(( LL_INFO100000,
+                    GCINFO_LOG( LL_INFO100000,
                          "\t" LOG_GCSLOTDESC_FMT " %s at end of chunk.\n",
                          LOG_GCSLOTDESC_ARGS(&m_SlotTable[i]),
-                         liveState.ReadBit(i) ? "live" : "dead"));
+                         liveState.ReadBit(i) ? "live" : "dead");
                 }
             }
 
@@ -2054,11 +2052,11 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
                     GCINFO_ASSERT(couldBeLive.ReadBit(slotId));
 
-                    GCINFO_LOG(( LL_INFO100000,
+                    GCINFO_LOG( LL_INFO100000,
                          "\tTransition " LOG_GCSLOTDESC_FMT " going %s at offset %04x.\n",
                          LOG_GCSLOTDESC_ARGS(&m_SlotTable[pT->SlotId]),
                          pT->BecomesLive ? "live" : "dead",
-                         (int) pT->CodeOffset ));
+                         (int) pT->CodeOffset );
 
                     // Write code offset delta
                     UINT32 normCodeOffset = pT->CodeOffset;
@@ -2167,8 +2165,8 @@ lExitSuccess:;
         m_CurrentMethodSize.Log(LL_INFO100, "=== PartiallyInterruptible method breakdown ===\r\n");
         g_PiGcInfoSize.Log(LL_INFO10, "=== PartiallyInterruptible global breakdown ===\r\n");
     }
-    GCINFO_LOGSPEW(( LL_INFO10, "Total SlimHeaders: %zu\n", g_NumSlimHeaders));
-    GCINFO_LOGSPEW(( LL_INFO10, "NumMethods: %zu\n", g_NumFatHeaders));
+    GCINFO_LOGSPEW( LL_INFO10, "Total SlimHeaders: %zu\n", g_NumSlimHeaders);
+    GCINFO_LOGSPEW( LL_INFO10, "NumMethods: %zu\n", g_NumFatHeaders);
 #endif
 }
 
@@ -2414,7 +2412,7 @@ template <typename GcInfoEncoding> BYTE* TGcInfoEncoder<GcInfoEncoding>::Emit()
     size_t cbGcInfoSize = m_Info1.GetByteCount() +
                           m_Info2.GetByteCount();
 
-    GCINFO_LOG(( LL_INFO100, "GcInfoEncoder::Emit(): Size of GC info is %u bytes, code size %u bytes.\n", (unsigned)cbGcInfoSize, m_CodeLength ));
+    GCINFO_LOG( LL_INFO100, "GcInfoEncoder::Emit(): Size of GC info is %u bytes, code size %u bytes.\n", (unsigned)cbGcInfoSize, m_CodeLength );
 
     BYTE* destBuffer = (BYTE *)eeAllocGCInfo(cbGcInfoSize);
     // Allocator will throw an exception on failure.
