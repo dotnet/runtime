@@ -628,6 +628,13 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         if (opcode == INTOP_MOV_VT)
             *ip++ = fSize;
     }
+    else if (opcode == INTOP_LDLOCA)
+    {
+        // This opcode references a var, int sVars[0], but it is not registered as a source for it
+        // aka g_interpOpSVars[INTOP_LDLOCA] is 0.
+        *ip++ = m_pVars[ins->dVar].offset;
+        *ip++ = m_pVars[ins->sVars[0]].offset;
+    }
     else
     {
         // Default code emit for an instruction. The opcode was already emitted above.
@@ -1616,6 +1623,15 @@ void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_F
         EmitStind(interpFieldType, pFieldInfo->structType, 0, true);
 }
 
+void InterpCompiler::EmitLdLocA(int32_t var)
+{
+    AddIns(INTOP_LDLOCA);
+    m_pLastIns->SetSVar(var);
+    m_pVars[var].indirects++;
+    PushInterpType(InterpTypeByRef, NULL);
+    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+}
+
 int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
     bool readonly = false;
@@ -1822,6 +1838,10 @@ retry_emit:
                 EmitLoadVar(*m_ip - CEE_LDARG_0);
                 m_ip++;
                 break;
+            case CEE_LDARGA_S:
+                EmitLdLocA(m_ip[1]);
+                m_ip += 2;
+                break;
             case CEE_STARG_S:
                 EmitStoreVar(m_ip[1]);
                 m_ip += 2;
@@ -1836,6 +1856,10 @@ retry_emit:
             case CEE_LDLOC_3:
                 EmitLoadVar(numArgs + *m_ip - CEE_LDLOC_0);
                 m_ip++;
+                break;
+            case CEE_LDLOCA_S:
+                EmitLdLocA(numArgs + m_ip[1]);
+                m_ip += 2;
                 break;
             case CEE_STLOC_S:
                 EmitStoreVar(numArgs + m_ip[1]);
@@ -2638,12 +2662,20 @@ retry_emit:
                         EmitLoadVar(getU2LittleEndian(m_ip + 1));
                         m_ip += 3;
                         break;
+                    case CEE_LDARGA:
+                        EmitLdLocA(getU2LittleEndian(m_ip + 1));
+                        m_ip += 3;
+                        break;
                     case CEE_STARG:
                         EmitStoreVar(getU2LittleEndian(m_ip + 1));
                         m_ip += 3;
                         break;
                     case CEE_LDLOC:
                         EmitLoadVar(numArgs + getU2LittleEndian(m_ip + 1));
+                        m_ip += 3;
+                        break;
+                    case CEE_LDLOCA:
+                        EmitLdLocA(numArgs + getU2LittleEndian(m_ip + 1));
                         m_ip += 3;
                         break;
                     case CEE_STLOC:

@@ -84,6 +84,11 @@ MAIN_LOOP:
             case INTOP_RET_VOID:
                 goto EXIT_FRAME;
 
+            case INTOP_LDLOCA:
+                LOCAL_VAR(ip[1], void*) = stack + ip[2];
+                ip += 3;
+                break;;
+
 #define MOV(argtype1,argtype2) \
     LOCAL_VAR(ip [1], argtype1) = LOCAL_VAR(ip [2], argtype2); \
     ip += 3;

@@ -376,6 +376,7 @@ private:
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
     void    EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo);
     void    EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, bool isLoad);
+    void    EmitLdLocA(int32_t var);
 
     // Var Offset allocator
     TArray<InterpInst*> *m_pActiveCalls;
