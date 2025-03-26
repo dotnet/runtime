@@ -6469,7 +6469,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
             if (ptr != NULL)
             {
-                setMethodHasFrozenObjects();
                 GenTree* retNode = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
                 return fgMorphTree(retNode);
             }
@@ -11802,6 +11801,7 @@ void Compiler::fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree)
 //
 void Compiler::fgAssertionGen(GenTree* tree)
 {
+    assert(optLocalAssertionProp);
     INDEBUG(unsigned oldAssertionCount = optAssertionCount;);
     optAssertionGen(tree);
 
@@ -11843,7 +11843,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
     //
     auto addImpliedAssertions = [=](AssertionIndex index, ASSERT_TP& assertions) {
         AssertionDsc* const assertion = optGetAssertion(index);
-        if (optLocalAssertionProp && (assertion->assertionKind == OAK_EQUAL) && (assertion->op1.kind == O1K_LCLVAR) &&
+        if ((assertion->assertionKind == OAK_EQUAL) && (assertion->op1.kind == O1K_LCLVAR) &&
             (assertion->op2.kind == O2K_CONST_INT))
         {
             LclVarDsc* const lclDsc = lvaGetDesc(assertion->op1.lclNum);
