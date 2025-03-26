@@ -67,7 +67,17 @@ namespace System
             }
 #endif // FEATURE_COMINTEROP
 
-            return ComWrappersObjectToComWeakRef(target, out context);
+            if (PossiblyComWrappersObject(target))
+            {
+                // This object is using ComWrappers, so use ComWrappers to create the weak reference.
+                context = target;
+                return ObjectToComWeakRef(ObjectHandleOnStack.Create(ref target));
+            }
+
+            // This object is not produced using built-in COM or ComWrappers
+            // or is an aggregated object, so we cannot create a weak reference.
+            context = null;
+            return IntPtr.Zero;
         }
     }
 }
