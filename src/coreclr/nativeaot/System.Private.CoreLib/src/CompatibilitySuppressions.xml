@@ -859,6 +859,18 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable)</Target>
+    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable)</Target>
+    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.Await(System.Threading.Tasks.Task)</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
@@ -866,6 +878,18 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.Await(System.Threading.Tasks.ValueTask)</Target>
+    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.Await``1(System.Runtime.CompilerServices.ConfiguredTaskAwaitable{``0})</Target>
+    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.Await``1(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable{``0})</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
   </Suppression>

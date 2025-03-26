@@ -271,6 +271,69 @@ namespace System.Runtime.CompilerServices
             awaiter.GetResult();
         }
 
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
+        {
+            ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            awaiter.GetResult();
+        }
+
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(ConfiguredValueTaskAwaitable configuredAwaitable)
+        {
+            ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            awaiter.GetResult();
+        }
+
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(ConfiguredTaskAwaitable<T> configuredAwaitable)
+        {
+            ConfiguredTaskAwaitable<T>.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            return awaiter.GetResult();
+        }
+
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(ConfiguredValueTaskAwaitable<T> configuredAwaitable)
+        {
+            ConfiguredValueTaskAwaitable<T>.ConfiguredValueTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            return awaiter.GetResult();
+        }
 #endif
     }
 }

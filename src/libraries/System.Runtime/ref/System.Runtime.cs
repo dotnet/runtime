@@ -13757,6 +13757,10 @@ namespace System.Runtime.CompilerServices
         public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw null; }
         public static void Await(System.Threading.Tasks.ValueTask task) { throw null; }
         public static T Await<T>(System.Threading.Tasks.ValueTask<T> task) { throw null; }
+        public static void Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable configuredAwaitable) { throw null; }
+        public static void Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable configuredAwaitable) { throw null; }
+        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw null; }
+        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw null; }
     }
     public sealed partial class RuntimeWrappedException : System.Exception
     {

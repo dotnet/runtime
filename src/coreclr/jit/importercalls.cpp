@@ -11243,6 +11243,17 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         }
                     }
                 }
+                else if (strcmp(namespaceName, "Threading.Tasks") == 0)
+                {
+                    if (strcmp(methodName, "ConfigureAwait") == 0)
+                    {
+                        if (strcmp(className, "Task`1") == 0 || strcmp(className, "Task") == 0 ||
+                            strcmp(className, "ValuTask`1") == 0 || strcmp(className, "ValueTask") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_Task_ConfigureAwait;
+                        }
+                    }
+                }
         }
     }
     else if (strcmp(namespaceName, "Internal.Runtime") == 0)

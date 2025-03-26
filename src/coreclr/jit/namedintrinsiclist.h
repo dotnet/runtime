@@ -155,6 +155,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_ExchangeAdd,
     NI_System_Threading_Interlocked_MemoryBarrier,
 
+    NI_System_Threading_Tasks_Task_ConfigureAwait,
+
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,
     NI_System_Runtime_Intrinsics_Intrinsic,
