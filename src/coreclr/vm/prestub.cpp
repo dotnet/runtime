@@ -1843,8 +1843,6 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
             DWORD localArg = 0;
             if (thunkMsig.HasThis())
             {
-                // Struct async thunks not yet implemented
-                _ASSERTE(!this->GetMethodTable()->IsValueType());
                 pCode->EmitLDARG(localArg++);
             }
 

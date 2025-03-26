@@ -14,9 +14,17 @@ public class Async2Struct
     public static void TestEntryPoint()
     {
         Async().Wait();
+        Async2().Wait();
     }
 
-    private static async2 Task Async()
+    private static async Task Async()
+    {
+        S s = new S(100);
+        await s.Test();
+        AssertEqual(100, s.Value);
+    }
+
+    private static async2 Task Async2()
     {
         S s = new S(100);
         await s.Test();
