@@ -819,10 +819,12 @@ create_scc (ScanData *data)
 	g_assert (found);
 
 	// Clear the visited flag on nodes that were added with add_other_colors in the loop above
-	for (i = dyn_array_ptr_size (&color_merge_array); i < dyn_array_ptr_size (&color_data->other_colors); i++) {
-		ColorData *cd = (ColorData *)dyn_array_ptr_get (&color_data->other_colors, i);
-		g_assert (cd->visited);
-		cd->visited = FALSE;
+	if (!can_reduce_color) {
+		for (i = dyn_array_ptr_size (&color_merge_array); i < dyn_array_ptr_size (&color_data->other_colors); i++) {
+			ColorData *cd = (ColorData *)dyn_array_ptr_get (&color_data->other_colors, i);
+			g_assert (cd->visited);
+			cd->visited = FALSE;
+		}
 	}
 
 #if DUMP_GRAPH
