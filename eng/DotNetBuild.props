@@ -42,9 +42,6 @@
       <InnerBuildArgs Condition="'$(DotNetBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)usemonoruntime</InnerBuildArgs>
       <!-- TODO: This parameter is only available on the Unix script. Intentional? -->
       <InnerBuildArgs Condition="'$(OS)' != 'Windows_NT'">$(InnerBuildArgs) --outputrid $(OutputRID)</InnerBuildArgs>
-      <!-- PackageOS and ToolsOS control the rids of prebuilts consumed by the build.
-           They are set to RuntimeOS so they match with the build SDK rid. -->
-      <InnerBuildArgs Condition="'$(RuntimeOS)' != ''">$(InnerBuildArgs) /p:PackageOS=$(RuntimeOS)</InnerBuildArgs>
       <!-- BaseOS is an expected known rid in the graph that OutputRID is compatible with.
            It's used to add OutputRID in the graph if the parent can't be detected. -->
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS) /p:BaseOS=$(BaseOS)</InnerBuildArgs>

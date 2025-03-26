@@ -25,18 +25,6 @@
     <_portableOS Condition="'$(HostOS)' == 'win' and '$(TargetsMobile)' != 'true'">win</_portableOS>
   </PropertyGroup>
 
-  <!-- PackageRID is used for packages needed for the target. -->
-  <PropertyGroup Label="CalculatePackageRID">
-    <_packageOS>$(_portableOS)</_packageOS>
-
-    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' != 'linux-musl' and '$(_portableOS)' != 'linux-bionic' and '$(_portableOS)' != 'android'">$(_hostOS)</_packageOS>
-
-    <!-- source-build sets PackageOS to build with non-portable rid packages that were source-built previously. -->
-    <PackageRID Condition="'$(PackageOS)' != ''">$(PackageOS)-$(TargetArchitecture)</PackageRID>
-    <PackageRID Condition="'$(PackageRID)' == ''">$(_packageOS)-$(TargetArchitecture)</PackageRID>
-  </PropertyGroup>
-
-
   <!-- OutputRID is used to name the target platform.
        For portable builds, OutputRID matches _portableOS.
        For non-portable builds, it uses __DistroRid (from the native build script), or falls back to RuntimeInformation.RuntimeIdentifier.

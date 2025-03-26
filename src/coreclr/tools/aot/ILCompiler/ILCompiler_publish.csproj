@@ -2,7 +2,7 @@
   <!-- This project is publishes a self-contained copy of ILCompiler. -->
   <PropertyGroup>
     <_IsPublishing>true</_IsPublishing>
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
