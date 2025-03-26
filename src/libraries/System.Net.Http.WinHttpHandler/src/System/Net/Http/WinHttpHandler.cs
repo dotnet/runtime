@@ -1277,7 +1277,6 @@ namespace System.Net.Http
                 {
                     if (state.Proxy != null)
                     {
-                        Debug.Assert(state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy);
                         updateProxySettings = true;
 
                         Uri? proxyUri = state.Proxy.IsBypassed(uri) ? null : state.Proxy.GetProxy(uri);
