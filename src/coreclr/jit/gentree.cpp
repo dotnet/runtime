@@ -28810,6 +28810,9 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
             case NI_AdvSimd_Not:
                 sveId = NI_Sve_Not;
                 break;
+            case NI_AdvSimd_Or:
+                sveId = NI_Sve_Or;
+                break;
             default:
                 sveId = id;
         }

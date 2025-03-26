@@ -929,6 +929,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_op_BitwiseAnd:
         case NI_Vector64_op_BitwiseAnd:
         case NI_Vector128_op_BitwiseAnd:
         {
@@ -941,6 +942,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_op_BitwiseOr:
         case NI_Vector64_op_BitwiseOr:
         case NI_Vector128_op_BitwiseOr:
         {
