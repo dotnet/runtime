@@ -3286,7 +3286,7 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
                     if (!node->TypeIs(TYP_VOID))
                     {
                         m_compiler->gtDispTree(node);
-                        assert("The tree is expected to be of TYP_VOID type");
+                        assert(!"The tree is expected to be of TYP_VOID type");
                     }
                     break;
 

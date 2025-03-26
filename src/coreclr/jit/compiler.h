@@ -7384,7 +7384,6 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP               0x00000080 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT                     0x00000100 // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS                      0x00000200 // Method needs GC polls
-#define OMF_HAS_FROZEN_OBJECTS                 0x00000400 // Method has frozen objects (REF constant int)
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 #define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
@@ -7415,16 +7414,6 @@ public:
     }
 
     void addFatPointerCandidate(GenTreeCall* call);
-
-    bool doesMethodHaveFrozenObjects() const
-    {
-        return (optMethodFlags & OMF_HAS_FROZEN_OBJECTS) != 0;
-    }
-
-    void setMethodHasFrozenObjects()
-    {
-        optMethodFlags |= OMF_HAS_FROZEN_OBJECTS;
-    }
 
     bool doesMethodHaveStaticInit()
     {

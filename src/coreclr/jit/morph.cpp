@@ -6469,7 +6469,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
             if (ptr != NULL)
             {
-                setMethodHasFrozenObjects();
                 GenTree* retNode = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
                 return fgMorphTree(retNode);
             }

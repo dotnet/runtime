@@ -1719,24 +1719,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
     }
     switch (assertion->op2.kind)
     {
-        case O2K_CONST_INT:
-        {
-            // The only flags that can be set are those in the GTF_ICON_HDL_MASK.
-            switch (assertion->op1.kind)
-            {
-                case O1K_EXACT_TYPE:
-                case O1K_SUBTYPE:
-                    break;
-                case O1K_LCLVAR:
-                    assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
-                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenObjects());
-                    break;
-                default:
-                    break;
-            }
-        }
-        break;
-
         case O2K_ZEROOBJ:
         {
             // We only make these assertion for stores (not control flow).
