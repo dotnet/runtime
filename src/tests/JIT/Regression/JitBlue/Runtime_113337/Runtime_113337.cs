@@ -8,6 +8,8 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.CompilerServices;
 using Xunit;
 
+#pragma warning disable SYSLIB5003 // Allow experimental SVE
+
 public class Runtime_113337
 {
     static sbyte[] s_7;
@@ -43,11 +45,34 @@ public class Runtime_113337
         }
     }
 
+    static Vector<ulong>[] s_4;
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void issue3()
+    {
+        try
+        {
+            var vr3 = Vector.Create<short>(1);
+            var vr4 = (short)0;
+            var vr5 = Vector128.CreateScalar(vr4).AsVector();
+            if ((Sve.TestFirstTrue(vr3, vr5) | (3268100580U != (-(uint)Sve.SaturatingDecrementBy16BitElementCount(0, 1)))))
+            {
+                s_4[0] = s_4[0];
+            }
+        }
+        catch (PlatformNotSupportedException e)
+        {
+        }
+        catch (NullReferenceException e)
+        {
+        }
+    }
+
     [Fact]
     public static void TestEntryPoint()
     {
         // Checking for successful compilation
         issue1();
         issue2();
+        issue3();
     }
 }
