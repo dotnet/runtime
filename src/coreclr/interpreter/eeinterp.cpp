@@ -83,7 +83,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     int32_t IRCodeSize;
     int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
- 
+
     // FIXME this shouldn't be here
     compHnd->setMethodAttribs(methodInfo->ftn, CORINFO_FLG_INTERPRETER);
 
@@ -104,6 +104,9 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     *entryAddress = (uint8_t*)args.hotCodeBlock;
     *nativeSizeOfCode = sizeOfCode;
+
+    // We can't do this until we've called allocMem
+    compiler.BuildGCInfo(pMethod);
 
     return CORJIT_OK;
 }

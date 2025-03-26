@@ -1192,7 +1192,7 @@ EECodeGenManager::EECodeGenManager()
     m_cleanupList(NULL),
     // CRST_DEBUGGER_THREAD - We take this lock on debugger thread during EnC add method, among other things
     // CRST_TAKEN_DURING_SHUTDOWN - We take this lock during shutdown if ETW is on (to do rundown)
-    m_CodeHeapCritSec( CrstSingleUseLock, 
+    m_CodeHeapCritSec( CrstSingleUseLock,
                         CrstFlags(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD|CRST_TAKEN_DURING_SHUTDOWN)),
     m_storeRichDebugInfo(false)
 {
@@ -3496,7 +3496,7 @@ GCInfoToken InterpreterJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    // The JIT-ed code always has the current version of GCInfo
+    // The Interpreter IR always has the current version of GCInfo
     return{ GetCodeHeader(MethodToken)->GetGCInfo(), GCINFO_VERSION };
 }
 #endif // FEATURE_INTERPRETER

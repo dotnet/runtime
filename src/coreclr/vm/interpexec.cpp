@@ -753,8 +753,12 @@ MAIN_LOOP:
             case INTOP_COLLECT: {
                 // HACK: blocking gc of all generations
                 // FIXME: currently hangs and stack walk does not ever reach the interpreter code manager
-                GCX_COOP();
-                GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, 0x00000002);
+                InterpreterExitFrame exitFrame(pFrame);
+                {
+                    GCX_COOP();
+                    GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, 0x00000002);
+                }
+                exitFrame.Pop();
                 ip++;
                 break;
             }

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+#include "gcinfoencoder.h"
 #include "interpreter.h"
 
 static const StackType g_stackTypeFromInterpType[] =
@@ -30,6 +31,49 @@ static const InterpType g_interpTypeFromStackType[] =
 };
 
 static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
+
+/*****************************************************************************/
+void DECLSPEC_NORETURN Interp_NOMEM()
+{
+    assert(0);
+}
+
+// GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
+class InterpIAllocator : public IAllocator
+{
+    InterpCompiler *m_pCompiler;
+
+public:
+    InterpIAllocator(InterpCompiler *compiler)
+        : m_pCompiler(compiler)
+    {
+    }
+
+    // Allocates a block of memory at least `sz` in size.
+    virtual void* Alloc(size_t sz) override
+    {
+        return m_pCompiler->AllocMethodData(sz);
+    }
+
+    // Allocates a block of memory at least `elems * elemSize` in size.
+    virtual void* ArrayAlloc(size_t elems, size_t elemSize) override
+    {
+        // Ensure that elems * elemSize does not overflow.
+        if (elems > (SIZE_MAX / elemSize))
+        {
+            Interp_NOMEM();
+        }
+
+        return m_pCompiler->AllocMethodData(elems * elemSize);
+    }
+
+    // Frees the block of memory pointed to by p.
+    virtual void Free(void* p) override
+    {
+        // FIXME: m_pCompiler->FreeMethodData
+        free(p);
+    }
+};
 
 // FIXME Use specific allocators for their intended purpose
 // Allocator for data that is kept alive throughout application execution,
@@ -679,6 +723,32 @@ void InterpCompiler::EmitCode()
     m_methodCodeSize = (int32_t)(ip - m_pMethodCode);
 
     PatchRelocations(&relocs);
+}
+
+void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
+{
+#ifdef FEATURE_INTERPRETER
+    InterpIAllocator* pAllocator = new InterpIAllocator(this);
+    InterpreterGcInfoEncoder* gcInfoEncoder = new InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
+    assert(gcInfoEncoder);
+
+    // TODO: Request slot IDs for all our locals before finalizing
+
+    gcInfoEncoder->FinalizeSlotIds();
+
+    // TODO: Use finalized slot IDs to declare live ranges
+
+    gcInfoEncoder->Build();
+
+    // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
+    // let's save the values anyway for debugging purposes
+    gcInfoEncoder->Emit();
+
+    // FIXME: Why doesn't the JIT code do this? Is it because the placement new it uses automatically frees them
+    //  at the end of JIT compilation?
+    delete gcInfoEncoder;
+    delete pAllocator;
+#endif
 }
 
 InterpMethod* InterpCompiler::CreateInterpMethod()
