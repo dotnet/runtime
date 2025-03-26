@@ -1,11 +1,14 @@
 #ifndef _GCINFOHELPERS_H_
 #define _GCINFOHELPERS_H_
 
+#if defined(_DEBUG)
 // NOTE: This needs to actually do something with expr or crossgen will crash in safemath.h
-//  because safemath verifies that you've actually performed overflow checks.
-#define GCINFO_ASSERT(expr) (__gcinfo_assert_hack_global = expr)
-
+//  because safemath verifies that you've actually performed overflow checks and there's a load-bearing assert somewhere in GcInfoEncoder
 static bool __gcinfo_assert_hack_global = false;
+#define GCINFO_ASSERT(expr) (__gcinfo_assert_hack_global = expr)
+#else
+#define GCINFO_ASSERT(expr) (void)0
+#endif
 
 // If you want to enable general GCINFO logging you'll need to replace this macro with an appropriate definition.
 // This previously relied on our common logging infrastructure, but that caused linker failures in the interpreter.
