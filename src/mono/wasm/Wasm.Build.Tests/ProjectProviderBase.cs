@@ -373,7 +373,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (IsFingerprintingEnabled)
         {
-            string bootJsonPath = Path.Combine(paths.BinFrameworkDir, "dotnet.boot.js");
+            string bootJsonPath = GetBootConfigPath(paths.BinFrameworkDir, "dotnet.boot.js");
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             var keysToUpdate = new List<string>();
             var updates = new List<(string oldKey, string newKey, (string fullPath, bool unchanged) value)>();
@@ -490,10 +490,31 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return ParseBootData(bootJsonPath);
     }
 
+    private string GetBootConfigPath(string binFrameworkDir, string bootConfigFileName)
+    {
+        if (bootConfigFileName.EndsWith(".js"))
+        {
+            string bootFileNameWithoutExtension = Path.GetFileNameWithoutExtension(bootConfigFileName);
+            string bootFileExtension = Path.GetExtension(bootConfigFileName);
+            string? fingerprintedBootJsonPath = Directory
+                .EnumerateFiles(binFrameworkDir)
+                .FirstOrDefault(f => Path.GetFileName(f).StartsWith(bootFileNameWithoutExtension) && Path.GetExtension(f) == bootFileExtension);
+            
+            if (fingerprintedBootJsonPath == null)
+                throw new XunitException($"Could not find boot config '{bootConfigFileName}' with fingerprint in '{binFrameworkDir}'");
+
+            bootJsonPath = fingerprintedBootJsonPath!;
+        }
+        else
+        {
+            bootJsonPath = Path.Combine(binFrameworkDir, options.BuildOptions.BootConfigFileName);
+        }
+    }
+
     public BootJsonData AssertBootJson(AssertBundleOptions options)
     {
         EnsureProjectDirIsSet();
-        string bootJsonPath = Path.Combine(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
+        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
         BootJsonData bootJson = GetBootJson(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
