@@ -71,7 +71,7 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     FreeUMEntryThunk();
 
 #if defined(FEATURE_COMWRAPPERS)
-    delete m_managedObjectComWrapperMap;
+    delete m_managedObjectComWrapperSet;
 #endif // FEATURE_COMWRAPPERS
 }
 

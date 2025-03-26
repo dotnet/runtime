@@ -225,8 +225,7 @@ extern "C" void QCALLTYPE ComWrappers_GetTaggedImpl(
 
 extern "C" void QCALLTYPE ComWrappers_RegisterManagedObjectWrapperForDiagnostics(
     _In_ QCall::ObjectHandleOnStack obj,
-    _In_ void* wrapper,
-    _In_ long wrapperId)
+    _In_ void* wrapper)
 {
     QCALL_CONTRACT;
 
@@ -242,7 +241,7 @@ extern "C" void QCALLTYPE ComWrappers_RegisterManagedObjectWrapperForDiagnostics
     InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
     _ASSERTE(syncBlock->IsPrecious());
 
-    interopInfo->TrySetManagedObjectComWrapper(wrapperId, wrapper);
+    interopInfo->AddManagedObjectComWrapper(wrapper);
 
     GCPROTECT_END();
 

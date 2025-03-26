@@ -5086,17 +5086,17 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
                 *rcw = TO_TADDR(pInfo->m_externalComObjectContext);
             }
 
-            DPTR(NewHolder<ManagedObjectComWrapperByIdMap>) mapHolder(PTR_TO_MEMBER_TADDR(InteropSyncBlockInfo, pInfo, m_managedObjectComWrapperMap));
-            DPTR(ManagedObjectComWrapperByIdMap *)ppMap(PTR_TO_MEMBER_TADDR(NewHolder<ManagedObjectComWrapperByIdMap>, mapHolder, m_value));
-            DPTR(ManagedObjectComWrapperByIdMap) pMap(TO_TADDR(*ppMap));
+            DPTR(NewHolder<ManagedObjectComWrapperSet>) mapHolder(PTR_TO_MEMBER_TADDR(InteropSyncBlockInfo, pInfo, m_managedObjectComWrapperSet));
+            DPTR(ManagedObjectComWrapperSet *)ppMap(PTR_TO_MEMBER_TADDR(NewHolder<ManagedObjectComWrapperSet>, mapHolder, m_value));
+            DPTR(ManagedObjectComWrapperSet) pMap(TO_TADDR(*ppMap));
 
             CQuickArrayList<CLRDATA_ADDRESS> comWrappers;
             if (pMap != NULL)
             {
-                ManagedObjectComWrapperByIdMap::Iterator iter = pMap->Begin();
+                ManagedObjectComWrapperSet::Iterator iter = pMap->Begin();
                 while (iter != pMap->End())
                 {
-                    comWrappers.Push(TO_CDADDR(iter->Value()));
+                    comWrappers.Push(TO_CDADDR(*iter));
                     ++iter;
 
                 }

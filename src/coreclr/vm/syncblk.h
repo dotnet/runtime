@@ -611,8 +611,18 @@ typedef DPTR(class ComCallWrapper)        PTR_ComCallWrapper;
 
 #include "shash.h"
 #endif // FEATURE_COMINTEROP
+class ManagedObjectComWrapperTraits final : public NoRemoveSHashTraits<DefaultSHashTraits<void *>>
+{
+public:
+    typedef LPVOID key_t;
+    static void *Null()                         { LIMITED_METHOD_CONTRACT; return NULL; }
+    static bool IsNull(void* *e)                 { LIMITED_METHOD_CONTRACT; return (e == NULL); }
+    static const LPVOID GetKey(void *e)         { LIMITED_METHOD_CONTRACT; return e; }
+    static count_t Hash(LPVOID key_t)          { LIMITED_METHOD_CONTRACT; return (count_t)(size_t) key_t; }
+    static BOOL Equals(LPVOID lhs, LPVOID rhs) { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
+};
 
-using ManagedObjectComWrapperByIdMap = MapSHash<INT64, void*>;
+using ManagedObjectComWrapperSet = SHash<ManagedObjectComWrapperTraits<void*>>;
 class InteropSyncBlockInfo
 {
     friend class RCWHolder;
@@ -636,7 +646,7 @@ public:
 #ifdef FEATURE_COMWRAPPERS
         , m_externalComObjectContext{}
         , m_managedObjectComWrapperLock{}
-        , m_managedObjectComWrapperMap{}
+        , m_managedObjectComWrapperSet{}
 #endif // FEATURE_COMWRAPPERS
 #ifdef FEATURE_OBJCMARSHAL
         , m_taggedMemory{}
@@ -805,27 +815,24 @@ public:
 #if defined(FEATURE_COMWRAPPERS)
 public:
 #ifndef DACCESS_COMPILE
-    bool TrySetManagedObjectComWrapper(_In_ INT64 wrapperId, _In_ void* mocw, _In_ void* curr = NULL)
+    bool AddManagedObjectComWrapper(_In_ void* mocw)
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (m_managedObjectComWrapperMap == NULL)
+        if (m_managedObjectComWrapperSet == NULL)
         {
-            NewHolder<ManagedObjectComWrapperByIdMap> map = new ManagedObjectComWrapperByIdMap();
-            if (InterlockedCompareExchangeT(&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
+            NewHolder<ManagedObjectComWrapperSet> map = new ManagedObjectComWrapperSet();
+            if (InterlockedCompareExchangeT(&m_managedObjectComWrapperSet, (ManagedObjectComWrapperSet *)map, NULL) == NULL)
             {
                 map.SuppressRelease();
             }
 
-            _ASSERTE(m_managedObjectComWrapperMap != NULL);
+            _ASSERTE(m_managedObjectComWrapperSet != NULL);
         }
 
         CrstHolder lock(&m_managedObjectComWrapperLock);
 
-        if (m_managedObjectComWrapperMap->LookupPtr(wrapperId) != curr)
-            return false;
-
-        m_managedObjectComWrapperMap->Add(wrapperId, mocw);
+        m_managedObjectComWrapperSet->Add(mocw);
         return true;
     }
 #endif // !DACCESS_COMPILE
@@ -854,7 +861,7 @@ private:
     void* m_externalComObjectContext;
 
     CrstExplicitInit m_managedObjectComWrapperLock;
-    ManagedObjectComWrapperByIdMap* m_managedObjectComWrapperMap;
+    ManagedObjectComWrapperSet* m_managedObjectComWrapperSet;
 #endif // FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_OBJCMARSHAL

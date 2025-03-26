@@ -23,16 +23,13 @@ namespace System.Runtime.InteropServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIUnknownImpl")]
         private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
-        private static long s_instanceCounter;
-        private readonly long id = Interlocked.Increment(ref s_instanceCounter);
-
         unsafe partial void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapper* wrapper)
         {
-            RegisterManagedObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack.Create(ref instance), wrapper, id);
+            RegisterManagedObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack.Create(ref instance), wrapper);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_RegisterManagedObjectWrapperForDiagnostics")]
-        private static unsafe partial void RegisterManagedObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack instance, ManagedObjectWrapper* wrapper, long wrapperId);
+        private static unsafe partial void RegisterManagedObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack instance, ManagedObjectWrapper* wrapper);
 
         static partial void RegisterNativeObjectWrapperForDiagnostics(NativeObjectWrapper registeredWrapper)
         {
