@@ -901,47 +901,9 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         assert((genRegMask(rCnt) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rCnt is not a live incoming
                                                                                 // argument reg
 
-        //
-        // ; base isa (+C extension)
-        //       addi      rCnt, zero, uCntSlots / 2
-        // Loop:
-        //      sd         zero, (8 + padding)rAddr           ; store first elem of block
-        //      sd         zero, (0 + padding)rAddr           ; store second elem of block
-        //      addi       rCnt, rCnt, -1
-        //      addi       rAddr, rAddr, 2 * REGSIZE_BYTES    ; go to the next block
-        //      bnez       rCnt, Loop                         ; Anything left?
-        //
-        // TODO-RISCV64: maybe use V or cmo extension?
-        //
-        // ; V-extension:
-        //
-        //      vsetvli    t0, zero, e64, m1, ta, ma          ; SEW=64b LMUL=1
-        //      vmv.v.i    v0, 0                              ; fill v0 with zeros
-        // Loop:
-        //      vsd        v0, (padding)rAddr                 ; store 2 * 8 = 16 bytes of zero
-        //      addi       rAddr, rAddr, 2 * REGSIZE_BYTES    ; advance by block size (16 bytes)
-        //      addi       rCnt, rCnt, -1
-        //      bnez       rCnt, Loop
-        //
-        // ; cmo-extension:
-        //
-        //      addi       rCnt, zero, uCntSlots
-        //      addi       rAddr, rAddr, padding
-        // Loop:
-        //      cbo.zero   rAddr                             ; Store zeros to the full set of bytes
-        //                                                   ; corresponding to a cache block
-        //      addi       rAddr, rAddr, REGSIZE_BYTES + padding
-        //      addi       rCnt, rCnt, -1
-        //      bnez       rCnt, Loop
-        //
-
-        BasicBlock* loop = genCreateTempLabel();
-
         if (uCntSlots % 4 == 0)
         {
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 4);
-
-            genDefineTempLabel(loop);
 
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
@@ -950,7 +912,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
 
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES + 3 * padding);
-            GetEmitter()->emitIns_J(INS_bnez, loop, rCnt);
+            GetEmitter()->emitIns_R_I(INS_bnez, EA_PTRSIZE, rCnt, -6 << 2);
 
             uCntBytes %= REGSIZE_BYTES * 4;
         }
@@ -958,14 +920,13 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         {
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
 
-            genDefineTempLabel(loop);
-
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
 
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES + padding);
-            GetEmitter()->emitIns_J(INS_bnez, loop, rCnt);
+
+            GetEmitter()->emitIns_R_I(INS_bnez, EA_PTRSIZE, rCnt, -4 << 2);
 
             uCntBytes %= REGSIZE_BYTES * 2;
         }

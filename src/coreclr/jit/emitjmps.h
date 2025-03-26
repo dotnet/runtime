@@ -62,9 +62,8 @@ JMP_SMALL(lt    , ge    , blt    )  // LT
 JMP_SMALL(ge    , lt    , bge    )  // GE
 JMP_SMALL(ltu   , geu   , bltu   )  // LTU
 JMP_SMALL(geu   , ltu   , bgeu   )  // GEU
-// C extension
-JMP_SMALL(eqz   , nez   , beqz   ) // EQZ
-JMP_SMALL(nez   , eqz   , bnez   ) // NEZ
+JMP_SMALL(eqz   , nez   , beqz   )  // EQZ
+JMP_SMALL(nez   , eqz   , bnez   )  // NEZ
 
 #else
   #error Unsupported or unset target architecture

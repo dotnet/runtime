@@ -275,7 +275,6 @@ inline static bool isCondJumpInstruction(instruction ins)
         case INS_bge:
         case INS_bltu:
         case INS_bgeu:
-        // C extension
         case INS_beqz:
         case INS_bnez:
             return true;
