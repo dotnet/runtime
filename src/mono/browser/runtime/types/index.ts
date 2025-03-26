@@ -6,11 +6,11 @@ import type { EmscriptenModule, NativePointer } from "./emscripten";
 export interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the blazor.boot.json will be downloaded and applied by default.
+     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: MonoConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./blazor.boot.json is a default config file location.
+     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
      */
     withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
@@ -256,7 +256,7 @@ export interface LoadingResource {
     response: Promise<Response>;
 }
 
-// Types of assets that can be in the _framework/blazor.boot.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
+// Types of assets that can be in the _framework/dotnet.boot.js file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 export interface AssetEntry {
     /**
      * the name of the asset, including extension.
@@ -335,7 +335,7 @@ export type SingleAssetBehaviors =
      */
     | "js-module-native"
     /**
-     * Typically blazor.boot.json
+     * Typically dotnet.boot.js
      */
     | "manifest"
     /**

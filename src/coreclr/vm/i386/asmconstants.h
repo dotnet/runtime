@@ -46,6 +46,8 @@ ASMCONSTANTS_C_ASSERT(FRAMETYPE_TailCallFrame == (int)FrameIdentifier::TailCallF
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
+#define ThisPtrRetBufPrecodeData__Target      0x00
+ASMCONSTANTS_C_ASSERT(ThisPtrRetBufPrecodeData__Target == offsetof(ThisPtrRetBufPrecodeData, Target));
 
 // CONTEXT from pal.h
 #define CONTEXT_Edi 0x9c
@@ -286,6 +288,9 @@ ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pMT     == offsetof(ResolveCacheElem, pM
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__token   == offsetof(ResolveCacheElem, token));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target  == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext   == offsetof(ResolveCacheElem, pNext));
+
+#define ASM__CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT (0x100)
+ASMCONSTANTS_C_ASSERT(ASM__CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT == CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT)
 
 #define FixupPrecodeData__Target 0x00
 ASMCONSTANTS_C_ASSERT(FixupPrecodeData__Target            == offsetof(FixupPrecodeData, Target))

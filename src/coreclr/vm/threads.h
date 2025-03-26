@@ -369,9 +369,9 @@ void SetupTLSForThread();
 // When we resume a thread at a new location, to get an exception thrown, we have to
 // pretend the exception originated elsewhere.
 EXTERN_C void ThrowControlForThread(
-#ifdef FEATURE_EH_FUNCLETS
+#if !defined(TARGET_X86)
         FaultingExceptionFrame *pfef
-#endif // FEATURE_EH_FUNCLETS
+#endif // !TARGET_X86
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
         , TADDR ssp
 #endif // TARGET_AMD64 && TARGET_WINDOWS
@@ -380,8 +380,6 @@ EXTERN_C void ThrowControlForThread(
 #if defined(_DEBUG)
 BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId );
 #endif
-
-typedef DWORD (*AppropriateWaitFunc) (void *args, DWORD timeout, DWORD option);
 
 // The Thread class represents a managed thread.  This thread could be internal
 // or external (i.e. it wandered in from outside the runtime).  For internal
@@ -2192,16 +2190,12 @@ public:
                                      DWORD millis, WaitMode mode,
                                      PendingSync *syncInfo = 0);
 
-    DWORD          DoAppropriateWait(AppropriateWaitFunc func, void *args, DWORD millis,
-                                     WaitMode mode, PendingSync *syncInfo = 0);
     DWORD          DoSignalAndWait(HANDLE *handles, DWORD millis, BOOL alertable,
                                      PendingSync *syncState = 0);
 private:
     void           DoAppropriateWaitWorkerAlertableHelper(WaitMode mode);
     DWORD          DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL waitAll,
                                            DWORD millis, WaitMode mode, void *associatedObjectForMonitorWait);
-    DWORD          DoAppropriateWaitWorker(AppropriateWaitFunc func, void *args,
-                                           DWORD millis, WaitMode mode);
     DWORD          DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable);
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
     DWORD          DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis);
