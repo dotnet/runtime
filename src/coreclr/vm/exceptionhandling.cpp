@@ -7944,7 +7944,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #endif // HOST_UNIX
         // Throw exception from the caller context
 
-#ifdef HOST_WINDOWS
+#if defined(HOST_WINDOWS) && !defined(HOST_X86)
         if ((pLongJmpBuf == NULL) && !IsComPlusException(&lastExceptionRecord) && MapWin32FaultToCOMPlusException(&lastExceptionRecord) == kSEHException)
         {
             // Propagate an external exception to the caller context. This is done in a special way, since the native stack
@@ -7958,7 +7958,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
             exceptionRecord.ExceptionInformation[1] = (ULONG_PTR)&lastExceptionRecord;
             RtlRestoreContext(pvRegDisplay->pCurrentContext, &exceptionRecord);
         }
-#endif // HOST_WINDOWS
+#endif // HOST_WINDOWS && !HOST_X86
 
 #if defined(HOST_AMD64)
         ULONG64* returnAddress = (ULONG64*)targetSp;
