@@ -1342,13 +1342,15 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 static void
 sample_current_thread_stack_trace ()
 {
+	MonoContext ctx;
 	MonoThreadInfo *thread_info = mono_thread_info_current ();
 	SampleProfileStackWalkData stack_walk_data;
 	SampleProfileStackWalkData *data= &stack_walk_data;
 	THREAD_INFO_TYPE adapter = { { 0 } };
+	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, sample_current_thread_stack_trace);
 
 	data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
-	data->thread_ip = 0;
+	data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&ctx);
 	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
 	data->stack_walk_data.stack_contents = &data->stack_contents;
 	data->stack_walk_data.top_frame = true;
@@ -1357,7 +1359,7 @@ sample_current_thread_stack_trace ()
 	data->stack_walk_data.runtime_invoke_frame = false;
 	ep_stack_contents_reset (&data->stack_contents);
 
-	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, NULL, MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, &ctx, MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
 	if (data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && (data->stack_walk_data.safe_point_frame || data->stack_walk_data.runtime_invoke_frame)) {
 		data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
 	}
