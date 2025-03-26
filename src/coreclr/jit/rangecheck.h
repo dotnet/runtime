@@ -294,8 +294,7 @@ struct Range
         // Lower limit should be less than or equal to upper limit.
         // In case of Checked Bounds, we have assumptions that a Checked Bound is never negative,
         // e.g. <$bnd + 10, 5> is not a valid range.
-        if ((lLimit.IsConstant() && uLimit.IsConstant()) || (lLimit.IsBinOpArray() && uLimit.IsConstant()) ||
-            (lLimit.IsConstant() && uLimit.IsBinOpArray()))
+        if ((lLimit.IsConstant() && uLimit.IsConstant()) || (lLimit.IsBinOpArray() && uLimit.IsConstant()))
         {
             return lLimit.GetConstant() <= uLimit.GetConstant();
         }
