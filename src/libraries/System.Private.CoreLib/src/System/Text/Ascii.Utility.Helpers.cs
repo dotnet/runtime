@@ -4,10 +4,16 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text
 {
-    public static partial class Ascii
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        static partial class Ascii
     {
         /// <summary>
         /// A mask which selects only the high bit of each byte of the given <see cref="uint"/>.
