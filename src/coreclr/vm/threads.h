@@ -369,9 +369,9 @@ void SetupTLSForThread();
 // When we resume a thread at a new location, to get an exception thrown, we have to
 // pretend the exception originated elsewhere.
 EXTERN_C void ThrowControlForThread(
-#ifdef FEATURE_EH_FUNCLETS
+#if !defined(TARGET_X86)
         FaultingExceptionFrame *pfef
-#endif // FEATURE_EH_FUNCLETS
+#endif // !TARGET_X86
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
         , TADDR ssp
 #endif // TARGET_AMD64 && TARGET_WINDOWS
