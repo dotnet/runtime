@@ -3181,17 +3181,21 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     }
 #endif
 
+    // Note the array reference may now be TYP_I_IMPL, TYP_BYREF, or TYP_REF
+    //
+    var_types const arrPtrType = arrRef->TypeIs(TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
+
     // First element's offset
     GenTree* elemOffset = gtNewIconNode(elemOffs, TYP_I_IMPL);
     if (groupArrayRefWithElemOffset)
     {
-        GenTree* basePlusOffset = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, elemOffset);
-        addr                    = gtNewOperNode(GT_ADD, TYP_BYREF, basePlusOffset, addr);
+        GenTree* basePlusOffset = gtNewOperNode(GT_ADD, arrPtrType, arrRef, elemOffset);
+        addr                    = gtNewOperNode(GT_ADD, arrPtrType, basePlusOffset, addr);
     }
     else
     {
         addr = gtNewOperNode(GT_ADD, TYP_I_IMPL, addr, elemOffset);
-        addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
+        addr = gtNewOperNode(GT_ADD, arrPtrType, arrRef, addr);
     }
 
     // TODO-Throughput: bash the INDEX_ADDR to ARR_ADDR here instead of creating a new node.
@@ -6465,7 +6469,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
             if (ptr != NULL)
             {
-                setMethodHasFrozenObjects();
                 GenTree* retNode = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
                 return fgMorphTree(retNode);
             }
@@ -11720,13 +11723,13 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
             if (BitVecOps::IsMember(apTraits, killed, index - 1))
             {
                 AssertionDsc* curAssertion = optGetAssertion(index);
-                noway_assert((curAssertion->op1.lcl.lclNum == lclNum) ||
-                             ((curAssertion->op2.kind == O2K_LCLVAR_COPY) && (curAssertion->op2.lcl.lclNum == lclNum)));
+                noway_assert((curAssertion->op1.lclNum == lclNum) ||
+                             ((curAssertion->op2.kind == O2K_LCLVAR_COPY) && (curAssertion->op2.lclNum == lclNum)));
                 if (verbose)
                 {
                     printf("\nThe store ");
                     printTreeID(tree);
-                    printf(" using V%02u removes: ", curAssertion->op1.lcl.lclNum);
+                    printf(" using V%02u removes: ", curAssertion->op1.lclNum);
                     optPrintAssertion(curAssertion, index);
                 }
             }
@@ -11798,6 +11801,7 @@ void Compiler::fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree)
 //
 void Compiler::fgAssertionGen(GenTree* tree)
 {
+    assert(optLocalAssertionProp);
     INDEBUG(unsigned oldAssertionCount = optAssertionCount;);
     optAssertionGen(tree);
 
@@ -11842,18 +11846,18 @@ void Compiler::fgAssertionGen(GenTree* tree)
         if ((assertion->assertionKind == OAK_EQUAL) && (assertion->op1.kind == O1K_LCLVAR) &&
             (assertion->op2.kind == O2K_CONST_INT))
         {
-            LclVarDsc* const lclDsc = lvaGetDesc(assertion->op1.lcl.lclNum);
+            LclVarDsc* const lclDsc = lvaGetDesc(assertion->op1.lclNum);
 
             if (varTypeIsIntegral(lclDsc->TypeGet()))
             {
                 ssize_t iconVal = assertion->op2.u1.iconVal;
                 if ((iconVal == 0) || (iconVal == 1))
                 {
-                    AssertionDsc extraAssertion   = {OAK_SUBRANGE};
-                    extraAssertion.op1.kind       = O1K_LCLVAR;
-                    extraAssertion.op1.lcl.lclNum = assertion->op1.lcl.lclNum;
-                    extraAssertion.op2.kind       = O2K_SUBRANGE;
-                    extraAssertion.op2.u2 = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
+                    AssertionDsc extraAssertion = {OAK_SUBRANGE};
+                    extraAssertion.op1.kind     = O1K_LCLVAR;
+                    extraAssertion.op1.lclNum   = assertion->op1.lclNum;
+                    extraAssertion.op2.kind     = O2K_SUBRANGE;
+                    extraAssertion.op2.u2       = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
 
                     AssertionIndex extraIndex = optFinalizeCreatingAssertion(&extraAssertion);
                     if (extraIndex != NO_ASSERTION_INDEX)
