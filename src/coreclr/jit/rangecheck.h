@@ -287,6 +287,7 @@ struct Range
     {
         return comp->printfAlloc("<%s, %s>", lLimit.ToString(comp), uLimit.ToString(comp));
     }
+#endif
 
     bool IsValid() const
     {
@@ -307,7 +308,6 @@ struct Range
 
         return true;
     }
-#endif
 };
 
 // Helpers for operations performed on ranges
@@ -472,8 +472,8 @@ struct RangeOps
     // then ignore the dependent variables for the lower bound but not for the upper bound.
     static Range Merge(const Range& r1, const Range& r2, bool monIncreasing)
     {
-        assert(r1.IsValid() || !"Merge: r1 is invalid");
-        assert(r2.IsValid() || !"Merge: r2 is invalid");
+        assert(r1.IsValid());
+        assert(r2.IsValid());
 
         const Limit& r1lo = r1.LowerLimit();
         const Limit& r1hi = r1.UpperLimit();
