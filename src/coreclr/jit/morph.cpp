@@ -417,15 +417,20 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // Because there is no IL instruction conv.r4.un, uint/ulong -> float
     // casts are always imported as CAST(float <- CAST(double <- uint/ulong)).
     // We can usually eliminate the redundant intermediate cast as an optimization.
+    //
     // AArch and xarch+EVEX have instructions that can cast directly from
-    // all integers (except for longs on 32-bit of course) to floats.
+    // all integers (except for longs on ARM32) to floats.
     // On x64, we also have the option of widening uint -> long and
     // using the signed conversion instructions, and ulong -> float/double
     // is handled directly in codegen, so we can allow all casts.
+    //
+    // This logic will also catch CAST(float <- CAST(double <- float))
+    // and reduce it to CAST(float <- float), which is handled in codegen as
+    // an optional mov.
     else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
-#ifndef TARGET_64BIT
+#ifdef TARGET_ARM
              && !varTypeIsLong(oper->AsCast()->CastOp())
-#endif // !TARGET_64BIT
+#endif // TARGET_ARM
 #ifdef TARGET_X86
              && canUseEvexEncoding()
 #endif // TARGET_X86
@@ -481,6 +486,35 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #endif // TARGET_AMD64
 
 #ifdef TARGET_X86
+#ifdef FEATURE_HW_INTRINSICS
+    else if (varTypeIsLong(srcType) && varTypeIsFloating(dstType) && canUseEvexEncoding())
+    {
+        // We can avoid helper calls by using SIMD conversion instructions. The result needs to end up
+        // in a SIMD/floating register anyway.
+        NamedIntrinsic intrinsicId      = NI_Illegal;
+        CorInfoType    baseFloatingType = (dstType == TYP_FLOAT) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_DOUBLE;
+        CorInfoType    baseIntegralType = tree->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG;
+
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+        {
+            intrinsicId = (dstType == TYP_FLOAT) ? NI_AVX512DQ_VL_ConvertToVector128Single
+                                                 : NI_AVX512DQ_VL_ConvertToVector128Double;
+        }
+        else
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
+            intrinsicId =
+                (dstType == TYP_FLOAT) ? NI_AVX10v1_ConvertToVector128Single : NI_AVX10v1_ConvertToVector128Double;
+        }
+
+        GenTree* createScalar = gtNewSimdCreateScalarNode(TYP_SIMD16, oper, baseIntegralType, 16);
+        GenTree* convert      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, createScalar, intrinsicId, baseIntegralType, 16);
+        GenTree* toScalar     = gtNewSimdToScalarNode(dstType, convert, baseFloatingType, 16);
+
+        return fgMorphHWIntrinsic(toScalar->AsHWIntrinsic());
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     // Do we have to do two step U4/8 -> R4/8 ?
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
