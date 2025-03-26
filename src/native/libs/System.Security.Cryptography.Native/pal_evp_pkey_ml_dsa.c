@@ -94,8 +94,6 @@ int32_t CryptoNative_MLDsaSignPure(EVP_PKEY *pkey,
     ERR_clear_error();
 
     EVP_PKEY_CTX* ctx = NULL;
-    EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
-    OSSL_LIB_CTX* libCtx = extra ? extra->libCtx : NULL;
 
     int ret = -1;
 
@@ -176,8 +174,6 @@ int32_t CryptoNative_MLDsaVerifyPure(EVP_PKEY *pkey,
     ERR_clear_error();
 
     EVP_PKEY_CTX* ctx = NULL;
-    EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
-    OSSL_LIB_CTX* libCtx = extra ? extra->libCtx : NULL;
 
     int ret = -1;
 
