@@ -21932,7 +21932,7 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
             unreached();
     }
 #elif defined(TARGET_ARM64)
-    assert((simdSize == 8) || (simdSize == 16));
+    assert((simdSize == 8) || (simdSize == 16) || (simdSize == compVectorTLength));
 
     switch (simdSourceBaseJitType)
     {
@@ -21988,6 +21988,10 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
+
+#if defined(TARGET_ARM64)
+    hwIntrinsicID = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(simdSize, hwIntrinsicID);
+#endif
 
     assert(hwIntrinsicID != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdSourceBaseJitType, simdSize);
@@ -28806,6 +28810,24 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
                 break;
             case NI_AdvSimd_And:
                 sveId = NI_Sve_And;
+                break;
+            case NI_AdvSimd_Arm64_ConvertToDouble:
+                sveId = NI_Sve_ConvertToDouble;
+                break;
+            case NI_AdvSimd_ConvertToSingle:
+                sveId = NI_Sve_ConvertToSingle;
+                break;
+            case NI_AdvSimd_ConvertToInt32RoundToZero:
+                sveId = NI_Sve_ConvertToInt32;
+                break;
+            case NI_AdvSimd_ConvertToUInt32RoundToZero:
+                sveId = NI_Sve_ConvertToUInt32;
+                break;
+            case NI_AdvSimd_Arm64_ConvertToInt64RoundToZero:
+                sveId = NI_Sve_ConvertToInt64;
+                break;
+            case NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero:
+                sveId = NI_Sve_ConvertToUInt64;
                 break;
             case NI_AdvSimd_Not:
                 sveId = NI_Sve_Not;

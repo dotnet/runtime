@@ -984,6 +984,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_ConvertToDouble:
         case NI_Vector64_ConvertToDouble:
         case NI_Vector128_ConvertToDouble:
         {
@@ -997,6 +998,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_ConvertToInt32Native:
         case NI_Vector64_ConvertToInt32Native:
         case NI_Vector128_ConvertToInt32Native:
         {
@@ -1007,6 +1009,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             FALLTHROUGH;
         }
 
+        case NI_Vector_ConvertToInt32:
         case NI_Vector64_ConvertToInt32:
         case NI_Vector128_ConvertToInt32:
         {
@@ -1018,6 +1021,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_ConvertToInt64Native:
         case NI_Vector64_ConvertToInt64Native:
         case NI_Vector128_ConvertToInt64Native:
         {
@@ -1028,6 +1032,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             FALLTHROUGH;
         }
 
+        case NI_Vector_ConvertToInt64:
         case NI_Vector64_ConvertToInt64:
         case NI_Vector128_ConvertToInt64:
         {
@@ -1039,6 +1044,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_ConvertToSingle:
         case NI_Vector64_ConvertToSingle:
         case NI_Vector128_ConvertToSingle:
         {
@@ -1050,6 +1056,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_ConvertToUInt32Native:
         case NI_Vector64_ConvertToUInt32Native:
         case NI_Vector128_ConvertToUInt32Native:
         {
@@ -1060,6 +1067,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             FALLTHROUGH;
         }
 
+        case NI_Vector_ConvertToUInt32:
         case NI_Vector64_ConvertToUInt32:
         case NI_Vector128_ConvertToUInt32:
         {
@@ -1071,6 +1079,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_ConvertToUInt64Native:
         case NI_Vector64_ConvertToUInt64Native:
         case NI_Vector128_ConvertToUInt64Native:
         {
@@ -1081,6 +1090,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             FALLTHROUGH;
         }
 
+        case NI_Vector_ConvertToUInt64:
         case NI_Vector64_ConvertToUInt64:
         case NI_Vector128_ConvertToUInt64:
         {
