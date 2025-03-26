@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -81,6 +82,82 @@ internal static class Entrypoints
         Legacy.SOSDacImpl impl = new(target, legacyImpl);
         nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         *obj = ptr;
+        return 0;
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstance")]
+    private static unsafe int CLRDataCreateInstance(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, void** iface)
+    {
+        if (pLegacyTarget == IntPtr.Zero || iface == null)
+            return HResults.E_INVALIDARG;
+
+        *iface = null;
+
+        ComWrappers cw = new StrategyBasedComWrappers();
+        object obj = cw.GetOrCreateObjectForComInstance(pLegacyTarget, CreateObjectFlags.None);
+        ICLRDataTarget dataTarget = obj as ICLRDataTarget ?? throw new ArgumentException($"pLegacyTarget does not implement ${nameof(ICLRDataTarget)}", nameof(pLegacyTarget));
+        ICLRContractLocator contractLocator = obj as ICLRContractLocator ?? throw new ArgumentException($"pLegacyTarget does not implement ${nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
+
+        ulong contractAddress;
+        if (contractLocator.GetContractDescriptor(&contractAddress) != 0)
+        {
+            throw new InvalidOperationException("Unable to retrieve contract address from ICLRContractLocator");
+        }
+
+        if (!ContractDescriptorTarget.TryCreate(
+            contractAddress,
+            (address, buffer) =>
+            {
+                fixed (byte* bufferPtr = buffer)
+                {
+                    uint bytesRead;
+                    return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
+                }
+            },
+            (threadId, contextFlags, contextSize, bufferToFill) =>
+            {
+                fixed (byte* bufferPtr = bufferToFill)
+                {
+                    return dataTarget.GetThreadContext(threadId, contextFlags, contextSize, bufferPtr);
+                }
+            },
+            (out platform) =>
+            {
+                platform = 0;
+                uint machineType;
+                int hr = dataTarget.GetMachineType(&machineType);
+                switch (machineType)
+                {
+                    // ICLRDataTarget can not be used to find OS. For now labeling all platforms as Windows
+                    //
+                    case 0x014c: // IMAGE_FILE_MACHINE_I386
+                        platform = (int)Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_X86;
+                        break;
+                    case 0x8664: // IMAGE_FILE_MACHINE_AMD64
+                        platform = (int)Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_AMD64;
+                        break;
+                    case 0x01c4: // IMAGE_FILE_MACHINE_ARMNT
+                        platform = (int)Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_ARM;
+                        break;
+                    case 0xAA64: // IMAGE_FILE_MACHINE_ARM64
+                        platform = (int)Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_ARM64;
+                        break;
+                }
+                return hr;
+            },
+            out ContractDescriptorTarget? target))
+        {
+            return -1;
+        }
+
+        Legacy.SOSDacImpl impl = new(target, null);
+        nint ccw = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
+        Marshal.QueryInterface(ccw, *pIID, out nint ptrToIface);
+        *iface = (void*)ptrToIface;
+
+        // Decrement reference count on ccw because QI increments it
+        Marshal.Release(ccw);
+
         return 0;
     }
 }
