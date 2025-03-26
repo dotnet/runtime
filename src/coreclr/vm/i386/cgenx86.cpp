@@ -39,6 +39,10 @@
 
 #include "stublink.inl"
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 // NOTE on Frame Size C_ASSERT usage in this file
 // if the frame size changes then the stubs have to be revisited for correctness
 // kindly revist the logic and then update the constants so that the C_ASSERT will again fire

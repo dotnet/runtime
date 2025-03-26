@@ -25,6 +25,10 @@
 #include "clrtocomcall.h"
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pRegs)
 {
     LIMITED_METHOD_CONTRACT;

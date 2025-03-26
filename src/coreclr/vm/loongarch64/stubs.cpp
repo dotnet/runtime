@@ -14,7 +14,9 @@
 #include "jitinterface.h"
 #include "ecall.h"
 
-
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------

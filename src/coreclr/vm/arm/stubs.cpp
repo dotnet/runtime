@@ -25,6 +25,10 @@
 #include "ecall.h"
 #include "threadsuspend.h"
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 // target write barriers
 EXTERN_C void JIT_WriteBarrier(Object **dst, Object *ref);
 EXTERN_C void JIT_WriteBarrier_End();
