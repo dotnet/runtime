@@ -30509,7 +30509,9 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
     if (varTypeIsMask(type))
     {
         assert(!isScalar);
+#ifdef TARGET_XARCH
         assert(comp->canUseEvexEncodingDebugOnly());
+#endif
     }
     else if (simdSize == 32)
     {
