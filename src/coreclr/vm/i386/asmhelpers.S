@@ -793,8 +793,7 @@ LOCAL_LABEL(main_loop):
     mov     ecx, eax
 
     CHECK_STACK_ALIGNMENT
-    // call C_FUNC(VirtualCallStubManager::PromoteChainEntry)
-    call    C_FUNC(_ZN22VirtualCallStubManager17PromoteChainEntryEP16ResolveCacheElem)
+    call    C_FUNC(VSD_PromoteChainEntry)
 
     add     esp, STACK_ALIGN_PADDING
     #undef  STACK_ALIGN_PADDING

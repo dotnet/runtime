@@ -163,8 +163,6 @@
 #define CHAIN_LOOKUP
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
-#if defined(TARGET_X86)
 // If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior
 // of stub-based interface dispatch.
 //#define STUB_LOGGING
-#endif
