@@ -139,8 +139,9 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
         return "VSD_VTableStub";
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+    default:
+        return "Unknown";
     }
-    return "Unknown";
 }
 
 void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind);
@@ -149,8 +150,6 @@ inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 {
 }
 #endif
-
-#ifndef 
 
 //-----------------------------------------------------------------------------
 // Method header which exists just before the code.

@@ -35,6 +35,11 @@ bool PerfMap::s_IndividualAllocationStubReporting = false;
 unsigned PerfMap::s_StubsMapped = 0;
 CrstStatic PerfMap::s_csPerfMap;
 
+bool PerfMapLowGranularityStubs()
+{
+    return PerfMap::LowGranularityStubs();
+}
+
 // Initialize the map for the process - called from EEStartupHelper.
 void PerfMap::Initialize()
 {
@@ -388,7 +393,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 }
 
 // Log a set of stub to the map.
-void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, bool individualAllocation)
+void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -397,9 +402,12 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
         return;
     }
 
-    if (individualAllocation != s_IndividualAllocationStubReporting)
+    if (stubAllocationType != PerfMapStubType::Individual)
     {
-        return;
+        if ((stubAllocationType == PerfMapStubType::IndividualWithinBlock) != s_IndividualAllocationStubReporting)
+        {
+            return;
+        }
     }
 
     // Logging failures should not cause any exceptions to flow upstream.
@@ -460,7 +468,7 @@ void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 {
     WRAPPER_NO_CONTRACT;
 
-    PerfMap::LogStubs(__FUNCTION__, GetStubCodeBlockKindString(kind), (PCODE)start, size, false);
+    PerfMap::LogStubs(__FUNCTION__, GetStubCodeBlockKindString(kind), (PCODE)start, size, PerfMapStubType::Block);
 }
 
 #endif // FEATURE_PERFMAP && !DACCESS_COMPILE

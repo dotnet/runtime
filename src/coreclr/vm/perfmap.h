@@ -11,6 +11,14 @@
 #include "volatile.h"
 
 // Generates a perfmap file.
+
+enum class PerfMapStubType
+{
+    Block,
+    IndividualWithinBlock,
+    Individual
+};
+
 class PerfMap
 {
 private:
@@ -49,7 +57,7 @@ private:
     // Default to /tmp or use DOTNET_PerfMapJitDumpPath if set
     static const char* InternalConstructPath();
 
-    void InitializeConfiguration();
+    static void InitializeConfiguration();
 
 protected:
     // Open the perf map file for write.
@@ -91,9 +99,11 @@ public:
     static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode);
 
     // Log a set of stub to the map.
-    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, bool individualAllocation);
+    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType);
 
     // Close the map and flush any remaining data.
     static void Disable();
+
+    static bool LowGranularityStubs() { return !s_IndividualAllocationStubReporting; }
 };
 #endif // PERFPID_H

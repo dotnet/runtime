@@ -3227,7 +3227,7 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         _ASSERTE(IS_ALIGNED(blockWriterHolder.GetRW(), CODE_SIZE_ALIGN));
     }
 
-    ReportStubBlock(mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB);
+    ReportStubBlock((void*)mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB);
 
     blockWriterHolder.GetRW()->m_next            = NULL;
     blockWriterHolder.GetRW()->m_used            = 0;
@@ -5256,7 +5256,7 @@ DONE:
     emitBackToBackJump(jumpStub, jumpStubRW, (void*) target);
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE, true);
+    PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE, PerfMapStubType::IndividualWithinBlock);
 #endif
 
     // We always add the new jumpstub to the jumpStubCache

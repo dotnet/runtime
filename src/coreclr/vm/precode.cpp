@@ -226,7 +226,7 @@ InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
     InterpreterPrecode* pPrecode = (InterpreterPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(size, 1));
     pPrecode->Init(pPrecode, byteCode);
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)p, size, true);
+    PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)pPrecode, size, PerfMapStubType::IndividualWithinBlock);
 #endif
     return pPrecode;
 }
@@ -251,7 +251,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
         pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetFixupPrecodeHeap()->AllocAlignedMem(sizeof(FixupPrecode), 1));
         pPrecode->Init(pPrecode, t, pMD, pLoaderAllocator);
 #ifdef FEATURE_PERFMAP
-        PerfMap::LogStubs(__FUNCTION__, "FixupPrecode", (PCODE)p, size, true);
+        PerfMap::LogStubs(__FUNCTION__, "FixupPrecode", (PCODE)pPrecode, sizeof(FixupPrecode), PerfMapStubType::IndividualWithinBlock);
 #endif
     }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
@@ -262,7 +262,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
         pThisPtrRetBufPrecode->Init(pData, pMD, pLoaderAllocator);
         pPrecode = (Precode*)pThisPtrRetBufPrecode;
 #ifdef FEATURE_PERFMAP
-        PerfMap::LogStubs(__FUNCTION__, "ThisPtrRetBuf", (PCODE)p, size, true);
+        PerfMap::LogStubs(__FUNCTION__, "ThisPtrRetBuf", (PCODE)pPrecode, sizeof(ThisPtrRetBufPrecodeData), PerfMapStubType::IndividualWithinBlock);
 #endif
         }
 #endif // HAS_THISPTR_RETBUF_PRECODE
@@ -272,7 +272,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
         pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(sizeof(StubPrecode), 1));
         pPrecode->Init(pPrecode, t, pMD, pLoaderAllocator);
 #ifdef FEATURE_PERFMAP
-        PerfMap::LogStubs(__FUNCTION__, t == PRECODE_STUB ? "StubPrecode" : "PInvokeImportPrecode", (PCODE)p, size, true);
+        PerfMap::LogStubs(__FUNCTION__, t == PRECODE_STUB ? "StubPrecode" : "PInvokeImportPrecode", (PCODE)pPrecode, sizeof(StubPrecode), PerfMapStubType::IndividualWithinBlock);
 #endif
     }
 
