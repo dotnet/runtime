@@ -7771,18 +7771,6 @@ PropagateForeignExceptionThroughNativeFrames(IN     PEXCEPTION_RECORD   pExcepti
     RaiseException(pExceptionToPropagateRecord->ExceptionCode, pExceptionToPropagateRecord->ExceptionFlags, pExceptionToPropagateRecord->NumberParameters, pExceptionToPropagateRecord->ExceptionInformation);
     UNREACHABLE();
 }
-#else
-EXTERN_C void __fastcall
-PropagateForeignExceptionThroughNativeFrames(IN PEXCEPTION_RECORD pExceptionToPropagateRecord)
-{
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_THROWS;
-
-    GCX_PREEMP_NO_DTOR();
-    RaiseException(pExceptionToPropagateRecord->ExceptionCode, pExceptionToPropagateRecord->ExceptionFlags, pExceptionToPropagateRecord->NumberParameters, pExceptionToPropagateRecord->ExceptionInformation);
-    UNREACHABLE();
-}
 #endif
 
 #endif // HOST_WINDOWS
@@ -7963,10 +7951,8 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         {
 #if defined(HOST_X86)
             PopSEHRecords((void *)GetSP(pvRegDisplay->pCurrentContext));
-            SetSP(pvRegDisplay->pCurrentContext, (TADDR)GetCurrentSP());
-            SetIP(pvRegDisplay->pCurrentContext, (PCODE)PropagateForeignExceptionThroughNativeFrames);
-            pvRegDisplay->pCurrentContext->Ecx = (size_t)&lastExceptionRecord;
-            ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
+            GCX_PREEMP_NO_DTOR();
+            RaiseException(lastExceptionRecord.ExceptionCode, lastExceptionRecord.ExceptionFlags, lastExceptionRecord.NumberParameters, lastExceptionRecord.ExceptionInformation);
             UNREACHABLE();
 #else
             // Propagate an external exception to the caller context. This is done in a special way, since the native stack
