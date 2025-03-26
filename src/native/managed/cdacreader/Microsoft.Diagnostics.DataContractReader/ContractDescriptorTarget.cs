@@ -60,7 +60,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         GetTargetThreadContextDelegate getThreadContext,
         GetTargetPlatformDelegate getTargetPlatform,
-        out ContractDescriptorTarget? target)
+        [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
         Reader reader = new Reader(readFromTarget, getThreadContext, getTargetPlatform);
         if (TryReadContractDescriptor(
