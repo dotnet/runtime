@@ -6806,7 +6806,6 @@ mono_object_handle_isinst (MonoObjectHandle obj, MonoClass *klass, MonoError *er
 {
 	error_init (error);
 
-	g_assert (klass);
 
 	if (!m_class_is_inited (klass))
 		mono_class_init_internal (klass);
