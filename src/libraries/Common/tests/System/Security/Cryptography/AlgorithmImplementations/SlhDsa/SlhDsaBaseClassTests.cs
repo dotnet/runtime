@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
@@ -105,16 +106,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Array.Fill(publicKey, (byte)42);
             slhDsa.ExportSlhDsaPublicKey(publicKey.AsSpan(1, publicKeySize));
 
-            Assert.Equal(42, publicKey[0]);
-            Assert.Equal(42, publicKey[^1]);
-            Assert.All(publicKey.Skip(1).SkipLast(1), b => Assert.Equal(1, b));
+            AssertExpectedFill(publicKey, nameof(SlhDsa.ExportSlhDsaPublicKey), callNumber: 1);
 
             Array.Fill(publicKey, (byte)42);
             slhDsa.ExportSlhDsaPublicKey(publicKey.AsSpan(1, publicKeySize + 1)); // Extra byte should be ignored
 
-            Assert.Equal(42, publicKey[0]);
-            Assert.Equal(42, publicKey[^1]);
-            Assert.All(publicKey.Skip(1).SkipLast(1), b => Assert.Equal(1, b));
+            AssertExpectedFill(publicKey, nameof(SlhDsa.ExportSlhDsaPublicKey), callNumber: 2);
         }
 
         [Theory]
@@ -135,16 +132,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Array.Fill(secretKey, (byte)42);
             slhDsa.ExportSlhDsaSecretKey(secretKey.AsSpan(1, secretKeySize));
 
-            Assert.Equal(42, secretKey[0]);
-            Assert.Equal(42, secretKey[^1]);
-            Assert.All(secretKey.Skip(1).SkipLast(1), b => Assert.Equal(1, b));
+            AssertExpectedFill(secretKey, nameof(SlhDsa.ExportSlhDsaSecretKey), callNumber: 1);
 
             Array.Fill(secretKey, (byte)42);
             slhDsa.ExportSlhDsaSecretKey(secretKey.AsSpan(1, secretKeySize + 1)); // Extra byte should be ignored
 
-            Assert.Equal(42, secretKey[0]);
-            Assert.Equal(42, secretKey[^1]);
-            Assert.All(secretKey.Skip(1).SkipLast(1), b => Assert.Equal(1, b));
+            AssertExpectedFill(secretKey, nameof(SlhDsa.ExportSlhDsaSecretKey), callNumber: 2);
         }
 
         [Theory]
@@ -165,16 +158,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Array.Fill(privateSeed, (byte)42);
             slhDsa.ExportSlhDsaPrivateSeed(privateSeed.AsSpan(1, privateSeedSize));
 
-            Assert.Equal(42, privateSeed[0]);
-            Assert.Equal(42, privateSeed[^1]);
-            Assert.All(privateSeed.Skip(1).SkipLast(1), b => Assert.Equal(1, b));
+            AssertExpectedFill(privateSeed, nameof(SlhDsa.ExportSlhDsaPrivateSeed), callNumber: 1);
 
             Array.Fill(privateSeed, (byte)42);
             slhDsa.ExportSlhDsaPrivateSeed(privateSeed.AsSpan(1, privateSeedSize + 1)); // Extra byte should be ignored
 
-            Assert.Equal(42, privateSeed[0]);
-            Assert.Equal(42, privateSeed[^1]);
-            Assert.All(privateSeed.Skip(1).SkipLast(1), b => Assert.Equal(1, b));
+            AssertExpectedFill(privateSeed, nameof(SlhDsa.ExportSlhDsaPrivateSeed), callNumber: 2);
         }
 
         [Theory]
@@ -200,16 +189,32 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Array.Fill(signature, (byte)42);
             slhDsa.SignData(testData, signature.AsSpan(1, signatureSize), testContext);
 
-            Assert.Equal(42, signature[0]);
-            Assert.Equal(42, signature[^1]);
-            Assert.All(signature.Skip(1).SkipLast(1), b => Assert.Equal(1, b));
+            AssertExpectedFill(signature, nameof(SlhDsa.SignData), callNumber: 1);
 
             Array.Fill(signature, (byte)42);
-            slhDsa.SignData(testData, signature.AsSpan(1, signatureSize), testContext); // Extra byte should be ignored
+            slhDsa.SignData(testData, signature.AsSpan(1, signatureSize + 1), testContext); // Extra byte should be ignored
 
-            Assert.Equal(42, signature[0]);
-            Assert.Equal(42, signature[^1]);
-            Assert.All(signature.Skip(1).SkipLast(1), b => Assert.Equal(1, b));
+            AssertExpectedFill(signature, nameof(SlhDsa.SignData), callNumber: 2);
+        }
+
+        private static void AssertExpectedFill(ReadOnlySpan<byte> source, string functionBeingTested, int callNumber)
+        {
+            if (source[0] != 42)
+            {
+                throw new XunitException($"Call #{callNumber} to {functionBeingTested} overwrote data before destination[0].{Environment.NewLine}Expected: 42{Environment.NewLine}Actual: {source[0]}");
+            }
+
+            if (source[^1] != 42)
+            {
+                throw new XunitException($"Call #{callNumber} to {functionBeingTested} overwrote data beyond the indicated length.{Environment.NewLine}Expected: 42{Environment.NewLine}Actual: {source[^1]}");
+            }
+
+            int idx = source.Slice(1, source.Length - 2).IndexOfAnyExcept((byte)1);
+
+            if (idx >= 0)
+            {
+                throw new XunitException($"Call #{callNumber} to {functionBeingTested} did not set relative index {idx} (absolute index {idx + 1}) correctly.{Environment.NewLine}Expected: 1{Environment.NewLine}Actual: {source[idx + 1]}");
+            }
         }
 
         [Theory]
