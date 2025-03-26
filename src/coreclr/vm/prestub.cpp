@@ -2622,7 +2622,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 {
     PCODE pbRetVal = (PCODE)NULL;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2734,8 +2734,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
     }
 
     POSTCONDITION(pbRetVal != NULL);
-
-    END_PRESERVE_LAST_ERROR;
 
     return pbRetVal;
 }
@@ -3163,7 +3161,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     PCODE         pCode   = (PCODE)NULL;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
@@ -3489,8 +3487,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
 
     pEMFrame->Pop(CURRENT_THREAD);          // Pop the ExternalMethodFrame from the frame stack
-
-    END_PRESERVE_LAST_ERROR;
 
     return pCode;
 }

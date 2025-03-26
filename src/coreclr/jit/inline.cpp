@@ -1452,14 +1452,13 @@ void InlineStrategy::DumpData()
 void InlineStrategy::DumpDataEnsurePolicyIsSet()
 {
     // Cache references to compiler substructures.
-    const Compiler::Info&    info = m_Compiler->info;
-    const Compiler::Options& opts = m_Compiler->opts;
+    const Compiler::Info& info = m_Compiler->info;
 
     // If there weren't any successful inlines, we won't have a
     // successful policy, so fake one up.
     if (m_LastSuccessfulPolicy == nullptr)
     {
-        const bool isPrejitRoot = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+        const bool isPrejitRoot = m_Compiler->IsAot();
         m_LastSuccessfulPolicy  = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
 
         // Add in a bit of data....
@@ -1597,10 +1596,9 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     }
 
     // Cache references to compiler substructures.
-    const Compiler::Info&    info = m_Compiler->info;
-    const Compiler::Options& opts = m_Compiler->opts;
+    const Compiler::Info& info = m_Compiler->info;
 
-    const bool isPrejitRoot = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool isPrejitRoot = m_Compiler->IsAot();
 
     // We'd really like the method identifier to be unique and
     // durable across crossgen invocations. Not clear how to

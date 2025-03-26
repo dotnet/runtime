@@ -289,6 +289,9 @@ ASMCONSTANTS_C_ASSERT(ResolveCacheElem__token   == offsetof(ResolveCacheElem, to
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target  == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext   == offsetof(ResolveCacheElem, pNext));
 
+#define ASM__CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT (0x100)
+ASMCONSTANTS_C_ASSERT(ASM__CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT == CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT)
+
 #define FixupPrecodeData__Target 0x00
 ASMCONSTANTS_C_ASSERT(FixupPrecodeData__Target            == offsetof(FixupPrecodeData, Target))
 #define FixupPrecodeData__MethodDesc 0x04

@@ -2864,36 +2864,6 @@ public:
 #endif
 };
 
-#ifdef _DEBUG
-// We use IsProtectedByGCFrame to check if some OBJECTREF pointers are protected
-// against GC. That function doesn't know if a byref is from managed stack thus
-// protected by JIT. AssumeByrefFromJITStackFrame is used to bypass that check if an
-// OBJECTRef pointer is passed from managed code to an FCall and it's in stack.
-
-typedef DPTR(class AssumeByrefFromJITStackFrame) PTR_AssumeByrefFromJITStackFrame;
-
-class AssumeByrefFromJITStackFrame : public Frame
-{
-public:
-#ifndef DACCESS_COMPILE
-    AssumeByrefFromJITStackFrame(OBJECTREF *pObjRef) : Frame(FrameIdentifier::AssumeByrefFromJITStackFrame)
-    {
-        m_pObjRef      = pObjRef;
-    }
-#endif
-
-    BOOL Protects_Impl(OBJECTREF *ppORef)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ppORef == m_pObjRef;
-    }
-
-private:
-    OBJECTREF *m_pObjRef;
-}; //AssumeByrefFromJITStackFrame
-
-#endif //_DEBUG
-
 //------------------------------------------------------------------------
 // These macros GC-protect OBJECTREF pointers on the EE's behalf.
 // In between these macros, the GC can move but not discard the protected
@@ -2964,8 +2934,7 @@ private:
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         sizeof(ObjRefStruct)/sizeof(OBJECTREF),         \
                         FALSE);                                         \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_BEGIN_THREAD(pThread, ObjRefStruct)           do {    \
                 GCFrame __gcframe(                                      \
@@ -2973,16 +2942,14 @@ private:
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         sizeof(ObjRefStruct)/sizeof(OBJECTREF),         \
                         FALSE);                                         \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_ARRAY_BEGIN(ObjRefArray,cnt) do {                     \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefArray),                     \
                         cnt * sizeof(ObjRefArray) / sizeof(OBJECTREF),  \
                         FALSE);                                         \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_BEGININTERIOR(ObjRefStruct)           do {            \
                 /* work around Wsizeof-pointer-div warning as we */     \
@@ -2992,20 +2959,18 @@ private:
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         subjectSize/sizeof(OBJECTREF),                  \
                         TRUE);                                          \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_BEGININTERIOR_ARRAY(ObjRefArray,cnt) do {             \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefArray),                     \
                         cnt,                                            \
                         TRUE);                                          \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 
 #define GCPROTECT_END()                                                 \
-                DEBUG_ASSURE_NO_RETURN_END(GCPROTECT) }                 \
+                }                                                       \
                 } while(0)
 
 
@@ -3021,27 +2986,6 @@ private:
 
 
 #define ASSERT_ADDRESS_IN_STACK(address) _ASSERTE (Thread::IsAddressInCurrentStack (address));
-
-#if defined (_DEBUG) && !defined (DACCESS_COMPILE)
-#define ASSUME_BYREF_FROM_JIT_STACK_BEGIN(__objRef)                                      \
-                /* make sure we are only called inside an FCall */                       \
-                if (__me == 0) {};                                                       \
-                /* make sure the address is in stack. If the address is an interior */   \
-                /*pointer points to GC heap, the FCall still needs to protect it explicitly */             \
-                ASSERT_ADDRESS_IN_STACK (__objRef);                                      \
-                do {                                                                     \
-                AssumeByrefFromJITStackFrame __dummyAssumeByrefFromJITStackFrame ((__objRef));       \
-                __dummyAssumeByrefFromJITStackFrame.Push ();                                  \
-                /* work around unreachable code warning */                               \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GC_PROTECT)
-
-#define ASSUME_BYREF_FROM_JIT_STACK_END()                                          \
-                DEBUG_ASSURE_NO_RETURN_END(GC_PROTECT) }                                            \
-                __dummyAssumeByrefFromJITStackFrame.Pop(); } while(0)
-#else //defined (_DEBUG) && !defined (DACCESS_COMPILE)
-#define ASSUME_BYREF_FROM_JIT_STACK_BEGIN(__objRef)
-#define ASSUME_BYREF_FROM_JIT_STACK_END()
-#endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
 
 void ComputeCallRefMap(MethodDesc* pMD,
                        GCRefMapBuilder * pBuilder,

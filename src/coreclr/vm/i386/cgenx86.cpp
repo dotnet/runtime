@@ -862,52 +862,6 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 
 #ifndef DACCESS_COMPILE
 
-Stub *GenerateInitPInvokeFrameHelper()
-{
-    CONTRACT(Stub*)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    CPUSTUBLINKER sl;
-    CPUSTUBLINKER *psl = &sl;
-
-    CORINFO_EE_INFO::InlinedCallFrameInfo FrameInfo;
-    InlinedCallFrame::GetEEInfo(&FrameInfo);
-
-    // EDI contains address of the frame on stack
-
-    // mov esi, GetThread()
-    psl->X86EmitCurrentThreadFetch(kESI, (1 << kEDI) | (1 << kEBX) | (1 << kECX) | (1 << kEDX));
-
-    // mov [edi], InlinedCallFrame::GetFrameVtable()
-    psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, 0);
-    psl->Emit32((DWORD)FrameIdentifier::InlinedCallFrame);
-
-    // mov eax, [esi + offsetof(Thread, m_pFrame)]
-    // mov [edi + FrameInfo.offsetOfFrameLink], eax
-    psl->X86EmitIndexRegLoad(kEAX, kESI, offsetof(Thread, m_pFrame));
-    psl->X86EmitIndexRegStore(kEDI, FrameInfo.offsetOfFrameLink, kEAX);
-
-    // mov [edi + FrameInfo.offsetOfCalleeSavedEbp], ebp
-    psl->X86EmitIndexRegStore(kEDI, FrameInfo.offsetOfCalleeSavedFP, kEBP);
-
-    // mov [edi + FrameInfo.offsetOfReturnAddress], 0
-    psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, FrameInfo.offsetOfReturnAddress);
-    psl->Emit32(0);
-
-    // mov [esi + offsetof(Thread, m_pFrame)], edi
-    psl->X86EmitIndexRegStore(kESI, offsetof(Thread, m_pFrame), kEDI);
-
-    // leave current Thread in ESI
-    psl->X86EmitReturn(0);
-
-    // A single process-wide stub that will never unload
-    RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-}
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // JITInterface

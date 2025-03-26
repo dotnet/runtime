@@ -2448,7 +2448,13 @@ void LinearScan::buildIntervals()
         // do that in the prolog. We handle registers in the prolog and the
         // stack args in the scratch BB that we have ensured exists. The
         // handling clobbers REG_SCRATCH, so kill it here.
-        if ((block == compiler->fgFirstBB) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        bool prologUsesScratchReg = compiler->lvaHasAnySwiftStackParamToReassemble();
+#ifdef TARGET_X86
+        // On x86, CodeGen::genFnProlog does a varargs preprocessing that uses
+        // the scratch register.
+        prologUsesScratchReg |= compiler->info.compIsVarArgs;
+#endif
+        if ((block == compiler->fgFirstBB) && prologUsesScratchReg)
         {
             addKillForRegs(genRegMask(REG_SCRATCH), currentLoc + 1);
             currentLoc += 2;
