@@ -766,7 +766,7 @@ namespace System.Runtime.InteropServices
             return managedObjectWrapper.ComIp;
         }
 
-        unsafe partial void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapper* wrapper);
+        static unsafe partial void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapper* wrapper);
 
         private static nuint AlignUp(nuint value, nuint alignment)
         {
