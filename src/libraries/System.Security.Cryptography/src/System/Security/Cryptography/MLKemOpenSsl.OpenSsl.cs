@@ -29,21 +29,8 @@ namespace System.Security.Cryptography
             try
             {
                 string name = Interop.Crypto.EvpKemGetName(upRefHandle);
-
-                if (name == MLKemAlgorithm.MLKem512.Name)
-                {
-                    return MLKemAlgorithm.MLKem512;
-                }
-                if (name == MLKemAlgorithm.MLKem768.Name)
-                {
-                    return MLKemAlgorithm.MLKem768;
-                }
-                if (name == MLKemAlgorithm.MLKem1024.Name)
-                {
-                    return MLKemAlgorithm.MLKem1024;
-                }
-
-                throw new CryptographicException(SR.Format(SR.Cryptography_KemInvalidAlgorithmHandle, name));
+                return MLKemAlgorithm.FromName(name) ??
+                    throw new CryptographicException(SR.Format(SR.Cryptography_KemInvalidAlgorithmHandle, name));
             }
             catch
             {

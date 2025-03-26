@@ -170,5 +170,25 @@ namespace System.Security.Cryptography
                 _ => null,
             };
         }
+
+        internal static MLKemAlgorithm? FromName(string? name)
+        {
+            if (name == MLKem512.Name)
+            {
+                return MLKem512;
+            }
+
+            if (name == MLKem768.Name)
+            {
+                return MLKem768;
+            }
+
+            if (name == MLKem1024.Name)
+            {
+                return MLKem1024;
+            }
+
+            return null;
+        }
     }
 }
