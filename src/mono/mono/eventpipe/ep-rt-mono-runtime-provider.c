@@ -1449,6 +1449,9 @@ static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 {
 	sample_skip_counter++;
+	if (should_record_sample ()) {
+		sample_current_thread_stack_trace ();
+	}
 }
 
 static void
