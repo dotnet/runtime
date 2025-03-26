@@ -503,14 +503,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             if (fingerprintedBootJsonPath == null)
                 throw new XunitException($"Could not find boot config '{bootConfigFileName}' with fingerprint in '{binFrameworkDir}'");
 
-            bootJsonPath = fingerprintedBootJsonPath!;
+            return fingerprintedBootJsonPath;
         }
         else
         {
-            bootJsonPath = Path.Combine(binFrameworkDir, bootConfigFileName);
+            return Path.Combine(binFrameworkDir, bootConfigFileName);
         }
-
-        return bootJsonPath;
     }
 
     public BootJsonData AssertBootJson(AssertBundleOptions options)
