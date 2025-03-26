@@ -3729,7 +3729,7 @@ void RedirectedThrowControl()
 void
 ThrowControlForThread(
 #if !defined(TARGET_X86)
-        FaultingExceptionFrame *pfef
+    FaultingExceptionFrame *pfef
 #endif // !TARGET_X86
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
         , TADDR ssp

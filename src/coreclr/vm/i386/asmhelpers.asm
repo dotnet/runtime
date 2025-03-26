@@ -83,8 +83,6 @@ endif
 EXTERN @IL_Throw_x86@8:PROC
 EXTERN @IL_Rethrow_x86@4:PROC
 
-EXTERN _VSD_ResolveWorker@12:PROC
-
 UNREFERENCED macro arg
     local unref
     unref equ size arg
@@ -304,6 +302,14 @@ endif
 else ; FEATURE_EH_FUNCLETS
 ProcessCLRException proto c
 .safeseh ProcessCLRException
+UMEntryPrestubUnwindFrameChainHandler proto c
+.safeseh UMEntryPrestubUnwindFrameChainHandler
+CallDescrWorkerUnwindFrameChainHandler proto c
+.safeseh CallDescrWorkerUnwindFrameChainHandler
+ifdef FEATURE_COMINTEROP
+ReverseComUnwindFrameChainHandler proto c
+.safeseh ReverseComUnwindFrameChainHandler
+endif ; FEATURE_COMINTEROP
 endif ; FEATURE_EH_FUNCLETS
 
 ifdef HAS_ADDRESS_SANITIZER

@@ -884,7 +884,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
         pFrame->Pop(pThread);
         pFrame = pThread->GetFrame();
     }
-    
+
     // Check if the pFrame is an active InlinedCallFrame inside of the target frame. It needs to be popped or inactivated depending
     // on the target architecture / ready to run
     if ((pFrame < targetCallerSp) && InlinedCallFrame::FrameHasActiveCall(pFrame))
