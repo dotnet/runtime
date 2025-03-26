@@ -6,7 +6,7 @@
 #define __GCINFOTYPES_H__
 
 // HACK: debugreturn.h breaks constexpr
-#ifdef debug_instrumented_return
+#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
 #undef return
 #endif // debug_instrumented_return
 
