@@ -11,6 +11,7 @@ using System.Runtime.InteropServices.CustomMarshalers;
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Buffers;
 
 namespace System.StubHelpers
 {
@@ -103,13 +104,19 @@ namespace System.StubHelpers
                     // wasting memory on systems with multibyte character sets where the buffer we end up with is often much
                     // smaller than the upper bound for the given managed string.
 
-                    byte[] bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged,
-                        fBestFit: 0 != (flags & 0xFF), fThrowOnUnmappableChar: 0 != (flags >> 8), out nb);
+                    byte[] bytes = ArrayPool<byte>.Shared.Rent(checked((strManaged.Length + 1) * Marshal.SystemMaxDBCSCharSize));
+                    fixed (byte* bytesPtr = &bytes[0])
+                    {
+                        bool fBestFit = 0 != (flags & 0xFF);
+                        bool fThrowOnUnmappableChar = 0 != (flags >> 8);
+                        nb = Marshal.StringToAnsiString(strManaged, bytesPtr, bytes.Length, fBestFit, fThrowOnUnmappableChar);
+                    }
 
                     // + 1 for the null character from the user.  + 1 for the null character we put in.
                     pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb + 2);
 
                     SpanHelpers.Memmove(ref *pbNativeBuffer, ref MemoryMarshal.GetArrayDataReference(bytes), (nuint)nb);
+                    ArrayPool<byte>.Shared.Return(bytes);
                 }
             }
 
