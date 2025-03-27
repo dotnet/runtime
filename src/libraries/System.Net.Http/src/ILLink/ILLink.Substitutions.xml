@@ -4,4 +4,9 @@
       <method signature="System.Boolean IsGloballyEnabled()" body="stub" value="false" feature="System.Net.Http.EnableActivityPropagation" featurevalue="false" />
     </type>
   </assembly>
+  <assembly fullname="System.Net.Http" feature="System.Net.Http.WebAssemblyEnableStreamingResponse" featurevalue="false">
+    <type fullname="System.Net.Http.BrowserHttpController">
+      <method signature="System.Boolean get_FeatureEnableStreamingResponse()" body="stub" value="false" />
+    </type>
+  </assembly>
 </linker>

@@ -1422,9 +1422,12 @@ export function generateWasmBody (
             // call C
             case MintOpcode.MINT_PROF_ENTER:
             case MintOpcode.MINT_PROF_SAMPLEPOINT:
+                append_profiler_event(builder, ip, opcode);
+                break;
             case MintOpcode.MINT_PROF_EXIT:
             case MintOpcode.MINT_PROF_EXIT_VOID:
                 append_profiler_event(builder, ip, opcode);
+                ip = abort;
                 break;
 
             // Generating code for these is kind of complex due to the intersection of JS and int64,

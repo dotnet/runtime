@@ -565,9 +565,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
     ETW::LoaderLog::DomainLoad((LPWSTR)wszFriendlyName);
 
-    if (dwFlags & APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS)
-        pDomain->SetIgnoreUnhandledExceptions();
-
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
 

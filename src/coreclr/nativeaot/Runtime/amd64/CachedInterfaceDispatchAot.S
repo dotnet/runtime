@@ -8,14 +8,6 @@
 // trick to avoid PLT relocation at runtime which corrupts registers
 #define REL_C_FUNC(name) C_FUNC(name)@gotpcrel
 
-// Stub dispatch routine for dispatch to a vtable slot
-LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
-        int 3
-        // UNIXTODO: Implement this function
-    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
-        int 3
-LEAF_END RhpVTableOffsetDispatch, _TEXT
-
 // Cache miss case, call the runtime to resolve the target and update the cache.
 // Use universal transition helper to allow an exception to flow out of resolution
 LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT

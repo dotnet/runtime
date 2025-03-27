@@ -578,7 +578,7 @@ public:
     }
 
     // Resolving
-    OBJECTHANDLE ResolveStringRef(DWORD Token, void** ppPinnedString = nullptr);
+    STRINGREF* ResolveStringRef(DWORD Token, void** ppPinnedString = nullptr);
 private:
     // string helper
     void InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb);
