@@ -30,6 +30,41 @@ int32_t CryptoNative_EvpKemAvailable(const char* algorithm)
     return 0;
 }
 
+int32_t CryptoNative_EvpKemGetPalId(const EVP_PKEY* pKey, int32_t* kemId)
+{
+#ifdef NEED_OPENSSL_3_0
+    assert(pKey && kemId);
+
+    if (API_EXISTS(EVP_PKEY_is_a))
+    {
+        ERR_clear_error();
+
+        if (EVP_PKEY_is_a(pKey, "ML-KEM-512"))
+        {
+            *kemId = PalKemId_MLKem512;
+        }
+        else if (EVP_PKEY_is_a(pKey, "ML-KEM-768"))
+        {
+            *kemId = PalKemId_MLKem768;
+        }
+        else if (EVP_PKEY_is_a(pKey, "ML-KEM-1024"))
+        {
+            *kemId = PalKemId_MLKem1024;
+        }
+        else
+        {
+            *kemId = PalKemId_Unknown;
+        }
+
+        return 1;
+    }
+#endif
+
+    (void)pKey;
+    *kemId = PalKemId_Unknown;
+    return 0;
+}
+
 EVP_PKEY* CryptoNative_EvpKemGeneratePkey(const char* kemName, uint8_t* seed, int32_t seedLength)
 {
     assert(kemName);
@@ -102,6 +137,7 @@ done:
 }
 
 int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
+                                       void* extraHandle,
                                        uint8_t* ciphertext,
                                        int32_t ciphertextLength,
                                        uint8_t* sharedSecret,
@@ -118,7 +154,7 @@ int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
         ERR_clear_error();
 
         EVP_PKEY_CTX* ctx = NULL;
-        ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
+        ctx = EvpPKeyCtxCreateFromPKey(pKey, extraHandle);
         int32_t ret = 0;
 
         if (ctx == NULL)
@@ -158,6 +194,7 @@ done:
 #endif
 
     (void)pKey;
+    (void)extraHandle;
     (void)ciphertext;
     (void)ciphertextLength;
     (void)sharedSecret;
@@ -166,6 +203,7 @@ done:
 }
 
 int32_t CryptoNative_EvpKemDecapsulate(EVP_PKEY* pKey,
+                                       void* extraHandle,
                                        const uint8_t* ciphertext,
                                        int32_t ciphertextLength,
                                        uint8_t* sharedSecret,
@@ -182,7 +220,7 @@ int32_t CryptoNative_EvpKemDecapsulate(EVP_PKEY* pKey,
         ERR_clear_error();
 
         EVP_PKEY_CTX* ctx = NULL;
-        ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
+        ctx = EvpPKeyCtxCreateFromPKey(pKey, extraHandle);
         int32_t ret = 0;
 
         if (ctx == NULL)
@@ -222,6 +260,7 @@ done:
 #endif
 
     (void)pKey;
+    (void)extraHandle;
     (void)ciphertext;
     (void)ciphertextLength;
     (void)sharedSecret;

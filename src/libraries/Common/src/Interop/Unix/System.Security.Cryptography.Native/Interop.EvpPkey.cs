@@ -19,27 +19,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyBits")]
         internal static partial int EvpPKeyBits(SafeEvpPKeyHandle pkey);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyFromData", StringMarshalling = StringMarshalling.Utf8)]
-        private static partial SafeEvpPKeyHandle CryptoNative_EvpPKeyFromData(
-            string algorithmName,
-            ReadOnlySpan<byte> key,
-            int keyLength,
-            [MarshalAs(UnmanagedType.Bool)] bool privateKey);
-
-        internal static SafeEvpPKeyHandle EvpPKeyFromData(string algorithmName, ReadOnlySpan<byte> key, bool privateKey)
-        {
-            SafeEvpPKeyHandle handle = CryptoNative_EvpPKeyFromData(algorithmName, key, key.Length, privateKey);
-
-            if (handle.IsInvalid)
-            {
-                Exception ex = CreateOpenSslCryptographicException();
-                handle.Dispose();
-                throw ex;
-            }
-
-            return handle;
-        }
-
         internal static int GetEvpPKeySizeBytes(SafeEvpPKeyHandle pkey)
         {
             // EVP_PKEY_size returns the maximum suitable size for the output buffers for almost all operations that can be done with the key.
@@ -338,34 +317,6 @@ internal static partial class Interop
                 }
 
                 throw;
-            }
-        }
-
-        internal static void ExportKeyContents(
-            SafeEvpPKeyHandle key,
-            Span<byte> destination,
-            Func<SafeEvpPKeyHandle, Span<byte>, int, int> action)
-        {
-            const int Success = 1;
-            const int Fail = 0;
-            const int NotRetrievable = -1;
-
-            int ret = action(key, destination, destination.Length);
-
-            switch (ret)
-            {
-                case Success:
-                    return;
-                case NotRetrievable:
-                    destination.Clear();
-                    throw new CryptographicException(SR.Cryptography_NotRetrievable);
-                case Fail:
-                    destination.Clear();
-                    throw CreateOpenSslCryptographicException();
-                default:
-                    destination.Clear();
-                    Debug.Fail($"Unexpected return value {ret}.");
-                    throw new CryptographicException();
             }
         }
 
