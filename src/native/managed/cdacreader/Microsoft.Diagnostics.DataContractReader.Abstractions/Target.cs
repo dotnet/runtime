@@ -120,6 +120,15 @@ public abstract class Target
     public abstract T ReadGlobal<T>(string name) where T : struct, INumber<T>;
 
     /// <summary>
+    /// Read a well known global from the target process as a number in the target endianness
+    /// </summary>
+    /// <typeparam name="T">The numeric type to be read</typeparam>
+    /// <param name="name">The name of the global</param>
+    /// <param name="value">The numeric value read.</param>
+    /// <returns>True if a global is found, false otherwise.</returns>
+    public abstract bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value) where T : struct, INumber<T>;
+
+    /// <summary>
     /// Read a value from the target in target endianness
     /// </summary>
     /// <typeparam name="T">Type of value to read</typeparam>
