@@ -9423,6 +9423,22 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                         unreached();
                 }
             }
+            else if (gtMathFN == NI_PRIMITIVE_TrailingZeroCount)
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_LONG:
+                        res = BitOperations::TrailingZeroCount((uint64_t)GetConstantInt64(arg0VN));
+                        break;
+
+                    case TYP_INT:
+                        res = BitOperations::TrailingZeroCount((uint32_t)GetConstantInt32(arg0VN));
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
             else
             {
                 unreached();
@@ -9434,8 +9450,9 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
     else
     {
         assert((typ == TYP_DOUBLE) || (typ == TYP_FLOAT) ||
-               ((typ == TYP_INT) && ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round) ||
-                                     (gtMathFN == NI_PRIMITIVE_LeadingZeroCount))));
+               ((typ == TYP_INT) &&
+                ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round) ||
+                 (gtMathFN == NI_PRIMITIVE_LeadingZeroCount) || (gtMathFN == NI_PRIMITIVE_TrailingZeroCount))));
 
         VNFunc vnf = VNF_Boundary;
         switch (gtMathFN)
@@ -9529,6 +9546,9 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                 break;
             case NI_PRIMITIVE_LeadingZeroCount:
                 vnf = VNF_LeadingZeroCount;
+                break;
+            case NI_PRIMITIVE_TrailingZeroCount:
+                vnf = VNF_TrailingZeroCount;
                 break;
             default:
                 unreached(); // the above are the only math intrinsics at the time of this writing.

@@ -5733,7 +5733,14 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // !TARGET_64BIT
 
-#if defined(FEATURE_HW_INTRINSICS)
+#ifdef TARGET_RISCV64
+            if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+            {
+                impPopStack();
+                result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount,
+                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+            }
+#elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
             if (compOpportunisticallyDependsOn(InstructionSet_LZCNT))
             {
@@ -5795,14 +5802,6 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
-#ifdef TARGET_RISCV64
-            if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
-            {
-                impPopStack();
-                result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount,
-                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
-            }
-#endif // TARGET_RISCV64
             break;
         }
 
@@ -6073,7 +6072,14 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // !TARGET_64BIT
 
-#if defined(FEATURE_HW_INTRINSICS)
+#ifdef TARGET_RISCV64
+            if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+            {
+                impPopStack();
+                result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount,
+                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+            }
+#elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
             if (compOpportunisticallyDependsOn(InstructionSet_BMI1))
             {
@@ -7935,6 +7941,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return true;
 
         case NI_PRIMITIVE_LeadingZeroCount:
+        case NI_PRIMITIVE_TrailingZeroCount:
             return compOpportunisticallyDependsOn(InstructionSet_Zbb);
 
         default:
@@ -8022,16 +8029,19 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Tanh:
         case NI_System_Math_Truncate:
         case NI_PRIMITIVE_LeadingZeroCount:
+        case NI_PRIMITIVE_TrailingZeroCount:
         {
             assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END) ||
-                   (intrinsicName == NI_PRIMITIVE_LeadingZeroCount));
+                   (intrinsicName == NI_PRIMITIVE_LeadingZeroCount) ||
+                   (intrinsicName == NI_PRIMITIVE_TrailingZeroCount));
             return true;
         }
 
         default:
         {
             assert((intrinsicName < NI_SYSTEM_MATH_START) || (intrinsicName > NI_SYSTEM_MATH_END) ||
-                   (intrinsicName != NI_PRIMITIVE_LeadingZeroCount));
+                   (intrinsicName != NI_PRIMITIVE_LeadingZeroCount) ||
+                   (intrinsicName != NI_PRIMITIVE_TrailingZeroCount));
             return false;
         }
     }
