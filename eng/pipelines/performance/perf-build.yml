@@ -3,6 +3,10 @@ parameters:
   displayName: Upload artifacts to blob storage
   type: boolean
   default: false
+- name: storeAsLatest
+  displayName: Mark the build as latest for the branch
+  type: boolean
+  default: false
 - name: mauiFramework
   type: string
   default: 'net9.0'
@@ -81,20 +85,14 @@ trigger:
   paths:
     include:
     - '*'
-    exclude:
-    - '**.md'
-    - .devcontainer/*
-    - .github/*
-    - docs/*
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - THIRD-PARTY-NOTICES.TXT
+    # do not exclude any paths, as we want to build every single commit
 
 resources:
   repositories:
     - repository: performance
       type: git
       name: internal/dotnet-performance
+      # if you need to specify explicit branch use 'ref:' - for example ref: ekharion/store-latest-build
 
 variables:
   - template: /eng/pipelines/common/variables.yml
@@ -234,3 +232,7 @@ extends:
                 - monoBDN_arm64_android
               - ${{ if eq(parameters.nativeAot_arm64_ios, true) }}:
                 - nativeAot_arm64_ios
+        - ${{ if eq(parameters.storeAsLatest, true) }}:
+          - template: /eng/pipelines/upload-latest-build.yml@performance
+            parameters:
+              branchName: ${{ replace(variables['Build.SourceBranch'], 'refs/heads/', '') }}
