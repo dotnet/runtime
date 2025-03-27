@@ -93,6 +93,10 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     list(APPEND GC_LINK_LIBRARIES
         gc_vxsort
     )
+    list(APPEND GC_SOURCES
+      ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
+    )
+    include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
 endif(CLR_CMAKE_TARGET_ARCH_AMD64)
 
 
