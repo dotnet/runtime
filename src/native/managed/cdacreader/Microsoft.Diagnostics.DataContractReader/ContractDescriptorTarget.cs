@@ -496,6 +496,22 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override bool IsAlignedToPointerSize(TargetPointer pointer)
         => IsAligned(pointer.Value, _config.PointerSize);
 
+    public override bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value)
+        => TryReadGlobal<T>(name, out value, out _);
+
+    public bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value, out string? type) where T : struct, INumber<T>
+    {
+        value = null;
+        type = null;
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
+        {
+            return false;
+        }
+        type = global.Type;
+        value = T.CreateChecked(global.Value);
+        return true;
+    }
+
     public override T ReadGlobal<T>(string name)
         => ReadGlobal<T>(name, out _);
 
