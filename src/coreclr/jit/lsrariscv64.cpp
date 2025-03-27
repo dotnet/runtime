@@ -366,6 +366,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 // Operand and its result must be integers
                 case NI_PRIMITIVE_LeadingZeroCount:
                 case NI_PRIMITIVE_TrailingZeroCount:
+                case NI_PRIMITIVE_PopCount:
                     assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
                     assert(op2 == nullptr);
                     assert(varTypeIsIntegral(op1));

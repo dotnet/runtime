@@ -5915,7 +5915,14 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // !TARGET_64BIT
 
-#if defined(FEATURE_HW_INTRINSICS)
+#ifdef TARGET_RISCV64
+            if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+            {
+                impPopStack();
+                result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount,
+                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+            }
+#elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
             if (compOpportunisticallyDependsOn(InstructionSet_POPCNT))
             {
@@ -7942,6 +7949,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 
         case NI_PRIMITIVE_LeadingZeroCount:
         case NI_PRIMITIVE_TrailingZeroCount:
+        case NI_PRIMITIVE_PopCount:
             return compOpportunisticallyDependsOn(InstructionSet_Zbb);
 
         default:
@@ -8030,10 +8038,11 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Truncate:
         case NI_PRIMITIVE_LeadingZeroCount:
         case NI_PRIMITIVE_TrailingZeroCount:
+        case NI_PRIMITIVE_PopCount:
         {
             assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END) ||
                    (intrinsicName == NI_PRIMITIVE_LeadingZeroCount) ||
-                   (intrinsicName == NI_PRIMITIVE_TrailingZeroCount));
+                   (intrinsicName == NI_PRIMITIVE_TrailingZeroCount) || (intrinsicName == NI_PRIMITIVE_PopCount));
             return true;
         }
 
@@ -8041,7 +8050,7 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         {
             assert((intrinsicName < NI_SYSTEM_MATH_START) || (intrinsicName > NI_SYSTEM_MATH_END) ||
                    (intrinsicName != NI_PRIMITIVE_LeadingZeroCount) ||
-                   (intrinsicName != NI_PRIMITIVE_TrailingZeroCount));
+                   (intrinsicName != NI_PRIMITIVE_TrailingZeroCount) || (intrinsicName != NI_PRIMITIVE_PopCount));
             return false;
         }
     }

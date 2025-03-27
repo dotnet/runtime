@@ -4750,6 +4750,9 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
         case NI_PRIMITIVE_TrailingZeroCount:
             instr = is4 ? INS_ctzw : INS_ctz;
             break;
+        case NI_PRIMITIVE_PopCount:
+            instr = is4 ? INS_cpopw : INS_cpop;
+            break;
         default:
             NO_WAY("Unknown intrinsic");
     }
