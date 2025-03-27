@@ -5795,7 +5795,14 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
-
+#ifdef TARGET_RISCV64
+            if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+            {
+                impPopStack();
+                result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount,
+                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+            }
+#endif // TARGET_RISCV64
             break;
         }
 
@@ -7927,6 +7934,9 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_ReciprocalSqrtEstimate:
             return true;
 
+        case NI_PRIMITIVE_LeadingZeroCount:
+            return compOpportunisticallyDependsOn(InstructionSet_Zbb);
+
         default:
             return false;
     }
@@ -8011,14 +8021,17 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Tan:
         case NI_System_Math_Tanh:
         case NI_System_Math_Truncate:
+        case NI_PRIMITIVE_LeadingZeroCount:
         {
-            assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END));
+            assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END) ||
+                   (intrinsicName == NI_PRIMITIVE_LeadingZeroCount));
             return true;
         }
 
         default:
         {
-            assert((intrinsicName < NI_SYSTEM_MATH_START) || (intrinsicName > NI_SYSTEM_MATH_END));
+            assert((intrinsicName < NI_SYSTEM_MATH_START) || (intrinsicName > NI_SYSTEM_MATH_END) ||
+                   (intrinsicName != NI_PRIMITIVE_LeadingZeroCount));
             return false;
         }
     }
