@@ -887,7 +887,7 @@ public:
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         , m_pPatchpointInfoFromJit(NULL),
           m_pPatchpointInfoFromRuntime(NULL),
-          m_ilOffset(0)
+          m_ilOffset(0),
 #endif
           m_finalCodeAddressSlot(NULL)
     {
