@@ -915,7 +915,7 @@ JS_ENGINES = [NODE_JS]
     </PropertyGroup>
 
     <ItemGroup Condition="'$(MonoUseCrossTool)' == 'true'">
-      <_LibclangPackageReferencePathPropertyName Include="Pkgruntime_$()NETCoreSdkPortableRuntimeIdentifier)_Microsoft_NETCore_Runtime_Mono_LLVM_Libclang" />
+      <_LibclangPackageReferencePathPropertyName Include="Pkgruntime_$(NETCoreSdkPortableRuntimeIdentifier)_Microsoft_NETCore_Runtime_Mono_LLVM_Libclang" />
     </ItemGroup>
     <PropertyGroup Condition="'$(MonoUseCrossTool)' == 'true'">
       <_LibclangPackageReferencePath>$(%(_LibclangPackageReferencePathPropertyName.Identity))</_LibclangPackageReferencePath>
