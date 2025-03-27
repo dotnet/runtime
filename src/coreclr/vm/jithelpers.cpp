@@ -1510,7 +1510,12 @@ HCIMPLEND
 
 /*************************************************************/
 
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
+EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
+#else
 HCIMPL1(void, IL_Throw,  Object* obj)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -1526,8 +1531,12 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     {
         Thread *pThread = GetThread();
 
+#ifdef TARGET_X86
+        SoftwareExceptionFrame exceptionFrame(transitionBlock);
+#else
         SoftwareExceptionFrame exceptionFrame;
         RtlCaptureContext(exceptionFrame.GetContext());
+#endif
         exceptionFrame.InitAndLink(pThread);
 
         FC_CAN_TRIGGER_GC();
@@ -1605,7 +1614,12 @@ HCIMPLEND
 
 /*************************************************************/
 
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+EXTERN_C FCDECL0(void, IL_Rethrow);
+EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
+#else
 HCIMPL0(void, IL_Rethrow)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -1616,8 +1630,12 @@ HCIMPL0(void, IL_Rethrow)
     {
         Thread *pThread = GetThread();
 
+#ifdef TARGET_X86
+        SoftwareExceptionFrame exceptionFrame(transitionBlock);
+#else
         SoftwareExceptionFrame exceptionFrame;
         RtlCaptureContext(exceptionFrame.GetContext());
+#endif
         exceptionFrame.InitAndLink(pThread);
 
         ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();

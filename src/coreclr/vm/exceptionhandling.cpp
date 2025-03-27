@@ -7800,6 +7800,8 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
                                    CastHandlerFn(pfnHandler),
                                    GetFirstNonVolatileRegisterAddress(pvRegDisplay->pCurrentContext),
                                    pFuncletCallerSP);
+
+        FixContext(pvRegDisplay->pCurrentContext);
 #else
         dwResumePC = pfnHandler(establisherFrame, OBJECTREFToObject(throwable));
 #endif
@@ -8128,7 +8130,11 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
         // it will retrieve the framepointer for accessing the locals in the parent
         // method.
         dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
+#ifdef TARGET_X86
+                                       GetRegdisplayFP(pvRegDisplay),
+#else
                                        GetFrameRestoreBase(pvRegDisplay->pCallerContext),
+#endif
                                        CastHandlerFn(pfnHandler),
                                        pFuncletCallerSP);
 #else
