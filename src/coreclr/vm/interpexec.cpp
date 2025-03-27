@@ -706,13 +706,9 @@ MAIN_LOOP:
                     MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_DESC_TAG);
                     PCODE code = pMD->GetNativeCode();
                     if (!code) {
-                        InterpreterExitFrame exitFrame(pFrame);
-                        {
-                            GCX_PREEMP();
-                            pMD->PrepareInitialCode(CallerGCMode::Coop);
-                            code = pMD->GetNativeCode();
-                        }
-                        exitFrame.Pop();
+                        GCX_PREEMP();
+                        pMD->PrepareInitialCode(CallerGCMode::Coop);
+                        code = pMD->GetNativeCode();
                     }
                     pMethod->pDataItems[ip[3]] = (void*)code;
                     targetIp = (const int32_t*)code;

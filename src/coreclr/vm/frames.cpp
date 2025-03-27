@@ -2084,7 +2084,7 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress_Impl()
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_INTERPRETER
-PTR_InterpMethodContextFrame InterpreterEntryFrame::GetInterpMethodTopmostContextFrame()
+PTR_InterpMethodContextFrame InterpreterFrame::GetInterpMethodTopmostContextFrame()
 {
     LIMITED_METHOD_CONTRACT;
     PTR_InterpMethodContextFrame pFrame = m_pInterpMethodContextFrame;
@@ -2099,20 +2099,6 @@ PTR_InterpMethodContextFrame InterpreterEntryFrame::GetInterpMethodTopmostContex
     }
 
     return pFrame;
-}
-
-void InterpreterExitFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    SetIP(pRD->pCurrentContext, (TADDR)m_pInterpMethodContextFrame->ip);
-    SetSP(pRD->pCurrentContext, dac_cast<TADDR>(m_pInterpMethodContextFrame));
-    SyncRegDisplayToCurrentContext(pRD);
-}
-
-TADDR InterpreterExitFrame::GetReturnAddress_Impl()
-{
-    return (TADDR)m_pInterpMethodContextFrame->ip;
 }
 
 #endif // FEATURE_INTERPRETER

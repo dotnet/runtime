@@ -767,6 +767,9 @@ private:
     bool          m_fFuncletNotSeen;
     // Indicates that the stack walk has moved past a funclet
     bool          m_fFoundFirstFunclet;
+#ifdef FEATURE_INTERPRETER
+    bool          m_walkingInterpreterFrames;
+#endif // FEATURE_INTERPRETER
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     LPVOID m_pvResumableFrameTargetSP;
