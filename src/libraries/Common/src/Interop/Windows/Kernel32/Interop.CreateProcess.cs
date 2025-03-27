@@ -21,9 +21,20 @@ internal static partial class Interop
             int dwCreationFlags,
             IntPtr lpEnvironment,
             string? lpCurrentDirectory,
-            ref STARTUPINFO lpStartupInfo,
+            ref STARTUPINFOEX lpStartupInfo,
             ref PROCESS_INFORMATION lpProcessInformation
         );
+
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "InitializeProcThreadAttributeList", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool InitializeProcThreadAttributeList(byte* lpAttributeList, uint dwAttributeCount, uint dwFlags, nuint* lpSize);
+
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "UpdateProcThreadAttribute", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool UpdateProcThreadAttribute(byte* lpAttributeList, uint dwFlags, nuint Attribute, Span<nint> lpValue, nuint cbSize, void* lpPreviousValue, nuint* lpReturnSize);
+
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "DeleteProcThreadAttributeList", SetLastError = true)]
+        internal static unsafe partial void DeleteProcThreadAttributeList(byte* lpAttributeList);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct PROCESS_INFORMATION
@@ -55,6 +66,13 @@ internal static partial class Interop
             internal IntPtr hStdInput;
             internal IntPtr hStdOutput;
             internal IntPtr hStdError;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct STARTUPINFOEX
+        {
+            internal STARTUPINFO StartupInfo;
+            internal byte* AttributeList;
         }
     }
 }
