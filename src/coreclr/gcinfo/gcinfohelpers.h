@@ -4,6 +4,7 @@
 #if defined(_DEBUG)
 // NOTE: This needs to actually do something with expr or crossgen will crash in safemath.h
 //  because safemath verifies that you've actually performed overflow checks and there's a load-bearing assert somewhere in GcInfoEncoder
+// It is not possible to use libc assert here without linker errors.
 static bool __gcinfo_assert_hack_global = false;
 #define GCINFO_ASSERT(expr) if (!(__gcinfo_assert_hack_global = (expr))) { \
     _DbgBreak();\
