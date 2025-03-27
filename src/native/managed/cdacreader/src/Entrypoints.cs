@@ -17,7 +17,6 @@ internal static class Entrypoints
         ulong descriptor,
         delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget,
         delegate* unmanaged<uint, uint, uint, byte*, void*, int> readThreadContext,
-        delegate* unmanaged<int*, void*, int> getPlatform,
         void* readContext,
         IntPtr* handle)
     {
@@ -36,13 +35,6 @@ internal static class Entrypoints
                 fixed (byte* bufferPtr = buffer)
                 {
                     return readThreadContext(threadId, contextFlags, contextSize, bufferPtr, readContext);
-                }
-            },
-            (out int platform) =>
-            {
-                fixed (int* platformPtr = &platform)
-                {
-                    return getPlatform(platformPtr, readContext);
                 }
             },
             out ContractDescriptorTarget? target))
@@ -95,6 +87,7 @@ internal static class Entrypoints
 
         ComWrappers cw = new StrategyBasedComWrappers();
         object obj = cw.GetOrCreateObjectForComInstance(pLegacyTarget, CreateObjectFlags.None);
+
         ICLRDataTarget dataTarget = obj as ICLRDataTarget ?? throw new ArgumentException($"pLegacyTarget does not implement ${nameof(ICLRDataTarget)}", nameof(pLegacyTarget));
         ICLRContractLocator contractLocator = obj as ICLRContractLocator ?? throw new ArgumentException($"pLegacyTarget does not implement ${nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
 
@@ -120,30 +113,6 @@ internal static class Entrypoints
                 {
                     return dataTarget.GetThreadContext(threadId, contextFlags, contextSize, bufferPtr);
                 }
-            },
-            (out platform) =>
-            {
-                platform = 0;
-                uint machineType;
-                int hr = dataTarget.GetMachineType(&machineType);
-                switch (machineType)
-                {
-                    // ICLRDataTarget can not be used to find OS. For now labeling all platforms as Windows
-                    //
-                    case 0x014c: // IMAGE_FILE_MACHINE_I386
-                        platform = (int)Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_X86;
-                        break;
-                    case 0x8664: // IMAGE_FILE_MACHINE_AMD64
-                        platform = (int)Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_AMD64;
-                        break;
-                    case 0x01c4: // IMAGE_FILE_MACHINE_ARMNT
-                        platform = (int)Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_ARM;
-                        break;
-                    case 0xAA64: // IMAGE_FILE_MACHINE_ARM64
-                        platform = (int)Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_ARM64;
-                        break;
-                }
-                return hr;
             },
             out ContractDescriptorTarget? target))
         {
