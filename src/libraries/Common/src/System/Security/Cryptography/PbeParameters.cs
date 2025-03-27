@@ -31,7 +31,7 @@ namespace System.Security.Cryptography
         ///   into an encryption key.
         /// </summary>
         /// <value>
-        ///   Gets the iteration count to provide to the Key Derivation Function (KDF) to turn a password
+        ///   The iteration count to provide to the Key Derivation Function (KDF) to turn a password
         ///   into an encryption key.
         /// </value>
         public int IterationCount { get; }
