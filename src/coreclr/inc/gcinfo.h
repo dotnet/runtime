@@ -4,6 +4,7 @@
 // ******************************************************************************
 // WARNING!!!: These values are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
+// There are scenarios in diagnostics that support parsing of old GC Info formats.
 // See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/gcinfo.h
 // ******************************************************************************
 
@@ -40,15 +41,11 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 
 #ifdef SOS_INCLUDE
 extern bool IsRuntimeVersionAtLeast(DWORD major);
-// SOS needs to support both v4 and v3 versions.
-//     we can figure which one is used from the major version of the runtime.
 inline int GCInfoVersion()
 {
-    // Since in SOS we only care about ability to parse the GC Info,
-    // we can assume that everything before net10.0 uses GCInfo v3
-    // v2 and v3 had the same format, so for parsing/dumping purposes they are the same.
-    // Also, since runtime cannot parse GC info in nondefault format,
-    // we can infer GC Info format from major runtime version.
+    // In SOS we only care about ability to parse/dump the GC Info.
+    // Since v2 and v3 had the same file format and v1 is no longer supported,
+    // we can assume that everything before net10.0 uses GCInfo v3.
     return IsRuntimeVersionAtLeast(10) ? 4 : 3;
 }
 #endif
