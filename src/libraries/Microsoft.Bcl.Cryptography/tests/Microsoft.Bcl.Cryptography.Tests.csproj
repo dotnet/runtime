@@ -34,6 +34,8 @@
              Link="CommonTest\System\Security\Cryptography\MLKemTests.Keys.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.Encapsulation.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemTests.Encapsulation.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PbeParametersTests.cs"
+             Link="CommonTest\System\Security\Cryptography\PbeParametersTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs"
