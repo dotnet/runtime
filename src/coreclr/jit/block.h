@@ -574,10 +574,6 @@ enum class BasicBlockVisit
 // The bbPreds list is initially created by Compiler::fgLinkBasicBlocks()
 // and is incrementally kept up to date.
 //
-// The edge weight are computed by Compiler::fgComputeEdgeWeights()
-// the edge weights are used to straighten conditional branches
-// by Compiler::fgReorderBlocks()
-//
 struct FlowEdge
 {
 private:

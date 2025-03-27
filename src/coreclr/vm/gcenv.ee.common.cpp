@@ -5,7 +5,7 @@
 #include "gcenv.h"
 #include <exinfo.h>
 
-#if defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 
 struct FindFirstInterruptiblePointState
 {
@@ -58,7 +58,6 @@ bool FindFirstInterruptiblePointStateCB(
 // the end is exclusive). Return -1 if no such point exists.
 unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
 {
-#ifdef USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
     GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
 
@@ -70,13 +69,9 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
     gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
 
     return state.returnOffs;
-#else
-    PORTABILITY_ASSERT("FindFirstInterruptiblePoint");
-    return -1;
-#endif // USE_GC_INFO_DECODER
 }
 
-#endif // FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
 
 //-----------------------------------------------------------------------------
 // Determine whether we should report the generic parameter context

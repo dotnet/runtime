@@ -638,7 +638,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
     else
     {
-        // Ngen case - GS cookie constant needs to be accessed through an indirection.
+        // AOT case - GS cookie constant needs to be accessed through an indirection.
         instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr,
                                INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_GSCookieCheck) DEBUGARG(GTF_EMPTY));
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, regGSConst, regGSConst, 0);
@@ -1489,13 +1489,10 @@ void CodeGen::genRangeCheck(GenTree* oper)
             assert(!arrLen->isContained());
             // For (index == 0), we can just test if (length == 0) as this is the only case that would throw.
             // This may lead to an optimization by using cbz/tbnz.
-            genJumpToThrowHlpBlk(
-                bndsChk->gtThrowKind,
-                [&](BasicBlock* target, bool isInline) {
+            genJumpToThrowHlpBlk(bndsChk->gtThrowKind, [&](BasicBlock* target, bool isInline) {
                 genCompareImmAndJump(isInline ? GenCondition::NE : GenCondition::EQ, arrLen->GetRegNum(), 0,
                                      emitActualTypeSize(arrLen), target);
-            },
-                bndsChk->gtIndRngFailBB);
+            });
             return;
         }
 #endif
@@ -1517,7 +1514,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
 #endif // DEBUG
 
     GetEmitter()->emitInsBinary(INS_cmp, emitActualTypeSize(bndsChkType), src1, src2);
-    genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind, bndsChk->gtIndRngFailBB);
+    genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind);
 }
 
 //---------------------------------------------------------------------
@@ -1725,7 +1722,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     {
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, base->GetRegNum(), node->gtLenOffset);
         GetEmitter()->emitIns_R_R(INS_cmp, emitActualTypeSize(index->TypeGet()), indexReg, tmpReg);
-        genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
+        genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL);
     }
 
     // Can we use a ScaledAdd instruction?
@@ -4636,7 +4633,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // - Generate fully interruptible code for loops that contains calls
     // - Generate fully interruptible code for leaf methods
     //
-    // Given the limited benefit from this optimization (<10k for CoreLib NGen image), the extra complexity
+    // Given the limited benefit from this optimization (<10k for CoreLib AOT image), the extra complexity
     // is not worth it.
     //
     rsPushRegs |= RBM_LR; // We must save the return address (in the LR register)

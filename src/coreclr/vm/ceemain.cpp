@@ -887,7 +887,6 @@ void EEStartupHelper()
         // Before setting up the execution manager initialize the first part
         // of the JIT helpers.
         InitJITHelpers1();
-        InitJITHelpers2();
 
         SyncBlockCache::Attach();
 

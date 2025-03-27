@@ -23,6 +23,7 @@
 #define HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS "PLATFORM_RESOURCE_ROOTS"
 #define HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES "TRUSTED_PLATFORM_ASSEMBLIES"
 
+// Any callbacks set on this contract are expected to be valid for the lifetime of the process
 struct host_runtime_contract
 {
     size_t size;

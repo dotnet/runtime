@@ -2317,8 +2317,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
 
     switch(stubCodeBlockKind)
     {
-    case STUB_CODE_BLOCK_PRECODE:
-        return MethodDesc::GetMethodDescFromStubAddr(entryPoint);
     case STUB_CODE_BLOCK_FIXUPPRECODE:
         return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
     case STUB_CODE_BLOCK_STUBPRECODE:

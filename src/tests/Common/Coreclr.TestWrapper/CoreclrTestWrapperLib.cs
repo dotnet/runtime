@@ -111,6 +111,36 @@ namespace CoreclrTestLib
 
     internal static class ProcessExtensions
     {
+        public static bool TryGetProcessId(this Process process, out int processId)
+        {
+            try
+            {
+                processId = process.Id;
+                return true;
+            }
+            catch
+            {
+                // Process exited
+                processId = default;
+                return false;
+            }
+        }
+
+        public static bool TryGetProcessName(this Process process, out string processName)
+        {
+            try
+            {
+                processName = process.ProcessName;
+                return true;
+            }
+            catch
+            {
+                // Process exited
+                processName = default;
+                return false;
+            }
+        }
+
         public unsafe static IEnumerable<Process> GetChildren(this Process process)
         {
             var children = new List<Process>();
@@ -353,7 +383,7 @@ namespace CoreclrTestLib
 
             Task<string> stdOut = proc.StandardOutput.ReadToEndAsync();
             Task<string> stdErr = proc.StandardError.ReadToEndAsync();
-            if(!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
+            if (!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
             {
                 proc.Kill(true);
                 outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
@@ -394,7 +424,7 @@ namespace CoreclrTestLib
                 string? userName = Environment.GetEnvironmentVariable("USER");
                 if (string.IsNullOrEmpty(userName))
                 {
-                    userName="helixbot";
+                    userName = "helixbot";
                 }
 
                 if (!RunProcess("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
@@ -569,7 +599,9 @@ namespace CoreclrTestLib
 
                 symbolizerOutput = stdout.Result;
 
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
                 outputWriter.WriteLine(e.ToString());
                 return false;
@@ -662,16 +694,23 @@ namespace CoreclrTestLib
             while (childrenToCheck.Count != 0)
             {
                 Process child = childrenToCheck.Dequeue();
-                if (seen.Contains(child.Id))
+
+                if (!child.TryGetProcessId(out int processId))
                     continue;
 
-                Console.WriteLine($"Checking child process: '{child.ProcessName}' (ID: {child.Id})");
-                seen.Add(child.Id);
+                if (seen.Contains(processId))
+                    continue;
+
+                if (!child.TryGetProcessName(out string processName))
+                    continue;
+
+                Console.WriteLine($"Checking child process: '{processName}' (ID: {processId})");
+                seen.Add(processId);
 
                 foreach (var grandchild in child.GetChildren())
                     childrenToCheck.Enqueue(grandchild);
 
-                if (child.ProcessName.Equals(childName, StringComparison.OrdinalIgnoreCase))
+                if (processName.Equals(childName, StringComparison.OrdinalIgnoreCase))
                 {
                     children.Push(child);
                 }
@@ -789,7 +828,7 @@ namespace CoreclrTestLib
                         {
                             cts.Cancel();
                         }
-                        catch {}
+                        catch { }
 
                         outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
                                 executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
@@ -851,7 +890,7 @@ namespace CoreclrTestLib
         {
             // The command to execute
             string command = "wmic process get Name, ProcessId, ParentProcessId";
-            
+
             // Start the process and capture the output
             Process process = new Process();
             process.StartInfo.FileName = "cmd.exe";
