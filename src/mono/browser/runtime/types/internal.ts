@@ -244,17 +244,19 @@ export type RuntimeHelpers = {
     dumpThreads: () => void,
     mono_wasm_print_thread_dump: () => void,
     utf8ToString: (ptr: CharPtr) => string,
-    mono_background_exec: () => void;
+    mono_background_exec: () => void,
     mono_wasm_ds_exec: () => void,
-    mono_wasm_instrument_method: (method:MonoMethod) => number,
+    mono_wasm_method_full_name: (method: MonoMethod) => CharPtr,
+    free: (ptr: VoidPtr) => void,
+    mono_wasm_instrument_method:(method:MonoMethod) => number,
 }
 
 export type DiagnosticHelpers = {
-    ds_rt_websocket_create:(urlPtr :CharPtr)=>number,
-    ds_rt_websocket_send:(client_socket :number, buffer:VoidPtr, bytes_to_write:number)=>number,
-    ds_rt_websocket_poll:(client_socket :number)=>number,
-    ds_rt_websocket_recv:(client_socket :number, buffer:VoidPtr, bytes_to_read:number)=>number,
-    ds_rt_websocket_close:(client_socket :number)=>number,
+    ds_rt_websocket_create:(urlPtr :CharPtr) => number,
+    ds_rt_websocket_send:(client_socket :number, buffer:VoidPtr, bytes_to_write:number) => number,
+    ds_rt_websocket_poll:(client_socket :number) => number,
+    ds_rt_websocket_recv:(client_socket :number, buffer:VoidPtr, bytes_to_read:number) => number,
+    ds_rt_websocket_close:(client_socket :number) => number,
 }
 
 export type AOTProfilerOptions = {

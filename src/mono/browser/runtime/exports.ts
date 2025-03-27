@@ -26,6 +26,7 @@ import { mono_wasm_dump_threads } from "./pthreads";
 
 import { threads_c_functions as tcwraps } from "./cwraps";
 import { utf8ToString } from "./strings";
+import { free } from "./memory";
 
 export let runtimeList: RuntimeList;
 
@@ -44,6 +45,8 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         utf8ToString,
         mono_background_exec: () => tcwraps.mono_background_exec(),
         mono_wasm_ds_exec: () => tcwraps.mono_wasm_ds_exec(),
+        mono_wasm_method_full_name: (m) => tcwraps.mono_wasm_method_full_name(m),
+        free: (p) => free(p),
     };
     if (WasmEnableThreads) {
         rh.dumpThreads = mono_wasm_dump_threads;

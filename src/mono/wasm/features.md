@@ -380,26 +380,25 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
 
 ```xml
 <PropertyGroup>
-  <!-- enables diagnostic server -->
-  <!-- this is new switch -->
-  <WasmPerfTracing>true</WasmPerfTracing>
-
-  <!-- enables perf instrumentation for sampling CPU profiler -->
-  <WasmPerfInstrumentation>true</WasmPerfInstrumentation>
-
-  <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
-  <!-- this is existing switch also on other targets -->
-  <MetricsSupport>true</MetricsSupport>
-
-  <!-- enables system events https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/diagnostics#observability-and-telemetry -->
-  <!-- this is existing switch also on other targets -->
-  <EventSourceSupport>true</EventSourceSupport>
+  <WasmProfilers>browser;</WasmProfilers>
 </PropertyGroup>
 ```
 
-`Timing-Allow-Origin` HTTP header allows for more precise time measurements.
+In Blazor, you can customize the startup in your index.html
+```html
+<script src="_framework/blazor.webassembly.js" autostart="false"></script>
+<script>
+Blazor.start({
+    configureRuntime: function (dotnet) {
+        dotnet.withConfig({
+            browserProfilerOptions: {}
+        });
+    }
+});
+</script>
+```
 
-### Profiling in the browser dev tools
+In simple browser template, you can add following to your `main.js`
 
 You can enable integration with the profiler in browser dev tools via following elements in your .csproj
 ```xml
