@@ -1690,7 +1690,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(ternaryLogicId));
                 node->NormalizeJitBaseTypeToInt(ternaryLogicId, simdBaseType);
             }
-            return LowerNode(node);
+            return node;
         }
     }
 
@@ -1929,7 +1929,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 node->Op(2) = op2;
 
                 node->ChangeHWIntrinsicId(testIntrinsicId);
-                return LowerNode(node);
+                return node;
             }
             break;
         }
@@ -2039,7 +2039,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 node->ChangeHWIntrinsicId(NI_Vector128_GetElement);
-                return LowerNode(node);
+                return node;
             }
             break;
         }
@@ -2706,7 +2706,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                 assert(simdSize == 16);
                 LowerHWIntrinsicCC(node, NI_SSE41_PTEST, cmpCnd);
             }
-            return LowerNode(node);
+            return node;
         }
     }
 
@@ -3343,7 +3343,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     node->gtType = TYP_VOID;
     node->ClearUnusedValue();
 
-    return LowerNode(node);
+    return node;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -3443,7 +3443,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
             }
 
             BlockRange().Remove(node);
-            return LowerNode(binOp);
+            return binOp;
         }
         else if (simdSize == 32)
         {
@@ -3472,7 +3472,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
         {
             // result = BlendVariable op3 (right) op2 (left) op1 (mask)
             node->ResetHWIntrinsicId(blendVariableId, comp, op3, op2, op1);
-            return LowerNode(node);
+            return node;
         }
     }
 
@@ -3496,7 +3496,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
             assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(ternaryLogicId));
             node->NormalizeJitBaseTypeToInt(ternaryLogicId, simdBaseType);
         }
-        return LowerNode(node);
+        return node;
     }
 
     // We cannot optimize, so produce unoptimized instructions
@@ -3552,7 +3552,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     }
 
     BlockRange().Remove(node);
-    return LowerNode(tmp4);
+    return tmp4;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -4075,7 +4075,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         BlockRange().Remove(node);
 
-        return LowerNode(vecCon);
+        return vecCon;
     }
     else if (argCnt == 1)
     {
@@ -4184,7 +4184,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     unreached();
                 }
             }
-            return LowerNode(node);
+            return node;
         }
 
         // We have the following (where simd is simd16 or simd32):
@@ -4209,7 +4209,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 LowerNode(tmp1);
 
                 node->ResetHWIntrinsicId(NI_AVX2_BroadcastScalarToVector256, tmp1);
-                return LowerNode(node);
+                return node;
             }
 
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
@@ -4254,7 +4254,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             node->ResetHWIntrinsicId(NI_Vector256_WithUpper, comp, tmp3, tmp1);
             LowerNode(tmp3);
 
-            return LowerNode(node);
+            return node;
         }
 
         assert(intrinsicId == NI_Vector128_Create);
@@ -4283,7 +4283,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             //   return Avx2.BroadcastScalarToVector128(tmp1);
 
             node->ChangeHWIntrinsicId(NI_AVX2_BroadcastScalarToVector128, tmp1);
-            return LowerNode(node);
+            return node;
         }
 
         switch (simdBaseType)
@@ -4522,7 +4522,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        return LowerNode(node);
+        return node;
     }
 
     if (intrinsicId == NI_Vector512_Create || intrinsicId == NI_Vector256_Create)
@@ -4588,7 +4588,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         LowerNode(lo);
         LowerNode(hi);
 
-        return LowerNode(node);
+        return node;
     }
 
     assert(intrinsicId == NI_Vector128_Create);
@@ -4985,7 +4985,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         }
     }
 
-    return LowerNode(node);
+    return node;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -5029,7 +5029,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         }
 
         node->ResetHWIntrinsicId(intrinsicId, op1);
-        return LowerNode(node);
+        return node;
     }
 
     uint32_t count    = simdSize / genTypeSize(simdBaseType);
@@ -5196,7 +5196,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         BlockRange().Remove(node);
 
         assert(newAddr->gtNext == newIndir);
-        return LowerNode(newAddr);
+        return newAddr;
     }
 
     if (!op2->OperIsConst())
@@ -5248,7 +5248,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
                 BlockRange().Remove(op2);
                 BlockRange().Remove(node);
 
-                return LowerNode(lclFld);
+                return lclFld;
             }
         }
 
@@ -5409,7 +5409,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         node->SetSimdSize(16);
         node->ResetHWIntrinsicId(NI_Vector128_ToScalar, op1);
 
-        return LowerNode(node);
+        return node;
     }
     else
     {
@@ -6075,7 +6075,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 }
 
                 BlockRange().Remove(node);
-                return LowerNode(tmp1);
+                return tmp1;
             }
 
             case TYP_DOUBLE:
@@ -6169,7 +6169,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                         node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp3);
                     }
 
-                    return LowerNode(node);
+                    return node;
                 }
 
                 horizontalAdd = NI_SSE3_HorizontalAdd;
@@ -6222,7 +6222,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                         node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp3);
                     }
 
-                    return LowerNode(node);
+                    return node;
                 }
 
                 horizontalAdd = NI_SSE3_HorizontalAdd;
@@ -6663,7 +6663,7 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
             BlockRange().Remove(op1);
             BlockRange().Remove(node);
 
-            return LowerNode(newIndir);
+            return newIndir;
         }
 
         if (op1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
@@ -6693,7 +6693,7 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
                 BlockRange().Remove(op1);
                 BlockRange().Remove(node);
 
-                return LowerNode(lclFld);
+                return lclFld;
             }
         }
     }
