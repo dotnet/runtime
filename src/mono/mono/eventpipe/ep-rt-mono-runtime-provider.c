@@ -1380,6 +1380,34 @@ sample_current_thread_stack_trace ()
 	}
 }
 
+static void
+ep_write_empty_profile_event ()
+{
+	MonoContext ctx;
+	MonoThreadInfo *thread_info = mono_thread_info_current ();
+	SampleProfileStackWalkData stack_walk_data;
+	SampleProfileStackWalkData *data= &stack_walk_data;
+	THREAD_INFO_TYPE adapter = { { 0 } };
+	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, sample_current_thread_stack_trace);
+
+	data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
+	data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&ctx);
+	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
+	data->stack_walk_data.stack_contents = &data->stack_contents;
+	data->stack_walk_data.top_frame = true;
+	data->stack_walk_data.async_frame = false;
+	data->stack_walk_data.safe_point_frame = false;
+	data->stack_walk_data.runtime_invoke_frame = false;
+	ep_stack_contents_reset (&data->stack_contents);
+
+	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+
+	mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
+	uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
+	ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
+}
+
+
 static double desired_sample_interval_ms;
 
 static double last_sample_time;
@@ -1501,6 +1529,13 @@ ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 	mono_profiler_set_method_samplepoint_callback (_ep_rt_mono_sampling_profiler_provider, method_samplepoint);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, method_enter);
 	mono_profiler_set_method_exception_leave_callback (_ep_rt_mono_sampling_profiler_provider, method_exc_leave);
+
+#ifdef HOST_BROWSER
+	// in order to satisfy dotnet-gcdump, which is requesting one sample event, before the asking for GC dump
+	// see https://github.com/dotnet/diagnostics/blob/d2f05caf4a97d8dc2a75d910d5d0c1170e2ed640/src/Tools/dotnet-gcdump/DotNetHeapDump/EventPipeDotNetHeapDumper.cs#L135-L145
+	// in browser, managed code is not running unless there is user interaction, so we need to fire an empty event
+	ep_write_empty_profile_event ();
+#endif
 }
 
 void
