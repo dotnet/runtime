@@ -29,7 +29,6 @@ internal class TestPlaceholderTarget : Target
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
-        Platform = Target.CorDebugPlatform.CORDB_PLATFORM_MAC_AMD64;
         _contractRegistry = new Mock<ContractRegistry>().Object;
         _dataCache = new DefaultDataCache(this);
         _typeInfoCache = types ?? [];
@@ -44,7 +43,6 @@ internal class TestPlaceholderTarget : Target
 
     public override int PointerSize { get; }
     public override bool IsLittleEndian { get; }
-    public override CorDebugPlatform Platform { get; }
 
     public override bool IsAlignedToPointerSize(TargetPointer pointer)
     {
