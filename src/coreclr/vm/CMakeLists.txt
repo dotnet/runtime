@@ -133,6 +133,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     typehandle.cpp
     typehash.cpp
     typestring.cpp
+    unsafeaccessors.cpp
     util.cpp
     vars.cpp
     versionresilienthashcode.cpp
