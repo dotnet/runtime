@@ -132,23 +132,8 @@ internal sealed class FrameIterator
 
     private FrameType GetFrameType(Data.Frame frame)
     {
-        foreach (FrameType frameType in Enum.GetValues<FrameType>())
-        {
-            TargetPointer typeVptr;
-            try
-            {
-                // not all Frames are in all builds, so we need to catch the exception
-                typeVptr = target.ReadGlobalPointer(frameType.ToString() + "Identifier");
-                if (frame.Identifier == typeVptr)
-                {
-                    return frameType;
-                }
-            }
-            catch (InvalidOperationException)
-            {
-            }
-        }
-
+        Console.WriteLine(target.PointerSize.ToString());
+        Console.WriteLine(frame);
         return FrameType.Unknown;
     }
 
