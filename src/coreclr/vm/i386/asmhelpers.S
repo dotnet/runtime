@@ -1091,3 +1091,34 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     xor edi, esi
     jmp eax
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+//==========================================================================
+// Capture a transition block with register values and call the IL_Throw
+// implementation written in C.
+//
+// Input state:
+//   ECX = Pointer to exception object
+//==========================================================================
+LEAF_ENTRY IL_Throw, _TEXT
+    STUB_PROLOG
+
+    mov     edx, esp
+    call    C_FUNC(IL_Throw_x86)
+
+    STUB_EPILOG
+    ret     4
+LEAF_END IL_Throw, _TEXT
+
+//==========================================================================
+// Capture a transition block with register values and call the IL_Rethrow
+// implementation written in C.
+//==========================================================================
+LEAF_ENTRY IL_Rethrow, _TEXT
+    STUB_PROLOG
+
+    mov     ecx, esp
+    call    C_FUNC(IL_Rethrow_x86)
+
+    STUB_EPILOG
+    ret     4
+LEAF_END IL_Rethrow

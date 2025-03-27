@@ -1049,6 +1049,10 @@ public:
     SoftwareExceptionFrame() : Frame(FrameIdentifier::SoftwareExceptionFrame) {
         LIMITED_METHOD_CONTRACT;
     }
+
+#ifdef TARGET_X86
+    SoftwareExceptionFrame(TransitionBlock *pTransitionBlock);
+#endif
 #endif
 
     TADDR GetReturnAddressPtr_Impl()
@@ -1058,13 +1062,8 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-    void Init(TransitionBlock *pTransitionBlock);
-    void InitAndLink(TransitionBlock *pTransitionBlock, Thread *pThread);
-#else
     void Init();
     void InitAndLink(Thread *pThread);
-#endif
 #endif
 
     Interception GetInterception_Impl()

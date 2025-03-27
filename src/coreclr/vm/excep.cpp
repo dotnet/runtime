@@ -11546,11 +11546,12 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 }
 
 #ifndef DACCESS_COMPILE
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#ifdef TARGET_X86
 
-void SoftwareExceptionFrame::Init(TransitionBlock *pTransitionBlock)
+SoftwareExceptionFrame::SoftwareExceptionFrame(TransitionBlock *pTransitionBlock)
+    : Frame(FrameIdentifier::SoftwareExceptionFrame)
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
 
     m_Context.Ecx = pTransitionBlock->m_argumentRegisters.ECX;
     m_Context.Edx = pTransitionBlock->m_argumentRegisters.EDX;
@@ -11566,19 +11567,9 @@ void SoftwareExceptionFrame::Init(TransitionBlock *pTransitionBlock)
     m_Context.Esp = (UINT_PTR)(pTransitionBlock + 1);
     m_Context.Eip = pTransitionBlock->m_ReturnAddress;
     m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
-
-    _ASSERTE(ExecutionManager::IsManagedCode(pTransitionBlock->m_ReturnAddress));
 }
 
-void SoftwareExceptionFrame::InitAndLink(TransitionBlock *pTransitionBlock, Thread *pThread)
-{
-    WRAPPER_NO_CONTRACT;
-
-    Init(pTransitionBlock);
-    Push(pThread);
-}
-
-#else
+#endif // TARGET_X86
 
 //
 // Init a new frame
@@ -11587,6 +11578,9 @@ void SoftwareExceptionFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
 
+    // On x86 we initialize the context state from transition block in a special
+    // constructor.
+#ifndef TARGET_X86
 #define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -11609,6 +11603,7 @@ void SoftwareExceptionFrame::Init()
     _ASSERTE(ExecutionManager::IsManagedCode(::GetIP(&m_Context)));
 
     m_ReturnAddress = ::GetIP(&m_Context);
+#endif // !TARGET_X86
 }
 
 //
@@ -11619,9 +11614,9 @@ void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
     WRAPPER_NO_CONTRACT;
 
     Init();
+
     Push(pThread);
 }
 
-#endif // TARGET_X86 && TARGET_WINDOWS
 #endif // DACCESS_COMPILE
 #endif // FEATURE_EH_FUNCLETS
