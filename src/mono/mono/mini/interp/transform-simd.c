@@ -1064,6 +1064,37 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			cmethod_name = "CompareGreaterThanOrEqual";
 		} else if (id == SN_Equals) {
 			cmethod_name = "CompareEqual";
+		} else if (id == SN_Add) {
+			cmethod_name = "Add";
+		} else if (id == SN_Subtract) {
+			cmethod_name = "Subtract";
+		} else if (id == SN_Multiply) {
+			cmethod_name = "Multiply";
+		//} else if (id == SN_Divide) {
+		//	cmethod_name = "Divide";
+		} else if (id == SN_And) {
+			cmethod_name = "BitwiseAnd";
+		//} else if (id == SN_Or) {
+		//	cmethod_name = "BitwiseOr";
+		//} else if (id == SN_Xor) {
+		//	cmethod_name = "BitwiseXor";
+		} else if (id == SN_ShiftLeft) {
+			cmethod_name = "ShiftLeft";
+		} else if (id == SN_ShiftRightLogical) {
+			cmethod_name = "ShiftRightLogical";
+		} else if (id == SN_ShiftRightArithmetic) {
+			cmethod_name = "ShiftRightArithmetic";
+		} else if (id == SN_Negate) {
+			cmethod_name = "Negate";
+		//} else if (id == SN_Abs) {
+		//	cmethod_name = "Absolute";
+		//} else if (id == SN_Min) {
+		//	cmethod_name = "Min";
+		//} else if (id == SN_Max) {
+		//	cmethod_name = "Max";
+		} else {
+			// Only transform the name if we expect it to work
+			return FALSE;
 		}
 	}
 	gint16 simd_opcode = -1;
