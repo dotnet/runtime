@@ -946,7 +946,7 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
     {
         // We are in the 1st pass of exception handling, but the thread mark says that it has already executed 2nd pass
         // of unhandled exception handling. That means that some external native code on top of the stack has caught the
-        // exception that runtime considered to be unhandledand a new native exception was thrown on the current thread.
+        // exception that runtime considered to be unhandled, and a new native exception was thrown on the current thread.
         // We need to reset the flags below so that we no longer block exception handling for the managed frames.
         pThread->ResetThreadStateNC(Thread::TSNC_UnhandledException2ndPass);
         pThread->ResetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);

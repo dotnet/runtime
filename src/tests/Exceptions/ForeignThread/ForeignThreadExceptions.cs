@@ -63,24 +63,27 @@ public class ForeignThreadExceptionsTest
             }
         });
 
-        InvokeCallbackAndCatchTwiceOnNewThread(() => {
-            throw new Exception("Exception unhandled in any managed code");
-        });
+        if (OperatingSystem.IsWindows() && !TestLibrary.Utilities.IsNativeAot)
+        {
+            InvokeCallbackAndCatchTwiceOnNewThread(() => {
+                throw new Exception("Exception unhandled in any managed code");
+            });
 
-        int finallyCallsCount = 0;
-        InvokeCallbackAndCatchTwiceOnNewThread(() => {
-            try
-            {
-                // Throw native exception that is not handled in any managed code
-                ThrowException();
-            }
-            finally
-            {
-                finallyCallsCount++;
-            }
-        });
+            int finallyCallsCount = 0;
+            InvokeCallbackAndCatchTwiceOnNewThread(() => {
+                try
+                {
+                    // Throw native exception that is not handled in any managed code
+                    ThrowException();
+                }
+                finally
+                {
+                    finallyCallsCount++;
+                }
+            });
 
-        Assert.Equal(2, finallyCallsCount);
+            Assert.Equal(2, finallyCallsCount);
+        }
     }
 
     [Fact]

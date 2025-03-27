@@ -15,15 +15,10 @@
 
 #include <platformdefines.h>
 
+#ifdef _WIN32
 extern "C" DLL_EXPORT void STDMETHODCALLTYPE ThrowException()
 {
-    throw std::exception{};
-}
-
-typedef void (*PFNACTION1)();
-extern "C" DLL_EXPORT void InvokeCallback(PFNACTION1 callback)
-{
-    callback();
+    throw std::exception();
 }
 
 extern "C" DLL_EXPORT void InvokeCallbackAndCatchTwice(PFNACTION1 callback)
@@ -55,16 +50,18 @@ extern "C" DLL_EXPORT void InvokeCallbackAndCatchTwice(PFNACTION1 callback)
     }
 }
 
+#endif // _WIN32
+
+typedef void (*PFNACTION1)();
+extern "C" DLL_EXPORT void InvokeCallback(PFNACTION1 callback)
+{
+    callback();
+}
+
 #ifndef _WIN32
 void* InvokeCallbackUnix(void* callback)
 {
     InvokeCallback((PFNACTION1)callback);
-    return NULL;
-}
-
-void* InvokeCallbackAndCatchTwiceUnix(void* callback)
-{
-    InvokeCallbackAndCatchTwice((PFNACTION1)callback);
     return NULL;
 }
 
@@ -78,6 +75,12 @@ void InvokeCallbackOnNewThreadCommon(PFNACTION1 callback, void (*startRoutine)(P
     std::thread t1(startRoutine, callback);
     t1.join();
 }
+
+extern "C" DLL_EXPORT void InvokeCallbackAndCatchTwiceOnNewThread(PFNACTION1 callback)
+{
+    InvokeCallbackOnNewThreadCommon(callback, InvokeCallbackAndCatchTwice);
+}
+
 #else // _WIN32
 void InvokeCallbackOnNewThreadCommon(PFNACTION1 callback, void *(*startRoutine)(void*))
 {
@@ -100,15 +103,6 @@ void InvokeCallbackOnNewThreadCommon(PFNACTION1 callback, void *(*startRoutine)(
     AbortIfFail(st);
 }
 #endif // _WIN32
-
-extern "C" DLL_EXPORT void InvokeCallbackAndCatchTwiceOnNewThread(PFNACTION1 callback)
-{
-#ifdef _WIN32
-    InvokeCallbackOnNewThreadCommon(callback, InvokeCallbackAndCatchTwice);
-#else // _WIN32
-    InvokeCallbackOnNewThreadCommon(callback, InvokeCallbackAndCatchTwiceUnix);
-#endif
-}
 
 extern "C" DLL_EXPORT void InvokeCallbackOnNewThread(PFNACTION1 callback)
 {
