@@ -8,6 +8,7 @@
     <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
     <DnneGenRollForward>Major</DnneGenRollForward>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
+    <UseLocalAppHostPack>true</UseLocalAppHostPack>
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
     <_TargetsAppleOS Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or
       '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or
