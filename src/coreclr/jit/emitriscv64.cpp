@@ -1357,9 +1357,9 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     // If we generate more instructions than the prefered maximum instruction count, we'll instead use emitDataConst +
     // emitIns_R_C combination.
     int insCountLimit = prefMaxInsCount;
-    // If we are currently generating prolog, we are currently not inside a method block, therefore, we should not use
-    // the emitDataConst + emitIns_R_C combination.
-    if (emitComp->compGeneratingProlog)
+    // If we are currently generating prolog / epilog, we are currently not inside a method block, therefore, we should
+    // not use the emitDataConst + emitIns_R_C combination.
+    if (emitComp->compGeneratingProlog || emitComp->compGeneratingEpilog)
     {
         insCountLimit = absMaxInsCount;
     }
@@ -1571,7 +1571,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     }
     else if (size == EA_PTRSIZE)
     {
-        assert(!emitComp->compGeneratingProlog);
+        assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
         auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
         emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr), 0);
     }
