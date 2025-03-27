@@ -5,8 +5,6 @@
 #define _WITH_GETLINE
 #endif
 
-#include "configure.h"
-
 #include "pal.h"
 #include "utils.h"
 #include "trace.h"

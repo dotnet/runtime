@@ -58,6 +58,8 @@
 
 #endif
 
+#include "configure.h"
+
 // When running on a platform that is not supported in RID fallback graph (because it was unknown
 // at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
 // consuming the native assets.
