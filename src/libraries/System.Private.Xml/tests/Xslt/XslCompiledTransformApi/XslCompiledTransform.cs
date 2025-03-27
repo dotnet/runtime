@@ -4,10 +4,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Loader;
+using System.Tests;
 using System.Text;
 using System.Xml.Tests;
 using System.Xml.XPath;
@@ -3170,84 +3172,87 @@ namespace System.Xml.XslCompiledTransformApiTests
         [Theory]
         public void ValidCases(object param0, object param1, object param2, object param3, object param4, object param5)
         {
-            string xslFile = FullFilePath(param0 as string);
-            string xmlFile = FullFilePath(param1 as string);
-            string baseLineFile = Path.Combine("baseline", param2 as string);
-            bool expectedResult = (bool)param4;
-            bool actualResult = false;
-
-            XmlReader xmlReader = XmlReader.Create(xmlFile);
-            //Let's select randomly how to create navigator
-            IXPathNavigable navigator = null;
-            Random randGenerator = new Random(unchecked((int)DateTime.Now.Ticks));
-            switch (randGenerator.Next(2))
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                case 0:
-                    _output.WriteLine("Using XmlDocument.CreateNavigator()");
-                    XmlDocument xmlDoc = new XmlDocument();
-                    xmlDoc.Load(xmlFile);
-                    navigator = xmlDoc.CreateNavigator();
-                    break;
+                string xslFile = FullFilePath(param0 as string);
+                string xmlFile = FullFilePath(param1 as string);
+                string baseLineFile = Path.Combine("baseline", param2 as string);
+                bool expectedResult = (bool)param4;
+                bool actualResult = false;
 
-                case 1:
-                    _output.WriteLine("Using XPathDocument.CreateNavigator()");
-                    XPathDocument xpathDoc;
-                    using (XmlReader reader = XmlReader.Create(xmlFile))
-                    {
-                        xpathDoc = new XPathDocument(reader);
-                        navigator = xpathDoc.CreateNavigator();
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
-            XmlResolver resolver = null;
-            switch (param3 as string)
-            {
-                case "NullResolver":
-                    break;
-
-                case "XmlUrlResolver":
-                    resolver = new XmlUrlResolver();
-                    break;
-
-                case "CustomXmlResolver":
-                    resolver = new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), @"XsltApiV2")));
-                    break;
-
-                default:
-                    break;
-            }
-
-            try
-            {
-                XslCompiledTransform localXslt = new XslCompiledTransform();
-                XsltSettings settings = new XsltSettings(true, true);
-                using (XmlReader xslReader = XmlReader.Create(xslFile))
-                    localXslt.Load(xslReader, settings, resolver);
-
-                using (XmlWriter writer = XmlWriter.Create("outputFile.txt"))
+                XmlReader xmlReader = XmlReader.Create(xmlFile);
+                //Let's select randomly how to create navigator
+                IXPathNavigable navigator = null;
+                Random randGenerator = new Random(unchecked((int)DateTime.Now.Ticks));
+                switch (randGenerator.Next(2))
                 {
-                    if (param5 as string == "XmlReader")
-                        localXslt.Transform(xmlReader, null, writer, resolver);
-                    else
-                        localXslt.Transform(navigator, null, writer, resolver);
+                    case 0:
+                        _output.WriteLine("Using XmlDocument.CreateNavigator()");
+                        XmlDocument xmlDoc = new XmlDocument();
+                        xmlDoc.Load(xmlFile);
+                        navigator = xmlDoc.CreateNavigator();
+                        break;
+
+                    case 1:
+                        _output.WriteLine("Using XPathDocument.CreateNavigator()");
+                        XPathDocument xpathDoc;
+                        using (XmlReader reader = XmlReader.Create(xmlFile))
+                        {
+                            xpathDoc = new XPathDocument(reader);
+                            navigator = xpathDoc.CreateNavigator();
+                        }
+                        break;
+
+                    default:
+                        break;
                 }
-                VerifyResult(baseLineFile, "outputFile.txt");
-                actualResult = true;
-            }
-            catch (Exception ex)
-            {
-                _output.WriteLine(ex.Message);
-                actualResult = false;
-            }
 
-            if (actualResult != expectedResult)
-                Assert.Fail();
+                XmlResolver resolver = null;
+                switch (param3 as string)
+                {
+                    case "NullResolver":
+                        break;
 
-            return;
+                    case "XmlUrlResolver":
+                        resolver = new XmlUrlResolver();
+                        break;
+
+                    case "CustomXmlResolver":
+                        resolver = new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), @"XsltApiV2")));
+                        break;
+
+                    default:
+                        break;
+                }
+
+                try
+                {
+                    XslCompiledTransform localXslt = new XslCompiledTransform();
+                    XsltSettings settings = new XsltSettings(true, true);
+                    using (XmlReader xslReader = XmlReader.Create(xslFile))
+                        localXslt.Load(xslReader, settings, resolver);
+
+                    using (XmlWriter writer = XmlWriter.Create("outputFile.txt"))
+                    {
+                        if (param5 as string == "XmlReader")
+                            localXslt.Transform(xmlReader, null, writer, resolver);
+                        else
+                            localXslt.Transform(navigator, null, writer, resolver);
+                    }
+                    VerifyResult(baseLineFile, "outputFile.txt");
+                    actualResult = true;
+                }
+                catch (Exception ex)
+                {
+                    _output.WriteLine(ex.Message);
+                    actualResult = false;
+                }
+
+                if (actualResult != expectedResult)
+                {
+                    Assert.Fail();
+                }
+            }
         }
 
         //[Variation("Invalid Arguments: null, valid, valid, valid", Pri = 0, Params = new object[] { 1, false })]
