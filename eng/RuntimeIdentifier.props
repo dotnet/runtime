@@ -65,4 +65,7 @@
     <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsHaiku)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
+  <PropertyGroup>
+    <_ImportedRuntimeIdentifierProps>true</_ImportedRuntimeIdentifierProps>
+  </PropertyGroup>
 </Project>

@@ -6,8 +6,8 @@
     <OutputRID Condition="'$(OutputRID)' == ''">$(TargetRid)</OutputRID>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)OSArch.props" />
-  <Import Project="$(MSBuildThisFileDirectory)RuntimeIdentifier.props" />
+  <Import Project="$(MSBuildThisFileDirectory)OSArch.props" Condition="'$(_ImportedOSArchProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)RuntimeIdentifier.props" Condition="'$(_ImportedRuntimeIdentifierProps)' != 'true'" />
 
   <PropertyGroup>
     <GitHubRepositoryName>runtime</GitHubRepositoryName>
