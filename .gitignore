@@ -11,9 +11,6 @@ syntax: glob
 .packages
 .tools
 
-# nuget packages for custom roslyn
-roslynpackages
-
 # User-specific files
 *.suo
 *.user

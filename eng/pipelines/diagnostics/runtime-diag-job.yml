@@ -1,6 +1,6 @@
 parameters:
   buildConfig: ''
-  nameSuffix: ''
+  name: ''
   buildArgs: ''
   archType: ''
   hostedOs: ''
@@ -16,7 +16,7 @@ parameters:
   # We provide this mechanism to allow for global builds to depend on other global builds and use the multiplexing
   # that platform-matrix.yml enables.
   # Each item can have the following properties:
-  # - nameSuffix: The suffix of the job name to depend on.
+  # - name: The suffix of the job name to depend on.
   # - buildConfig: The configuration of the job to depend on.
   dependsOnGlobalBuilds: []
   pool: ''
@@ -36,50 +36,29 @@ parameters:
   templatePath: 'templates'
   templateContext: ''
   disableComponentGovernance: ''
+  liveRuntimeDir: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
   parameters:
-    ${{ if eq(parameters.hostedOs, '') }}:
-      name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
-      displayName: ${{ format('{0}{1}-{2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix, parameters.runtimeVariant) }}
-    ${{ if ne(parameters.hostedOs, '') }}:
-      name: ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix) }}
-      displayName: ${{ format('{0}{1}-{2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix, parameters.runtimeVariant) }}
+    name: ${{ coalesce(parameters.name, parameters.osGroup) }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
-    enableMicrobuild: ${{ parameters.isOfficialBuild }}
-    enableMicrobuildForMacAndLinux: ${{ parameters.isOfficialBuild }}
 
-    templateContext:
-      ${{ if ne(parameters.templateContext, '') }}:
-        ${{ each pair in parameters.templateContext }}:
-          ${{ if notIn(pair.key, 'outputs') }}:
-            ${{ pair.key }}: ${{ pair.value }}
-      outputs:
-        - ${{ if ne(parameters.templateContext.outputs, '') }}:
-          - ${{ each output in parameters.templateContext.outputs }}:
-            ${{ output.key }}: ${{ output.value }}
-        - ${{ if eq(parameters.isOfficialBuild, true) }}:
-          - output: pipelineArtifact
-            displayName: 'Publish Pipeline Artifacts'
-            ${{ if eq(parameters.hostedOs, '') }}:
-              artifactName: ${{ format('build_{0}{1}_{2}_{3}_{4}_Artifacts', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
-            ${{ if ne(parameters.hostedOs, '') }}:
-              artifactName: ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}_Artifacts', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix) }}
-            targetPath: $(Build.SourcesDirectory)/artifacts/staging
+    ${{ if ne(parameters.templateContext, '') }}:
+      templateContext: ${{ parameters.templateContext }}
 
     artifacts:
       publish:
         logs:
           ${{ if notin(parameters.osGroup, 'browser', 'wasi') }}:
-            name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+            name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.name }}
           ${{ if in(parameters.osGroup, 'browser', 'wasi') }}:
-            name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+            name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.name }}
 
     # Component governance does not work on musl machines
     ${{ if eq(parameters.osSubGroup, '_musl') }}:
@@ -95,64 +74,38 @@ jobs:
       - ${{ each build in parameters.dependsOn }}:
         - ${{ build }}
       - ${{ each globalBuild in parameters.dependsOnGlobalBuilds }}:
-        - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(globalBuild.buildConfig, parameters.buildConfig), globalBuild.nameSuffix) }}
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(globalBuild.buildConfig, parameters.buildConfig), globalBuild.name) }}
 
     variables:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
           - group: AzureDevOps-Artifact-Feeds-Pats
+      
+      - _PhaseName: ${{ coalesce(parameters.name, parameters.osGroup) }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+      - _Pipeline_StreamDumpDir: $(Build.SourcesDirectory)/artifacts/tmp/${{ parameters.buildConfig }}/streams
 
-      - name: _osParameter
-        value: -os ${{ parameters.osGroup }}
-      - name: _archParameter
-        value: -arch ${{ parameters.archType }}
+      - _TestArgs: '-test'
+      - _Cross: ''
 
-      - name: _AssetManifestName
-        value: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.nameSuffix }}
+      - _buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
 
-      - name: _SignType
-        value: $[ coalesce(variables.OfficialSignType, 'real') ]
+      - ${{ if and(eq(parameters.testOnly, 'true'), eq(parameters.buildOnly, 'true')) }}:
+        'error, testOnly and buildOnly cannot be true at the same time': error
 
-      - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
-        - name: _osParameter
-          value: -os linux-bionic
+      - ${{ if eq(parameters.testOnly, 'true') }}:
+        - _TestArgs: '-test -skipnative'
 
-      - name: crossArg
-        value: ''
-      - ${{ if eq(parameters.crossBuild, true) }}:
-        - name: crossArg
-          value: '-cross'
+      - ${{ if or(eq(parameters.buildOnly, 'true'), eq(parameters.isCodeQLRun, 'true')) }}:
+        - _TestArgs: ''
 
-      - name: CxxStandardLibraryArg
-        value: ''
-      - ${{ if ne(parameters.cxxStandardLibrary, '') }}:
-        - name: CxxStandardLibraryArg
-          value: /p:TargetCxxStandardLibrary=${{ parameters.cxxStandardLibrary }}
-
-      - name: CxxStandardLibraryStaticArg
-        value: ''
-      - ${{ if ne(parameters.cxxStandardLibraryStatic, '') }}:
-        - name: CxxStandardLibraryStaticArg
-          value: /p:TargetCxxStandardLibraryStatic=${{ parameters.cxxStandardLibraryStatic }}
-
-      - name: CxxAbiLibraryArg
-        value: ''
-      - ${{ if ne(parameters.cxxAbiLibrary, '') }}:
-        - name: CxxAbiLibraryArg
-          value: /p:TargetCxxAbiLibrary=${{ parameters.cxxAbiLibrary }}
-
-      - name: TargetCxxLibraryConfigurationArgs
-        value: $(CxxStandardLibraryArg) $(CxxStandardLibraryStaticArg) $(CxxAbiLibraryArg)
-
-      - name: _officialBuildParameter
-        ${{ if eq(parameters.isOfficialBuild, true) }}:
-          value: /p:OfficialBuildId=$(Build.BuildNumber) /p:DotNetPublishUsingPipelines=true /p:SignType=$(_SignType) /p:DotNetSignType=$(_SignType)
-        ${{ if ne(parameters.isOfficialBuild, true) }}:
-          value: ''
-
-      # Set no native sanitizers by default
-      - name: _nativeSanitizersArg
-        value: ''
+      # For testing msrc's and service releases. The RuntimeSourceVersion is either "default" or the service release version to test
+      - _InternalInstallArgs: ''
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), eq(parameters.isCodeQLRun, 'false')) }}:
+        - _InternalInstallArgs:
+            -dotnetruntimeversion '$(DotnetRuntimeVersion)'
+            -dotnetruntimedownloadversion '$(DotnetRuntimeDownloadVersion)'
+            -runtimesourcefeed '$(RuntimeFeedUrl)'
+            -runtimesourcefeedkey '$(RuntimeFeedBase64SasToken)'
 
       - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
         - template: ${{ variableTemplate.template }}
@@ -165,7 +118,7 @@ jobs:
             runtimeVariant: ${{ parameters.runtimeVariant }}
             helixQueues: ${{ parameters.helixQueues }}
             targetRid: ${{ parameters.targetRid }}
-            nameSuffix: ${{ parameters.nameSuffix }}
+            name: ${{ parameters.name }}
             platform: ${{ parameters.platform }}
             shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
             ${{ if ne(variableTemplate.forwardedParameters, '') }}:
@@ -181,7 +134,7 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
 
-    - checkout: self
+    - checkout: diagnostics
       clean: true
       fetchDepth: $(checkoutFetchDepth)
 
@@ -239,7 +192,7 @@ jobs:
               runtimeVariant: ${{ parameters.runtimeVariant }}
               helixQueues: ${{ parameters.helixQueues }}
               targetRid: ${{ parameters.targetRid }}
-              nameSuffix: ${{ parameters.nameSuffix }}
+              name: ${{ parameters.name }}
               platform: ${{ parameters.platform }}
               shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
               ${{ if ne(preBuildStep.forwardedParameters, '') }}:
@@ -251,11 +204,24 @@ jobs:
           - ${{ preBuildStep }}
 
     # Build
-    - template: /eng/pipelines/common/templates/global-build-step.yml
-      parameters:
-        buildArgs: ${{ parameters.buildArgs }}
-        useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
-        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    - script: $(_buildScript)
+          -ci
+          -configuration ${{ parameters.buildConfig }}
+          -architecture ${{ parameters.archType }}
+          -privatebuild
+          -useCdac
+          -liveRuntimeDir ${{ parameters.liveRuntimeDir }}
+          $(_TestArgs)
+          $(_Cross)
+          $(_InternalInstallArgs)
+          /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
+      ${{ if eq(parameters.testOnly, 'true') }}:
+        displayName: Test
+      ${{ elseif eq(parameters.buildOnly, 'true') }}:
+        displayName: Build
+      ${{ else }}:
+        displayName: Build / Test
+      condition: succeeded()
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
       - script: |
@@ -278,7 +244,7 @@ jobs:
               runtimeVariant: ${{ parameters.runtimeVariant }}
               helixQueues: ${{ parameters.helixQueues }}
               targetRid: ${{ parameters.targetRid }}
-              nameSuffix: ${{ parameters.nameSuffix }}
+              name: ${{ parameters.name }}
               platform: ${{ parameters.platform }}
               shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
               ${{ if ne(postBuildStep.forwardedParameters, '') }}:
