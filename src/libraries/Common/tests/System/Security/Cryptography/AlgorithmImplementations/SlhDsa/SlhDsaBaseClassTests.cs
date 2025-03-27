@@ -220,8 +220,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] testData = [2];
             byte[] testContext = [3];
             bool returnValue = false;
-
-
             slhDsa.VerifyDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             {
                 AssertExtensions.SequenceEqual(testData, data);
