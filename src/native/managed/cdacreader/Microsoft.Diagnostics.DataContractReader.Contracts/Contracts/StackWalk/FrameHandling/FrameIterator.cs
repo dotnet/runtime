@@ -146,7 +146,7 @@ internal sealed class FrameIterator
         {
             if (target.TryReadGlobal(frameType.ToString() + "Identifier", out ulong? id))
             {
-                if (frame.Identifier == new TargetPointer(id.Value))
+                if (frameIdentifier == new TargetPointer(id.Value))
                 {
                     return frameType;
                 }
