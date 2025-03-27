@@ -426,7 +426,7 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         pRD->pCallerContextPointers             = tempPtrs;
 
 #ifdef TARGET_X86
-        pRD->PCTAddr = pRD->SP - pCodeInfo->GetCodeManager()->GetStackParameterSize(pCodeInfo) - sizeof(DWORD);
+        pRD->PCTAddr = pRD->pCurrentContext->Esp - pCodeInfo->GetCodeManager()->GetStackParameterSize(pCodeInfo) - sizeof(DWORD);
 #endif
     }
     else
