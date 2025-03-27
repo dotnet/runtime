@@ -1752,8 +1752,9 @@ EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool 
     if (deferAdding)
     {
         // We can add count entries...
+        // (we may not have allocated a table, so return a dummy non-null entry)
         //
-        return compHndBBtab;
+        return (EHblkDsc*)(0x1);
     }
 
     if (newCount > compHndBBtabAllocCount)
@@ -3232,12 +3233,6 @@ void Compiler::dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& claus
 
 void Compiler::fgVerifyHandlerTab()
 {
-    if (compIsForInlining())
-    {
-        // We don't inline functions with EH. Don't bother verifying the EH table in the inlinee Compiler.
-        return;
-    }
-
     if (compHndBBtabCount == 0)
     {
         return;
