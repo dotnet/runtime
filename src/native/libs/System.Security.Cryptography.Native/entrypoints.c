@@ -24,6 +24,7 @@
 #include "pal_evp_pkey_ecdsa.h"
 #include "pal_evp_pkey_eckey.h"
 #include "pal_evp_pkey_rsa.h"
+#include "pal_evp_pkey_ml_dsa.h"
 #include "pal_hmac.h"
 #include "pal_ocsp.h"
 #include "pal_pkcs7.h"
@@ -242,10 +243,17 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_HmacOneShot)
     DllImportEntry(CryptoNative_HmacReset)
     DllImportEntry(CryptoNative_HmacUpdate)
+    DllImportEntry(CryptoNative_IsSignatureAlgorithmAvailable)
     DllImportEntry(CryptoNative_LoadKeyFromProvider)
     DllImportEntry(CryptoNative_LoadPrivateKeyFromEngine)
     DllImportEntry(CryptoNative_LoadPublicKeyFromEngine)
     DllImportEntry(CryptoNative_LookupFriendlyNameByOid)
+    DllImportEntry(CryptoNative_MLDsaExportSecretKey)
+    DllImportEntry(CryptoNative_MLDsaExportSeed)
+    DllImportEntry(CryptoNative_MLDsaExportPublicKey)
+    DllImportEntry(CryptoNative_MLDsaGenerateKey)
+    DllImportEntry(CryptoNative_MLDsaSignPure)
+    DllImportEntry(CryptoNative_MLDsaVerifyPure)
     DllImportEntry(CryptoNative_NewX509Stack)
     DllImportEntry(CryptoNative_ObjNid2Obj)
     DllImportEntry(CryptoNative_ObjObj2Txt)
