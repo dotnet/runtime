@@ -1103,7 +1103,16 @@ LEAF_ENTRY IL_Throw, _TEXT
     STUB_PROLOG
 
     mov     edx, esp
+
+    #define STACK_ALIGN_PADDING 4
+    sub     esp, STACK_ALIGN_PADDING
+
+    CHECK_STACK_ALIGNMENT
+
     call    C_FUNC(IL_Throw_x86)
+
+    add     esp, STACK_ALIGN_PADDING
+    #undef STACK_ALIGN_PADDING
 
     STUB_EPILOG
     ret     4
@@ -1117,7 +1126,16 @@ LEAF_ENTRY IL_Rethrow, _TEXT
     STUB_PROLOG
 
     mov     ecx, esp
+
+    #define STACK_ALIGN_PADDING 4
+    sub     esp, STACK_ALIGN_PADDING
+
+    CHECK_STACK_ALIGNMENT
+
     call    C_FUNC(IL_Rethrow_x86)
+
+    add     esp, STACK_ALIGN_PADDING
+    #undef STACK_ALIGN_PADDING
 
     STUB_EPILOG
     ret     4
