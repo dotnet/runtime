@@ -2297,7 +2297,9 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, CONTEXT *pContext)
         // frame which is the InterpreterEntryFrame.
         // Interpreter-TODO: Consider returning the context of the JITted / AOTed code that called the interpreter instead
         SetIP(pContext, 0);
+        SetSP(pContext, sp);
     }
+    pContext->ContextFlags = CONTEXT_CONTROL;
 }
 
 bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
