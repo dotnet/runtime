@@ -1951,16 +1951,14 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
 
     InterpMethodContextFrame interpFrame = {0};
     interpFrame.startIp = (int32_t*)byteCodeAddr;
-    interpFrame.ip = interpFrame.startIp;
     interpFrame.pStack = sp;
     interpFrame.pRetVal = sp;
 
-    InterpreterEntryFrame interpreterEntryFrame(pTransitionBlock, &interpFrame);
+    InterpreterFrame InterpreterFrame(pTransitionBlock, &interpFrame);
 
-    // Interpreter-TODO: catch exceptions stemming from the InterpExecMethod and call the managed exception handling
     InterpExecMethod(&interpFrame, threadContext);
 
-    interpreterEntryFrame.Pop();
+    InterpreterFrame.Pop();
 }
 #endif // FEATURE_INTERPRETER
 

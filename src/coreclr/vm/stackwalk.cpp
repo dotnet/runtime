@@ -1060,6 +1060,9 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_movedPastFirstExInfo = false;
     m_fFuncletNotSeen = false;
     m_fFoundFirstFunclet = false;
+#ifdef FEATURE_INTERPRETER
+    m_walkingInterpreterFrames = false;
+#endif
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     m_pvResumableFrameTargetSP = NULL;
 #endif
@@ -2966,6 +2969,33 @@ void StackFrameIterator::ProcessCurrentFrame(void)
         memset((void *)m_crawl.codeManState.stateBuf, 0xCD,
                sizeof(m_crawl.codeManState.stateBuf));
 #endif // _DEBUG
+
+#ifdef FEATURE_INTERPRETER
+        if (!m_crawl.isFrameless)
+        {
+            if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                if (!m_walkingInterpreterFrames)
+                {
+                    // We have hit the InterpreterFrame while we were not processing the interpreter frames.
+                    // Switch to walking the underlying interpreted frames.
+                    PTR_InterpMethodContextFrame pTOSInterpMethodContextFrame = ((PTR_InterpreterFrame)m_crawl.pFrame)->GetInterpMethodTopmostContextFrame();
+                    PREGDISPLAY pRD = m_crawl.GetRegisterSet();
+                    SetIP(pRD->pCurrentContext, (TADDR)pTOSInterpMethodContextFrame->ip);
+                    SetSP(pRD->pCurrentContext, dac_cast<TADDR>(pTOSInterpMethodContextFrame));
+                    pRD->pCurrentContext->ContextFlags = CONTEXT_CONTROL;
+                    SyncRegDisplayToCurrentContext(pRD);
+                    ProcessIp(GetControlPC(pRD));
+                    m_walkingInterpreterFrames = m_crawl.isFrameless;
+                }
+                else
+                {
+                    // We have finished walking the interpreted frames. Process the InterpreterFrame itself.
+                    m_walkingInterpreterFrames = false;
+                }
+            }
+        }
+#endif // FEATURE_INTERPRETER
 
         if (m_crawl.isFrameless)
         {

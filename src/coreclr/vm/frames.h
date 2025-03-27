@@ -2871,49 +2871,17 @@ public:
 };
 
 #ifdef FEATURE_INTERPRETER
-typedef DPTR(class InterpreterExitFrame) PTR_InterpreterExitFrame;
 struct InterpMethodContextFrame;
 typedef DPTR(struct InterpMethodContextFrame) PTR_InterpMethodContextFrame;
 
-class InterpreterExitFrame : public Frame
+typedef DPTR(class InterpreterFrame) PTR_InterpreterFrame;
+
+class InterpreterFrame : public FramedMethodFrame
 {
 public:
 #ifndef DACCESS_COMPILE
-    InterpreterExitFrame(InterpMethodContextFrame* pContextFrame) : Frame(FrameIdentifier::InterpreterExitFrame),
-                                                                    m_pInterpMethodContextFrame(pContextFrame)
-    {
-        WRAPPER_NO_CONTRACT;
-        Push();
-    }
-#endif // DACCESS_COMPILE
-
-    PTR_InterpMethodContextFrame GetInterpMethodContextFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pInterpMethodContextFrame;
-    }
-
-    BOOL NeedsUpdateRegDisplay_Impl()
-    {
-        return TRUE;
-    }
-
-    TADDR GetReturnAddress_Impl();
-
-    void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats);
-
-private:
-    PTR_InterpMethodContextFrame m_pInterpMethodContextFrame;
-};
-
-typedef DPTR(class InterpreterEntryFrame) PTR_InterpreterEntryFrame;
-
-class InterpreterEntryFrame : public FramedMethodFrame
-{
-public:
-#ifndef DACCESS_COMPILE
-    InterpreterEntryFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame) 
-        : FramedMethodFrame(FrameIdentifier::InterpreterEntryFrame, pTransitionBlock, NULL),
+    InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
+        : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
         m_pInterpMethodContextFrame(pContextFrame)
     {
         WRAPPER_NO_CONTRACT;

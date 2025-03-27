@@ -2294,7 +2294,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, CONTEXT *pContext)
     {
         // This indicates that there are no more interpreter frames to unwind in the current InterpExecMethod
         // The stack walker will not find any code manager for the address 0 and move on to the next explicit
-        // frame which is the InterpreterEntryFrame.
+        // frame which is the InterpreterFrame.
         // Interpreter-TODO: Consider returning the context of the JITted / AOTed code that called the interpreter instead
         SetIP(pContext, 0);
         SetSP(pContext, sp);

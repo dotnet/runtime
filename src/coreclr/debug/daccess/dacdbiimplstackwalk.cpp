@@ -189,23 +189,7 @@ void DacDbiInterfaceImpl::SetStackWalkCurrentContext(VMPTR_Thread           vmTh
     // Allocate a context in DDImpl's memory space. DDImpl can't contain raw pointers back into
     // the client space since that may not marshal.
     T_CONTEXT * pContext2 = GetContextBufferFromHandle(pSFIHandle);
-
-#ifdef FEATURE_INTERPRETER
-    PTR_Frame pTopFrame = vmThread.GetDacPtr()->GetFrame();
-
-    if ((pTopFrame != FRAME_TOP) && (pTopFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterEntryFrame))
-    {
-        InterpreterEntryFrame *pEntryFrame = dac_cast<PTR_InterpreterEntryFrame>(pTopFrame);
-        PTR_InterpMethodContextFrame pTOSInterpMethodContextFrame = pEntryFrame->GetInterpMethodTopmostContextFrame();
-        SetIP(pContext2, (TADDR)pTOSInterpMethodContextFrame->ip);
-        SetSP(pContext2, dac_cast<TADDR>(pTOSInterpMethodContextFrame));
-        pContext2->ContextFlags = CONTEXT_CONTROL;
-    }
-    else
-#endif // FEATURE_INTERPRETER
-    {
-        CopyMemory(pContext2, pContext, sizeof(*pContext));
-    }
+    CopyMemory(pContext2, pContext, sizeof(*pContext));
 
     // update the REGDISPLAY with the given CONTEXT.
     // Be sure that the context is in DDImpl's memory space and not the Right-sides.
