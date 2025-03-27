@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(BuildX509Loader)' == 'true'" />
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(BuildX509Loader)' == 'true'" />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(BuildX509Loader)' == 'true' or '$(BuildPqc)' == 'true' " />
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="Microsoft.Bcl.Cryptography.Forwards.cs" />
@@ -74,7 +74,7 @@
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BuildX509Loader)' == 'true'">
+  <ItemGroup Condition="'$(BuildX509Loader)' == 'true' or '$(BuildPqc)' == 'true' ">
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</Link>
     </AsnXml>
@@ -86,6 +86,24 @@
       <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.manual.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
+             Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
+             Link="Common\System\Security\Cryptography\CryptoPool.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Helpers.cs"
+             Link="Common\System\Security\Cryptography\Helpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
+             Link="Common\System\Security\Cryptography\Oids.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildX509Loader)' == 'true'">
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\AttributeAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\AttributeAsn.xml</Link>
     </AsnXml>
@@ -157,13 +175,6 @@
       <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.manual.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml</DependentUpon>
     </Compile>
-    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml</Link>
-    </AsnXml>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml.cs</Link>
-      <DependentUpon>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml</DependentUpon>
-    </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml</Link>
     </AsnXml>
@@ -220,18 +231,10 @@
 
     <Compile Include="$(CommonPath)System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs"
              Link="Common\System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs" />
-    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
-             Link="Common\System\Memory\PointerMemoryManager.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
-             Link="Common\System\Security\Cryptography\CryptoPool.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Helpers.cs"
-             Link="Common\System\Security\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.Encrypted.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.Encrypted.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
-             Link="Common\System\Security\Cryptography\Oids.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"
              Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
@@ -330,6 +333,8 @@
   <ItemGroup Condition="'$(BuildPqc)' == 'true'">
     <Compile Include="$(CommonPath)System\Experimentals.cs"
              Link="Common\Experimentals.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKem.cs"
             Link="Common\System\Security\Cryptography\MLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemAlgorithm.cs"
