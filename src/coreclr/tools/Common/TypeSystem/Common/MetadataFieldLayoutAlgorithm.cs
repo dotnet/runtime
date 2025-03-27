@@ -444,9 +444,6 @@ namespace Internal.TypeSystem
                 if (field.IsStatic)
                     continue;
 
-                if (field.MetadataOffset != LayoutInt.Indeterminate)
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
-
                 var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType.UnderlyingType, hasLayout: true, packingSize, out ComputedFieldData fieldData);
                 if (!fieldData.LayoutAbiStable)
                     layoutAbiStable = false;

@@ -44,20 +44,7 @@ namespace
             // if we haven't found a matching token, it must be a static field with layout -- ignore it
             if (pfwalk->m_MD != fd) continue;
 
-            if (!fExplicitOffsets)
-            {
-                LPCUTF8 szFieldName;
-                if (FAILED(pInternalImport->GetNameOfFieldDef(pfwalk->m_MD, &szFieldName)))
-                {
-                    szFieldName = "Invalid FieldDef record";
-                }
-
-                pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport,
-                    cl,
-                    szFieldName,
-                    IDS_CLASSLOAD_STRUCT_EXPLICIT_OFFSET);
-            }
-            else
+            if (fExplicitOffsets)
             {
                 // ulOffset is the explicit offset
                 pfwalk->m_placement.m_offset = ulOffset;
@@ -108,7 +95,7 @@ namespace
                         pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport,
                             cl,
                             szFieldName,
-                            IDS_CLASSLOAD_EXPSTRUCT_EXPLICIT_OFFSET);
+                            IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET);
                     }
                     else if ((INT)pFieldInfoArray[i].m_placement.m_offset < 0)
                     {
