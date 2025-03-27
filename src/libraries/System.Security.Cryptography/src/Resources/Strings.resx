@@ -499,7 +499,7 @@
     <value>The string contains an invalid X500 name attribute key, oid, value or delimiter.</value>
   </data>
   <data name="Cryptography_KemInvalidAlgorithmHandle" xml:space="preserve">
-    <value>The specified EVP_PKEY handle has an unexpected algorithm name '{0}'.</value>
+    <value>The specified EVP_PKEY handle is not a known ML-KEM algorithm.</value>
   </data>
   <data name="Cryptography_KeyBlobParsingError" xml:space="preserve">
     <value>Key Blob not in expected format.</value>

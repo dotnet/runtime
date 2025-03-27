@@ -153,7 +153,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EvpKemExportEncapsulationKey)
     DllImportEntry(CryptoNative_EvpKemExportPrivateSeed)
     DllImportEntry(CryptoNative_EvpKemGeneratePkey)
-    DllImportEntry(CryptoNative_EvpKemGetName)
+    DllImportEntry(CryptoNative_EvpKemGetPalId)
     DllImportEntry(CryptoNative_EvpMacCtxDup)
     DllImportEntry(CryptoNative_EvpMacCtxNew)
     DllImportEntry(CryptoNative_EvpMacCtxFree)

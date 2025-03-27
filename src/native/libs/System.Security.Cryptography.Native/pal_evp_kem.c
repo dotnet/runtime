@@ -78,41 +78,38 @@ int32_t CryptoNative_EvpKemAvailable(const char* algorithm)
     return 0;
 }
 
-int32_t CryptoNative_EvpKemGetName(const EVP_PKEY* pKey, char* algorithm, int32_t* algorithmLength)
+int32_t CryptoNative_EvpKemGetPalId(const EVP_PKEY* pKey, int32_t* kemId)
 {
 #ifdef NEED_OPENSSL_3_0
-    assert(pKey);
-    assert(algorithm);
-    assert(algorithmLength);
+    assert(pKey && kemId);
 
-    if (API_EXISTS(EVP_PKEY_get0_type_name))
+    if (API_EXISTS(EVP_PKEY_is_a))
     {
         ERR_clear_error();
-        const char* name = EVP_PKEY_get0_type_name(pKey);
 
-        if (name == NULL)
+        if (EVP_PKEY_is_a(pKey, "ML-KEM-512"))
         {
-            return 0;
+            *kemId = PalKemId_MLKem512;
         }
-
-        size_t nameLength = strlen(name);
-
-        if (SizeTToInt32(nameLength) > *algorithmLength)
+        else if (EVP_PKEY_is_a(pKey, "ML-KEM-768"))
         {
-            return 0;
+            *kemId = PalKemId_MLKem768;
         }
-
-        strncpy(algorithm, name, nameLength);
-        *algorithmLength = SizeTToInt32(nameLength);
+        else if (EVP_PKEY_is_a(pKey, "ML-KEM-1024"))
+        {
+            *kemId = PalKemId_MLKem1024;
+        }
+        else
+        {
+            *kemId = PalKemId_Unknown;
+        }
 
         return 1;
     }
-#else
-    (void)pKey;
-    (void)algorithm;
-    (void)algorithmLength;
 #endif
 
+    (void)pKey;
+    *kemId = PalKemId_Unknown;
     return 0;
 }
 

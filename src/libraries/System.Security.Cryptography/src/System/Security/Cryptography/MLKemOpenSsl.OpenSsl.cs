@@ -28,9 +28,19 @@ namespace System.Security.Cryptography
 
             try
             {
-                string name = Interop.Crypto.EvpKemGetName(upRefHandle);
-                return MLKemAlgorithm.FromName(name) ??
-                    throw new CryptographicException(SR.Format(SR.Cryptography_KemInvalidAlgorithmHandle, name));
+                Interop.Crypto.PalKemAlgorithmId kemId = Interop.Crypto.EvpKemGetKemIdentifier(upRefHandle);
+
+                switch (kemId)
+                {
+                    case Interop.Crypto.PalKemAlgorithmId.MLKem512:
+                        return MLKemAlgorithm.MLKem512;
+                    case Interop.Crypto.PalKemAlgorithmId.MLKem768:
+                        return MLKemAlgorithm.MLKem768;
+                    case Interop.Crypto.PalKemAlgorithmId.MLKem1024:
+                        return MLKemAlgorithm.MLKem1024;
+                    default:
+                        throw new CryptographicException(SR.Cryptography_KemInvalidAlgorithmHandle);
+                }
             }
             catch
             {

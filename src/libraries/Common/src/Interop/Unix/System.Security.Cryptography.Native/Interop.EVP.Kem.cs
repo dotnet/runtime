@@ -13,6 +13,15 @@ internal static partial class Interop
     {
         private static partial IntPtr GetExtraHandle(SafeEvpPKeyHandle handle);
 
+        // Must be kept in sync with PalKemId in native shim.
+        internal enum PalKemAlgorithmId
+        {
+            Unknown = 0,
+            MLKem512 = 1,
+            MLKem768 = 2,
+            MLKem1024 = 3,
+        }
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemDecapsulate")]
         private static partial int CryptoNative_EvpKemDecapsulate(
             SafeEvpPKeyHandle kem,
@@ -22,11 +31,10 @@ internal static partial class Interop
             Span<byte> sharedSecret,
             int sharedSecretLength);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGetName")]
-        private static partial int CryptoNative_EvpKemGetName(
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGetPalId")]
+        private static partial int CryptoNative_EvpKemGetPalId(
             SafeEvpPKeyHandle kem,
-            Span<byte> algorithmBuffer,
-            ref int algorithmBufferLength);
+            out PalKemAlgorithmId kemId);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGeneratePkey", StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_EvpKemGeneratePkey(
@@ -95,25 +103,22 @@ internal static partial class Interop
             return handle;
         }
 
-        internal static string EvpKemGetName(SafeEvpPKeyHandle key)
+        internal static PalKemAlgorithmId EvpKemGetKemIdentifier(SafeEvpPKeyHandle key)
         {
-            const int BufferSize = 32;// All known KEM names are much shorter like ML-KEM-1024.
             const int Success = 1;
             const int Fail = 0;
-            Span<byte> buffer = stackalloc byte[BufferSize + 1]; // Add one for the null terminator.
-            int size = BufferSize;
-            int result = CryptoNative_EvpKemGetName(key, buffer, ref size);
+            int result = CryptoNative_EvpKemGetPalId(key, out PalKemAlgorithmId kemId);
 
             return result switch
             {
-                Success => System.Text.Encoding.UTF8.GetString(buffer.Slice(0, size)),
+                Success => kemId,
                 Fail => throw CreateOpenSslCryptographicException(),
                 int other => throw FailThrow(other),
             };
 
             static Exception FailThrow(int result)
             {
-                Debug.Fail($"Unexpected return value {result} from {nameof(CryptoNative_EvpKemGetName)}.");
+                Debug.Fail($"Unexpected return value {result} from {nameof(CryptoNative_EvpKemGetPalId)}.");
                 return new CryptographicException();
             }
         }

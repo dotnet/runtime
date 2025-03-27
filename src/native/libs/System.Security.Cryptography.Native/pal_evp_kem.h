@@ -5,8 +5,16 @@
 #include <stdint.h>
 #include "opensslshim.h"
 
+typedef enum
+{
+    PalKemId_Unknown = 0,
+    PalKemId_MLKem512 = 1,
+    PalKemId_MLKem768 = 2,
+    PalKemId_MLKem1024 = 3,
+} PalKemId;
+
 PALEXPORT int32_t CryptoNative_EvpKemAvailable(const char* algorithm);
-PALEXPORT int32_t CryptoNative_EvpKemGetName(const EVP_PKEY* pKey, char* algorithm, int32_t* algorithmLength);
+PALEXPORT int32_t CryptoNative_EvpKemGetPalId(const EVP_PKEY* pKey, int32_t* kemId);
 PALEXPORT EVP_PKEY* CryptoNative_EvpKemGeneratePkey(const char* kemName, uint8_t* seed, int32_t seedLength);
 PALEXPORT int32_t CryptoNative_EvpKemExportPrivateSeed(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength);
 PALEXPORT int32_t CryptoNative_EvpKemExportDecapsulationKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength);
