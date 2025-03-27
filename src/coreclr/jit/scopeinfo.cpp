@@ -1485,7 +1485,7 @@ void CodeGen::siBeginBlock(BasicBlock* block)
         return;
     }
 
-    if (compiler->bbIsFuncletBeg(block))
+    if (block == compiler->fgFirstFuncletBB)
     {
         // For now, don't report any scopes in funclets. JIT64 doesn't.
         siInFuncletRegion = true;
