@@ -26,8 +26,8 @@ public enum RuntimeInfoOperatingSystem : uint
 public interface IRuntimeInfo : IContract
 {
     static string IContract.Name { get; } = nameof(RuntimeInfo);
-    public virtual RuntimeInfoArchitecture GetTargetArchitecture() => throw new NotImplementedException();
-    public virtual RuntimeInfoOperatingSystem GetTargetOperatingSystem() => throw new NotImplementedException();
+    RuntimeInfoArchitecture GetTargetArchitecture() => throw new NotImplementedException();
+    RuntimeInfoOperatingSystem GetTargetOperatingSystem() => throw new NotImplementedException();
 }
 
 public readonly struct RuntimeInfo : IRuntimeInfo
