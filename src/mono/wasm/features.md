@@ -380,25 +380,49 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
 
 ```xml
 <PropertyGroup>
-  <WasmProfilers>browser;</WasmProfilers>
+  <!-- enables diagnostic server -->
+  <!-- this is new switch -->
+  <WasmPerfTracing>true</WasmPerfTracing>
+
+  <!-- enables perf instrumentation for sampling CPU profiler -->
+  <WasmPerfInstrumentation>true</WasmPerfInstrumentation>
+  <!-- alternatively you can filter method full names by regular expression -->
+  <WasmPerfInstrumentation>Sample.*</WasmPerfInstrumentation>
+
+  <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
+  <!-- this is existing switch also on other targets -->
+  <MetricsSupport>true</MetricsSupport>
+
+  <!-- enables system events https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/diagnostics#observability-and-telemetry -->
+  <!-- this is existing switch also on other targets -->
+  <EventSourceSupport>true</EventSourceSupport>
 </PropertyGroup>
 ```
 
-In Blazor, you can customize the startup in your index.html
-```html
-<script src="_framework/blazor.webassembly.js" autostart="false"></script>
-<script>
-Blazor.start({
-    configureRuntime: function (dotnet) {
-        dotnet.withConfig({
-            browserProfilerOptions: {}
-        });
-    }
-});
-</script>
+`Timing-Allow-Origin` HTTP header allows for more precise time measurements.
+
+Then you can trigger collection of a trace from browser dev tools
+
+```js
+globalThis.getDotnetRuntime(0).collectGcDump()
 ```
 
-In simple browser template, you can add following to your `main.js`
+The .nettrace file could be coverted for VS via `dotnet-gcdump convert` or opened in `PerfView.exe` as is.
+
+```js
+globalThis.getDotnetRuntime(0).collectPerfCounters({durationSeconds: 60})
+```
+
+The counters could be opened in VS, `PerfView.exe` tools or via `dotnet-trace report xxx.nettrace topN -n 10`
+
+```js
+globalThis.getDotnetRuntime(0).collectCpuSamples({durationSeconds: 60})
+```
+
+The counters could be opened in VS or in `PerfView.exe`
+
+
+### Profiling in the browser dev tools
 
 You can enable integration with the profiler in browser dev tools via following elements in your .csproj
 ```xml
