@@ -15,7 +15,7 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.MLKem))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.MLKemAlgorithm))]
 #endif
-#if NETSTANDARD2_1_OR_GREATER
+#if NET || NETSTANDARD2_1_OR_GREATER
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.PbeEncryptionAlgorithm))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.PbeParameters))]
 #endif
