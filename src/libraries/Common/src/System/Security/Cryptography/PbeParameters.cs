@@ -59,8 +59,16 @@ namespace System.Security.Cryptography
 #if NET
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterationCount);
 #else
-            if (iterationCount < 1)
-                throw new ArgumentOutOfRangeException(nameof(iterationCount));
+            if (iterationCount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(iterationCount),
+                    iterationCount,
+                    SR.Format(
+                        SR.ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero,
+                        nameof(iterationCount),
+                        iterationCount));
+            }
 #endif
 
             EncryptionAlgorithm = encryptionAlgorithm;
