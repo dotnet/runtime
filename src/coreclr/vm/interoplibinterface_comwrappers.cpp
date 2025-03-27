@@ -342,7 +342,7 @@ bool GCHandleSetObject::Iterator::MoveNext()
         // one with an entry.
         while (++_currentIndex != (int32_t)_buckets->GetNumComponents())
         {
-            _currentEntry = _buckets->GetAt(_currentIndex);
+            _currentEntry = (HANDLESETENTRYREF)_buckets->GetAt(_currentIndex);
             if (_currentEntry != NULL)
             {
                 return true;
