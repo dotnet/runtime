@@ -265,7 +265,7 @@ INST(amomaxu_d,     "amomaxu.d",      0,   0xe000302f) // funct5:11100
 INST(clz,           "clz",            0,   0x60001013)
 INST(clzw,          "clzw",           0,   0x6000101b)
 INST(ctz,           "ctz",            0,   0x60101013)
-INST(ctzw,          "ctzw",           0,   0x6020101b)
+INST(ctzw,          "ctzw",           0,   0x6010101b)
 INST(cpop,          "cpop",           0,   0x60201013)
 INST(cpopw,         "cpopw",          0,   0x6020101b)
 
