@@ -955,6 +955,10 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, "\n            hot=\"true\"");
             }
+            if (block->HasFlag(BBF_HAS_NEWARR))
+            {
+                fprintf(fgxFile, "\n            callsNewArr=\"true\"");
+            }
             if (block->HasFlag(BBF_HAS_NEWOBJ))
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
@@ -2856,7 +2860,14 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
         }
     }
 
-    assert(found && "BBJ_EHFINALLYRET predecessor of block that doesn't follow a BBJ_CALLFINALLY!");
+    if (!found)
+    {
+        JITDUMP(FMT_BB " is successor of finallyret " FMT_BB " but prev block is not a callfinally to " FMT_BB
+                       " (search range was [" FMT_BB "..." FMT_BB "]\n",
+                block->bbNum, blockPred->bbNum, finBeg->bbNum, firstBlock->bbNum, lastBlock->bbNum);
+        assert(!"BBJ_EHFINALLYRET predecessor of block that doesn't follow a BBJ_CALLFINALLY!");
+    }
+
     return found;
 }
 
@@ -3267,9 +3278,20 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
                 assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
             }
 
-            if (node->OperIs(GT_NOP))
+            switch (node->OperGet())
             {
-                assert(node->TypeIs(TYP_VOID) && "GT_NOP should be TYP_VOID.");
+                case GT_NOP:
+                case GT_JTRUE:
+                case GT_BOUNDS_CHECK:
+                    if (!node->TypeIs(TYP_VOID))
+                    {
+                        m_compiler->gtDispTree(node);
+                        assert(!"The tree is expected to be of TYP_VOID type");
+                    }
+                    break;
+
+                default:
+                    break;
             }
 
             if (varTypeIsSmall(node))
@@ -3419,6 +3441,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+
+                    case NI_Vector128_op_Division:
+                    case NI_Vector256_op_Division:
+                    {
                         break;
                     }
 #endif // TARGET_XARCH
@@ -4731,15 +4759,30 @@ void Compiler::fgDebugCheckFlowGraphAnnotations()
         return;
     }
 
-    unsigned count = fgRunDfs(
-        [](BasicBlock* block, unsigned preorderNum) {
+    auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
         assert(block->bbPreorderNum == preorderNum);
-    },
-        [=](BasicBlock* block, unsigned postorderNum) {
+    };
+
+    auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
         assert(block->bbPostorderNum == postorderNum);
         assert(m_dfsTree->GetPostOrder(postorderNum) == block);
-    },
-        [](BasicBlock* block, BasicBlock* succ) {});
+    };
+
+    auto visitEdge = [](BasicBlock* block, BasicBlock* succ) {};
+
+    unsigned count;
+    if (m_dfsTree->IsProfileAware())
+    {
+        count = fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), true>(visitPreorder,
+                                                                                                       visitPostorder,
+                                                                                                       visitEdge);
+    }
+    else
+    {
+        count = fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), false>(visitPreorder,
+                                                                                                        visitPostorder,
+                                                                                                        visitEdge);
+    }
 
     assert(m_dfsTree->GetPostOrderCount() == count);
 

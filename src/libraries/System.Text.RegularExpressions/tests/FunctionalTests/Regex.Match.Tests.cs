@@ -564,6 +564,8 @@ namespace System.Text.RegularExpressions.Tests
             {
                 // Throws NotSupported with NonBacktracking engine because of the balancing group dog-0
                 yield return (@"(?<cat>cat)\w+(?<dog-0>dog)", "cat_Hello_World_dog", RegexOptions.None, 0, 19, false, string.Empty);
+                yield return (@"(.)(?'2-1'(?'-1'))", "cat", RegexOptions.None, 0, 3, false, string.Empty);
+                yield return (@"(?'2-1'(.))", "cat", RegexOptions.None, 0, 3, true, "c");
             }
 
             // Atomic Zero-Width Assertions \A \Z \z \b \B

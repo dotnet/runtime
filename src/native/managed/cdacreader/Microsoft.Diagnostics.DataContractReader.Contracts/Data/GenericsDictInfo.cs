@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class GenericsDictInfo : IData<GenericsDictInfo>
+internal sealed class GenericsDictInfo : IData<GenericsDictInfo>
 {
     static GenericsDictInfo IData<GenericsDictInfo>.Create(Target target, TargetPointer address) => new GenericsDictInfo(target, address);
     public GenericsDictInfo(Target target, TargetPointer address)

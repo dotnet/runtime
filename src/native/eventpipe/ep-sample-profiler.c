@@ -84,6 +84,7 @@ sample_profiler_store_can_start_sampling (bool start_sampling)
 	ep_rt_volatile_store_uint32_t (&_can_start_sampling, start_sampling ? 1 : 0);
 }
 
+#ifndef PERFTRACING_DISABLE_THREADS
 EP_RT_DEFINE_THREAD_FUNC (sampling_thread)
 {
 	EP_ASSERT (data != NULL);
@@ -108,6 +109,7 @@ EP_RT_DEFINE_THREAD_FUNC (sampling_thread)
 
 	return (ep_rt_thread_start_func_return_t)0;
 }
+#endif
 
 static
 void
@@ -192,14 +194,18 @@ sample_profiler_enable (void)
 	if (!sample_profiler_load_profiling_enabled ()) {
 		sample_profiler_store_profiling_enabled (true);
 
+		ep_rt_sample_profiler_enabled (_thread_time_event);
+
 		EP_ASSERT (!ep_rt_wait_event_is_valid (&_thread_shutdown_event));
 		ep_rt_wait_event_alloc (&_thread_shutdown_event, true, false);
 		if (!ep_rt_wait_event_is_valid (&_thread_shutdown_event))
 			EP_UNREACHABLE ("Unable to create sample profiler event.");
 
+#ifndef PERFTRACING_DISABLE_THREADS
 		ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 		if (!ep_rt_thread_create ((void *)sampling_thread, NULL, EP_THREAD_TYPE_SAMPLING, &thread_id))
 			EP_UNREACHABLE ("Unable to create sample profiler thread.");
+#endif
 
 		sample_profiler_set_time_granularity ();
 	}
@@ -287,6 +293,8 @@ ep_sample_profiler_disable (void)
 		// The sampling thread will watch this value and exit
 		// when profiling is disabled.
 		sample_profiler_store_profiling_enabled (false);
+
+		ep_rt_sample_profiler_disabled ();
 
 		// Wait for the sampling thread to clean itself up.
 		ep_rt_wait_event_wait (&_thread_shutdown_event, EP_INFINITE_WAIT, false);

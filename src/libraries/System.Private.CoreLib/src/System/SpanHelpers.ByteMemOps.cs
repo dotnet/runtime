@@ -239,7 +239,7 @@ namespace System
             Debug.Assert(len > 0);
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
             _ = Unsafe.ReadUnaligned<byte>(ref src);
-            Buffer._Memmove(ref dest, ref src, len);
+            Buffer.Memmove(ref dest, ref src, len);
         }
 
         [Intrinsic] // Unrolled for small sizes
@@ -425,7 +425,7 @@ namespace System
         PInvoke:
             // Implicit nullchecks
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
-            Buffer._ZeroMemory(ref dest, len);
+            Buffer.ZeroMemory(ref dest, len);
         }
 
         internal static void Fill(ref byte dest, byte value, nuint len)
@@ -438,7 +438,7 @@ namespace System
             if (len >= (nuint)Vector<byte>.Count)
             {
                 // We have enough data for at least one vectorized write.
-                Vector<byte> vector = new (value);
+                Vector<byte> vector = new(value);
                 nuint stopLoopAtOffset = len & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
                 nuint offset = 0;
 

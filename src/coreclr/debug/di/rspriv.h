@@ -1837,14 +1837,14 @@ public ICorDebugAssemblyEnum
         CordbBase * pOwnerObj,
         NeuterList * pOwnerList,
         CordbHashTable *table,
-        const _GUID &id);
+        const GUID &id);
 
 public:
     static void BuildOrThrow(
         CordbBase * pOwnerObj,
         NeuterList * pOwnerList,
         CordbHashTable *table,
-        const _GUID &id,
+        const GUID &id,
         RSInitHolder<CordbHashTableEnum> * pHolder);
 
     CordbHashTableEnum(CordbHashTableEnum *cloneSrc);

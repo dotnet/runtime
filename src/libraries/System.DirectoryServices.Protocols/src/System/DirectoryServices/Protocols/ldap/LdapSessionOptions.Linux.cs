@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.IO;
+using System.Runtime.Versioning;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -10,6 +12,34 @@ namespace System.DirectoryServices.Protocols
         static partial void PALCertFreeCRLContext(IntPtr certPtr);
 
         private bool _secureSocketLayer;
+
+        /// <summary>
+        /// Specifies the path of the directory containing CA certificates in the PEM format.
+        /// Multiple directories may be specified by separating with a semi-colon.
+        /// </summary>
+        /// <remarks>
+        /// The certificate files are looked up by the CA subject name hash value where that hash can be
+        /// obtained by using, for example, <code>openssl x509 -hash -noout -in CA.crt</code>.
+        /// It is a common practice to have the certificate file be a symbolic link to the actual certificate file
+        /// which can be done by using <code>openssl rehash .</code> or <code>c_rehash .</code> in the directory
+        /// containing the certificate files.
+        /// </remarks>
+        /// <exception cref="DirectoryNotFoundException">The directory does not exist.</exception>
+        [UnsupportedOSPlatform("windows")]
+        public string TrustedCertificatesDirectory
+        {
+            get => GetStringValueHelper(LdapOption.LDAP_OPT_X_TLS_CACERTDIR, releasePtr: true);
+
+            set
+            {
+                if (!Directory.Exists(value))
+                {
+                    throw new DirectoryNotFoundException(SR.Format(SR.DirectoryNotFound, value));
+                }
+
+                SetStringOptionHelper(LdapOption.LDAP_OPT_X_TLS_CACERTDIR, value);
+            }
+        }
 
         public bool SecureSocketLayer
         {
@@ -23,12 +53,6 @@ namespace System.DirectoryServices.Protocols
                 if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
                 _secureSocketLayer = value;
             }
-        }
-
-        public int ProtocolVersion
-        {
-            get => GetPtrValueHelper(LdapOption.LDAP_OPT_VERSION).ToInt32();
-            set => SetPtrValueHelper(LdapOption.LDAP_OPT_VERSION, new IntPtr(value));
         }
 
         public ReferralChasingOptions ReferralChasing
@@ -52,6 +76,16 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
+        /// <summary>
+        /// Create a new TLS library context.
+        /// Calling this is necessary after setting TLS-based options, such as <c>TrustedCertificatesDirectory</c>.
+        /// </summary>
+        [UnsupportedOSPlatform("windows")]
+        public void StartNewTlsSessionContext()
+        {
+            SetIntValueHelper(LdapOption.LDAP_OPT_X_TLS_NEWCTX, 0);
+        }
+
         private bool GetBoolValueHelper(LdapOption option)
         {
             if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
@@ -68,6 +102,15 @@ namespace System.DirectoryServices.Protocols
             if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
 
             int error = LdapPal.SetBoolOption(_connection._ldapHandle, option, value);
+
+            ErrorChecking.CheckAndSetLdapError(error);
+        }
+
+        private void SetStringOptionHelper(LdapOption option, string value)
+        {
+            if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
+
+            int error = LdapPal.SetStringOption(_connection._ldapHandle, option, value);
 
             ErrorChecking.CheckAndSetLdapError(error);
         }

@@ -73,7 +73,7 @@
 
 #include <olectl.h>
 
-#ifdef HOST_AMD64
+#if defined(HOST_AMD64) || defined(HOST_X86)
 #include <xmmintrin.h>
 #endif
 
@@ -123,12 +123,15 @@ typedef VPTR(class EditAndContinueModule) PTR_EditAndContinueModule;
 typedef DPTR(class EEClass)             PTR_EEClass;
 typedef DPTR(class DelegateEEClass)     PTR_DelegateEEClass;
 typedef VPTR(class EECodeManager)       PTR_EECodeManager;
+#ifdef FEATURE_INTERPRETER
+typedef VPTR(class InterpreterCodeManager) PTR_InterpreterCodeManager;
+#endif
 typedef DPTR(class RangeSectionMap)     PTR_RangeSectionMap;
 typedef DPTR(class EEConfig)            PTR_EEConfig;
 typedef VPTR(class EEDbgInterfaceImpl)  PTR_EEDbgInterfaceImpl;
 typedef VPTR(class DebugInfoManager)    PTR_DebugInfoManager;
 typedef DPTR(class FieldDesc)           PTR_FieldDesc;
-typedef VPTR(class Frame)               PTR_Frame;
+typedef DPTR(class Frame)               PTR_Frame;
 typedef DPTR(class GCFrame)             PTR_GCFrame;
 typedef VPTR(class ICodeManager)        PTR_ICodeManager;
 typedef VPTR(class IJitManager)         PTR_IJitManager;

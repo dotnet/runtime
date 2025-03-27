@@ -60,7 +60,9 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 
 #ifdef __APPLE__
 #include <mach/mach.h>
+#if defined(TARGET_OSX)
 #include <mach/mach_vm.h>
+#endif
 #endif // __APPLE__
 
 #if HAVE_MACH_EXCEPTIONS
@@ -108,6 +110,9 @@ Remarks
 This is a no-op for x86 architectures where the instruction and data
 caches are coherent in hardware. For non-X86 architectures, this call
 usually maps to a kernel API to flush the D-caches on all processors.
+
+It is also no-op on wasm. We don't have a way to flush the instruction
+cache and it is also not needed.
 
 --*/
 BOOL
@@ -420,7 +425,12 @@ Function:
 BOOL
 IsInDebugBreak(void *addr)
 {
+#if defined (__wasm__)
+    _ASSERT("IsInDebugBreak not implemented on wasm");
+    return false;
+#else
     return (addr >= (void *)DBG_DebugBreak) && (addr <= (void *)DBG_DebugBreak_End);
+#endif
 }
 
 /*++

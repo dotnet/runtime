@@ -1,16 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
-    <UnicodeUcdVersion>15.0</UnicodeUcdVersion>
+    <UnicodeUcdVersion>16.0</UnicodeUcdVersion>
     <!-- CS3021: 'type' does not need a CLSCompliant attribute because the assembly does not have a CLSCompliant attribute -->
     <NoWarn Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">$(NoWarn);CS3021</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
       <Visible>False</Visible>
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\src\System\Text\Encodings\Web\AllowedBmpCodePointsBitmap.cs" Link="System\Text\Encodings\Web\AllowedBmpCodePointsBitmap.cs" />
     <Compile Include="..\src\System\Text\Encodings\Web\AsciiByteMap.cs" Link="System\Text\Encodings\Web\AsciiByteMap.cs" />
@@ -42,11 +45,13 @@
     <Compile Include="UnicodeTestHelpers.cs" />
     <Compile Include="UrlEncoderTests.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Text\Rune.cs" Link="System\Text\Rune.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf16Utility.cs" Link="System\Text\Unicode\Utf16Utility.cs" />
     <Compile Include="..\src\System\ThrowHelper.cs" Link="System\ThrowHelper.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
     <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\UnicodeData.txt">
@@ -57,8 +62,9 @@
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
     <ProjectReference Include="..\src\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
+
 </Project>

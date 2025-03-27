@@ -3,11 +3,13 @@
 
 #cmakedefine01 HAVE_ARC4RANDOM_BUF
 #cmakedefine01 HAVE_AUXV_HWCAP_H
+#cmakedefine01 HAVE_HWPROBE_H
 #cmakedefine01 HAVE_O_CLOEXEC
 #cmakedefine01 HAVE_SYSCTLBYNAME
 #cmakedefine01 HAVE_CLOCK_GETTIME_NSEC_NP
 #cmakedefine01 BIGENDIAN
 #cmakedefine01 HAVE_BCRYPT_H
 #cmakedefine01 HAVE_WINDOWS_H
+#cmakedefine01 HAVE_FSYNC
 
 #endif
