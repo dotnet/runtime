@@ -331,7 +331,7 @@ void ManagedObjectWrapper::GetIUnknownImpl(
 
 void const* ManagedObjectWrapper::GetTaggedCurrentVersionImpl() noexcept
 {
-    return &ITaggedImpl_IsCurrentVersion;
+    return reinterpret_cast<void const*>(&ITaggedImpl_IsCurrentVersion);
 }
 
 // The logic here should match code:ClrDataAccess::DACTryGetComWrappersObjectFromCCW in daccess/request.cpp

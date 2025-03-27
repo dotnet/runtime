@@ -75,6 +75,7 @@ public:
 // Define "manually managed" definitions of the ComWrappers types
 // that are used in diagnostics and during GC.
 class GCHandleSetObject;
+class GCHandleSetEntryObject;
 
 class ManagedObjectWrapperHolderObject : public Object
 {
@@ -123,14 +124,6 @@ public:
     }
 };
 
-class GCHandleSetEntryObject final : public Object
-{
-    friend class CoreLibBinder;
-    public:
-    OBJECTREF m_next;
-    OBJECTHANDLE m_handle;
-};
-
 #ifdef USE_CHECKED_OBJECTREFS
 using MOWHOLDERREF = REF<ManagedObjectWrapperHolderObject>;
 using NATIVEOBJECTWRAPPERREF = REF<NativeObjectWrapperObject>;
@@ -144,6 +137,14 @@ using REFTRACKEROBJECTWRAPPERREF = DPTR(ReferenceTrackerNativeObjectWrapperObjec
 using HANDLESETENTRYREF = DPTR(GCHandleSetEntryObject);
 using HANDLESETREF = DPTR(GCHandleSetObject);
 #endif
+
+class GCHandleSetEntryObject final : public Object
+{
+    friend class CoreLibBinder;
+    public:
+    HANDLESETENTRYREF m_next;
+    OBJECTHANDLE m_handle;
+};
 
 class GCHandleSetObject final : public Object
 {
