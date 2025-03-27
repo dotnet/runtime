@@ -132,6 +132,7 @@ internal sealed class FrameIterator
 
     private FrameType GetFrameType(Data.Frame frame)
     {
+        Console.WriteLine(target.PointerSize.ToString());
         Console.WriteLine(frame);
         return FrameType.Unknown;
     }
