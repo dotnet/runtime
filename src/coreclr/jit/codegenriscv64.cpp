@@ -1162,8 +1162,7 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
     emitAttr  attr       = emitActualTypeSize(tree);
 
     GetEmitter()->emitIns_R_R_I(INS_addi, attr, targetReg, operandReg, 1);
-    // bne targetReg, zero, 2 * 4
-    GetEmitter()->emitIns_R_R_I(INS_bne, attr, targetReg, REG_R0, 8);
+    GetEmitter()->emitIns_R_I(INS_bnez, attr, targetReg, 2 << 2);
     GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, targetReg, -1);
 
     genProduceReg(tree);
@@ -1689,6 +1688,8 @@ void CodeGen::genLclHeap(GenTree* tree)
         // and localloc size is a multiple of STACK_ALIGN.
 
         // Loop:
+        BasicBlock* loop = genCreateTempLabel();
+        genDefineTempLabel(loop);
         emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -16);
 
         emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, 8);
@@ -1701,8 +1702,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         emit->emitIns_R_R_I(INS_addi, emitActualTypeSize(type), regCnt, regCnt, -16);
 
-        // goto Loop
-        emit->emitIns_R_R_I(INS_bne, EA_PTRSIZE, regCnt, REG_R0, -4 << 2);
+        emit->emitIns_J(INS_bnez, loop, regCnt);
 
         lastTouchDelta = 0;
     }
