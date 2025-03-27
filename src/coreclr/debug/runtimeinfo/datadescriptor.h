@@ -757,6 +757,31 @@ CDAC_TYPE_END(CalleeSavedRegisters)
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
+
+// RuntimeInfo OperatingSystem
+#ifdef TARGET_UNIX
+CDAC_GLOBAL(OperatingSystem, uint32, 2) // RuntimeInfoOperatingSystem.Unix
+#else // !TARGET_UNIX
+CDAC_GLOBAL(OperatingSystem, uint32, 1) // RuntimeInfoOperatingSystem.Windows
+#endif // !TARGET_UNIX
+
+// RuntimeInfo Architecture
+#if defined(TARGET_X86)
+CDAC_GLOBAL(Architecture, uint32, 1) // RuntimeInfoArchitecture.X86
+#elif defined(TARGET_AMD64)
+CDAC_GLOBAL(Architecture, uint32, 3) // RuntimeInfoArchitecture.Amd64
+#elif defined(TARGET_ARM)
+CDAC_GLOBAL(Architecture, uint32, 2) // RuntimeInfoArchitecture.Arm32
+#elif defined(TARGET_ARM64)
+CDAC_GLOBAL(Architecture, uint32, 4) // RuntimeInfoArchitecture.Arm64
+#elif defined(TARGET_LOONGARCH64)
+CDAC_GLOBAL(Architecture, uint32, 5) // RuntimeInfoArchitecture.LoongArch64
+#elif defined(TARGET_RISCV64)
+CDAC_GLOBAL(Architecture, uint32, 6) // RuntimeInfoArchitecture.RISCV
+#else
+#error Unknown Processor.
+#endif
+
 CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
