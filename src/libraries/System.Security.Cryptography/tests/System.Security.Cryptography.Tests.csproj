@@ -6,6 +6,7 @@
     <NoWarn>$(NoWarn);SYSLIB0021;SYSLIB0026;SYSLIB0027;SYSLIB0028;SYSLIB0057</NoWarn>
     <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -153,16 +154,16 @@
              Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemAlgorithmTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemBaseTests.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemBaseTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemTestData.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemImplementationTests.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemImplementationTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.ArgValidation.cs"
-             Link="CommonTest\System\Security\Cryptography\MLKemTests.ArgValidation.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.Keys.cs"
-             Link="CommonTest\System\Security\Cryptography\MLKemTests.Keys.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTests.Encapsulation.cs"
-             Link="CommonTest\System\Security\Cryptography\MLKemTests.Encapsulation.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemKeyTests.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemKeyTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs"
@@ -279,6 +280,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaTestsBase.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaXml.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaXml.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherOneShotTests.cs"
@@ -546,6 +549,7 @@
     <Compile Include="DefaultECDiffieHellmanProvider.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">
+    <Compile Include="MLKemOpenSslTests.NotSupported.cs" />
     <Compile Include="X509Certificates\X509StoreMutableTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
@@ -604,10 +608,20 @@
              Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.CheckX509Hostname_IntPtr.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.CheckX509Hostname_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.ExportKeyContents.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.ExportKeyContents.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.FromData.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.FromData.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
+    <Compile Include="Interop.EVP.Kem.ExtraHandle.cs" />
+    <Compile Include="MLKemOpenSslTests.Unix.cs" />
     <Compile Include="X509Certificates\HostnameMatchTests.Unix.cs" />
     <Compile Include="X509Certificates\X509FilesystemTests.Unix.cs" />
     <Compile Include="X509Certificates\X509StoreTests.Unix.cs" />
@@ -643,6 +657,7 @@
              Link="Common\Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="MLKemOpenSslTests.NotSupported.cs" />
     <Compile Include="X509Certificates\InteropTests.Windows.cs" />
     <Compile Include="X509Certificates\X509FilesystemTests.Windows.cs" />
   </ItemGroup>

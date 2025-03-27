@@ -534,17 +534,16 @@ EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method)
 	return res;
 }
 
-EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name_ex (MonoMethod *method) {
-	const char *res;
+EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_name_ex (MonoMethod *method) {
+	char *res;
 	MONO_ENTER_GC_UNSAFE;
-	res = mono_method_get_name (method);
+	const char *method_name = mono_method_get_name (method);
 	// starts with .ctor or .cctor
 	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (res) < 7) {
-		char *res_ex = (char *) malloc (128);
-		snprintf (res_ex, 128,"%s.%s", mono_class_get_name (mono_method_get_class (method)), res);
-		res = res_ex;
+		res = (char *) malloc (128);
+		snprintf (res, 128,"%s.%s", mono_class_get_name (mono_method_get_class (method)), method_name);
 	} else {
-		res = strdup (res);
+		res = strdup (method_name);
 	}
 	MONO_EXIT_GC_UNSAFE;
 	return res;
