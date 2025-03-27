@@ -175,9 +175,9 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
 
     pRD->PCTAddr = GetReturnAddressPtr();
 
-#ifdef FEATURE_EH_FUNCLETS
-
     DWORD CallerSP = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
+
+#ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;
@@ -200,7 +200,7 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
 #undef CALLEE_SAVED_REGISTER
 
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
+    pRD->SP  = CallerSP;
 
 #endif // FEATURE_EH_FUNCLETS
 

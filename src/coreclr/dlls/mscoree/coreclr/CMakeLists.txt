@@ -76,7 +76,7 @@ add_dependencies(coreclr coreclr_exports)
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
-if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_TARGET_ARCH_I386)
+if (CLR_CMAKE_HOST_UNIX)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX)
 

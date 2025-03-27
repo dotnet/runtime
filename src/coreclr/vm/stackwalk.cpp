@@ -404,6 +404,15 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
     }
     CONTRACTL_END;
 
+#ifdef TARGET_X86
+    EECodeInfo codeInfo;
+    if (pCodeInfo == NULL)
+    {
+        codeInfo.Init(GetControlPC(pRD));
+        pCodeInfo = &codeInfo;
+    }
+#endif
+
     if (pRD->IsCallerContextValid)
     {
         // We already have the caller's frame context
@@ -415,10 +424,33 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         PT_KNONVOLATILE_CONTEXT_POINTERS tempPtrs = pRD->pCurrentContextPointers;
         pRD->pCurrentContextPointers            = pRD->pCallerContextPointers;
         pRD->pCallerContextPointers             = tempPtrs;
+
+#ifdef TARGET_X86
+        pRD->PCTAddr = pRD->SP - pCodeInfo->GetCodeManager()->GetStackParameterSize(pCodeInfo) - sizeof(DWORD);
+#endif
     }
     else
     {
+#ifdef TARGET_X86
+        GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+        hdrInfo hdrInfoBody;
+        DWORD hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, pCodeInfo->GetRelOffset(), &hdrInfoBody);
+
+        ::UnwindStackFrameX86(pRD,
+                            PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
+                            pCodeInfo->GetRelOffset(),
+                            &hdrInfoBody,
+                            dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
+                            PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)),
+                            pCodeInfo->IsFunclet(),
+                            true);
+
+        pRD->pCurrentContext->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
+        pRD->pCurrentContext->Esp = pRD->SP;
+        pRD->pCurrentContext->Eip = pRD->ControlPC;
+#else
         VirtualUnwindCallFrame(pRD->pCurrentContext, pRD->pCurrentContextPointers, pCodeInfo);
+#endif
     }
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
@@ -457,6 +489,39 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     PCODE           uControlPc = GetIP(pContext);
 
 #if !defined(DACCESS_COMPILE)
+#ifdef TARGET_X86
+    EECodeInfo tempCodeInfo;
+    if (pCodeInfo == NULL)
+    {
+        tempCodeInfo.Init(uControlPc);
+        pCodeInfo = &tempCodeInfo;
+    }
+
+    REGDISPLAY rd;
+
+    rd.SP = (DWORD)GetSP(pContext);
+    rd.ControlPC = (DWORD)GetIP(pContext);
+    rd.pCurrentContext = pContext;
+    rd.pCurrentContextPointers = pContextPointers != NULL ? pContextPointers : &rd.ctxPtrsOne;
+
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+    hdrInfo hdrInfoBody;
+    DWORD hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, pCodeInfo->GetRelOffset(), &hdrInfoBody);
+
+    ::UnwindStackFrameX86(&rd,
+                          PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
+                          pCodeInfo->GetRelOffset(),
+                          &hdrInfoBody,
+                          dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
+                          PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)),
+                          pCodeInfo->IsFunclet(),
+                          true);
+
+    pContext->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
+    pContext->Esp = rd.SP;
+    pContext->Eip = rd.ControlPC;
+    uControlPc = rd.ControlPC;
+#else  // !TARGET_X86
     UINT_PTR            uImageBase;
     PT_RUNTIME_FUNCTION pFunctionEntry;
 
@@ -473,17 +538,17 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 
     if (pCodeInfo == NULL)
     {
-#if defined(TARGET_WINDOWS) && !defined(TARGET_X86)
+#ifndef TARGET_UNIX
         pFunctionEntry = RtlLookupFunctionEntry(uControlPc,
                                             ARM_ONLY((DWORD*))(&uImageBase),
                                             NULL);
-#else // TARGET_WINDOWS && !TARGET_X86
+#else // !TARGET_UNIX
         EECodeInfo codeInfo;
 
         codeInfo.Init(uControlPc);
         pFunctionEntry = codeInfo.GetFunctionEntry();
         uImageBase = (UINT_PTR)codeInfo.GetModuleBase();
-#endif // TARGET_WINDOWS && !TARGET_X86
+#endif // !TARGET_UNIX
     }
     else
     {
@@ -494,7 +559,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
         // expects this indirection to be resolved, so we use RUNTIME_FUNCTION of the hot code even
         // if we are in cold code.
 
-#if defined(_DEBUG) && defined(TARGET_WINDOWS) && !defined(TARGET_X86)
+#if defined(_DEBUG) && !defined(TARGET_UNIX)
         UINT_PTR            uImageBaseFromOS;
         PT_RUNTIME_FUNCTION pFunctionEntryFromOS;
 
@@ -505,7 +570,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
         // Note that he address returned from the OS is different from the one we have computed
         // when unwind info is registered using RtlAddGrowableFunctionTable. Compare RUNTIME_FUNCTION content.
         _ASSERTE( (uImageBase == uImageBaseFromOS) && (memcmp(pFunctionEntry, pFunctionEntryFromOS, sizeof(RUNTIME_FUNCTION)) == 0) );
-#endif // _DEBUG && TARGET_WINDOWS
+#endif // _DEBUG && !TARGET_UNIX
     }
 
     if (pFunctionEntry)
@@ -532,6 +597,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     {
         uControlPc = VirtualUnwindLeafCallFrame(pContext);
     }
+#endif // TARGET_X86
 #else  // DACCESS_COMPILE
     // We can't use RtlVirtualUnwind() from out-of-process.  Instead, we call code:DacUnwindStackFrame,
     // which is similar to StackWalk64().
