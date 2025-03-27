@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Reflection.Emit;
 using Xunit;
 using Xunit.Sdk;
 
@@ -15,6 +17,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             from shouldDispose in new[] { true, false }
             select new object[] { algorithm, shouldDispose };
 
+#if !NETSTANDARD2_0_OR_GREATER && !NETFRAMEWORK // Remove once PbeParameters is outboxed
         [Theory]
         [MemberData(nameof(ArgumentValidationData))]
         public static void NullArgumentValidation(SlhDsaAlgorithm algorithm, bool shouldDispose)
@@ -34,6 +37,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<ArgumentNullException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, null, Span<byte>.Empty, out _));
             Assert.Throws<ArgumentNullException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, null, Span<byte>.Empty, out _));
         }
+#endif
 
         [Theory]
         [MemberData(nameof(ArgumentValidationData))]
@@ -70,12 +74,16 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             // The private seed and public key sizes are both smaller so this can be used for all three:
             byte[] input = new byte[algorithm.SecretKeySizeInBytes];
+#if !NETSTANDARD2_0_OR_GREATER && !NETFRAMEWORK // Remove once PbeParameters is outboxed
             PbeParameters pbeParameters = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32);
+#endif
 
             slhDsa.Dispose();
 
+#if !NETSTANDARD2_0_OR_GREATER && !NETFRAMEWORK // Remove once PbeParameters is outboxed
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pbeParameters));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte>.Empty, pbeParameters));
+#endif
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKey());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKeyPem());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPrivateSeed(input));
@@ -83,19 +91,29 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaSecretKey(input));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfo());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfoPem());
+#if !NETSTANDARD2_0_OR_GREATER && !NETFRAMEWORK // Remove once PbeParameters is outboxed
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pbeParameters, Span<byte>.Empty, out _));
+#endif
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportPkcs8PrivateKey(Span<byte>.Empty, out _));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportSubjectPublicKeyInfo(Span<byte>.Empty, out _));
         }
 
+        public static IEnumerable<object[]> ApiWithDestinationSpanTestData =>
+            from algorithm in AlgorithmsRaw
+            from destinationLargerThanRequired in new[] { true, false }
+            select new object[] { algorithm, destinationLargerThanRequired };
+
+        private const int PaddingSize = 10;
+
         [Theory]
-        [MemberData(nameof(AlgorithmsData))]
-        public static void CallsExportSlhDsaPublicKeyCore(SlhDsaAlgorithm algorithm)
+        [MemberData(nameof(ApiWithDestinationSpanTestData))]
+        public static void CallsExportSlhDsaPublicKeyCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
         {
             using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
             int publicKeySize = algorithm.PublicKeySizeInBytes;
-            byte[] publicKey = new byte[publicKeySize + 2];
+            byte[] publicKey = new byte[publicKeySize + 2 * PaddingSize];
+            publicKey.AsSpan().Fill(42);
 
             slhDsa.ExportSlhDsaPublicKeyCoreHook = (Span<byte> destination) =>
             {
@@ -103,25 +121,21 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 destination.Fill(1);
             };
 
-            Array.Fill(publicKey, (byte)42);
-            slhDsa.ExportSlhDsaPublicKey(publicKey.AsSpan(1, publicKeySize));
-
-            AssertExpectedFill(publicKey, nameof(SlhDsa.ExportSlhDsaPublicKey), callNumber: 1);
-
-            Array.Fill(publicKey, (byte)42);
-            slhDsa.ExportSlhDsaPublicKey(publicKey.AsSpan(1, publicKeySize + 1)); // Extra byte should be ignored
-
-            AssertExpectedFill(publicKey, nameof(SlhDsa.ExportSlhDsaPublicKey), callNumber: 2);
+            // Extra bytes in destination buffer should not be touched
+            int extraBytes = destinationLargerThanRequired ? PaddingSize / 2 : 0;
+            slhDsa.ExportSlhDsaPublicKey(publicKey.AsSpan(PaddingSize, publicKeySize + extraBytes));
+            AssertExpectedFill(publicKey, fillElement: 1, paddingElement: 42, PaddingSize, publicKeySize);
         }
 
         [Theory]
-        [MemberData(nameof(AlgorithmsData))]
-        public static void CallsExportSlhDsaSecretKeyCore(SlhDsaAlgorithm algorithm)
+        [MemberData(nameof(ApiWithDestinationSpanTestData))]
+        public static void CallsExportSlhDsaSecretKeyCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
         {
             using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
             int secretKeySize = algorithm.SecretKeySizeInBytes;
-            byte[] secretKey = new byte[secretKeySize + 2];
+            byte[] secretKey = new byte[secretKeySize + 2 * PaddingSize];
+            secretKey.AsSpan().Fill(42);
 
             slhDsa.ExportSlhDsaSecretKeyCoreHook = (Span<byte> destination) =>
             {
@@ -129,25 +143,21 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 destination.Fill(1);
             };
 
-            Array.Fill(secretKey, (byte)42);
-            slhDsa.ExportSlhDsaSecretKey(secretKey.AsSpan(1, secretKeySize));
-
-            AssertExpectedFill(secretKey, nameof(SlhDsa.ExportSlhDsaSecretKey), callNumber: 1);
-
-            Array.Fill(secretKey, (byte)42);
-            slhDsa.ExportSlhDsaSecretKey(secretKey.AsSpan(1, secretKeySize + 1)); // Extra byte should be ignored
-
-            AssertExpectedFill(secretKey, nameof(SlhDsa.ExportSlhDsaSecretKey), callNumber: 2);
+            // Extra bytes in destination buffer should not be touched
+            int extraBytes = destinationLargerThanRequired ? PaddingSize / 2 : 0;
+            slhDsa.ExportSlhDsaSecretKey(secretKey.AsSpan(PaddingSize, secretKeySize + extraBytes));
+            AssertExpectedFill(secretKey, fillElement: 1, paddingElement: 42, PaddingSize, secretKeySize);
         }
 
         [Theory]
-        [MemberData(nameof(AlgorithmsData))]
-        public static void CallsExportSlhDsaPrivateSeedCore(SlhDsaAlgorithm algorithm)
+        [MemberData(nameof(ApiWithDestinationSpanTestData))]
+        public static void CallsExportSlhDsaPrivateSeedCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
         {
             using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
             int privateSeedSize = algorithm.PrivateSeedSizeInBytes;
-            byte[] privateSeed = new byte[privateSeedSize + 2];
+            byte[] privateSeed = new byte[privateSeedSize + 2 * PaddingSize];
+            privateSeed.AsSpan().Fill(42);
 
             slhDsa.ExportSlhDsaPrivateSeedCoreHook = (Span<byte> destination) =>
             {
@@ -155,66 +165,47 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 destination.Fill(1);
             };
 
-            Array.Fill(privateSeed, (byte)42);
-            slhDsa.ExportSlhDsaPrivateSeed(privateSeed.AsSpan(1, privateSeedSize));
-
-            AssertExpectedFill(privateSeed, nameof(SlhDsa.ExportSlhDsaPrivateSeed), callNumber: 1);
-
-            Array.Fill(privateSeed, (byte)42);
-            slhDsa.ExportSlhDsaPrivateSeed(privateSeed.AsSpan(1, privateSeedSize + 1)); // Extra byte should be ignored
-
-            AssertExpectedFill(privateSeed, nameof(SlhDsa.ExportSlhDsaPrivateSeed), callNumber: 2);
+            // Extra bytes in destination buffer should not be touched
+            int extraBytes = destinationLargerThanRequired ? PaddingSize / 2 : 0;
+            slhDsa.ExportSlhDsaPrivateSeed(privateSeed.AsSpan(PaddingSize, privateSeedSize + extraBytes));
+            AssertExpectedFill(privateSeed, fillElement: 1, paddingElement: 42, PaddingSize, privateSeedSize);
         }
 
         [Theory]
-        [MemberData(nameof(AlgorithmsData))]
-        public static void CallsSignDataCore(SlhDsaAlgorithm algorithm)
+        [MemberData(nameof(ApiWithDestinationSpanTestData))]
+        public static void CallsSignDataCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
         {
             using SlhDsaTestImplementation slhDsa = SlhDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
             int signatureSize = algorithm.SignatureSizeInBytes;
-            byte[] signature = new byte[signatureSize + 2];
+            byte[] signature = new byte[signatureSize + 2 * PaddingSize];
+            signature.AsSpan().Fill(42);
             byte[] testData = [2];
             byte[] testContext = [3];
 
             slhDsa.SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
-                Assert.Equal(testData, data);
-                Assert.Equal(testContext, context);
+                AssertExtensions.SequenceEqual(testData, data);
+                AssertExtensions.SequenceEqual(testContext, context);
 
                 Assert.Equal(destination.Length, signatureSize);
                 destination.Fill(1);
             };
 
-            Array.Fill(signature, (byte)42);
-            slhDsa.SignData(testData, signature.AsSpan(1, signatureSize), testContext);
-
-            AssertExpectedFill(signature, nameof(SlhDsa.SignData), callNumber: 1);
-
-            Array.Fill(signature, (byte)42);
-            slhDsa.SignData(testData, signature.AsSpan(1, signatureSize + 1), testContext); // Extra byte should be ignored
-
-            AssertExpectedFill(signature, nameof(SlhDsa.SignData), callNumber: 2);
+            // Extra bytes in destination buffer should not be touched
+            int extraBytes = destinationLargerThanRequired ? PaddingSize / 2 : 0;
+            slhDsa.SignData(testData, signature.AsSpan(PaddingSize, signatureSize + extraBytes), testContext);
+            AssertExpectedFill(signature, fillElement: 1, paddingElement: 42, PaddingSize, signatureSize);
         }
 
-        private static void AssertExpectedFill(ReadOnlySpan<byte> source, string functionBeingTested, int callNumber)
+        private static void AssertExpectedFill(ReadOnlySpan<byte> source, byte fillElement, byte paddingElement, int startIndex, int length)
         {
-            if (source[0] != 42)
-            {
-                throw new XunitException($"Call #{callNumber} to {functionBeingTested} overwrote data before destination[0].{Environment.NewLine}Expected: 42{Environment.NewLine}Actual: {source[0]}");
-            }
+            // Ensure that the data was filled correctly
+            AssertExtensions.FilledWith(fillElement, source.Slice(startIndex, length));
 
-            if (source[^1] != 42)
-            {
-                throw new XunitException($"Call #{callNumber} to {functionBeingTested} overwrote data beyond the indicated length.{Environment.NewLine}Expected: 42{Environment.NewLine}Actual: {source[^1]}");
-            }
-
-            int idx = source.Slice(1, source.Length - 2).IndexOfAnyExcept((byte)1);
-
-            if (idx >= 0)
-            {
-                throw new XunitException($"Call #{callNumber} to {functionBeingTested} did not set relative index {idx} (absolute index {idx + 1}) correctly.{Environment.NewLine}Expected: 1{Environment.NewLine}Actual: {source[idx + 1]}");
-            }
+            // And that the padding was not touched
+            AssertExtensions.FilledWith(paddingElement, source.Slice(0, startIndex));
+            AssertExtensions.FilledWith(paddingElement, source.Slice(startIndex + length));
         }
 
         [Theory]
@@ -225,17 +216,17 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             int signatureSize = algorithm.SignatureSizeInBytes;
             byte[] testSignature = new byte[signatureSize + 1];
+            testSignature.AsSpan().Fill(42);
             byte[] testData = [2];
             byte[] testContext = [3];
             bool returnValue = false;
 
-            Array.Fill(testSignature, (byte)42);
 
             slhDsa.VerifyDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             {
-                Assert.Equal(testData, data);
-                Assert.Equal(testContext, context);
-                Assert.Equal(testSignature.AsSpan(0, signatureSize), signature);
+                AssertExtensions.SequenceEqual(testData, data);
+                AssertExtensions.SequenceEqual(testContext, context);
+                AssertExtensions.SequenceEqual(testSignature.AsSpan(0, signatureSize), signature);
 
                 return returnValue;
             };

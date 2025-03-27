@@ -5,7 +5,9 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 // The type being internal is making unused parameter warnings fire for
 // not-implemented methods. Suppress those warnings.
@@ -45,9 +47,19 @@ namespace System.Security.Cryptography
             Algorithm = algorithm;
         }
 
+        /// <summary>
+        ///   Throws <see cref="ObjectDisposedException" /> if the current instance is disposed.
+        /// </summary>
         protected void ThrowIfDisposed()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+#if NET
+            ObjectDisposedException.ThrowIf(_disposed, typeof(SlhDsa));
+#else
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(typeof(SlhDsa).FullName);
+            }
+#endif
         }
 
         /// <summary>
@@ -249,7 +261,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             AsnWriter writer = ExportSubjectPublicKeyInfoCore();
-            return writer.Encode(static span => PemEncoding.WriteString(PemLabels.SpkiPublicKey, span));
+            return GetEncodedPemString(writer, PemLabels.SpkiPublicKey);
         }
 
         /// <summary>
@@ -330,6 +342,7 @@ namespace System.Security.Cryptography
             throw new NotImplementedException("The PKCS#8 format is still under debate");
         }
 
+#if !NETSTANDARD2_0_OR_GREATER && !NETFRAMEWORK // Remove once PbeParameters is outboxed
         /// <summary>
         ///  Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
         /// </summary>
@@ -354,7 +367,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -397,7 +410,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -450,7 +463,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
@@ -503,7 +516,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
@@ -545,7 +558,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -554,7 +567,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                return writer.Encode(static span => PemEncoding.WriteString(PemLabels.EncryptedPkcs8PrivateKey, span));
+                return GetEncodedPemString(writer, PemLabels.EncryptedPkcs8PrivateKey);
             }
             finally
             {
@@ -591,7 +604,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -600,13 +613,14 @@ namespace System.Security.Cryptography
 
             try
             {
-                return writer.Encode(static span => PemEncoding.WriteString(PemLabels.EncryptedPkcs8PrivateKey, span));
+                return GetEncodedPemString(writer, PemLabels.EncryptedPkcs8PrivateKey);
             }
             finally
             {
                 writer.Reset();
             }
         }
+#endif
 
         /// <summary>
         ///  Exports the public-key portion of the current key in the FIPS 205 public key format.
@@ -703,7 +717,7 @@ namespace System.Security.Cryptography
         /// </returns>
         public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm)
         {
-            ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNull(algorithm);
             ThrowIfNotSupported();
 
             return SlhDsaImplementation.GenerateKeyCore(algorithm);
@@ -750,8 +764,7 @@ namespace System.Security.Cryptography
                         {
                             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                             spki.Algorithm.Encode(writer);
-                            ThrowAlgorithmUnknown(writer);
-                            Debug.Fail("Execution should have halted in the throw-helper.");
+                            throw Helpers.CreateAlgorithmUnknownException(writer);
                         }
 
                         return SlhDsaImplementation.ImportPublicKey(algorithm, spki.SubjectPublicKey.Span);
@@ -801,8 +814,7 @@ namespace System.Security.Cryptography
                         {
                             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                             pki.PrivateKeyAlgorithm.Encode(writer);
-                            ThrowAlgorithmUnknown(writer);
-                            Debug.Fail("Execution should have halted in the throw-helper.");
+                            throw Helpers.CreateAlgorithmUnknownException(writer);
                         }
 
                         return SlhDsaImplementation.ImportPkcs8PrivateKeyValue(info, pki.PrivateKey.Span);
@@ -1015,7 +1027,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PublicKeySizeInBytes)
             {
@@ -1054,7 +1066,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.SecretKeySizeInBytes)
             {
@@ -1093,7 +1105,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
             {
@@ -1276,16 +1288,26 @@ namespace System.Security.Cryptography
             }
         }
 
-        [DoesNotReturn]
-        private static void ThrowAlgorithmUnknown(AsnWriter encodedId)
+        private static void ThrowIfNull(
+            [NotNull] object? argument,
+            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
         {
-#if NET9_0_OR_GREATER
-            throw encodedId.Encode(static encoded =>
-                new CryptographicException(
-                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, Convert.ToHexString(encoded))));
+#if NET
+            ArgumentNullException.ThrowIfNull(argument, paramName);
 #else
-            throw new CryptographicException(
-                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, Convert.ToHexString(encodedId.Encode())));
+            if (argument is null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+#endif
+        }
+
+        internal static string GetEncodedPemString(AsnWriter writer, string label)
+        {
+#if NET10_0_OR_GREATER
+            return writer.Encode(label, static (l, span) => PemEncoding.WriteString(l, span));
+#else
+            throw new NotImplementedException();
 #endif
         }
     }

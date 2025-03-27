@@ -32,22 +32,38 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
         }
 
+#if NETFRAMEWORK
+        internal delegate void ExportSlhDsaPrivateSeedCoreAction(Span<byte> s);
+        public ExportSlhDsaPrivateSeedCoreAction ExportSlhDsaPrivateSeedCoreHook { get; set; } = _ => { };
+        internal delegate void ExportSlhDsaPublicKeyCoreAction(Span<byte> s);
+        public ExportSlhDsaPublicKeyCoreAction ExportSlhDsaPublicKeyCoreHook { get; set; } = _ => { };
+        internal delegate void ExportSlhDsaSecretKeyCoreAction(Span<byte> s);
+        public ExportSlhDsaSecretKeyCoreAction ExportSlhDsaSecretKeyCoreHook { get; set; } = _ => { };
+        internal delegate void SignDataCoreAction(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> s);
+        public SignDataCoreAction SignDataCoreHook { get; set; } = (_, _, _) => { };
+        internal delegate bool VerifyDataCoreFunc(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
+        public VerifyDataCoreFunc VerifyDataCoreHook { get; set; } = (_, _, _) => false;
+        internal delegate void DisposeAction(bool disposing);
+        public DisposeAction DisposeHook { get; set; } = _ => { };
+#else
         public Action<Span<byte>> ExportSlhDsaPrivateSeedCoreHook { get; set; } = _ => { };
+        public Action<Span<byte>> ExportSlhDsaPublicKeyCoreHook { get; set; } = _ => { };
+        public Action<Span<byte>> ExportSlhDsaSecretKeyCoreHook { get; set; } = _ => { };
+        public Action<ReadOnlySpan<byte>, ReadOnlySpan<byte>, Span<byte>> SignDataCoreHook { get; set; } = (_, _, _) => { };
+        public Func<ReadOnlySpan<byte>, ReadOnlySpan<byte>, ReadOnlySpan<byte>, bool> VerifyDataCoreHook { get; set; } = (_, _, _) => false;
+        public Action<bool> DisposeHook { get; set; } = _ => { };
+#endif
+
         protected override void ExportSlhDsaPrivateSeedCore(Span<byte> destination) => ExportSlhDsaPrivateSeedCoreHook(destination);
 
-        public Action<Span<byte>> ExportSlhDsaPublicKeyCoreHook { get; set; } = _ => { };
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) => ExportSlhDsaPublicKeyCoreHook(destination);
 
-        public Action<Span<byte>> ExportSlhDsaSecretKeyCoreHook { get; set; } = _ => { };
         protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination) => ExportSlhDsaSecretKeyCoreHook(destination);
 
-        public Action<ReadOnlySpan<byte>, ReadOnlySpan<byte>, Span<byte>> SignDataCoreHook { get; set; } = (_, _, _) => { };
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) => SignDataCoreHook(data, context, destination);
 
-        public Func<ReadOnlySpan<byte>, ReadOnlySpan<byte>, ReadOnlySpan<byte>, bool> VerifyDataCoreHook { get; set; } = (_, _, _) => false;
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) => VerifyDataCoreHook(data, context, signature);
 
-        public Action<bool> DisposeHook { get; set; } = _ => { };
         protected override void Dispose(bool disposing) => DisposeHook(disposing);
     }
 }
