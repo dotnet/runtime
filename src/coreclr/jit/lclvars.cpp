@@ -2466,7 +2466,7 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
     // In R2R we cannot query arbitrary information about struct fields, so
     // skip it there. Note that the getTypeLayout call above is enough to cover
     // us for promotion at least.
-    if (!opts.IsReadyToRun())
+    if (!IsAot())
     {
         for (unsigned int i = 0; i < fieldCnt; i++)
         {
@@ -3068,15 +3068,6 @@ void Compiler::lvaSortByRefCount()
         {
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
         }
-#if defined(JIT32_GCENCODER)
-        if (UsesFunclets() && lvaIsOriginalThisArg(lclNum) &&
-            (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
-        {
-            // For x86/Linux, we need to track "this".
-            // However we cannot have it in tracked variables, so we set "this" pointer always untracked
-            varDsc->lvTracked = 0;
-        }
-#endif
 
         // No benefit in tracking the PSPSym (if any)
         //
@@ -4771,7 +4762,7 @@ bool Compiler::lvaIsPreSpilled(unsigned lclNum, regMaskTP preSpillMask)
 //
 void Compiler::lvaUpdateArgWithInitialReg(LclVarDsc* varDsc)
 {
-    noway_assert(varDsc->lvIsParam);
+    assert(varDsc->lvIsParam || varDsc->lvIsParamRegTarget);
 
     if (varDsc->lvIsRegCandidate())
     {
@@ -4790,20 +4781,11 @@ void Compiler::lvaUpdateArgsWithInitialReg()
         return;
     }
 
-    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-        if (varDsc->lvPromoted)
-        {
-            for (unsigned fieldVarNum = varDsc->lvFieldLclStart;
-                 fieldVarNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++fieldVarNum)
-            {
-                LclVarDsc* fieldVarDsc = lvaGetDesc(fieldVarNum);
-                lvaUpdateArgWithInitialReg(fieldVarDsc);
-            }
-        }
-        else
+        if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
         {
             lvaUpdateArgWithInitialReg(varDsc);
         }
@@ -6447,6 +6429,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("R");
         }
+        if (varDsc->lvIsMultiRegDest)
+        {
+            printf("M");
+        }
 #ifdef JIT32_GCENCODER
         if (varDsc->lvPinned)
             printf("P");
@@ -6461,6 +6447,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->lvIsMultiRegRet)
     {
         printf(" multireg-ret");
+    }
+    if (varDsc->lvIsMultiRegDest)
+    {
+        printf(" multireg-dest");
     }
     if (varDsc->lvMustInit)
     {

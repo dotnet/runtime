@@ -776,6 +776,7 @@ inline
 void
 ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 {
+	wait_event->event = NULL;
 }
 
 static

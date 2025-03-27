@@ -97,7 +97,7 @@ namespace System.Net.Http
 
             // Since we are reusing the request message instance on redirects, clear any existing headers
             // Do so before writing DiagnosticListener events as instrumentations use those to inject headers
-            if (request.WasRedirected() && _propagatorFields is HeaderDescriptor[] fields)
+            if (request.WasPropagatorStateInjectedByDiagnosticsHandler() && _propagatorFields is HeaderDescriptor[] fields)
             {
                 foreach (HeaderDescriptor field in fields)
                 {
@@ -355,6 +355,7 @@ namespace System.Net.Http
                     request.Headers.TryAddWithoutValidation(descriptor, value);
                 }
             });
+            request.MarkPropagatorStateInjectedByDiagnosticsHandler();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
