@@ -119,3 +119,7 @@ export function mono_wasm_profiler_record (method: MonoMethod, start: number): v
     }
     globalThis.performance.measure(methodName, options);
 }
+
+export function mono_wasm_instrument_method (method:MonoMethod):number {
+    return runtimeHelpers.mono_wasm_instrument_method(method);
+}
