@@ -11,13 +11,30 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        private static partial IntPtr GetExtraHandle(SafeEvpPKeyHandle handle);
+
+        // Must be kept in sync with PalKemId in native shim.
+        internal enum PalKemAlgorithmId
+        {
+            Unknown = 0,
+            MLKem512 = 1,
+            MLKem768 = 2,
+            MLKem1024 = 3,
+        }
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemDecapsulate")]
         private static partial int CryptoNative_EvpKemDecapsulate(
             SafeEvpPKeyHandle kem,
+            IntPtr extraHandle,
             ReadOnlySpan<byte> ciphertext,
             int ciphertextLength,
             Span<byte> sharedSecret,
             int sharedSecretLength);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGetPalId")]
+        private static partial int CryptoNative_EvpKemGetPalId(
+            SafeEvpPKeyHandle kem,
+            out PalKemAlgorithmId kemId);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGeneratePkey", StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_EvpKemGeneratePkey(
@@ -46,6 +63,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemEncapsulate")]
         private static partial int CryptoNative_EvpKemEncapsulate(
             SafeEvpPKeyHandle kem,
+            IntPtr extraHandle,
             Span<byte> ciphertext,
             int ciphertextLength,
             Span<byte> sharedSecret,
@@ -85,12 +103,32 @@ internal static partial class Interop
             return handle;
         }
 
+        internal static PalKemAlgorithmId EvpKemGetKemIdentifier(SafeEvpPKeyHandle key)
+        {
+            const int Success = 1;
+            const int Fail = 0;
+            int result = CryptoNative_EvpKemGetPalId(key, out PalKemAlgorithmId kemId);
+
+            return result switch
+            {
+                Success => kemId,
+                Fail => throw CreateOpenSslCryptographicException(),
+                int other => throw FailThrow(other),
+            };
+
+            static Exception FailThrow(int result)
+            {
+                Debug.Fail($"Unexpected return value {result} from {nameof(CryptoNative_EvpKemGetPalId)}.");
+                return new CryptographicException();
+            }
+        }
+
         internal static void EvpKemDecapsulate(SafeEvpPKeyHandle key, ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
             const int Success = 1;
             const int Fail = 0;
 
-            int ret = CryptoNative_EvpKemDecapsulate(key, ciphertext, ciphertext.Length, sharedSecret, sharedSecret.Length);
+            int ret = CryptoNative_EvpKemDecapsulate(key, GetExtraHandle(key), ciphertext, ciphertext.Length, sharedSecret, sharedSecret.Length);
 
             switch (ret)
             {
@@ -107,20 +145,20 @@ internal static partial class Interop
         }
 
         internal static void EvpKemExportPrivateSeed(SafeEvpPKeyHandle key, Span<byte> destination) =>
-            ExportKeyContents(key, destination, CryptoNative_EvpKemExportPrivateSeed);
+            Interop.Crypto.ExportKeyContents(key, destination, CryptoNative_EvpKemExportPrivateSeed);
 
         internal static void EvpKemExportDecapsulationKey(SafeEvpPKeyHandle key, Span<byte> destination) =>
-            ExportKeyContents(key, destination, CryptoNative_EvpKemExportDecapsulationKey);
+            Interop.Crypto.ExportKeyContents(key, destination, CryptoNative_EvpKemExportDecapsulationKey);
 
         internal static void EvpKemExportEncapsulationKey(SafeEvpPKeyHandle key, Span<byte> destination) =>
-            ExportKeyContents(key, destination, CryptoNative_EvpKemExportEncapsulationKey);
+            Interop.Crypto.ExportKeyContents(key, destination, CryptoNative_EvpKemExportEncapsulationKey);
 
         internal static void EvpKemEncapsulate(SafeEvpPKeyHandle key, Span<byte> ciphertext, Span<byte> sharedSecret)
         {
             const int Success = 1;
             const int Fail = 0;
 
-            int ret = CryptoNative_EvpKemEncapsulate(key, ciphertext, ciphertext.Length, sharedSecret, sharedSecret.Length);
+            int ret = CryptoNative_EvpKemEncapsulate(key, GetExtraHandle(key), ciphertext, ciphertext.Length, sharedSecret, sharedSecret.Length);
 
             switch (ret)
             {
@@ -134,34 +172,6 @@ internal static partial class Interop
                     ciphertext.Clear();
                     sharedSecret.Clear();
                     Debug.Fail($"Unexpected return value {ret} from {nameof(CryptoNative_EvpKemEncapsulate)}.");
-                    throw new CryptographicException();
-            }
-        }
-
-        private static void ExportKeyContents(
-            SafeEvpPKeyHandle key,
-            Span<byte> destination,
-            Func<SafeEvpPKeyHandle, Span<byte>, int, int> action)
-        {
-            const int Success = 1;
-            const int Fail = 0;
-            const int NotRetrievable = -1;
-
-            int ret = action(key, destination, destination.Length);
-
-            switch (ret)
-            {
-                case Success:
-                    return;
-                case NotRetrievable:
-                    destination.Clear();
-                    throw new CryptographicException(SR.Cryptography_NotRetrievable);
-                case Fail:
-                    destination.Clear();
-                    throw CreateOpenSslCryptographicException();
-                default:
-                    destination.Clear();
-                    Debug.Fail($"Unexpected return value {ret}.");
                     throw new CryptographicException();
             }
         }
