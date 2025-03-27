@@ -164,6 +164,8 @@
              Link="CommonTest\System\Security\Cryptography\MLKemTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemKeyTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemKeyTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PbeParametersTests.cs"
+             Link="CommonTest\System\Security\Cryptography\PbeParametersTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs"
@@ -422,7 +424,6 @@
     <Compile Include="OidCollectionTests.cs" />
     <Compile Include="OpenSslNamedKeysTests.manual.cs" />
     <Compile Include="PaddingModeTests.cs" />
-    <Compile Include="PbeParametersTests.cs" />
     <Compile Include="PemEncodingTests.cs" />
     <Compile Include="PemEncodingFindTests.cs" />
     <Compile Include="PKCS1MaskGenerationMethodTest.cs" />
