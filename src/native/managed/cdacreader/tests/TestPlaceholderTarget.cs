@@ -93,6 +93,20 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override TargetNUInt ReadNUInt(ulong address) => DefaultReadNUInt(address);
+
+    public override bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value)
+    {
+        value = default;
+        foreach (var global in _globals)
+        {
+            if (global.Name == name)
+            {
+                value = T.CreateChecked(global.Value);
+                return true;
+            }
+        }
+        return false;
+    }
     public override T ReadGlobal<T>(string name)
     {
         foreach (var global in _globals)
