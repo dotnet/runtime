@@ -3895,11 +3895,14 @@ static MONO_NEVER_INLINE void
 mono_interp_trace_with_ctx (InterpFrame *frame, void (*trace_cb)(MonoMethod*,MonoJitInfo*,MonoProfilerCallContext*))
 {
 	MonoProfilerCallContext prof_ctx;
+	MonoLMFExt ext;
 	memset (&prof_ctx, 0, sizeof (MonoProfilerCallContext));
 	prof_ctx.interp_frame = frame;
 	prof_ctx.method = frame->imethod->method;
 	prof_ctx.return_value = frame->retval;
+	interp_push_lmf (&ext, frame);
 	trace_cb (frame->imethod->method, frame->imethod->jinfo, &prof_ctx);
+	interp_pop_lmf (&ext);
 }
 
 static MONO_NEVER_INLINE void

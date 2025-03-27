@@ -301,7 +301,7 @@ ep_on_error:
 void
 ep_session_inc_ref (EventPipeSession *session)
 {
-	session->ref_count++;
+	ep_rt_atomic_inc_uint32_t (&session->ref_count);
 }
 
 void
@@ -311,8 +311,7 @@ ep_session_dec_ref (EventPipeSession *session)
 
 	EP_ASSERT (!ep_session_get_streaming_enabled (session));
 
-	session->ref_count--;
-	if (session->ref_count > 0)
+	if (ep_rt_atomic_dec_uint32_t (&session->ref_count) != 0)
 		return;
 
 	ep_rt_wait_event_free (&session->rt_thread_shutdown_event);
