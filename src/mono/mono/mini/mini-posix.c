@@ -291,11 +291,16 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 
 	int hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
 
-	mono_thread_info_set_is_async_context (TRUE);
+	gboolean restore_async_context = FALSE;
+	if (!mono_thread_info_is_async_context ()) {
+		mono_thread_info_set_is_async_context (TRUE);
+		restore_async_context = TRUE;
+	}
 
 	MONO_PROFILER_RAISE (sample_hit, ((const mono_byte*)mono_arch_ip_from_context (ctx), ctx));
 
-	mono_thread_info_set_is_async_context (FALSE);
+	if (restore_async_context)
+		mono_thread_info_set_is_async_context (FALSE);
 
 	mono_hazard_pointer_restore_for_signal_handler (hp_save_index);
 

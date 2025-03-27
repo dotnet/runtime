@@ -34,7 +34,7 @@ jobs:
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
-      - (Ubuntu.2410.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.10-helix-arm64v8
+      - (Ubuntu.2504.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.04-helix-arm64v8
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Debian.13.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm64v8
 
@@ -56,7 +56,7 @@ jobs:
           - SLES.15.Amd64.Open
           - (Centos.10.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64
           - (Fedora.41.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-41-helix
-          - (Ubuntu.2404.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-amd64
+          - (Ubuntu.2504.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.04-helix-amd64
           - (Debian.13.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
@@ -115,7 +115,7 @@ jobs:
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'net481') }}:
         # libraries on mono outerloop
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.Amd64.Server2022.Open
@@ -137,14 +137,14 @@ jobs:
               - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64
 
       # .NETFramework
-      - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
+      - ${{ if eq(parameters.jobParameters.framework, 'net481') }}:
         - Windows.11.Amd64.Client.Open
 
 
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'net481') }}:
         # mono outerloop
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.11.Amd64.Client.Open
@@ -155,7 +155,7 @@ jobs:
             - Windows.11.Amd64.Client.Open
 
       # .NETFramework
-      - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
+      - ${{ if eq(parameters.jobParameters.framework, 'net481') }}:
         - Windows.10.Amd64.Client.Open
 
     # windows arm64

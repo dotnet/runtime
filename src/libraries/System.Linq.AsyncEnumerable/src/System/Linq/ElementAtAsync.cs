@@ -111,22 +111,16 @@ namespace System.Linq
         {
             if (index >= 0)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        if (index == 0)
-                        {
-                            return e.Current;
-                        }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                        index--;
-                    }
-                }
-                finally
+                while (await e.MoveNextAsync())
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    if (index == 0)
+                    {
+                        return e.Current;
+                    }
+
+                    index--;
                 }
             }
 
@@ -146,33 +140,27 @@ namespace System.Linq
         {
             if (indexFromEnd > 0)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                if (await e.MoveNextAsync())
                 {
-                    if (await e.MoveNextAsync().ConfigureAwait(false))
+                    Queue<TSource> queue = new();
+                    queue.Enqueue(e.Current);
+
+                    while (await e.MoveNextAsync())
                     {
-                        Queue<TSource> queue = new();
-                        queue.Enqueue(e.Current);
-
-                        while (await e.MoveNextAsync().ConfigureAwait(false))
-                        {
-                            if (queue.Count == indexFromEnd)
-                            {
-                                queue.Dequeue();
-                            }
-
-                            queue.Enqueue(e.Current);
-                        }
-
                         if (queue.Count == indexFromEnd)
                         {
-                            return queue.Dequeue();
+                            queue.Dequeue();
                         }
+
+                        queue.Enqueue(e.Current);
                     }
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
+
+                    if (queue.Count == indexFromEnd)
+                    {
+                        return queue.Dequeue();
+                    }
                 }
             }
 

@@ -410,12 +410,6 @@ public class GenerateWasmBootJson : Task
             }
         }
 
-        var jsonOptions = new JsonSerializerOptions()
-        {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-            WriteIndented = true
-        };
 
         if (EnvVariables != null && EnvVariables.Length > 0)
         {
@@ -426,7 +420,6 @@ public class GenerateWasmBootJson : Task
                 result.environmentVariables[name] = env.GetMetadata("Value");
             }
         }
-
         if (Extensions != null && Extensions.Length > 0)
         {
             result.extensions = new Dictionary<string, Dictionary<string, object>>();
@@ -434,24 +427,13 @@ public class GenerateWasmBootJson : Task
             {
                 var key = configExtension.GetMetadata("key");
                 using var fs = File.OpenRead(configExtension.ItemSpec);
-                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(fs, jsonOptions);
+                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(fs, BootJsonBuilderHelper.JsonOptions);
                 result.extensions[key] = config;
             }
         }
 
         helper.ComputeResourcesHash(result);
-
-        if (Path.GetExtension(OutputPath) == ".js")
-        {
-            var jsonOutput = JsonSerializer.Serialize(result, jsonOptions);
-            var jsOutput = $"export const config = /*json-start*/{jsonOutput}/*json-end*/;";
-            File.WriteAllText(OutputPath, jsOutput);
-        }
-        else
-        {
-            using var output = File.Create(OutputPath);
-            JsonSerializer.Serialize(output, result, jsonOptions);
-        }
+        helper.WriteConfigToFile(result, OutputPath);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {

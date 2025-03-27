@@ -218,7 +218,7 @@ namespace System.Numerics.Tensors
         internal static Tensor<T> LazyBroadcast<T>(Tensor<T> input, ReadOnlySpan<nint> lengths)
         {
             if (input.Lengths.SequenceEqual(lengths))
-                return new Tensor<T>(input._values, lengths, false);
+                return new Tensor<T>(input._values, lengths, input._memoryOffset, isPinned: false);
 
             if (!TensorHelpers.IsBroadcastableTo(input.Lengths, lengths))
                 ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
@@ -244,7 +244,7 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            Tensor<T> output = new Tensor<T>(input._values, lengths, strides);
+            Tensor<T> output = new Tensor<T>(input._values, lengths, strides, input._memoryOffset);
 
             return output;
         }
@@ -2660,7 +2660,7 @@ namespace System.Numerics.Tensors
                         lengths[i] = tensor.Lengths[dimensions[i]];
                     permutation = dimensions.ToArray();
                 }
-                outTensor = new Tensor<T>(values, lengths, Array.Empty<nint>(), tensor._isPinned);
+                outTensor = new Tensor<T>(values, lengths, Array.Empty<nint>(), tensor._memoryOffset, tensor._isPinned);
 
                 ospan = outTensor.AsTensorSpan();
                 ispan = tensor.AsTensorSpan();
@@ -2771,7 +2771,7 @@ namespace System.Numerics.Tensors
             else
                 strides = TensorSpanHelpers.CalculateStrides(arrLengths);
 
-            return new Tensor<T>(tensor._values, arrLengths, strides);
+            return new Tensor<T>(tensor._values, arrLengths, strides, tensor._memoryOffset);
         }
 
         /// <summary>
@@ -2926,7 +2926,7 @@ namespace System.Numerics.Tensors
         {
             nint newSize = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = tensor.IsPinned ? GC.AllocateArray<T>((int)newSize) : (new T[newSize]);
-            Tensor<T> output = new Tensor<T>(values, lengths, false);
+            Tensor<T> output = new Tensor<T>(values, lengths, tensor._memoryOffset, isPinned: false);
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor.AsTensorSpan()._reference, (int)tensor._values.Length);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
             if (newSize > tensor._values.Length)
@@ -3217,7 +3217,7 @@ namespace System.Numerics.Tensors
             for (int i = 0; i < outputs.Length; i++)
             {
                 T[] values = new T[(int)totalToCopy];
-                outputs[i] = new Tensor<T>(values, newShape);
+                outputs[i] = new Tensor<T>(values, newShape, memoryOffset: 0);
                 oIndices.Clear();
                 iIndices.Clear();
 
@@ -3299,7 +3299,7 @@ namespace System.Numerics.Tensors
                 strides = TensorSpanHelpers.CalculateStrides(lengths);
             }
 
-            return new Tensor<T>(tensor._values, lengths, strides);
+            return new Tensor<T>(tensor._values, lengths, strides, tensor._memoryOffset);
         }
 
         /// <summary>
@@ -3661,7 +3661,7 @@ namespace System.Numerics.Tensors
                 strides[dimension] = tensor.Strides[dimension] * tensor.Lengths[dimension];
             }
 
-            return new Tensor<T>(tensor._values, lengths, strides);
+            return new Tensor<T>(tensor._values, lengths, strides, tensor._memoryOffset);
         }
 
         /// <summary>

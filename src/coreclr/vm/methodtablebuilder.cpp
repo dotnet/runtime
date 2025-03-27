@@ -10181,6 +10181,8 @@ void MethodTableBuilder::CheckForSystemTypes()
             // although applying 16 byte alignment is consistent with treatment of 128 bit SSE types
             // even on X86
             pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
+#elif defined(TARGET_WASM)
+            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(v128)
 #else
 #error Unknown architecture
 #endif // TARGET_64BIT
