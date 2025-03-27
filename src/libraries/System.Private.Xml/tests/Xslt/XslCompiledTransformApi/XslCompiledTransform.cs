@@ -82,7 +82,6 @@ namespace System.Xml.XslCompiledTransformApiTests
         }
     }
 
-    //[TestCase(Name = "Load(MethodInfo, ByteArray, TypeArray) tests", Desc = "This testcase tests private Load method via Reflection. This method is used by sharepoint")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadMethInfoTest : ReflectionTestCaseBase
     {
@@ -92,7 +91,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        //[Variation("Load(MethodInfo = null, ByteArray, TypeArray)", Pri = 1)]
         [Fact]
         public void Var1()
         {
@@ -113,7 +111,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load(MethodInfo, ByteArray = null, TypeArray)", Pri = 1)]
         [Fact]
         public void Var2()
         {
@@ -135,7 +132,6 @@ namespace System.Xml.XslCompiledTransformApiTests
         }
     }
 
-    //[TestCase(Name = "Null argument tests", Desc = "This testcase passes NULL arguments to all XslCompiledTransform methods")]
     public class CNullArgumentTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -144,7 +140,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        //[Variation("Load(string = null)", Pri = 1)]
         [Fact]
         public void Var0()
         {
@@ -164,7 +159,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load(IXPathNavigable = null)", Pri = 1)]
         [Fact]
         public void Var1()
         {
@@ -184,7 +178,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load(XmlReader = null)", Pri = 1)]
         [Fact]
         public void Var2()
         {
@@ -204,7 +197,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load(IXPathNavigable = null, XmlResolver = null)", Pri = 1)]
         [Fact]
         public void Var3()
         {
@@ -224,7 +216,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load(XmlReader = null, XmlResolver = null)", Pri = 1)]
         [Fact]
         public void Var4()
         {
@@ -244,7 +235,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load(IXPathNavigable = null, XmlResolver = null)", Pri = 1)]
         [Fact]
         public void Var5()
         {
@@ -264,7 +254,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load(XmlReader = null, XmlResolver = null)", Pri = 1)]
         [Fact]
         public void Var6()
         {
@@ -284,7 +273,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null)", Pri = 1)]
         [Fact]
         public void Var7()
         {
@@ -307,7 +295,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null)", Pri = 1)]
         [Fact]
         public void Var8()
         {
@@ -330,7 +317,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, TextWriter = null)", Pri = 1)]
         [Fact]
         public void Var9()
         {
@@ -352,7 +338,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, TextWriter = null)", Pri = 1)]
         [Fact]
         public void Var10()
         {
@@ -374,7 +359,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, Stream = null)", Pri = 1)]
         [Fact]
         public void Var11()
         {
@@ -396,7 +380,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, Stream = null)", Pri = 1)]
         [Fact]
         public void Var12()
         {
@@ -418,7 +401,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, XmlWriter = null)", Pri = 1)]
         [Fact]
         public void Var13()
         {
@@ -440,7 +422,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, XmlWriter = null)", Pri = 1)]
         [Fact]
         public void Var14()
         {
@@ -467,18 +448,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     /*          XslCompiledTransform.Resolver - Integrity              */
     /***********************************************************/
 
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : Reader, Reader", Desc = "READER,READER")]
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : Reader, Stream", Desc = "READER,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : Reader, Writer", Desc = "READER,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : Reader, TextWriter", Desc = "READER,TEXTWRITER")]
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : URI, Reader", Desc = "URI,READER")]
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : URI, Stream", Desc = "URI,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : URI, Writer", Desc = "URI,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : URI, TextWriter", Desc = "URI,TEXTWRITER")]
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : Navigator, Reader", Desc = "NAVIGATOR,READER")]
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.XmlResolver : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CXmlResolverTest : XsltApiTestCaseBase2, IDisposable
     {
@@ -496,7 +465,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _resolverContext.Dispose();
         }
 
-        //[Variation(id = 1, Desc = "Set XmlResolver property to null, load style sheet with import/include, should not affect transform")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -526,7 +494,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation(id = 2, Desc = "Set XmlResolver property to null, load style sheet with document function, should not resolve during load")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -557,7 +524,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation(id = 3, Desc = "Default XmlResolver, load style sheet with document function, should resolve during transform", Pri = 1, Param = "DefaultResolver.txt")]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -591,7 +557,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation(id = 7, Desc = "document() has absolute URI", Pri = 0)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -658,18 +623,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     /*          XslCompiledTransform.Load - Integrity                  */
     /***********************************************************/
 
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Reader, Reader", Desc = "READER,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Reader, Stream", Desc = "READER,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Reader, Writer", Desc = "READER,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Reader, TextWriter", Desc = "READER,TEXTWRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : URI, Reader", Desc = "URI,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : URI, Stream", Desc = "URI,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : URI, Writer", Desc = "URI,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : URI, TextWriter", Desc = "URI,TEXTWRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Navigator, Reader", Desc = "NAVIGATOR,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadTest : XsltApiTestCaseBase2
     {
@@ -679,7 +632,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        //[Variation(id = 1, Desc = "Call Load with null value")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -698,7 +650,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation(id = 2, Desc = "Load with valid, then invalid, then valid again")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -738,7 +689,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation(id = 3, Desc = "Load an invalid, then a valid and transform", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -768,7 +718,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation(id = 4, Desc = "Call several overloaded functions", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -810,7 +759,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation(id = 5, Desc = "Call same overloaded Load() many times then transform", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -841,7 +789,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation(id = 6, Desc = "Call load with non-existing stylesheet")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -860,7 +807,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation(id = 7, Desc = "Verify that style sheet is closed properly after Load - Shared Read Access")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -892,7 +838,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation(id = 9, Desc = "Verify that included files are closed properly after Load - Read Access")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -960,7 +905,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation(id = 12, Desc = "Load with invalid stylesheet and verify that file is closed properly")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -997,18 +941,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     /*          XslCompiledTransform.Load(XmlResolver) - Integrity   */
     /**************************************************************************/
 
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : Reader, Reader", Desc = "READER,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : Reader, Stream", Desc = "READER,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : Reader, Writer", Desc = "READER,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : Reader, TextWriter", Desc = "READER,TEXTWRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : Navigator, Reader", Desc = "NAVIGATOR,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : URI, Reader", Desc = "URI,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : URI, Stream", Desc = "URI,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : URI, Writer", Desc = "URI,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : URI, TextWriter", Desc = "URI,TEXTWRITER")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadXmlResolverTest : XsltApiTestCaseBase2
     {
@@ -1018,7 +950,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        //[Variation("Call Load with null source value and null resolver")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -1038,7 +969,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Call Load with null source value and valid resolver")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -1058,7 +988,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Call Load with null XmlResolver, style sheet does not have include/import, URI should throw ArgumentNullException and the rest shouldn't error", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -1092,7 +1021,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Call Load with null XmlResolver and stylesheet has import/include, URI should throw ArgumentNullException, rest throw XsltException")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -1123,7 +1051,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Call Load with null custom resolver and style sheet has import/include, should throw Exception")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -1167,7 +1094,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Call Load with null custom resolver and style sheet has no import/include, should error for URI only", Param = "ShowParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -1213,7 +1139,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Style sheet has import/include, call Load first with custom null resolver and then default resolver, should not fail", Param = "XmlResolverTestMain.txt")]
         [InlineData("XmlResolverTestMain.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("XmlResolverTestMain.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("XmlResolverTestMain.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -1309,7 +1234,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Style sheet has import/include, call Load first with default resolver and then with custom null resolver, should fail", Param = "XmlResolverTestMain.txt")]
         [InlineData("XmlResolverTestMain.txt", XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData("XmlResolverTestMain.txt", XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData("XmlResolverTestMain.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -1370,7 +1294,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load with resolver with credentials, then load XSL that does not need cred.")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -1401,7 +1324,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Call Load with null Resolver, file does not exist")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -1437,10 +1359,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     /*          XslCompiledTransform.Load(Url, Resolver)               */
     /***********************************************************/
 
-    //[TestCase(Name = "XslCompiledTransform.Load(Url, Resolver) : URI, Reader", Desc = "URI,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Load(Url, Resolver) : URI, Stream", Desc = "URI,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Load(Url, Resolver) : URI, Writer", Desc = "URI,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Load(Url, Resolver) : URI, TextWriter", Desc = "URI,TEXTWRITER")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadUrlResolverTest : XsltApiTestCaseBase2
     {
@@ -1450,7 +1368,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        //[Variation("Basic check for usage of credentials on resolver, load XSL that needs cred. with correct resolver", Param = "XmlResolverTestMain.txt")]
         [InlineData("XmlResolverTestMain.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("XmlResolverTestMain.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("XmlResolverTestMain.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -1470,7 +1387,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load XSL that needs cred. with null resolver, should fail", Param = "XmlResolverTestMain.txt")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [Theory]
         public void LoadUrlResolver2(XslInputType xslInputType, ReaderType readerType)
@@ -1488,7 +1404,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Call Load with null source value")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [Theory]
         public void LoadUrlResolver3(XslInputType xslInputType, ReaderType readerType)
@@ -1506,7 +1421,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Call Load with custom resolver; custom resolver should be honored.")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [Theory]
         public void LoadUrlResolver4(XslInputType xslInputType, ReaderType readerType)
@@ -1540,7 +1454,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     /*          XslCompiledTransform.Load(Url)                         */
     /***********************************************************/
 
-    //[TestCase(Name = "XslCompiledTransform.Load(Url) Integrity : URI, Stream", Desc = "URI,STREAM")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadStringTest : XsltApiTestCaseBase2
     {
@@ -1550,7 +1463,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        //[Variation("Call Load with an invalid uri")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [Theory]
         public void LoadUrl1(XslInputType xslInputType, ReaderType readerType)
@@ -1585,7 +1497,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Load file with empty string")]
         [InlineData(ReaderType.XmlValidatingReader)]
         [Theory]
         public void LoadUrl2(ReaderType readerType)
@@ -1602,7 +1513,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load with \".\"")]
         [InlineData(ReaderType.XmlValidatingReader)]
         [Theory]
         public void LoadUrl3(ReaderType readerType)
@@ -1619,7 +1529,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load with \"..\"")]
         [InlineData(ReaderType.XmlValidatingReader)]
         [Theory]
         public void LoadUrl(ReaderType readerType)
@@ -1636,8 +1545,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Load with \"\\\\\"")]
-        [PlatformSpecific(TestPlatforms.Windows)] //Not an invalid path on Unix
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(ReaderType.XmlValidatingReader)]
         [Theory]
         public void LoadUrl5(ReaderType readerType)
@@ -1659,7 +1567,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     /*          XslCompiledTransform.Load(IXPathNavigable)             */
     /***********************************************************/
 
-    //[TestCase(Name = "XslCompiledTransform .Load(IXPathNavigable) : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadXPathNavigableTest : XsltApiTestCaseBase2
     {
@@ -1669,7 +1576,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        //[Variation("Basic Verification Test", Param = "showParam.txt")]
         [InlineData("showParam.txt", OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
         public void LoadNavigator1(object param, OutputType outputType, NavType navType)
@@ -1694,7 +1600,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Create Navigator and navigate away from root", Param = "showParam.txt")]
         [InlineData("showParam.txt", OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
         public void LoadNavigator2(object param, OutputType outputType, NavType navType)
@@ -1717,7 +1622,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Basic check for usage of credentials on resolver, load XSL that needs cred. with correct resolver", Param = "XmlResolverTestMain.txt")]
         [InlineData("XmlResolverTestMain.txt", OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
         public void LoadNavigator3(object param, OutputType outputType, NavType navType)
@@ -1738,7 +1642,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Regression case for bug 80768")]
         [Fact]
         public void LoadNavigator4()
         {
@@ -1768,7 +1671,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     /*          XslCompiledTransform.Load(Reader)                      */
     /***********************************************************/
 
-    //[TestCase(Name = "XslCompiledTransform.Load(Reader) : Reader, Stream", Desc = "READER,STREAM")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadReaderTest : XsltApiTestCaseBase2
     {
@@ -1778,7 +1680,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        //[Variation("Basic Verification Test", Param = "showParam.txt")]
         [InlineData("showParam.txt", OutputType.Stream, NavType.XPathDocument)]
         [Theory]
         public void LoadXmlReader1(object param, OutputType outputType, NavType navType)
@@ -1816,7 +1717,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Calling with a closed reader, should throw exception")]
         [Fact]
         public void LoadXmlReader2()
         {
@@ -1842,7 +1742,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Verify Reader isn't closed after Load")]
         [Fact]
         public void LoadXmlReader3()
         {
@@ -1878,7 +1777,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             return;
         }
 
-        //[Variation("Verify position of node in Reader is at EOF after Load")]
         [Fact]
         public void LoadXmlReader4()
         {
@@ -1913,7 +1811,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             return;
         }
 
-        //[Variation("Load with reader position at EOF, should throw exception")]
         [Fact]
         public void LoadXmlReader5()
         {
@@ -1944,7 +1841,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             return;
         }
 
-        //[Variation("Load with NULL reader, should throw System.ArgumentNullException")]
         [Fact]
         public void LoadXmlReader6()
         {
@@ -1964,7 +1860,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Basic check for usage of credentials on resolver, load XSL that needs cred. with correct resolver", Param = "XmlResolverTestMain.txt")]
         [InlineData("XmlResolverTestMain.txt", OutputType.Stream, NavType.XPathDocument)]
         [Theory]
         public void LoadXmlReader7(object param, OutputType outputType, NavType navType)
@@ -1984,7 +1879,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("bug 380138 NRE during XSLT compilation")]
         [Fact]
         public void Bug380138()
         {
@@ -2147,18 +2041,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     /*          XslCompiledTransform.Transform - Integrity     */
     /***********************************************************/
 
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Reader , Reader", Desc = "READER,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Reader, Stream", Desc = "READER,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Reader, Writer", Desc = "READER,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Reader, TextWriter", Desc = "READER,TEXTWRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : URI, Reader", Desc = "URI,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : URI, Stream", Desc = "URI,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : URI, Writer", Desc = "URI,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : URI, TextWriter", Desc = "URI,TEXTWRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Navigator, Reader", Desc = "NAVIGATOR,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CTransformTestGeneric : XsltApiTestCaseBase2
     {
@@ -2168,7 +2050,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        //[Variation("Basic Verification Test", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2191,7 +2072,6 @@ namespace System.Xml.XslCompiledTransformApiTests
                 Assert.Fail();
         }
 
-        //[Variation("Load and Transform multiple times", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2215,7 +2095,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             return;
         }
 
-        //[Variation("Load once, Transform many times", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2245,7 +2124,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Call Transform without loading")]
         [InlineData(OutputType.Stream, NavType.XPathDocument)]
         [InlineData(OutputType.Writer, NavType.XPathDocument)]
         [InlineData(OutputType.TextWriter, NavType.XPathDocument)]
@@ -2266,7 +2144,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Closing XSL and XML files used in transform, Read access")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2295,7 +2172,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Bug20003707 - InvalidProgramException for 2.0 stylesheets in forwards-compatible mode")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2322,7 +2198,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Bug382506 - Loading stylesheet from custom navigator with enableDebug = true causes ArgumentOutOfRangeException")]
         [Fact]
         public void TransformGeneric8()
         {
@@ -2332,7 +2207,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             return;
         }
 
-        //[Variation("Bug378293 - Incorrect error message when an attribute is added to a root node")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2359,7 +2233,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Bug349757 - document() function does not work when stylesheet was loaded from a stream or reader or constructed DOM")]
         [Fact]
         public void TransformGeneric10()
         {
@@ -2371,7 +2244,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             return;
         }
 
-        //[Variation("Bug369463 - Invalid XPath exception in forward compatibility mode should render lineNumber linePosition")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2403,18 +2275,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     /*          XslCompiledTransform(Resolver) - Integrity       */
     /*************************************************************/
 
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Reader, Reader", Desc = "READER,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Reader, Stream", Desc = "READER,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Reader, Writer", Desc = "READER,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Reader, TextWriter", Desc = "READER,TEXTWRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : URI, Reader", Desc = "URI,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : URI, Stream", Desc = "URI,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : URI, Writer", Desc = "URI,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : URI, TextWriter", Desc = "URI,TEXTWRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Navigator, Reader", Desc = "NAVIGATOR,READER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CTransformResolverTest : XsltApiTestCaseBase2, IDisposable
     {
@@ -2432,7 +2292,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _resolverContext.Dispose();
         }
 
-        //[Variation("Pass null XmlResolver, load style sheet with import/include, should not affect transform")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2468,7 +2327,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Pass null XmlResolver, load style sheet with document function, should not resolve during transform", Param = "xmlResolver_document_function.txt")]
         [InlineData("xmlResolver_document_function.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("xmlResolver_document_function.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("xmlResolver_document_function.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2504,7 +2362,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Default XmlResolver, load style sheet with document function, should resolve during transform", Param = "DefaultResolver.txt")]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2539,7 +2396,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("document() has absolute URI")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2600,7 +2456,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Pass null resolver but stylesheet doesn't have any include/imports")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2624,9 +2479,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     /*          XslCompiledTransform.Transform - (String, String)                    */
     /***********************************************************/
 
-    //[TestCase(Name = "XslCompiledTransform.Transform(String, String) : Reader , String", Desc = "READER,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(String, String) : URI, String", Desc = "URI,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(String, String) : Navigator, String", Desc = "NAVIGATOR,STREAM")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CTransformStrStrTest : XsltApiTestCaseBase2
     {
@@ -2636,7 +2488,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        //[Variation("Basic Verification Test", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2655,7 +2506,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Input is null")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2675,7 +2525,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Output file is null")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2699,7 +2548,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Input is nonexisting file")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2721,8 +2569,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Output file is invalid")]
-        [PlatformSpecific(TestPlatforms.Windows)] //Output file name is valid on Unix
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2746,7 +2593,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Input is empty string")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2768,7 +2614,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Output file is empty string")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2792,7 +2637,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Call Transform many times", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2814,7 +2658,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             return;
         }
 
-        //[Variation("Call without loading")]
         [Fact]
         public void TransformStrStr9()
         {
@@ -2833,7 +2676,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Output to unreachable destination")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2856,7 +2698,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Input filename is \'.\', \'..\', and \'\\\\\'")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2902,7 +2743,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Output filename is \'.\' and \'..\'")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2938,8 +2778,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Output filename is \'\\\\\'")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Invalid path specific to Windows
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2958,7 +2797,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Closing files after transform")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -2997,9 +2835,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     /*          XslCompiledTransform.Transform - (String, String, Resolver)          */
     /***********************************************************/
 
-    //[TestCase(Name = "XslCompiledTransform.Transform(String, String, Resolver) : Reader , String", Desc = "READER,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(String, String, Resolver) : URI, String", Desc = "URI,STREAM")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(String, String, Resolver) : Navigator, String", Desc = "NAVIGATOR,STREAM")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CTransformStrStrResolverTest : XsltApiTestCaseBase2, IDisposable
     {
@@ -3017,7 +2852,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _resolverContext.Dispose();
         }
 
-        //[Variation("Pass null XmlResolver to Transform, load style sheet with import/include, should not affect transform")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -3043,7 +2877,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             Assert.Fail();
         }
 
-        //[Variation("Pass null XmlResolver, load style sheet with document function, should not resolve during transform")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -3072,7 +2905,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Pass XmlUrlResolver, load style sheet with document function, should resolve during transform", Param = "xmlResolver_document_function.txt")]
         [InlineData("xmlResolver_document_function.txt", XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData("xmlResolver_document_function.txt", XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData("xmlResolver_document_function.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -3103,8 +2935,6 @@ namespace System.Xml.XslCompiledTransformApiTests
         }
     }
 
-    //[TestCase(Name = "XslCompiledTransform.Transform(IXPathNavigable, XsltArgumentList, XmlWriter, XmlResolver)", Desc = "Constructor Tests", Param = "IXPathNavigable")]
-    //[TestCase(Name = "XslCompiledTransform.Transform(XmlReader, XsltArgumentList, XmlWriter, XmlResolver)", Desc = "Constructor Tests", Param = "XmlReader")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CTransformConstructorWithFourParametersTest : XsltApiTestCaseBase2
     {
@@ -3131,10 +2961,8 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true })]
         [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "IXPathNavigable")]
         [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "XmlReader")]
-        //[Variation("Import/Include, NullResolver", Pri = 0, Params = new object[] { "XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false })]
         [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "IXPathNavigable")]
         [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "XmlReader")]
         [Theory]
@@ -3146,25 +2974,16 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Document function 1, CustomXmlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true })]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "XmlReader")]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "IXPathNavigable")]
-        //[Variation("Document function 1, XmlUrlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true })]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true, "IXPathNavigable")]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true, "XmlReader")]
-        //[Variation("Document function 1, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false })]
-       // [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "IXPathNavigable")]
-       // [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "XmlReader")]
-        //[Variation("No Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "bug382198.txt", "CustomXmlResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "CustomXmlResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "CustomXmlResolver", true, "XmlReader")]
-        //[Variation("Import/Include, XmlUrlResolver", Pri = 0, Params = new object[] { "XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "XmlUrlResolver", true })]
         [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "XmlUrlResolver", true, "IXPathNavigable")]
         [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "XmlUrlResolver", true, "XmlReader")]
-        //[Variation("No Import/Include, XmlUrlResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "bug382198.txt", "XmlUrlResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "XmlUrlResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "XmlUrlResolver", true, "XmlReader")]
-        //[Variation("No Import/Include, NullResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "bug382198.txt", "NullResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "NullResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "NullResolver", true, "XmlReader")]
         [InlineData("bug93189.xsl", "bug93189.xml", "bug93189.xml", "NullResolver", true, "XmlReader")]
@@ -3254,16 +3073,12 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Invalid Arguments: null, valid, valid, valid", Pri = 0, Params = new object[] { 1, false })]
         [InlineData(1, false, "IXPathNavigable")]
         [InlineData(1, false, "XmlReader")]
-        //[Variation("Invalid Arguments: valid, null, valid, valid", Pri = 0, Params = new object[] { 2, true })]
         [InlineData(2, true, "XmlReader")]
         [InlineData(2, true, "IXPathNavigable")]
-        //[Variation("Invalid Arguments: valid, valid, null, valid", Pri = 0, Params = new object[] { 3, false })]
         [InlineData(3, false, "IXPathNavigable")]
         [InlineData(3, false, "XmlReader")]
-        //[Variation("Invalid Arguments: valid, valid, valid, null", Pri = 0, Params = new object[] { 4, true })]
         [InlineData(4, true, "IXPathNavigable")]
         [InlineData(4, true, "XmlReader")]
         [Theory]
@@ -3311,9 +3126,6 @@ namespace System.Xml.XslCompiledTransformApiTests
         }
     }
 
-    // This testcase is for bugs 109429, 111075 and 109644 fixed in Everett SP1
-    //[TestCase(Name = "NDP1_1SP1 Bugs (URI,STREAM)", Desc = "URI,STREAM")]
-    //[TestCase(Name = "NDP1_1SP1 Bugs (NAVIGATOR,TEXTWRITER)", Desc = "NAVIGATOR,TEXTWRITER")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CNDP1_1SP1Test : XsltApiTestCaseBase2
     {
@@ -3323,7 +3135,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        //[Variation("Local parameter gets overwritten with global param value", Pri = 1)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
         public void var1(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
@@ -3344,7 +3155,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
                 Assert.Fail();
         }
 
-        //[Variation("Local parameter gets overwritten with global variable value", Pri = 1)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
         public void var2(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
@@ -3365,7 +3175,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
                 Assert.Fail();
         }
 
-        //[Variation("Subclassed XPathNodeIterator returned from an extension object or XsltFunction is not accepted by XPath", Pri = 1)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
         public void var3(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
@@ -3384,7 +3193,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
                 Assert.Fail();
         }
 
-        //[Variation("Iterator using for-each over a variable is not reset correctly while using msxsl:node-set()", Pri = 1)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
         public void var4(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
@@ -3405,7 +3213,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
         }
     }
 
-    //[TestCase(Name = "XslCompiledTransform Regression Tests for API", Desc = "XslCompiledTransform Regression Tests")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CTransformRegressionTest : XsltApiTestCaseBase2, IDisposable
     {
@@ -3423,7 +3230,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
             _resolverContext.Dispose();
         }
 
-        //[Variation("Bug398968 - Globalization is broken for document() function")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
         public void RegressionTest1(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
@@ -3445,7 +3251,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
             return;
         }
 
-        //[Variation("Bug412703 - Off-by-one errors for XSLT loading error column")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [Theory]
         public void RegressionTest3(XslInputType xslInputType, ReaderType readerType)
@@ -3465,7 +3270,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
             Assert.Fail();
         }
 
-        //[Variation("Bug423641 - XslCompiledTransform.Load() [retail] throws a NullReferenceException when scripts are prohibited")]
         [Fact]
         public void RegressionTest4()
         {
@@ -3475,7 +3279,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
             return;
         }
 
-        //[Variation("Bug423641 - XslCompiledTransform.Load() [debug] throws a NullReferenceException when scripts are prohibited")]
         [Fact]
         public void RegressionTest5()
         {
@@ -3485,7 +3288,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
             return;
         }
 
-        //[Variation("Bug469781 - Replace shouldn't relax original type 'assertion failure'")]
         [Fact]
         public void RegressionTest7()
         {
@@ -3513,7 +3315,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
             return;
         }
 
-        //[Variation("Bug737816 - Dynamic method will have declaring type == null")]
         [Fact]
         public void RegressionTest8()
         {
