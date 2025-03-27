@@ -611,18 +611,18 @@ typedef DPTR(class ComCallWrapper)        PTR_ComCallWrapper;
 
 #include "shash.h"
 #endif // FEATURE_COMINTEROP
-class ManagedObjectComWrapperTraits final : public NoRemoveSHashTraits<DefaultSHashTraits<void *>>
+class ManagedObjectComWrapperTraits : public NoRemoveSHashTraits<DefaultSHashTraits<void *>>
 {
 public:
     typedef LPVOID key_t;
     static void *Null()                         { LIMITED_METHOD_CONTRACT; return NULL; }
-    static bool IsNull(void* *e)                 { LIMITED_METHOD_CONTRACT; return (e == NULL); }
+    static bool IsNull(void *e)                 { LIMITED_METHOD_CONTRACT; return (e == NULL); }
     static const LPVOID GetKey(void *e)         { LIMITED_METHOD_CONTRACT; return e; }
     static count_t Hash(LPVOID key_t)          { LIMITED_METHOD_CONTRACT; return (count_t)(size_t) key_t; }
     static BOOL Equals(LPVOID lhs, LPVOID rhs) { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
 };
 
-using ManagedObjectComWrapperSet = SHash<ManagedObjectComWrapperTraits<void*>>;
+using ManagedObjectComWrapperSet = SHash<ManagedObjectComWrapperTraits>;
 class InteropSyncBlockInfo
 {
     friend class RCWHolder;

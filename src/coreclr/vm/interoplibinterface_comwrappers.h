@@ -43,8 +43,7 @@ extern "C" void QCALLTYPE ComWrappers_GetTaggedImpl(
 
 extern "C" void QCALLTYPE ComWrappers_RegisterManagedObjectWrapperForDiagnostics(
     _In_ QCall::ObjectHandleOnStack obj,
-    _In_ void* wrapper,
-    _In_ long wrapperId);
+    _In_ void* wrapper);
 
 extern "C" void QCALLTYPE ComWrappers_RegisterNativeObjectWrapperForDiagnostics(
     _In_ QCall::ObjectHandleOnStack target,

@@ -35,13 +35,13 @@ namespace InteropLib
             {
                 return _refCount;
             }
-        
+
         protected:
             LONGLONG _refCount;
-        
+
             Volatile<InteropLib::Com::CreateComInterfaceFlagsEx> _flags;
-            const int32_t _userDefinedCount;
-            const ComInterfaceEntry* _userDefined;
+            int32_t _userDefinedCount;
+            ComInterfaceEntry* _userDefined;
             ComInterfaceDispatch* _dispatches;
         };
     }

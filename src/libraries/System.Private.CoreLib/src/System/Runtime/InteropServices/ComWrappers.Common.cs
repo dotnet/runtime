@@ -1405,10 +1405,6 @@ namespace System.Runtime.InteropServices
             return (IntPtr)vftbl;
         }
 
-        // This IID represents an internal interface we define to tag any ManagedObjectWrappers we create.
-        // This interface type and GUID do not correspond to any public interface; it is an internal implementation detail.
-        // TODO-ComWrappers: Pull the "IsCurrentVersion" implementation from the runtime (CoreCLR needs to access it from native code)
-
         private static partial IntPtr GetTaggedImplCurrentVersion();
 
         private static unsafe IntPtr CreateTaggedImplVftbl()
