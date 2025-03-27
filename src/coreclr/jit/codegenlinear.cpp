@@ -372,9 +372,8 @@ void CodeGen::genCodeForBBlist()
 
         bool firstMapping = true;
 
-        if (block->HasFlag(BBF_FUNCLET_BEG))
+        if (compiler->bbIsFuncletBeg(block))
         {
-            assert(compiler->UsesFunclets());
             genReserveFuncletProlog(block);
         }
 
@@ -711,7 +710,7 @@ void CodeGen::genCodeForBBlist()
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if (block->IsLast() || block->Next()->HasFlag(BBF_FUNCLET_BEG) ||
+                if (block->IsLast() || compiler->bbIsFuncletBeg(block->Next()) ||
                     !BasicBlock::sameEHRegion(block, block->Next()) ||
                     (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
                     block->IsLastHotBlock(compiler))

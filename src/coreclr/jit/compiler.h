@@ -2733,6 +2733,9 @@ public:
     // Returns true if "block" is the start of a handler or filter region.
     bool bbIsHandlerBeg(const BasicBlock* block);
 
+    // Returns true if "block" is the start of a funclet.
+    bool bbIsFuncletBeg(const BasicBlock* block);
+
     bool ehHasCallableHandlers();
 
     // Return the EH descriptor for the given region index.

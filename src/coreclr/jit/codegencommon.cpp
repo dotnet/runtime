@@ -1695,7 +1695,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 /*****************************************************************************
  *
  *  Update the current funclet as needed by calling genUpdateCurrentFunclet().
- *  For non-BBF_FUNCLET_BEG blocks, it asserts that the current funclet
+ *  For blocks that aren't at the beginning of a funclet, it asserts that the current funclet
  *  is up-to-date.
  *
  */
@@ -1707,7 +1707,7 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
         return;
     }
 
-    if (block->HasFlag(BBF_FUNCLET_BEG))
+    if (compiler->bbIsFuncletBeg(block))
     {
         compiler->funSetCurrentFunc(compiler->funGetFuncIdx(block));
         if (compiler->funCurrentFunc()->funKind == FUNC_FILTER)

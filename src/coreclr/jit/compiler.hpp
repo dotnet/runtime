@@ -887,7 +887,7 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 /*****************************************************************************
  *  Get the funcIdx for the EH funclet that begins with block.
  *  This is only valid after funclets are created.
- *  It is only valid for blocks marked with BBF_FUNCLET_BEG because
+ *  It is only valid for blocks that begin a funclet because
  *  otherwise we would have to do a more expensive check to determine
  *  if this should return the filter funclet or the filter handler funclet.
  *
@@ -896,8 +896,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
     if (UsesFunclets())
     {
-        assert(fgFuncletsCreated);
-        assert(block->HasFlag(BBF_FUNCLET_BEG));
+        assert(bbIsFuncletBeg(block));
 
         EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
         unsigned int funcIdx = eh->ebdFuncIndex;
