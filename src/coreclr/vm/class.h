@@ -447,6 +447,13 @@ class EEClassLayoutInfo
                                        : (m_bFlags & ~e_IS_OR_HAS_INT128_FIELD);
         }
 
+        void SetHasExplicitSize(BOOL hasExplicitSize)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasExplicitSize ? (m_bFlags | e_HAS_EXPLICIT_SIZE)
+                                    : (m_bFlags & ~e_HAS_EXPLICIT_SIZE);
+        }
+
         void SetAlignmentRequirement(BYTE alignment)
         {
             LIMITED_METHOD_CONTRACT;
@@ -481,35 +488,18 @@ class EEClassLayoutInfo
                                 : (m_bFlags & ~e_ZERO_SIZED);
         }
 
-        void SetHasExplicitSize(BOOL hasExplicitSize)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_bFlags = hasExplicitSize ? (m_bFlags | e_HAS_EXPLICIT_SIZE)
-                                    : (m_bFlags & ~e_HAS_EXPLICIT_SIZE);
-        }
-
         void SetPackingSize(BYTE cbPackingSize)
         {
             LIMITED_METHOD_CONTRACT;
             m_cbPackingSize = cbPackingSize;
         }
 
-        UINT32 SetInstanceBytesSize(UINT32 size, ULONG sizeInMetadata)
+        UINT32 SetInstanceBytesSize(UINT32 size)
         {
             LIMITED_METHOD_CONTRACT;
-            if (size == 0)
-            {
-                // Bump the managed size of the structure up to 1.
-                SetIsZeroSized(TRUE);
-                size = 1;
-            }
-            else
-            {
-                SetIsZeroSized(FALSE);
-            }
-
-            SetHasExplicitSize(sizeInMetadata != 0 ? TRUE : FALSE);
-            return size;
+            // Bump the managed size of the structure up to 1.
+            SetIsZeroSized(size == 0 ? TRUE : FALSE);
+            return size == 0 ? 1 : size;
         }
 
         void SetLayoutType(LayoutType layoutType)

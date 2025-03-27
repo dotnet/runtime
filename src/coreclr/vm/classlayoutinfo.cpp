@@ -549,7 +549,7 @@ ULONG EEClassLayoutInfo::InitializeSequentialFieldLayout(
         managedSize = AlignSize(lastFieldEnd, alignmentRequirement);
     }
 
-    return SetInstanceBytesSize(managedSize, classSizeInMetadata);
+    return SetInstanceBytesSize(managedSize);
 }
 
 ULONG EEClassLayoutInfo::InitializeExplicitFieldLayout(
@@ -604,7 +604,7 @@ ULONG EEClassLayoutInfo::InitializeExplicitFieldLayout(
         managedSize = AlignSize(lastFieldEnd, alignmentRequirement);
     }
 
-    return SetInstanceBytesSize(managedSize, classSizeInMetadata);
+    return SetInstanceBytesSize(managedSize);
 }
 
 namespace
