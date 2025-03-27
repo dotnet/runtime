@@ -643,6 +643,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange)
 {
     MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, pRange, false);
+    assert(pRange->IsValid());
     return !pRange->LowerLimit().IsUnknown() || !pRange->UpperLimit().IsUnknown();
 }
 
@@ -1208,6 +1209,9 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         op2Range = *op2RangeCached;
     }
 
+    assert(op1Range.IsValid());
+    assert(op2Range.IsValid());
+
     Range r = Range(Limit::keUnknown);
     if (binop->OperIs(GT_ADD))
     {
@@ -1234,6 +1238,13 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         r = RangeOps::ShiftRight(op1Range, op2Range);
         JITDUMP("Right shift range: %s >> %s = %s\n", op1Range.ToString(m_pCompiler), op2Range.ToString(m_pCompiler),
                 r.ToString(m_pCompiler));
+    }
+
+    // Some binops may produce invalid ranges, e.g. <0, 1> * <-1, -1> = <0, -1>
+    if (!r.IsValid())
+    {
+        JITDUMP("BinOp range is invalid: %s\n", r.ToString(m_pCompiler));
+        return Range(Limit::keUnknown);
     }
     return r;
 }
@@ -1705,6 +1716,7 @@ bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange)
     ClearSearchPath();
 
     Range range = GetRangeWorker(block, expr, false DEBUGARG(0));
+    assert(range.IsValid());
     if (range.UpperLimit().IsUnknown() && range.LowerLimit().IsUnknown())
     {
         JITDUMP("Range is completely unknown.\n");
