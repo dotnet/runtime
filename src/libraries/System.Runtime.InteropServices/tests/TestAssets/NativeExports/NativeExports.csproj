@@ -115,6 +115,8 @@
           BeforeTargets="DnneBuildNativeExports">
     <PropertyGroup>
       <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
+      <!-- Build the native component in release always to avoid CRT conflicts. -->
+      <Configuration>Release</Configuration>
     </PropertyGroup>
   </Target>
 </Project>
