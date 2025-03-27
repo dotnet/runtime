@@ -145,13 +145,13 @@ internal static partial class Interop
         }
 
         internal static void EvpKemExportPrivateSeed(SafeEvpPKeyHandle key, Span<byte> destination) =>
-            ExportKeyContents(key, destination, CryptoNative_EvpKemExportPrivateSeed);
+            Interop.Crypto.ExportKeyContents(key, destination, CryptoNative_EvpKemExportPrivateSeed);
 
         internal static void EvpKemExportDecapsulationKey(SafeEvpPKeyHandle key, Span<byte> destination) =>
-            ExportKeyContents(key, destination, CryptoNative_EvpKemExportDecapsulationKey);
+            Interop.Crypto.ExportKeyContents(key, destination, CryptoNative_EvpKemExportDecapsulationKey);
 
         internal static void EvpKemExportEncapsulationKey(SafeEvpPKeyHandle key, Span<byte> destination) =>
-            ExportKeyContents(key, destination, CryptoNative_EvpKemExportEncapsulationKey);
+            Interop.Crypto.ExportKeyContents(key, destination, CryptoNative_EvpKemExportEncapsulationKey);
 
         internal static void EvpKemEncapsulate(SafeEvpPKeyHandle key, Span<byte> ciphertext, Span<byte> sharedSecret)
         {
@@ -172,34 +172,6 @@ internal static partial class Interop
                     ciphertext.Clear();
                     sharedSecret.Clear();
                     Debug.Fail($"Unexpected return value {ret} from {nameof(CryptoNative_EvpKemEncapsulate)}.");
-                    throw new CryptographicException();
-            }
-        }
-
-        private static void ExportKeyContents(
-            SafeEvpPKeyHandle key,
-            Span<byte> destination,
-            Func<SafeEvpPKeyHandle, Span<byte>, int, int> action)
-        {
-            const int Success = 1;
-            const int Fail = 0;
-            const int NotRetrievable = -1;
-
-            int ret = action(key, destination, destination.Length);
-
-            switch (ret)
-            {
-                case Success:
-                    return;
-                case NotRetrievable:
-                    destination.Clear();
-                    throw new CryptographicException(SR.Cryptography_NotRetrievable);
-                case Fail:
-                    destination.Clear();
-                    throw CreateOpenSslCryptographicException();
-                default:
-                    destination.Clear();
-                    Debug.Fail($"Unexpected return value {ret}.");
                     throw new CryptographicException();
             }
         }

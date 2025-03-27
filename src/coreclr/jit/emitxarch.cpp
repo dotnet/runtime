@@ -365,8 +365,14 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
         return false;
     }
 
-    if (HasApxNdd(ins) || HasApxNf(ins) || (ins == INS_crc32_apx))
+    if (HasApxNdd(ins) || HasApxNf(ins))
     {
+        return true;
+    }
+
+    if (ins == INS_crc32_apx)
+    {
+        // With the new opcode, CRC32 is promoted to EVEX with APX.
         return true;
     }
 
@@ -17971,10 +17977,7 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
         // path, but for those instructions with no tuple information,
         // APX-EVEX treat the scaling factor to be 1 constantly.
         instruction ins = id->idIns();
-        // TODO-XArch-APX:
-        // This assert may need tweak if BMI1 instructions are promoted
-        // into EVEX for multiple features, currently only EVEX.NF.
-        assert(IsApxExtendedEvexInstruction(id->idIns()));
+        assert(IsApxExtendedEvexInstruction(ins) || IsBMIInstruction(ins));
         *dspInByte = ((signed char)dsp == (ssize_t)dsp);
         return dsp;
     }
