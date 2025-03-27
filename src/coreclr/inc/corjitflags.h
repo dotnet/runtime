@@ -64,6 +64,10 @@ public:
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
 
+#if defined(TARGET_X86)
+        CORJIT_FLAG_FUNCLET_ABI             = 29, // Enable funclets for exception handling
+#endif
+
     };
 
     CORJIT_FLAGS()

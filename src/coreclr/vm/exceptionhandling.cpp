@@ -7946,7 +7946,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #endif // HOST_UNIX
         // Throw exception from the caller context
 
-#if defined(HOST_WINDOWS)
+#ifdef HOST_WINDOWS
         if ((pLongJmpBuf == NULL) && !IsComPlusException(&lastExceptionRecord) && MapWin32FaultToCOMPlusException(&lastExceptionRecord) == kSEHException)
         {
 #if defined(HOST_X86)
@@ -7967,7 +7967,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
             RtlRestoreContext(pvRegDisplay->pCurrentContext, &exceptionRecord);
 #endif
         }
-#endif // HOST_WINDOWS && !HOST_X86
+#endif // HOST_WINDOWS
 
 #if defined(HOST_AMD64)
         ULONG64* returnAddress = (ULONG64*)targetSp;

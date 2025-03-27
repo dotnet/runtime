@@ -44,6 +44,10 @@ public:
         JIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
 
+#if defined(TARGET_X86)
+        JIT_FLAG_FUNCLET_ABI             = 29, // Enable funclets for exception handling
+#endif
+
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,
         // something needs to change.
