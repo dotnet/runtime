@@ -29,14 +29,13 @@ namespace InteropLib
         struct ManagedObjectWrapperLayout
         {
         public:
-            Volatile<InteropLib::OBJECTHANDLE> Target;
-
             LONGLONG GetRawRefCount() const
             {
                 return _refCount;
             }
 
         protected:
+            Volatile<InteropLib::OBJECTHANDLE> target;
             LONGLONG _refCount;
 
             Volatile<InteropLib::Com::CreateComInterfaceFlagsEx> _flags;

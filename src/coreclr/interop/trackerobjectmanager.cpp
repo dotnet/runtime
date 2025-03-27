@@ -56,7 +56,7 @@ namespace
             RETURN_IF_FAILED(InteropLibImports::FoundReferencePath(
                 _runtimeCallCxt,
                 _sourceHandle,
-                mow->Target));
+                mow->GetTarget()));
 
             return S_OK;
         }

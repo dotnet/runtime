@@ -59,6 +59,11 @@ public:
     // Check if the wrapper has been marked to be destroyed.
     bool IsMarkedToDestroy() const;
 
+    InteropLib::OBJECTHANDLE GetTarget() const
+    {
+        return target;
+    }
+
 public: // IReferenceTrackerTarget
     ULONG AddRefFromReferenceTracker();
     ULONG ReleaseFromReferenceTracker();

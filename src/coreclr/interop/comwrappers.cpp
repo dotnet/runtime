@@ -195,7 +195,7 @@ HRESULT STDMETHODCALLTYPE TrackerTarget_QueryInterface(
     //  1. Marked to Destroy - in this case it is unsafe to touch wrapper.
     //  2. Object Handle target has been NULLed out by GC.
     if (wrapper->IsMarkedToDestroy()
-        || !InteropLibImports::HasValidTarget(wrapper->Target))
+        || !InteropLibImports::HasValidTarget(wrapper->GetTarget()))
     {
         // It is unsafe to proceed with a QueryInterface call. The MOW has been
         // marked destroyed or the associated managed object has been collected.
@@ -501,7 +501,7 @@ ULONG ManagedObjectWrapper::ReleaseFromReferenceTracker()
     // must destroy the wrapper.
     if (refCount == DestroySentinel)
     {
-        InteropLib::OBJECTHANDLE handle = InterlockedExchangePointer(&Target, nullptr);
+        InteropLib::OBJECTHANDLE handle = InterlockedExchangePointer(&target, nullptr);
         if (handle != nullptr)
         {
             InteropLibImports::DestroyHandle(handle);
@@ -537,7 +537,7 @@ HRESULT ManagedObjectWrapper::QueryInterface(
         // Check if the managed object has implemented ICustomQueryInterface
         if (!IsSet(CreateComInterfaceFlagsEx::LacksICustomQueryInterface))
         {
-            TryInvokeICustomQueryInterfaceResult result = InteropLibImports::TryInvokeICustomQueryInterface(Target, riid, ppvObject);
+            TryInvokeICustomQueryInterfaceResult result = InteropLibImports::TryInvokeICustomQueryInterface(target, riid, ppvObject);
             switch (result)
             {
                 case TryInvokeICustomQueryInterfaceResult::Handled:
