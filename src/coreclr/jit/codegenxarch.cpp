@@ -156,7 +156,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
     else
     {
-        // Ngen case - GS cookie value needs to be accessed through an indirection.
+        // AOT case - GS cookie value needs to be accessed through an indirection.
 
         pushedRegs = genPushRegs(regMaskGSCheck, &byrefPushedRegs, &norefPushedRegs);
 
@@ -4678,7 +4678,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
 #endif // DEBUG
 
     GetEmitter()->emitInsBinary(cmpKind, emitTypeSize(bndsChkType), src1, src2);
-    genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind, bndsChk->gtIndRngFailBB);
+    genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind);
 }
 
 //---------------------------------------------------------------------
@@ -5414,7 +5414,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             GetEmitter()->emitIns_R_AR(INS_cmp, EA_4BYTE, indexReg, baseReg, static_cast<int>(node->gtLenOffset));
         }
 
-        genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
+        genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL);
     }
 
 #ifdef TARGET_64BIT
@@ -5685,6 +5685,13 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             // These intrinsics are "ins reg/mem, xmm"
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
                             attr = emitActualTypeSize(baseType);
+#if defined(TARGET_X86)
+                            if (varTypeIsLong(baseType))
+                            {
+                                ins  = INS_movq;
+                                attr = EA_8BYTE;
+                            }
+#endif // TARGET_X86
                             break;
                         }
 
@@ -9814,7 +9821,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // RCX = ProfilerMethHnd
     if (compiler->compProfilerMethHndIndirected)
     {
-        // Profiler hooks enabled during Ngen time.
+        // Profiler hooks enabled during AOT.
         // Profiler handle needs to be accessed through an indirection of a pointer.
         GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
@@ -9893,7 +9900,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // R14 = ProfilerMethHnd
     if (compiler->compProfilerMethHndIndirected)
     {
-        // Profiler hooks enabled during Ngen time.
+        // Profiler hooks enabled during AOT.
         // Profiler handle needs to be accessed through an indirection of a pointer.
         GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_PROFILER_ENTER_ARG_0,
                                    (ssize_t)compiler->compProfilerMethHnd);
@@ -9975,7 +9982,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     // RCX = ProfilerMethHnd
     if (compiler->compProfilerMethHndIndirected)
     {
-        // Profiler hooks enabled during Ngen time.
+        // Profiler hooks enabled during AOT.
         // Profiler handle needs to be accessed through an indirection of an address.
         GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
@@ -11711,7 +11718,7 @@ bool CodeGenInterface::genCodeIndirAddrCanBeEncodedAsZeroRelOffset(size_t addr)
 //
 bool CodeGenInterface::genCodeIndirAddrNeedsReloc(size_t addr)
 {
-    // If generating relocatable ngen code, then all code addr should go through relocation
+    // If generating relocatable AOT code, then all code addr should go through relocation
     if (compiler->opts.compReloc)
     {
         return true;
@@ -11744,7 +11751,7 @@ bool CodeGenInterface::genCodeIndirAddrNeedsReloc(size_t addr)
 //
 bool CodeGenInterface::genCodeAddrNeedsReloc(size_t addr)
 {
-    // If generating relocatable ngen code, then all code addr should go through relocation
+    // If generating relocatable AOT code, then all code addr should go through relocation
     if (compiler->opts.compReloc)
     {
         return true;
