@@ -517,6 +517,8 @@ void StubPrecode::StaticInitialize()
 
 void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
 {
+    SIZE_T actualSize = (SIZE_T)((BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode);
+    SIZE_T paddingSize = StubPrecode::CodeSize - actualSize;
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / StubPrecode::CodeSize) * StubPrecode::CodeSize;
     for (int i = 0; i < totalCodeSize; i += StubPrecode::CodeSize)
@@ -530,7 +532,7 @@ void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T page
         *(BYTE**)(pageBase + i + SYMBOL_VALUE(StubPrecodeCode_MethodDesc_Offset)) = pMethodDescSlot;
     }
 #else // TARGET_X86
-    FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)StubPrecodeCode), StubPrecode::CodeSize, pageSize);
+    FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)StubPrecodeCode), StubPrecode::CodeSize, pageSize, paddingSize);
 #endif // TARGET_X86
 }
 
@@ -648,6 +650,8 @@ void FixupPrecode::StaticInitialize()
 
 void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
 {
+    SIZE_T actualSize = (SIZE_T)((BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode);
+    SIZE_T paddingSize= FixupPrecode::CodeSize - actualSize;
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize;
 
@@ -664,7 +668,7 @@ void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pag
         *(BYTE**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_PrecodeFixupThunk_Offset)) = pPrecodeFixupThunkSlot;
     }
 #else // TARGET_X86
-    FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)FixupPrecodeCode), FixupPrecode::CodeSize, pageSize);
+    FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)FixupPrecodeCode), FixupPrecode::CodeSize, pageSize, paddingSize);
 #endif // TARGET_X86
 }
 
