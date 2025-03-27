@@ -1707,7 +1707,8 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
         return;
     }
 
-    if (compiler->bbIsFuncletBeg(block))
+    assert(compiler->fgFuncletsCreated);
+    if (compiler->bbIsHandlerBeg(block))
     {
         compiler->funSetCurrentFunc(compiler->funGetFuncIdx(block));
         if (compiler->funCurrentFunc()->funKind == FUNC_FILTER)
