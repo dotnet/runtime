@@ -40,14 +40,9 @@
 #define EMBED_HASH_LO_PART_UTF8 "74e592c2fa383d4a3960714caef0c4f2"
 #define EMBED_HASH_FULL_UTF8    (EMBED_HASH_HI_PART_UTF8 EMBED_HASH_LO_PART_UTF8) // NUL terminated
 
-void to_non_volatile(volatile const char* cstr, char* output, size_t length)
-{
-    for (size_t i = 0; i < length; i++)
-    {
-        output[i] = cstr[i];
-    }
-}
-
+// This is a workaround for a compiler workaround that
+// causes issues with inserting multiple static strings.
+// See https://github.com/dotnet/runtime/issues/109611 for more details.
 bool compare_memory_nooptimization(volatile const char* a, volatile const char* b, size_t length)
 {
     for (size_t i = 0; i < length; i++)
@@ -66,21 +61,18 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     // Contains the EMBED_HASH_FULL_UTF8 value at compile time or the managed DLL name replaced by "dotnet build".
     // Must not be 'const' because std::string(&embed[0]) below would bind to a const string ctor plus length
     // where length is determined at compile time (=64) instead of the actual length of the string at runtime.
-    volatile static char embed[EMBED_MAX] = EMBED_HASH_FULL_UTF8;     // series of NULs followed by embed hash string
+    static char embed[EMBED_MAX] = EMBED_HASH_FULL_UTF8;     // series of NULs followed by embed hash string
 
     static const char hi_part[] = EMBED_HASH_HI_PART_UTF8;
     static const char lo_part[] = EMBED_HASH_LO_PART_UTF8;
 
-    char working_copy_embed[EMBED_MAX];
-    to_non_volatile(embed, working_copy_embed, EMBED_MAX);
-
-    if (!pal::clr_palstring(&working_copy_embed[0], app_dll))
+    if (!pal::clr_palstring(embed, app_dll))
     {
         trace::error(_X("The managed DLL bound to this executable could not be retrieved from the executable image."));
         return false;
     }
 
-    std::string binding(&working_copy_embed[0]);
+    std::string binding(&embed[0]);
 
     // Check if the path exceeds the max allowed size
     if (binding.size() > EMBED_MAX - 1) // -1 for null terminator
