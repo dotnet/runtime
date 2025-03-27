@@ -157,26 +157,26 @@ namespace System.Diagnostics
 
             vsb.Append("(");
             vsb.Append(ac.TraceId.ToHexString());
-            vsb.Append(", ");
+            vsb.Append(",\u200B");
             vsb.Append(ac.SpanId.ToHexString());
-            vsb.Append(", ");
+            vsb.Append(",\u200B");
             vsb.Append(ac.TraceFlags.ToString());
-            vsb.Append(", ");
+            vsb.Append(",\u200B");
             vsb.Append(ac.TraceState ?? "null");
-            vsb.Append(", ");
+            vsb.Append(",\u200B");
             vsb.Append(ac.IsRemote ? "true" : "false");
 
             if (al.Tags is not null)
             {
-                vsb.Append(", [");
+                vsb.Append(",\u200B[");
                 string sep = "";
                 foreach (KeyValuePair<string, object?> kvp in al.EnumerateTagObjects())
                 {
                     vsb.Append(sep);
                     vsb.Append(kvp.Key);
-                    vsb.Append(": ");
+                    vsb.Append(":\u200B");
                     vsb.Append(kvp.Value?.ToString() ?? "null");
-                    sep = ", ";
+                    sep = ",\u200B";
                 }
 
                 vsb.Append("]");
@@ -188,20 +188,20 @@ namespace System.Diagnostics
         {
             vsb.Append("(");
             vsb.Append(ae.Name);
-            vsb.Append(", ");
+            vsb.Append(",\u200B");
             vsb.Append(ae.Timestamp.ToString("o"));
 
             if (ae.Tags is not null)
             {
-                vsb.Append(", [");
+                vsb.Append(",\u200B[");
                 string sep = "";
                 foreach (KeyValuePair<string, object?> kvp in ae.EnumerateTagObjects())
                 {
                     vsb.Append(sep);
                     vsb.Append(kvp.Key);
-                    vsb.Append(": ");
+                    vsb.Append(":\u200B");
                     vsb.Append(kvp.Value?.ToString() ?? "null");
-                    sep = ", ";
+                    sep = ",\u200B";
                 }
 
                 vsb.Append("]");
@@ -231,7 +231,7 @@ namespace System.Diagnostics
                         current = current.Next;
                         if (current is not null)
                         {
-                            vsb.Append(", ");
+                            vsb.Append(",\u200B");
                         }
                     }
                 }
@@ -244,7 +244,7 @@ namespace System.Diagnostics
                         current = current.Next;
                         if (current is not null)
                         {
-                            vsb.Append(", ");
+                            vsb.Append(",\u200B");
                         }
                     }
                 }
@@ -256,7 +256,7 @@ namespace System.Diagnostics
                         current = current.Next;
                         if (current is not null)
                         {
-                            vsb.Append(", ");
+                            vsb.Append(",\u200B");
                         }
                     }
                 }

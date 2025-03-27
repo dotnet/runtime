@@ -2440,32 +2440,32 @@ namespace System.Diagnostics.Tests
 
                 formattedLinks += $"{linkSep}(";
                 formattedLinks += ac.TraceId.ToHexString();
-                formattedLinks += ", ";
+                formattedLinks += ",\u200B";
                 formattedLinks += ac.SpanId.ToHexString();
-                formattedLinks += ", ";
+                formattedLinks += ",\u200B";
                 formattedLinks += ac.TraceFlags.ToString();
-                formattedLinks += ", ";
+                formattedLinks += ",\u200B";
                 formattedLinks += ac.TraceState ?? "null";
-                formattedLinks += ", ";
+                formattedLinks += ",\u200B";
                 formattedLinks += ac.IsRemote ? "true" : "false";
 
                 if (link.Tags is not null)
                 {
-                    formattedLinks += ", [";
+                    formattedLinks += ",\u200B[";
                     string sep = "";
                     foreach (KeyValuePair<string, object?> kvp in link.EnumerateTagObjects())
                     {
                         formattedLinks += sep;
                         formattedLinks += kvp.Key;
-                        formattedLinks += ": ";
+                        formattedLinks += ":\u200B";
                         formattedLinks += kvp.Value?.ToString() ?? "null";
-                        sep = ", ";
+                        sep = ",\u200B";
                     }
 
                     formattedLinks += "]";
                 }
                 formattedLinks += ")";
-                linkSep = ", ";
+                linkSep = ",\u200B";
             }
             formattedLinks += "]";
 
@@ -2489,27 +2489,27 @@ namespace System.Diagnostics.Tests
             {
                 formattedEvents += $"{linkSep}(";
                 formattedEvents += e.Name;
-                formattedEvents += ", ";
+                formattedEvents += ",\u200B";
                 formattedEvents += e.Timestamp.ToString("o");
 
                 if (e.Tags is not null)
                 {
-                    formattedEvents += ", [";
+                    formattedEvents += ",\u200B[";
                     string sep = "";
                     foreach (KeyValuePair<string, object?> kvp in e.EnumerateTagObjects())
                     {
                         formattedEvents += sep;
                         formattedEvents += kvp.Key;
-                        formattedEvents += ": ";
+                        formattedEvents += ":\u200B";
                         formattedEvents += kvp.Value?.ToString() ?? "null";
-                        sep = ", ";
+                        sep = ",\u200B";
                     }
 
                     formattedEvents += "]";
                 }
 
                 formattedEvents += ")";
-                linkSep = ", ";
+                linkSep = ",\u200B";
             }
 
             formattedEvents += "]";
