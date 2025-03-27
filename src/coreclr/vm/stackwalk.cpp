@@ -440,6 +440,10 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                                         T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers /*= NULL*/,
                                         EECodeInfo * pCodeInfo /*= NULL*/)
 {
+#ifdef TARGET_WASM
+    _ASSERTE("VirtualUnwindCallFrame is not supported on WebAssembly");
+    return 0;
+#else
     CONTRACTL
     {
         NOTHROW;
@@ -542,6 +546,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 #endif // !DACCESS_COMPILE
 
     return uControlPc;
+#endif // TARGET_WASM
 }
 
 #ifndef DACCESS_COMPILE
@@ -3207,8 +3212,17 @@ void StackFrameIterator::PostProcessingForNoFrameTransition()
 
     // Flags the same as from a FaultingExceptionFrame.
     m_crawl.isInterrupted = true;
-    m_crawl.hasFaulted = true;
+    m_crawl.hasFaulted = (pContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) != 0;
     m_crawl.isIPadjusted = false;
+    if (!m_crawl.hasFaulted)
+    {
+        // If the context is from a hardware exception that happened in a helper where we have unwound
+        // the exception location to the caller of the helper, the frame needs to be marked as not
+        // being the first one. The COMPlusThrowCallback uses this information to decide whether
+        // the current IP should or should not be included in the try region range. The call to
+        // the helper that has fired the exception may be the last instruction in the try region.
+        m_crawl.isFirst = false;
+    }
 
 #if defined(STACKWALKER_MAY_POP_FRAMES)
     // If Frames would be unlinked from the Frame chain, also reset the UseExInfoForStackwalk bit

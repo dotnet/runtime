@@ -1564,7 +1564,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
 
     if (g_SystemInfo.dwNumberOfProcessors == 1)
     {
-        return AwareLock::EnterHelperResult_Contention;
+        return AwareLock::EnterHelperResult::Contention;
     }
 
     YieldProcessorNormalizationInfo normalizationInfo;
@@ -1582,7 +1582,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             // If we have a hash code already, we need to create a sync block
             if (oldValue & BIT_SBLK_IS_HASHCODE)
             {
-                return AwareLock::EnterHelperResult_UseSlowPath;
+                return AwareLock::EnterHelperResult::UseSlowPath;
             }
 
             SyncBlock *syncBlock = g_pSyncTable[oldValue & MASK_SYNCBLOCKINDEX].m_SyncBlock;
@@ -1590,7 +1590,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             AwareLock *awareLock = &syncBlock->m_Monitor;
 
             AwareLock::EnterHelperResult result = awareLock->TryEnterBeforeSpinLoopHelper(pCurThread);
-            if (result != AwareLock::EnterHelperResult_Contention)
+            if (result != AwareLock::EnterHelperResult::Contention)
             {
                 return result;
             }
@@ -1610,11 +1610,11 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
                     }
 
                     result = awareLock->TryEnterInsideSpinLoopHelper(pCurThread);
-                    if (result == AwareLock::EnterHelperResult_Entered)
+                    if (result == AwareLock::EnterHelperResult::Entered)
                     {
-                        return AwareLock::EnterHelperResult_Entered;
+                        return AwareLock::EnterHelperResult::Entered;
                     }
-                    if (result == AwareLock::EnterHelperResult_UseSlowPath)
+                    if (result == AwareLock::EnterHelperResult::UseSlowPath)
                     {
                         break;
                     }
@@ -1623,7 +1623,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
 
             if (awareLock->TryEnterAfterSpinLoopHelper(pCurThread))
             {
-                return AwareLock::EnterHelperResult_Entered;
+                return AwareLock::EnterHelperResult::Entered;
             }
             break;
         }
@@ -1635,7 +1635,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
         {
             if (tid > SBLK_MASK_LOCK_THREADID)
             {
-                return AwareLock::EnterHelperResult_UseSlowPath;
+                return AwareLock::EnterHelperResult::UseSlowPath;
             }
 
             LONG newValue = oldValue | tid;
@@ -1645,7 +1645,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
 #endif
             {
-                return AwareLock::EnterHelperResult_Entered;
+                return AwareLock::EnterHelperResult::Entered;
             }
 
             continue;
@@ -1663,7 +1663,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             tid != (DWORD)(oldValue & SBLK_MASK_LOCK_THREADID));
     }
 
-    return AwareLock::EnterHelperResult_Contention;
+    return AwareLock::EnterHelperResult::Contention;
 }
 
 BOOL ObjHeader::LeaveObjMonitor()
@@ -1687,10 +1687,10 @@ BOOL ObjHeader::LeaveObjMonitor()
 
         switch(action)
         {
-        case AwareLock::LeaveHelperAction_None:
+        case AwareLock::LeaveHelperAction::None:
             // We are done
             return TRUE;
-        case AwareLock::LeaveHelperAction_Signal:
+        case AwareLock::LeaveHelperAction::Signal:
             {
                 // Signal the event
                 SyncBlock *psb = thisObj->GetHeader ()->PassiveGetSyncBlock();
@@ -1698,10 +1698,10 @@ BOOL ObjHeader::LeaveObjMonitor()
                     psb->QuickGetMonitor()->Signal();
             }
             return TRUE;
-        case AwareLock::LeaveHelperAction_Yield:
+        case AwareLock::LeaveHelperAction::Yield:
             YieldProcessorNormalized();
             continue;
-        case AwareLock::LeaveHelperAction_Contention:
+        case AwareLock::LeaveHelperAction::Contention:
             // Some thread is updating the syncblock value.
             {
                 //protect the object before switching mode
@@ -1713,7 +1713,7 @@ BOOL ObjHeader::LeaveObjMonitor()
             continue;
         default:
             // Must be an error otherwise - ignore it
-            _ASSERTE(action == AwareLock::LeaveHelperAction_Error);
+            _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
             return FALSE;
         }
     }
@@ -1739,10 +1739,10 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
 
         switch(action)
         {
-        case AwareLock::LeaveHelperAction_None:
+        case AwareLock::LeaveHelperAction::None:
             // We are done
             return TRUE;
-        case AwareLock::LeaveHelperAction_Signal:
+        case AwareLock::LeaveHelperAction::Signal:
             {
                 // Signal the event
                 SyncBlock *psb = PassiveGetSyncBlock();
@@ -1750,10 +1750,10 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
                     psb->QuickGetMonitor()->Signal();
             }
             return TRUE;
-        case AwareLock::LeaveHelperAction_Yield:
+        case AwareLock::LeaveHelperAction::Yield:
             YieldProcessorNormalized();
             continue;
-        case AwareLock::LeaveHelperAction_Contention:
+        case AwareLock::LeaveHelperAction::Contention:
             // Some thread is updating the syncblock value.
             //
             // We never toggle GC mode while holding the spinlock (BeginNoTriggerGC/EndNoTriggerGC
@@ -1766,7 +1766,7 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
             continue;
         default:
             // Must be an error otherwise - ignore it
-            _ASSERTE(action == AwareLock::LeaveHelperAction_Error);
+            _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
             return FALSE;
         }
     }
@@ -2755,16 +2755,16 @@ BOOL AwareLock::Leave()
 
     switch(action)
     {
-    case AwareLock::LeaveHelperAction_None:
+    case AwareLock::LeaveHelperAction::None:
         // We are done
         return TRUE;
-    case AwareLock::LeaveHelperAction_Signal:
+    case AwareLock::LeaveHelperAction::Signal:
         // Signal the event
         Signal();
         return TRUE;
     default:
         // Must be an error otherwise
-        _ASSERTE(action == AwareLock::LeaveHelperAction_Error);
+        _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
         return FALSE;
     }
 }

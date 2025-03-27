@@ -186,6 +186,16 @@ struct TransitionBlock
     };
     TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
     ArgumentRegisters       m_argumentRegisters;
+#elif defined(TARGET_WASM)
+    // No transition block on WASM yet
+    union {
+        CalleeSavedRegisters m_calleeSavedRegisters;
+        // alias saved link register as m_ReturnAddress
+        struct {
+            TADDR m_ReturnAddress;
+        };
+    };
+    ArgumentRegisters       m_argumentRegisters;
 #else
     PORTABILITY_ASSERT("TransitionBlock");
 #endif
@@ -924,6 +934,16 @@ public:
     }
 
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+
+#ifdef TARGET_WASM
+
+    // Get layout information for the argument that the ArgIterator is currently visiting.
+    void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
+    {
+        _ASSERTE(!"GetArgLoc not implemented for WASM");
+    }
+#endif // TARGET_WASM
+
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack

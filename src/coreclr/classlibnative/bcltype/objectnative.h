@@ -27,6 +27,10 @@ public:
     static FCDECL1(INT32, TryGetHashCode, Object* vThisRef);
     static FCDECL2(FC_BOOL_RET, ContentEquals, Object *pThisRef, Object *pCompareRef);
     static FCDECL1(FC_BOOL_RET, IsLockHeld, Object* pThisUNSAFE);
+    
+    static FCDECL1(FC_BOOL_RET, Monitor_TryEnter_FastPath, Object* obj);
+    static FCDECL2(AwareLock::EnterHelperResult, Monitor_TryEnter_FastPath_WithTimeout, Object* obj, INT32 timeout);
+    static FCDECL1(AwareLock::LeaveHelperAction, Monitor_Exit_FastPath, Object* obj);
 };
 
 extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle);
@@ -35,5 +39,9 @@ extern "C" BOOL QCALLTYPE Monitor_Wait(QCall::ObjectHandleOnStack pThis, INT32 T
 extern "C" void QCALLTYPE Monitor_Pulse(QCall::ObjectHandleOnStack pThis);
 extern "C" void QCALLTYPE Monitor_PulseAll(QCall::ObjectHandleOnStack pThis);
 extern "C" INT64 QCALLTYPE Monitor_GetLockContentionCount();
+extern "C" void QCALLTYPE Monitor_Enter_Slowpath(QCall::ObjectHandleOnStack objHandle);
+extern "C" void QCALLTYPE Monitor_Exit_Slowpath(QCall::ObjectHandleOnStack objHandle, AwareLock::LeaveHelperAction exitBehavior);
+extern "C" INT32 QCALLTYPE Monitor_TryEnter_Slowpath(QCall::ObjectHandleOnStack objHandle, INT32 timeOut);
+
 
 #endif // _OBJECTNATIVE_H_

@@ -33,6 +33,8 @@ namespace System.Numerics.Tensors
         internal readonly nint[] _strides;
         /// <summary>If the backing memory is permanently pinned (so not just using a fixed statement).</summary>
         internal readonly bool _isPinned;
+        /// <summary>The offset of the first element in the backing memory.</summary>
+        internal readonly int _memoryOffset;
 
         /// <summary>
         /// Creates a new empty Tensor.
@@ -43,13 +45,14 @@ namespace System.Numerics.Tensors
             _values = [];
             _lengths = [];
             _strides = [];
+            _memoryOffset = 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Tensor(T[]? values, ReadOnlySpan<nint> lengths, bool isPinned = false) : this(values, lengths, Array.Empty<nint>(), isPinned) { }
+        internal Tensor(T[]? values, ReadOnlySpan<nint> lengths, int memoryOffset, bool isPinned = false) : this(values, lengths, Array.Empty<nint>(), memoryOffset, isPinned) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Tensor(T[]? values, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool isPinned = false)
+        internal Tensor(T[]? values, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, int memoryOffset, bool isPinned = false)
         {
             if (values == null)
             {
@@ -59,10 +62,15 @@ namespace System.Numerics.Tensors
                 _values = [];
                 _lengths = [];
                 _strides = [];
+                _memoryOffset = memoryOffset;
                 return; // returns default
             }
 
             _lengths = lengths.IsEmpty ? [values.Length] : lengths.ToArray();
+            _memoryOffset = memoryOffset;
+
+            if (_memoryOffset < 0 || (_memoryOffset >= values.Length && values.Length != 0 ))
+                ThrowHelper.ThrowIndexOutOfRangeException();
 
             _flattenedLength = TensorSpanHelpers.CalculateTotalLength(_lengths);
             _strides = strides.IsEmpty ? TensorSpanHelpers.CalculateStrides(_lengths, _flattenedLength) : strides.ToArray();
@@ -72,12 +80,12 @@ namespace System.Numerics.Tensors
             if (Environment.Is64BitProcess)
             {
                 // See comment in Span<T>.Slice for how this works.
-                if ((ulong)(uint)maxElements >= (ulong)(uint)values.Length && values.Length != 0)
+                if ((ulong)(uint)maxElements >= (ulong)(uint)(values.Length - memoryOffset) && values.Length != 0)
                     ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
             }
             else
             {
-                if (((uint)maxElements >= (uint)(values.Length)) && values.Length != 0)
+                if (((uint)maxElements >= (uint)(values.Length - memoryOffset)) && values.Length != 0)
                     ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
             }
 
@@ -94,7 +102,7 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
-            return new Tensor<T>(values, lengths.ToArray(), pinned);
+            return new Tensor<T>(values, lengths.ToArray(), memoryOffset: 0, pinned);
         }
 
         /// <summary>
@@ -107,7 +115,7 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
-            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), pinned);
+            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), memoryOffset: 0, pinned);
         }
 
         /// <summary>
@@ -119,7 +127,7 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
-            return new Tensor<T>(values, lengths.ToArray(), pinned);
+            return new Tensor<T>(values, lengths.ToArray(), memoryOffset: 0, pinned);
         }
 
         /// <summary>
@@ -132,7 +140,7 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
-            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), pinned);
+            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), memoryOffset: 0, pinned);
         }
 
         // ITensor
@@ -369,30 +377,30 @@ namespace System.Numerics.Tensors
                     }
                 }
 
-                return new Tensor<T>(values, [linearLength], _isPinned);
+                return new Tensor<T>(values, [linearLength], _memoryOffset, _isPinned);
             }
         }
 
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Tensor{T}"/>.
         /// </summary>
-        public static implicit operator Tensor<T>(T[] array) => new Tensor<T>(array, [array.Length]);
+        public static implicit operator Tensor<T>(T[] array) => new Tensor<T>(array, [array.Length], memoryOffset: 0);
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/>.
         /// </summary>
-        public static implicit operator TensorSpan<T>(Tensor<T> value) => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value._flattenedLength);
+        public static implicit operator TensorSpan<T>(Tensor<T> value) => value.AsTensorSpan();
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/>.
         /// </summary>
-        public static implicit operator ReadOnlyTensorSpan<T>(Tensor<T> value) => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value.FlattenedLength);
+        public static implicit operator ReadOnlyTensorSpan<T>(Tensor<T> value) => value.AsReadOnlyTensorSpan();
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/> pointing to the same backing memory."/>
         /// </summary>
         /// <returns><see cref="TensorSpan{T}"/></returns>
-        public TensorSpan<T> AsTensorSpan() => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides, _flattenedLength);
+        public TensorSpan<T> AsTensorSpan() => new TensorSpan<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_values), _memoryOffset), _lengths, _strides, _values.Length - _memoryOffset);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/> pointing to the same backing memory based on the provided ranges."/>
@@ -406,7 +414,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="start">The start location you want in the <see cref="TensorSpan{T}"/>.</param>
         /// <returns><see cref="TensorSpan{T}"/> based on the provided ranges.</returns>
-        public TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<nint> start) => Slice(start);
+        public TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<nint> start) => AsTensorSpan().Slice(start);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/> pointing to the same backing memory based on the provided start indexes."/>
@@ -419,7 +427,7 @@ namespace System.Numerics.Tensors
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="ReadOnlyTensorSpan{T}"/> pointing to the same backing memory."/>
         /// </summary>
         /// <returns><see cref="ReadOnlyTensorSpan{T}"/></returns>
-        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan() => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides, _flattenedLength);
+        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan() => new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_values), _memoryOffset), _lengths, _strides, _flattenedLength);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="ReadOnlyTensorSpan{T}"/> pointing to the same backing memory based on the provided ranges."/>
@@ -433,7 +441,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="start">The start locations you want in the <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <returns></returns>
-        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<nint> start) => Slice(start);
+        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<nint> start) => AsTensorSpan().Slice(start);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="ReadOnlyTensorSpan{T}"/> pointing to the same backing memory based on the provided start indexes."/>
@@ -460,26 +468,71 @@ namespace System.Numerics.Tensors
         /// Forms a slice out of the given tensor
         /// </summary>
         /// <param name="start">The ranges for the slice</param>
-        /// <returns><see cref="Tensor{T}"/> as a copy of the provided ranges.</returns>
-        // REVIEW: CURRENTLY DOES A COPY.
+        /// <returns><see cref="Tensor{T}"/> without copying the provided ranges.</returns>
         public Tensor<T> Slice(params ReadOnlySpan<NRange> start)
         {
             if (start.Length != Lengths.Length)
                 throw new ArgumentOutOfRangeException(nameof(start), "Number of dimensions to slice does not equal the number of dimensions in the span");
 
-            TensorSpan<T> s = AsTensorSpan(start);
-            T[] values = _isPinned ? GC.AllocateArray<T>(checked((int)s.FlattenedLength), _isPinned) : (new T[s.FlattenedLength]);
-            var outTensor = new Tensor<T>(values, s.Lengths.ToArray(), _isPinned);
-            s.CopyTo(outTensor);
-            return outTensor;
+            scoped Span<nint> lengths;
+            scoped Span<nint> offsets;
+            nint[]? lengthsArray;
+            nint[]? offsetsArray;
+            if (Rank > TensorShape.MaxInlineRank)
+            {
+                lengthsArray = ArrayPool<nint>.Shared.Rent(Rank);
+                lengths = lengthsArray.AsSpan(0, Rank);
+
+                offsetsArray = ArrayPool<nint>.Shared.Rent(Rank);
+                offsets = offsetsArray.AsSpan(0, Rank);
+            }
+            else
+            {
+                lengths = stackalloc nint[Rank];
+                offsets = stackalloc nint[Rank];
+
+                lengthsArray = null;
+                offsetsArray = null;
+            }
+            lengths.Clear();
+            offsets.Clear();
+
+            for (int i = 0; i < start.Length; i++)
+            {
+                (offsets[i], lengths[i]) = start[i].GetOffsetAndLength(Lengths[i]);
+            }
+
+            // When we have an empty Tensor and someone wants to slice all of it, we should return an empty Tensor.
+            // FlattenedLength is computed everytime so using a local to cache the value.
+            nint flattenedLength = FlattenedLength;
+            int memoryOffset = 0;
+
+            if (flattenedLength != 0)
+            {
+                for (int i = 0; i < offsets.Length; i++)
+                {
+                    memoryOffset += (int)(Strides[i] * offsets[i]);
+                }
+            }
+
+            if ((memoryOffset >= _values.Length || memoryOffset < 0) && flattenedLength != 0)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            Tensor<T> toReturn = new Tensor<T>(_values, lengths, Strides, memoryOffset, _isPinned);
+
+            if (offsetsArray != null)
+                ArrayPool<nint>.Shared.Return(offsetsArray);
+            if (lengthsArray != null)
+                ArrayPool<nint>.Shared.Return(lengthsArray);
+
+            return toReturn;
         }
 
         /// <summary>
         /// Forms a slice out of the given tensor
         /// </summary>
         /// <param name="start">The start indexes for the slice</param>
-        /// <returns><see cref="Tensor{T}"/> as a copy of the provided ranges.</returns>
-        // REVIEW: CURRENTLY DOES A COPY.
+        /// <returns><see cref="Tensor{T}"/> without copying the provided ranges.</returns>
         public Tensor<T> Slice(params ReadOnlySpan<nint> start)
         {
             NRange[] ranges = new NRange[start.Length];
@@ -494,8 +547,7 @@ namespace System.Numerics.Tensors
         /// Forms a slice out of the given tensor
         /// </summary>
         /// <param name="startIndex">The start indexes for the slice</param>
-        /// <returns><see cref="Tensor{T}"/> as a copy of the provided ranges.</returns>
-        // REVIEW: CURRENTLY DOES A COPY.
+        /// <returns><see cref="Tensor{T}"/> without copying the provided ranges.</returns>
         public Tensor<T> Slice(params ReadOnlySpan<NIndex> startIndex)
         {
             NRange[] ranges = new NRange[startIndex.Length];
