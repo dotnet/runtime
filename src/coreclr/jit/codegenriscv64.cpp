@@ -4725,7 +4725,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2IfPresent();
 
-    emitAttr size = emitActualTypeSize(treeNode);
+    emitAttr size = emitActualTypeSize(op1);
     bool     is4  = (size == 4);
 
     instruction instr = INS_invalid;
@@ -4743,6 +4743,9 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             break;
         case NI_System_Math_MaxNumber:
             instr = is4 ? INS_fmax_s : INS_fmax_d;
+            break;
+        case NI_PRIMITIVE_LeadingZeroCount:
+            instr = is4 ? INS_clzw : INS_clz;
             break;
         default:
             NO_WAY("Unknown intrinsic");
