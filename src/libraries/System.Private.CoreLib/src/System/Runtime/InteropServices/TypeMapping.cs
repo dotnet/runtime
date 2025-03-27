@@ -22,8 +22,6 @@ namespace System.Runtime.InteropServices
         [RequiresUnreferencedCode("Lazy TypeMap isn't supported in the Trimmer")]
         private static TypeMapLazyDictionary CreateOrGet(RuntimeType typeGroup)
         {
-            Debug.Assert(!typeGroup.IsGenericType, "Type group should not be generic");
-
             TypeMapLazyDictionary? typeMaps;
             lock (s_lock)
             {

@@ -1453,61 +1453,21 @@ namespace
         ULONG sigLen;
         IfFailThrow(pImport->GetTypeSpecFromToken(typeSpec, &sig, &sigLen));
 
-        SigPointer sigptr{ sig, sigLen };
+        SigPointer sigPointer{ sig, sigLen };
 
-        // Processing TypeSpec. See ECMA-225, II.23.2.14 TypeSpec
-        CorElementType type;
-        IfFailThrow(sigptr.GetElemType(&type));
-        if (type != ELEMENT_TYPE_GENERICINST)
-            return false;
-
-        IfFailThrow(sigptr.GetElemType(&type));
-        if (type != ELEMENT_TYPE_CLASS) // All TypeMap attributes are classes.
-            return false;
-
-        // TypeMap attribute type token
-        IfFailThrow(sigptr.GetToken(NULL));
-
-        uint32_t genericArgCount;
-        IfFailThrow(sigptr.GetData(&genericArgCount));
-        if (genericArgCount != 1) // All TypeMap attributes have a single generic parameter.
-            return false;
-
-        IfFailThrow(sigptr.GetElemType(&type));
-        switch (type)
+        SigTypeContext context{};
+        TypeHandle typeMapAttribute = sigPointer.GetTypeHandleNT(pAssembly->GetModule(), &context);
+        if (typeMapAttribute.IsNull()
+            || !typeMapAttribute.HasInstantiation())    // All TypeMap attributes are generic.
         {
-        case ELEMENT_TYPE_OBJECT:
-            return groupTypeMT == g_pObjectClass;
-        case ELEMENT_TYPE_STRING:
-            return groupTypeMT == g_pStringClass;
-        case ELEMENT_TYPE_ARRAY:
             return false;
-        default:
-            break;
         }
 
-        CorElementType groupElementType = groupTypeMT->GetSignatureCorElementType();
-        if (type != groupElementType)
+        Instantiation genericParams = typeMapAttribute.GetInstantiation();
+        if (genericParams.GetNumArgs() != 1) // All TypeMap attributes have a single generic parameter.
             return false;
 
-        if (type != ELEMENT_TYPE_CLASS && type != ELEMENT_TYPE_VALUETYPE)
-        {
-            // No token to compare if the element type is not a class or value type.
-            return true;
-        }
-
-        mdToken tkGroupTypeInSig;
-        IfFailThrow(sigptr.GetToken(&tkGroupTypeInSig));
-
-        // Resolve the group type token to a TypeDef token.
-        Module* pModule = NULL;
-        mdToken tkGroupTypeMaybe = mdTokenNil;
-        (void)ClassLoader::ResolveTokenToTypeDefThrowing(pAssembly->GetModule(), tkGroupTypeInSig, &pModule, &tkGroupTypeMaybe);
-
-        // Get the details from the actual group type and compare that to what was resolved above.
-        mdToken tk = groupTypeMT->GetCl();
-        Module* mod = groupTypeMT->GetModule();
-        return tkGroupTypeMaybe == tk && mod == pModule;
+        return genericParams[0] == groupTypeMT;
     }
 
     template<typename ATTR_PROCESSOR>
@@ -1548,7 +1508,7 @@ namespace
             IfFailThrow(pImport->GetParentToken(tokenMember, &tokenType));
             _ASSERTE(TypeFromToken(tokenType) == mdtTypeSpec);
 
-            // Determine if this TypeSpec contains the group type we are looking for.
+            // Determine if this TypeSpec contains the "GroupType" we are looking for.
             if (targetTypeSpec == mdTypeSpecNil)
             {
                 if (!IsTypeSpecForTypeMapGroup(groupTypeMT, pAssembly, tokenType))

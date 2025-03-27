@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices
         }
 
         // See assemblynative.hpp for native version.
-        public unsafe struct CallbackArg
+        public unsafe struct ProcessAttributesCallbackArg
         {
             public void* Utf8String1;
             public void* Utf8String2;
@@ -46,9 +46,9 @@ namespace System.Runtime.InteropServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
         private static unsafe partial void ProcessAttributes(
             QCallAssembly assembly,
-            QCallTypeHandle typeGroup,
-            delegate* unmanaged<CallbackContext*, CallbackArg*, void> newExternalTypeEntry,
-            delegate* unmanaged<CallbackContext*, CallbackArg*, void> newProxyTypeEntry,
+            QCallTypeHandle groupType,
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, void> newExternalTypeEntry,
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, void> newProxyTypeEntry,
             CallbackContext* context);
 
         private static TypeName CreateNewTypeName(string typeName, string assemblyName)
@@ -60,7 +60,7 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void NewExternalTypeEntry(CallbackContext* context, CallbackArg* arg)
+        private static unsafe void NewExternalTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
         {
             Debug.Assert(context != null);
             Debug.Assert(arg != null);
@@ -82,7 +82,7 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void NewProxyTypeEntry(CallbackContext* context, CallbackArg* arg)
+        private static unsafe void NewProxyTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
         {
             Debug.Assert(context != null);
             Debug.Assert(arg != null);
@@ -111,12 +111,12 @@ namespace System.Runtime.InteropServices
             context->ProxyTypeMap.Add(parsedSource, parsedProxy);
         }
 
-        public unsafe TypeMapLazyDictionary(RuntimeType typeGroup, RuntimeAssembly startingAssembly)
+        public unsafe TypeMapLazyDictionary(RuntimeType groupType, RuntimeAssembly startingAssembly)
         {
             CallbackContext context = new();
             ProcessAttributes(
                 new QCallAssembly(ref startingAssembly),
-                new QCallTypeHandle(ref typeGroup),
+                new QCallTypeHandle(ref groupType),
                 &NewExternalTypeEntry,
                 &NewProxyTypeEntry,
                 &context);
@@ -226,12 +226,15 @@ namespace System.Runtime.InteropServices
         [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
         private sealed class LazyProxyTypeDictionary : LazyTypeLoadDictionary<Type>
         {
-            private static int ComputeHashCode(string key) => key.GetHashCode();
+            // We don't include the assembly name for the hash code since it is not
+            // guaranteed to be the same for the same type due to type forwarding.
+            private static int ComputeHashCode(Type key) => key.FullName!.GetHashCode();
+            private static int ComputeHashCode(TypeName key) => key.FullName.GetHashCode();
 
             private sealed class DelayedTypeCollection
             {
                 public required Tuple<DelayedType, DelayedType> First { get; init; }
-                public List<Tuple<DelayedType, DelayedType>>? Others { get; set; }
+                public List<Tuple<DelayedType, DelayedType>>? Others { get; private set; }
 
                 public bool Add(Tuple<DelayedType, DelayedType> newEntryMaybe)
                 {
@@ -253,7 +256,7 @@ namespace System.Runtime.InteropServices
 
             protected override bool TryGetOrLoadType(Type key, [NotNullWhen(true)] out Type? type)
             {
-                int hash = ComputeHashCode(key.FullName!);
+                int hash = ComputeHashCode(key);
 
                 if (_lazyData.TryGetValue(hash, out DelayedTypeCollection? value))
                 {
@@ -282,9 +285,7 @@ namespace System.Runtime.InteropServices
 
             public void Add(TypeName parsedSource, TypeName parsedProxy)
             {
-                // We don't use the assembly name for the hash code since it is not
-                // guaranteed to be the same for the same type due to type forwarding.
-                int hash = ComputeHashCode(parsedSource.FullName);
+                int hash = ComputeHashCode(parsedSource);
 
                 Tuple<DelayedType, DelayedType> newEntryMaybe = new(
                     new(parsedSource.AssemblyName!.FullName, parsedSource.FullName),
@@ -297,7 +298,8 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    if (!types.Add(newEntryMaybe))
+                    if (types.First.Item1.RepresentsSameType(newEntryMaybe.Item1)
+                        || !types.Add(newEntryMaybe))
                     {
                         ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(parsedSource.AssemblyQualifiedName);
                     }
