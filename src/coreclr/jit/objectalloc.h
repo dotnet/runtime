@@ -149,6 +149,9 @@ class ObjectAllocator final : public Phase
     unsigned        m_maxPseudoLocals;
     unsigned        m_regionsToClone;
 
+    // Struct fields
+    bool m_trackFields;
+
     //===============================================================================
     // Methods
 public:
