@@ -132,17 +132,7 @@ internal sealed class FrameIterator
 
     private FrameType GetFrameType(Data.Frame frame)
     {
-        foreach (FrameType frameType in Enum.GetValues<FrameType>())
-        {
-            if (target.TryReadGlobal(frameType.ToString() + "Identifier", out ulong? id))
-            {
-                if (frame.Identifier == new TargetPointer(id.Value))
-                {
-                    return frameType;
-                }
-            }
-        }
-
+        Console.WriteLine(frame);
         return FrameType.Unknown;
     }
 
