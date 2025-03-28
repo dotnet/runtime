@@ -527,17 +527,6 @@ EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_full_name (MonoMethod *method) 
 	return res;
 }
 
-// JS is responsible for freeing this
-EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_full_name (MonoMethod *method) {
-	char *res;
-	MONO_ENTER_GC_UNSAFE;
-	res = mono_method_full_name (method, 0);
-	MONO_EXIT_GC_UNSAFE;
-	return res;
-}
-
-
-
 EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method) {
 	const char *res;
 	MONO_ENTER_GC_UNSAFE;

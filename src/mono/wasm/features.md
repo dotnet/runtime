@@ -386,8 +386,8 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
 
   <!-- enables perf instrumentation for sampling CPU profiler -->
   <WasmPerfInstrumentation>true</WasmPerfInstrumentation>
-  <!-- alternatively you can filter method full names by regular expression -->
-  <WasmPerfInstrumentation>Sample.*</WasmPerfInstrumentation>
+  <!-- alternatively you can filter method full names by substring. For example namespace -->
+  <WasmPerfInstrumentation>Sample</WasmPerfInstrumentation>
 
   <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
   <!-- this is existing switch also on other targets -->

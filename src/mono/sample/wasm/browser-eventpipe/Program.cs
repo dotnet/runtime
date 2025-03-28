@@ -11,16 +11,6 @@ using System.Runtime.CompilerServices;
 
 namespace Sample
 {
-    /*
-    public partial class Test
-    {
-        public static int Main(string[] args)
-        {
-            return 0;
-        }
-    }
-    */
-
     class ConsoleWriterEventListener : EventListener
     {
         public static ConsoleWriterEventListener Instance;

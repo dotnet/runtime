@@ -983,6 +983,7 @@ ep_rt_queue_job (
 	void *job_func,
 	void *params)
 {
+#ifdef HOST_BROWSER
 	// in single-threaded, it will run the callback inline and re-schedule itself if necessary
 	// it's called from browser event loop
 	ds_job_cb cb = (ds_job_cb)job_func;
@@ -997,6 +998,10 @@ ep_rt_queue_job (
 	}
 
 	return true;
+#else
+	// not implemented
+	return false;
+#endif
 }
 
 #endif // PERFTRACING_DISABLE_THREADS

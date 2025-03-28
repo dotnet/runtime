@@ -9,7 +9,7 @@ import { cleanup_client as cleanup_js_client, createDiagConnectionJs, serverSess
 import { IDiagConnection } from "./common";
 import { createDiagConnectionWs } from "./diag-ws";
 import { diagnosticHelpers, setRuntimeGlobalsImpl } from "./globals";
-import { collectCpuSamples, mono_wasm_instrument_method } from "./dotnet-cpu-profiler";
+import { collectCpuSamples } from "./dotnet-cpu-profiler";
 import { collectPerfCounters } from "./dotnet-counters";
 import { collectGcDump } from "./dotnet-gcdump";
 import { advert1Full } from "./client-commands";
@@ -73,7 +73,6 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects): void {
     globalObjects.api.collectPerfCounters = collectPerfCounters;
     globalObjects.api.collectGcDump = collectGcDump;
     globalObjects.api.connectDSRouter = connectDSRouter;
-    runtimeHelpers.mono_wasm_instrument_method = mono_wasm_instrument_method;
 
     cleanup_js_client();
 }

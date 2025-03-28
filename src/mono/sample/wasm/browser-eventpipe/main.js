@@ -11,7 +11,7 @@ try {
     const { setModuleImports, runMain, getAssemblyExports, getConfig } = await dotnet
         //.withEnvironmentVariable("MONO_DIAGNOSTICS", "--diagnostic-mono-profiler=enable")// --diagnostic-ports=mock:../mock.js,suspend
         //.withEnvironmentVariable("DOTNET_DiagnosticPorts", "ws://127.0.0.1:8088/diagnostics,suspend")
-        .withEnvironmentVariable("DOTNET_DiagnosticPorts", "ws://127.0.0.1:8088/diagnostics")
+        // .withEnvironmentVariable("DOTNET_DiagnosticPorts", "ws://127.0.0.1:8088/diagnostics")
         // dotnet-trace collect --providers Microsoft-Windows-DotNETRuntime:0x1980001:5 -p 41732
         // dotnet-gcdump collect -p 41732
         // dotnet-counters

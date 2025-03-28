@@ -246,9 +246,7 @@ export type RuntimeHelpers = {
     utf8ToString: (ptr: CharPtr) => string,
     mono_background_exec: () => void,
     mono_wasm_ds_exec: () => void,
-    mono_wasm_method_full_name: (method: MonoMethod) => CharPtr,
     free: (ptr: VoidPtr) => void,
-    mono_wasm_instrument_method:(method:MonoMethod) => number,
 }
 
 export type DiagnosticHelpers = {

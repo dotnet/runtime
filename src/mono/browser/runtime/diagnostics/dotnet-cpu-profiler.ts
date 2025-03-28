@@ -7,8 +7,6 @@ import { commandStopTracing, commandSampleProfiler } from "./client-commands";
 import { loaderHelpers, Module, runtimeHelpers } from "./globals";
 import { serverSession, setup_js_client } from "./diag-js";
 import { IDiagSession } from "./common";
-import { MonoMethod } from "../types/internal";
-import { mono_log_debug } from "./logging";
 
 export function collectCpuSamples (options?:DiagnosticCommandOptions):Promise<Uint8Array[]> {
     if (!options) options = {};
@@ -35,42 +33,19 @@ export function collectCpuSamples (options?:DiagnosticCommandOptions):Promise<Ui
     });
     return onClosePromise.promise;
 }
-
-let filter:RegExp|boolean = undefined as any;
-export function mono_wasm_instrument_method (method:MonoMethod):number {
-    if (!is_instrument_method_enabled()) {
-        return 0;
-    }
-    if (filter === true) {
-        return 1;
-    }
-
-    const chars = runtimeHelpers.mono_wasm_method_full_name(method);
-    const methodName = runtimeHelpers.utf8ToString(chars);
-    runtimeHelpers.free(chars as any);
-
-    if ((filter as RegExp).test(methodName)) {
-        mono_log_debug(`Instrumenting method ${methodName} for profiling`);
-        return 1;
-    }
-
-    return 0;
-}
-
+let filter: boolean | undefined = undefined;
 export function is_instrument_method_enabled (): boolean {
     if (filter !== undefined) {
-        return !!filter;
+        return filter!;
     }
+
     const environmentVariables = runtimeHelpers.config.environmentVariables || {};
     const value = environmentVariables["DOTNET_WasmPerfInstrumentation"];
 
-    if (value == null || value == undefined || value == "0" || value == "false") {
+    if (value == null || value == undefined || value == "0" || value == "false" || value == "") {
         filter = false;
-    } else if (value == "1" || value == "true") {
-        filter = true;
     } else {
-        filter = new RegExp(value);
+        filter = true;
     }
-    return !!filter;
+    return filter;
 }
-

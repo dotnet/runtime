@@ -2,23 +2,13 @@
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <WasmPerfTracing>true</WasmPerfTracing>
-    <WasmPerfInstrumentation>Sample.*</WasmPerfInstrumentation>
+    <WasmPerfInstrumentation>Sample</WasmPerfInstrumentation>
     <MetricsSupport>true</MetricsSupport>
     <EventSourceSupport>true</EventSourceSupport>
-    <!--
-    -->
 
-    <!--
-    <BlazorWebAssemblyJiterpreter>false</BlazorWebAssemblyJiterpreter>
-    <WasmEnableWebcil>false</WasmEnableWebcil>
-    <DiagnosticPorts>ws://127.0.0.1:8088/diagnostics</DiagnosticPorts>
-    -->
-
-    <!-- 
     <RunAOTCompilation>true</RunAOTCompilation>
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
-    -->
 
   </PropertyGroup>
   <ItemGroup>
