@@ -38,7 +38,7 @@ struct PatchpointInfo
     void Initialize(unsigned localCount, int totalFrameSize)
     {
         m_calleeSaveRegisters     = 0;
-        m_tier0Version            = NULL;
+        m_tier0Version            = 0;
         m_totalFrameSize          = totalFrameSize;
         m_numberOfLocals          = localCount;
         m_genericContextArgOffset = -1;
