@@ -1092,6 +1092,7 @@ walk_managed_stack_for_thread (
 		stack_walk_data->top_frame = false;
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
+	case FRAME_TYPE_IL_STATE:
 	case FRAME_TYPE_INTERP:
 		if (frame->ji) {
 			stack_walk_data->async_frame |= frame->ji->async;
