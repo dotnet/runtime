@@ -300,9 +300,6 @@ Mobile browsers typically have strict limits on the amount of memory they can us
 
 A WebAssembly application that works well on desktop PCs browser may take minutes to download or run out of memory before it is able to start on a mobile device, and the same is true for .NET.
 
-### Shell environments - V8
-While our primary target is web browsers, we have partial support for D8/V8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
-
 ## Choosing the right platform target
 Every end user has different needs, so the right platform for every application may differ.
 
@@ -379,34 +376,36 @@ await dotnet
 
 See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045e7741fffa17710dc48e9032e519258/src/mono/mono/utils/mono-logger.c#L273-L308)
 
-### Profiling
+### Diagnostics tools
 
-You can enable integration with browser profiler via following elements in your .csproj
+```xml
+<PropertyGroup>
+  <!-- enables diagnostic server -->
+  <!-- this is new switch -->
+  <WasmPerfTracing>true</WasmPerfTracing>
+
+  <!-- enables perf instrumentation for sampling CPU profiler -->
+  <WasmPerfInstrumentation>true</WasmPerfInstrumentation>
+
+  <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
+  <!-- this is existing switch also on other targets -->
+  <MetricsSupport>true</MetricsSupport>
+
+  <!-- enables system events https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/diagnostics#observability-and-telemetry -->
+  <!-- this is existing switch also on other targets -->
+  <EventSourceSupport>true</EventSourceSupport>
+</PropertyGroup>
+```
+
+`Timing-Allow-Origin` HTTP header allows for more precise time measurements.
+
+### Profiling in the browser dev tools
+
+You can enable integration with the profiler in browser dev tools via following elements in your .csproj
 ```xml
 <PropertyGroup>
   <WasmProfilers>browser;</WasmProfilers>
 </PropertyGroup>
-```
-
-In Blazor, you can customize the startup in your index.html
-```html
-<script src="_framework/blazor.webassembly.js" autostart="false"></script>
-<script>
-Blazor.start({
-    configureRuntime: function (dotnet) {
-        dotnet.withConfig({
-            browserProfilerOptions: {}
-        });
-    }
-});
-</script>
-```
-
-In simple browser template, you can add following to your `main.js`
-
-```javascript
-import { dotnet } from './dotnet.js'
-await dotnet.withConfig({browserProfilerOptions: {}}).run();
 ```
 
 ### Log Profiling for Memory Troubleshooting
@@ -447,11 +446,3 @@ class Profiling
 Invoke `MyApp.Profiling.TakeHeapshot()` from your code in order to create a memory heap shot and flush the contents of the profile to the VFS. Make sure to align the namespace and class of the `logProfilerOptions.takeHeapshot` with your class.
 
 You can download the mpld file to analyze it.
-
-### Diagnostic tools
-
-We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe)
-
-At the moment it requires multi-threaded build of the runtime.
-
-For more details see [diagnostic-server.md](../browser/runtime/diagnostics/diagnostic-server.md)
