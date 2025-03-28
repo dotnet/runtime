@@ -10,18 +10,8 @@ if (BROTLICOMMON)
     list(APPEND BROTLI_LIBRARIES ${BROTLICOMMON})
 endif()
 
-# Resolve the NOIPO variants of libraries when we aren't using the system ones.
-set (CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}/NOIPO/)
-if (NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
-    find_library(BROTLIDEC_NOIPO brotlidec REQUIRED)
-    find_library(BROTLIENC_NOIPO brotlienc REQUIRED)
-    find_library(BROTLICOMMON_NOIPO brotlicommon REQUIRED)
-    set (BROTLI_LIBRARIES_NOIPO ${BROTLIDEC_NOIPO} ${BROTLIENC_NOIPO} ${BROTLICOMMON_NOIPO})
-endif()
-
 if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
     set(ZLIB_USE_STATIC_LIBS ON)
-    find_library(ZLIB_NOIPO NAMES z zlibstatic zlibstaticd REQUIRED)
 endif()
 find_package(ZLIB REQUIRED)
 
@@ -101,14 +91,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
     target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
-
-    foreach(BROTLI_LIB ${BROTLI_LIBRARIES_NOIPO})
-        install (PROGRAMS ${BROTLI_LIB} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
-    endforeach()
-
-    if (ZLIB_NOIPO)
-        install (PROGRAMS ${ZLIB_NOIPO} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
-    endif()
 else ()
 
     if (GEN_SHARED_LIB)
