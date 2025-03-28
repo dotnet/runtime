@@ -1531,10 +1531,10 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     {
         Thread *pThread = GetThread();
 
-#ifdef TARGET_X86
-        SoftwareExceptionFrame exceptionFrame(transitionBlock);
-#else
         SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+        exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
         RtlCaptureContext(exceptionFrame.GetContext());
 #endif
         exceptionFrame.InitAndLink(pThread);
@@ -1630,10 +1630,10 @@ HCIMPL0(void, IL_Rethrow)
     {
         Thread *pThread = GetThread();
 
-#ifdef TARGET_X86
-        SoftwareExceptionFrame exceptionFrame(transitionBlock);
-#else
         SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+        exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
         RtlCaptureContext(exceptionFrame.GetContext());
 #endif
         exceptionFrame.InitAndLink(pThread);

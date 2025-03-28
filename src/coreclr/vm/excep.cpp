@@ -11549,8 +11549,7 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 #ifndef DACCESS_COMPILE
 #ifdef TARGET_X86
 
-SoftwareExceptionFrame::SoftwareExceptionFrame(TransitionBlock *pTransitionBlock)
-    : Frame(FrameIdentifier::SoftwareExceptionFrame)
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -11579,8 +11578,8 @@ void SoftwareExceptionFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
 
-    // On x86 we initialize the context state from transition block in a special
-    // constructor.
+    // On x86 we initialize the context state from transition block in
+    // UpdateContextFromTransitionBlock method.
 #ifndef TARGET_X86
 #define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
     ENUM_CALLEE_SAVED_REGISTERS();

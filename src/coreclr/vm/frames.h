@@ -1051,7 +1051,7 @@ public:
     }
 
 #ifdef TARGET_X86
-    SoftwareExceptionFrame(TransitionBlock *pTransitionBlock);
+    void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
 #endif
 #endif
 
