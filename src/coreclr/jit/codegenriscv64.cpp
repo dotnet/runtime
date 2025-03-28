@@ -909,7 +909,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 24 + padding);
 
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES + 3 * padding);
-            GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rCnt, -5 << 2);
+            GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rTarget, -5 << 2);
 
             uCntBytes %= REGSIZE_BYTES * 4;
         }
@@ -921,7 +921,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
 
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES + padding);
-            GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rCnt, -3 << 2);
+            GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rTarget, -3 << 2);
 
             uCntBytes %= REGSIZE_BYTES * 2;
         }
