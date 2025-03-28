@@ -6293,9 +6293,7 @@ namespace System.Threading.Tasks
             while (enumerator.MoveNext());
 
 
-            return taskList.Count == 0 ?
-                new Task<TResult[]>(false, [], TaskCreationOptions.None, default) :
-                new WhenAllPromise<TResult>([.. taskList]);
+            return new WhenAllPromise<TResult>([.. taskList]);
         }
 
         /// <summary>
