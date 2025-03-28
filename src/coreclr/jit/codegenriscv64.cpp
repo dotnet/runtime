@@ -897,7 +897,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
         noway_assert(uCntBytes >= 2 * REGSIZE_BYTES);
         assert((genRegMask(rTarget) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rTarget is not a live incoming
-                                                                                // argument reg
+                                                                                   // argument reg
 
         if (uCntBytes % (4 * REGSIZE_BYTES) == 0)
         {
