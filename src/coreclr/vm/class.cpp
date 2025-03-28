@@ -65,44 +65,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     }
     CONTRACTL_END
 
-#ifdef PROFILING_SUPPORTED
-    // If profiling, then notify the class is getting unloaded.
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
-        {
-            // Calls to the profiler callback may throw, or otherwise fail, if
-            // the profiler AVs/throws an unhandled exception/etc. We don't want
-            // those failures to affect the runtime, so we'll ignore them.
-            //
-            // Note that the profiler callback may turn around and make calls into
-            // the profiling runtime that may throw. This try/catch block doesn't
-            // protect the profiler against such failures. To protect the profiler
-            // against that, we will need try/catch blocks around all calls into the
-            // profiling API.
-            //
-            // (Bug #26467)
-            //
-
-            FAULT_NOT_FATAL();
-
-            EX_TRY
-            {
-                GCX_PREEMP();
-
-                (&g_profControlBlock)->ClassUnloadStarted((ClassID) pOwningMT);
-            }
-            EX_CATCH
-            {
-                // The exception here came from the profiler itself. We'll just
-                // swallow the exception, since we don't want the profiler to bring
-                // down the runtime.
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
-        }
-        END_PROFILER_CALLBACK();
-    }
-#endif // PROFILING_SUPPORTED
-
 #ifdef FEATURE_COMINTEROP
     // clean up any COM Data
     if (m_pccwTemplate)
@@ -147,29 +109,68 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     if (GetSparseCOMInteropVTableMap() != NULL)
         delete GetSparseCOMInteropVTableMap();
 #endif // FEATURE_COMINTEROP
+}
+
+//*******************************************************************************
+void EEClass::NotifyUnload(MethodTable* pMT, bool unloadStarted)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        FORBID_FAULT;
+        PRECONDITION(pMT != NULL);
+    }
+    CONTRACTL_END
 
 #ifdef PROFILING_SUPPORTED
     // If profiling, then notify the class is getting unloaded.
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
         {
-            // See comments in the call to ClassUnloadStarted for details on this
-            // FAULT_NOT_FATAL marker and exception swallowing.
+            if (pMT->ContainsGenericVariables() || pMT->IsArray())
+            {
+                // Don't notify the profiler about types with unbound variables or arrays.
+                // See ClassLoadStarted callback for more details.
+                return;
+            }
+        
+            // Calls to the profiler callback may throw, or otherwise fail, if
+            // the profiler AVs/throws an unhandled exception/etc. We don't want
+            // those failures to affect the runtime, so we'll ignore them.
+            //
+            // Note that the profiler callback may turn around and make calls into
+            // the profiling runtime that may throw. This try/catch block doesn't
+            // protect the profiler against such failures. To protect the profiler
+            // against that, we will need try/catch blocks around all calls into the
+            // profiling API.
+            //
+            // (Bug #26467)
+            //
+
             FAULT_NOT_FATAL();
+
             EX_TRY
             {
                 GCX_PREEMP();
-                (&g_profControlBlock)->ClassUnloadFinished((ClassID) pOwningMT, S_OK);
+
+                if (unloadStarted)
+                    (&g_profControlBlock)->ClassUnloadStarted((ClassID) pMT);
+                else
+                    (&g_profControlBlock)->ClassUnloadFinished((ClassID) pMT, S_OK);
             }
             EX_CATCH
             {
+                // The exception here came from the profiler itself. We'll just
+                // swallow the exception, since we don't want the profiler to bring
+                // down the runtime.
             }
             EX_END_CATCH(RethrowTerminalExceptions);
         }
         END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
-
 }
 
 //*******************************************************************************

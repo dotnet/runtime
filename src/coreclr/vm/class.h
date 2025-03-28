@@ -728,6 +728,9 @@ public:
     void *operator new(size_t size, LoaderHeap* pHeap, AllocMemTracker *pamTracker);
     void Destruct(MethodTable * pMT);
 
+    // Notify profiler about class unload
+    static void NotifyUnload(MethodTable* pMT, bool unloadStarted);
+
     static EEClass * CreateMinimalClass(LoaderHeap *pHeap, AllocMemTracker *pamTracker);
 #endif // !DACCESS_COMPILE
 
