@@ -437,7 +437,9 @@ void StubDispatchFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
         // code:VSD_ResolveWorker or code:StubDispatchFixupWorker
         pRD->ControlPC = GetAdjustedCallAddress(pRD->ControlPC);
 #ifdef FEATURE_EH_FUNCLETS
-        // We need to set EIP to match to ensude Thread::VirtualUnwindCallFrame
+        // We need to set EIP to match ControlPC to ensure Thread::VirtualUnwindCallFrame
+        // doesn't fail assertion on GetControlPC(pRD) == GetIP(pRD->pCurrentContext)
+        // precondition.
         pRD->pCurrentContext->Eip = pRD->ControlPC;
 #endif
     }
