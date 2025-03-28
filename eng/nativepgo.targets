@@ -60,8 +60,4 @@
 
     <Error Condition="!Exists('$(PgoPackagePath)') And '$(NativeOptimizationDataSupported)' == 'true'" Text="Unable to locate restored PGO package at $(PgoPackagePath). Maybe the platform-specific package naming changed?" />
   </Target>
-
-  <Target Name="OutputPgoPathForCI" Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(NativeOptimizationDataSupported)' == 'true'" DependsOnTargets="GetPgoDataPackagePath">
-    <Message Text="##vso[task.setvariable variable=CoreClrPgoDataArg]-pgodatapath &quot;$(PgoPackagePath)&quot;" Importance="High" />
-  </Target>
 </Project>
