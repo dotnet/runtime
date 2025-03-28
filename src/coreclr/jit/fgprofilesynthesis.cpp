@@ -168,7 +168,10 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     if (m_approximate)
     {
         JITDUMP("Profile is inconsistent. Bypassing post-phase consistency checks.\n");
-        m_comp->Metrics.ProfileInconsistentInitially++;
+        if (!m_comp->fgImportDone)
+        {
+            m_comp->Metrics.ProfileInconsistentInitially++;
+        }
     }
 
     // Derive the method's call count from the entry block's weight
@@ -828,10 +831,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 
                 for (FlowEdge* const edge : nestedLoop->EntryEdges())
                 {
-                    if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
-                    {
-                        newWeight += edge->getLikelyWeight();
-                    }
+                    newWeight += edge->getLikelyWeight();
                 }
 
                 newWeight *= m_cyclicProbabilities[nestedLoop->GetIndex()];
@@ -847,10 +847,10 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                 {
                     BasicBlock* const sourceBlock = edge->getSourceBlock();
 
-                    // Ignore flow across EH, or from preds not in the loop.
-                    // Latter can happen if there are unreachable blocks that flow into the loop.
+                    // Ignore flow from preds not in the loop.
+                    // This can happen if there are unreachable blocks that flow into the loop.
                     //
-                    if (BasicBlock::sameHndRegion(block, sourceBlock) && loop->ContainsBlock(sourceBlock))
+                    if (loop->ContainsBlock(sourceBlock))
                     {
                         newWeight += edge->getLikelyWeight();
                     }
@@ -1214,7 +1214,8 @@ void ProfileSynthesis::GaussSeidelSolver()
     const FlowGraphDfsTree* const dfs                  = m_loops->GetDfsTree();
     unsigned const                blockCount           = dfs->GetPostOrderCount();
     bool                          checkEntryExitWeight = true;
-    bool                          showDetails          = false;
+    bool const                    showDetails          = false;
+    bool const                    callFinalliesCreated = m_comp->fgImportDone;
 
     JITDUMP("Synthesis solver: flow graph has %u improper loop headers\n", m_improperLoopHeaders);
 
@@ -1290,9 +1291,10 @@ void ProfileSynthesis::GaussSeidelSolver()
                     {
                         newWeight = block->bbWeight;
 
-                        // Finallies also add in the weight of their try.
+                        // If we haven't added flow edges into/out of finallies yet,
+                        // add in the weight of their corresponding try regions.
                         //
-                        if (ehDsc->HasFinallyHandler())
+                        if (!callFinalliesCreated && ehDsc->HasFinallyHandler())
                         {
                             newWeight += countVector[ehDsc->ebdTryBeg->bbNum];
                         }
@@ -1318,11 +1320,7 @@ void ProfileSynthesis::GaussSeidelSolver()
                     for (FlowEdge* const edge : loop->EntryEdges())
                     {
                         BasicBlock* const predBlock = edge->getSourceBlock();
-
-                        if (BasicBlock::sameHndRegion(block, predBlock))
-                        {
-                            newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
-                        }
+                        newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
                     }
 
                     // Scale by cyclic probability
@@ -1354,10 +1352,7 @@ void ProfileSynthesis::GaussSeidelSolver()
                             continue;
                         }
 
-                        if (BasicBlock::sameHndRegion(block, predBlock))
-                        {
-                            newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
-                        }
+                        newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
                     }
 
                     if (selfEdge != nullptr)

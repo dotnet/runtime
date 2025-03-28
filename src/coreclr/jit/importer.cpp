@@ -12670,7 +12670,9 @@ void Compiler::impFixPredLists()
 
                     if (!profileConsistent)
                     {
-                        JITDUMP("Flow propagation out of " FMT_BB " might have introduced inconsistency. Data %s inconsistent.\n", finallyBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
+                        JITDUMP("Flow propagation out of " FMT_BB
+                                " might have introduced inconsistency. Data %s inconsistent.\n",
+                                finallyBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
                         fgPgoConsistent = false;
                     }
                 }
