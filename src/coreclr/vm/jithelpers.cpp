@@ -2576,7 +2576,7 @@ extern "C" void JIT_ResumeOSRWorker(TransitionBlock * pTransitionBlock)
 
     // Find OSR method code for this IL offset.
 
-    PCODE osrMethodCode = NULL;
+    PCODE osrMethodCode = 0;
 
     {
         EECodeInfo codeInfo(ip);
