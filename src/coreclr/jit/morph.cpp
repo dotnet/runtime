@@ -428,9 +428,9 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // and reduce it to CAST(float <- float), which is handled in codegen as
     // an optional mov.
     else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
-#ifdef TARGET_ARM
+#ifndef TARGET_64BIT
              && !varTypeIsLong(oper->AsCast()->CastOp())
-#endif // TARGET_ARM
+#endif // !TARGET_64BIT
 #ifdef TARGET_X86
              && canUseEvexEncoding()
 #endif // TARGET_X86
@@ -489,29 +489,9 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #ifdef FEATURE_HW_INTRINSICS
     else if (varTypeIsLong(srcType) && varTypeIsFloating(dstType) && canUseEvexEncoding())
     {
-        // We can avoid helper calls by using SIMD conversion instructions. The result needs to end up
-        // in a SIMD/floating register anyway.
-        NamedIntrinsic intrinsicId      = NI_Illegal;
-        CorInfoType    baseFloatingType = (dstType == TYP_FLOAT) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_DOUBLE;
-        CorInfoType    baseIntegralType = tree->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG;
-
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
-        {
-            intrinsicId = (dstType == TYP_FLOAT) ? NI_AVX512DQ_VL_ConvertToVector128Single
-                                                 : NI_AVX512DQ_VL_ConvertToVector128Double;
-        }
-        else
-        {
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
-            intrinsicId =
-                (dstType == TYP_FLOAT) ? NI_AVX10v1_ConvertToVector128Single : NI_AVX10v1_ConvertToVector128Double;
-        }
-
-        GenTree* createScalar = gtNewSimdCreateScalarNode(TYP_SIMD16, oper, baseIntegralType, 16);
-        GenTree* convert      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, createScalar, intrinsicId, baseIntegralType, 16);
-        GenTree* toScalar     = gtNewSimdToScalarNode(dstType, convert, baseFloatingType, 16);
-
-        return fgMorphHWIntrinsic(toScalar->AsHWIntrinsic());
+        // We can handle these casts directly using SIMD instructions.
+        // The transform to SIMD is done in DecomposeLongs.
+        return nullptr;
     }
 #endif // FEATURE_HW_INTRINSICS
 
