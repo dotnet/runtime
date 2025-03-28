@@ -296,6 +296,8 @@ bool IntegralRange::Contains(int64_t value) const
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #elif defined(TARGET_ARM64)
+                case NI_Vector_op_Equality:
+                case NI_Vector_op_Inequality:
                 case NI_Vector64_op_Equality:
                 case NI_Vector64_op_Inequality:
                 case NI_Vector128_op_Equality:

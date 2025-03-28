@@ -22031,8 +22031,12 @@ GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
 }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
-GenTree* Compiler::gtNewSimdCmpOpNode(
-    genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
+GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps        op,
+                                      var_types         type,
+                                      GenTree*          op1,
+                                      GenTree*          op2,
+                                      CorInfoType       simdBaseJitType,
+                                      unsigned simdSize ARM64_ARG(bool wrapInCvtm))
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
 
@@ -22056,7 +22060,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
     if (intrinsic != NI_Illegal)
     {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-        if (lookupType != type)
+        if (wrapInCvtm && (lookupType != type))
         {
             assert(varTypeIsMask(lookupType));
             GenTree* retNode = gtNewSimdHWIntrinsicNode(lookupType, op1, op2, intrinsic, simdBaseJitType, simdSize);
@@ -22417,7 +22421,41 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
 #elif defined(TARGET_ARM64)
         case GT_EQ:
         {
-            intrinsic = (simdSize == 8) ? NI_Vector64_op_Equality : NI_Vector128_op_Equality;
+            if (simdSize == 8)
+            {
+                intrinsic = NI_Vector64_op_Equality;
+            }
+            else if (simdSize == 16)
+            {
+                intrinsic = NI_Vector128_op_Equality;
+            }
+            else
+            {
+                assert(simdSize > 16);
+                GenTree* cmpResult =
+                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize ARM64_ARG(false));
+
+                // The operation `p1 = SVE_CMP_CC(a, b)` returns predicate mask, having `1` for lanes for which `a CC b`
+                // is true. For `All` operation, we can perform `r1 = CNTP(p1)` and then if `r1 == VL`, it means `ALL`
+                // lanes satisfies the CC condition and hence can return true. So the operations will be:
+                //      p1 = SVE_CMP_CC(a, b)
+                //      r1 = CNTP(p1)
+                //      r2 = CNT{B,H,W,D} // only for NativeAOT. For JIT, this is a constant
+                //      cmp r1, r2
+                //
+                // It can also be done without having to find out VL using CNT{B,H,W,D}, using something like:
+                //      p1 = SVE_CMP_CC(a, b)
+                //      p2 = SVE_NOT(p1)
+                //      r1 = CNTP(p2)
+                //      if r1 == 0 return true else false
+                //
+                // However, NOT() operation only operates on "byte" variant i.e. `p1.B`, while the result of `p1` from
+                // `SVE_CMP_CC` can be of other variants like `p1.S` or `p1.D`, etc.
+                GenTree* allTrue = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+                op1 = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
+                    simdBaseJitType, simdSize);
+                op2 = gtNewSimdAllFalseMaskNode(simdBaseJitType, simdSize);
+            }
             break;
         }
 
@@ -22437,9 +22475,37 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
             {
                 intrinsic = NI_Vector128_op_Equality;
             }
+            if (simdSize > 16)
+            {
+                GenTree* cmpResult =
+                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize ARM64_ARG(false));
 
-            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize);
-            op2 = gtNewAllBitsSetConNode(simdType);
+                // The operation `p1 = SVE_CMP_CC(a, b)` returns predicate mask, having `1` for lanes for which `a CC b`
+                // is true. For `All` operation, we can perform `r1 = CNTP(p1)` and then if `r1 == VL`, it means `ALL`
+                // lanes satisfies the CC condition and hence can return true. So the operations will be:
+                //      p1 = SVE_CMP_CC(a, b)
+                //      r1 = CNTP(p1)
+                //      r2 = CNT{B,H,W,D} // only for NativeAOT. For JIT, this is a constant
+                //      cmp r1, r2
+                //
+                // It can also be done without having to find out VL using CNT{B,H,W,D}, using something like:
+                //      p1 = SVE_CMP_CC(a, b)
+                //      p2 = SVE_NOT(p1)
+                //      r1 = CNTP(p2)
+                //      if r1 == 0 return true else false
+                //
+                // However, NOT() operation only operates on "byte" variant i.e. `p1.B`, while the result of `p1` from
+                // `SVE_CMP_CC` can be of other variants like `p1.S` or `p1.D`, etc.
+                GenTree* allTrue = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+                op1              = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
+                                                            simdBaseJitType, simdSize);
+                op2              = gtNewSimdAllFalseMaskNode(simdBaseJitType, simdSize);
+            }
+            else
+            {
+                op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize);
+                op2 = gtNewAllBitsSetConNode(simdType);
+            }
 
             if (simdBaseType == TYP_FLOAT)
             {
@@ -22462,6 +22528,10 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
             unreached();
         }
     }
+
+#if defined(TARGET_ARM64)
+    intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(simdSize, intrinsic);
+#endif
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
@@ -22567,8 +22637,29 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
 
             intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
 
-            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize);
-            op2 = gtNewZeroConNode(simdType);
+            if (simdSize > 16)
+            {
+                GenTree* cmpResult =
+                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize ARM64_ARG(false));
+
+                // The operation `p1 = SVE_CMP_CC(a, b)` returns predicate mask, having `1` for lanes for which `a CC b`
+                // is true. For `Any` operation, we can perform `r1 = CNTP(p1)` and then if `r1 != 0`, it means `SOME`
+                // lanes satisfies the CC condition and hence can return true. So the operations will be:
+                //      p1 = SVE_CMP_CC(a, b)
+                //      r1 = CNTP(p1)
+                //      if r1 != 0 return true else false
+
+                GenTree* allTrue = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+                op1              = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
+                                                            simdBaseJitType, simdSize);
+
+                op2 = gtNewSimdAllFalseMaskNode(simdBaseJitType, simdSize);
+            }
+            else
+            {
+                op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize);
+                op2 = gtNewZeroConNode(simdType);
+            }
 
             if (simdBaseType == TYP_FLOAT)
             {
@@ -22585,7 +22676,36 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
 
         case GT_NE:
         {
-            intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
+            if (simdSize == 8)
+            {
+                intrinsic = NI_Vector64_op_Inequality;
+            }
+            else if (simdSize == 16)
+            {
+                intrinsic = NI_Vector128_op_Inequality;
+            }
+            else
+            {
+                assert(simdSize > 16);
+
+                intrinsic = NI_Vector_op_Inequality;
+
+                GenTree* cmpResult =
+                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize ARM64_ARG(false));
+
+                // The operation `p1 = SVE_CMP_CC(a, b)` returns predicate mask, having `1` for lanes for which `a CC b`
+                // is true. For `Any` operation, we can perform `r1 = CNTP(p1)` and then if `r1 != 0`, it means `SOME`
+                // lanes satisfies the CC condition and hence can return true. So the operations will be:
+                //      p1 = SVE_CMP_CC(a, b)
+                //      r1 = CNTP(p1)
+                //      if r1 != 0 return true else false
+
+                GenTree* allTrue = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+                op1 = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
+                    simdBaseJitType, simdSize);
+
+                op2 = gtNewSimdAllFalseMaskNode(simdBaseJitType, simdSize);
+            }
             break;
         }
 #else
@@ -22597,6 +22717,10 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
             unreached();
         }
     }
+
+#if defined(TARGET_ARM64)
+    intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(simdSize, intrinsic);
+#endif
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
@@ -28789,7 +28913,6 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
     }
 }
 
-
 //------------------------------------------------------------------------------
 // GetScalableHWIntrinsicId: Returns SVE equivalent of given intrinsic ID, if applicable
 //
@@ -28810,6 +28933,26 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
                 break;
             case NI_AdvSimd_And:
                 sveId = NI_Sve_And;
+                break;
+            case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqual:
+                sveId = NI_Sve_CompareEqual;
+                break;
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+            case NI_AdvSimd_CompareGreaterThanOrEqual:
+                sveId = NI_Sve_CompareGreaterThanOrEqual;
+                break;
+            case NI_AdvSimd_Arm64_CompareGreaterThan:
+            case NI_AdvSimd_CompareGreaterThan:
+                sveId = NI_Sve_CompareGreaterThan;
+                break;
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
+            case NI_AdvSimd_CompareLessThanOrEqual:
+                sveId = NI_Sve_CompareLessThanOrEqual;
+                break;
+            case NI_AdvSimd_Arm64_CompareLessThan:
+            case NI_AdvSimd_CompareLessThan:
+                sveId = NI_Sve_CompareLessThan;
                 break;
             case NI_AdvSimd_Arm64_ConvertToDouble:
                 sveId = NI_Sve_ConvertToDouble;
@@ -28834,6 +28977,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
                 break;
             case NI_AdvSimd_Or:
                 sveId = NI_Sve_Or;
+                break;
+            case NI_Vector128_op_Equality:
+                sveId = NI_Vector_op_Equality;
+                break;
+            case NI_Vector128_op_Inequality:
+                sveId = NI_Vector_op_Inequality;
                 break;
             default:
                 sveId = id;
@@ -29774,16 +29923,20 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
     if (varTypeIsMask(type))
     {
         assert(!isScalar);
+#if defined(TARGET_XARCH)
         assert(comp->canUseEvexEncodingDebugOnly());
+#endif
     }
+#if !defined(TARGET_ARM64)
     else if (simdSize == 32)
     {
         assert(!isScalar);
         assert(comp->IsBaselineVector256IsaSupportedDebugOnly());
     }
+#endif // !TARGET_ARM64
     else
     {
-        assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16));
+        assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == Compiler::compVectorTLength));
 
 #if defined(TARGET_ARM64)
         assert(!isScalar || (simdSize == 8));
@@ -30082,6 +30235,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                 assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
                 id = isScalar ? NI_SSE2_CompareScalarNotEqual : NI_SSE2_CompareNotEqual;
             }
+#elif defined(TARGET_ARM64)
+            if (simdSize > 16)
+            {
+                id = NI_Sve_CompareNotEqualTo;
+            }
 #endif // TARGET_XARCH
             break;
         }
@@ -30091,6 +30249,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             unreached();
         }
     }
+
+#if defined(TARGET_ARM64)
+    id = GetScalableHWIntrinsicId(simdSize, id);
+#endif
 
     return id;
 }
@@ -30161,7 +30323,28 @@ var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(
             unreached();
         }
     }
-#endif // TARGET_XARCH
+#elif defined(TARGET_ARM64)
+    switch (oper)
+    {
+        case GT_EQ:
+        case GT_GE:
+        case GT_LE:
+        case GT_NE:
+        case GT_GT:
+        case GT_LT:
+        {
+            if (simdSize > 16)
+            {
+                lookupType = TYP_MASK;
+            }
+            break;
+        }
+        default:
+        {
+            unreached();
+        }
+    }
+#endif // TARGET_XARCH || TARGET_ARM64
 
     return lookupType;
 }
@@ -30190,6 +30373,8 @@ bool GenTreeHWIntrinsic::ShouldConstantProp(GenTree* operand, GenTreeVecCon* vec
     switch (gtHWIntrinsicId)
     {
 #if defined(TARGET_ARM64)
+        case NI_Vector_op_Equality:
+        case NI_Vector_op_Inequality:
         case NI_Vector64_op_Equality:
         case NI_Vector64_op_Inequality:
 #endif // TARGET_ARM64
@@ -32032,6 +32217,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 case NI_Vector128_op_Equality:
 #if defined(TARGET_ARM64)
+                case NI_Vector_op_Equality:
                 case NI_Vector64_op_Equality:
 #elif defined(TARGET_XARCH)
                 case NI_Vector256_op_Equality:
@@ -32045,6 +32231,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 case NI_Vector128_op_Inequality:
 #if defined(TARGET_ARM64)
+                case NI_Vector_op_Inequality:
                 case NI_Vector64_op_Inequality:
 #elif defined(TARGET_XARCH)
                 case NI_Vector256_op_Inequality:
@@ -32506,6 +32693,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             case NI_Vector128_op_Equality:
 #if defined(TARGET_ARM64)
+            case NI_Vector_op_Equality:
             case NI_Vector64_op_Equality:
 #elif defined(TARGET_XARCH)
             case NI_Vector256_op_Equality:
@@ -32527,6 +32715,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             case NI_Vector128_op_Inequality:
 #if defined(TARGET_ARM64)
+            case NI_Vector_op_Inequality:
             case NI_Vector64_op_Inequality:
 #elif defined(TARGET_XARCH)
             case NI_Vector256_op_Inequality:

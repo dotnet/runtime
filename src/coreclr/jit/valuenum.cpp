@@ -8737,6 +8737,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
             case NI_Vector128_op_Equality:
 #if defined(TARGET_ARM64)
+            case NI_Vector_op_Equality:
             case NI_Vector64_op_Equality:
 #elif defined(TARGET_XARCH)
             case NI_Vector256_op_Equality:
@@ -8758,6 +8759,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
             case NI_Vector128_op_Inequality:
 #if defined(TARGET_ARM64)
+            case NI_Vector_op_Inequality:
             case NI_Vector64_op_Inequality:
 #elif defined(TARGET_XARCH)
             case NI_Vector256_op_Inequality:
@@ -8863,6 +8865,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
         {
             case NI_Vector128_op_Equality:
 #if defined(TARGET_ARM64)
+            case NI_Vector_op_Equality:
             case NI_Vector64_op_Equality:
 #elif defined(TARGET_XARCH)
             case NI_Vector256_op_Equality:
@@ -8880,6 +8883,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
             case NI_Vector128_op_Inequality:
 #if defined(TARGET_ARM64)
+            case NI_Vector_op_Inequality:
             case NI_Vector64_op_Inequality:
 #elif defined(TARGET_XARCH)
             case NI_Vector256_op_Inequality:

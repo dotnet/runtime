@@ -1366,6 +1366,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_Equals:
         case NI_Vector64_Equals:
         case NI_Vector128_Equals:
         {
@@ -1378,6 +1379,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_op_Equality:
         case NI_Vector64_op_Equality:
         case NI_Vector128_op_Equality:
         {
@@ -1390,6 +1392,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_EqualsAny:
         case NI_Vector64_EqualsAny:
         case NI_Vector128_EqualsAny:
         {
@@ -1668,6 +1671,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_GreaterThan:
         case NI_Vector64_GreaterThan:
         case NI_Vector128_GreaterThan:
         {
@@ -1680,6 +1684,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_GreaterThanAll:
         case NI_Vector64_GreaterThanAll:
         case NI_Vector128_GreaterThanAll:
         {
@@ -1692,6 +1697,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_GreaterThanAny:
         case NI_Vector64_GreaterThanAny:
         case NI_Vector128_GreaterThanAny:
         {
@@ -1704,6 +1710,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_GreaterThanOrEqual:
         case NI_Vector64_GreaterThanOrEqual:
         case NI_Vector128_GreaterThanOrEqual:
         {
@@ -1716,6 +1723,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_GreaterThanOrEqualAll:
         case NI_Vector64_GreaterThanOrEqualAll:
         case NI_Vector128_GreaterThanOrEqualAll:
         {
@@ -1728,6 +1736,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_GreaterThanOrEqualAny:
         case NI_Vector64_GreaterThanOrEqualAny:
         case NI_Vector128_GreaterThanOrEqualAny:
         {
@@ -1873,6 +1882,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_LessThan:
         case NI_Vector64_LessThan:
         case NI_Vector128_LessThan:
         {
@@ -1885,6 +1895,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_LessThanAll:
         case NI_Vector64_LessThanAll:
         case NI_Vector128_LessThanAll:
         {
@@ -1897,6 +1908,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_LessThanAny:
         case NI_Vector64_LessThanAny:
         case NI_Vector128_LessThanAny:
         {
@@ -1909,6 +1921,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_LessThanOrEqual:
         case NI_Vector64_LessThanOrEqual:
         case NI_Vector128_LessThanOrEqual:
         {
@@ -1921,6 +1934,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_LessThanOrEqualAll:
         case NI_Vector64_LessThanOrEqualAll:
         case NI_Vector128_LessThanOrEqualAll:
         {
@@ -1933,6 +1947,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_LessThanOrEqualAny:
         case NI_Vector64_LessThanOrEqualAny:
         case NI_Vector128_LessThanOrEqualAny:
         {
@@ -2171,6 +2186,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_op_Inequality:
         case NI_Vector64_op_Inequality:
         case NI_Vector128_op_Inequality:
         {

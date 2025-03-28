@@ -3161,7 +3161,8 @@ public:
                                 GenTree*    op1,
                                 GenTree*    op2,
                                 CorInfoType simdBaseJitType,
-                                unsigned    simdSize);
+                                unsigned    simdSize
+                                ARM64_ARG(bool wrapInCvtm = true));
 
     GenTree* gtNewSimdCmpOpAllNode(genTreeOps  op,
                                    var_types   type,

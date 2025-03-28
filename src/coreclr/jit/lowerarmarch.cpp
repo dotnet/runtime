@@ -1757,6 +1757,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_Vector_op_Equality:
+        {
+            return LowerHWIntrinsicCmpOpVL(node, GT_EQ);
+        }
+
+        case NI_Vector_op_Inequality:
+        {
+            return LowerHWIntrinsicCmpOpVL(node, GT_NE);
+        }
+
         case NI_Vector64_op_Equality:
         case NI_Vector128_op_Equality:
         {
@@ -2019,8 +2029,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
     assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
-           (node->GetHWIntrinsicId() == NI_Vector_Create) ||
-           (node->GetHWIntrinsicId() == NI_Vector64_CreateScalar) ||
+           (node->GetHWIntrinsicId() == NI_Vector_Create) || (node->GetHWIntrinsicId() == NI_Vector64_CreateScalar) ||
            (node->GetHWIntrinsicId() == NI_Vector128_CreateScalar) ||
            (node->GetHWIntrinsicId() == NI_Vector64_CreateScalarUnsafe) ||
            (node->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe) ||
@@ -2045,6 +2054,171 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
     }
 
     return false;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicCmpOpVL: Lowers a Vector comparison intrinsic
+//
+//  Arguments:
+//     node  - The hardware intrinsic node.
+//     cmpOp - The comparison operation, currently must be GT_EQ or GT_NE
+//
+GenTree* Lowering::LowerHWIntrinsicCmpOpVL(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
+{
+    NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
+    CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
+    var_types      simdBaseType    = node->GetSimdBaseType();
+    unsigned       simdSize        = node->GetSimdSize();
+    var_types      simdType        = Compiler::getSIMDTypeForSize(simdSize);
+    assert(simdType == TYP_SIMD32);
+
+    assert((intrinsicId == NI_Vector_op_Equality) || (intrinsicId == NI_Vector_op_Inequality));
+
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(simdSize != 0);
+    assert(node->TypeIs(TYP_INT));
+    assert((cmpOp == GT_EQ) || (cmpOp == GT_NE));
+
+    // We have the following (with the appropriate simd size and where the intrinsic could be op_Inequality):
+    //          /--*  op2  mask
+    //          /--*  op1  mask
+    //   node = *  HWINTRINSIC   simd   T op_Equality
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+
+    // Optimize comparison against Vector.Zero via CNTP:
+    //
+    //   bool eq = v == Vector<int>.Zero
+    //
+    // to:
+    //
+    //   bool eq = Sve.GetActiveElementCount(v) == 0;
+    //
+
+    GenTree* op     = nullptr;
+    GenTree* opZero = nullptr;
+    if (op1->IsMaskZero())
+    {
+        op     = op2;
+        opZero = op1;
+    }
+    else if (op2->IsMaskZero())
+    {
+        op     = op1;
+        opZero = op2;
+    }
+
+    // Currently only `some == Vector<T>.Zero` is handled
+    if (op != nullptr)
+    {
+
+        NamedIntrinsic elementCountIntrinsicId;
+        int            elementsCnt = 0;
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                elementCountIntrinsicId = NI_Sve_Count8BitElements;
+                elementsCnt             = simdSize;
+                break;
+            case TYP_SHORT:
+            case TYP_USHORT:
+                elementCountIntrinsicId = NI_Sve_Count16BitElements;
+                elementsCnt             = simdSize / 2;
+                break;
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                elementCountIntrinsicId = NI_Sve_Count32BitElements;
+                elementsCnt             = simdSize / 4;
+                break;
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                elementCountIntrinsicId = NI_Sve_Count64BitElements;
+                elementsCnt             = simdSize / 8;
+                break;
+            default:
+                unreached();
+        }
+
+        GenTree* cntNode;
+
+        if (cmpOp == GT_EQ)
+        {
+            if (comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                GenTree* svePattern = comp->gtNewIconNode(31, TYP_LONG);
+                BlockRange().InsertBefore(node, svePattern);
+
+                cntNode = comp->gtNewSimdHWIntrinsicNode(TYP_LONG, svePattern, elementCountIntrinsicId,
+                                                         CORINFO_TYPE_LONG, simdSize);
+            }
+            else
+            {
+                cntNode = comp->gtNewIconNode(elementsCnt, TYP_LONG);
+            }
+        }
+        else
+        {
+            // For inequality, we need to just check if all lanes are 0
+            cntNode = comp->gtNewIconNode(0, TYP_LONG);
+        }
+
+        BlockRange().InsertBefore(node, cntNode);
+        BlockRange().Remove(opZero);
+
+        LowerNode(cntNode);
+
+        node->ChangeOper(cmpOp);
+        node->gtType        = TYP_INT;
+        node->AsOp()->gtOp1 = op1;
+        node->AsOp()->gtOp2 = cntNode;
+
+        LowerNodeCC(node, (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE);
+
+        node->gtType = TYP_VOID;
+        node->ClearUnusedValue();
+        LowerNode(node);
+        return node->gtNext;
+    }
+
+    GenTree* cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, NI_Sve_CompareEqual, simdBaseJitType, simdSize);
+    BlockRange().InsertBefore(node, cmp);
+
+    // Save cmp into a temp as we're going to need to pass it GetActiveElementCount
+    node->Op(1) = cmp;
+    LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+    ReplaceWithLclVar(tmp1Use);
+    GenTree* cmpResult = node->Op(1);
+    LowerNode(cmpResult);
+
+    GenTree* allTrue = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+    GenTree* activeElemCnt = comp->gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
+        simdBaseJitType, simdSize);
+    GenTree* cntNode = comp->gtNewIconNode(0, TYP_LONG);
+    BlockRange().InsertBefore(node, allTrue);
+    BlockRange().InsertBefore(node, activeElemCnt);
+    BlockRange().InsertBefore(node, cntNode);
+
+    LowerNode(activeElemCnt);
+    LowerNode(cntNode);
+
+    LowerNode(cmp);
+
+    node->ChangeOper(cmpOp);
+    node->gtType = TYP_INT;
+    node->AsOp()->gtOp1 = activeElemCnt;
+    node->AsOp()->gtOp2 = cntNode;
+
+    LowerNodeCC(node, (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE);
+
+    node->gtType = TYP_VOID;
+    node->ClearUnusedValue();
+    LowerNode(node);
+    return node->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------

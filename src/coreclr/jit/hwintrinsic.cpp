@@ -1232,6 +1232,12 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
     {
         return simdSize;
     }
+#if defined(TARGET_ARM64)
+    else if ((FIRST_NI_Vector <= id) && (id <= LAST_NI_Vector))
+    {
+        return Compiler::compVectorTLength;
+    }
+#endif
 
     CORINFO_CLASS_HANDLE typeHnd = nullptr;
 
