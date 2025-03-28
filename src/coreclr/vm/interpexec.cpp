@@ -32,7 +32,7 @@ InterpThreadContext* InterpGetThreadContext()
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 
-void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext)
+void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext)
 {
     const int32_t *ip;
     int8_t *stack;
@@ -706,6 +706,7 @@ MAIN_LOOP:
                     MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_DESC_TAG);
                     PCODE code = pMD->GetNativeCode();
                     if (!code) {
+                        pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                         GCX_PREEMP();
                         pMD->PrepareInitialCode(CallerGCMode::Coop);
                         code = pMD->GetNativeCode();
@@ -758,6 +759,7 @@ EXIT_FRAME:
     if (pFrame->pParent && pFrame->pParent->ip)
     {
         // Return to the main loop after a non-recursive interpreter call
+        pFrame->ip = NULL;
         pFrame = pFrame->pParent;
         ip = pFrame->ip;
         stack = pFrame->pStack;

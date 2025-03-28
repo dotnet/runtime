@@ -55,6 +55,6 @@ struct InterpThreadContext
 };
 
 InterpThreadContext* InterpGetThreadContext();
-void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext);
+void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext);
 
 #endif
