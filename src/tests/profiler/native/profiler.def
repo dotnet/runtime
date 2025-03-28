@@ -6,4 +6,5 @@ EXPORTS
             PassCallbackToProfiler  PRIVATE
             DoPInvoke               PRIVATE
             DoPInvokeWithCallbackOnOtherThread PRIVATE
+            SwitchJitOptimization PRIVATE
 

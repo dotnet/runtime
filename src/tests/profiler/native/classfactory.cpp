@@ -22,6 +22,7 @@
 #include "inlining/inlining.h"
 #include "moduleload/moduleload.h"
 #include "assemblyprofiler/assemblyprofiler.h"
+#include "dynamicjitoptimization/dynamicjitoptimization.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -148,6 +149,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == EnumThreadsProfiler::GetClsid())
     {
         profiler = new EnumThreadsProfiler();
+    }
+    else if (clsid == DynamicJitOptimizations::GetClsid())
+    {
+        profiler = new DynamicJitOptimizations();
     }
     else
     {
