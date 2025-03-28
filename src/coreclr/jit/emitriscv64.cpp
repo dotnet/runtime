@@ -88,13 +88,7 @@ const emitJumpKind emitReverseJumpKinds[] = {
 {
     assert(emitter::isCondJumpInstruction(ins));
 
-    return emitJumpKindToIns(
-        emitReverseJumpKind(
-            emitInsToJumpKind(
-                ins
-            )
-        )
-    );
+    return emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(ins)));
 }
 
 /*****************************************************************************
