@@ -3108,152 +3108,248 @@ namespace System.Xml.XslCompiledTransformApiTests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CTransformConstructorWithFourParametersTest : XsltApiTestCaseBase2
     {
-        public static IEnumerable<object[]> ValidCasesTestData
+        public static IEnumerable<object[]> LoadXmlFileExternalUriShouldThrowXsltExceptionTestData
         {
             get
             {
                 yield return new object[] {
-                    "xmlResolver_document_function.xsl",
-                    "fruits.xml",
-                    "xmlResolver_document_function.txt",
-                    "CustomXmlResolver",
-                    true,
-                    "XmlReader"
-                };
-                yield return new object[] {
-                    "xmlResolver_document_function.xsl",
-                    "fruits.xml",
-                    "xmlResolver_document_function.txt",
-                    "CustomXmlResolver",
-                    true,
-                    "IXPathNavigable"
-                };
-                yield return new object[] {
-                    "xmlResolver_document_function.xsl",
-                    "fruits.xml",
-                    "xmlResolver_document_function.txt",
-                    "XmlUrlResolver",
-                    true,
-                    "IXPathNavigable"
-                };
-                yield return new object[] {
-                    "xmlResolver_document_function.xsl",
-                    "fruits.xml",
-                    "xmlResolver_document_function.txt",
-                    "XmlUrlResolver",
-                    true,
-                    "XmlReader"
-                };
-                yield return new object[] {
-                    "Bug382198.xsl",
-                    "fruits.xml",
-                    "bug382198.txt",
-                    "CustomXmlResolver",
-                    true,
-                    "IXPathNavigable"
-                };
-                yield return new object[] {
-                    "Bug382198.xsl",
-                    "fruits.xml",
-                    "bug382198.txt",
-                    "CustomXmlResolver",
-                    true,
-                    "XmlReader"
-                };
-                yield return new object[] {
-                    "XmlResolver_Main.xsl",
-                    "fruits.xml",
-                    "xmlResolver_main.txt",
-                    "XmlUrlResolver",
-                    true,
-                    "IXPathNavigable"
-                };
-                yield return new object[] {
-                    "XmlResolver_Main.xsl",
-                    "fruits.xml",
-                    "xmlResolver_main.txt",
-                    "XmlUrlResolver",
-                    true,
-                    "XmlReader"
-                };
-                yield return new object[] {
-                    "Bug382198.xsl",
-                    "fruits.xml",
-                    "bug382198.txt",
-                    "XmlUrlResolver",
-                    true,
-                    "IXPathNavigable"
-                };
-                yield return new object[] {
-                    "Bug382198.xsl",
-                    "fruits.xml",
-                    "bug382198.txt",
-                    "XmlUrlResolver",
-                    true,
-                    "XmlReader"
-                };
-                yield return new object[] {
-                    "Bug382198.xsl",
-                    "fruits.xml",
-                    "bug382198.txt",
-                    "NullResolver",
-                    true,
-                    "IXPathNavigable"
-                };
-                yield return new object[] {
-                    "Bug382198.xsl",
-                    "fruits.xml",
-                    "bug382198.txt",
-                    "NullResolver",
-                    true,
-                    "XmlReader"
-                };
-                yield return new object[] {
-                    "bug93189.xsl",
-                    "bug93189.xml",
-                    "bug93189.xml",
-                    "NullResolver",
-                    true,
-                    "XmlReader"
+                    FullFilePath("XmlResolver_Main.xsl"),
+                    null
                 };
             }
         }
 
-        public static IEnumerable<object[]> ValidCasesExternalUriTestData
+        public static IEnumerable<object[]> TransformWithXmlReaderXmlFileReturnsExpectedBaseLineFileCasesTestData
         {
             get
             {
                 yield return new object[] {
-                    "XmlResolver_Main.xsl",
-                    "fruits.xml",
-                    "xmlResolver_main.txt",
-                    "CustomXmlResolver",
-                    true,
-                    "IXPathNavigable"
+                    FullFilePath("xmlResolver_document_function.xsl"),
+                    FullFilePath("fruits.xml"),
+                    Path.Combine("baseline", "xmlResolver_document_function.txt"),
+                    new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), "XsltApiV2")))
                 };
                 yield return new object[] {
-                    "XmlResolver_Main.xsl",
-                    "fruits.xml",
-                    "xmlResolver_main.txt",
-                    "CustomXmlResolver",
-                    true,
-                    "XmlReader"
+                    FullFilePath("xmlResolver_document_function.xsl"),
+                    FullFilePath("fruits.xml"),
+                    Path.Combine("baseline", "xmlResolver_document_function.txt"),
+                    new XmlUrlResolver()
                 };
                 yield return new object[] {
-                    "XmlResolver_Main.xsl",
-                    "fruits.xml",
-                    "xmlResolver_main.txt",
-                    "NullResolver",
-                    false,
-                    "IXPathNavigable"
+                    FullFilePath("Bug382198.xsl"),
+                    FullFilePath("fruits.xml"),
+                    Path.Combine("baseline", "bug382198.txt"),
+                    new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), "XsltApiV2")))
                 };
                 yield return new object[] {
-                    "XmlResolver_Main.xsl",
-                    "fruits.xml",
-                    "xmlResolver_main.txt",
-                    "NullResolver",
-                    false,
-                    "XmlReader"
+                    FullFilePath("XmlResolver_Main.xsl"),
+                    FullFilePath("fruits.xml"),
+                    Path.Combine("baseline", "xmlResolver_main.txt"),
+                    new XmlUrlResolver()
+                };
+                yield return new object[] {
+                    FullFilePath("Bug382198.xsl"),
+                    FullFilePath("fruits.xml"),
+                    Path.Combine("baseline", "bug382198.txt"),
+                    new XmlUrlResolver()
+                };
+                yield return new object[] {
+                    FullFilePath("Bug382198.xsl"),
+                    FullFilePath("fruits.xml"),
+                    Path.Combine("baseline", "bug382198.txt"),
+                    null
+                };
+                yield return new object[] {
+                    FullFilePath("bug93189.xsl"),
+                    FullFilePath("bug93189.xml"),
+                    Path.Combine("baseline", "bug93189.xml"),
+                    null
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> TransformWithIXPathNavigableXmlFileReturnsExpectedBaseLineFileCasesTestData
+        {
+            get
+            {
+                XmlDocument xmlDoc = new XmlDocument();
+                xmlDoc.Load(FullFilePath("fruits.xml"));
+                yield return new object[] {
+                    FullFilePath("xmlResolver_document_function.xsl"),
+                    xmlDoc.CreateNavigator(),
+                    Path.Combine("baseline", "xmlResolver_document_function.txt"),
+                    new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), "XsltApiV2")))
+                };
+
+                XPathDocument xpathDoc;
+                IXPathNavigable navigator;
+                using (XmlReader reader = XmlReader.Create(FullFilePath("fruits.xml")))
+                {
+                    xpathDoc = new XPathDocument(reader);
+                    navigator = xpathDoc.CreateNavigator();
+                }
+                yield return new object[] {
+                    FullFilePath("xmlResolver_document_function.xsl"),
+                    navigator,
+                    Path.Combine("baseline", "xmlResolver_document_function.txt"),
+                    new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), "XsltApiV2")))
+                };
+
+                XmlDocument xmlDoc2 = new XmlDocument();
+                xmlDoc2.Load(FullFilePath("fruits.xml"));
+                yield return new object[] {
+                    FullFilePath("xmlResolver_document_function.xsl"),
+                    xmlDoc2.CreateNavigator(),
+                    Path.Combine("baseline", "xmlResolver_document_function.txt"),
+                    new XmlUrlResolver()
+                };
+
+                XPathDocument xpathDoc2;
+                IXPathNavigable navigator2;
+                using (XmlReader reader = XmlReader.Create(FullFilePath("fruits.xml")))
+                {
+                    xpathDoc2 = new XPathDocument(reader);
+                    navigator2 = xpathDoc.CreateNavigator();
+                }
+                yield return new object[] {
+                    FullFilePath("xmlResolver_document_function.xsl"),
+                    navigator2,
+                    Path.Combine("baseline", "xmlResolver_document_function.txt"),
+                    new XmlUrlResolver()
+                };
+
+                XmlDocument xmlDoc3 = new XmlDocument();
+                xmlDoc3.Load(FullFilePath("fruits.xml"));
+                yield return new object[] {
+                    FullFilePath("Bug382198.xsl"),
+                    xmlDoc3.CreateNavigator(),
+                    Path.Combine("baseline", "bug382198.txt"),
+                    new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), "XsltApiV2")))
+                };
+
+                XPathDocument xpathDoc3;
+                IXPathNavigable navigator3;
+                using (XmlReader reader = XmlReader.Create(FullFilePath("fruits.xml")))
+                {
+                    xpathDoc3 = new XPathDocument(reader);
+                    navigator3 = xpathDoc.CreateNavigator();
+                }
+                yield return new object[] {
+                    FullFilePath("Bug382198.xsl"),
+                    navigator3,
+                    Path.Combine("baseline", "bug382198.txt"),
+                    new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), "XsltApiV2")))
+                };
+
+                XmlDocument xmlDoc4 = new XmlDocument();
+                xmlDoc4.Load(FullFilePath("fruits.xml"));
+                yield return new object[] {
+                    FullFilePath("XmlResolver_Main.xsl"),
+                    xmlDoc4.CreateNavigator(),
+                    Path.Combine("baseline", "xmlResolver_main.txt"),
+                    new XmlUrlResolver()
+                };
+
+                XPathDocument xpathDoc4;
+                IXPathNavigable navigator4;
+                using (XmlReader reader = XmlReader.Create(FullFilePath("fruits.xml")))
+                {
+                    xpathDoc4 = new XPathDocument(reader);
+                    navigator4 = xpathDoc.CreateNavigator();
+                }
+                yield return new object[] {
+                    FullFilePath("XmlResolver_Main.xsl"),
+                    navigator4,
+                    Path.Combine("baseline", "xmlResolver_main.txt"),
+                    new XmlUrlResolver()
+                };
+
+                XmlDocument xmlDoc5 = new XmlDocument();
+                xmlDoc5.Load(FullFilePath("fruits.xml"));
+                yield return new object[] {
+                    FullFilePath("Bug382198.xsl"),
+                    xmlDoc5.CreateNavigator(),
+                    Path.Combine("baseline", "bug382198.txt"),
+                    new XmlUrlResolver()
+                };
+
+                XPathDocument xpathDoc5;
+                IXPathNavigable navigator5;
+                using (XmlReader reader = XmlReader.Create(FullFilePath("fruits.xml")))
+                {
+                    xpathDoc5 = new XPathDocument(reader);
+                    navigator5 = xpathDoc.CreateNavigator();
+                }
+                yield return new object[] {
+                    FullFilePath("Bug382198.xsl"),
+                    navigator5,
+                    Path.Combine("baseline", "bug382198.txt"),
+                    new XmlUrlResolver()
+                };
+
+                XmlDocument xmlDoc6 = new XmlDocument();
+                xmlDoc6.Load(FullFilePath("fruits.xml"));
+                yield return new object[] {
+                    FullFilePath("Bug382198.xsl"),
+                    xmlDoc6.CreateNavigator(),
+                    Path.Combine("baseline", "bug382198.txt"),
+                    null
+                };
+
+                XPathDocument xpathDoc6;
+                IXPathNavigable navigator6;
+                using (XmlReader reader = XmlReader.Create(FullFilePath("fruits.xml")))
+                {
+                    xpathDoc6 = new XPathDocument(reader);
+                    navigator6 = xpathDoc.CreateNavigator();
+                }
+                yield return new object[] {
+                    FullFilePath("Bug382198.xsl"),
+                    navigator6,
+                    Path.Combine("baseline", "bug382198.txt"),
+                    null
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> TransformWithIXPathNavigableXmlFileExternalUriReturnsExpectedBaseLineFileTestData
+        {
+            get
+            {
+                XmlDocument xmlDoc = new XmlDocument();
+                xmlDoc.Load(FullFilePath("fruits.xml"));
+                yield return new object[] {
+                    FullFilePath("XmlResolver_Main.xsl"),
+                    xmlDoc.CreateNavigator(),
+                    Path.Combine("baseline", "xmlResolver_main.txt"),
+                    new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), "XsltApiV2")))
+                };
+
+                XPathDocument xpathDoc;
+                IXPathNavigable navigator;
+                using (XmlReader reader = XmlReader.Create(FullFilePath("fruits.xml")))
+                {
+                    xpathDoc = new XPathDocument(reader);
+                    navigator = xpathDoc.CreateNavigator();
+                }
+                yield return new object[] {
+                    FullFilePath("XmlResolver_Main.xsl"),
+                    navigator,
+                    Path.Combine("baseline", "xmlResolver_main.txt"),
+                    new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), "XsltApiV2")))
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> TransformWithXmlReaderXmlFileExternalUriReturnsExpectedBaseLineFileTestData
+        {
+            get
+            {
+                yield return new object[] {
+                    FullFilePath("XmlResolver_Main.xsl"),
+                    FullFilePath("fruits.xml"),
+                    Path.Combine("baseline", "xmlResolver_main.txt"),
+                    new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), "XsltApiV2")))
                 };
             }
         }
@@ -3282,99 +3378,78 @@ namespace System.Xml.XslCompiledTransformApiTests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCasesExternalUriTestData))]
-        public void ValidCases_ExternalUri(string param0, string param1, string param2, string param3, bool param4, string param5)
+        [MemberData(nameof(TransformWithIXPathNavigableXmlFileExternalUriReturnsExpectedBaseLineFileTestData))]
+        public void TransformWithIXPathNavigable_XmlFileExternalUri_ReturnsExpectedBaseLineFile(string xslFile, IXPathNavigable navigator, string baseLineFile, XmlResolver resolver)
         {
             using (new AllowDefaultResolverContext())
             {
-                ValidCases(param0, param1, param2, param3, param4, param5);
+                TransformWithIXPathNavigable_XmlFile_ReturnsExpectedBaseLineFile(xslFile, navigator, baseLineFile, resolver);
             }
         }
 
         [Theory]
-        [MemberData(nameof(ValidCasesTestData))]
-        public void ValidCases(string param0, string param1, string param2, string param3, bool param4, string param5)
+        [MemberData(nameof(TransformWithXmlReaderXmlFileExternalUriReturnsExpectedBaseLineFileTestData))]
+        public void TransformWithXmlReader_XmlFileExternalUri_ReturnsExpectedBaseLineFile(string xslFile, string xmlFile, string baseLineFile, XmlResolver resolver)
+        {
+            using (new AllowDefaultResolverContext())
+            {
+                TransformWithXmlReader_XmlFile_ReturnsExpectedBaseLineFile(xslFile, xmlFile, baseLineFile, resolver);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(LoadXmlFileExternalUriShouldThrowXsltExceptionTestData))]
+        public void Load_XmlFileExternalUri_ShouldThrowXsltException(string xslFile, XmlResolver resolver)
+        {
+            XslCompiledTransform localXslt = new XslCompiledTransform();
+            XsltSettings settings = new XsltSettings(true, true);
+            using (XmlReader xslReader = XmlReader.Create(xslFile))
+            {
+                Assert.ThrowsAny<XsltException>(() => localXslt.Load(xslReader, settings, resolver));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TransformWithIXPathNavigableXmlFileReturnsExpectedBaseLineFileCasesTestData))]
+        public void TransformWithIXPathNavigable_XmlFile_ReturnsExpectedBaseLineFile(string xslFile, IXPathNavigable navigator, string baseLineFile, XmlResolver resolver)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                string xslFile = FullFilePath(param0);
-                string xmlFile = FullFilePath(param1);
-                string baseLineFile = Path.Combine("baseline", param2);
-                bool expectedResult = param4;
-                bool actualResult = false;
+                XslCompiledTransform localXslt = new XslCompiledTransform();
+                XsltSettings settings = new XsltSettings(true, true);
+                using (XmlReader xslReader = XmlReader.Create(xslFile))
+                {
+                    localXslt.Load(xslReader, settings, resolver);
+                }
 
+                using (XmlWriter writer = XmlWriter.Create("outputFile.txt"))
+                {
+                    localXslt.Transform(navigator, null, writer, resolver);
+                }
+                VerifyResult(baseLineFile, "outputFile.txt");
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TransformWithXmlReaderXmlFileReturnsExpectedBaseLineFileCasesTestData))]
+        public void TransformWithXmlReader_XmlFile_ReturnsExpectedBaseLineFile(string xslFile, string xmlFile, string baseLineFile, XmlResolver resolver)
+        {
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            {
                 XmlReader xmlReader = XmlReader.Create(xmlFile);
-                //Let's select randomly how to create navigator
-                IXPathNavigable navigator = null;
-                Random randGenerator = new Random(unchecked((int)DateTime.Now.Ticks));
-                switch (randGenerator.Next(2))
+
+                XslCompiledTransform localXslt = new XslCompiledTransform();
+                XsltSettings settings = new XsltSettings(true, true);
+                using (XmlReader xslReader = XmlReader.Create(xslFile))
                 {
-                    case 0:
-                        _output.WriteLine("Using XmlDocument.CreateNavigator()");
-                        XmlDocument xmlDoc = new XmlDocument();
-                        xmlDoc.Load(xmlFile);
-                        navigator = xmlDoc.CreateNavigator();
-                        break;
-
-                    case 1:
-                        _output.WriteLine("Using XPathDocument.CreateNavigator()");
-                        XPathDocument xpathDoc;
-                        using (XmlReader reader = XmlReader.Create(xmlFile))
-                        {
-                            xpathDoc = new XPathDocument(reader);
-                            navigator = xpathDoc.CreateNavigator();
-                        }
-                        break;
-
-                    default:
-                        break;
+                    localXslt.Load(xslReader, settings, resolver);
                 }
 
-                XmlResolver resolver = null;
-                switch (param3)
+                using (XmlWriter writer = XmlWriter.Create("outputFile.txt"))
                 {
-                    case "NullResolver":
-                        break;
-
-                    case "XmlUrlResolver":
-                        resolver = new XmlUrlResolver();
-                        break;
-
-                    case "CustomXmlResolver":
-                        resolver = new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), @"XsltApiV2")));
-                        break;
-
-                    default:
-                        break;
+                    localXslt.Transform(xmlReader, null, writer, resolver);
                 }
-
-                try
-                {
-                    XslCompiledTransform localXslt = new XslCompiledTransform();
-                    XsltSettings settings = new XsltSettings(true, true);
-                    using (XmlReader xslReader = XmlReader.Create(xslFile))
-                        localXslt.Load(xslReader, settings, resolver);
-
-                    using (XmlWriter writer = XmlWriter.Create("outputFile.txt"))
-                    {
-                        if (param5 == "XmlReader")
-                            localXslt.Transform(xmlReader, null, writer, resolver);
-                        else
-                            localXslt.Transform(navigator, null, writer, resolver);
-                    }
-                    VerifyResult(baseLineFile, "outputFile.txt");
-                    actualResult = true;
-                }
-                catch (Exception ex)
-                {
-                    _output.WriteLine(ex.Message);
-                    actualResult = false;
-                }
-
-                if (actualResult != expectedResult)
-                {
-                    Assert.Fail();
-                }
+                VerifyResult(baseLineFile, "outputFile.txt");
             }
         }
 
