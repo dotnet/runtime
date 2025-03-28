@@ -924,8 +924,16 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 		g_assert (prev_table != NULL);
 
 		MonoTableInfo *tbl = &delta->mutants [i];
-		tbl->row_size = delta->delta_image->tables [i].row_size;
-		tbl->size_bitfield = delta->delta_image->tables [i].size_bitfield;
+		if (delta->delta_image->tables [i].row_size != 0 || prev_table->rows_ == 0)
+		{
+			tbl->row_size = delta->delta_image->tables [i].row_size;
+			tbl->size_bitfield = delta->delta_image->tables [i].size_bitfield;
+		}
+		else
+		{
+			tbl->row_size = prev_table->row_size;
+			tbl->size_bitfield = prev_table->size_bitfield;
+		}
 		mono_metadata_compute_column_offsets (tbl);
 		tbl->rows_ = rows;
 		g_assert (tbl->rows_ > 0 && tbl->row_size != 0);
