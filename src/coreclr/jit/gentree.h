@@ -7948,6 +7948,33 @@ protected:
 #endif // DEBUGGABLE_GENTREE
 };
 
+struct GenTreeShxadd : public GenTreeOp
+{
+    unsigned int shammt;
+
+    bool IsUnsignedVariant()
+    {
+        return gtOper == GT_SHXADD_UW;
+    }
+
+    GenTree* Base()
+    {
+        return gtOp1;
+    }
+
+    GenTree* Index()
+    {
+        return gtOp2;
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeShxadd()
+        : GenTreeOp()
+    {
+    }
+#endif // DEBUGGABLE_GENTREE
+};
+
 // Read-modify-write status of a RMW memory op rooted at a storeInd
 enum RMWStatus
 {
