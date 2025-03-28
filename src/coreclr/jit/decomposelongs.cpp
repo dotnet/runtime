@@ -587,7 +587,7 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
         // We will reach this path only if morph did not convert the cast to a helper call,
         // meaning we can perform the cast using SIMD instructions.
         // The sequence this creates is simply:
-        //    AVX512DQ.VL.ConvertToVector128Single(Vector128.CreateScalar(LONG)).ToScalar()
+        //    AVX512DQ.VL.ConvertToVector128Single(Vector128.CreateScalarUnsafe(LONG)).ToScalar()
 
         NamedIntrinsic intrinsicId      = NI_Illegal;
         GenTree*       srcOp            = cast->CastOp();
@@ -609,13 +609,18 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
                 (dstType == TYP_FLOAT) ? NI_AVX10v1_ConvertToVector128Single : NI_AVX10v1_ConvertToVector128Double;
         }
 
-        GenTree* createScalar = m_compiler->gtNewSimdCreateScalarNode(TYP_SIMD16, srcOp, baseIntegralType, 16);
+        GenTree* createScalar = m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, srcOp, baseIntegralType, 16);
         GenTree* convert =
             m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, createScalar, intrinsicId, baseIntegralType, 16);
         GenTree* toScalar = m_compiler->gtNewSimdToScalarNode(dstType, convert, baseFloatingType, 16);
 
         Range().InsertAfter(cast, createScalar, convert, toScalar);
         Range().Remove(cast);
+
+        if (createScalar->IsCnsVec())
+        {
+            Range().Remove(srcOp);
+        }
 
         if (use.IsDummyUse())
         {
