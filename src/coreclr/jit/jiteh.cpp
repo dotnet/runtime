@@ -640,6 +640,9 @@ bool Compiler::bbIsHandlerBeg(const BasicBlock* block)
     return (ehDsc != nullptr) && ((block == ehDsc->ebdHndBeg) || (ehDsc->HasFilter() && (block == ehDsc->ebdFilter)));
 }
 
+// bbIsFuncletBeg() returns true if "block" is the start of a handler or filter region,
+// and if the handler/filter is a funclet.
+//
 bool Compiler::bbIsFuncletBeg(const BasicBlock* block)
 {
     if (UsesFunclets() && fgFuncletsCreated)
