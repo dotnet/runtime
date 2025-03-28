@@ -21,5 +21,5 @@
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />
-
+  <Import Project="crossgen2.targets" />
 </Project>
