@@ -40,10 +40,10 @@
 #define EMBED_HASH_LO_PART_UTF8 "74e592c2fa383d4a3960714caef0c4f2"
 #define EMBED_HASH_FULL_UTF8    (EMBED_HASH_HI_PART_UTF8 EMBED_HASH_LO_PART_UTF8) // NUL terminated
 
-// This is a workaround for a compiler workaround that
-// causes issues with inserting multiple static strings.
+// This avoids compiler optimization which cause EMBED_HASH_HI_PART_UTF8 EMBED_HASH_LO_PART_UTF8
+// to be placed adjacent causing them to match EMBED_HASH_FULL_UTF8 when searched for replacing.
 // See https://github.com/dotnet/runtime/issues/109611 for more details.
-bool compare_memory_nooptimization(volatile const char* a, volatile const char* b, size_t length)
+static bool compare_memory_nooptimization(volatile const char* a, volatile const char* b, size_t length)
 {
     for (size_t i = 0; i < length; i++)
     {
@@ -72,10 +72,10 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
         return false;
     }
 
-    std::string binding(&embed[0]);
+    size_t binding_len = strlen(&embed[0]);
 
     // Check if the path exceeds the max allowed size
-    if (binding.size() > EMBED_MAX - 1) // -1 for null terminator
+    if (binding_len > EMBED_MAX - 1) // -1 for null terminator
     {
         trace::error(_X("The managed DLL bound to this executable is longer than the max allowed length (%d)"), EMBED_MAX - 1);
         return false;
@@ -86,9 +86,9 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     // So use two parts of the string that will be unaffected by the edit.
     size_t hi_len = (sizeof(hi_part) / sizeof(hi_part[0])) - 1;
     size_t lo_len = (sizeof(lo_part) / sizeof(lo_part[0])) - 1;
-    if (binding.size() >= (hi_len + lo_len)
-        && compare_memory_nooptimization(binding.c_str(), hi_part, hi_len)
-        && compare_memory_nooptimization(binding.substr(hi_len).c_str(), lo_part, lo_len))
+    if (binding_len >= (hi_len + lo_len)
+        && compare_memory_nooptimization(&embed[0], hi_part, hi_len)
+        && compare_memory_nooptimization(&embed[hi_len], lo_part, lo_len))
     {
         trace::error(_X("This executable is not bound to a managed DLL to execute. The binding value is: '%s'"), app_dll->c_str());
         return false;
