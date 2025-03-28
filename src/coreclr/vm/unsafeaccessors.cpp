@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-
-#ifndef DACCESS_COMPILE
-
 #include "customattribute.h"
 
 namespace
@@ -801,5 +798,3 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     GenerateAccessor(context, resolver, methodILDecoder);
     return true;
 }
-
-#endif // !DACCESS_COMPILE
