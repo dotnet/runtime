@@ -88,13 +88,14 @@ internal static class Entrypoints
         ComWrappers cw = new StrategyBasedComWrappers();
         object obj = cw.GetOrCreateObjectForComInstance(pLegacyTarget, CreateObjectFlags.None);
 
-        ICLRDataTarget dataTarget = obj as ICLRDataTarget ?? throw new ArgumentException($"pLegacyTarget does not implement ${nameof(ICLRDataTarget)}", nameof(pLegacyTarget));
-        ICLRContractLocator contractLocator = obj as ICLRContractLocator ?? throw new ArgumentException($"pLegacyTarget does not implement ${nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
+        ICLRDataTarget dataTarget = obj as ICLRDataTarget ?? throw new ArgumentException($"{nameof(pLegacyTarget)} does not implement {nameof(ICLRDataTarget)}", nameof(pLegacyTarget));
+        ICLRContractLocator contractLocator = obj as ICLRContractLocator ?? throw new ArgumentException($"{nameof(pLegacyTarget)} does not implement {nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
 
         ulong contractAddress;
-        if (contractLocator.GetContractDescriptor(&contractAddress) != 0)
+        int hr = contractLocator.GetContractDescriptor(&contractAddress);
+        if (hr != 0)
         {
-            throw new InvalidOperationException("Unable to retrieve contract address from ICLRContractLocator");
+            throw new InvalidOperationException($"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
         }
 
         if (!ContractDescriptorTarget.TryCreate(
@@ -124,7 +125,7 @@ internal static class Entrypoints
         Marshal.QueryInterface(ccw, *pIID, out nint ptrToIface);
         *iface = (void*)ptrToIface;
 
-        // Decrement reference count on ccw because QI increments it
+        // Decrement reference count on ccw because QI incremented it
         Marshal.Release(ccw);
 
         return 0;
