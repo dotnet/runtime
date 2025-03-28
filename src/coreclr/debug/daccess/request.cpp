@@ -5263,7 +5263,7 @@ namespace
         OBJECTREF nativeObjectWrapper = ObjectFromHandle(nativeObjectWrapperHandle);
         if (nativeObjectWrapper == NULL)
         {
-            return NULL;
+            return (TADDR)NULL;
         }
 
         NATIVEOBJECTWRAPPERREF pNativeObjectWrapper = NATIVEOBJECTWRAPPERREF(nativeObjectWrapper);
