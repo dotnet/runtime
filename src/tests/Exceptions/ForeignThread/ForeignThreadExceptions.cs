@@ -63,7 +63,7 @@ public class ForeignThreadExceptionsTest
             }
         });
 
-        if (OperatingSystem.IsWindows() && !TestLibrary.Utilities.IsNativeAot)
+        if (OperatingSystem.IsWindows() && !TestLibrary.Utilities.IsNativeAot && !TestLibrary.Utilities.IsMonoRuntime)
         {
             InvokeCallbackAndCatchTwiceOnNewThread(() => {
                 throw new Exception("Exception unhandled in any managed code");
