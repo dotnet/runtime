@@ -2043,6 +2043,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_Max:
         case NI_Vector64_Max:
         case NI_Vector128_Max:
         {
@@ -2055,6 +2056,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_MaxNative:
         case NI_Vector64_MaxNative:
         case NI_Vector128_MaxNative:
         {

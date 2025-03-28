@@ -22765,7 +22765,8 @@ GenTree* Compiler::gtNewSimdCndSelNode(
     }
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
 #elif defined(TARGET_ARM64)
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, NI_AdvSimd_BitwiseSelect, simdBaseJitType, simdSize);
+    intrinsic = (simdSize > 16) ? NI_Sve_ConditionalSelect : NI_AdvSimd_BitwiseSelect;
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -24748,6 +24749,9 @@ GenTree* Compiler::gtNewSimdMaxNativeNode(
 
     if (intrinsic != NI_Illegal)
     {
+#ifdef TARGET_ARM64
+        intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(simdSize, intrinsic);
+#endif
         return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
     }
 
@@ -24755,7 +24759,7 @@ GenTree* Compiler::gtNewSimdMaxNativeNode(
     GenTree* op2Dup = fgMakeMultiUse(&op2);
 
     // op1 = op1 > op2
-    op1 = gtNewSimdCmpOpNode(GT_GT, type, op1, op2, simdBaseJitType, simdSize);
+    op1 = gtNewSimdCmpOpNode(GT_GT, type, op1, op2, simdBaseJitType, simdSize ARM64_ARG(false));
 
     // result = ConditionalSelect(op1, op1Dup, op2Dup)
     return gtNewSimdCndSelNode(type, op1, op1Dup, op2Dup, simdBaseJitType, simdSize);
@@ -28983,6 +28987,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
                 break;
             case NI_Vector128_op_Inequality:
                 sveId = NI_Vector_op_Inequality;
+                break;
+            case NI_AdvSimd_Max:
+            case NI_AdvSimd_Arm64_Max:
+                sveId = NI_Sve_Max;
                 break;
             default:
                 sveId = id;
