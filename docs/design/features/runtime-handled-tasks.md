@@ -30,7 +30,7 @@ Unlike traditional C# compiler generated async, async2 methods shall not save/re
 
 #### Integration with `SynchronizationContext` and resumption
 
-A new attribute `System.Runtime.CompilerServices.ConfigureAwaitAttribute` will be defined. It can be applied at the assembly/module/type/method level. It shall be defined as 
+A new attribute `System.Runtime.CompilerServices.ConfigureAwaitAttribute` will be defined. It can be applied at the assembly/module/type/method level. It shall be defined as
 ```cs
 namespace System.Runtime.CompilerServices
 {
@@ -91,7 +91,7 @@ async2 Task<ReturnType> ThunkAsync(ParameterType param1, ParameterType2 param2, 
 }
 ```
 
-If any of the parameter types to the target method are ref parameters, or ref structures, then the Thunk generated will be 
+If any of the parameter types to the target method are ref parameters, or ref structures, then the Thunk generated will be
 ```cs
 async2 Task<ReturnType> ThunkAsync(ParameterType param1, ParameterType2 param2, ...)
 {
@@ -145,7 +145,7 @@ Non-async2 code is never permitted to directly invoke async2 code. Instead any a
 
 ### Interaction with Reflection
 
-Async2 methods will not be visible in reflection via the `Type.GetMethod`, `TypeInfo.DeclaredMethods`, `TypeInfo.DeclaredMembers` , or `Type.GetInterfaceMap()` apis. 
+Async2 methods will not be visible in reflection via the `Type.GetMethod`, `TypeInfo.DeclaredMethods`, `TypeInfo.DeclaredMembers` , or `Type.GetInterfaceMap()` apis.
 
 `Type.GetMembers` and `Type.GetMethods` will be able to find the async2 methods if and only if the `BindingFlags.Async2Visible` flag is set.
 
@@ -456,7 +456,7 @@ async2 Task<ReturnType> Thunk(ParameterType param1, ParameterType2 param2, ...)
 ## C# Language changes
 
 For the purpose of the experiment we have extended the syntax and semantics of C# language to support async2 methods. It is not the goal for this syntax to become the syntax in the actual implementation, however we will record our experiences with the experimental syntax in case it is useful when designing the actual syntax.
-  
+
 #### === Syntax v2 (current)
 
 The syntax that is currently in use in the experiment looks like:
@@ -485,7 +485,7 @@ int32 modopt([System.Runtime]System.Threading.Tasks.ValueTask`1) M1(int arg)
 ```
 and combinations of the above.
 
-Internal Roslyn compiler representation of async2 methods is roughly the same as for regular `Task/ValueTask` returning methods, except that the method symbol reports that it is an async2 method thus scenarios that are different for different flavors of async/async2 (i.e. lowering of `await` operator), can work differently. 
+Internal Roslyn compiler representation of async2 methods is roughly the same as for regular `Task/ValueTask` returning methods, except that the method symbol reports that it is an async2 method thus scenarios that are different for different flavors of async/async2 (i.e. lowering of `await` operator), can work differently.
 
 In a particular case of lowering await operator, if we notice that both containing and awaited members are async2, we can lower the `await M1()` into a direct call to the `int modopt(..)M1()`
 Conversely, if we see an invocation of `M1()` without await or in a regular, non-async2 member, we lower that into a call to `Task<int> M1()` thunk.
@@ -517,18 +517,18 @@ public int32 modopt([System.Runtime]System.Threading.Tasks.Task`1) M1()
 
 Operations that are not affected by `async2`, such as generic substitution or Overriding/Hiding/Implementing end up naturally working with async2 methods. Note that these areas are some of the most complex parts of the compiler. It was very beneficial to not having to specialcase async2 in these areas.
 
-One thing to observe is that unlike regular `async`, which is a source-only concept, the async2 survives serialization/deserialization via metadata. 
+One thing to observe is that unlike regular `async`, which is a source-only concept, the async2 survives serialization/deserialization via metadata.
 Effectively we treat the `int32 modopt([System.Runtime]System.Threading.Tasks.Task'1)` as just a special encoding of `Task<int>` return type with additional property of making the method `async2`.
 
 #### Unresolved concerns.
 None of the following appears to be unresolvable or blocking, we just did not get to these due to time constraints and the scoping of the experiment.
 
 1. There is an existing concept for `async void` methods. Does that model need to exist in the new system?
-1. It looks like there might be a need for async2 flavors of delegates. 
+1. It looks like there might be a need for async2 flavors of delegates.
 To the runtime these would look like delegates with async2 `Invoke` method and may "just work". They would need some kind of syntax in C#.
-1. It looks like there might be a need for async2 flavors of method pointers - to represent async2 methods. 
+1. It looks like there might be a need for async2 flavors of method pointers - to represent async2 methods.
 In the runtime this is representable via the modopt on the return type and, again, might "just work", so this is mostly a matter of picking C# syntax/semantics.
-1. Is there any impact on async enumerable/iterator?  
+1. Is there any impact on async enumerable/iterator?
 While async2 is interoperable with regular async and these interfaces could be used or even implemented by the means of async2 methods, there could be opportunities to employ async2 implementations in the lowering. It is not clear if that could be beneficial without defining/deriving async2 versions of `IAsyncEnumerable`/`IAsyncEnumerator`/`IAsyncDisposable`.
 
 #### ==== Syntax v1 (abandoned)
@@ -547,12 +547,12 @@ int32 modopt([System.Runtime]System.Threading.Tasks.Task`1) M1(int arg)
 While initially favored for being close to the IL representation, it was eventually abandoned due to major problems and inconsistencies.
 - When the method above is called from regular code without awaiting, user gets `Task<int>` result. That is not what it looks in the signature.
 - For the purposes of overriding/hiding/inheriting the method above is equivalent to `Task<int> M1(int arg)`, which is easily observable.
-For example it is illegal to add such method in the same class as invoking `Task<int> M1(int arg)` would become ambiguous. On the other hand overloading a method like `int M1(int arg)` is completely non-conflicting.  
-This was very confusing, both as a programming model and as internal implementation.  
-- Internally, due to duality with `Task<int> M1(int arg)` signature it was often necessary to "lift" the signature into the `Task<int>` form, perform operation there (such as generic substitution or overriding resolution) and then "unlift" the result back into `async2 int` form. It was frequintly a source of subtle bugs.  
+For example it is illegal to add such method in the same class as invoking `Task<int> M1(int arg)` would become ambiguous. On the other hand overloading a method like `int M1(int arg)` is completely non-conflicting.
+This was very confusing, both as a programming model and as internal implementation.
+- Internally, due to duality with `Task<int> M1(int arg)` signature it was often necessary to "lift" the signature into the `Task<int>` form, perform operation there (such as generic substitution or overriding resolution) and then "unlift" the result back into `async2 int` form. It was frequintly a source of subtle bugs.
 - When we got to interfacing with `ValueTask` there was no good place in the syntax to express a variant of the same method, but with `ValueTask`-based thunk.
-For some time we used an attribute and that was verbose and not symmetrical.  
-Besides, it is valid for the same class to contain two async2 methods that differ only on `Task`/`ValueTask` flavor of the thunk. It would mean that in the source one could have two methods in the same class, differing only by an attribute.  
+For some time we used an attribute and that was verbose and not symmetrical.
+Besides, it is valid for the same class to contain two async2 methods that differ only on `Task`/`ValueTask` flavor of the thunk. It would mean that in the source one could have two methods in the same class, differing only by an attribute.
 
 ## Microbenchmarks
 
@@ -566,7 +566,7 @@ The data was gathered using the `src/tests/Loader/async/async-mincallcost-microb
 
 This benchmark works by an async method calling into another mostly empty async method in a loop.
 The benchmark operates for a fixed period of time, measuring the number of iterations.
-The caller method is always a `Task<long>` returning method, and the mostly empty method, reads a global variable, and then awaits the result of a call to `Task.Yield()` if that global variable is `0`. (The variable never has the value '0'.) 
+The caller method is always a `Task<long>` returning method, and the mostly empty method, reads a global variable, and then awaits the result of a call to `Task.Yield()` if that global variable is `0`. (The variable never has the value '0'.)
 
 ![MinCallCostGraph](async-mincallcost.svg)
 
@@ -576,7 +576,7 @@ In addition, the cost to call an async2 function from another async2 function is
 Here we can see the cost of inlining vs not inlining, as there is a meaningful reduction in iteration count.
 In addition, the async2 method with Context Save is also unable to inline at the current time, and also performs work simulating the additional work that the async2 logic would need to implement to fully replicate async1 behavior around async locals, and synchronization context handling.
 
-NOTES: 
+NOTES:
 - Cost of calls from async1 method to async2 method are shown for the JIT state machine model only.
 The performance of the calls from async1 to async2 for the unwinder model were substantially slower, although if we choose that as the implementation style it is expected they could be made at least as fast as the state machine model.
 - Measurement of calls from async1 to async 2 non-inlineable and with context save were not measured.
@@ -614,7 +614,7 @@ With `ValueTask`, the function signature is `async ValueTask<long> RunTask(int d
 With `Async2`, the function signature is `async2 long RunTask(int depth)`
 With `Async2Capture`, the function signature is `async2 long RunTask(int depth)`, and the body of the function contains a try/finally which saves/restores the Sync and ExecutionContext. This is intended to (imperfectly) measure the cost of adjusting the runtime async model to behave exactly like the existing async model.
 
-When a graph does not specify one of the config options, the graph is a relative performance gathered by dividing the iters/250ms that the benchmark produces between the two options, and then multiplying by 100 to produce a percentage. 
+When a graph does not specify one of the config options, the graph is a relative performance gathered by dividing the iters/250ms that the benchmark produces between the two options, and then multiplying by 100 to produce a percentage.
 
 ## Relative performance of throwing vs returning cleanly from a function at varying stack depths
 
@@ -708,15 +708,15 @@ It is not a secret that inability to use span and byref with async code causes s
 
 https://stackoverflow.com/questions/57229123/how-to-use-spanbyte-in-async-method
 
-https://stackoverflow.com/questions/63284335/spant-and-async-methods 
+https://stackoverflow.com/questions/63284335/spant-and-async-methods
 
-[Span<T> in async methods not supported · Issue #27147 · dotnet/roslyn (github.com)] (https://github.com/dotnet/roslyn/issues/27147) 
+[Span<T> in async methods not supported · Issue #27147 · dotnet/roslyn (github.com)] (https://github.com/dotnet/roslyn/issues/27147)
 
-https://stackoverflow.com/questions/20868103/ref-and-out-arguments-in-async-method 
+https://stackoverflow.com/questions/20868103/ref-and-out-arguments-in-async-method
 
-[Consider relaxing restrictions of async methods in blocks that do not contain `await`. · Issue 1331 · dotnet/csharplang (github.com)](https://github.com/dotnet/csharplang/issues/1331) Lots of discussions here, including insightful comments by Vance. 
+[Consider relaxing restrictions of async methods in blocks that do not contain `await`. · Issue 1331 · dotnet/csharplang (github.com)](https://github.com/dotnet/csharplang/issues/1331) Lots of discussions here, including insightful comments by Vance.
 
-The current situation is that C# does not allow byrefs and byref-likes in async methods in any form – be it parameters, locals or spans. The reason for this restriction is inability to capture byrefs as fields of display types. For consistency all use is forbidden, even if it does not require capture.  
+The current situation is that C# does not allow byrefs and byref-likes in async methods in any form – be it parameters, locals or spans. The reason for this restriction is inability to capture byrefs as fields of display types. For consistency all use is forbidden, even if it does not require capture.
 There are few cases were C# supports transient byrefs by the means of decomposing a byref-producing expression into constituent parts and capturing the parts and re-playing at use sites. Example `staticArray[i].Field += await Somehting();`    That allows to handle a subset of cases, but codegen is far from great.
 
 In runtime-assisted async supporting span and byrefs is not a strict “no”, but there are implications. There are roughly two kinds of byrefs that async implementation would need to deal with. They come with distinct challenges.
@@ -725,14 +725,14 @@ In runtime-assisted async supporting span and byrefs is not a strict “no”, b
 
 **Stack-referencing byrefs** do not have to be reported to GC, but must be adjusted when containing frame is reactivated as the referent is either in the current frame and thus now lives in a different stack location, or in one of still suspended caller frames and thus not on the stack at all. In the presence of “ref Span<T> param” and similar, updating upon suspending is also necessary to keep chains of byrefs safely walkable.
 
-In general it would not be a tractable programming model from the user perspective, if we allow only one kind of byrefs and not another as distinction may often only be known at run time.  
-Note that the stack/heap-referencing nature of a byref cannot change while the frame is not active. However that is not completely true if “ref Span<T> param” is allowed. In such case a calee may repoint a byref in a caller frame and switch from stack-pointing to heap-pointing.   
+In general it would not be a tractable programming model from the user perspective, if we allow only one kind of byrefs and not another as distinction may often only be known at run time.
+Note that the stack/heap-referencing nature of a byref cannot change while the frame is not active. However that is not completely true if “ref Span<T> param” is allowed. In such case a calee may repoint a byref in a caller frame and switch from stack-pointing to heap-pointing.
 
 **Stack-referencing byrefs, that lead into sync callers** these are unsafe as the sync caller may exit any or all its stack frames before the Task is resumed.
 
 In the current experiment we have looked into two implementing strategies:
 
-**Stack unwinding with 1:1 stack capture for suspended frames.** In this model byrefs/spans that point to heap or other async callers can be supported as there is a mechanism to report byrefs to the GC. There are some performance challenges, but not without solutions. 
+**Stack unwinding with 1:1 stack capture for suspended frames.** In this model byrefs/spans that point to heap or other async callers can be supported as there is a mechanism to report byrefs to the GC. There are some performance challenges, but not without solutions.
 
 **State machine with managed storage for captured variables.** The current implementation does not support capturing byrefs and byref-likes. On the other hand it can utilize regular GC reporting mechanisms, which has many advantages, notably not having O(n) components that need to run in GC pauses. There are some ideas on how byrefs may be captured and converted into {object, offset} at the next GC, so that not to incur continuous O(n) costs.
 
@@ -752,13 +752,13 @@ Our observations (on x64, AMD 5950X):
 
 There is some noise, but a typical Gen0 pause in the above scenario was: 120 microseconds.
 The managed heap size (as reported by `GetGCMemoryInfo.HeapSizeBytes`) is stable at 130 Mb.
-The peak working set (as reported by `Task Manager`) is 148 Mb. 
+The peak working set (as reported by `Task Manager`) is 148 Mb.
 
 **=====Async2 (unwinding/stack-capturing based)**:
 
 When GC pauses were measured as-is, the results were very disappointing - **48690 microsecond**. (**~400x worse** than async1 and generally unacceptable for a Gen0 pause)
 
-The reasons for such timings is that the implementation would go through every one of the 1000000 tasklets and report referenced objects as roots. That is time consuming and is also very redundant when GC generational model is considered. Since suspended stacks can't see assignments of new objects, once GC performs en-masse promotion, all the roots owned by these tasks become too old to be of interest for collections that target younger generations until the containing task is resumed.  
+The reasons for such timings is that the implementation would go through every one of the 1000000 tasklets and report referenced objects as roots. That is time consuming and is also very redundant when GC generational model is considered. Since suspended stacks can't see assignments of new objects, once GC performs en-masse promotion, all the roots owned by these tasks become too old to be of interest for collections that target younger generations until the containing task is resumed.
 This is a unique challenge of stack-capturing implementation. In async1 suspended tasks are regular heap objects and do not require any special reporting in GC STW phases.
 
 As a solution to this issue, we implemented tasklet aging mechanism, similar to approach used by GC handles. We make note of GC promotions, and increase "min age" of suspended tasks, so that, for example, tasks that only refer to tenured objects do not need to report roots in ephemeral collections.
@@ -768,20 +768,20 @@ It was still **4x worse** than async1.
 
 Once tasks know their age, root reporting is no longer the dominant factor, but we still need to check age of 10000 tasks, even if the answer is "too old". A further improvement is possible by grouping the suspended tasks in groups, so that age of entire group could be examined.
 
-For the memory consumption, the managed heap is reported to be very small - **28Mb**. Unsurprisingly, since this approach uses native/malloc memory to store captured data.  
+For the memory consumption, the managed heap is reported to be very small - **28Mb**. Unsurprisingly, since this approach uses native/malloc memory to store captured data.
 However, the peak working set was seen at **499Mb** that is **3.3x worse** than async1.
 
 The reason for higher memory consumption is that this approach captures the entire stack frame and its registers, which is less eficient than async1, which, based on data-flow analysis, may capture only variables that are live across awaits.
 
 **=====Async2 (JIT state-machine based)**:
 
-The pause times were observed at **100 microseconds**, which is **better than in async1** implementation. 
+The pause times were observed at **100 microseconds**, which is **better than in async1** implementation.
 Since the root set would be roughly the same as in async1, the difference could be just second-order effects of different heap graph or different distribution of object sizes.
 
-The peak working set was seen at 328Mb. 
+The peak working set was seen at 328Mb.
 That is higher than async1 and most likely just additional transient allocations in the JIT. As the benchmark has just a few methods, it cannot be method bodies, but may need some follow up to confirm.
 
-Managed allocation impact in this model depends on JIT optimizations as the capture is based on liveness information, which is not available in tier-0 compiled methods. That is expected and could be acceptable as hot methods would not stay in tier-0. Besides it is possible to enable liveness analysis in tier-0 async2 methods, if needed, at about 5% of the estimated JIT cost. 
+Managed allocation impact in this model depends on JIT optimizations as the capture is based on liveness information, which is not available in tier-0 compiled methods. That is expected and could be acceptable as hot methods would not stay in tier-0. Besides it is possible to enable liveness analysis in tier-0 async2 methods, if needed, at about 5% of the estimated JIT cost.
 It is also possible to improve liveness analysis/information in async2 methods in general - to further improve capturing efficiency.
 
 With `set DOTNET_TieredCompilation=0`
@@ -789,5 +789,3 @@ Managed heap size: **157Mb**   - slightly more than async1
 
 With `set DOTNET_TieredCompilation=1`
 Managed heap size: **reaches 300Mb** in the first couple iterations, but then drops and **stays at 105Mb**, which is better than async1.
-
- 
