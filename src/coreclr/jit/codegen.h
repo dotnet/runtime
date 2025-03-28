@@ -865,6 +865,10 @@ protected:
                       int scale RISCV64_ARG(regNumber scaleTempReg));
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
+#if defined(TARGET_RISCV64)
+    void genShxaddInstruction(GenTreeShxadd *shxadd);
+#endif
+
 #if defined(TARGET_ARMARCH)
     void genCodeForMulLong(GenTreeOp* mul);
 #endif // TARGET_ARMARCH
