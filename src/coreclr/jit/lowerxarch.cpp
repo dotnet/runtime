@@ -3443,7 +3443,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
             }
 
             BlockRange().Remove(node);
-            return LowerNode(binOp);
+            return binOp;
         }
         else if (simdSize == 32)
         {
