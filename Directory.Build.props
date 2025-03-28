@@ -169,11 +169,6 @@
   <Import Project="$(RepositoryEngineeringDir)RuntimeIdentifier.props" />
 
   <PropertyGroup>
-    <!-- Microsoft.NET.Sdk.IL SDK defaults to the portable host rid. Match it to the SDK RID (so source-build scenarios use the same RID as the host SDK). -->
-    <MicrosoftNetCoreIlasmPackageRuntimeId>$(NETCoreSdkRuntimeIdentifier)</MicrosoftNetCoreIlasmPackageRuntimeId>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <MicrosoftNetCoreAppRefPackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.ref'))</MicrosoftNetCoreAppRefPackDir>
     <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>
     <MicrosoftNetCoreAppRefPackDataDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'data'))</MicrosoftNetCoreAppRefPackDataDir>
@@ -371,6 +366,7 @@
   <PropertyGroup>
     <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
     <CustomAfterTraversalTargets>$(RepositoryEngineeringDir)TraversalSdk.AfterTargets.targets</CustomAfterTraversalTargets>
+    <BeforeMicrosoftNETSdkTargets Condition="'$(MSBuildProjectExtension)' == '.ilproj'">$(BeforeMicrosoftNETSdkTargets);$(RepositoryEngineeringDir)ILSdk.BeforeTargets.targets</BeforeMicrosoftNETSdkTargets>
   </PropertyGroup>
 
   <PropertyGroup>

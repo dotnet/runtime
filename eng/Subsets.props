@@ -52,7 +52,7 @@
 
     <!-- Determine if AOT tools can run on the specified target -->
     <_AotToolsSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true' and '$(StageOneBuild)' != 'true'">true</_AotToolsSupportedOS>
-    <_AotToolsSupportedArch>true</_AotToolsSupportedArch>
+    <_AotToolsSupportedArch Condition="'$(TargetArchitecture)' != 'armel'">true</_AotToolsSupportedArch>
     <AotToolsSupported Condition="'$(_AotToolsSupportedOS)' == 'true' and '$(_AotToolsSupportedArch)' == 'true'">true</AotToolsSupported>
   </PropertyGroup>
 
@@ -169,7 +169,6 @@
   <PropertyGroup>
     <_IsCommunityCrossArchitecture Condition="'$(CrossBuild)' == 'true' and ('$(TargetArchitecture)' == 'loongarch64' or '$(TargetArchitecture)' == 'riscv64')">true</_IsCommunityCrossArchitecture>
     <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and '$(TargetOS)' == '$(HostOS)' and '$(TargetsLinuxBionic)' != 'true' and '$(_IsCommunityCrossArchitecture)' != 'true'">true</UseNativeAotForComponents>
-
     <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
     <UseNativeAotCoreLib Condition="'$(TestNativeAot)' == 'true' or ($(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr.native+')) and !$(_subset.Contains('+clr.runtime+')) and !$(_subset.Contains('+clr.corelib+')))">true</UseNativeAotCoreLib>
   </PropertyGroup>
@@ -440,7 +439,8 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_publish.csproj" Condition="'$(AotToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" Condition="'$(AotToolsSupported)' == 'true'" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Category="clr" Condition="'$(AotToolsSupported)' == 'true'" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(AotToolsSupported)' == 'true'" />
+    <!-- We may use these targets with the in-build ILCompiler or with the shipping ILCompiler. Produce them whenever we may use them. -->
+    <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(AotToolsSupported)' == 'true' or '$(NativeAotSupported)' == 'true'" />
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Condition="'$(AotToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Condition="'$(AotToolsSupported)' == 'true'" Category="clr" />

@@ -8,8 +8,10 @@
     <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
     <DnneGenRollForward>Major</DnneGenRollForward>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
-    <UseLocalAppHostPack>true</UseLocalAppHostPack>
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <UseLocalAppHostPack>true</UseLocalAppHostPack>
+    <!-- Don't use the local apphost pack on Windows as matching linker configurations is difficult. -->
+    <UseLocalAppHostPack Condition="'$(TargetOS)' == 'windows'">false</UseLocalAppHostPack>
     <_TargetsAppleOS Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or
       '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or
       '$(TargetOS)' == 'tvossimulator'">true</_TargetsAppleOS>
@@ -18,6 +20,11 @@
   <ItemGroup>
     <Compile Include="..\..\TestAssets\SharedTypes\ComInterfaces\**\*.cs" Link="ComInterfaceGenerator\ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalAppHostPack)' != 'true' and '$(NetCoreAppToolCurrent)' != '$(NetCoreAppCurrent)'">
+    <KnownAppHostPack Include="@(KnownAppHostPack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))"
+                      TargetFramework="$(NetCoreAppCurrent)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -113,10 +120,5 @@
                             GetAppleBuildArgumentsForDNNE;
                             GetUnixCrossBuildArgumentsForDNNE"
           BeforeTargets="DnneBuildNativeExports">
-    <PropertyGroup>
-      <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
-      <!-- Build the native component in release always to avoid CRT conflicts. -->
-      <Configuration>Release</Configuration>
-    </PropertyGroup>
   </Target>
 </Project>
