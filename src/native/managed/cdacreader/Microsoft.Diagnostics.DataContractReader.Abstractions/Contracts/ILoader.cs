@@ -44,7 +44,6 @@ public interface ILoader : IContract
     public virtual string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
 
     public virtual TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual TargetPointer GetThunkHeap(ModuleHandle handle) => throw new NotImplementedException();
     public virtual TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
     public virtual ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
 

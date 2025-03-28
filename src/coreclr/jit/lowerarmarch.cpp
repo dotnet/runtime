@@ -406,8 +406,21 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 
             if (childNode->gtGetOp1()->OperIs(GT_CAST))
             {
-                // Grab the cast as well, we can contain this with cmn.
-                GenTreeCast* cast = childNode->gtGetOp1()->AsCast();
+                // Grab the cast as well, we can contain this with cmn (extended-register).
+                GenTreeCast* cast   = childNode->gtGetOp1()->AsCast();
+                GenTree*     castOp = cast->CastOp();
+
+                // Cannot contain the cast from floating point.
+                if (!varTypeIsIntegral(castOp))
+                {
+                    return false;
+                }
+
+                // Cannot contain the cast if it already contains it's CastOp.
+                if (castOp->isContained())
+                {
+                    return false;
+                }
 
                 assert(!cast->gtOverflow());
                 assert(varTypeIsIntegral(cast) && varTypeIsIntegral(cast->CastToType()));
@@ -2015,11 +2028,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
-    assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
-           (node->GetHWIntrinsicId() == NI_Vector64_CreateScalar) ||
-           (node->GetHWIntrinsicId() == NI_Vector128_CreateScalar) ||
-           (node->GetHWIntrinsicId() == NI_Vector64_CreateScalarUnsafe) ||
-           (node->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe) ||
+    assert(HWIntrinsicInfo::IsVectorCreate(node->GetHWIntrinsicId()) ||
+           HWIntrinsicInfo::IsVectorCreateScalar(node->GetHWIntrinsicId()) ||
+           HWIntrinsicInfo::IsVectorCreateScalarUnsafe(node->GetHWIntrinsicId()) ||
            (node->GetHWIntrinsicId() == NI_AdvSimd_DuplicateToVector64) ||
            (node->GetHWIntrinsicId() == NI_AdvSimd_DuplicateToVector128) ||
            (node->GetHWIntrinsicId() == NI_AdvSimd_Arm64_DuplicateToVector64) ||
@@ -2278,7 +2289,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     assert(simdSize != 0);
 
     bool   isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal);
-    bool   isCreateScalar = (intrinsicId == NI_Vector64_CreateScalar) || (intrinsicId == NI_Vector128_CreateScalar);
+    bool   isCreateScalar = HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId);
     size_t argCnt         = node->GetOperandCount();
 
     // Check if we have a cast that we can remove. Note that "IsValidConstForMovImm"
@@ -3095,11 +3106,32 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 #ifdef TARGET_ARM64
     if (comp->opts.OptimizationEnabled() && (cmp->OperIsCompare() || cmp->OperIs(GT_CMP)))
     {
+        auto forceCastOpInRegister = [](GenTree* op) {
+            // If the compare contains a cast, make sure that cast node definitely does not become
+            // a memory operation, as we won't be able to contain it in CodeGen if this happens.
+            // The node being cast must have a register assigned.
+            GenTree* cast = nullptr;
+            if (op->OperIs(GT_CAST))
+            {
+                // cmp (extended-register): GT_EQ -> GT_CAST -> ...
+                cast = op;
+            }
+            else if (op->OperIs(GT_NEG) && op->gtGetOp1()->OperIs(GT_CAST))
+            {
+                // cmn (extended-register): GT_EQ -> GT_NEG -> GT_CAST -> ...
+                cast = op->gtGetOp1();
+            }
+            if (cast)
+            {
+                cast->AsCast()->CastOp()->ClearRegOptional();
+            }
+        };
+
         if (IsContainableUnaryOrBinaryOp(cmp, op2))
         {
-            if (cmp->OperIsCmpCompare() && op2->OperIs(GT_CAST))
+            if (cmp->OperIsCmpCompare())
             {
-                op2->AsCast()->CastOp()->ClearRegOptional();
+                forceCastOpInRegister(op2);
             }
 
             MakeSrcContained(cmp, op2);
@@ -3108,9 +3140,9 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 
         if (IsContainableUnaryOrBinaryOp(cmp, op1))
         {
-            if (cmp->OperIsCmpCompare() && op1->OperIs(GT_CAST))
+            if (cmp->OperIsCmpCompare())
             {
-                op1->AsCast()->CastOp()->ClearRegOptional();
+                forceCastOpInRegister(op1);
             }
 
             MakeSrcContained(cmp, op1);
@@ -3168,11 +3200,15 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     //
     GenCondition cond1;
     if (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1()) && IsInvariantInRange(op2, tree) &&
+        (op2->gtGetOp1()->IsIntegralConst() || !op2->gtGetOp1()->isContained()) &&
+        (op2->gtGetOp2() == nullptr || op2->gtGetOp2()->IsIntegralConst() || !op2->gtGetOp2()->isContained()) &&
         TryLowerConditionToFlagsNode(tree, op1, &cond1))
     {
         // Fall through, converting op2 to the CCMP
     }
     else if (op1->OperIsCmpCompare() && varTypeIsIntegralOrI(op1->gtGetOp1()) && IsInvariantInRange(op1, tree) &&
+             (op1->gtGetOp1()->IsIntegralConst() || !op1->gtGetOp1()->isContained()) &&
+             (op1->gtGetOp2() == nullptr || op1->gtGetOp2()->IsIntegralConst() || !op1->gtGetOp2()->isContained()) &&
              TryLowerConditionToFlagsNode(tree, op2, &cond1))
     {
         std::swap(op1, op2);

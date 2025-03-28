@@ -140,8 +140,8 @@ HANDLES(ARRAY_14, "SetValueRelaxedImpl",  ves_icall_System_Array_SetValueRelaxed
 
 ICALL_TYPE(BUFFER, "System.Buffer", BUFFER_0)
 NOHANDLES(ICALL(BUFFER_0, "BulkMoveWithWriteBarrier", ves_icall_System_Buffer_BulkMoveWithWriteBarrier))
-NOHANDLES(ICALL(BUFFER_2, "__Memmove", ves_icall_System_Runtime_RuntimeImports_Memmove))
-NOHANDLES(ICALL(BUFFER_3, "__ZeroMemory", ves_icall_System_Runtime_RuntimeImports_ZeroMemory))
+NOHANDLES(ICALL(BUFFER_2, "MemmoveInternal", ves_icall_System_Runtime_RuntimeImports_Memmove))
+NOHANDLES(ICALL(BUFFER_3, "ZeroMemoryInternal", ves_icall_System_Runtime_RuntimeImports_ZeroMemory))
 
 ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
 HANDLES(DELEGATE_1, "AllocDelegateLike_internal", ves_icall_System_Delegate_AllocDelegateLike_internal, MonoMulticastDelegate, 1, (MonoDelegate))
@@ -364,6 +364,7 @@ HANDLES(RASSEM_5, "GetManifestResourceNames", ves_icall_System_Reflection_Runtim
 HANDLES(RASSEM_6, "GetModulesInternal", ves_icall_System_Reflection_RuntimeAssembly_GetModulesInternal, void, 2, (MonoQCallAssemblyHandle, MonoObjectHandleOnStack))
 HANDLES(RASSEM_6b, "GetTopLevelForwardedTypes", ves_icall_System_Reflection_RuntimeAssembly_GetTopLevelForwardedTypes, void, 2, (MonoQCallAssemblyHandle, MonoObjectHandleOnStack))
 HANDLES(RASSEM_7, "InternalGetReferencedAssemblies", ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies, GPtrArray_ptr, 1, (MonoReflectionAssembly))
+HANDLES(RASSEM_8, "InternalTryGetRawMetadata", ves_icall_System_Reflection_RuntimeAssembly_InternalTryGetRawMetadata, MonoBoolean, 3, (MonoQCallAssemblyHandle, gpointer_ref, gint32_ref))
 
 ICALL_TYPE(MCMETH, "System.Reflection.RuntimeConstructorInfo", MCMETH_1)
 HANDLES(MCMETH_1, "GetGenericMethodDefinition_impl", ves_icall_RuntimeMethodInfo_GetGenericMethodDefinition, MonoReflectionMethod, 1, (MonoReflectionMethod))

@@ -902,38 +902,14 @@ HCIMPL1(StringObject*, FramedAllocateString, DWORD stringLength)
 HCIMPLEND
 
 /*********************************************************************/
-OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
+STRINGREF* ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
-
     Module* module = GetModule(scopeHnd);
     return module->ResolveStringRef(metaTok, ppPinnedString);
 }
-
-/*********************************************************************/
-HCIMPL2(Object *, JIT_StrCns, unsigned rid, CORINFO_MODULE_HANDLE scopeHnd)
-{
-    FCALL_CONTRACT;
-
-    OBJECTHANDLE hndStr = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    // Retrieve the handle to the CLR string object.
-    hndStr = ConstructStringLiteral(scopeHnd, RidToToken(rid, mdtString));
-    HELPER_METHOD_FRAME_END();
-
-    // Don't use ObjectFromHandle; this isn't a real handle
-    return *(Object**)hndStr;
-}
-HCIMPLEND
-
 
 //========================================================================
 //
@@ -1516,282 +1492,6 @@ HCIMPLEND
 
 
 
-//========================================================================
-//
-//      MONITOR HELPERS
-//
-//========================================================================
-
-/*********************************************************************/
-NOINLINE static void JIT_MonEnter_Helper(Object* obj, BYTE* pbLockTaken, LPVOID __me)
-{
-    FC_INNER_PROLOG_NO_ME_SETUP();
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    // Monitor helpers are used as both hcalls and fcalls, thus we need exact depth.
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
-
-    if (objRef == NULL)
-        COMPlusThrow(kArgumentNullException);
-
-    GCPROTECT_BEGININTERIOR(pbLockTaken);
-
-    if (GET_THREAD()->CatchAtSafePoint())
-    {
-        GET_THREAD()->PulseGCMode();
-    }
-    objRef->EnterObjMonitor();
-
-    if (pbLockTaken != 0) *pbLockTaken = 1;
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-
-HCIMPL_MONHELPER(JIT_MonEnterWorker_Portable, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    if (obj != nullptr && obj->TryEnterObjMonitorSpinHelper())
-    {
-        MONHELPER_STATE(*pbLockTaken = 1);
-        return;
-    }
-
-    FC_INNER_RETURN_VOID(JIT_MonEnter_Helper(obj, MONHELPER_ARG, GetEEFuncEntryPointMacro(JIT_MonEnter)));
-}
-HCIMPLEND
-
-HCIMPL1(void, JIT_MonEnter_Portable, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    if (obj != nullptr && obj->TryEnterObjMonitorSpinHelper())
-    {
-        return;
-    }
-
-    FC_INNER_RETURN_VOID(JIT_MonEnter_Helper(obj, NULL, GetEEFuncEntryPointMacro(JIT_MonEnter)));
-}
-HCIMPLEND
-
-HCIMPL2(void, JIT_MonReliableEnter_Portable, Object* obj, BYTE* pbLockTaken)
-{
-    FCALL_CONTRACT;
-
-    if (obj != nullptr && obj->TryEnterObjMonitorSpinHelper())
-    {
-        *pbLockTaken = 1;
-        return;
-    }
-
-    FC_INNER_RETURN_VOID(JIT_MonEnter_Helper(obj, pbLockTaken, GetEEFuncEntryPointMacro(JIT_MonReliableEnter)));
-}
-HCIMPLEND
-
-#include <optdefault.h>
-
-
-/*********************************************************************/
-NOINLINE static void JIT_MonTryEnter_Helper(Object* obj, INT32 timeOut, BYTE* pbLockTaken)
-{
-    FC_INNER_PROLOG(JIT_MonTryEnter);
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    // Monitor helpers are used as both hcalls and fcalls, thus we need exact depth.
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
-
-    if (objRef == NULL)
-        COMPlusThrow(kArgumentNullException);
-
-    if (timeOut < -1)
-        COMPlusThrow(kArgumentOutOfRangeException);
-
-    GCPROTECT_BEGININTERIOR(pbLockTaken);
-
-    if (GET_THREAD()->CatchAtSafePoint())
-    {
-        GET_THREAD()->PulseGCMode();
-    }
-
-    BOOL result = objRef->TryEnterObjMonitor(timeOut);
-    *pbLockTaken = result != FALSE;
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-#include <optsmallperfcritical.h>
-HCIMPL3(void, JIT_MonTryEnter_Portable, Object* obj, INT32 timeOut, BYTE* pbLockTaken)
-{
-    FCALL_CONTRACT;
-
-    AwareLock::EnterHelperResult result;
-    Thread * pCurThread;
-
-    if (obj == NULL)
-    {
-        goto FramedLockHelper;
-    }
-
-    if (timeOut < -1)
-    {
-        goto FramedLockHelper;
-    }
-
-    pCurThread = GetThread();
-
-    if (pCurThread->CatchAtSafePoint())
-    {
-        goto FramedLockHelper;
-    }
-
-    result = obj->EnterObjMonitorHelper(pCurThread);
-    if (result == AwareLock::EnterHelperResult_Entered)
-    {
-        *pbLockTaken = 1;
-        return;
-    }
-    if (result == AwareLock::EnterHelperResult_Contention)
-    {
-        if (timeOut == 0)
-        {
-            return;
-        }
-
-        result = obj->EnterObjMonitorHelperSpin(pCurThread);
-        if (result == AwareLock::EnterHelperResult_Entered)
-        {
-            *pbLockTaken = 1;
-            return;
-        }
-    }
-
-FramedLockHelper:
-    FC_INNER_RETURN_VOID(JIT_MonTryEnter_Helper(obj, timeOut, pbLockTaken));
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-NOINLINE static void JIT_MonExit_Helper(Object* obj, BYTE* pbLockTaken)
-{
-    FC_INNER_PROLOG(JIT_MonExit);
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    // Monitor helpers are used as both hcalls and fcalls, thus we need exact depth.
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_1(Frame::FRAME_ATTR_NO_THREAD_ABORT|Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
-
-    if (objRef == NULL)
-        COMPlusThrow(kArgumentNullException);
-
-    if (!objRef->LeaveObjMonitor())
-        COMPlusThrow(kSynchronizationLockException);
-
-    if (pbLockTaken != 0) *pbLockTaken = 0;
-
-    if (GET_THREAD()->IsAbortRequested()) {
-        GET_THREAD()->HandleThreadAbort();
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-NOINLINE static void JIT_MonExit_Signal(Object* obj)
-{
-    FC_INNER_PROLOG(JIT_MonExit);
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    // Monitor helpers are used as both hcalls and fcalls, thus we need exact depth.
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_1(Frame::FRAME_ATTR_NO_THREAD_ABORT|Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
-
-    // Signal the event
-    SyncBlock *psb = objRef->PassiveGetSyncBlock();
-    if (psb != NULL)
-        psb->QuickGetMonitor()->Signal();
-
-    if (GET_THREAD()->IsAbortRequested()) {
-        GET_THREAD()->HandleThreadAbort();
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-#include <optsmallperfcritical.h>
-FCIMPL1(void, JIT_MonExit_Portable, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    AwareLock::LeaveHelperAction action;
-
-    if (obj == NULL)
-    {
-        goto FramedLockHelper;
-    }
-
-    // Handle the simple case without erecting helper frame
-    action = obj->LeaveObjMonitorHelper(GetThread());
-    if (action == AwareLock::LeaveHelperAction_None)
-    {
-        return;
-    }
-    if (action == AwareLock::LeaveHelperAction_Signal)
-    {
-        FC_INNER_RETURN_VOID(JIT_MonExit_Signal(obj));
-    }
-
-FramedLockHelper:
-    FC_INNER_RETURN_VOID(JIT_MonExit_Helper(obj, NULL));
-}
-HCIMPLEND
-
-HCIMPL_MONHELPER(JIT_MonExitWorker_Portable, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    MONHELPER_STATE(_ASSERTE(pbLockTaken != NULL));
-    MONHELPER_STATE(if (*pbLockTaken == 0) return;)
-
-    AwareLock::LeaveHelperAction action;
-
-    if (obj == NULL)
-    {
-        goto FramedLockHelper;
-    }
-
-    // Handle the simple case without erecting helper frame
-    action = obj->LeaveObjMonitorHelper(GetThread());
-    if (action == AwareLock::LeaveHelperAction_None)
-    {
-        MONHELPER_STATE(*pbLockTaken = 0;)
-        return;
-    }
-    if (action == AwareLock::LeaveHelperAction_Signal)
-    {
-        MONHELPER_STATE(*pbLockTaken = 0;)
-        FC_INNER_RETURN_VOID(JIT_MonExit_Signal(obj));
-    }
-
-FramedLockHelper:
-    FC_INNER_RETURN_VOID(JIT_MonExit_Helper(obj, MONHELPER_ARG));
-}
-HCIMPLEND
-#include <optdefault.h>
 
 //========================================================================
 //
@@ -2139,7 +1839,7 @@ extern "C" VOID JIT_PInvokeEndRarePath();
 
 void JIT_PInvokeEndRarePath()
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread *thread = GetThread();
 
@@ -2164,8 +1864,6 @@ void JIT_PInvokeEndRarePath()
     }
 
     thread->m_pFrame->Pop(thread);
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 /*************************************************************/
@@ -2203,7 +1901,7 @@ void JIT_RareDisableHelper()
     // in the first phase.
     //      </TODO>
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread *thread = GetThread();
     // We execute RareDisablePreemptiveGC manually before checking any abort conditions
@@ -2225,8 +1923,6 @@ void JIT_RareDisableHelper()
         END_QCALL;
         thread->DisablePreemptiveGC();
     }
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
@@ -2654,7 +2350,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
 extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransitionBlock)
 {
-    // BEGIN_PRESERVE_LAST_ERROR;
+    // Manually preserve the last error as we may not return normally from this method.
     DWORD dwLastError = ::GetLastError();
 
     // This method may not return normally
@@ -2819,7 +2515,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
 #endif
 
         // Restore last error (since call below does not return)
-        // END_PRESERVE_LAST_ERROR;
         ::SetLastError(dwLastError);
 
         // Transition!
@@ -2827,8 +2522,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
     }
 
  DONE:
-
-    // END_PRESERVE_LAST_ERROR;
     ::SetLastError(dwLastError);
 }
 
@@ -3379,7 +3072,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     MethodDesc* pMD = GetMethod(handle);
     if (pMD->IsILStub() && secretArg != NULL)
     {
-        pMD = ((UMEntryThunk*)secretArg)->GetMethod();
+        pMD = ((UMEntryThunkData*)secretArg)->m_pMD;
     }
     frame->pMD = pMD;
 
@@ -3405,14 +3098,14 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? (UMEntryThunk*)secretArg : (UMEntryThunk*)NULL);
+            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk : (UMEntryThunk*)NULL);
         }
     }
     else
     {
         // If we're in an IL stub, we want to trace the address of the target method,
         // not the next instruction in the stub.
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? (UMEntryThunk*)secretArg  : (UMEntryThunk*)NULL);
+        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk  : (UMEntryThunk*)NULL);
     }
 
 #ifndef FEATURE_EH_FUNCLETS
@@ -3628,17 +3321,4 @@ bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum)
     }
 
     return true;
-}
-
-/*********************************************************************/
-// Initialize the part of the JIT helpers that require much of the
-// EE infrastructure to be in place.
-/*********************************************************************/
-void InitJITHelpers2()
-{
-    STANDARD_VM_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-    SetJitHelperFunction(CORINFO_HELP_INIT_PINVOKE_FRAME, (void *)GenerateInitPInvokeFrameHelper()->GetEntryPoint());
-#endif // TARGET_X86 || TARGET_ARM
 }
