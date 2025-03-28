@@ -29,7 +29,7 @@ namespace
 
         pal::string_t retval;
         json_parser_t json;
-        if (!json.parse_file(deps_json))
+        if (!json.parse_fully_trusted_file(deps_json))
         {
             return retval;
         }
