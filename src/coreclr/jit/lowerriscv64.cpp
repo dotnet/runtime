@@ -490,6 +490,105 @@ void Lowering::LowerRotate(GenTree* tree)
     ContainCheckShiftRotate(tree->AsOp());
 }
 
+//------------------------------------------------------------------------
+// TryLowerShiftAddToShxadd : Lower ADD(LSH) node to SH(X)ADD(.UW) node.
+//
+// Arguments:
+//    tree - pointer to the node
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
+{
+    if (!tree->OperIs(GT_ADD))
+    {
+        return false;
+    }
+
+    GenTree* base  = nullptr;
+    GenTree* shift = nullptr;
+
+    if (!tree->gtOp2->IsCnsIntOrI() && (tree->gtOp1->OperIs(GT_LSH) || tree->gtOp1->OperIs(GT_MUL)))
+    {
+        shift = tree->gtOp1;
+        base  = tree->gtOp2;
+    }
+    else if (!tree->gtOp1->IsCnsIntOrI() && (tree->gtOp2->OperIs(GT_LSH) || tree->gtOp2->OperIs(GT_MUL)))
+    {
+        shift = tree->gtOp2;
+        base  = tree->gtOp1;
+    }
+    else
+    {
+        return false;
+    }
+
+    GenTree*     index = shift->gtGetOp1();
+    unsigned int scale = shift->GetScaledIndex();
+
+    if (scale == 0 || base->IsRegOptional() || index->IsRegOptional())
+    {
+        return false;
+    }
+
+    DWORD shammt;
+    BitScanForward(&shammt, scale);
+
+    JITDUMP("Removing unused node:\n  ");
+    DISPNODE(shift->gtGetOp2());
+    BlockRange().Remove(shift->gtGetOp2());
+    DEBUG_DESTROY_NODE(shift->gtGetOp2());
+
+    JITDUMP("Removing unused node:\n  ");
+    DISPNODE(shift);
+    BlockRange().Remove(shift);
+    DEBUG_DESTROY_NODE(shift);
+
+    tree->gtOp1 = base;
+    tree->gtOp2 = index;
+    tree->ChangeOper(GT_SHXADD);
+    tree->AsShxadd()->shammt = shammt;
+
+    JITDUMP("New SHXADD node:\n  ");
+    DISPNODE(tree);
+    JITDUMP("\n");
+
+    if (tree->gtOp2->OperIs(GT_CAST))
+    {
+        GenTreeCast* const cast         = tree->gtOp2->AsCast();
+        GenTree* const     src          = cast->CastOp();
+        const var_types    srcType      = genActualType(src);
+        const bool         srcUnsigned  = cast->IsUnsigned();
+        const unsigned     srcSize      = genTypeSize(srcType);
+        const var_types    castType     = cast->gtCastType;
+        const bool         castUnsigned = varTypeIsUnsigned(castType);
+        const unsigned     castSize     = genTypeSize(castType);
+
+        bool isZeroExtendIntToLong = varTypeIsIntegral(srcType) && varTypeIsIntegral(castType) && srcSize == 4 &&
+                                     castSize == 8 && (castUnsigned || srcUnsigned);
+
+        if (isZeroExtendIntToLong && !varTypeIsGC(cast))
+        {
+            JITDUMP("Removing unused node:\n  ");
+            DISPNODE(cast);
+            BlockRange().Remove(cast);
+            DEBUG_DESTROY_NODE(cast);
+
+            tree->gtOp2 = src;
+            tree->ChangeOper(GT_SHXADD_UW);
+
+            JITDUMP("Transformed SHXADD node to SHXADD_UW node:\n  ");
+            DISPNODE(tree);
+            JITDUMP("\n");
+        }
+    }
+
+    *next = tree->gtNext;
+    return true;
+}
+
 #ifdef FEATURE_SIMD
 //----------------------------------------------------------------------------------------------
 // Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
