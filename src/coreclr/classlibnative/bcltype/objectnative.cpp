@@ -224,14 +224,7 @@ FCIMPL1(FC_BOOL_RET, ObjectNative::Monitor_TryEnter_FastPath, Object* obj)
 {
     FCALL_CONTRACT;
 
-    if (obj->TryEnterObjMonitorSpinHelper())
-    {
-        FC_RETURN_BOOL(TRUE);
-    }
-    else
-    {
-        FC_RETURN_BOOL(FALSE);
-    }
+    FC_RETURN_BOOL(obj->TryEnterObjMonitorSpinHelper());
 }
 FCIMPLEND
 
@@ -274,8 +267,7 @@ extern "C" INT32 QCALLTYPE Monitor_TryEnter_Slowpath(QCall::ObjectHandleOnStack 
 
     GCX_COOP();
 
-    if (timeOut < -1)
-        COMPlusThrow(kArgumentOutOfRangeException);
+    _ASSERTE(timeOut >= -1); // This should be checked in managed code.
 
     result = objHandle.Get()->TryEnterObjMonitor(timeOut);
 
