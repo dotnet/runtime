@@ -59,8 +59,8 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     constexpr int EMBED_MAX = (EMBED_SZ > 1025 ? EMBED_SZ : 1025); // 1024 DLL name length, 1 NUL
 
     // Contains the EMBED_HASH_FULL_UTF8 value at compile time or the managed DLL name replaced by "dotnet build".
-    // Must not be 'const' because std::string(&embed[0]) below would bind to a const string ctor plus length
-    // where length is determined at compile time (=64) instead of the actual length of the string at runtime.
+    // Must not be 'const' because strlen below could be determined at compile time (=64) instead of the actual
+    // length of the string at runtime.
     static char embed[EMBED_MAX] = EMBED_HASH_FULL_UTF8;     // series of NULs followed by embed hash string
 
     static const char hi_part[] = EMBED_HASH_HI_PART_UTF8;
