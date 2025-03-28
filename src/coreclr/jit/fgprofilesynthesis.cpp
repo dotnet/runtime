@@ -41,6 +41,11 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         assert(m_loops != nullptr);
     }
 
+    if (m_loops->NumLoops() > 0)
+    {
+        m_cyclicProbabilities = new (m_comp, CMK_Pgo) weight_t[m_loops->NumLoops()];
+    }
+
     // Profile synthesis can be run before or after morph, so tolerate (non-)canonical method entries
     //
     m_entryBlock = (m_comp->opts.IsOSR() && (m_comp->fgEntryBB != nullptr)) ? m_comp->fgEntryBB : m_comp->fgFirstBB;
@@ -748,13 +753,6 @@ void ProfileSynthesis::RandomizeLikelihoods()
 //
 void ProfileSynthesis::ComputeCyclicProbabilities()
 {
-    m_cyclicProbabilities = nullptr;
-    if (m_loops->NumLoops() == 0)
-    {
-        return;
-    }
-
-    m_cyclicProbabilities = new (m_comp, CMK_Pgo) weight_t[m_loops->NumLoops()];
     // Walk loops in post order to visit inner loops before outer loops.
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
