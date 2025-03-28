@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal struct RuntimeInfo_1 : IRuntimeInfo
 {
-    private const string ArchitectureGlobalName = "Architecture";
-    private const string OperatingSystemGlobalName = "OperatingSystem";
-
     internal readonly Target _target;
 
     public RuntimeInfo_1(Target target)
@@ -21,9 +16,12 @@ internal struct RuntimeInfo_1 : IRuntimeInfo
 
     RuntimeInfoArchitecture IRuntimeInfo.GetTargetArchitecture()
     {
-        if (_target.TryReadGlobal<uint>(ArchitectureGlobalName, out uint? arch))
+        if (_target.TryReadGlobal(Constants.Globals.Architecture, out uint? arch))
         {
-            return (RuntimeInfoArchitecture)arch;
+            if (Enum.IsDefined(typeof(RuntimeInfoArchitecture), arch))
+            {
+                return (RuntimeInfoArchitecture)arch;
+            }
         }
 
         return RuntimeInfoArchitecture.Unknown;
@@ -31,9 +29,12 @@ internal struct RuntimeInfo_1 : IRuntimeInfo
 
     RuntimeInfoOperatingSystem IRuntimeInfo.GetTargetOperatingSystem()
     {
-        if (_target.TryReadGlobal<uint>(OperatingSystemGlobalName, out uint? os))
+        if (_target.TryReadGlobal(Constants.Globals.OperatingSystem, out uint? os))
         {
-            return (RuntimeInfoOperatingSystem)os;
+            if (Enum.IsDefined(typeof(RuntimeInfoOperatingSystem), os))
+            {
+                return (RuntimeInfoOperatingSystem)os;
+            }
         }
 
         return RuntimeInfoOperatingSystem.Unknown;
