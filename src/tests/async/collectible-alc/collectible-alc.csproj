@@ -3,6 +3,7 @@
     <!-- For collectible ALC -->
     <RequiresProcessIsolation>True</RequiresProcessIsolation>
     <Optimize>True</Optimize>
+    <Features>$(Features);runtime-async</Features>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
