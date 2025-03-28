@@ -308,7 +308,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int moduleIndex = _moduleIndexLookup(module);
             if (moduleIndex != 0 && !(module is Internal.TypeSystem.Ecma.MutableModule))
             {
-                if (!_compilationModuleGroup.VersionsWithModule(module))
+                if (!_compilationModuleGroup.VersionsWithModule((ModuleDesc)module))
                 {
                     throw new InternalCompilerErrorException("Attempt to use token from a module not within the version bubble");
                 }
@@ -324,7 +324,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         private class DummyTypeInfo
         {
-            public static DummyTypeInfo Instance = new DummyTypeInfo(); 
+            public static DummyTypeInfo Instance = new DummyTypeInfo();
         }
 
         private class TokenResolverProvider : ISignatureTypeProvider<DummyTypeInfo, ModuleTokenResolver>
