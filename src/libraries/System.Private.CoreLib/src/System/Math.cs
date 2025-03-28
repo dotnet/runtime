@@ -47,43 +47,34 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
-            if (value < 0)
+            if (value == short.MinValue)
             {
-                value = (short)-value;
-                if (value < 0)
-                {
-                    ThrowNegateTwosCompOverflow();
-                }
+                ThrowNegateTwosCompOverflow();
             }
-            return value;
+            
+            return unchecked((short)((value + (value >>= 15)) ^ value));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Abs(int value)
         {
-            if (value < 0)
+            if (value == int.MinValue)
             {
-                value = -value;
-                if (value < 0)
-                {
-                    ThrowNegateTwosCompOverflow();
-                }
+                ThrowNegateTwosCompOverflow();
             }
-            return value;
+
+            return unchecked((value + (value >>= 31)) ^ value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Abs(long value)
         {
-            if (value < 0)
+            if (value == long.MinValue)
             {
-                value = -value;
-                if (value < 0)
-                {
-                    ThrowNegateTwosCompOverflow();
-                }
+                ThrowNegateTwosCompOverflow();
             }
-            return value;
+
+            value = unchecked((value + (value >>= 63)) ^ value);
         }
 
         /// <summary>Returns the absolute value of a native signed integer.</summary>
@@ -107,15 +98,12 @@ namespace System
         [CLSCompliant(false)]
         public static sbyte Abs(sbyte value)
         {
-            if (value < 0)
+            if (value == sbyte.MinValue)
             {
-                value = (sbyte)-value;
-                if (value < 0)
-                {
-                    ThrowNegateTwosCompOverflow();
-                }
+                ThrowNegateTwosCompOverflow();
             }
-            return value;
+
+            return unchecked((sbyte)((value + (value >>= 7)) ^ value));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
