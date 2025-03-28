@@ -85,6 +85,7 @@ namespace System.Net.Http.Functional.Tests
             async server =>
             {
                 await using Http2LoopbackConnection connection = await ((Http2LoopbackServer)server).EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
+                connection.IgnoreWindowUpdates();
 
                 (int streamId, HttpRequestData request) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
 
