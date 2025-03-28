@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -65,6 +67,8 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 Assert.Equal(expectedMatches.Length, count);
+
+                EnumerateMatches_ExpectedGI(r.EnumerateMatches(span), span, expectedMatches);
             }
         }
 
@@ -93,6 +97,8 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 Assert.Equal(expectedMatches.Length, count);
+
+                EnumerateMatches_ExpectedGI(r.EnumerateMatches(span), span, expectedMatches);
             }
         }
 
@@ -117,7 +123,17 @@ namespace System.Text.RegularExpressions.Tests
 
                     count++;
                 }
+
+                EnumerateMatches_ExpectedGI(r.EnumerateMatches(span), span, expectedMatches, expectedIndex);
             }
+        }
+
+        internal static void EnumerateMatches_ExpectedGI<TEnumerator>(TEnumerator enumerator, ReadOnlySpan<char> span,
+            string[] expectedMatches, int[]? expectedIndex = default)
+            where TEnumerator : IEnumerator<ValueMatch>, allows ref struct
+        {
+            var expected = expectedMatches.Select((val, index) => new CaptureData(val, expectedIndex?[index] ?? -1, -1));
+            RegexMultipleMatchTests.EnumerateMatches_ExpectedGI(enumerator, span, expected);
         }
     }
 
@@ -125,7 +141,7 @@ namespace System.Text.RegularExpressions.Tests
     {
         [Theory]
         [MemberData(nameof(Matches_TestData))]
-        public async Task EnumerateMatches(RegexEngine engine, string pattern, string input, RegexOptions options, CaptureData[] expected)
+        public async Task EnumerateMatches_Tests(RegexEngine engine, string pattern, string input, RegexOptions options, CaptureData[] expected)
         {
             Test(input, expected, await RegexHelpers.GetRegexAsync(engine, pattern, options));
 
@@ -142,7 +158,52 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 Assert.Equal(expected.Length, count);
+
+                EnumerateMatches_ExpectedGI(regexAdvanced.EnumerateMatches(span), span, expected);
             }
+        }
+
+        internal static void EnumerateMatches_ExpectedGI<TEnumerator>(TEnumerator enumerator, ReadOnlySpan<char> span, IEnumerable<CaptureData> expected)
+            where TEnumerator : IEnumerator<ValueMatch>, allows ref struct
+        {
+            try { enumerator.Reset(); } catch (NotSupportedException) { };
+            enumerator.Dispose();
+
+            foreach (var capture in expected)
+            {
+                Assert.True(enumerator.MoveNext());
+                var match = enumerator.Current;
+                EnumerateMatches_CurrentI(enumerator);
+                if (capture.Index >= 0)
+                    Assert.Equal(capture.Index, match.Index);
+                if (capture.Length >= 0)
+                    Assert.Equal(capture.Length, match.Length);
+                if (capture.Value is not null)
+                    Assert.Equal(capture.Value, span.Slice(match.Index, match.Length).ToString());
+
+                try { enumerator.Reset(); } catch (NotSupportedException) { };
+                enumerator.Dispose();
+                match = enumerator.Current;
+                EnumerateMatches_CurrentI(enumerator);
+                if (capture.Index >= 0)
+                    Assert.Equal(capture.Index, match.Index);
+                if (capture.Length >= 0)
+                    Assert.Equal(capture.Length, match.Length);
+                if (capture.Value is not null)
+                    Assert.Equal(capture.Value, span.Slice(match.Index, match.Length).ToString());
+            }
+
+            Assert.False(enumerator.MoveNext());
+
+            try { enumerator.Reset(); } catch (NotSupportedException) { };
+            enumerator.Dispose();
+            Assert.False(enumerator.MoveNext());
+        }
+
+        internal static void EnumerateMatches_CurrentI<TEnumerator>(TEnumerator enumerator)
+            where TEnumerator : IEnumerator, allows ref struct
+        {
+            try { _ = enumerator.Current; } catch (NotSupportedException) { };
         }
     }
 
@@ -163,6 +224,9 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 Assert.Equal(expectedCount, count);
+
+                RegexMultipleMatchTests.EnumerateMatches_ExpectedGI(r.EnumerateMatches(input), input,
+                    Enumerable.Range(0, expectedCount).Select(_ => new CaptureData(default, -1, -1)));
             }
         }
     }
@@ -184,6 +248,9 @@ namespace System.Text.RegularExpressions.Tests
                 }
                 Assert.Equal(expectedCount, count);
 
+                RegexMultipleMatchTests.EnumerateMatches_ExpectedGI(r.EnumerateMatches(input, startat), input,
+                    Enumerable.Range(0, expectedCount).Select(_ => new CaptureData(default, -1, -1)));
+
                 bool isDefaultStartAt = startat == ((options & RegexOptions.RightToLeft) != 0 ? input.Length : 0);
                 if (!isDefaultStartAt)
                 {
@@ -198,6 +265,9 @@ namespace System.Text.RegularExpressions.Tests
                         count++;
                     }
                     Assert.Equal(expectedCount, count);
+
+                    RegexMultipleMatchTests.EnumerateMatches_ExpectedGI(Regex.EnumerateMatches(input, pattern), input,
+                        Enumerable.Range(0, expectedCount).Select(_ => new CaptureData(default, -1, -1)));
                 }
 
                 switch (engine)
@@ -212,6 +282,8 @@ namespace System.Text.RegularExpressions.Tests
                             count++;
                         }
                         Assert.Equal(expectedCount, count);
+                        RegexMultipleMatchTests.EnumerateMatches_ExpectedGI(Regex.EnumerateMatches(input, pattern, options | engineOptions), input,
+                            Enumerable.Range(0, expectedCount).Select(_ => new CaptureData(default, -1, -1)));
 
                         count = 0;
                         foreach (ValueMatch _ in Regex.EnumerateMatches(input, pattern, options | engineOptions, Regex.InfiniteMatchTimeout))
@@ -219,6 +291,8 @@ namespace System.Text.RegularExpressions.Tests
                             count++;
                         }
                         Assert.Equal(expectedCount, count);
+                        RegexMultipleMatchTests.EnumerateMatches_ExpectedGI(Regex.EnumerateMatches(input, pattern, options | engineOptions, Regex.InfiniteMatchTimeout), input,
+                            Enumerable.Range(0, expectedCount).Select(_ => new CaptureData(default, -1, -1)));
                         break;
                 }
             }
