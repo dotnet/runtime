@@ -12656,6 +12656,24 @@ void Compiler::impFixPredLists()
                 }
 
                 finallyBlock->SetEhfTargets(jumpEhf);
+
+                if (finallyBlock->hasProfileWeight())
+                {
+                    bool profileConsistent = false;
+                    for (BasicBlock* const succBlock : finallyBlock->Succs())
+                    {
+                        const weight_t oldWeight = succBlock->bbWeight;
+                        const weight_t newWeight = succBlock->computeIncomingWeight();
+                        succBlock->setBBProfileWeight(newWeight);
+                        profileConsistent &= fgProfileWeightsEqual(oldWeight, newWeight);
+                    }
+
+                    if (!profileConsistent)
+                    {
+                        JITDUMP("Flow propagation out of " FMT_BB " might have introduced inconsistency. Data %s inconsistent.\n", finallyBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
+                        fgPgoConsistent = false;
+                    }
+                }
             }
         }
     }
