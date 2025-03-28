@@ -7865,6 +7865,13 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         goto exit;
     }
 
+    if (pOrigCallerModule->IsInliningDisabled())
+    {        
+        result = INLINE_NEVER;
+        szFailReason = "Inlining is disabled in the compiled method's module";
+        goto exit;
+    }
+
     // Also check to see if the method requires a security object.  This means they call demand and
     // shouldn't be inlined.
     if (IsMdRequireSecObject(pCallee->GetAttrs()))
