@@ -6542,10 +6542,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         // Not an Out-of-memory situation, so no need for a forbid fault region here
         //
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled)
-        {
-            EEPolicy::HandleStackOverflow();
-        }
+        EEPolicy::HandleStackOverflow();
 #endif // FEATURE_EH_FUNCLETS
         return VEH_CONTINUE_SEARCH;
     }
@@ -7240,14 +7237,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 //
                 // HandleManagedFault may never return, so we cannot use a forbid fault region around it.
                 //
-                if (g_isNewExceptionHandlingEnabled)
-                {
-                    HandleManagedFaultNew(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
-                else
-                {
-                    HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
+                HandleManagedFaultNew(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
 #endif // FEATURE_EH_FUNCLETS
@@ -7457,7 +7447,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     Exception::Delete(pException);
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && !nativeRethrow)
+    if (!nativeRethrow)
     {
         Thread *pThread = GetThread();
         ThreadExceptionState* pExState = pThread->GetExceptionState();

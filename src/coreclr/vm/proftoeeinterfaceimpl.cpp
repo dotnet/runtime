@@ -8085,7 +8085,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     }
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && !pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
+    if (!pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
     {
         // Skip new exception handling helpers
         InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pCf->GetFrame());

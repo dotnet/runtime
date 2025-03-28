@@ -2713,12 +2713,9 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         }
         EX_CATCH
         {
-            if (g_isNewExceptionHandlingEnabled)
-            {
-                OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-                _ASSERTE(ohThrowable);
-                StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
-            }
+            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            _ASSERTE(ohThrowable);
+            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             EX_RETHROW;
         }
         EX_END_CATCH(SwallowAllExceptions)
