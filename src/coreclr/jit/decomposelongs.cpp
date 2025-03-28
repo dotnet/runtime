@@ -138,7 +138,8 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
     }
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_X86)
-    if (!tree->TypeIs(TYP_LONG) && !(tree->OperIs(GT_CAST) && varTypeIsLong(tree->AsCast()->CastOp()) && varTypeIsFloating(tree)))
+    if (!tree->TypeIs(TYP_LONG) &&
+        !(tree->OperIs(GT_CAST) && varTypeIsLong(tree->AsCast()->CastOp()) && varTypeIsFloating(tree)))
 #else
     if (!tree->TypeIs(TYP_LONG))
 #endif // FEATURE_HW_INTRINSICS && TARGET_X86
