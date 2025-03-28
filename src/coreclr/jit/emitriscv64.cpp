@@ -726,7 +726,7 @@ void emitter::emitIns_R_R_I(
 
     if ((INS_addi <= ins && INS_srai >= ins) || (INS_addiw <= ins && INS_sraiw >= ins) ||
         (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
-        INS_flw == ins)
+        INS_flw == ins || INS_rori == ins || INS_roriw == ins)
     {
         assert(isGeneralRegister(reg2));
         code |= (reg1 & 0x1f) << 7; // rd
@@ -824,7 +824,8 @@ void emitter::emitIns_R_R_R(
     if ((INS_add <= ins && ins <= INS_and) || (INS_mul <= ins && ins <= INS_remuw) ||
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
-        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d))
+        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
+        (INS_rol <= ins && ins <= INS_rorw))
     {
 #ifdef DEBUG
         switch (ins)
@@ -913,6 +914,11 @@ void emitter::emitIns_R_R_R(
             case INS_amominu_d:
             case INS_amomaxu_w:
             case INS_amomaxu_d:
+
+            case INS_rol:
+            case INS_rolw:
+            case INS_ror:
+            case INS_rorw:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
@@ -3592,17 +3598,22 @@ void emitter::emitDispInsName(
                     break;
                 case 0x5: // SRLI & SRAI
                 {
-                    static constexpr unsigned kLogicalShiftFunct6    = 0b000000;
-                    static constexpr unsigned kArithmeticShiftFunct6 = 0b010000;
-
-                    unsigned funct6         = (imm12 >> 6) & 0x3f;
-                    bool     isLogicalShift = funct6 == kLogicalShiftFunct6;
-                    if ((!isLogicalShift) && (funct6 != kArithmeticShiftFunct6))
-                    {
-                        return emitDispIllegalInstruction(code);
-                    }
-                    printLength = printf(isLogicalShift ? "srli" : "srai");
+                    unsigned funct6 = (imm12 >> 6) & 0x3f;
                     imm12 &= 0x3f; // 6BITS for SHAMT in RISCV64
+                    switch (funct6)
+                    {
+                        case 0b000000:
+                            printLength = printf("srli");
+                            break;
+                        case 0b010000:
+                            printLength = printf("srai");
+                            break;
+                        case 0b011000:
+                            printLength = printf("rori");
+                            break;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
                 }
                 break;
                 case 0x6: // ORI
@@ -3675,21 +3686,21 @@ void emitter::emitDispInsName(
                     return;
                 case 0x5: // SRLIW & SRAIW
                 {
-                    static constexpr unsigned kLogicalShiftFunct7    = 0b0000000;
-                    static constexpr unsigned kArithmeticShiftFunct7 = 0b0100000;
-
-                    unsigned funct7 = (imm12 >> 5) & 0x7f;
-                    if (funct7 == kLogicalShiftFunct7)
+                    unsigned funct6 = (imm12 >> 5) & 0x7f;
+                    imm12 &= 0x1f; // 5BITS for SHAMT in RISCV64
+                    switch (funct6)
                     {
-                        printf("srliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5BITS for SHAMT in RISCV64
-                    }
-                    else if (funct7 == kArithmeticShiftFunct7)
-                    {
-                        printf("sraiw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5BITS for SHAMT in RISCV64
-                    }
-                    else
-                    {
-                        emitDispIllegalInstruction(code);
+                        case 0b000000:
+                            printf("srliw          %s, %s, %d\n", rd, rs1, imm12);
+                            return;
+                        case 0b010000:
+                            printf("sraiw          %s, %s, %d\n", rd, rs1, imm12);
+                            return;
+                        case 0b011000:
+                            printf("roriw          %s, %s, %d\n", rd, rs1, imm12);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
                 }
                     return;
@@ -3782,6 +3793,19 @@ void emitter::emitDispInsName(
                             return emitDispIllegalInstruction(code);
                     }
                     return;
+                case 0b0110000:
+                    switch (opcode3)
+                    {
+                        case 0b001:
+                            printf("rol            %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0b101:
+                            printf("ror           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
+                    return;
                 default:
                     return emitDispIllegalInstruction(code);
             }
@@ -3842,6 +3866,19 @@ void emitter::emitDispInsName(
                             return;
                         case 0x7: // REMUW
                             printf("remuw          %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
+                    return;
+                case 0b0110000:
+                    switch (opcode3)
+                    {
+                        case 0b001:
+                            printf("rolw           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0b101:
+                            printf("rorw          %s, %s, %s\n", rd, rs1, rs2);
                             return;
                         default:
                             return emitDispIllegalInstruction(code);

@@ -260,6 +260,14 @@ INST(amominu_w,     "amominu.w",      0,   0xc000202f) // funct5:11000
 INST(amominu_d,     "amominu.d",      0,   0xc000302f) // funct5:11000
 INST(amomaxu_w,     "amomaxu.w",      0,   0xe000202f) // funct5:11100
 INST(amomaxu_d,     "amomaxu.d",      0,   0xe000302f) // funct5:11100
+
+INST(rol,           "rol",            0,   0x60001033)
+INST(rolw,          "rolw",           0,   0x6000103b)
+INST(ror,           "ror",            0,   0x60005033)
+INST(rorw,          "rorw",           0,   0x6000503b)
+INST(rori,          "rori",           0,   0x60005013)
+INST(roriw,         "roriw",          0,   0x6000501b)
+
 // clang-format on
 /*****************************************************************************/
 #undef INST
