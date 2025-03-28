@@ -3108,6 +3108,156 @@ namespace System.Xml.XslCompiledTransformApiTests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CTransformConstructorWithFourParametersTest : XsltApiTestCaseBase2
     {
+        public static IEnumerable<object[]> ValidCasesTestData
+        {
+            get
+            {
+                yield return new object[] {
+                    "xmlResolver_document_function.xsl",
+                    "fruits.xml",
+                    "xmlResolver_document_function.txt",
+                    "CustomXmlResolver",
+                    true,
+                    "XmlReader"
+                };
+                yield return new object[] {
+                    "xmlResolver_document_function.xsl",
+                    "fruits.xml",
+                    "xmlResolver_document_function.txt",
+                    "CustomXmlResolver",
+                    true,
+                    "IXPathNavigable"
+                };
+                yield return new object[] {
+                    "xmlResolver_document_function.xsl",
+                    "fruits.xml",
+                    "xmlResolver_document_function.txt",
+                    "XmlUrlResolver",
+                    true,
+                    "IXPathNavigable"
+                };
+                yield return new object[] {
+                    "xmlResolver_document_function.xsl",
+                    "fruits.xml",
+                    "xmlResolver_document_function.txt",
+                    "XmlUrlResolver",
+                    true,
+                    "XmlReader"
+                };
+                yield return new object[] {
+                    "Bug382198.xsl",
+                    "fruits.xml",
+                    "bug382198.txt",
+                    "CustomXmlResolver",
+                    true,
+                    "IXPathNavigable"
+                };
+                yield return new object[] {
+                    "Bug382198.xsl",
+                    "fruits.xml",
+                    "bug382198.txt",
+                    "CustomXmlResolver",
+                    true,
+                    "XmlReader"
+                };
+                yield return new object[] {
+                    "XmlResolver_Main.xsl",
+                    "fruits.xml",
+                    "xmlResolver_main.txt",
+                    "XmlUrlResolver",
+                    true,
+                    "IXPathNavigable"
+                };
+                yield return new object[] {
+                    "XmlResolver_Main.xsl",
+                    "fruits.xml",
+                    "xmlResolver_main.txt",
+                    "XmlUrlResolver",
+                    true,
+                    "XmlReader"
+                };
+                yield return new object[] {
+                    "Bug382198.xsl",
+                    "fruits.xml",
+                    "bug382198.txt",
+                    "XmlUrlResolver",
+                    true,
+                    "IXPathNavigable"
+                };
+                yield return new object[] {
+                    "Bug382198.xsl",
+                    "fruits.xml",
+                    "bug382198.txt",
+                    "XmlUrlResolver",
+                    true,
+                    "XmlReader"
+                };
+                yield return new object[] {
+                    "Bug382198.xsl",
+                    "fruits.xml",
+                    "bug382198.txt",
+                    "NullResolver",
+                    true,
+                    "IXPathNavigable"
+                };
+                yield return new object[] {
+                    "Bug382198.xsl",
+                    "fruits.xml",
+                    "bug382198.txt",
+                    "NullResolver",
+                    true,
+                    "XmlReader"
+                };
+                yield return new object[] {
+                    "bug93189.xsl",
+                    "bug93189.xml",
+                    "bug93189.xml",
+                    "NullResolver",
+                    true,
+                    "XmlReader"
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> ValidCasesExternalUriTestData
+        {
+            get
+            {
+                yield return new object[] {
+                    "XmlResolver_Main.xsl",
+                    "fruits.xml",
+                    "xmlResolver_main.txt",
+                    "CustomXmlResolver",
+                    true,
+                    "IXPathNavigable"
+                };
+                yield return new object[] {
+                    "XmlResolver_Main.xsl",
+                    "fruits.xml",
+                    "xmlResolver_main.txt",
+                    "CustomXmlResolver",
+                    true,
+                    "XmlReader"
+                };
+                yield return new object[] {
+                    "XmlResolver_Main.xsl",
+                    "fruits.xml",
+                    "xmlResolver_main.txt",
+                    "NullResolver",
+                    false,
+                    "IXPathNavigable"
+                };
+                yield return new object[] {
+                    "XmlResolver_Main.xsl",
+                    "fruits.xml",
+                    "xmlResolver_main.txt",
+                    "NullResolver",
+                    false,
+                    "XmlReader"
+                };
+            }
+        }
+
         private ITestOutputHelper _output;
         public CTransformConstructorWithFourParametersTest(ITestOutputHelper output) : base(output)
         {
@@ -3131,14 +3281,9 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true })]
-        [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "IXPathNavigable")]
-        [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "XmlReader")]
-        //[Variation("Import/Include, NullResolver", Pri = 0, Params = new object[] { "XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false })]
-        [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "IXPathNavigable")]
-        [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "XmlReader")]
         [Theory]
-        public void ValidCases_ExternalURI(object param0, object param1, object param2, object param3, object param4, object param5)
+        [MemberData(nameof(ValidCasesExternalUriTestData))]
+        public void ValidCases_ExternalUri(string param0, string param1, string param2, string param3, bool param4, string param5)
         {
             using (new AllowDefaultResolverContext())
             {
@@ -3146,38 +3291,16 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        //[Variation("Document function 1, CustomXmlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true })]
-        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "XmlReader")]
-        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "IXPathNavigable")]
-        //[Variation("Document function 1, XmlUrlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true })]
-        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true, "IXPathNavigable")]
-        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true, "XmlReader")]
-        //[Variation("Document function 1, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false })]
-       // [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "IXPathNavigable")]
-       // [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "XmlReader")]
-        //[Variation("No Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "bug382198.txt", "CustomXmlResolver", true })]
-        [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "CustomXmlResolver", true, "IXPathNavigable")]
-        [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "CustomXmlResolver", true, "XmlReader")]
-        //[Variation("Import/Include, XmlUrlResolver", Pri = 0, Params = new object[] { "XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "XmlUrlResolver", true })]
-        [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "XmlUrlResolver", true, "IXPathNavigable")]
-        [InlineData("XmlResolver_Main.xsl", "fruits.xml", "xmlResolver_main.txt", "XmlUrlResolver", true, "XmlReader")]
-        //[Variation("No Import/Include, XmlUrlResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "bug382198.txt", "XmlUrlResolver", true })]
-        [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "XmlUrlResolver", true, "IXPathNavigable")]
-        [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "XmlUrlResolver", true, "XmlReader")]
-        //[Variation("No Import/Include, NullResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "bug382198.txt", "NullResolver", true })]
-        [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "NullResolver", true, "IXPathNavigable")]
-        [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "NullResolver", true, "XmlReader")]
-        // [ActiveIssue(https://github.com/dotnet/runtime/issues/115455)]
-        // [InlineData("bug93189.xsl", "bug93189.xml", "bug93189.xml", "NullResolver", true, "XmlReader")]
         [Theory]
-        public void ValidCases(object param0, object param1, object param2, object param3, object param4, object param5)
+        [MemberData(nameof(ValidCasesTestData))]
+        public void ValidCases(string param0, string param1, string param2, string param3, bool param4, string param5)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                string xslFile = FullFilePath(param0 as string);
-                string xmlFile = FullFilePath(param1 as string);
-                string baseLineFile = Path.Combine("baseline", param2 as string);
-                bool expectedResult = (bool)param4;
+                string xslFile = FullFilePath(param0);
+                string xmlFile = FullFilePath(param1);
+                string baseLineFile = Path.Combine("baseline", param2);
+                bool expectedResult = param4;
                 bool actualResult = false;
 
                 XmlReader xmlReader = XmlReader.Create(xmlFile);
@@ -3208,7 +3331,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 }
 
                 XmlResolver resolver = null;
-                switch (param3 as string)
+                switch (param3)
                 {
                     case "NullResolver":
                         break;
@@ -3234,7 +3357,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
                     using (XmlWriter writer = XmlWriter.Create("outputFile.txt"))
                     {
-                        if (param5 as string == "XmlReader")
+                        if (param5 == "XmlReader")
                             localXslt.Transform(xmlReader, null, writer, resolver);
                         else
                             localXslt.Transform(navigator, null, writer, resolver);
