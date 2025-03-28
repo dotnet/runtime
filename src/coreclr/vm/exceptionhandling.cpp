@@ -914,7 +914,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
 }
 
 EXTERN_C EXCEPTION_DISPOSITION
-ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
+ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
                     IN     PVOID               pEstablisherFrame,
                     IN OUT PCONTEXT            pContextRecord,
                     IN OUT PDISPATCHER_CONTEXT pDispatcherContext
@@ -934,8 +934,7 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
     // There is nothing to do for those with the new exception handling.
     // Also skip all frames when processing unhandled exceptions. That allows them to reach the host app
     // level and let 3rd party the chance to handle them.
-    if (!ExecutionManager::IsManagedCode((PCODE)pDispatcherContext->ControlPc) ||
-        pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+    if (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
     {
         return ExceptionContinueSearch;
     }
@@ -981,24 +980,6 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
 #endif // !HOST_UNIX
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, _T("SEH exception leaked into managed code"));
     UNREACHABLE();
-}
-
-EXTERN_C EXCEPTION_DISPOSITION
-ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                    IN     PVOID               pEstablisherFrame,
-                    IN OUT PCONTEXT            pContextRecord,
-                    IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                    )
-{
-    //
-    // This method doesn't always return, so it will leave its
-    // state on the thread if using dynamic contracts.
-    //
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_THROWS;
-
-    return ProcessCLRExceptionNew(pExceptionRecord, pEstablisherFrame, pContextRecord, pDispatcherContext);
 }
 
 // When we hit a native exception such as an AV in managed code, we put up a FaultingExceptionFrame which saves all the
