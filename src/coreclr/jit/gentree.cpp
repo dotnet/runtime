@@ -25013,6 +25013,9 @@ GenTree* Compiler::gtNewSimdMinNativeNode(
 
     if (intrinsic != NI_Illegal)
     {
+#ifdef TARGET_ARM64
+        intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(simdSize, intrinsic);
+#endif
         return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
     }
 
@@ -25020,7 +25023,7 @@ GenTree* Compiler::gtNewSimdMinNativeNode(
     GenTree* op2Dup = fgMakeMultiUse(&op2);
 
     // op1 = op1 < op2
-    op1 = gtNewSimdCmpOpNode(GT_LT, type, op1, op2, simdBaseJitType, simdSize);
+    op1 = gtNewSimdCmpOpNode(GT_LT, type, op1, op2, simdBaseJitType, simdSize ARM64_ARG(false));
 
     // result = ConditionalSelect(op1, op1Dup, op2Dup)
     return gtNewSimdCndSelNode(type, op1, op1Dup, op2Dup, simdBaseJitType, simdSize);
@@ -28976,6 +28979,14 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
             case NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero:
                 sveId = NI_Sve_ConvertToUInt64;
                 break;
+            case NI_AdvSimd_Max:
+            case NI_AdvSimd_Arm64_Max:
+                sveId = NI_Sve_Max;
+                break;
+            case NI_AdvSimd_Min:
+            case NI_AdvSimd_Arm64_Min:
+                sveId = NI_Sve_Min;
+                break;
             case NI_AdvSimd_Not:
                 sveId = NI_Sve_Not;
                 break;
@@ -28987,10 +28998,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
                 break;
             case NI_Vector128_op_Inequality:
                 sveId = NI_Vector_op_Inequality;
-                break;
-            case NI_AdvSimd_Max:
-            case NI_AdvSimd_Arm64_Max:
-                sveId = NI_Sve_Max;
                 break;
             default:
                 sveId = id;

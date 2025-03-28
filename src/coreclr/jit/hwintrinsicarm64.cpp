@@ -2074,6 +2074,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_Min:
         case NI_Vector64_Min:
         case NI_Vector128_Min:
         {
@@ -2086,6 +2087,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_MinNative:
         case NI_Vector64_MinNative:
         case NI_Vector128_MinNative:
         {
