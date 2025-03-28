@@ -57,6 +57,7 @@ lookup_intrins (guint16 *intrinsics, int size, const char *cmethod_name)
 // These items need to be in ASCII order, which means alphabetical order where lowercase is after uppercase
 // i.e. all 'get_' and 'op_' need to come after regular title-case names
 static guint16 sri_vector128_methods [] = {
+	SN_Abs,
 	SN_AndNot,
 	SN_As,
 	SN_AsByte,
@@ -76,24 +77,33 @@ static guint16 sri_vector128_methods [] = {
 	SN_AsVector,
 	SN_AsVector4,
 	SN_AsVector128,
+	SN_BitwiseAnd,
+	SN_BitwiseOr,
+	SN_Ceiling,
 	SN_ConditionalSelect,
 	SN_Create,
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
+	SN_Divide,
 	SN_Equals,
 	SN_EqualsAny,
 	SN_ExtractMostSignificantBits,
+	SN_Floor,
 	SN_GreaterThan,
 	SN_GreaterThanOrEqual,
 	SN_LessThan,
 	SN_LessThanOrEqual,
 	SN_Narrow,
+	SN_Negate,
+	SN_Max,
+	SN_Min,
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
 	SN_Shuffle,
 	SN_WidenLower,
 	SN_WidenUpper,
+	SN_Xor,
 	SN_get_IsHardwareAccelerated,
 };
 
@@ -1069,18 +1079,24 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			cmethod_name = "CompareEqual";
 		} else if (id == SN_Add) {
 			cmethod_name = "Add";
+		} else if (id == SN_AndNot) {
+			cmethod_name = "AndNot";
 		} else if (id == SN_Subtract) {
 			cmethod_name = "Subtract";
 		} else if (id == SN_Multiply) {
 			cmethod_name = "Multiply";
-		//} else if (id == SN_Divide) {
-		//	cmethod_name = "Divide";
-		} else if (id == SN_And) {
-			cmethod_name = "BitwiseAnd";
-		//} else if (id == SN_Or) {
-		//	cmethod_name = "BitwiseOr";
-		//} else if (id == SN_Xor) {
-		//	cmethod_name = "BitwiseXor";
+		} else if (id == SN_Divide) {
+			cmethod_name = "Divide";
+		} else if (id == SN_BitwiseAnd) {
+			cmethod_name = "And";
+		} else if (id == SN_BitwiseOr) {
+			cmethod_name = "Or";
+		} else if (id == SN_Ceiling) {
+			cmethod_name = "Ceiling";
+		} else if (id == SN_Floor) {
+			cmethod_name = "Floor";
+		} else if (id == SN_Xor) {
+			cmethod_name = "Xor";
 		} else if (id == SN_ShiftLeft) {
 			cmethod_name = "ShiftLeft";
 		} else if (id == SN_ShiftRightLogical) {
@@ -1089,12 +1105,12 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			cmethod_name = "ShiftRightArithmetic";
 		} else if (id == SN_Negate) {
 			cmethod_name = "Negate";
-		//} else if (id == SN_Abs) {
-		//	cmethod_name = "Absolute";
-		//} else if (id == SN_Min) {
-		//	cmethod_name = "Min";
-		//} else if (id == SN_Max) {
-		//	cmethod_name = "Max";
+		} else if (id == SN_Abs) {
+			cmethod_name = "Abs";
+		} else if (id == SN_Min) {
+			cmethod_name = "Min";
+		} else if (id == SN_Max) {
+			cmethod_name = "Max";
 		} else {
 			// Only transform the name if we expect it to work
 			return FALSE;
