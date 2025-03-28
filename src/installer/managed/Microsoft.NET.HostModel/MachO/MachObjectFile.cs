@@ -17,6 +17,7 @@ namespace Microsoft.NET.HostModel.MachO;
 internal unsafe partial class MachObjectFile
 {
     private const uint PageSize = 0x1000;
+    private const uint CodeSignatureAlignment = 0x10;
 
     private MachHeader _header;
     private (LinkEditCommand Command, long FileOffset) _codeSignatureLoadCommand;
@@ -271,8 +272,7 @@ internal unsafe partial class MachObjectFile
 
     public static long GetSignatureSizeEstimate(uint fileSize, string identifier)
     {
-        const int CodeSignatureSizeAlignment = 0x10;
-        return CodeSignature.GetCodeSignatureSize(fileSize, identifier) + (AlignUp(fileSize, CodeSignatureSizeAlignment) - fileSize);
+        return CodeSignature.GetCodeSignatureSize(fileSize, identifier) + (AlignUp(fileSize, CodeSignatureAlignment) - fileSize);
     }
 
     /// <summary>
@@ -424,10 +424,10 @@ internal unsafe partial class MachObjectFile
     {
         if (!_codeSignatureLoadCommand.Command.IsDefault)
         {
-            Debug.Assert(_codeSignatureLoadCommand.Command.GetDataOffset(_header) % 0x10 == 0);
+            Debug.Assert(_codeSignatureLoadCommand.Command.GetDataOffset(_header) % CodeSignatureAlignment == 0);
             return _codeSignatureLoadCommand.Command.GetDataOffset(_header);
         }
-        return AlignUp((uint)(_linkEditSegment64.Command.GetFileOffset(_header) + _linkEditSegment64.Command.GetFileSize(_header)), 0x10);
+        return AlignUp((uint)(_linkEditSegment64.Command.GetFileOffset(_header) + _linkEditSegment64.Command.GetFileSize(_header)), CodeSignatureAlignment);
     }
 
     /// <summary>
@@ -451,7 +451,7 @@ internal unsafe partial class MachObjectFile
             var csEnd = csStart + _codeSignatureLoadCommand.Command.GetFileSize(_header);
             Debug.Assert(_codeSignatureBlob is not null);
             Debug.Assert(_codeSignatureBlob.FileOffset == csStart);
-            Debug.Assert(_codeSignatureLoadCommand.Command.GetDataOffset(_header) % 0x10 == 0);
+            Debug.Assert(_codeSignatureLoadCommand.Command.GetDataOffset(_header) % CodeSignatureAlignment == 0);
             Debug.Assert(csStart >= linkEditStart);
             Debug.Assert(csEnd <= linkEditStart + linkEditFileSize);
         }
