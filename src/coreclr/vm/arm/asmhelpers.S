@@ -564,6 +564,9 @@ LOCAL_LABEL(stackProbe_loop):
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         __\name\()__g_sw_ww_table_offset = 0xffff
 #endif
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        __\name\()__g_card_bundle_table_offset = 0xffff
+#endif
      .endm
 
     .macro LOAD_GC_GLOBAL name, regName, globalName
@@ -603,6 +606,21 @@ LOCAL_LABEL(stackProbe_loop):
             strb \tmpReg, [__wbScratch]
         .endif
 
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        LOAD_GC_GLOBAL \name, __wbScratch, g_card_bundle_table
+        add __wbScratch, __wbScratch, \ptrReg, lsr #20
+
+        .if(\mp)
+            ldrb \tmpReg, [__wbScratch]
+            cmp \tmpReg, #0xff
+            itt ne
+            movne \tmpReg, 0xff
+            strbne \tmpReg, [__wbScratch]
+        .else
+            mov \tmpReg, #0xff
+            strb \tmpReg, [__wbScratch]
+        .endif
+#endif
 0:
     .endm
 
@@ -649,7 +667,7 @@ LOCAL_LABEL(stackProbe_loop):
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         UPDATE_WRITE_WATCH_TABLE \name, r0, \mp, r12
 #endif
-        UPDATE_CARD_TABLE \name, r0, r1, \mp, \post, r0
+        UPDATE_CARD_TABLE \name, r0, r1, \mp, \post, r12
         bx lr
     LEAF_END_MARKED \name, _TEXT
     .endm
@@ -663,7 +681,7 @@ LOCAL_LABEL(stackProbe_loop):
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         UPDATE_WRITE_WATCH_TABLE \name, r0, 0, r12
 #endif
-        UPDATE_CARD_TABLE \name, r0, r1, 0, \post, r0
+        UPDATE_CARD_TABLE \name, r0, r1, 0, \post, r12
 1:
         bx lr
     LEAF_END_MARKED \name, _TEXT
@@ -679,7 +697,7 @@ LOCAL_LABEL(stackProbe_loop):
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         UPDATE_WRITE_WATCH_TABLE \name, r0, 1, r12
 #endif
-        UPDATE_CARD_TABLE \name, r0, r1, 1, \post, r0
+        UPDATE_CARD_TABLE \name, r0, r1, 1, \post, r12
         bx lr
 1:
         str r1, [r0]
@@ -720,6 +738,9 @@ LOCAL_LABEL(stackProbe_loop):
         .word __\name\()__g_card_table_offset
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         .word __\name\()__g_sw_ww_table_offset
+#endif
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        .word __\name\()__g_card_bundle_table_offset
 #endif
     .endm
 
