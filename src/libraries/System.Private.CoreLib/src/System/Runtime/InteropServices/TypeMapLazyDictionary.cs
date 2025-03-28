@@ -183,12 +183,6 @@ namespace System.Runtime.InteropServices
                 }
                 return _type;
             }
-
-            public bool RepresentsSameType(DelayedType other)
-            {
-                return string.Equals(AssemblyName, other.AssemblyName, StringComparison.Ordinal)
-                        && string.Equals(TypeName, other.TypeName, StringComparison.Ordinal);
-            }
         }
 
         [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
@@ -231,24 +225,21 @@ namespace System.Runtime.InteropServices
             private static int ComputeHashCode(Type key) => key.FullName!.GetHashCode();
             private static int ComputeHashCode(TypeName key) => key.FullName.GetHashCode();
 
+            private struct SourceProxyPair
+            {
+                public required DelayedType Source { get; init; }
+                public required DelayedType Proxy { get; init; }
+            }
+
             private sealed class DelayedTypeCollection
             {
-                public required Tuple<DelayedType, DelayedType> First { get; init; }
-                public List<Tuple<DelayedType, DelayedType>>? Others { get; private set; }
+                public required SourceProxyPair First { get; init; }
+                public List<SourceProxyPair>? Others { get; private set; }
 
-                public bool Add(Tuple<DelayedType, DelayedType> newEntryMaybe)
+                public void Add(SourceProxyPair newEntryMaybe)
                 {
-                    Others ??= new List<Tuple<DelayedType, DelayedType>>();
-                    foreach (Tuple<DelayedType, DelayedType> entry in Others)
-                    {
-                        if (entry.Item1.RepresentsSameType(newEntryMaybe.Item1))
-                        {
-                            return false;
-                        }
-                    }
-
+                    Others ??= new List<SourceProxyPair>();
                     Others.Add(newEntryMaybe);
-                    return true;
                 }
             }
 
@@ -261,19 +252,19 @@ namespace System.Runtime.InteropServices
                 if (_lazyData.TryGetValue(hash, out DelayedTypeCollection? value))
                 {
                     // The common case, no duplicate mappings.
-                    if (value.First.Item1.GetOrLoadType() == key)
+                    if (value.First.Source.GetOrLoadType() == key)
                     {
-                        type = value.First.Item2.GetOrLoadType();
+                        type = value.First.Proxy.GetOrLoadType();
                         return true;
                     }
                     else if (value.Others != null)
                     {
                         // Common case failed, look at alternate mappings.
-                        foreach (Tuple<DelayedType, DelayedType> entry in value.Others)
+                        foreach (SourceProxyPair entry in value.Others)
                         {
-                            if (entry.Item1.GetOrLoadType() == key)
+                            if (entry.Source.GetOrLoadType() == key)
                             {
-                                type = entry.Item2.GetOrLoadType();
+                                type = entry.Proxy.GetOrLoadType();
                                 return true;
                             }
                         }
@@ -287,9 +278,11 @@ namespace System.Runtime.InteropServices
             {
                 int hash = ComputeHashCode(parsedSource);
 
-                Tuple<DelayedType, DelayedType> newEntryMaybe = new(
-                    new(parsedSource.AssemblyName!.FullName, parsedSource.FullName),
-                    new(parsedProxy.AssemblyName!.FullName, parsedProxy.FullName));
+                SourceProxyPair newEntryMaybe = new()
+                {
+                    Source = new(parsedSource.AssemblyName!.FullName, parsedSource.FullName),
+                    Proxy = new(parsedProxy.AssemblyName!.FullName, parsedProxy.FullName)
+                };
 
                 if (!_lazyData.TryGetValue(hash, out DelayedTypeCollection? types))
                 {
@@ -298,11 +291,7 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    if (types.First.Item1.RepresentsSameType(newEntryMaybe.Item1)
-                        || !types.Add(newEntryMaybe))
-                    {
-                        ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(parsedSource.AssemblyQualifiedName);
-                    }
+                    types.Add(newEntryMaybe);
                 }
             }
         }
