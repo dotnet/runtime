@@ -839,7 +839,7 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     regNumber rAddr;
-    regNumber rCnt = REG_NA; // Invalid
+    regNumber rTarget = REG_NA; // Invalid
     regMaskTP regMask;
 
     regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
@@ -880,13 +880,11 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         uCntBytes -= 4;
     }
 
-    unsigned uCntSlots = uCntBytes / REGSIZE_BYTES; // How many register sized stack slots we're going to use.
-
-    // When uCntSlots is 9 or less, we will emit a sequence of sd instructions inline.
-    // When it is 10 or greater, we will emit a loop containing a sd instruction.
+    // When uCntBytes is 11 * REGSIZE_BYTES or less, we will emit a sequence of sd instructions inline.
+    // When it is 12 * REGSIZE_BYTES or greater, we will emit a loop containing a sd instruction.
     // In both of these cases the sd instruction will write two zeros to memory
     // and we will use a single str instruction at the end whenever we have an odd count.
-    if (uCntSlots >= 12)
+    if (uCntBytes >= 12 * REGSIZE_BYTES)
         useLoop = true;
 
     if (useLoop)
@@ -894,39 +892,36 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         // We pick the next lowest register number for rCnt
         noway_assert(availMask != RBM_NONE);
         regMask = genFindLowestBit(availMask);
-        rCnt    = genRegNumFromMask(regMask);
+        rTarget = genRegNumFromMask(regMask);
         availMask &= ~regMask;
 
-        noway_assert(uCntSlots >= 2);
-        assert((genRegMask(rCnt) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rCnt is not a live incoming
+        noway_assert(uCntBytes >= 2 * REGSIZE_BYTES);
+        assert((genRegMask(rTarget) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rTarget is not a live incoming
                                                                                 // argument reg
 
-        if (uCntSlots % 4 == 0)
+        if (uCntBytes % (4 * REGSIZE_BYTES) == 0)
         {
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 4);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rTarget, (ssize_t)uCntBytes);
 
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 16 + padding);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 24 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
 
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES + 3 * padding);
-            GetEmitter()->emitIns_R_I(INS_bnez, EA_PTRSIZE, rCnt, -6 << 2);
+            GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rCnt, -5 << 2);
 
             uCntBytes %= REGSIZE_BYTES * 4;
         }
         else
         {
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rTarget, (ssize_t)uCntBytes);
 
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
 
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES + padding);
-
-            GetEmitter()->emitIns_R_I(INS_bnez, EA_PTRSIZE, rCnt, -4 << 2);
+            GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rCnt, -3 << 2);
 
             uCntBytes %= REGSIZE_BYTES * 2;
         }
