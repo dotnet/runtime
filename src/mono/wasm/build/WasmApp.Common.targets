@@ -712,6 +712,7 @@
       AotModulesTablePath="$(_DriverGenCPath)"
       UseLLVM="true"
       Profilers="$(WasmProfilers)"
+      WasmPerfInstrumentation="$(WasmPerfInstrumentation)"
       DisableParallelAot="$(DisableParallelAot)"
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"
