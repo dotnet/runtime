@@ -403,8 +403,7 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
     Get the number of bytes used for stack parameters.
     This is currently only used on x86.
 */
-virtual
-ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
+ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo) override;
 
 /*
     Unwind the current stack frame, i.e. update the virtual register
@@ -414,12 +413,11 @@ ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
     (if UpdateAllRegs), callee-UNsaved registers are trashed)
     Returns success of operation.
 */
-virtual
 bool UnwindStackFrame(
                 PREGDISPLAY     pRD,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags,
-                CodeManState   *pState);
+                CodeManState   *pState) override;
 
 #ifdef HAS_LIGHTUNWIND
 enum LightUnwindFlag
@@ -444,13 +442,11 @@ void LightUnwindStackFrame(
     Is the function currently at a "GC safe point" ?
     Can call EnumGcRefs() successfully
 */
-virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
-                DWORD           dwRelOffset);
+                DWORD           dwRelOffset) override;
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-virtual
-bool HasTailCalls(EECodeInfo *pCodeInfo);
+bool HasTailCalls(EECodeInfo *pCodeInfo) override;
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
 
 /*
@@ -460,13 +456,12 @@ bool HasTailCalls(EECodeInfo *pCodeInfo);
     object have to be individually enumerated).
     Returns success of operation.
 */
-virtual
 bool EnumGcRefs(PREGDISPLAY     pContext,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags,
                 GCEnumCallback  pCallback,
                 LPVOID          hCallBack,
-                DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET);
+                DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET) override;
 
 #ifdef FEATURE_CONSERVATIVE_GC
 // Temporary conservative collection, for testing purposes, until we have
@@ -478,22 +473,20 @@ bool EnumGcRefsConservative(PREGDISPLAY     pRD,
                             LPVOID          hCallBack);
 #endif // FEATURE_CONSERVATIVE_GC
 
-virtual
 OBJECTREF GetInstance(
                 PREGDISPLAY     pContext,
-                EECodeInfo *    pCodeInfo);
+                EECodeInfo *    pCodeInfo) override;
 
 /*
     Returns the extra argument passed to shared generic code if it is still alive.
     Returns NULL in all other cases.
 */
-virtual
 PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
-                         EECodeInfo *    pCodeInfo);
+                         EECodeInfo *    pCodeInfo) override;
 
 // Returns the type of the context parameter (this, methodtable, methoddesc, or none)
-virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
-                                                    EECodeInfo *    pCodeInfo);
+GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
+                                            EECodeInfo *    pCodeInfo) override;
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 /*
@@ -514,38 +507,34 @@ PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
     Returns the offset of the GuardStack cookie if it exists.
     Returns NULL if there is no cookie.
 */
-virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        EECodeInfo    * pCodeInfo,
                        unsigned        flags,
-                       CodeManState  * pState);
+                       CodeManState  * pState) override;
 
 
 #ifndef USE_GC_INFO_DECODER
 /*
   Returns true if the given IP is in the given method's prolog or an epilog.
 */
-virtual
 bool IsInPrologOrEpilog(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
-                size_t*     prologSize);
+                size_t*     prologSize) override;
 
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
 */
-virtual
 bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
-                unsigned    flags);
+                unsigned    flags) override;
 #endif // !USE_GC_INFO_DECODER
 
 /*
   Returns the size of a given function.
 */
-virtual
-size_t GetFunctionSize(GCInfoToken gcInfoToken);
+size_t GetFunctionSize(GCInfoToken gcInfoToken) override;
 
 /*
 *  Get information necessary for return address hijacking of the method represented by the gcInfoToken.
@@ -553,7 +542,7 @@ size_t GetFunctionSize(GCInfoToken gcInfoToken);
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind));
+bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind)) override;
 
 #ifndef USE_GC_INFO_DECODER
 /*
