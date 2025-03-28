@@ -114,16 +114,15 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateComInterfaceForObject(
     CONTRACTL_END;
 
     void* wrapper;
-    {
-        GCPROTECT_BEGIN(instance);
 
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__GET_OR_CREATE_COM_INTERFACE_FOR_OBJECT_WITH_GLOBAL_MARSHALLING_INSTANCE);
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(instance);
-        CALL_MANAGED_METHOD(wrapper, void*, args);
+    GCPROTECT_BEGIN(instance);
 
-        GCPROTECT_END();
-    }
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__GET_OR_CREATE_COM_INTERFACE_FOR_OBJECT_WITH_GLOBAL_MARSHALLING_INSTANCE);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(instance);
+    CALL_MANAGED_METHOD(wrapper, void*, args);
+
+    GCPROTECT_END();
 
     *wrapperRaw = wrapper;
 
@@ -142,39 +141,24 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     }
     CONTRACTL_END;
 
-    // Determine the true identity of the object
-    SafeComHolder<IUnknown> identity;
-    {
-        GCX_PREEMP();
+    // TrackerObject support and unwrapping matches the built-in semantics that the global marshalling scenario mimics.
+    int flags = CreateObjectFlags::CreateObjectFlags_TrackerObject | CreateObjectFlags::CreateObjectFlags_Unwrap;
+    if ((objFromComIPFlags & ObjFromComIP::UNIQUE_OBJECT) != 0)
+        flags |= CreateObjectFlags::CreateObjectFlags_UniqueInstance;
 
-        HRESULT hr = externalComObject->QueryInterface(IID_IUnknown, &identity);
-        _ASSERTE(hr == S_OK);
-    }
+    OBJECTREF obj = NULL;
+    GCPROTECT_BEGIN(obj);
 
-    // Switch to Cooperative mode since object references
-    // are being manipulated.
-    {
-        GCX_COOP();
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__GET_OR_CREATE_OBJECT_FOR_COM_INSTANCE_WITH_GLOBAL_MARSHALLING_INSTANCE);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(externalComObject);
+    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(flags);
+    CALL_MANAGED_METHOD_RETREF(obj, OBJECTREF, args);
 
-        // TrackerObject support and unwrapping matches the built-in semantics that the global marshalling scenario mimics.
-        int flags = CreateObjectFlags::CreateObjectFlags_TrackerObject | CreateObjectFlags::CreateObjectFlags_Unwrap;
-        if ((objFromComIPFlags & ObjFromComIP::UNIQUE_OBJECT) != 0)
-            flags |= CreateObjectFlags::CreateObjectFlags_UniqueInstance;
+    GCPROTECT_END();
 
-        OBJECTREF obj = NULL;
-        GCPROTECT_BEGIN(obj);
-
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__GET_OR_CREATE_OBJECT_FOR_COM_INSTANCE_WITH_GLOBAL_MARSHALLING_INSTANCE);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = PTR_TO_ARGHOLDER(identity);
-        args[ARGNUM_1] = DWORD_TO_ARGHOLDER(flags);
-        CALL_MANAGED_METHOD_RETREF(obj, OBJECTREF, args);
-
-        GCPROTECT_END();
-
-        *objRef = obj;
-        return obj != NULL;
-    }
+    *objRef = obj;
+    return obj != NULL;
 }
 
 extern "C" void* QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::ObjectHandleOnStack obj)
