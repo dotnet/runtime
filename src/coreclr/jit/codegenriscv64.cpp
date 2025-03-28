@@ -5531,7 +5531,16 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // dest = base + (index << scale)
         if (node->gtElemSize <= 64)
         {
-            genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale, tempReg);
+            instruction shxaddIns = getShxaddVariant(scale, (genTypeSize(index) == 4));
+
+            if (shxaddIns != INS_none)
+            {
+                GetEmitter()->emitIns_R_R_R(shxaddIns, attr, node->GetRegNum(), index->GetRegNum(), base->GetRegNum());
+            }
+            else
+            {
+                genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale, tempReg);
+            }
         }
         else
         {
@@ -6641,7 +6650,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     genProduceReg(lea);
 }
 
-instruction getShxaddVariant(int scale, bool useUnsignedVariant)
+instruction CodeGen::getShxaddVariant(int scale, bool useUnsignedVariant)
 {
     if (useUnsignedVariant)
     {
