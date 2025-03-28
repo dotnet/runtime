@@ -1049,6 +1049,9 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg);
 #if HOST_BROWSER
 	if (!is_packedsimd) {
+		if (vector_size != SIZEOF_V128) {
+			return FALSE;
+		}
 		// transform the method name from the Vector(128)? name to the packed simd name
 		// FIXME: This is a hack, but it works for now.
 		id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod_name);
