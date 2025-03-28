@@ -973,7 +973,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 
             // Make sure we don't pass something other than a local address to the return buffer arg.
             // It is allowed to pass current's method return buffer as it is a local too.
-            if (fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(call->gtRetClsHnd) ||
+            if ((fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(call->gtRetClsHnd)) ||
                 (compIsAsync2() && !destAddr->OperIs(GT_LCL_ADDR)))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
