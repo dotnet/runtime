@@ -1025,16 +1025,6 @@ public:
 
     void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
-
-    void ResetForJitRetry()
-    {
-        CONTRACTL {
-            NOTHROW;
-            GC_NOTRIGGER;
-        } CONTRACTL_END;
-
-        CEECodeGenInfo::ResetForJitRetry();
-    }
 };
 #endif // FEATURE_INTERPRETER
 
