@@ -515,7 +515,7 @@ static const Entry s_QCall[] =
     DllImportEntry(InterfaceMarshaler_ConvertToNative)
     DllImportEntry(InterfaceMarshaler_ConvertToManaged)
 #endif
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
     DllImportEntry(ComWeakRefToObject)
     DllImportEntry(ObjectToComWeakRef)
 #endif

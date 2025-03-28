@@ -13,7 +13,7 @@
 
 #include "weakreference.h"
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
 
 class ComAwareWeakReferenceNative
 {
@@ -24,6 +24,6 @@ public:
 extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference * pComWeakReference, QCall::ObjectHandleOnStack retRcw);
 extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnStack obj);
 
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#endif // FEATURE_COMINTEROP
 
 #endif // _WEAKREFERENCENATIVE_H
