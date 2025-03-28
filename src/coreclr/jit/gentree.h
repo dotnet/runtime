@@ -7948,6 +7948,7 @@ protected:
 #endif // DEBUGGABLE_GENTREE
 };
 
+#if defined(TARGET_RISCV64)
 struct GenTreeShxadd : public GenTreeOp
 {
     unsigned int shammt;
@@ -7974,6 +7975,7 @@ struct GenTreeShxadd : public GenTreeOp
     }
 #endif // DEBUGGABLE_GENTREE
 };
+#endif // TARGET_RISCV
 
 // Read-modify-write status of a RMW memory op rooted at a storeInd
 enum RMWStatus
