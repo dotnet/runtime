@@ -2,7 +2,7 @@
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <WasmPerfTracing>true</WasmPerfTracing>
-    <WasmPerfInstrumentation>Sample</WasmPerfInstrumentation>
+    <WasmPerfInstrumentation>Sample.</WasmPerfInstrumentation>
     <MetricsSupport>true</MetricsSupport>
     <EventSourceSupport>true</EventSourceSupport>
 
