@@ -15,6 +15,8 @@
 
 #include <platformdefines.h>
 
+typedef void (*PFNACTION1)();
+
 #ifdef _WIN32
 extern "C" DLL_EXPORT void STDMETHODCALLTYPE ThrowException()
 {
@@ -52,7 +54,6 @@ extern "C" DLL_EXPORT void InvokeCallbackAndCatchTwice(PFNACTION1 callback)
 
 #endif // _WIN32
 
-typedef void (*PFNACTION1)();
 extern "C" DLL_EXPORT void InvokeCallback(PFNACTION1 callback)
 {
     callback();
