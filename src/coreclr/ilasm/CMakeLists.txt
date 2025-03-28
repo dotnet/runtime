@@ -51,6 +51,10 @@ if(CLR_CMAKE_TARGET_WIN32)
 
   set(ILASM_RESOURCES Native.rc)
   add_definitions(-DFX_VER_INTERNALNAME_STR=ilasm.exe)
+
+  # Ensure secure source code hashing is enabled when building asmparse.cpp
+  # to avoid BinSkim BA2004 warnings.
+  set_source_files_properties( prebuilt/asmparse.cpp PROPERTIES COMPILE_FLAGS "/ZH:SHA_256" )
 endif(CLR_CMAKE_TARGET_WIN32)
 
 
