@@ -13,6 +13,10 @@
     <PackageReference Condition="'$(TargetsBrowser)' == 'true'" Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_CMakeArgs Include="-DCMAKE_PREFIX_PATH=$(VendoredLibraryRootPath.TrimEnd('\\'))" />
+  </ItemGroup>
+
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
   <Target Name="BuildRuntime"
