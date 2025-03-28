@@ -1084,7 +1084,7 @@ export function mono_interp_tier_prepare_jiterpreter (
 export function mono_wasm_free_method_data (
     method: MonoMethod, imethod: number, traceIndex: number
 ) {
-    if (runtimeHelpers.emscriptenBuildOptions.enablePerfTracing) {
+    if (runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler) {
         mono_wasm_profiler_free_method(method);
     }
 

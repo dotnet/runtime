@@ -25,7 +25,7 @@ import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
 import { mono_wasm_get_locale_info } from "./globalization-locale";
 
-import { mono_wasm_profiler_record, mono_wasm_profiler_now } from "./profiler";
+import { mono_wasm_profiler_record, mono_wasm_profiler_now, mono_wasm_instrument_method } from "./profiler";
 import { ds_rt_websocket_create, ds_rt_websocket_send, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_close } from "./diagnostics";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
@@ -72,7 +72,8 @@ export const mono_wasm_imports = [
     mono_interp_flush_jitcall_queue,
     mono_wasm_free_method_data,
 
-    // browser.c
+    // browser.c, ep-rt-mono-runtime-provider.c
+    mono_wasm_instrument_method,
     mono_wasm_profiler_now,
     mono_wasm_profiler_record,
 
