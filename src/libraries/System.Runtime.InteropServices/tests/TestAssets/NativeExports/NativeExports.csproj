@@ -120,5 +120,8 @@
                             GetAppleBuildArgumentsForDNNE;
                             GetUnixCrossBuildArgumentsForDNNE"
           BeforeTargets="DnneBuildNativeExports">
+    <PropertyGroup>
+      <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
+    </PropertyGroup>
   </Target>
 </Project>
