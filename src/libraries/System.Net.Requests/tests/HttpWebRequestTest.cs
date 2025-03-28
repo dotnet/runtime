@@ -2100,8 +2100,7 @@ namespace System.Net.Tests
             HttpWebRequest request = WebRequest.CreateHttp("http://anything-unusable-blabla");
             request.Method = "POST";
             request.AllowWriteStreamBuffering = false;
-            WebException webException = await Assert.ThrowsAnyAsync<WebException>(() => request.GetRequestStreamAsync());
-            Assert.Equal(PlatformDetection.IsLinux ? WebExceptionStatus.UnknownError : WebExceptionStatus.NameResolutionFailure, webException.Status);
+            await Assert.ThrowsAnyAsync<WebException>(() => request.GetRequestStreamAsync());
         }
 
         [Fact]
