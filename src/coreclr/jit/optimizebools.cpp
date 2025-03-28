@@ -1698,18 +1698,19 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
     }
 
     // Both edges must be BBJ_RETURN
-    BasicBlock* retFalseBb = block->GetFalseTarget();
-    BasicBlock* retTrueBb  = block->GetTrueTarget();
+    BasicBlock* const retFalseBb = block->GetFalseTarget();
+    BasicBlock* const retTrueBb  = block->GetTrueTarget();
 
-    // Although, we might want to fold fallthrough BBJ_ALWAYS blocks first
-    if (fgCanCompactBlock(retTrueBb))
+    // We might want to compact BBJ_ALWAYS blocks first,
+    // but don't compact the conditional block away in the process
+    if (fgCanCompactBlock(retTrueBb) && !retTrueBb->TargetIs(block))
     {
         fgCompactBlock(retTrueBb);
         modified = true;
     }
     // By the time we get to the retFalseBb, it might be removed by fgCompactBlock()
     // so we need to check if it is still valid.
-    if (!retFalseBb->HasFlag(BBF_REMOVED) && fgCanCompactBlock(retFalseBb))
+    if (!retFalseBb->HasFlag(BBF_REMOVED) && fgCanCompactBlock(retFalseBb) && !retFalseBb->TargetIs(block))
     {
         fgCompactBlock(retFalseBb);
         modified = true;
@@ -1720,8 +1721,8 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
         return modified;
     }
 
-    retTrueBb  = block->GetTrueTarget();
-    retFalseBb = block->GetFalseTarget();
+    assert(block->TrueTargetIs(retTrueBb));
+    assert(block->FalseTargetIs(retFalseBb));
     if (!retTrueBb->KindIs(BBJ_RETURN) || !retFalseBb->KindIs(BBJ_RETURN) ||
         !BasicBlock::sameEHRegion(block, retTrueBb) || !BasicBlock::sameEHRegion(block, retFalseBb) ||
         (retTrueBb == genReturnBB) || (retFalseBb == genReturnBB))

@@ -29,7 +29,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false), predicate);
+            return Impl(source.WithCancellation(cancellationToken), predicate);
 
             static async ValueTask<bool> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -74,9 +74,9 @@ namespace System.Linq
                 Func<TSource, CancellationToken, ValueTask<bool>> predicate,
                 CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    if (!await predicate(element, cancellationToken).ConfigureAwait(false))
+                    if (!await predicate(element, cancellationToken))
                     {
                         return false;
                     }

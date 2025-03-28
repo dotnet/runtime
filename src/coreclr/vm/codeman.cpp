@@ -2604,7 +2604,7 @@ extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG     ControlPc
     PT_RUNTIME_FUNCTION prf = NULL;
 
     // We must preserve this so that GCStress=4 eh processing doesnt kill last error.
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
 #ifdef ENABLE_CONTRACTS
     // Some 64-bit OOM tests use the hosting interface to re-enter the CLR via
@@ -2626,8 +2626,6 @@ extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG     ControlPc
         prf = codeInfo.GetFunctionEntry();
 
     LOG((LF_EH, LL_INFO1000000, "GetRuntimeFunctionCallback(%p) returned %p\n", ControlPc, prf));
-
-    END_PRESERVE_LAST_ERROR;
 
     return  prf;
 }
@@ -4779,7 +4777,7 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
 
     WRAPPER_NO_CONTRACT;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     if (pModuleBase)
         *pModuleBase = 0;
@@ -4792,7 +4790,7 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
 #if defined(DACCESS_COMPILE)
         GetUnmanagedStackWalkInfo(ControlPc, pModuleBase, pFuncEntry);
 #endif // DACCESS_COMPILE
-        goto Exit;
+        return;
     }
 
     if (pModuleBase)
@@ -4804,10 +4802,6 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
     {
         *pFuncEntry = (UINT_PTR)(PT_RUNTIME_FUNCTION)codeInfo.GetFunctionEntry();
     }
-
-Exit:
-    ;
-    END_PRESERVE_LAST_ERROR;
 }
 #endif // FEATURE_EH_FUNCLETS
 
