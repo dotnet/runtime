@@ -489,7 +489,7 @@ public:
         regOrder         = UCHAR_MAX;
     }
 
-    void init(regNumber reg)
+    regMaskTP init(regNumber reg)
     {
 #ifdef TARGET_ARM64
         // The Zero register, or the SP
@@ -521,7 +521,9 @@ public:
         }
 #endif // FEATURE_MASKED_HW_INTRINSICS
         regNum       = reg;
-        isCalleeSave = ((RBM_CALLEE_SAVED & genRegMask(reg)) != 0);
+        regMaskTP   regMask = genRegMask(reg);
+        isCalleeSave = ((RBM_CALLEE_SAVED & regMask) != 0);
+        return regMask;
     }
 
 #ifdef DEBUG
@@ -546,6 +548,7 @@ public:
     regNumber     regNum;
     bool          isCalleeSave;
     unsigned char regOrder;
+    RegRecord *nextRegRecord; // next register in the list
 };
 
 inline bool leafInRange(GenTree* leaf, int lower, int upper)
@@ -2116,7 +2119,7 @@ private:
         return REG_INT_LAST;
     }
 #endif // TARGET_AMD64
-
+    RegRecord* lastPhysRecord;
 #if defined(TARGET_XARCH)
     regMaskTP        rbmAllMask;
     regMaskTP        rbmMskCalleeTrash;
