@@ -403,7 +403,7 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
     Get the number of bytes used for stack parameters.
     This is currently only used on x86.
 */
-ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo) override;
+ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
 
 /*
     Unwind the current stack frame, i.e. update the virtual register
@@ -417,7 +417,7 @@ bool UnwindStackFrame(
                 PREGDISPLAY     pRD,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags,
-                CodeManState   *pState) override;
+                CodeManState   *pState);
 
 #ifdef HAS_LIGHTUNWIND
 enum LightUnwindFlag
@@ -443,10 +443,10 @@ void LightUnwindStackFrame(
     Can call EnumGcRefs() successfully
 */
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
-                DWORD           dwRelOffset) override;
+                DWORD           dwRelOffset);
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-bool HasTailCalls(EECodeInfo *pCodeInfo) override;
+bool HasTailCalls(EECodeInfo *pCodeInfo);
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
 
 /*
@@ -461,7 +461,7 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
                 unsigned        flags,
                 GCEnumCallback  pCallback,
                 LPVOID          hCallBack,
-                DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET) override;
+                DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET);
 
 #ifdef FEATURE_CONSERVATIVE_GC
 // Temporary conservative collection, for testing purposes, until we have
@@ -475,18 +475,18 @@ bool EnumGcRefsConservative(PREGDISPLAY     pRD,
 
 OBJECTREF GetInstance(
                 PREGDISPLAY     pContext,
-                EECodeInfo *    pCodeInfo) override;
+                EECodeInfo *    pCodeInfo);
 
 /*
     Returns the extra argument passed to shared generic code if it is still alive.
     Returns NULL in all other cases.
 */
 PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
-                         EECodeInfo *    pCodeInfo) override;
+                         EECodeInfo *    pCodeInfo);
 
 // Returns the type of the context parameter (this, methodtable, methoddesc, or none)
 GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
-                                            EECodeInfo *    pCodeInfo) override;
+                                            EECodeInfo *    pCodeInfo);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 /*
@@ -510,7 +510,7 @@ PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        EECodeInfo    * pCodeInfo,
                        unsigned        flags,
-                       CodeManState  * pState) override;
+                       CodeManState  * pState);
 
 
 #ifndef USE_GC_INFO_DECODER
@@ -520,7 +520,7 @@ void * GetGSCookieAddr(PREGDISPLAY     pContext,
 bool IsInPrologOrEpilog(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
-                size_t*     prologSize) override;
+                size_t*     prologSize);
 
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
@@ -528,13 +528,13 @@ bool IsInPrologOrEpilog(
 bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
-                unsigned    flags) override;
+                unsigned    flags);
 #endif // !USE_GC_INFO_DECODER
 
 /*
   Returns the size of a given function.
 */
-size_t GetFunctionSize(GCInfoToken gcInfoToken) override;
+size_t GetFunctionSize(GCInfoToken gcInfoToken);
 
 /*
 *  Get information necessary for return address hijacking of the method represented by the gcInfoToken.
@@ -542,7 +542,7 @@ size_t GetFunctionSize(GCInfoToken gcInfoToken) override;
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind)) override;
+bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind));
 
 #ifndef USE_GC_INFO_DECODER
 /*
@@ -582,7 +582,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_EH_FUNCLETS
-    virtual void EnsureCallerContextIsValid( PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0) override;
+    virtual void EnsureCallerContextIsValid( PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
 #ifdef TARGET_X86
     static size_t GetResumeSp( PCONTEXT  pContext );
 #endif // TARGET_X86
@@ -670,7 +670,7 @@ bool UnwindStackFrame(
 
 #ifdef FEATURE_EH_FUNCLETS
 virtual 
-void EnsureCallerContextIsValid(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0) override;
+void EnsureCallerContextIsValid(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
 #endif // FEATURE_EH_FUNCLETS
 
 virtual
