@@ -645,8 +645,9 @@ bool Compiler::bbIsHandlerBeg(const BasicBlock* block)
 //
 bool Compiler::bbIsFuncletBeg(const BasicBlock* block)
 {
-    if (UsesFunclets() && fgFuncletsCreated)
+    if (UsesFunclets())
     {
+        assert(fgFuncletsCreated);
         return bbIsHandlerBeg(block);
     }
 
@@ -3743,7 +3744,7 @@ void Compiler::fgVerifyHandlerTab()
 
             // If this block wasn't marked as an EH handler 'begin' block,
             // it shouldn't be the beginning of a funclet.
-            assert(!bbIsFuncletBeg(block));
+            assert(!fgFuncletsCreated || !bbIsFuncletBeg(block));
         }
 
         // Check for legal block types

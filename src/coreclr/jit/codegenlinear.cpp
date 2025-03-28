@@ -370,8 +370,7 @@ void CodeGen::genCodeForBBlist()
 
         bool firstMapping = true;
 
-        const bool isFuncletBeg = compiler->UsesFunclets() && compiler->bbIsHandlerBeg(block);
-        if (isFuncletBeg)
+        if (compiler->bbIsFuncletBeg(block))
         {
             genUpdateCurrentFunclet(block);
             genReserveFuncletProlog(block);

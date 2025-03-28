@@ -818,7 +818,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 // Don't display the `[` `]` unless we're going to display something.
                 const bool isTryEntryBlock     = bbIsTryBeg(block);
-                const bool isFuncletEntryBlock = bbIsFuncletBeg(block);
+                const bool isFuncletEntryBlock = fgFuncletsCreated && bbIsFuncletBeg(block);
 
                 if (isTryEntryBlock || isFuncletEntryBlock ||
                     block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
