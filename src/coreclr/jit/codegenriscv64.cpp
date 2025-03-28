@@ -1758,11 +1758,13 @@ void CodeGen::genLclHeap(GenTree* tree)
         regSet.verifyRegUsed(rPageSize);
         emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_SPBASE, 0);
 
+        BasicBlock* tickleLoop = genCreateTempLabel();
+        genDefineTempLabel(tickleLoop);
         // tickle the page - this triggers a page fault when on the guard page
         emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, tempReg, 0);
         emit->emitIns_R_R_R(INS_sub, EA_4BYTE, tempReg, tempReg, rPageSize);
 
-        emit->emitIns_R_R_I(INS_bgeu, EA_PTRSIZE, tempReg, regCnt, -2 << 2);
+        emit->emitIns_J(INS_bgeu, tickleLoop, tempReg | (regCnt << 5));
 
         // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
         // we're going to assume the worst and probe.
