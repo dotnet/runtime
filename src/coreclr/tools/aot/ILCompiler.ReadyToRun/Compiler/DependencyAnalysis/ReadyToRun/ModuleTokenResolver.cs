@@ -305,6 +305,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int GetModuleIndex(IEcmaModule module)
         {
+            int moduleIndex = _moduleIndexLookup(module);
+            if (moduleIndex != 0 && !(module is Internal.TypeSystem.Ecma.MutableModule))
+            {
+                if (!_compilationModuleGroup.VersionsWithModule(module))
+                {
+                    throw new InternalCompilerErrorException("Attempt to use token from a module not within the version bubble");
+                }
+            }
             return _moduleIndexLookup(module);
         }
 
