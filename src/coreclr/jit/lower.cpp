@@ -4181,6 +4181,13 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag() &&
         BlockRange().TryGetUse(cmp, &use))
     {
+#ifdef TARGET_XARCH
+        // Do not optimize, BMI2 shrx does not set zero flag
+        if (op1->OperIs(GT_RSZ) && !op1->AsOp()->gtGetOp2()->OperIsConst())
+        {
+            return cmp;
+        }
+#endif // TARGET_XARCH
         op1->gtFlags |= GTF_SET_FLAGS;
         op1->SetUnusedValue();
 
