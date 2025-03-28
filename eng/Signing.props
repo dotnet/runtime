@@ -47,7 +47,7 @@
          Avoid doing this on Linux, which has the same executable names -->
     <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;corerun;createdump" CertificateName="MacDeveloperHarden" />
     <!-- Additionally, we need to notarize any .pkg files -->
-    <MacOSPkg Include="$(ArtifactsPackagesDir)**/dotnet-runtime*.pkg" Exclude="$(ArtifactsPackagesDir)**/dotnet-runtime-internal*.pkg />
+    <MacOSPkg Include="$(ArtifactsPackagesDir)**/dotnet-runtime*.pkg" Exclude="$(ArtifactsPackagesDir)**/dotnet-runtime-internal*.pkg" />
     <FileSignInfo Include="@(MacOSPkg->'%(Filename)%(Extension)')" CertificateName="MacDeveloperWithNotarization" />
 
     <!-- We don't need to code sign .js files because they are not used in Windows Script Host. -->
