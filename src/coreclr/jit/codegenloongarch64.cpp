@@ -5308,7 +5308,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
     assert(src1ChkType == TYP_INT || src1ChkType == TYP_LONG);
 #endif // DEBUG
 
-    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, reg1, bndsChk->gtIndRngFailBB, reg2);
+    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, reg1, nullptr, reg2);
 }
 
 //---------------------------------------------------------------------
@@ -5542,7 +5542,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // IndRngFail:
         // ...
         // RngChkExit:
-        genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, index->GetRegNum(), node->gtIndRngFailBB, REG_R21);
+        genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, index->GetRegNum(), nullptr, REG_R21);
     }
 
     emitAttr attr = emitActualTypeSize(node);

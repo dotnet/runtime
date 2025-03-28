@@ -11622,7 +11622,6 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             }
             else
             {
-                assert(doesMethodHaveFrozenObjects());
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
 
@@ -12065,10 +12064,6 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             if (info.compCompHnd->getStaticFieldContent(fieldHandle, buffer, size, (int)byteOffset))
             {
                 ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
-                if (vnStore->IsVNObjHandle(vn))
-                {
-                    setMethodHasFrozenObjects();
-                }
                 tree->gtVNPair.SetBoth(vn);
                 return true;
             }
@@ -12866,7 +12861,6 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
             CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
             if (typeObj != nullptr)
             {
-                setMethodHasFrozenObjects();
                 ValueNum handleVN   = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
                 intrinsic->gtVNPair = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), arg0VNPx);
                 return;
@@ -13606,7 +13600,6 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
             CORINFO_OBJECT_HANDLE obj = info.compCompHnd->getRuntimeTypePointer((CORINFO_CLASS_HANDLE)clsHandle);
             if (obj != nullptr)
             {
-                setMethodHasFrozenObjects();
                 call->gtVNPair.SetBoth(vnStore->VNForHandle((ssize_t)obj, GTF_ICON_OBJ_HDL));
                 return true;
             }
@@ -14049,7 +14042,6 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
                 if (typeObj != nullptr)
                 {
-                    setMethodHasFrozenObjects();
                     ValueNum typeObjVN = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
                     call->gtVNPair.SetBoth(vnStore->VNForBitCast(typeObjVN, TYP_STRUCT, genTypeSize(TYP_REF)));
                     return false;

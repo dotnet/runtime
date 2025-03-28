@@ -67,6 +67,8 @@ UINT32 g_mono_miss_counter = 0;         //# of times expected MT did not match a
 UINT32 g_poly_call_counter = 0;         //# of times resolve stubs entered
 UINT32 g_poly_miss_counter = 0;         //# of times cache missed (resolve stub)
 
+EXTERN_C UINT32 g_chained_lookup_call_counter;
+EXTERN_C UINT32 g_chained_lookup_miss_counter;
 UINT32 g_chained_lookup_call_counter = 0;   //# of hits in a chained lookup
 UINT32 g_chained_lookup_miss_counter = 0;   //# of misses in a chained lookup
 
@@ -83,11 +85,7 @@ UINT32 g_bucket_space_dead = 0;         //# of bytes of abandoned buckets not ye
 // This is the number of times a successful chain lookup will occur before the
 // entry is promoted to the front of the chain. This is declared as extern because
 // the default value (CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT) is defined in the header.
-#ifdef TARGET_ARM64
-extern "C" size_t g_dispatch_cache_chain_success_counter;
-#else
-extern size_t g_dispatch_cache_chain_success_counter;
-#endif
+EXTERN_C size_t g_dispatch_cache_chain_success_counter;
 
 #define DECLARE_DATA
 #include "virtualcallstub.h"
@@ -1817,11 +1815,18 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     pMgr->BackPatchWorker(&callSite);
 }
 
-#if defined(TARGET_X86) && defined(TARGET_UNIX)
+#if defined(TARGET_X86)
 void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect)
 {
     VirtualCallStubManager::BackPatchWorkerStatic(returnAddr, siteAddrForRegisterIndirect);
 }
+
+#ifdef CHAIN_LOOKUP
+ResolveCacheElem* __fastcall VSD_PromoteChainEntry(ResolveCacheElem *pElem)
+{
+    return VirtualCallStubManager::PromoteChainEntry(pElem);
+}
+#endif
 #endif
 
 PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,

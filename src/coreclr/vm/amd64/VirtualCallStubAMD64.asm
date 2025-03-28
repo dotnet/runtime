@@ -6,7 +6,7 @@ include AsmConstants.inc
 
 ifdef FEATURE_VIRTUAL_STUB_DISPATCH 
 
-CHAIN_SUCCESS_COUNTER  equ ?g_dispatch_cache_chain_success_counter@@3_KA
+CHAIN_SUCCESS_COUNTER  equ g_dispatch_cache_chain_success_counter
 
         extern  VSD_ResolveWorker:proc
         extern  CHAIN_SUCCESS_COUNTER:dword

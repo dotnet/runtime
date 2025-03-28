@@ -406,8 +406,21 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 
             if (childNode->gtGetOp1()->OperIs(GT_CAST))
             {
-                // Grab the cast as well, we can contain this with cmn.
-                GenTreeCast* cast = childNode->gtGetOp1()->AsCast();
+                // Grab the cast as well, we can contain this with cmn (extended-register).
+                GenTreeCast* cast   = childNode->gtGetOp1()->AsCast();
+                GenTree*     castOp = cast->CastOp();
+
+                // Cannot contain the cast from floating point.
+                if (!varTypeIsIntegral(castOp))
+                {
+                    return false;
+                }
+
+                // Cannot contain the cast if it already contains it's CastOp.
+                if (castOp->isContained())
+                {
+                    return false;
+                }
 
                 assert(!cast->gtOverflow());
                 assert(varTypeIsIntegral(cast) && varTypeIsIntegral(cast->CastToType()));
@@ -3187,11 +3200,15 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     //
     GenCondition cond1;
     if (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1()) && IsInvariantInRange(op2, tree) &&
+        (op2->gtGetOp1()->IsIntegralConst() || !op2->gtGetOp1()->isContained()) &&
+        (op2->gtGetOp2() == nullptr || op2->gtGetOp2()->IsIntegralConst() || !op2->gtGetOp2()->isContained()) &&
         TryLowerConditionToFlagsNode(tree, op1, &cond1))
     {
         // Fall through, converting op2 to the CCMP
     }
     else if (op1->OperIsCmpCompare() && varTypeIsIntegralOrI(op1->gtGetOp1()) && IsInvariantInRange(op1, tree) &&
+             (op1->gtGetOp1()->IsIntegralConst() || !op1->gtGetOp1()->isContained()) &&
+             (op1->gtGetOp2() == nullptr || op1->gtGetOp2()->IsIntegralConst() || !op1->gtGetOp2()->isContained()) &&
              TryLowerConditionToFlagsNode(tree, op2, &cond1))
     {
         std::swap(op1, op2);

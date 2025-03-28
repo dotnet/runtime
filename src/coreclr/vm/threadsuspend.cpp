@@ -2105,7 +2105,7 @@ extern void WaitForEndOfShutdown();
 // why we Enable GC here!
 void Thread::RareDisablePreemptiveGC()
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     CONTRACTL {
         NOTHROW;
@@ -2115,7 +2115,7 @@ void Thread::RareDisablePreemptiveGC()
 
     if (IsAtProcessExit())
     {
-        goto Exit;
+        return;
     }
 
     _ASSERTE (m_fPreemptiveGCDisabled);
@@ -2127,7 +2127,7 @@ void Thread::RareDisablePreemptiveGC()
 
     if (!GCHeapUtilities::IsGCHeapInitialized())
     {
-        goto Exit;
+        return;
     }
 
     if (ThreadStore::HoldingThreadStore(this))
@@ -2138,7 +2138,7 @@ void Thread::RareDisablePreemptiveGC()
         // may want to enter coop mode, but we have a number of other scenarios where TSL is acquired
         // in coop mode or when TSL-owning thread tries to swtch to coop.
         // We will handle all cases in the same way - by allowing the thread into coop mode without a wait.
-        goto Exit;
+        return;
     }
 
     STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
@@ -2257,14 +2257,12 @@ void Thread::RareDisablePreemptiveGC()
     }
 
     STRESS_LOG0(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: leaving\n");
-
-Exit: ;
-    END_PRESERVE_LAST_ERROR;
 }
 
 void Thread::HandleThreadAbort ()
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    // Only preserve the last error when we aren't throwing an exception for ThreadAbort.
+    DWORD lastError = GetLastError();
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2322,7 +2320,7 @@ void Thread::HandleThreadAbort ()
         }
     }
 
-    END_PRESERVE_LAST_ERROR;
+    ::SetLastError(lastError);
 }
 
 void Thread::PreWorkForThreadAbort()
@@ -2641,9 +2639,8 @@ extern "C" PCONTEXT __stdcall GetCurrentSavedRedirectContext()
 
     PCONTEXT pContext;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
     pContext = GetThread()->GetSavedRedirectContext();
-    END_PRESERVE_LAST_ERROR;
 
     return pContext;
 }
@@ -2688,7 +2685,8 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 
     // We must preserve this in case we've interrupted an IL pinvoke stub before it
     // was able to save the error.
-    DWORD dwLastError = GetLastError(); // BEGIN_PRESERVE_LAST_ERROR
+    // Manually preserve it as we don't return from this function normally.
+    DWORD dwLastError = GetLastError();
 
     Thread *pThread = GetThread();
 
@@ -2774,7 +2772,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     pThread->UnmarkRedirectContextInUse(pCtx);
 
     LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
-    SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
+    SetLastError(dwLastError);
 
     __asan_handle_no_return();
 #ifdef TARGET_X86
@@ -3648,8 +3646,7 @@ void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
     STRESS_LOG0(LF_SYNC, LL_INFO1000, "ResumeAllThreads() - End\n");
 }
 
-#ifndef TARGET_UNIX
-#ifdef TARGET_X86
+#if defined(TARGET_WINDOWS) && defined(TARGET_X86)
 //****************************************************************************************
 // This will resume the thread at the location of redirection.
 //
@@ -3711,17 +3708,27 @@ int RedirectedThrowControlExceptionFilter(
     // Resume execution at point where thread was originally redirected
     return (EXCEPTION_CONTINUE_EXECUTION);
 }
-#endif
-#endif // !TARGET_UNIX
+
+void RedirectedThrowControl()
+{
+    __try{
+        RaiseException(BOOTUP_EXCEPTION_COMPLUS,0,0,NULL);
+    }
+    __except(RedirectedThrowControlExceptionFilter(GetExceptionInformation()))
+    {
+        _ASSERTE(!"Should not reach here");
+    }
+}
+#endif // TARGET_WINDOWS && TARGET_X86
 
 // Resume a thread at this location, to persuade it to throw a ThreadStop.  The
 // exception handler needs a reasonable idea of how large this method is, so don't
 // add lots of arbitrary code here.
 void
 ThrowControlForThread(
-#ifdef FEATURE_EH_FUNCLETS
-        FaultingExceptionFrame *pfef
-#endif // FEATURE_EH_FUNCLETS
+#if !defined(TARGET_X86)
+    FaultingExceptionFrame *pfef
+#endif // !TARGET_X86
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
         , TADDR ssp
 #endif // TARGET_AMD64 && TARGET_WINDOWS
@@ -3748,29 +3755,23 @@ ThrowControlForThread(
             STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread resume\n");
             pThread->ResetThrowControlForThread();
             // Thread abort is not allowed at this point
-#ifndef FEATURE_EH_FUNCLETS
-            __try{
-                RaiseException(BOOTUP_EXCEPTION_COMPLUS,0,0,NULL);
-            }
-            __except(RedirectedThrowControlExceptionFilter(GetExceptionInformation()))
-            {
-                _ASSERTE(!"Should not reach here");
-            }
-#else // FEATURE_EH_FUNCLETS
             __asan_handle_no_return();
+#if defined(TARGET_WINDOWS) && defined(TARGET_X86)
+            RedirectedThrowControl();
+#else // TARGET_WINDOWS && TARGET_X86
             RtlRestoreContext(pThread->m_OSContext, NULL);
-#endif // !FEATURE_EH_FUNCLETS
+#endif // TARGET_WINDOWS && TARGET_X86
             _ASSERTE(!"Should not reach here");
         }
         pThread->SetThrowControlForThread(Thread::InducedThreadStop);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
+#if !defined(TARGET_X86)
     ((Frame*)pfef)->Init(FrameIdentifier::FaultingExceptionFrame);
-#else // FEATURE_EH_FUNCLETS
+#else // !TARGET_X86
     FaultingExceptionFrame fef;
     FaultingExceptionFrame *pfef = &fef;
-#endif // FEATURE_EH_FUNCLETS
+#endif // !TARGET_X86
     pfef->InitAndLink(pThread->m_OSContext);
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
@@ -4868,7 +4869,7 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
     CONTRACTL_END;
 
 #ifdef HIJACK_NONINTERRUPTIBLE_THREADS
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread         *thread = GetThread();
 
@@ -4901,8 +4902,6 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // _DEBUG
 
     frame.Pop();
-
-    END_PRESERVE_LAST_ERROR;
 #else
     PORTABILITY_ASSERT("OnHijackWorker not implemented on this platform.");
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
@@ -5731,7 +5730,7 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
 
     // The criteria for safe activation is to be running managed code.
     // Also we are not interested in handling interruption if we are already in preemptive mode nor if we are single stepping
-    BOOL isActivationSafePoint = pThread != NULL && 
+    BOOL isActivationSafePoint = pThread != NULL &&
         (pThread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0 &&
         pThread->PreemptiveGCDisabled() &&
         ExecutionManager::IsManagedCode(ip);
