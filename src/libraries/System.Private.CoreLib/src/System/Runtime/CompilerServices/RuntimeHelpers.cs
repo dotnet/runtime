@@ -176,7 +176,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct => IsReferenceOrContainsReferences<T>();
 
-#if !NATIVEAOT
+#if !NATIVEAOT && !MONO
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
@@ -333,6 +333,69 @@ namespace System.Runtime.CompilerServices
             }
 
             return awaiter.GetResult();
+        }
+#else
+        // TODO: PlatformSuppressions.xml does not seem to work on MONO.
+        //       Thus we have these as a workaround.
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(Task<T> task)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(Task task)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(ValueTask<T> task)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(ValueTask task)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(ConfiguredValueTaskAwaitable configuredAwaitable)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(ConfiguredTaskAwaitable<T> configuredAwaitable)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(ConfiguredValueTaskAwaitable<T> configuredAwaitable)
+        {
+            throw new PlatformNotSupportedException();
         }
 #endif
     }
