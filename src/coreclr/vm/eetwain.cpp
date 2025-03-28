@@ -2281,7 +2281,7 @@ ULONG32 EECodeManager::GetStackParameterSize(EECodeInfo * pCodeInfo)
 
 #ifdef FEATURE_INTERPRETER
 
-static void VirtualUnwindInterpreterCallFrame(TADDR sp, CONTEXT *pContext)
+static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
 {
     PTR_InterpMethodContextFrame pFrame = dac_cast<PTR_InterpMethodContextFrame>(sp);
     pFrame = pFrame->pParent;

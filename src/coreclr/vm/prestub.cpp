@@ -1949,16 +1949,16 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
     InterpThreadContext *threadContext = InterpGetThreadContext();
     int8_t *sp = threadContext->pStackPointer;
 
-    InterpMethodContextFrame interpFrame = {0};
-    interpFrame.startIp = (int32_t*)byteCodeAddr;
-    interpFrame.pStack = sp;
-    interpFrame.pRetVal = sp;
+    InterpMethodContextFrame interpMethodContextFrame = {0};
+    interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
+    interpMethodContextFrame.pStack = sp;
+    interpMethodContextFrame.pRetVal = sp;
 
-    InterpreterFrame InterpreterFrame(pTransitionBlock, &interpFrame);
+    InterpreterFrame interpreterFrame(pTransitionBlock, &interpMethodContextFrame);
 
-    InterpExecMethod(&interpFrame, threadContext);
+    InterpExecMethod(&interpreterFrame, &interpMethodContextFrame, threadContext);
 
-    InterpreterFrame.Pop();
+    interpreterFrame.Pop();
 }
 #endif // FEATURE_INTERPRETER
 

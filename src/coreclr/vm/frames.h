@@ -2882,16 +2882,24 @@ public:
 #ifndef DACCESS_COMPILE
     InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
         : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
-        m_pInterpMethodContextFrame(pContextFrame)
+        m_pTopInterpMethodContextFrame(pContextFrame)
     {
         WRAPPER_NO_CONTRACT;
         Push();
     }
+
+    void SetTopInterpMethodContextFrame(InterpMethodContextFrame* pTopInterpMethodContextFrame)
+    {
+        m_pTopInterpMethodContextFrame = pTopInterpMethodContextFrame;
+    }
+
 #endif // DACCESS_COMPILE
-    PTR_InterpMethodContextFrame GetInterpMethodTopmostContextFrame();
+    PTR_InterpMethodContextFrame GetTopInterpMethodContextFrame();
 
 private:
-    PTR_InterpMethodContextFrame m_pInterpMethodContextFrame;
+    // The last known topmost interpreter frame in the InterpExecMethod belonging to
+    // this InterpreterFrame.
+    PTR_InterpMethodContextFrame m_pTopInterpMethodContextFrame;
     
 };
 
