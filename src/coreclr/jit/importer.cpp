@@ -9098,7 +9098,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // TODO: The configVal should be wired to the actual implementation
                     //       that control the flow of sync context.
                     //       We do not have that yet.
-                    int configVal= -1;  // -1 not congigured, 0/1 configured to false/true
+                    int configVal = -1; // -1 not congigured, 0/1 configured to false/true
                     if (compIsAsync2() && JitConfig.JitOptimizeAwait())
                     {
                         isAwait = impMatchAwaitPattern(codeAddr, codeEndp, &configVal);
