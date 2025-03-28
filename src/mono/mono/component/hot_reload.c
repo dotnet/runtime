@@ -928,9 +928,7 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 		{
 			tbl->row_size = delta->delta_image->tables [i].row_size;
 			tbl->size_bitfield = delta->delta_image->tables [i].size_bitfield;
-		}
-		else
-		{
+		} else {
 			tbl->row_size = prev_table->row_size;
 			tbl->size_bitfield = prev_table->size_bitfield;
 		}
