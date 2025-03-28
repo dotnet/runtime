@@ -52,7 +52,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', '$(CrossHostArch)', '$(JitInterfaceLibraryName)'))"
+    <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(JitInterfaceLibraryName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
@@ -85,9 +85,9 @@
     <DiaSymReaderTargetArch>$(TargetArchitectureForSharedLibraries)</DiaSymReaderTargetArch>
     <DiaSymReaderTargetArch Condition="'$(DiaSymReaderTargetArch)' == 'x64'">amd64</DiaSymReaderTargetArch>
     <DiaSymReaderTargetArchFileName>Microsoft.DiaSymReader.Native.$(DiaSymReaderTargetArch).dll</DiaSymReaderTargetArchFileName>
-    <DiaSymReaderTargetArchPath Condition="'$(PkgMicrosoft_DiaSymReader_Native)' != ''">$([MSBuild]::NormalizePath('$(PkgMicrosoft_DiaSymReader_Native)', 'runtimes', 'win', 'native', '$(DiaSymReaderTargetArchFileName)'))</DiaSymReaderTargetArchPath>
+    <DiaSymReaderTargetArchPath Condition="'$(PkgMicrosoft_DiaSymReader_Native)' != ''">$(PkgMicrosoft_DiaSymReader_Native)\runtimes\win\native\$(DiaSymReaderTargetArchFileName)</DiaSymReaderTargetArchPath>
     <!-- When publishing we won't have the NuGet packages, so use the copy from the build artifacts directory. -->
-    <DiaSymReaderTargetArchPath Condition="'$(PkgMicrosoft_DiaSymReader_Native)' == ''">$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'crossgen2', '$(DiaSymReaderTargetArchFileName)'))</DiaSymReaderTargetArchPath>
+    <DiaSymReaderTargetArchPath Condition="'$(PkgMicrosoft_DiaSymReader_Native)' == ''">$(CoreCLRArtifactsPath)crossgen2/$(DiaSymReaderTargetArchFileName)</DiaSymReaderTargetArchPath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
