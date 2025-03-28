@@ -326,7 +326,8 @@ get_common_simd_info (MonoClass *vector_klass, MonoMethodSignature *csignature, 
 	if (*atype == MONO_TYPE_BOOLEAN)
 		return FALSE;
 	*vector_size = mono_class_value_size (vector_klass, NULL);
-	g_assert (*vector_size == SIZEOF_V128);
+	if (*vector_size != SIZEOF_V128)
+		return FALSE;
 	if (arg_size)
 		*arg_size = mono_class_value_size (mono_class_from_mono_type_internal (arg_type), NULL);
 
