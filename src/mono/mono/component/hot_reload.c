@@ -1454,7 +1454,7 @@ delta_info_mutate_row (MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log
 		guint32 dst_col_size = mono_metadata_table_size (dst_bitfield, col);
 		guint32 src_col_size = mono_metadata_table_size (src_bitfield, col);
 		if ((m_SuppressedDeltaColumns [token_table] & (1 << col)) == 0) {
-			g_assert(src_col_size == dst_col_size);
+			g_assert(src_col_size <= dst_col_size);
 			const char *src = src_base + src_offset;
 			char *dst = dst_base + dst_offset;
 			memcpy(dst, src, src_col_size);
