@@ -10,6 +10,8 @@
 #include <commctrl.h>
 #include <shellapi.h>
 
+#include "appcontainer_helpers.h"
+
 namespace
 {
     pal::string_t g_buffered_errors;
@@ -84,13 +86,20 @@ namespace
     void open_url(const pal::char_t* url)
     {
         // Open the URL in default browser
-        ::ShellExecuteW(
-            nullptr,
-            _X("open"),
-            url,
-            nullptr,
-            nullptr,
-            SW_SHOWNORMAL);
+        if (!appcontainer_helpers::is_appcontainer())
+        {
+            ::ShellExecuteW(
+                nullptr,
+                _X("open"),
+                url,
+                nullptr,
+                nullptr,
+                SW_SHOWNORMAL);
+        }
+        else
+        {
+            appcontainer_helpers::open_url_for_appcontainer(url);
+        }
     }
 
     bool enable_visual_styles()
@@ -112,7 +121,7 @@ namespace
 
         // Since this is only for errors shown when the process is about to exit, we
         // skip releasing/deactivating the context to minimize impact on apphost size
-        ACTCTXW actctx = { sizeof(ACTCTXW), 0, manifest.c_str() };
+        ACTCTXW actctx = { sizeof(ACTCTXW), appcontainer_helpers::is_uwp() ? ACTCTX_FLAG_SET_PROCESS_DEFAULT : NULL, manifest.c_str() };
         HANDLE context_handle = ::CreateActCtxW(&actctx);
         if (context_handle == INVALID_HANDLE_VALUE)
         {
