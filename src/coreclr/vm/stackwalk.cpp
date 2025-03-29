@@ -404,6 +404,15 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
     }
     CONTRACTL_END;
 
+#ifdef TARGET_X86
+    EECodeInfo codeInfo;
+    if (pCodeInfo == NULL)
+    {
+        codeInfo.Init(GetControlPC(pRD));
+        pCodeInfo = &codeInfo;
+    }
+#endif
+
     if (pRD->IsCallerContextValid)
     {
         // We already have the caller's frame context
@@ -415,10 +424,33 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         PT_KNONVOLATILE_CONTEXT_POINTERS tempPtrs = pRD->pCurrentContextPointers;
         pRD->pCurrentContextPointers            = pRD->pCallerContextPointers;
         pRD->pCallerContextPointers             = tempPtrs;
+
+#ifdef TARGET_X86
+        pRD->PCTAddr = pRD->pCurrentContext->Esp - pCodeInfo->GetCodeManager()->GetStackParameterSize(pCodeInfo) - sizeof(DWORD);
+#endif
     }
     else
     {
+#ifdef TARGET_X86
+        GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+        hdrInfo hdrInfoBody;
+        DWORD hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, pCodeInfo->GetRelOffset(), &hdrInfoBody);
+
+        ::UnwindStackFrameX86(pRD,
+                            PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
+                            pCodeInfo->GetRelOffset(),
+                            &hdrInfoBody,
+                            dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
+                            PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)),
+                            pCodeInfo->IsFunclet(),
+                            true);
+
+        pRD->pCurrentContext->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
+        pRD->pCurrentContext->Esp = pRD->SP;
+        pRD->pCurrentContext->Eip = pRD->ControlPC;
+#else
         VirtualUnwindCallFrame(pRD->pCurrentContext, pRD->pCurrentContextPointers, pCodeInfo);
+#endif
     }
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
@@ -457,6 +489,39 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     PCODE           uControlPc = GetIP(pContext);
 
 #if !defined(DACCESS_COMPILE)
+#ifdef TARGET_X86
+    EECodeInfo tempCodeInfo;
+    if (pCodeInfo == NULL)
+    {
+        tempCodeInfo.Init(uControlPc);
+        pCodeInfo = &tempCodeInfo;
+    }
+
+    REGDISPLAY rd;
+
+    rd.SP = (DWORD)GetSP(pContext);
+    rd.ControlPC = (DWORD)GetIP(pContext);
+    rd.pCurrentContext = pContext;
+    rd.pCurrentContextPointers = pContextPointers != NULL ? pContextPointers : &rd.ctxPtrsOne;
+
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+    hdrInfo hdrInfoBody;
+    DWORD hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, pCodeInfo->GetRelOffset(), &hdrInfoBody);
+
+    ::UnwindStackFrameX86(&rd,
+                          PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
+                          pCodeInfo->GetRelOffset(),
+                          &hdrInfoBody,
+                          dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
+                          PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)),
+                          pCodeInfo->IsFunclet(),
+                          true);
+
+    pContext->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
+    pContext->Esp = rd.SP;
+    pContext->Eip = rd.ControlPC;
+    uControlPc = rd.ControlPC;
+#else  // !TARGET_X86
     UINT_PTR            uImageBase;
     PT_RUNTIME_FUNCTION pFunctionEntry;
 
@@ -532,6 +597,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     {
         uControlPc = VirtualUnwindLeafCallFrame(pContext);
     }
+#endif // TARGET_X86
 #else  // DACCESS_COMPILE
     // We can't use RtlVirtualUnwind() from out-of-process.  Instead, we call code:DacUnwindStackFrame,
     // which is similar to StackWalk64().
@@ -577,6 +643,11 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
         SetSSP(pContext, ssp + sizeof(ULONGLONG));
     }
 #endif // TARGET_WINDOWS
+
+#elif defined(TARGET_X86)
+
+    uControlPc = *(TADDR*)pContext->Esp;
+    pContext->Esp += sizeof(TADDR);
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64)
 

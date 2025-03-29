@@ -175,14 +175,14 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
 
     pRD->PCTAddr = GetReturnAddressPtr();
 
-#ifdef FEATURE_EH_FUNCLETS
+    DWORD CallerSP = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
 
-    DWORD CallerSP = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
+#ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;
 
-    pRD->pCurrentContext->Eip = *PTR_PCODE(pRD->PCTAddr);;
+    pRD->pCurrentContext->Eip = *PTR_PCODE(pRD->PCTAddr);
     pRD->pCurrentContext->Esp = CallerSP;
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, regs);
@@ -200,7 +200,7 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
 #undef CALLEE_SAVED_REGISTER
 
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
+    pRD->SP  = CallerSP;
 
 #endif // FEATURE_EH_FUNCLETS
 
@@ -436,6 +436,12 @@ void StubDispatchFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
         // This path is hit when we are throwing null reference exception from
         // code:VSD_ResolveWorker or code:StubDispatchFixupWorker
         pRD->ControlPC = GetAdjustedCallAddress(pRD->ControlPC);
+#ifdef FEATURE_EH_FUNCLETS
+        // We need to set EIP to match ControlPC to ensure Thread::VirtualUnwindCallFrame
+        // doesn't fail assertion on GetControlPC(pRD) == GetIP(pRD->pCurrentContext)
+        // precondition.
+        pRD->pCurrentContext->Eip = pRD->ControlPC;
+#endif
     }
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    StubDispatchFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
