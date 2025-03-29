@@ -1617,6 +1617,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_get_Indices:
+        {
+            GenTree* start = gtNewIconNode(0, TYP_INT);
+            GenTree* step = gtNewIconNode(1, TYP_INT);
+            retNode = gtNewSimdHWIntrinsicNode(retType, start, step, NI_Sve_Index, simdBaseJitType, simdSize);
+            break;
+        }
         case NI_Vector64_get_Indices:
         case NI_Vector128_get_Indices:
         {

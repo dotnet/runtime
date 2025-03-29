@@ -1952,6 +1952,19 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             StoreFFRValue(node);
             break;
         }
+        case NI_Sve_Index:
+        {
+            int start = (int)node->Op(1)->AsIntCon()->IconValue();
+            int step = (int)node->Op(1)->AsIntCon()->IconValue();
+            bool encodableStart = ((-16 <= start) && (start <= 15));
+            bool encodableStep = ((-16 <= step) && (step <= 15));
+            if (encodableStart && encodableStep)
+            {
+                node->Op(1)->SetContained();
+                node->Op(2)->SetContained();
+            }
+            break;
+        }
 
         default:
             break;

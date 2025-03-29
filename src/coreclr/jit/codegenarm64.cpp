@@ -2539,7 +2539,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                                 simd32_t             constValue;
                                 memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd32_t));
                                 hnd = emit->emitSimd32Const(constValue);
-                                emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                                emit->emitIns_R_C(INS_sve_ldr, attr, targetReg, addrReg, hnd, 0);
                             }
                         }
                         else
@@ -2569,7 +2569,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                                 simd64_t             constValue;
                                 memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd64_t));
                                 hnd = emit->emitSimd64Const(constValue);
-                                emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                                emit->emitIns_R_C(INS_sve_ldr, attr, targetReg, addrReg, hnd, 0);
                             }
                         }
                     }

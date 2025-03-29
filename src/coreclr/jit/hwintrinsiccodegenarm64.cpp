@@ -2649,6 +2649,23 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 break;
             }
+            case NI_Sve_Index:
+            {
+                // either both should be available or both not.
+                assert ((op1Reg == REG_NA) == (op2Reg == REG_NA));
+
+                if (op1Reg == REG_NA)
+                {
+                    int start = (int)intrin.op1->AsIntCon()->gtIconVal;
+                    int step = (int)intrin.op2->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitIns_R_I_I(INS_sve_index, EA_SCALABLE, targetReg, start, step, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(INS_sve_index, emitTypeSize(intrin.baseType), targetReg, op1Reg, op2Reg, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                }
+                break;
+            }
 
             default:
                 unreached();
