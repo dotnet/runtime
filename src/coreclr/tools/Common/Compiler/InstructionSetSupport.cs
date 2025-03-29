@@ -366,6 +366,13 @@ namespace ILCompiler
                     _supportedInstructionSets.Add("vpclmul_v512");
             }
 
+            if (_supportedInstructionSets.Any(iSet => iSet.Contains("avx10v2_v512")))
+            {
+                // AvxVnniInt8 and AvxVnniInt16 512 bit should also be enabled
+                _supportedInstructionSets.Add("avxvnniint8_v512");
+                _supportedInstructionSets.Add("avxvnniint16_v512");
+            }
+
             if (_supportedInstructionSets.Any(iSet => iSet.Contains("avx")))
             {
                 // These ISAs should automatically extend to 256-bit if

@@ -331,6 +331,16 @@ int minipal_getcpufeatures(void)
                                         result |= XArchIntrinsicConstants_AvxVnni;
                                     }
 
+                                    if ((cpuidInfo[CPUID_EDX] & (1 << 4)) != 0)                                 // AVX-VNNI-INT8
+                                    {
+                                        result |= XArchIntrinsicConstants_AvxVnniInt8;
+                                    }
+
+                                    if ((cpuidInfo[CPUID_EDX] & (1 << 10)) != 0)                                // AVX-VNNI-INT16
+                                    {
+                                        result |= XArchIntrinsicConstants_AvxVnniInt16;
+                                    }
+
                                     if (IsApxEnabled() && apxStateSupport())
                                     {
                                         if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                            // Apx
@@ -353,6 +363,8 @@ int minipal_getcpufeatures(void)
                                             if (avx10Version >= 2)                                              // Avx10.2
                                             {
                                                 result |= XArchIntrinsicConstants_Avx10v2;
+                                                result |= XArchIntrinsicConstants_AvxVnniInt8;                  // AvxVnniInt8
+                                                result |= XArchIntrinsicConstants_AvxVnniInt16;                 // AvxVnniInt16
                                             }
 
                                             // We assume that the Avx10/V512 support can be inferred from

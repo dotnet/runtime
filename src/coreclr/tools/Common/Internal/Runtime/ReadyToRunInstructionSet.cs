@@ -69,6 +69,10 @@ namespace Internal.ReadyToRunConstants
         RiscV64Base=56,
         Zba=57,
         Zbb=58,
+        AvxVnniInt8=59,
+        AvxVnniInt8_V512=60,
+        AvxVnniInt16=61,
+        AvxVnniInt16_V512=62,
 
     }
 }
