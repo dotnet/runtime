@@ -13651,6 +13651,20 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
     GenTree* argNode = argInfo.arg->GetNode();
     assert(!argNode->OperIs(GT_RET_EXPR));
 
+    // For TYP_REF args, if the argNode doesn't have any class information
+    // we will lose some type info if we directly substitute it.
+    // We can at least rely on the declared type of the arg here.
+    //
+    bool argLosesTypeInfo = false;
+    if (argNode->TypeIs(TYP_REF))
+    {
+        bool                 isExact;
+        bool                 isNeverNull;
+        CORINFO_CLASS_HANDLE argClass = gtGetClassHandle(argNode, &isExact, &isNeverNull);
+
+        argLosesTypeInfo = (argClass == NO_CLASS_HANDLE);
+    }
+
     if (argInfo.argIsInvariant && !argCanBeModified)
     {
         // Directly substitute constants or addresses of locals
@@ -13676,7 +13690,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             op1->gtType = genActualType(lclTyp);
         }
     }
-    else if (argInfo.argIsLclVar && !argCanBeModified && !argInfo.argHasCallerLocalRef)
+    else if (argInfo.argIsLclVar && !argCanBeModified && !argInfo.argHasCallerLocalRef && !argLosesTypeInfo)
     {
         // Directly substitute unaliased caller locals for args that cannot be modified
         //
@@ -13764,8 +13778,10 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
                 assert(lvaTable[tmpNum].lvSingleDef == 0);
                 lvaTable[tmpNum].lvSingleDef = 1;
                 JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
+
                 if (lclTyp == TYP_REF)
                 {
+                    // Use argNode type (when it exists) or lclInfo type
                     lvaSetClass(tmpNum, argNode, lclInfo.lclTypeHandle);
                 }
             }
@@ -13773,7 +13789,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             {
                 if (lclTyp == TYP_REF)
                 {
-                    // Arg might be modified, use the declared type of the argument.
+                    // Arg might be modified. Use the declared type of the argument.
                     lvaSetClass(tmpNum, lclInfo.lclTypeHandle);
                 }
             }
