@@ -4567,6 +4567,10 @@ protected:
 
     GenTree* impThrowIfNull(GenTreeCall* call);
 
+#ifdef TARGET_ARM64
+    bool impImportDivModWithChecks(genTreeOps oper);
+#endif
+
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
 #endif // DEBUG
@@ -4956,7 +4960,7 @@ private:
     // for the block, but instead, just re-uses the block's existing EntryState.
     void impReimportBlockPending(BasicBlock* block);
 
-    var_types impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTree** pOp1, GenTree** pOp2);
+    var_types impProcessResultType(genTreeOps oper, bool fUnsigned, GenTree** pOp1, GenTree** pOp2);
 
     void impImportBlock(BasicBlock* block);
 
