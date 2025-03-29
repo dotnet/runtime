@@ -1680,7 +1680,7 @@ private:
                 *use    = m_compiler->gtNewCastNode(genActualType(indir), lclNode, false, indir->TypeGet());
                 break;
 
-#ifdef FEATURE_HW_INTRINSICS
+#ifdef FEATURE_SIMD
                 // We have three cases we want to handle:
                 // 1. Vector2/3/4 and Quaternion where we have 2-4x float fields
                 // 2. Plane where we have 1x Vector3 and 1x float field
@@ -1819,7 +1819,7 @@ private:
                 lclNode                   = indir->AsLclVarCommon();
             }
             break;
-#endif // FEATURE_HW_INTRINSICS
+#endif // FEATURE_SIMD
 
             case IndirTransform::LclVar:
                 // TODO-ADDR: use "BashToLclVar" here.
@@ -1933,7 +1933,7 @@ private:
                 return IndirTransform::LclFld;
             }
 
-#ifdef FEATURE_HW_INTRINSICS
+#ifdef FEATURE_SIMD
             if (varTypeIsSIMD(varDsc))
             {
                 // We have three cases we want to handle:
@@ -1976,7 +1976,7 @@ private:
                 }
 #endif // FEATURE_SIMD && TARGET_XARCH
             }
-#endif // FEATURE_HW_INTRINSICS
+#endif // FEATURE_SIMD
 
             if ((!isDef) && (offset == 0))
             {

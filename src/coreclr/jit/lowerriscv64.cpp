@@ -511,28 +511,50 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 //  Arguments:
 //     node - The hardware intrinsic node.
 //
-void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
+GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_RISCV64("LowerHWIntrinsic");
+    switch (node->GetHWIntrinsicId())
+    {
+        case NI_RiscV64Base_FusedMultiplyAddScalar:
+        {
+            auto removeNegation = [this, node](size_t operandIndex) {
+                GenTree*& operand   = node->Op(operandIndex);
+                bool      isNegated = operand->OperIs(GT_NEG);
+                if (isNegated)
+                {
+                    BlockRange().Remove(operand);
+                    operand = operand->gtGetOp1();
+                }
+                return isNegated;
+            };
+
+            // "Negated" on RISC-V refers to the whole (op1 * op2 + op3) expression so:
+            bool isNegated  = (removeNegation(1) != removeNegation(2)); // product sign determines negation,
+            bool isSubtract = (removeNegation(3) != isNegated);         // negation flips add/subtract op3.
+            assert(node->GetOperandCount() == 3);
+
+            static const NamedIntrinsic base = NI_RiscV64Base_FusedMultiplyAddScalar;
+            static_assert((base + (0 << 1) + 0) == NI_RiscV64Base_FusedMultiplyAddScalar, "");
+            static_assert((base + (0 << 1) + 1) == NI_RiscV64Base_FusedMultiplySubtractScalar, "");
+            static_assert((base + (1 << 1) + 0) == NI_RiscV64Base_FusedNegatedMultiplyAddScalar, "");
+            static_assert((base + (1 << 1) + 1) == NI_RiscV64Base_FusedNegatedMultiplySubtractScalar, "");
+            int index = ((int)isNegated << 1) + (int)isSubtract;
+            if (index != 0)
+            {
+                node->ChangeHWIntrinsicId((NamedIntrinsic)(base + index));
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    ContainCheckHWIntrinsic(node);
+    return node->gtNext;
 }
 
-//----------------------------------------------------------------------------------------------
-// Lowering::IsValidConstForMovImm: Determines if the given node can be replaced by a mov/fmov immediate instruction
-//
-//  Arguments:
-//     node - The hardware intrinsic node.
-//
-//  Returns:
-//     true if the node can be replaced by a mov/fmov immediate instruction; otherwise, false
-//
-//  IMPORTANT:
-//     This check may end up modifying node->gtOp1 if it is a cast node that can be removed
-bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
-{
-    NYI_RISCV64("IsValidConstForMovImm");
-    return false;
-}
-
+#ifdef FEATURE_SIMD
 //----------------------------------------------------------------------------------------------
 // Lowering::LowerHWIntrinsicCmpOp: Lowers a Vector128 or Vector256 comparison intrinsic
 //
@@ -540,9 +562,10 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 //     node  - The hardware intrinsic node.
 //     cmpOp - The comparison operation, currently must be GT_EQ or GT_NE
 //
-void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
+GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 {
     NYI_RISCV64("LowerHWIntrinsicCmpOp");
+    return node->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -551,9 +574,10 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 //  Arguments:
 //     node - The hardware intrinsic node.
 //
-void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
+GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 {
     NYI_RISCV64("LowerHWIntrinsicCreate");
+    return node->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -562,11 +586,12 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 //  Arguments:
 //     node - The hardware intrinsic node.
 //
-void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
+GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 {
     NYI_RISCV64("LowerHWIntrinsicDot");
+    return node->gtNext;
 }
-
+#endif // FEATURE_SIMD
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
@@ -817,7 +842,9 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_RISCV64("ContainCheckHWIntrinsic");
+    NamedIntrinsic id = node->GetHWIntrinsicId();
+    assert(!HWIntrinsicInfo::HasImmediateOperand(id));
+    assert(!HWIntrinsicInfo::SupportsContainment(id));
 }
 #endif // FEATURE_HW_INTRINSICS
 

@@ -781,10 +781,24 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
+int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsic, int* pDstCount)
 {
-    NYI_RISCV64("-----unimplemented on RISCV64 yet----");
-    return 0;
+    for (GenTree* op : intrinsic->Operands())
+    {
+        assert(!op->isContained());
+        int srcRegs = BuildOperandUses(op);
+        assert(srcRegs == 1);
+    }
+
+    buildInternalRegisterUses();
+
+    assert(!HWIntrinsicInfo::IsMultiReg(intrinsic->GetHWIntrinsicId()));
+    assert(pDstCount != nullptr);
+    assert(intrinsic->IsValue());
+    *pDstCount = 1;
+    BuildDef(intrinsic);
+
+    return intrinsic->GetOperandCount();
 }
 #endif
 

@@ -322,6 +322,8 @@ bool IntegralRange::Contains(int64_t value) const
                     // Note: No advantage in using a precise range for IntegralRange.
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+#elif defined(TARGET_RISCV64)
+                // No integral ranges so far
 #else
 #error Unsupported platform
 #endif
@@ -3121,12 +3123,13 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
             {
                 return false;
             }
-
+#ifdef FEATURE_SIMD
             // For several of the scenarios we may skip the costing logic
             // since we know that the operand is always containable and therefore
             // is always cost effective to propagate.
 
             return parent->ShouldConstantProp(dest, value->AsVecCon());
+#endif // FEATURE_SIMD
         }
 #endif // FEATURE_HW_INTRINSICS
     }

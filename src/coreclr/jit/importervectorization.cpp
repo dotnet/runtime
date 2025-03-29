@@ -95,7 +95,7 @@ GenTree* Compiler::impExpandHalfConstEquals(
 
     // A gtNewOperNode which can handle SIMD operands (used for bitwise operations):
     auto bitwiseOp = [&](genTreeOps oper, var_types type, GenTree* op1, GenTree* op2) -> GenTree* {
-#ifdef FEATURE_HW_INTRINSICS
+#ifdef FEATURE_SIMD
         if (varTypeIsSIMD(type))
         {
             return gtNewSimdBinOpNode(oper, type, op1, op2, CORINFO_TYPE_NATIVEUINT, genTypeSize(type));

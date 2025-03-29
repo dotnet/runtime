@@ -34,6 +34,19 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
         /* category */ category \
     },
 #include "hwintrinsiclistarm64.h"
+#elif defined (TARGET_RISCV64)
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+    { \
+            /* name */ #name, \
+           /* flags */ static_cast<HWIntrinsicFlag>(flag), \
+              /* id */ NI_##isa##_##name, \
+             /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
+             /* isa */ InstructionSet_##isa, \
+        /* simdSize */ size, \
+         /* numArgs */ numarg, \
+        /* category */ category \
+    },
+#include "hwintrinsiclistriscv64.h"
 #else
 #error Unsupported platform
 #endif
@@ -712,7 +725,7 @@ uint8_t TernaryLogicInfo::GetTernaryControlByte(const TernaryLogicInfo& info, ui
     return oper3Result;
 }
 #endif // TARGET_XARCH
-
+#ifdef FEATURE_SIMD
 //------------------------------------------------------------------------
 // getBaseJitTypeFromArgIfNeeded: Get simdBaseJitType of intrinsic from 1st or 2nd argument depending on the flag
 //
@@ -756,6 +769,7 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic    intrinsic,
 
     return simdBaseJitType;
 }
+#endif // FEATURE_SIMD
 
 struct HWIntrinsicIsaRange
 {
@@ -866,6 +880,10 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                         // Sha1_Arm64
     { NI_Illegal, NI_Illegal },                         // Sha256_Arm64
     { NI_Illegal, NI_Illegal },                         // Sve_Arm64
+#elif defined (TARGET_RISCV64)
+    { FIRST_NI_RiscV64Base, LAST_NI_RiscV64Base },
+    { NI_Illegal, NI_Illegal },
+    { NI_Illegal, NI_Illegal },
 #else
 #error Unsupported platform
 #endif
@@ -888,6 +906,8 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
         assert((info.simdSize == 8) || (info.simdSize == 16));
 #elif defined(TARGET_XARCH)
         assert((info.simdSize == 16) || (info.simdSize == 32) || (info.simdSize == 64));
+#elif defined(TARGET_RISCV64)
+        unreached(); // no SIMD intrinsics yet
 #else
         unreached();
 #endif
@@ -898,6 +918,8 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
         // We should only have an expected number of arguments
 #if defined(TARGET_ARM64) || defined(TARGET_XARCH)
         assert((info.numArgs >= 0) && (info.numArgs <= 5));
+#elif defined(TARGET_RISCV64)
+        assert((info.numArgs >= 1) && (info.numArgs <= 3));
 #else
         unreached();
 #endif
@@ -918,6 +940,11 @@ static void ValidateHWIntrinsicIsaRange(CORINFO_InstructionSet isa, const HWIntr
     assert(isaRange.LastId != NI_Illegal);
 
     // Both entries should belong to the expected ISA
+    if (HWIntrinsicInfo::lookupIsa(isaRange.FirstId) != isa)
+    {
+        printf("HWIntrinsicInfo::lookupIsa(isaRange.FirstId):%i == isa:%i\n",
+               HWIntrinsicInfo::lookupIsa(isaRange.FirstId), isa);
+    }
     assert(HWIntrinsicInfo::lookupIsa(isaRange.FirstId) == isa);
     assert(HWIntrinsicInfo::lookupIsa(isaRange.LastId) == isa);
 
@@ -1064,6 +1091,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
     if (isSupportedProp || isHardwareAcceleratedProp)
     {
+#ifdef FEATURE_SIMD
         // The `compSupportsHWIntrinsic` above validates `compSupportsIsa` indicating
         // that the compiler can emit instructions for the ISA but not whether the
         // hardware supports them.
@@ -1095,14 +1123,14 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
                 return NI_IsSupported_Dynamic;
             }
         }
-
+#endif // FEATURE_SIMD
         return NI_IsSupported_False;
     }
     else if (!isIsaSupported)
     {
         return NI_Throw_PlatformNotSupportedException;
     }
-
+#ifdef FEATURE_SIMD
     // Special case: For Vector64/128/256 we currently don't accelerate any of the methods when
     // IsHardwareAccelerated reports false. For Vector64 and Vector128 this is when the baseline
     // ISA is unsupported. For Vector256 this is when AVX2 is unsupported since integer types
@@ -1149,6 +1177,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         }
     }
 #endif
+#endif // FEATURE_SIMD
 
     size_t isaIndex = static_cast<size_t>(isa) - 1;
     assert(isaIndex < ARRAY_SIZE(hwintrinsicIsaRangeArray));
@@ -1202,7 +1231,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     // Those intrinsics will hit this code path and need to return NI_Illegal
     return NI_Illegal;
 }
-
+#ifdef FEATURE_SIMD
 //------------------------------------------------------------------------
 // lookupSimdSize: Gets the SimdSize for a given HWIntrinsic and signature
 //
@@ -1246,6 +1275,7 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
     assert((simdSize > 0) && (simdBaseJitType != CORINFO_TYPE_UNDEF));
     return simdSize;
 }
+#endif // FEATURE_SIMD
 
 //------------------------------------------------------------------------
 // isImmOp: Checks whether the HWIntrinsic node has an imm operand
@@ -1273,6 +1303,8 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
     {
         return false;
     }
+#elif defined(TARGET_RISCV64)
+    return HWIntrinsicInfo::HasImmediateOperand(id);
 #else
 #error Unsupported platform
 #endif
@@ -1298,7 +1330,7 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass)
 {
     GenTree* arg = nullptr;
-
+#ifdef FEATURE_SIMD
     if (varTypeIsStruct(argType))
     {
         if (!varTypeIsSIMD(argType))
@@ -1313,6 +1345,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
         assert(varTypeIsSIMDOrMask(arg));
     }
     else
+#endif // FEATURE_SIMD
     {
         assert(varTypeIsArithmetic(argType) || (argType == TYP_BYREF));
 
@@ -1438,7 +1471,11 @@ bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 //
 static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
 {
+#ifdef FEATURE_SIMD
     return (category != HW_Category_Special) && !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
+#else
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1693,7 +1730,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     var_types              retType         = genActualType(JITtype2varType(sig->retType));
     CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
     GenTree*               retNode         = nullptr;
-
+#ifdef FEATURE_SIMD
     if (retType == TYP_STRUCT)
     {
         unsigned int sizeBytes;
@@ -1764,7 +1801,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     simdBaseJitType   = getBaseJitTypeFromArgIfNeeded(intrinsic, sig, simdBaseJitType);
     unsigned simdSize = 0;
-
+#endif // FEATURE_SIMD
     if (simdBaseJitType == CORINFO_TYPE_UNDEF)
     {
         if ((category == HW_Category_Scalar) || HWIntrinsicInfo::isScalarIsa(isa))
@@ -1778,6 +1815,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
         else
         {
+#ifdef FEATURE_SIMD
             unsigned int sizeBytes;
 
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
@@ -1802,6 +1840,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
             }
+#else
+            assert(false);
+#endif // FEATURE_SIMD
         }
     }
 #ifdef TARGET_ARM64
@@ -1831,14 +1872,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 #endif // TARGET_ARM64
 
+    var_types simdBaseType = TYP_UNKNOWN;
+#ifdef FEATURE_SIMD
     // Immediately return if the category is other than scalar/special and this is not a supported base type.
     if ((category != HW_Category_Special) && (category != HW_Category_Scalar) && !HWIntrinsicInfo::isScalarIsa(isa) &&
         !isSupportedBaseType(intrinsic, simdBaseJitType))
     {
         return nullptr;
     }
-
-    var_types simdBaseType = TYP_UNKNOWN;
+#endif // FEATURE_SIMD
 
     if (simdBaseJitType != CORINFO_TYPE_UNDEF)
     {
@@ -1851,10 +1893,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
 #endif // TARGET_XARCH
     }
-
+#ifdef FEATURE_SIMD
     // We may have already determined simdSize for intrinsics that require special handling.
     // If so, skip the lookup.
     simdSize = (simdSize == 0) ? HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig) : simdSize;
+#endif // FEATURE_SIMD
 
     HWIntrinsicSignatureReader sigReader;
     sigReader.Read(info.compCompHnd, sig);
@@ -1926,7 +1969,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         getHWIntrinsicImmTypes(intrinsic, sig, 1, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
                                sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1, &immLowerBound, &immUpperBound);
-#else
+#elif defined(TARGET_XARCH)
         immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
         hasFullRangeImm = HWIntrinsicInfo::HasFullRangeImm(intrinsic);
 #endif
@@ -2045,15 +2088,17 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         switch (numArgs)
         {
+#ifdef FEATURE_SIMD
             case 0:
             {
                 assert(!isScalar);
                 retNode = gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseJitType, simdSize);
                 break;
             }
-
+#endif // FEATURE_SIMD
             case 1:
             {
+#if !defined(TARGET_RISCV64)
                 if ((category == HW_Category_MemoryLoad) && op1->OperIs(GT_CAST))
                 {
                     // Although the API specifies a pointer, if what we have is a BYREF, that's what
@@ -2063,9 +2108,19 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         op1 = op1->gtGetOp1();
                     }
                 }
-
-                retNode = isScalar ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, intrinsic)
-                                   : gtNewSimdHWIntrinsicNode(nodeRetType, op1, intrinsic, simdBaseJitType, simdSize);
+#endif // !TARGET_RISCV64
+                if (isScalar)
+                {
+                    retNode = gtNewScalarHWIntrinsicNode(nodeRetType, op1, intrinsic);
+                }
+                else
+                {
+#ifdef FEATURE_SIMD
+                    retNode = gtNewSimdHWIntrinsicNode(nodeRetType, op1, intrinsic, simdBaseJitType, simdSize);
+#else
+                    assert(false);
+#endif
+                }
 
 #if defined(TARGET_XARCH)
                 switch (intrinsic)
@@ -2126,9 +2181,18 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             case 2:
             {
-                retNode = isScalar
-                              ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, intrinsic)
-                              : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+                if (isScalar)
+                {
+                    retNode = gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, intrinsic);
+                }
+                else
+                {
+#ifdef FEATURE_SIMD
+                    retNode = gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+#else
+                    assert(false);
+#endif
+                }
 
 #ifdef TARGET_XARCH
                 if ((intrinsic == NI_SSE42_Crc32) || (intrinsic == NI_SSE42_X64_Crc32))
@@ -2221,9 +2285,19 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
                 }
 
-                retNode = isScalar ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic)
-                                   : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType,
-                                                              simdSize);
+                if (isScalar)
+                {
+                    retNode = gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic);
+                }
+                else
+                {
+#ifdef FEATURE_SIMD
+                    retNode =
+                        gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+#else
+                    assert(false);
+#endif
+                }
 
                 switch (intrinsic)
                 {
@@ -2274,7 +2348,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                 break;
             }
-
+#ifdef FEATURE_SIMD
             case 4:
             {
                 assert(!isScalar);
@@ -2299,15 +2373,17 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 break;
             }
-
+#endif // FEATURE_SIMD
             default:
                 break;
         }
     }
     else
     {
+#ifdef FEATURE_SIMD
         retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, nodeRetType,
                                       simdSize, mustExpand);
+#endif // FEATURE_SIMD
     }
 
     if (setMethodHandle && (retNode != nullptr))

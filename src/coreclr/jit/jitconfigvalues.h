@@ -449,7 +449,7 @@ RELEASE_CONFIG_INTEGER(EnableApxNDD,                "EnableApxNDD",             
 
 // clang-format on
 
-#ifdef FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
 // Default 0, ValueNumbering of SIMD nodes and HW Intrinsic nodes enabled
 // If 1, then disable ValueNumbering of SIMD nodes
 // If 2, then disable ValueNumbering of HW Intrinsic nodes
