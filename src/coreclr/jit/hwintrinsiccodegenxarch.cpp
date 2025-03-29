@@ -1076,7 +1076,7 @@ void CodeGen::genHWIntrinsic_R_RM(
         instOptions = AddEmbBroadcastMode(instOptions);
     }
 
-    OperandDesc rmOpDesc = genOperandDesc(rmOp);
+    OperandDesc rmOpDesc = genOperandDesc(ins, rmOp);
 
     if (((instOptions & INS_OPTS_EVEX_b_MASK) != 0) && (rmOpDesc.GetKind() == OperandKind::Reg))
     {
@@ -1361,7 +1361,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins,
         instOptions = AddEmbBroadcastMode(instOptions);
     }
 
-    OperandDesc op2Desc = genOperandDesc(op2);
+    OperandDesc op2Desc = genOperandDesc(ins, op2);
 
     if (op2Desc.IsContained())
     {
@@ -1431,7 +1431,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(instruction ins,
         instOptions = AddEmbBroadcastMode(instOptions);
     }
 
-    OperandDesc op3Desc = genOperandDesc(op3);
+    OperandDesc op3Desc = genOperandDesc(ins, op3);
 
     if (((instOptions & INS_OPTS_EVEX_b_MASK) != 0) && (op3Desc.GetKind() == OperandKind::Reg))
     {
@@ -1547,7 +1547,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
         instOptions = AddEmbBroadcastMode(instOptions);
     }
 
-    OperandDesc op3Desc = genOperandDesc(op3);
+    OperandDesc op3Desc = genOperandDesc(ins, op3);
 
     switch (op3Desc.GetKind())
     {
