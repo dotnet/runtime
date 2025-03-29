@@ -526,8 +526,7 @@ namespace System.IO.Compression
                     // the buffer read must always be large enough to fit the constant section size of at least one header
                     continueReadingCentralDirectory = sizedFileBuffer.Length >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
 
-                    while (continueReadingCentralDirectory
-                        && currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize < sizedFileBuffer.Length)
+                    while (currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize <= sizedFileBuffer.Length)
                     {
                         if (!ZipCentralDirectoryFileHeader.TryReadBlock(sizedFileBuffer.Slice(currPosition), _archiveStream,
                             saveExtraFieldsAndComments, out bytesConsumed, out ZipCentralDirectoryFileHeader? currentHeader))
