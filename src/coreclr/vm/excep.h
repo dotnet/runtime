@@ -756,10 +756,6 @@ LONG WatsonLastChance(
 
 bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord);
 
-#ifndef FEATURE_EH_FUNCLETS
-#define g_isNewExceptionHandlingEnabled false
-#endif
-
 inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 {
     SIZE_T cbReadOnlyPost = 0;
@@ -769,10 +765,7 @@ inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 
     memcpyNoGCRefs(pDest, pSrc, sizeof(T_CONTEXT) - cbReadOnlyPost);
 #ifdef TARGET_AMD64
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        pDest->ContextFlags = (pDest->ContextFlags & ~(CONTEXT_XSTATE | CONTEXT_FLOATING_POINT)) | CONTEXT_AMD64;
-    }
+    pDest->ContextFlags = (pDest->ContextFlags & ~(CONTEXT_XSTATE | CONTEXT_FLOATING_POINT)) | CONTEXT_AMD64;
 #endif // TARGET_AMD64
 }
 
