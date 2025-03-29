@@ -1102,7 +1102,7 @@ namespace System.Net
                 Task<Stream> getStreamTask = getStreamTcs.Task;
                 try
                 {
-                    Task result = await Task.WhenAny((Task)getStreamTask, (Task)_sendRequestTask).ConfigureAwait(false);
+                    Task result = await Task.WhenAny(getStreamTask, _sendRequestTask).ConfigureAwait(false);
                     if (result == _sendRequestTask)
                     {
                         await _sendRequestTask.ConfigureAwait(false); // Propagate the exception
