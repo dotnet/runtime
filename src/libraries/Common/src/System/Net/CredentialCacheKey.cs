@@ -25,7 +25,7 @@ namespace System.Net
             AuthenticationType = authenticationType;
         }
 
-        internal bool Match(Uri uri, string authenticationType)
+        internal bool Match(Uri uri, int prefixLen, string authenticationType)
         {
             if (uri == null || authenticationType == null)
             {
@@ -40,12 +40,12 @@ namespace System.Net
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Match({UriPrefix} & {uri})");
 
-            return IsPrefix(uri, UriPrefix);
+            return IsPrefix(uri, prefixLen);
         }
 
         // IsPrefix (Uri)
         //
-        // Determines whether <prefixUri> is a prefix of this URI. A prefix
+        // Determines whether <this> is a prefix of this URI. A prefix
         // match is defined as:
         //
         //     scheme match
@@ -55,23 +55,22 @@ namespace System.Net
         //
         // Returns:
         // True if <prefixUri> is a prefix of this URI
-        private static bool IsPrefix(Uri uri, Uri prefixUri)
+        private bool IsPrefix(Uri uri, int prefixLen)
         {
             Debug.Assert(uri != null);
-            Debug.Assert(prefixUri != null);
+            Uri uriPrefix = UriPrefix;
 
-            if (prefixUri.Scheme != uri.Scheme || prefixUri.Host != uri.Host || prefixUri.Port != uri.Port)
+            if (uriPrefix.Scheme != uri.Scheme || uriPrefix.Host != uri.Host || uriPrefix.Port != uri.Port)
             {
                 return false;
             }
 
-            int prefixLen = prefixUri.AbsolutePath.LastIndexOf('/');
-            if (prefixLen > uri.AbsolutePath.LastIndexOf('/'))
+            if (UriPrefixLength > prefixLen)
             {
                 return false;
             }
 
-            return string.Compare(uri.AbsolutePath, 0, prefixUri.AbsolutePath, 0, prefixLen, StringComparison.OrdinalIgnoreCase) == 0;
+            return string.Compare(uri.AbsolutePath, 0, uriPrefix.AbsolutePath, 0, UriPrefixLength, StringComparison.OrdinalIgnoreCase) == 0;
         }
 
         public override int GetHashCode() =>
@@ -108,21 +107,37 @@ namespace System.Net
             mostSpecificMatch = null;
             mostSpecificMatchUri = null;
 
-            // Enumerate through every credential in the cache
+            if (cache.Count == 0)
+            {
+                return false;
+            }
+
+            // precompute the length of the prefix
+            int uriPrefixLength = uriPrefix.AbsolutePath.LastIndexOf('/');
+
+            // Enumerate through every credential in the cache, get match with longest prefix
             foreach ((CredentialCacheKey key, NetworkCredential value) in cache)
             {
-                // Determine if this credential is applicable to the current Uri/AuthType
-                if (key.Match(uriPrefix, authType))
-                {
-                    int prefixLen = key.UriPrefixLength;
+                int prefixLen = key.UriPrefixLength;
 
-                    // Check if the match is better than the current-most-specific match
-                    if (prefixLen > longestMatchPrefix)
+                if (prefixLen <= longestMatchPrefix)
+                {
+                    // this credential can't provide a longer prefix match
+                    continue;
+                }
+
+                // Determine if this credential is applicable to the current Uri/AuthType
+                if (key.Match(uriPrefix, uriPrefixLength, authType))
+                {
+                    // update the information about currently preferred match
+                    longestMatchPrefix = prefixLen;
+                    mostSpecificMatch = value;
+                    mostSpecificMatchUri = key.UriPrefix;
+
+                    if (uriPrefixLength == prefixLen)
                     {
-                        // Yes: update the information about currently preferred match
-                        longestMatchPrefix = prefixLen;
-                        mostSpecificMatch = value;
-                        mostSpecificMatchUri = key.UriPrefix;
+                        // we can't get any better than this
+                        break;
                     }
                 }
             }

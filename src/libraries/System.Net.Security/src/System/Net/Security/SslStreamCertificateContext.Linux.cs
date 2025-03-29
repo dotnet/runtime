@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
@@ -23,9 +24,11 @@ namespace System.Net.Security
         internal static TimeSpan RefreshAfterFailureBackOffInterval => TimeSpan.FromSeconds(5);
 
         private const bool TrimRootCertificate = true;
-        internal readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts;
+        private const bool ChainBuildNeedsTrustedRoot = false;
         internal readonly SafeX509Handle CertificateHandle;
         internal readonly SafeEvpPKeyHandle KeyHandle;
+
+        private object SyncObject => KeyHandle;
 
         private bool _staplingForbidden;
         private byte[]? _ocspResponse;
@@ -57,7 +60,6 @@ namespace System.Net.Security
 
             TargetCertificate = target;
             Trust = trust;
-            SslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
 
             using (RSAOpenSsl? rsa = (RSAOpenSsl?)target.GetRSAPrivateKey())
             {
@@ -223,7 +225,7 @@ namespace System.Net.Security
                 return new ValueTask<byte[]?>((byte[]?)null);
             }
 
-            lock (SslContexts)
+            lock (SyncObject)
             {
                 pending = _pendingDownload;
 

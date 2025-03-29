@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
-
+using System.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -49,23 +50,33 @@ namespace Internal.IL.Stubs
 
         private void EmitByte(byte b)
         {
-            if (_instructions.Length == _length)
-                Array.Resize<byte>(ref _instructions, 2 * _instructions.Length + 10);
+            if (_length == _instructions.Length)
+                Grow();
             _instructions[_length++] = b;
         }
 
         private void EmitUInt16(ushort value)
         {
-            EmitByte((byte)value);
-            EmitByte((byte)(value >> 8));
+            if (_length + sizeof(ushort) > _instructions.Length)
+                Grow();
+
+            BinaryPrimitives.WriteUInt16LittleEndian(_instructions.AsSpan(_length, sizeof(ushort)), value);
+            _length += sizeof(ushort);
         }
 
         private void EmitUInt32(int value)
         {
-            EmitByte((byte)value);
-            EmitByte((byte)(value >> 8));
-            EmitByte((byte)(value >> 16));
-            EmitByte((byte)(value >> 24));
+            if (_length + sizeof(int) > _instructions.Length)
+                Grow();
+
+            BinaryPrimitives.WriteInt32LittleEndian(_instructions.AsSpan(_length, sizeof(int)), value);
+            _length += sizeof(int);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void Grow()
+        {
+            Array.Resize(ref _instructions, 2 * _instructions.Length + 10);
         }
 
         public void Emit(ILOpcode opcode)
@@ -468,19 +479,13 @@ namespace Internal.IL.Stubs
                 Debug.Assert(patch.Label.IsPlaced);
                 Debug.Assert(_startOffsetForLinking != StartOffsetNotSet);
 
-                int offset = patch.Offset;
+                Span<byte> offsetSpan = _instructions.AsSpan(patch.Offset, sizeof(int));
 
-                int delta = _instructions[offset + 3] << 24 |
-                    _instructions[offset + 2] << 16 |
-                    _instructions[offset + 1] << 8 |
-                    _instructions[offset];
+                int delta = BinaryPrimitives.ReadInt32LittleEndian(offsetSpan);
 
                 int value = patch.Label.AbsoluteOffset - _startOffsetForLinking - patch.Offset - delta;
 
-                _instructions[offset] = (byte)value;
-                _instructions[offset + 1] = (byte)(value >> 8);
-                _instructions[offset + 2] = (byte)(value >> 16);
-                _instructions[offset + 3] = (byte)(value >> 24);
+                BinaryPrimitives.WriteInt32LittleEndian(offsetSpan, value);
             }
         }
 
@@ -818,6 +823,16 @@ namespace Internal.IL.Stubs
     public abstract partial class ILStubMethod : MethodDesc
     {
         public abstract MethodIL EmitIL();
+
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+        {
+            return false;
+        }
+    }
+
+    public abstract partial class SpecializableILStubMethod : ILStubMethod
+    {
+        public abstract MethodIL EmitIL(MethodDesc specializedMethod);
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {

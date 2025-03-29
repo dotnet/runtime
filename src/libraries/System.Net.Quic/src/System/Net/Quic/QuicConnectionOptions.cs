@@ -51,6 +51,21 @@ public sealed class QuicReceiveWindowSizes
 }
 
 /// <summary>
+/// Arguments for <see cref="QuicConnectionOptions.StreamCapacityCallback"/>.
+/// </summary>
+public readonly struct QuicStreamCapacityChangedArgs
+{
+    /// <summary>
+    /// The increment saying how many additional bidirectional streams can be opened on the connection, increased via the latest MAX_STREAMS frame.
+    /// </summary>
+    public int BidirectionalIncrement { get; init; }
+    /// <summary>
+    /// The increment saying how many additional unidirectional streams can be opened on the connection, increased via the latest MAX_STREAMS frame.
+    /// </summary>
+    public int UnidirectionalIncrement { get; init; }
+}
+
+/// <summary>
 /// Shared options for both client (outbound) and server (inbound) <see cref="QuicConnection" />.
 /// </summary>
 public abstract class QuicConnectionOptions
@@ -123,6 +138,14 @@ public abstract class QuicConnectionOptions
     /// Default timeout is 10 seconds.
     /// </summary>
     public TimeSpan HandshakeTimeout { get; set; } = QuicDefaults.HandshakeTimeout;
+
+    /// <summary>
+    /// Optional callback that is invoked when new stream limit is released by the peer. Corresponds to receiving a MAX_STREAMS frame.
+    /// The callback values represent increments of stream limits, e.g.: current limit is 10 bidirectional streams, callback arguments notify 5 more additional bidirectional streams => 15 bidirectional streams can be opened in total at the moment.
+    /// The initial capacity is reported with the first invocation of the callback that might happen before the <see cref="QuicConnection"/> instance is handed out via either
+    /// <see cref="QuicConnection.ConnectAsync(QuicClientConnectionOptions, CancellationToken)"/> or <see cref="QuicListener.AcceptConnectionAsync(CancellationToken)"/>.
+    /// </summary>
+    public Action<QuicConnection, QuicStreamCapacityChangedArgs>? StreamCapacityCallback { get; set; }
 
     /// <summary>
     /// Validates the options and potentially sets platform specific defaults.

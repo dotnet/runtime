@@ -762,7 +762,7 @@ namespace Microsoft.Win32
                              EvtStringVariant[] values,
                              EvtFormatMessageFlags flags,
                              int bufferSize,
-                             [Out] char[]? buffer,
+                             Span<char> buffer,
                              out int bufferUsed);
 
         [LibraryImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtFormatMessage", SetLastError = true)]

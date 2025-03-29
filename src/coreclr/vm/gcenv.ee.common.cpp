@@ -5,7 +5,7 @@
 #include "gcenv.h"
 #include <exinfo.h>
 
-#if defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 
 struct FindFirstInterruptiblePointState
 {
@@ -58,7 +58,6 @@ bool FindFirstInterruptiblePointStateCB(
 // the end is exclusive). Return -1 if no such point exists.
 unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
 {
-#ifdef USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
     GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
 
@@ -70,13 +69,9 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
     gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
 
     return state.returnOffs;
-#else
-    PORTABILITY_ASSERT("FindFirstInterruptiblePoint");
-    return -1;
-#endif // USE_GC_INFO_DECODER
 }
 
-#endif // FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
 
 //-----------------------------------------------------------------------------
 // Determine whether we should report the generic parameter context
@@ -104,9 +99,9 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!pCF->IsFrameless() && pCF->GetFrame()->GetVTablePtr() == StubDispatchFrame::GetMethodFrameVPtr())
+    if (!pCF->IsFrameless() && pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
     {
-        return !((StubDispatchFrame*)pCF->GetFrame())->SuppressParamTypeArg();
+        return !(dac_cast<PTR_StubDispatchFrame>(pCF->GetFrame()))->SuppressParamTypeArg();
     }
 
     if (!pCF->IsFrameless() || !(pCF->IsActiveFrame() || pCF->IsInterrupted()))
@@ -138,6 +133,31 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 }
 
 /*
+ * CheckDoubleReporting()
+ *
+ * This function is used to check for double reporting of the same stack slot or register.
+ * Double reporting is not allowed unless the reference is pinned, since it would
+ * result in incorrect updating of a reference in the slot in case the GC moves the
+ * object.
+ */
+void CheckDoubleReporting(GCCONTEXT *pCtx, Object **ppObj, uint32_t flags)
+{
+    if (((flags & GC_CALL_PINNED) == 0) && pCtx->sc->promotion)
+    {
+        if (pCtx->pScannedSlots == NULL)
+        {
+            pCtx->pScannedSlots = new (nothrow) SetSHash<Object**, PtrSetSHashTraits<Object**> >();
+            if (pCtx->pScannedSlots == NULL)
+            {
+                return;
+            }
+        }
+        _ASSERTE_ALL_BUILDS(pCtx->pScannedSlots->Lookup(ppObj) == NULL);
+        pCtx->pScannedSlots->AddNoThrow(ppObj);
+    }
+}
+
+/*
  * GcEnumObject()
  *
  * This is the JIT compiler (or any remote code manager)
@@ -148,6 +168,11 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
 {
     Object ** ppObj = (Object **)pObj;
     GCCONTEXT   * pCtx  = (GCCONTEXT *) pData;
+
+    if (g_pConfig->GetCheckDoubleReporting())
+    {
+        CheckDoubleReporting(pCtx, ppObj, flags);
+    }
 
     // Since we may be asynchronously walking another thread's stack,
     // check (frequently) for stack-buffer-overrun corruptions after
@@ -183,16 +208,14 @@ void GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator 
     if (pLoaderAllocator != NULL && pLoaderAllocator->IsCollectible())
     {
         Object *refCollectionObject = OBJECTREFToObject(pLoaderAllocator->GetExposedObject());
+        if (refCollectionObject != NULL)
+        {
+            INDEBUG(Object *oldObj = refCollectionObject;)
+            fn(&refCollectionObject, sc, CHECK_APP_DOMAIN);
 
-#ifdef _DEBUG
-        Object *oldObj = refCollectionObject;
-#endif
-
-        _ASSERTE(refCollectionObject != NULL);
-        fn(&refCollectionObject, sc, CHECK_APP_DOMAIN);
-
-        // We are reporting the location of a local variable, assert it doesn't change.
-        _ASSERTE(oldObj == refCollectionObject);
+            // We are reporting the location of a local variable, assert it doesn't change.
+            _ASSERTE(oldObj == refCollectionObject);
+        }
     }
 }
 
@@ -339,8 +362,8 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             Frame * pFrame = pCF->GetFrame();
 
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000,
-                "Scanning ExplicitFrame %p AssocMethod = %pM frameVTable = %pV\n",
-                pFrame, pFrame->GetFunction(), *((void**) pFrame));
+                "Scanning ExplicitFrame %p AssocMethod = %pM FrameIdentifier = %s\n",
+                pFrame, pFrame->GetFunction(), Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
             pFrame->GcScanRoots( gcctx->f, gcctx->sc);
         }
     }

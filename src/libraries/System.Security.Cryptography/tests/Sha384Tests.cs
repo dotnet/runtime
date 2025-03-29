@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void Sha384_VerifyLargeStream_MultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -sha384
             VerifyRepeating(
                 "0102030405060708",
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void Sha384_VerifyLargeStream_NotMultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -sha384
             VerifyRepeating(
                 "0102030405060708",
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task Sha384_VerifyLargeStream_NotMultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -sha384
             await VerifyRepeatingAsync(
                 "0102030405060708",
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task Sha384_VerifyLargeStream_MultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -sha384
             await VerifyRepeatingAsync(
                 "0102030405060708",

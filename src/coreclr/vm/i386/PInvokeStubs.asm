@@ -20,11 +20,9 @@
         option  casemap:none
         .code
 
-extern _s_gsCookie:DWORD
-extern ??_7InlinedCallFrame@@6B@:DWORD
 extern _g_TrapReturningThreads:DWORD
 
-extern @JIT_PInvokeEndRarePath@0:proc
+extern _JIT_PInvokeEndRarePath@0:proc
 
 .686P
 .XMM
@@ -37,13 +35,8 @@ extern @JIT_PInvokeEndRarePath@0:proc
 ;
 _JIT_PInvokeBegin@4 PROC public
 
-        mov             eax, dword ptr [_s_gsCookie]
-        mov             dword ptr [ecx], eax
-        add             ecx, SIZEOF_GSCookie
-
-        ;; set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
-        lea             eax,[??_7InlinedCallFrame@@6B@]
-        mov             dword ptr [ecx], eax
+        ;; set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
+        mov             dword ptr [ecx], FRAMETYPE_InlinedCallFrame
 
         mov             dword ptr [ecx + InlinedCallFrame__m_Datum], edx
 
@@ -81,8 +74,6 @@ _JIT_PInvokeBegin@4 ENDP
 ;
 _JIT_PInvokeEnd@4 PROC public
 
-        add             ecx, SIZEOF_GSCookie
-
         ;; edx = GetThread(). Trashes eax
         INLINE_GETTHREAD edx, eax
 
@@ -103,8 +94,41 @@ _JIT_PInvokeEnd@4 PROC public
         ret
 
 RarePath:
-        jmp             @JIT_PInvokeEndRarePath@0
+        jmp             _JIT_PInvokeEndRarePath@0
 
 _JIT_PInvokeEnd@4 ENDP
+
+;
+; in:
+; InlinedCallFrame (edi) = pointer to the InlinedCallFrame data
+; out:
+; Thread (esi) = pointer to Thread data
+;
+;
+_JIT_InitPInvokeFrame@4 PROC public
+
+        ;; esi = GetThread(). Trashes eax
+        INLINE_GETTHREAD esi, eax
+
+        ;; edi = pFrame
+        ;; esi = pThread
+
+        ;; set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
+        mov             dword ptr [edi], FRAMETYPE_InlinedCallFrame
+
+        ;; pFrame->m_Next = pThread->m_pFrame;
+        mov             eax, dword ptr [esi + Thread_m_pFrame]
+        mov             dword ptr [edi + Frame__m_Next], eax
+
+        mov             dword ptr [edi + InlinedCallFrame__m_pCalleeSavedFP], ebp
+        mov             dword ptr [edi + InlinedCallFrame__m_pCallerReturnAddress], 0
+
+        ;; pThread->m_pFrame = pFrame;
+        mov             dword ptr [esi + Thread_m_pFrame], edi
+
+        ;; leave current Thread in ESI
+        ret
+
+_JIT_InitPInvokeFrame@4 ENDP
 
         end

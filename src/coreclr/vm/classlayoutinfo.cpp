@@ -44,12 +44,7 @@ namespace
             // if we haven't found a matching token, it must be a static field with layout -- ignore it
             if (pfwalk->m_MD != fd) continue;
 
-            if (!fExplicitOffsets)
-            {
-                // ulOffset is the sequence
-                pfwalk->m_sequence = ulOffset;
-            }
-            else
+            if (fExplicitOffsets)
             {
                 // ulOffset is the explicit offset
                 pfwalk->m_placement.m_offset = ulOffset;
@@ -285,7 +280,7 @@ namespace
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
-            if (pNestedType.GetMethodTable()->ContainsPointers())
+            if (pNestedType.GetMethodTable()->ContainsGCPointers())
             {
                 // this field type has GC pointers in it, which need to be pointer-size aligned
                 placementInfo.m_alignment = TARGET_POINTER_SIZE;
@@ -310,7 +305,7 @@ namespace
         if (corElemType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!pNestedType.IsNull());
-            return pNestedType.GetMethodTable()->ContainsPointers() != FALSE;
+            return pNestedType.GetMethodTable()->ContainsGCPointers() != FALSE;
         }
         return TRUE;
     }

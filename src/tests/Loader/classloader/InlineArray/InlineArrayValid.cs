@@ -41,7 +41,7 @@ public unsafe class Validate
 {
     // ====================== SizeOf ==============================================================
     [InlineArray(42)]
-    struct FourtyTwoBytes
+    struct FortyTwoBytes
     {
         byte b;
     }
@@ -50,11 +50,20 @@ public unsafe class Validate
     public static void Sizeof()
     {
         Console.WriteLine($"{nameof(Sizeof)}...");
-        Assert.Equal(42, sizeof(FourtyTwoBytes));
+        Assert.Equal(42, sizeof(FortyTwoBytes));
         Assert.Equal(84, sizeof(MyArray<char>));
     }
 
     // ====================== OneElement ==========================================================
+    // These types are interesting since their layouts are
+    // identical with or without the InlineArrayAttribute.
+
+    [InlineArray(1)]
+    struct OneInt
+    {
+        public int i;
+    }
+
     [InlineArray(1)]
     struct OneObj
     {
@@ -65,6 +74,7 @@ public unsafe class Validate
     public static void OneElement()
     {
         Console.WriteLine($"{nameof(OneElement)}...");
+        Assert.Equal(sizeof(int), sizeof(OneInt));
         Assert.Equal(sizeof(nint), sizeof(OneObj));
     }
 
@@ -392,5 +402,51 @@ public unsafe class Validate
             Assert.Equal(i, holder.arr[i].o);
             Assert.Equal(i + 1, holder.arr[i].s);
         }
+    }
+
+    struct StructHasFortyTwoBytesField
+    {
+        FortyTwoBytes _field;
+    }
+
+    struct StructHasOneIntField
+    {
+        OneInt _field;
+    }
+
+    [Fact]
+    public static void InlineArrayEqualsGetHashCode_Fails()
+    {
+        Console.WriteLine($"{nameof(InlineArrayEqualsGetHashCode_Fails)}...");
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new OneInt().Equals(new OneInt());
+        });
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new StructHasOneIntField().Equals(new StructHasOneIntField());
+        });
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new FortyTwoBytes().Equals(new FortyTwoBytes());
+        });
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new StructHasFortyTwoBytesField().Equals(new StructHasFortyTwoBytesField());
+        });
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new OneInt().GetHashCode();
+        });
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new FortyTwoBytes().GetHashCode();
+        });
     }
 }

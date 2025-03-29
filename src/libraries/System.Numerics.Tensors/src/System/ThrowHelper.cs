@@ -29,6 +29,10 @@ namespace System
             throw new ArgumentException(SR.Argument_InputAndDestinationSpanMustNotOverlap, "destination");
 
         [DoesNotReturn]
+        public static void ThrowArgument_DestinationSpansMustNotOverlap() =>
+            throw new ArgumentException(SR.Argument_DestinationSpansMustNotOverlap);
+
+        [DoesNotReturn]
         internal static void ThrowArrayTypeMismatchException()
         {
             throw new ArrayTypeMismatchException();
@@ -98,9 +102,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_ShapesNotBroadcastCompatible()
+        public static void ThrowArgument_LengthsNotBroadcastCompatible()
         {
-            throw new ArgumentException(SR.ThrowArgument_ShapesNotBroadcastCompatible);
+            throw new ArgumentException(SR.ThrowArgument_LengthsNotBroadcastCompatible);
         }
 
         [DoesNotReturn]
@@ -119,6 +123,12 @@ namespace System
         public static void ThrowArgument_1DTensorRequired(string? paramNames)
         {
             throw new ArgumentException(SR.ThrowArgument_1DTensorRequired, paramNames);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_2DTensorRequired(string? paramNames)
+        {
+            throw new ArgumentException(SR.Argument_2DTensorRequired, paramNames);
         }
 
         [DoesNotReturn]
@@ -202,7 +212,37 @@ namespace System
         [DoesNotReturn]
         public static void ThrowArgument_StrideLessThan0()
         {
-            throw new ArgumentException(SR.ThrowArgument_StrideLessThan0);
+            throw new ArgumentOutOfRangeException(SR.ThrowArgument_StrideLessThan0);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_IncompatibleDimensions(nint leftDim, nint rightDim)
+        {
+            throw new ArgumentException(SR.Format(SR.Argument_IncompatibleDimensions, leftDim, rightDim));
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_StackShapesNotSame()
+        {
+            throw new ArgumentException(SR.ThrowArgument_StackShapesNotSame);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_CannotReshapeNonContiguousOrDense()
+        {
+            throw new ArgumentException(SR.Argument_CannotReshapeNonContiguousOrDense);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_MinGreaterThanMax()
+        {
+            throw new ArgumentException(SR.Argument_MinGreaterThanMax);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArithmetic_NaN()
+        {
+            throw new ArithmeticException(SR.Arithmetic_NaN);
         }
     }
 }

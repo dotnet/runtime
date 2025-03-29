@@ -9,6 +9,7 @@ using System.Threading;
 
 namespace System.Net
 {
+    [Obsolete(Obsoletions.WebRequestMessage + " Settings on ServicePointManager no longer affect SslStream or HttpClient.", DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public class ServicePointManager
     {
         public const int DefaultNonPersistentConnectionLimit = 4;
@@ -99,13 +100,10 @@ namespace System.Net
         [UnsupportedOSPlatform("browser")]
         public static EncryptionPolicy EncryptionPolicy { get; } = EncryptionPolicy.RequireEncryption;
 
-        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ServicePoint FindServicePoint(Uri address) => FindServicePoint(address, null);
 
-        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ServicePoint FindServicePoint(string uriString, IWebProxy? proxy) => FindServicePoint(new Uri(uriString), proxy);
 
-        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ServicePoint FindServicePoint(Uri address, IWebProxy? proxy)
         {
             ArgumentNullException.ThrowIfNull(address);

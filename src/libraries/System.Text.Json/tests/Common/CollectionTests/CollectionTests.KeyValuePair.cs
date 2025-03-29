@@ -445,11 +445,11 @@ namespace System.Text.Json.Serialization.Tests
         public async Task JsonPathIsAccurate(string json, string expectedPath)
         {
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<KeyValuePair<int, int>>(json));
-            Assert.Contains(expectedPath, ex.ToString());
+            Assert.Contains(expectedPath, ex.Message);
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<KeyValuePair<int, int>>(json));
-            Assert.Contains(expectedPath, ex.ToString());
+            Assert.Contains(expectedPath, ex.Message);
         }
 
         [Theory]
@@ -459,7 +459,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<KeyValuePair<int, int>>(json, options));
-            Assert.Contains(expectedPath, ex.ToString());
+            Assert.Contains(expectedPath, ex.Message);
         }
 
         [Theory]
@@ -469,7 +469,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = new LeadingUnderscorePolicy() };
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<KeyValuePair<int, int>>(json, options));
-            Assert.Contains(expectedPath, ex.ToString());
+            Assert.Contains(expectedPath, ex.Message);
         }
 
         [Fact]

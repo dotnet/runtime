@@ -792,7 +792,8 @@ const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
     {
         if (NSLocale.preferredLanguages.count > 0)
         {
-            return strdup([NSLocale.preferredLanguages[0] UTF8String]);
+            NSString *preferredLanguage = [NSLocale.preferredLanguages objectAtIndex:0];
+            return strdup([preferredLanguage UTF8String]);
         }
         else
         {

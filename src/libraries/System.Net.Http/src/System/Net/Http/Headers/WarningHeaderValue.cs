@@ -24,6 +24,20 @@ namespace System.Net.Http.Headers
 
         public DateTimeOffset? Date => _dateHasValue ? _date : null;
 
+        private WarningHeaderValue(int code, string agent, string text, DateTimeOffset? date)
+        {
+#if DEBUG
+            // This constructor should only be used with already validated values.
+            new WarningHeaderValue(code, agent, text);
+#endif
+
+            _code = code;
+            _agent = agent;
+            _text = text;
+            _date = date.GetValueOrDefault();
+            _dateHasValue = date.HasValue;
+        }
+
         public WarningHeaderValue(int code, string agent, string text)
         {
             CheckCode(code);
@@ -130,10 +144,9 @@ namespace System.Net.Http.Headers
             }
 
             // Read <code> in '<code> <agent> <text> ["<date>"]'
-            int code;
             int current = startIndex;
 
-            if (!TryReadCode(input, ref current, out code))
+            if (!TryReadCode(input, ref current, out int code))
             {
                 return 0;
             }
@@ -145,9 +158,8 @@ namespace System.Net.Http.Headers
             }
 
             // Read <text> in '<code> <agent> <text> ["<date>"]'
-            int textLength;
             int textStartIndex = current;
-            if (HttpRuleParser.GetQuotedStringLength(input, current, out textLength) != HttpParseResult.Parsed)
+            if (HttpRuleParser.GetQuotedStringLength(input, current, out int textLength) != HttpParseResult.Parsed)
             {
                 return 0;
             }
@@ -157,15 +169,12 @@ namespace System.Net.Http.Headers
             current += textLength;
 
             // Read <date> in '<code> <agent> <text> ["<date>"]'
-            DateTimeOffset? date;
-            if (!TryReadDate(input, ref current, out date))
+            if (!TryReadDate(input, ref current, out DateTimeOffset? date))
             {
                 return 0;
             }
 
-            parsedValue = date is null ?
-                new WarningHeaderValue(code, agent, text) :
-                new WarningHeaderValue(code, agent, text, date.Value);
+            parsedValue = new WarningHeaderValue(code, agent, text, date);
 
             return current - startIndex;
         }
@@ -254,8 +263,7 @@ namespace System.Net.Http.Headers
                 }
                 current += quote;
 
-                DateTimeOffset temp;
-                if (!HttpDateParser.TryParse(input.AsSpan(dateStartIndex, current - dateStartIndex), out temp))
+                if (!HttpDateParser.TryParse(input.AsSpan(dateStartIndex, current - dateStartIndex), out DateTimeOffset temp))
                 {
                     return false;
                 }
@@ -282,9 +290,9 @@ namespace System.Net.Http.Headers
 
         private static void CheckAgent(string agent)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(agent);
+            ArgumentException.ThrowIfNullOrEmpty(agent);
 
-            // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value
+            // 'Agent' can either be a host or a token. Since a token is a valid host, we only verify if the value
             // is a valid host.
             if (HttpRuleParser.GetHostLength(agent, 0, true) != agent.Length)
             {

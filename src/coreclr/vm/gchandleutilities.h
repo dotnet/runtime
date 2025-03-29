@@ -48,6 +48,14 @@ inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
     return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));
 }
 
+// Given a handle, returns an OBJECTREF for the object it refers to.
+inline _UNCHECKED_OBJECTREF ObjectFromHandleUnchecked(OBJECTHANDLE handle)
+{
+    _ASSERTE(handle);
+
+    return (*PTR_UNCHECKED_OBJECTREF(handle));
+}
+
 // Quick inline check for whether a handle is null
 inline BOOL IsHandleNullUnchecked(OBJECTHANDLE handle)
 {
@@ -116,23 +124,6 @@ inline OBJECTHANDLE CreateAsyncPinningHandle(IGCHandleStore* store, OBJECTREF ob
 inline OBJECTHANDLE CreateRefcountedHandle(IGCHandleStore* store, OBJECTREF object)
 {
     return CreateHandleCommon(store, object, HNDTYPE_REFCOUNTED);
-}
-
-inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object)
-{
-    return CreateHandleCommon(store, object, HNDTYPE_SIZEDREF);
-}
-
-inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object, int heapToAffinitizeTo)
-{
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_SIZEDREF, heapToAffinitizeTo);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    DiagHandleCreated(hnd, object);
-    return hnd;
 }
 
 inline OBJECTHANDLE CreateDependentHandle(IGCHandleStore* store, OBJECTREF primary, OBJECTREF secondary)

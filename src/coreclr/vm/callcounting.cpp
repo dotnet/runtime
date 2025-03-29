@@ -365,7 +365,7 @@ NOINLINE LoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHea
 bool CallCountingManager::CallCountingStubAllocator::IsStub(TADDR entryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != (TADDR)NULL);
 
     return !!m_heapRangeList.IsInRange(entryPoint);
 }
@@ -562,7 +562,7 @@ bool CallCountingManager::SetCodeEntryPoint(
     _ASSERTE(
         activeCodeVersion ==
         methodDesc->GetCodeVersionManager()->GetActiveILCodeVersion(methodDesc).GetActiveNativeCodeVersion(methodDesc));
-    _ASSERTE(codeEntryPoint != NULL);
+    _ASSERTE(codeEntryPoint != (PCODE)NULL);
     _ASSERTE(codeEntryPoint == activeCodeVersion.GetNativeCode());
     _ASSERTE(!wasMethodCalled || createTieringBackgroundWorkerRef != nullptr);
     _ASSERTE(createTieringBackgroundWorkerRef == nullptr || !*createTieringBackgroundWorkerRef);
@@ -760,7 +760,7 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
 
     PCODE codeEntryPoint = 0;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
@@ -774,8 +774,8 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
         CallCountingInfo::From(CallCountingStub::From(stubIdentifyingToken)->GetRemainingCallCountCell())->GetCodeVersion();
 
     MethodDesc *methodDesc = codeVersion.GetMethodDesc();
-    FrameWithCookie<CallCountingHelperFrame> frameWithCookie(transitionBlock, methodDesc);
-    CallCountingHelperFrame *frame = &frameWithCookie;
+    CallCountingHelperFrame callCountingFrame(transitionBlock, methodDesc);
+    CallCountingHelperFrame *frame = &callCountingFrame;
     frame->Push(CURRENT_THREAD);
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -822,8 +822,6 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
     frame->Pop(CURRENT_THREAD);
-
-    END_PRESERVE_LAST_ERROR;
 
     return codeEntryPoint;
 }
@@ -1253,7 +1251,7 @@ bool CallCountingManager::IsCallCountingStub(PCODE entryPoint)
     CONTRACTL_END;
 
     TADDR entryAddress = PCODEToPINSTR(entryPoint);
-    _ASSERTE(entryAddress != NULL);
+    _ASSERTE(entryAddress != (PCODE)NULL);
 
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 

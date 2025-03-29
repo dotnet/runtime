@@ -37,7 +37,7 @@
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <!-- Suppress trimming warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <NoWarn>$(NoWarn);IL2103;IL2105;IL2025;IL2111</NoWarn>
+    <NoWarn>$(NoWarn);IL2103;IL2025;IL2111;IL2122</NoWarn>
   </PropertyGroup>
 
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this

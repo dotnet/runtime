@@ -2058,10 +2058,10 @@ void emitter::emitIns_R_AI(instruction  ins,
 
     // INS_OPTS_RELOC: placeholders.  2-ins:
     //  case:EA_HANDLE_CNS_RELOC
-    //   pcaddu12i  reg, off-hi-20bits
+    //   pcalau12i  reg, off-hi-20bits
     //   addi_d  reg, reg, off-lo-12bits
     //  case:EA_PTR_DSP_RELOC
-    //   pcaddu12i  reg, off-hi-20bits
+    //   pcalau12i  reg, off-hi-20bits
     //   ld_d  reg, reg, off-lo-12bits
 
     instrDesc* id = emitNewInstr(attr);
@@ -2202,11 +2202,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     id->idInsOpt(INS_OPTS_J);
     emitCounts_INS_OPTS_J++;
     id->idAddr()->iiaBBlabel = dst;
-
-    if (emitComp->opts.compReloc)
-    {
-        id->idSetIsDspReloc();
-    }
 
     id->idjShort = false;
 
@@ -2409,7 +2404,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     // Our stack level should be always greater than the bytes of arguments we push. Just
     // a sanity test.
-    assert((unsigned)abs(argSize) <= codeGen->genStackLevel);
+    assert((unsigned)std::abs(argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
     regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
@@ -2509,8 +2504,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     //   else if (callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR)
     //     if reloc:
     //             //pc + offset_38bits       # only when reloc.
-    //      pcaddu18i  t2, addr-hi20
-    //      jilr r0/1,t2,addr-lo18
+    //      pcaddu18i  t4, addr-hi20
+    //      jilr r0/1, t4, addr-lo18
     //
     //     else:
     //      lu12i_w  t2, dst_offset_lo32-hi
@@ -2639,7 +2634,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         // pc + offset_38bits
         //
         //   pcaddu18i  t4, addr-hi20
-        //   jilr r0/1,t4,addr-lo18
+        //   jilr r0/1, t4, addr-lo18
 
         emitOutput_Instr(dst, 0x1e000000 | (int)REG_DEFAULT_HELPER_CALL_TARGET);
 
@@ -2648,7 +2643,6 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         int reg2 = (int)addr & 1;
         addr     = addr ^ 1;
 
-        assert(isValidSimm38(addr - (ssize_t)dst));
         assert((addr & 3) == 0);
 
         dst += 4;
@@ -3236,21 +3230,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_RELOC:
         {
             //  case:EA_HANDLE_CNS_RELOC
-            //   pcaddu12i  reg, off-hi-20bits
+            //   pcalau12i  reg, off-hi-20bits
             //   addi_d  reg, reg, off-lo-12bits
             //  case:EA_PTR_DSP_RELOC
-            //   pcaddu12i  reg, off-hi-20bits
+            //   pcalau12i  reg, off-hi-20bits
             //   ld_d  reg, reg, off-lo-12bits
 
             regNumber reg1 = id->idReg1();
 
-            *(code_t*)dstRW = 0x1c000000 | (code_t)reg1;
+            *(code_t*)dstRW = 0x1a000000 | (code_t)reg1;
 
             dstRW += 4;
 
 #ifdef DEBUG
-            code = emitInsCode(INS_pcaddu12i);
-            assert(code == 0x1c000000);
+            code = emitInsCode(INS_pcalau12i);
+            assert(code == 0x1a000000);
             code = emitInsCode(INS_addi_d);
             assert(code == 0x02c00000);
             code = emitInsCode(INS_ld_d);
@@ -3994,9 +3988,13 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 
     printf("  ");
 
-    if (!emitComp->opts.disDiffable)
+    if (emitComp->opts.disCodeBytes && !emitComp->opts.disDiffable)
     {
         printf("%08X  ", code);
+    }
+    else
+    {
+        printf("          ");
     }
 #else
     printf("            ");
@@ -4007,7 +4005,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
     int       tmp;
 
     instruction ins = INS_invalid;
-    for (int i = 1; i < INS_count; i++)
+    for (uint32_t i = 1; i < INS_count; i++)
     {
         if ((code & emitGetInsMask(i)) == emitInsCode((instruction)i))
         {
@@ -4923,7 +4921,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         if (needCheckOv)
         {
-            emitIns_R_R_R(INS_or, attr, REG_R21, nonIntReg->GetRegNum(), REG_R0);
+            emitIns_R_R_I(INS_ori, attr, REG_R21, nonIntReg->GetRegNum(), 0);
         }
 
         emitIns_R_R_I(ins, attr, dst->GetRegNum(), nonIntReg->GetRegNum(), imm);
@@ -5063,7 +5061,18 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
             if (dst->OperIs(GT_ADD))
             {
-                saveOperReg1 = (dst->GetRegNum() == regOp1) ? regOp2 : regOp1;
+                saveOperReg1 = regOp1;
+                if (dst->GetRegNum() == regOp1)
+                {
+                    saveOperReg1 = regOp2;
+                    if (regOp1 == regOp2)
+                    {
+                        assert(REG_R21 != regOp1);
+                        assert(REG_RA != regOp1);
+                        emitIns_R_R_I(INS_ori, attr, REG_R21, regOp1, 0);
+                        saveOperReg1 = REG_R21;
+                    }
+                }
             }
             else
             {
@@ -5072,7 +5081,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     assert(REG_R21 != regOp1);
                     assert(REG_RA != regOp1);
                     saveOperReg1 = REG_R21;
-                    emitIns_R_R_R(INS_or, attr, REG_R21, regOp1, REG_R0);
+                    emitIns_R_R_I(INS_ori, attr, REG_R21, regOp1, 0);
                 }
                 else
                 {

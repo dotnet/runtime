@@ -70,6 +70,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pullRequest.number,
-              reviewers: ["lewing", "pavelsavara", "maraf", "ilonatommy", "radical"]
+              reviewers: ["lewing", "pavelsavara", "maraf", "ilonatommy", "akoeplinger"]
             });
             return pullRequest.number;

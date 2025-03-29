@@ -154,7 +154,7 @@ internal static partial class Interop
         /// </summary>
         /// <param name="values">The values to put in the array</param>
         /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
-        internal static unsafe SafeCreateHandle CFArrayCreate(Span<IntPtr> values)
+        internal static unsafe SafeCreateHandle CFArrayCreate(ReadOnlySpan<IntPtr> values)
         {
             fixed (IntPtr* pValues = &MemoryMarshal.GetReference(values))
             {

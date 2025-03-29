@@ -277,7 +277,7 @@ bool multilevel_lookup_enabled()
     return multilevel_lookup;
 }
 
-void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations)
+void get_framework_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations)
 {
     bool multilevel_lookup = disable_multilevel_lookup ? false : multilevel_lookup_enabled();
 
@@ -320,7 +320,7 @@ bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
     pal::string_t file_path;
     if (pal::getenv(env_key, &file_path))
     {
-        if (pal::realpath(&file_path))
+        if (pal::fullpath(&file_path))
         {
             recv->assign(file_path);
             return true;

@@ -156,10 +156,6 @@ void CodeGen::genCodeForBBlist()
 
     genMarkLabelsForCodegen();
 
-    assert(!compiler->fgFirstBBScratch ||
-           compiler->fgFirstBB == compiler->fgFirstBBScratch); // compiler->fgFirstBBScratch
-                                                               // has to be first.
-
     /* Initialize structures used in the block list iteration */
     genInitialize();
 
@@ -367,9 +363,9 @@ void CodeGen::genCodeForBBlist()
         siBeginBlock(block);
 
         // BBF_INTERNAL blocks don't correspond to any single IL instruction.
-        if (compiler->opts.compDbgInfo && block->HasFlag(BBF_INTERNAL) &&
-            !compiler->fgBBisScratch(block)) // If the block is the distinguished first scratch block, then no need to
-                                             // emit a NO_MAPPING entry, immediately after the prolog.
+        // Add a NoMapping entry unless this is right after the prolog where it
+        // is unnecessary.
+        if (compiler->opts.compDbgInfo && block->HasFlag(BBF_INTERNAL) && !block->IsFirst())
         {
             genIPmappingAdd(IPmappingDscKind::NoMapping, DebugInfo(), true);
         }
@@ -388,17 +384,17 @@ void CodeGen::genCodeForBBlist()
 
 #ifdef SWIFT_SUPPORT
         // Reassemble Swift struct parameters on the local stack frame in the
-        // scratch BB right after the prolog. There can be arbitrary amounts of
+        // init BB right after the prolog. There can be arbitrary amounts of
         // codegen related to doing this, so it cannot be done in the prolog.
-        if (compiler->fgBBisScratch(block) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        if (block->IsFirst() && compiler->lvaHasAnySwiftStackParamToReassemble())
         {
-            genHomeSwiftStructParameters(/* handleStack */ true);
+            genHomeSwiftStructStackParameters();
         }
 #endif
 
-        // Emit poisoning into scratch BB that comes right after prolog.
+        // Emit poisoning into the init BB that comes right after prolog.
         // We cannot emit this code in the prolog as it might make the prolog too large.
-        if (compiler->compShouldPoisonFrame() && compiler->fgBBisScratch(block))
+        if (compiler->compShouldPoisonFrame() && block->IsFirst())
         {
             genPoisonFrame(newLiveRegSet);
         }
@@ -487,23 +483,33 @@ void CodeGen::genCodeForBBlist()
 
         regSet.rsSpillChk();
 
-        /* Make sure we didn't bungle pointer register tracking */
+        // Make sure we didn't bungle pointer register tracking
 
         regMaskTP ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
         regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
 
-        // If return is a GC-type, clear it.  Note that if a common
-        // epilog is generated (genReturnBB) it has a void return
-        // even though we might return a ref.  We can't use the compRetType
-        // as the determiner because something we are tracking as a byref
-        // might be used as a return value of a int function (which is legal)
-        GenTree* blockLastNode = block->lastNode();
-        if ((blockLastNode != nullptr) && (blockLastNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET)) &&
-            (varTypeIsGC(compiler->info.compRetType) ||
-             (blockLastNode->AsOp()->GetReturnValue() != nullptr &&
-              varTypeIsGC(blockLastNode->AsOp()->GetReturnValue()->TypeGet()))))
+        // If this is a return block then we expect some live GC regs. Clear those.
+        if (compiler->compMethodReturnsRetBufAddr())
         {
             nonVarPtrRegs &= ~RBM_INTRET;
+        }
+        else
+        {
+            const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+            const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                regNumber reg = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
+                nonVarPtrRegs &= ~genRegMask(reg);
+            }
+        }
+
+        // For a tailcall arbitrary argument registers may be live into the
+        // prolog. Skip validating those.
+        if (block->HasFlag(BBF_HAS_JMP))
+        {
+            nonVarPtrRegs &= ~fullIntArgRegMask(CorInfoCallConvExtension::Managed);
         }
 
         if (nonVarPtrRegs)
@@ -937,9 +943,20 @@ void CodeGen::genSpillVar(GenTree* tree)
         // but we will kill the var in the reg (below).
         if (!varDsc->IsAlwaysAliveInMemory())
         {
-            instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
             assert(varDsc->GetRegNum() == tree->GetRegNum());
-            inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
+#if defined(FEATURE_SIMD)
+            if (lclType == TYP_SIMD12)
+            {
+                // Store SIMD12 to stack as 12 bytes
+                GetEmitter()->emitStoreSimd12ToLclOffset(varNum, tree->AsLclVarCommon()->GetLclOffs(),
+                                                         tree->GetRegNum(), nullptr);
+            }
+            else
+#endif
+            {
+                instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
+                inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
+            }
         }
 
         // We should only have both GTF_SPILL (i.e. the flag causing this method to be called) and
@@ -1724,7 +1741,6 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
-#if FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
@@ -1807,7 +1823,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
         inst_RV_IV(INS_mov, sizeReg, size, EA_PTRSIZE);
     }
 }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #if FEATURE_ARG_SPLIT
 //------------------------------------------------------------------------
@@ -1878,11 +1893,11 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // We can't write beyond the arg area unless this is a tail call, in which case we use
 // the first stack arg as the base of the incoming arg area.
 #ifdef DEBUG
-        unsigned areaSize = compiler->lvaLclSize(outArgVarNum);
+        unsigned areaSize = compiler->lvaLclStackHomeSize(outArgVarNum);
 #if FEATURE_FASTTAILCALL
         if (putArgStk->gtCall->IsFastTailCall())
         {
-            areaSize = compiler->info.compArgStackSize;
+            areaSize = compiler->lvaParameterStackSize;
         }
 #endif
 
@@ -2469,8 +2484,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         }
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
-        // the upper 32bits be sign-extended to 64 bits.
+        // TODO-LOONGARCH64:
+        // TODO-RISCV64:
+        // LoongArch64 and RiscV64 ABIs require 32-bit values to be sign-extended to 64-bits.
+        // We apply the sign-extension unconditionally here to avoid corner case bugs, even
+        // though it may not be strictly necessary in all cases.
         m_extendKind = SIGN_EXTEND_INT;
 #else
         m_extendKind = COPY;
@@ -2515,7 +2533,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
                 break;
 
 #ifdef TARGET_64BIT
-            case ZERO_EXTEND_INT: // ubyte/ushort/int -> long.
+            case ZERO_EXTEND_INT: // ubyte/ushort/uint -> long.
                 assert(varTypeIsUnsigned(srcLoadType) || (srcLoadType == TYP_INT));
                 m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_ZERO_EXTEND_SMALL_INT : LOAD_ZERO_EXTEND_INT;
                 m_extendSrcSize = genTypeSize(srcLoadType);
@@ -2667,7 +2685,7 @@ void CodeGen::genEmitterUnitTests()
         return;
     }
 
-    const WCHAR* unitTestSection = JitConfig.JitEmitUnitTestsSections();
+    const char* unitTestSection = JitConfig.JitEmitUnitTestsSections();
 
     if (unitTestSection == nullptr)
     {
@@ -2684,26 +2702,42 @@ void CodeGen::genEmitterUnitTests()
     // Add NOPs at the start and end for easier script parsing.
     instGen(INS_nop);
 
-    bool unitTestSectionAll = (u16_strstr(unitTestSection, W("all")) != nullptr);
+    bool unitTestSectionAll = (strstr(unitTestSection, "all") != nullptr);
 
 #if defined(TARGET_AMD64)
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sse2")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "sse2") != nullptr))
     {
         genAmd64EmitterUnitTestsSse2();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "apx") != nullptr))
+    {
+        genAmd64EmitterUnitTestsApx();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "avx10v2") != nullptr))
+    {
+        genAmd64EmitterUnitTestsAvx10v2();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "ccmp") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCCMP();
+    }
 
 #elif defined(TARGET_ARM64)
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("general")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "general") != nullptr))
     {
         genArm64EmitterUnitTestsGeneral();
     }
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("advsimd")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "advsimd") != nullptr))
     {
         genArm64EmitterUnitTestsAdvSimd();
     }
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sve")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "sve") != nullptr))
     {
         genArm64EmitterUnitTestsSve();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "pac") != nullptr))
+    {
+        genArm64EmitterUnitTestsPac();
     }
 #endif
 

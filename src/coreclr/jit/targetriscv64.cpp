@@ -20,8 +20,8 @@ const Target::ArgOrder Target::g_tgtUnmanagedArgOrder = ARG_ORDER_R2L;
 const regNumber intArgRegs [] = {REG_A0, REG_A1, REG_A2, REG_A3, REG_A4, REG_A5, REG_A6, REG_A7};
 const regMaskTP intArgMasks[] = {RBM_A0, RBM_A1, RBM_A2, RBM_A3, RBM_A4, RBM_A5, RBM_A6, RBM_A7};
 
-const regNumber fltArgRegs [] = {REG_FLTARG_0, REG_FLTARG_1, REG_FLTARG_2, REG_FLTARG_3, REG_FLTARG_4, REG_FLTARG_5, REG_FLTARG_6, REG_FLTARG_7 };
-const regMaskTP fltArgMasks[] = {RBM_FLTARG_0, RBM_FLTARG_1, RBM_FLTARG_2, RBM_FLTARG_3, RBM_FLTARG_4, RBM_FLTARG_5, RBM_FLTARG_6, RBM_FLTARG_7 };
+const regNumber fltArgRegs [] = {REG_FA0, REG_FA1, REG_FA2, REG_FA3, REG_FA4, REG_FA5, REG_FA6, REG_FA7 };
+const regMaskTP fltArgMasks[] = {RBM_FA0, RBM_FA1, RBM_FA2, RBM_FA3, RBM_FA4, RBM_FA5, RBM_FA6, RBM_FA7 };
 // clang-format on
 
 //-----------------------------------------------------------------------------
@@ -58,35 +58,35 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                                                   ClassLayout* structLayout,
                                                   WellKnownArg /*wellKnownParam*/)
 {
-    StructFloatFieldInfoFlags flags     = STRUCT_NO_FLOAT_FIELD;
-    unsigned                  intFields = 0, floatFields = 0;
-    unsigned                  passedSize;
+    const CORINFO_FPSTRUCT_LOWERING* lowering = nullptr;
+
+    unsigned intFields = 0, floatFields = 0;
+    unsigned passedSize;
+    bool     passedByRef = false;
 
     if (varTypeIsStruct(type))
     {
         passedSize = structLayout->GetSize();
         if (passedSize > MAX_PASS_MULTIREG_BYTES)
         {
-            passedSize = TARGET_POINTER_SIZE; // pass by reference
+            passedByRef = true;
+            passedSize  = TARGET_POINTER_SIZE;
         }
         else if (!structLayout->IsBlockLayout())
         {
-            flags = (StructFloatFieldInfoFlags)comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(
-                structLayout->GetClassHandle());
-
-            if ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+            lowering = comp->GetFpStructLowering(structLayout->GetClassHandle());
+            if (!lowering->byIntegerCallConv)
             {
-                floatFields = 1;
-            }
-            else if ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
-            {
-                floatFields = 2;
-            }
-            else if (flags != STRUCT_NO_FLOAT_FIELD)
-            {
-                assert((flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0);
-                floatFields = 1;
-                intFields   = 1;
+                assert((lowering->numLoweredElements == 1) || (lowering->numLoweredElements == 2));
+                INDEBUG(unsigned debugIntFields = 0;)
+                for (size_t i = 0; i < lowering->numLoweredElements; ++i)
+                {
+                    var_types type = JITtype2varType(lowering->loweredElements[i]);
+                    floatFields += (unsigned)varTypeIsFloating(type);
+                    INDEBUG(debugIntFields += (unsigned)varTypeIsIntegralOrI(type);)
+                }
+                intFields = static_cast<unsigned>(lowering->numLoweredElements) - floatFields;
+                assert(debugIntFields == intFields);
             }
         }
     }
@@ -104,66 +104,73 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         // Hardware floating-point calling convention
         if ((floatFields == 1) && (intFields == 0))
         {
-            if (flags == STRUCT_NO_FLOAT_FIELD)
-                assert(varTypeIsFloating(type)); // standalone floating-point real
-            else
-                assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0); // struct containing just one FP real
+            unsigned offset = 0;
+            if (lowering != nullptr)
+            {
+                assert(lowering->numLoweredElements == 1); // struct containing just one FP real
+                type       = JITtype2varType(lowering->loweredElements[0]);
+                passedSize = genTypeSize(type);
+                offset     = lowering->offsets[0];
+            }
+            assert(varTypeIsFloating(type));
 
-            return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
-                                                                                          passedSize));
+            ABIPassingSegment seg = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, passedSize);
+            return ABIPassingInformation::FromSegmentByValue(comp, seg);
         }
         else
         {
             assert(varTypeIsStruct(type));
             assert((floatFields + intFields) == 2);
-            assert(flags != STRUCT_NO_FLOAT_FIELD);
-            assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) == 0);
+            assert(lowering != nullptr);
+            assert(!lowering->byIntegerCallConv);
+            assert(lowering->numLoweredElements == 2);
 
-            unsigned firstSize  = ((flags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0) ? 8 : 4;
-            unsigned secondSize = ((flags & STRUCT_SECOND_FIELD_SIZE_IS8) != 0) ? 8 : 4;
-            unsigned offset = max(firstSize, secondSize); // TODO: cover empty fields and custom offsets / alignments
+            var_types type0 = JITtype2varType(lowering->loweredElements[0]);
+            var_types type1 = JITtype2varType(lowering->loweredElements[1]);
+            assert(varTypeIsFloating(type0) || varTypeIsFloating(type1));
+            RegisterQueue& queue0 = varTypeIsFloating(type0) ? m_floatRegs : m_intRegs;
+            RegisterQueue& queue1 = varTypeIsFloating(type1) ? m_floatRegs : m_intRegs;
 
-            bool isFirstFloat  = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_FIRST)) != 0;
-            bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
-            assert(isFirstFloat || isSecondFloat);
-
-            regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
-            regNumber secondReg = (isSecondFloat ? m_floatRegs : m_intRegs).Dequeue();
-
-            return {2, new (comp, CMK_ABI)
-                           ABIPassingSegment[2]{ABIPassingSegment::InRegister(firstReg, 0, firstSize),
-                                                ABIPassingSegment::InRegister(secondReg, offset, secondSize)}};
+            auto seg0 = ABIPassingSegment::InRegister(queue0.Dequeue(), lowering->offsets[0], genTypeSize(type0));
+            auto seg1 = ABIPassingSegment::InRegister(queue1.Dequeue(), lowering->offsets[1], genTypeSize(type1));
+            return ABIPassingInformation::FromSegments(comp, seg0, seg1);
         }
     }
     else
     {
         // Integer calling convention
-        auto passSlot = [this](unsigned offset, unsigned size) -> ABIPassingSegment {
+        auto passOnStack = [this](unsigned offset, unsigned size) -> ABIPassingSegment {
             assert(size > 0);
-            assert(size <= TARGET_POINTER_SIZE);
-            if (m_intRegs.Count() > 0)
+            assert(size <= 2 * TARGET_POINTER_SIZE);
+            assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
+            ABIPassingSegment seg = ABIPassingSegment::OnStack(m_stackArgSize, offset, size);
+            m_stackArgSize += (size > TARGET_POINTER_SIZE) ? (2 * TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
+            return seg;
+        };
+
+        if (m_intRegs.Count() > 0)
+        {
+            if (passedSize <= TARGET_POINTER_SIZE)
             {
-                return ABIPassingSegment::InRegister(m_intRegs.Dequeue(), offset, size);
+                ABIPassingSegment seg = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, passedSize);
+                return ABIPassingInformation::FromSegment(comp, passedByRef, seg);
             }
             else
             {
-                assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
-                ABIPassingSegment seg = ABIPassingSegment::OnStack(m_stackArgSize, offset, size);
-                m_stackArgSize += TARGET_POINTER_SIZE;
-                return seg;
-            }
-        };
+                assert(varTypeIsStruct(type));
+                unsigned int tailSize = passedSize - TARGET_POINTER_SIZE;
 
-        if (passedSize <= TARGET_POINTER_SIZE)
-        {
-            return ABIPassingInformation::FromSegment(comp, passSlot(0, passedSize));
+                ABIPassingSegment head = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, TARGET_POINTER_SIZE);
+                ABIPassingSegment tail =
+                    (m_intRegs.Count() > 0)
+                        ? ABIPassingSegment::InRegister(m_intRegs.Dequeue(), TARGET_POINTER_SIZE, tailSize)
+                        : passOnStack(TARGET_POINTER_SIZE, tailSize);
+                return ABIPassingInformation::FromSegments(comp, head, tail);
+            }
         }
         else
         {
-            assert(varTypeIsStruct(type));
-            return {2, new (comp, CMK_ABI)
-                           ABIPassingSegment[2]{passSlot(0, TARGET_POINTER_SIZE),
-                                                passSlot(TARGET_POINTER_SIZE, passedSize - TARGET_POINTER_SIZE)}};
+            return ABIPassingInformation::FromSegment(comp, passedByRef, passOnStack(0, passedSize));
         }
     }
 }

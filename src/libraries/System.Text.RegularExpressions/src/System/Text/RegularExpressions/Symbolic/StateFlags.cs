@@ -6,18 +6,18 @@ namespace System.Text.RegularExpressions.Symbolic
     /// <summary>
     /// These flags provide context-independent information available for every state. They provide a fast way to evaluate
     /// conditions in the inner matching loops of <see cref="SymbolicRegexMatcher{TSet}"/>. The matcher caches one of these
-    /// for every state, for which they are created by <see cref="MatchingState{TSet}.BuildStateFlags(ISolver{TSet}, bool)"/>.
+    /// for every state, for which they are created by <see cref="MatchingState{TSet}.BuildStateFlags(bool)"/>.
     /// In DFA mode the cached flags are used directly, while in NFA mode the <see cref="SymbolicRegexMatcher{TSet}.NfaStateHandler"/>
     /// handles aggregating the flags in the state set.
     /// </summary>
     [Flags]
     internal enum StateFlags : byte
     {
+        None = 0,
         IsInitialFlag = 1,
-        IsDeadendFlag = 2,
-        IsNullableFlag = 4,
-        CanBeNullableFlag = 8,
-        SimulatesBacktrackingFlag = 16,
+        IsNullableFlag = 2,
+        CanBeNullableFlag = 4,
+        SimulatesBacktrackingFlag = 8,
     }
 
     /// <summary>
@@ -25,10 +25,9 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </summary>
     internal static class StateFlagsExtensions
     {
-        internal static bool IsInitial(this StateFlags info) => (info & StateFlags.IsInitialFlag) != 0;
-        internal static bool IsDeadend(this StateFlags info) => (info & StateFlags.IsDeadendFlag) != 0;
-        internal static bool IsNullable(this StateFlags info) => (info & StateFlags.IsNullableFlag) != 0;
-        internal static bool CanBeNullable(this StateFlags info) => (info & StateFlags.CanBeNullableFlag) != 0;
-        internal static bool SimulatesBacktracking(this StateFlags info) => (info & StateFlags.SimulatesBacktrackingFlag) != 0;
+        internal static bool IsInitial(this StateFlags info) => (info & StateFlags.IsInitialFlag) != StateFlags.None;
+        internal static bool IsNullable(this StateFlags info) => (info & StateFlags.IsNullableFlag) != StateFlags.None;
+        internal static bool CanBeNullable(this StateFlags info) => (info & StateFlags.CanBeNullableFlag) != StateFlags.None;
+        internal static bool SimulatesBacktracking(this StateFlags info) => (info & StateFlags.SimulatesBacktrackingFlag) != StateFlags.None;
     }
 }

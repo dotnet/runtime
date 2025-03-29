@@ -139,6 +139,9 @@ typedef struct SeqPointInfo SeqPointInfo;
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
+// Used by MonoImage:aot_module to indicate aot_module was not found
+#define AOT_MODULE_NOT_FOUND GINT_TO_POINTER (-1)
+
 typedef struct
 {
 	MonoClass *klass;
@@ -1676,7 +1679,7 @@ typedef struct {
 	G_UNLIKELY ((cfg)->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ ## flag)
 
 #define MONO_CFG_PROFILE_CALL_CONTEXT(cfg) \
-	(MONO_CFG_PROFILE (cfg, ENTER_CONTEXT) || MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT))
+	(MONO_CFG_PROFILE (cfg, ENTER_CONTEXT) || MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT) || MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT))
 
 typedef enum {
 	MONO_CFG_HAS_ALLOCA = 1 << 0,
@@ -1737,6 +1740,7 @@ typedef struct {
 	gint64 jit_compile_dominator_info;
 	gint64 jit_compute_natural_loops;
 	gint64 jit_insert_safepoints;
+	gint64 jit_insert_samplepoints;
 	gint64 jit_ssa_compute;
 	gint64 jit_ssa_cprop;
 	gint64 jit_ssa_deadce;
@@ -2122,6 +2126,7 @@ mono_bb_last_inst (MonoBasicBlock *bb, int filter)
 /* profiler support */
 void        mini_add_profiler_argument (const char *desc);
 void        mini_profiler_emit_enter (MonoCompile *cfg);
+void        mini_profiler_emit_samplepoint (MonoCompile *cfg);
 void        mini_profiler_emit_leave (MonoCompile *cfg, MonoInst *ret);
 void        mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target);
 void        mini_profiler_emit_call_finally (MonoCompile *cfg, MonoMethodHeader *header, unsigned char *ip, guint32 index, MonoExceptionClause *clause);

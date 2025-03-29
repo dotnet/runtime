@@ -30,13 +30,12 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 	/// </summary>
 	class InterfaceImplementedRecursively
 	{
-		public static void Main()
+		public static void Main ()
 		{
 
 #if IL_ASSEMBLY_AVAILABLE
 			Program.IBase b = null;
 			object c = new Program.C();
-
 #endif
 		}
 	}

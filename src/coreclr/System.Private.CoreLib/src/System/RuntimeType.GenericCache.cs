@@ -157,9 +157,12 @@ namespace System
                         }
 
                         TCache newEntry = TCache.Create(type);
-                        if (Interlocked.CompareExchange(ref TCache.GetStorageRef(compositeCache), newEntry, null) == null)
-                            return newEntry;
-                        // We lost the race, try again.
+                        // Try to put our entry in the composite cache, but only if someone else hasn't set the entry.
+                        TCache? currentEntry = Interlocked.CompareExchange(ref TCache.GetStorageRef(compositeCache), newEntry, null);
+
+                        // If currentEntry == null, then we won the race.
+                        // Otherwise, we lost and should return the existing entry.
+                        return currentEntry ?? newEntry;
                     }
                 }
             }

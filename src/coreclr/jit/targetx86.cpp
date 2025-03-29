@@ -84,7 +84,7 @@ ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
     unsigned numSlots = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
 
     bool canEnreg = false;
-    if (m_regs.Count() >= numSlots)
+    if ((m_regs.Count() >= numSlots) && (wellKnownParam != WellKnownArg::X86TailCallSpecialArg))
     {
         switch (type)
         {
@@ -136,7 +136,7 @@ ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
         segment = ABIPassingSegment::OnStack(offset, 0, size);
     }
 
-    return ABIPassingInformation::FromSegment(comp, segment);
+    return ABIPassingInformation::FromSegmentByValue(comp, segment);
 }
 
 #endif // TARGET_X86

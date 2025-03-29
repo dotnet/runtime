@@ -31,11 +31,6 @@ class Module;
 struct VASigCookie;
 class ComCallMethodDesc;
 
-//
-// functions implemented in AMD64 assembly
-//
-EXTERN_C void SinglecastDelegateInvokeStub();
-EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 
 #define COMMETHOD_PREPAD                        16   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
 #define COMMETHOD_CALL_PRESTUB_SIZE             6    // 32-bit indirect relative call
@@ -510,43 +505,6 @@ inline PCODE decodeBackToBackJump(PCODE pCode)
 extern "C" void setFPReturn(int fpSize, INT64 retVal);
 extern "C" void getFPReturn(int fpSize, INT64 *retval);
 
-
-#include <pshpack1.h>
-struct DECLSPEC_ALIGN(8) UMEntryThunkCode
-{
-    // padding                  // CC CC CC CC
-    // mov r10, pUMEntryThunk   // 49 ba xx xx xx xx xx xx xx xx    // METHODDESC_REGISTER
-    // mov rax, pJmpDest        // 48 b8 xx xx xx xx xx xx xx xx    // need to ensure this imm64 is qword aligned
-    // TAILJMP_RAX              // 48 FF E0
-
-    BYTE            m_padding[4];
-    BYTE            m_movR10[2];    // MOV R10,
-    LPVOID          m_uet;          //          pointer to start of this structure
-    BYTE            m_movRAX[2];    // MOV RAX,
-    DECLSPEC_ALIGN(8)
-    const BYTE*     m_execstub;     //          pointer to destination code // ensure this is qword aligned
-    BYTE            m_jmpRAX[3];    // JMP RAX
-    BYTE            m_padding2[5];
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)&m_movR10;
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return offsetof(UMEntryThunkCode, m_movR10);
-    }
-};
-#include <poppack.h>
-
 struct HijackArgs
 {
 #ifndef FEATURE_MULTIREG_RETURN
@@ -609,11 +567,7 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-
-
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 #endif // __cgencpu_h__

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
@@ -130,6 +131,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(JsonElement))]
         [JsonSerializable(typeof(string))]
         [JsonSerializable(typeof(IDictionary<int, int>))]
+        [JsonSerializable(typeof(IDictionary<int, IEnumerable<int>>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithInternalParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithPrivateParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, Dictionary<string, CustomClass>>))]
@@ -556,6 +558,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(JsonElement))]
         [JsonSerializable(typeof(string))]
         [JsonSerializable(typeof(IDictionary<int, int>))]
+        [JsonSerializable(typeof(IDictionary<int, IEnumerable<int>>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithInternalParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithPrivateParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, Dictionary<string, CustomClass>>))]

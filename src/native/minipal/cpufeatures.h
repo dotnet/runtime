@@ -26,20 +26,15 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_Lzcnt = 0x1000,
     XArchIntrinsicConstants_AvxVnni = 0x2000,
     XArchIntrinsicConstants_Movbe = 0x4000,
-    XArchIntrinsicConstants_Avx512f = 0x8000,
-    XArchIntrinsicConstants_Avx512f_vl = 0x10000,
-    XArchIntrinsicConstants_Avx512bw = 0x20000,
-    XArchIntrinsicConstants_Avx512bw_vl = 0x40000,
-    XArchIntrinsicConstants_Avx512cd = 0x80000,
-    XArchIntrinsicConstants_Avx512cd_vl = 0x100000,
-    XArchIntrinsicConstants_Avx512dq = 0x200000,
-    XArchIntrinsicConstants_Avx512dq_vl = 0x400000,
-    XArchIntrinsicConstants_Avx512Vbmi = 0x800000,
-    XArchIntrinsicConstants_Avx512Vbmi_vl = 0x1000000,
-    XArchIntrinsicConstants_Serialize = 0x2000000,
-    XArchIntrinsicConstants_Avx10v1 = 0x4000000,
-    XArchIntrinsicConstants_Avx10v1_V256 = 0x8000000,
-    XArchIntrinsicConstants_Avx10v1_V512 = 0x10000000,
+    XArchIntrinsicConstants_Avx512 = 0x8000,
+    XArchIntrinsicConstants_Avx512Vbmi = 0x10000,
+    XArchIntrinsicConstants_Serialize = 0x20000,
+    XArchIntrinsicConstants_Avx10v1 = 0x40000,
+    XArchIntrinsicConstants_Evex = 0x80000,
+    XArchIntrinsicConstants_Apx = 0x100000,
+    XArchIntrinsicConstants_Vpclmulqdq = 0x200000,
+    XArchIntrinsicConstants_Avx10v2 = 0x400000,
+    XArchIntrinsicConstants_Gfni = 0x800000,
 };
 #endif // HOST_X86 || HOST_AMD64
 
@@ -66,6 +61,14 @@ enum ARM64IntrinsicConstants
 static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_Atomics, "ARM64_ATOMICS_FEATURE_FLAG_BIT must match with ARM64IntrinsicConstants_Atomics");
 
 #endif // HOST_ARM64
+
+#if defined(HOST_RISCV64)
+enum RiscV64IntrinsicConstants
+{
+    RiscV64IntrinsicConstants_Zba = 0x0001,
+    RiscV64IntrinsicConstants_Zbb = 0x0002,
+};
+#endif // HOST_RISCV64
 
 #ifdef __cplusplus
 extern "C"

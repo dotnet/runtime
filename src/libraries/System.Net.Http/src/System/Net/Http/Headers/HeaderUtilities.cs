@@ -142,9 +142,9 @@ namespace System.Net.Http.Headers
 
         internal static void CheckValidToken(string value, [CallerArgumentExpression(nameof(value))] string? parameterName = null)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(value, parameterName);
+            ArgumentException.ThrowIfNullOrEmpty(value, parameterName);
 
-            if (HttpRuleParser.GetTokenLength(value, 0) != value.Length)
+            if (!HttpRuleParser.IsToken(value))
             {
                 throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }
@@ -152,10 +152,9 @@ namespace System.Net.Http.Headers
 
         internal static void CheckValidComment(string value, [CallerArgumentExpression(nameof(value))] string? parameterName = null)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(value, parameterName);
+            ArgumentException.ThrowIfNullOrEmpty(value, parameterName);
 
-            int length;
-            if ((HttpRuleParser.GetCommentLength(value, 0, out length) != HttpParseResult.Parsed) ||
+            if ((HttpRuleParser.GetCommentLength(value, 0, out int length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
                 throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
@@ -164,10 +163,9 @@ namespace System.Net.Http.Headers
 
         internal static void CheckValidQuotedString(string value, [CallerArgumentExpression(nameof(value))] string? parameterName = null)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(value, parameterName);
+            ArgumentException.ThrowIfNullOrEmpty(value, parameterName);
 
-            int length;
-            if ((HttpRuleParser.GetQuotedStringLength(value, 0, out length) != HttpParseResult.Parsed) ||
+            if ((HttpRuleParser.GetQuotedStringLength(value, 0, out int length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
                 throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));

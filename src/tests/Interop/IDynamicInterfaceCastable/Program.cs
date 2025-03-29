@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -334,6 +335,15 @@ namespace IDynamicInterfaceCastableTests
         }
     }
 
+    public struct ValueTypeDynamicInterfaceCastable : IDynamicInterfaceCastable
+    {
+        public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
+            => throw new UnreachableException("ValueType implementations are ignored");
+
+        public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType)
+            => throw new UnreachableException("ValueType implementations are ignored");
+    }
+
     [ActiveIssue("https://github.com/dotnet/runtime/issues/55742", TestRuntimes.Mono)]
     public class Program
     {
@@ -370,7 +380,6 @@ namespace IDynamicInterfaceCastableTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/1442", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         public static void ValidateGenericInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateGenericInterface)}");
@@ -413,13 +422,16 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(expectedStr, testStr.ReturnArg(expectedStr));
             Assert.Equal(expectedStr, testVar.ReturnArg(expectedStr));
 
-            Console.WriteLine(" -- Validate generic method call");
-            Assert.Equal(expectedInt * 2, testInt.DoubleGenericArg<int>(42));
-            Assert.Equal(expectedStr + expectedStr, testInt.DoubleGenericArg<string>("str"));
-            Assert.Equal(expectedInt * 2, testStr.DoubleGenericArg<int>(42));
-            Assert.Equal(expectedStr + expectedStr, testStr.DoubleGenericArg<string>("str"));
-            Assert.Equal(expectedInt * 2, testVar.DoubleGenericArg<int>(42));
-            Assert.Equal(expectedStr + expectedStr, testVar.DoubleGenericArg<string>("str"));
+            if (!TestLibrary.Utilities.IsNativeAot) // https://github.com/dotnet/runtime/issues/108228
+            {
+                Console.WriteLine(" -- Validate generic method call");
+                Assert.Equal(expectedInt * 2, testInt.DoubleGenericArg<int>(42));
+                Assert.Equal(expectedStr + expectedStr, testInt.DoubleGenericArg<string>("str"));
+                Assert.Equal(expectedInt * 2, testStr.DoubleGenericArg<int>(42));
+                Assert.Equal(expectedStr + expectedStr, testStr.DoubleGenericArg<string>("str"));
+                Assert.Equal(expectedInt * 2, testVar.DoubleGenericArg<int>(42));
+                Assert.Equal(expectedStr + expectedStr, testVar.DoubleGenericArg<string>("str"));
+            }
 
             Console.WriteLine(" -- Validate delegate call");
             Func<int, int> funcInt = new Func<int, int>(testInt.ReturnArg);
@@ -564,6 +576,27 @@ namespace IDynamicInterfaceCastableTests
             castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.DefaultHandle;
             ex = Assert.Throws<InvalidCastException>(() => testObj.GetMyType());
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
+        }
+
+        [Fact]
+        public static void ValidateValueTypeImplementationIgnored()
+        {
+            Console.WriteLine($"Running {nameof(ValidateValueTypeImplementationIgnored)}");
+
+            Console.WriteLine(" -- Validate casting is ignored");
+            object notCastableVC = Create();
+
+            // Confirm the ValueType implements IDynamicInterfaceCastable
+            Assert.True(notCastableVC.GetType().IsValueType);
+            Assert.True(notCastableVC is IDynamicInterfaceCastable);
+
+            // Confirm the IDynamicInterfaceCastable implementation isn't called.
+            Assert.False(notCastableVC is ITest);
+            Assert.Null(notCastableVC as ITest);
+            Assert.Throws<InvalidCastException>(() => { var testObj = (ITest)notCastableVC; });
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static object Create() => (object)new ValueTypeDynamicInterfaceCastable();
         }
     }
 }

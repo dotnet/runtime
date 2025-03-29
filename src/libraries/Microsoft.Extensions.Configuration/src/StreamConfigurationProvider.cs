@@ -7,19 +7,19 @@ using System.IO;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Stream based configuration provider
+    /// Defines the core behavior of stream-based configuration providers and provides a base for derived classes.
     /// </summary>
     public abstract class StreamConfigurationProvider : ConfigurationProvider
     {
         /// <summary>
-        /// The source settings for this provider.
+        /// Gets the source settings for this provider.
         /// </summary>
         public StreamConfigurationSource Source { get; }
 
         private bool _loaded;
 
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of the <see cref="StreamConfigurationProvider"/> class.
         /// </summary>
         /// <param name="source">The source.</param>
         public StreamConfigurationProvider(StreamConfigurationSource source)
@@ -30,14 +30,17 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Load the configuration data from the stream.
+        /// Loads the configuration data from the stream.
         /// </summary>
         /// <param name="stream">The data stream.</param>
         public abstract void Load(Stream stream);
 
         /// <summary>
-        /// Load the configuration data from the stream. Will throw after the first call.
+        /// Loads the configuration data from the stream.
         /// </summary>
+        /// <remarks>
+        /// This method throws an exception on subsequent calls.
+        /// </remarks>
         public override void Load()
         {
             if (_loaded)

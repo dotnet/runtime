@@ -130,6 +130,29 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
     return lvaSIMDInitTempVarNum;
 }
 
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// Get, and allocate if necessary, the SIMD temp used for various operations.
+// The temp is allocated as the maximum sized type of all operations required.
+//
+// Arguments:
+//    simdType - Required SIMD type
+//
+// Returns:
+//    The temp number
+//
+unsigned Compiler::getFFRegisterVarNum()
+{
+    if (lvaFfrRegister == BAD_VAR_NUM)
+    {
+        lvaFfrRegister                                 = lvaGrabTemp(false DEBUGARG("Save the FFR value."));
+        lvaTable[lvaFfrRegister].lvType                = TYP_MASK;
+        lvaTable[lvaFfrRegister].lvUsedInSIMDIntrinsic = true;
+    }
+    return lvaFfrRegister;
+}
+#endif
+
 //----------------------------------------------------------------------------------
 // Return the base type and size of SIMD vector type given its type handle.
 //
@@ -146,7 +169,7 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
 //    to determine if this api needs to be called.
 //
 //    The type handle passed here can only be used in a subset of JIT-EE calls
-//    since it may be called by promotion during prejit of a method that does
+//    since it may be called by promotion during AOT of a method that does
 //    not version with SPC. See CORINFO_TYPE_LAYOUT_NODE for the contract on
 //    the supported JIT-EE calls.
 //

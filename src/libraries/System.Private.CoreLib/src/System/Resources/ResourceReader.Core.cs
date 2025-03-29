@@ -102,7 +102,7 @@ namespace System.Resources
             if (Volatile.Read(ref s_binaryFormatterType) is null || Volatile.Read(ref s_deserializeMethod) is null)
             {
                 Type binaryFormatterType = Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters", throwOnError: true)!;
-                MethodInfo? binaryFormatterDeserialize = binaryFormatterType.GetMethod("Deserialize", new[] { typeof(Stream) });
+                MethodInfo? binaryFormatterDeserialize = binaryFormatterType.GetMethod("Deserialize", [typeof(Stream)]);
                 Func<object?, Stream, object>? deserializeMethod = (Func<object?, Stream, object>?)
                     typeof(ResourceReader)
                         .GetMethod(nameof(CreateUntypedDelegate), BindingFlags.NonPublic | BindingFlags.Static)

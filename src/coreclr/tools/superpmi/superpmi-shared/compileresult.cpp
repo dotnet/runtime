@@ -65,12 +65,18 @@ bool CompileResult::IsEmpty()
     return isEmpty;
 }
 
-// Allocate memory associated with this CompileResult. Keep track of it in a list so we can free it all later.
-void* CompileResult::allocateMemory(size_t sizeInBytes)
+MemoryTracker* CompileResult::getOrCreateMemoryTracker()
 {
     if (memoryTracker == nullptr)
         memoryTracker = new MemoryTracker();
-    return memoryTracker->allocate(sizeInBytes);
+
+    return memoryTracker;
+}
+
+// Allocate memory associated with this CompileResult. Keep track of it in a list so we can free it all later.
+void* CompileResult::allocateMemory(size_t sizeInBytes)
+{
+    return getOrCreateMemoryTracker()->allocate(sizeInBytes);
 }
 
 void CompileResult::recAssert(const char* assertText)
@@ -888,6 +894,8 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 }
                 break;
 
+                case IMAGE_REL_ARM64_SECREL_HIGH12A: // TLSDESC ADD for High-12 Add
+                case IMAGE_REL_ARM64_SECREL_LOW12A:  // TLSDESC ADD for Low-12 Add
                 case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                 case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12: // TLSDESC ADD for corresponding ADRP
                 case IMAGE_REL_AARCH64_TLSDESC_CALL:
@@ -910,7 +918,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
         if (IsSpmiTarget64Bit())
         {
-            if (relocType == IMAGE_REL_BASED_DIR64)
+            if (!wasRelocHandled && (relocType == IMAGE_REL_BASED_DIR64))
             {
                 DWORDLONG fixupLocation = tmp.location;
 
@@ -1259,7 +1267,7 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
     if (value.callSig.callConv == (DWORD)-1)
         return false;
 
-    *pCallSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap);
+    *pCallSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap, getOrCreateMemoryTracker());
 
     return true;
 }

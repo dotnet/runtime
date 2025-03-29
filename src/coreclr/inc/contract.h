@@ -1160,7 +1160,6 @@ typedef __SafeToUsePostCondition __PostConditionOK;
     Contract::RanPostconditions ___ran(__FUNCTION__);                   \
     Contract::Operation ___op = Contract::Setup;                        \
     BOOL ___contract_enabled = FALSE;                                   \
-    DEBUG_ASSURE_NO_RETURN_BEGIN(CONTRACT)                              \
     ___contract_enabled = Contract::EnforceContract();                  \
     enum {___disabled = 0};                                             \
     if (!___contract_enabled)                                           \
@@ -1181,10 +1180,8 @@ typedef __SafeToUsePostCondition __PostConditionOK;
             }                                                           \
             else                                                        \
             {                                                           \
-                DEBUG_OK_TO_RETURN_BEGIN(CONTRACT)                      \
               ___run_return:                                            \
                 return _returnexp;                                      \
-                DEBUG_OK_TO_RETURN_END(CONTRACT)                        \
             }                                                           \
         }                                                               \
         if (0)                                                          \
@@ -1226,7 +1223,6 @@ typedef __SafeToUsePostCondition __PostConditionOK;
         Contract::Returner<_returntype> ___returner(RETVAL);                \
         Contract::RanPostconditions ___ran(__FUNCTION__);                   \
         Contract::Operation ___op = Contract::Setup;                        \
-        DEBUG_ASSURE_NO_RETURN_BEGIN(CONTRACT)                              \
         BOOL ___contract_enabled = Contract::EnforceContract();             \
         enum {___disabled = 0};                                             \
         {                                                                   \
@@ -1244,10 +1240,8 @@ typedef __SafeToUsePostCondition __PostConditionOK;
                 }                                                           \
                 else                                                        \
                 {                                                           \
-                    DEBUG_OK_TO_RETURN_BEGIN(CONTRACT)                      \
                   ___run_return:                                            \
                     return _returnexp;                                      \
-                    DEBUG_OK_TO_RETURN_END(CONTRACT)                        \
                 }                                                           \
             }                                                               \
             if (0)                                                          \
@@ -1460,8 +1454,7 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 
 #endif // __FORCE_NORUNTIME_CONTRACTS__
 
-#define CONTRACT_END   CONTRACTL_END                                                        \
-   DEBUG_ASSURE_NO_RETURN_END(CONTRACT)                                                     \
+#define CONTRACT_END   CONTRACTL_END
 
 
 // The final expression in the RETURN macro deserves special explanation (or something.)
@@ -1679,7 +1672,6 @@ public:
     {                                                                       \
         ContractViolationHolder<violationmask> __violationHolder_onlyOneAllowedPerScope;   \
         __violationHolder_onlyOneAllowedPerScope.Enter();                   \
-        DEBUG_ASSURE_NO_RETURN_BEGIN(CONTRACT)                              \
 
 // Use this to jump out prematurely from a violation.  Used for EH
 // when the function might not return
@@ -1687,7 +1679,6 @@ public:
         __violationHolder_onlyOneAllowedPerScope.Leave();                   \
 
 #define END_CONTRACT_VIOLATION                                              \
-        DEBUG_ASSURE_NO_RETURN_END(CONTRACT)                                \
         __violationHolder_onlyOneAllowedPerScope.Leave();                   \
     }                                                                       \
 
@@ -1981,21 +1972,6 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 #define LOCK_RELEASED_MULTIPLE(dbgStateLockType, cExits, pvLock)     \
     ::GetClrDebugState()->LockReleased((dbgStateLockType), (cExits), (void*) (pvLock))
 
-// Use these only if you need to force multiple entrances or exits in a single
-// line (e.g., to restore the lock to a previous state). CRWLock in vm\rwlock.cpp does this
-#define EE_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)                          \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_EE, cEntrances, pvLock)
-#define EE_LOCK_RELEASED_MULTIPLE(cExits, pvLock)                           \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_EE, cExits, pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN_MULTIPLE(cEntrances, pvLock)              \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_HostBreakableCrst, cEntrances, pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED_MULTIPLE(cExits, pvLock)               \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_HostBreakableCrst, cExits, pvLock)
-#define USER_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)                        \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_User, cEntrances, pvLock)
-#define USER_LOCK_RELEASED_MULTIPLE(cExits, pvLock)                         \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_User, cExits, pvLock)
-
 // These are most typically used
 #define EE_LOCK_TAKEN(pvLock)                   \
     LOCK_TAKEN_MULTIPLE(kDbgStateLockType_EE, 1, pvLock)
@@ -2014,12 +1990,6 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 
 #define LOCK_TAKEN_MULTIPLE(dbgStateLockType, cEntrances, pvLock)
 #define LOCK_RELEASED_MULTIPLE(dbgStateLockType, cExits, pvLock)
-#define EE_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)
-#define EE_LOCK_RELEASED_MULTIPLE(cExits, pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN_MULTIPLE(cEntrances, pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED_MULTIPLE(cExits, pvLock)
-#define USER_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)
-#define USER_LOCK_RELEASED_MULTIPLE(cExits, pvLock)
 #define EE_LOCK_TAKEN(pvLock)
 #define EE_LOCK_RELEASED(pvLock)
 #define HOST_BREAKABLE_CRST_TAKEN(pvLock)

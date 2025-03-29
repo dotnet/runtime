@@ -27,7 +27,8 @@ c_static_assert_msg(USEARCH_DONE == -1, "managed side requires -1 for not found"
 #define CompareOptionsIgnoreSymbols 0x4
 #define CompareOptionsIgnoreKanaType 0x8
 #define CompareOptionsIgnoreWidth 0x10
-#define CompareOptionsMask 0x1f
+#define CompareOptionsNumericOrdering 0x20
+#define CompareOptionsMask 0x3f
 // #define CompareOptionsStringSort 0x20000000
 // ICU's default is to use "StringSort", i.e. nonalphanumeric symbols come before alphanumeric.
 // When StringSort is not specified (.NET's default), the sort order will be different between
@@ -275,11 +276,12 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
 {
     UColAttributeValue strength = ucol_getStrength(pCollator);
 
-    int32_t isIgnoreCase        = (options & CompareOptionsIgnoreCase)     == CompareOptionsIgnoreCase;
-    int32_t isIgnoreNonSpace    = (options & CompareOptionsIgnoreNonSpace) == CompareOptionsIgnoreNonSpace;
-    int32_t isIgnoreSymbols     = (options & CompareOptionsIgnoreSymbols)  == CompareOptionsIgnoreSymbols;
-    int32_t isIgnoreKanaType    = (options & CompareOptionsIgnoreKanaType) == CompareOptionsIgnoreKanaType;
-    int32_t isIgnoreWidth       = (options & CompareOptionsIgnoreWidth)    == CompareOptionsIgnoreWidth;
+    int32_t isIgnoreCase        = (options & CompareOptionsIgnoreCase)      == CompareOptionsIgnoreCase;
+    int32_t isIgnoreNonSpace    = (options & CompareOptionsIgnoreNonSpace)  == CompareOptionsIgnoreNonSpace;
+    int32_t isIgnoreSymbols     = (options & CompareOptionsIgnoreSymbols)   == CompareOptionsIgnoreSymbols;
+    int32_t isIgnoreKanaType    = (options & CompareOptionsIgnoreKanaType)  == CompareOptionsIgnoreKanaType;
+    int32_t isIgnoreWidth       = (options & CompareOptionsIgnoreWidth)     == CompareOptionsIgnoreWidth;
+    int32_t isNumericOrdering   = (options & CompareOptionsNumericOrdering) == CompareOptionsNumericOrdering;
 
     if (isIgnoreCase)
     {
@@ -382,38 +384,10 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
     {
         ucol_setAttribute(pClonedCollator, UCOL_ALTERNATE_HANDLING, UCOL_SHIFTED, pErr);
 
-#if !defined(STATIC_ICU)
-    if (ucol_setMaxVariable_ptr != NULL)
-    {
         // by default, ICU alternate shifted handling only ignores punctuation, but
         // IgnoreSymbols needs symbols and currency as well, so change the "variable top"
         // to include all symbols and currency
         ucol_setMaxVariable(pClonedCollator, UCOL_REORDER_CODE_CURRENCY, pErr);
-    }
-    else
-    {
-        assert(ucol_setVariableTop_ptr != NULL);
-        // 0xfdfc is the last currency character before the first digit character
-        // in http://source.icu-project.org/repos/icu/icu/tags/release-52-1/source/data/unidata/FractionalUCA.txt
-        const UChar ignoreSymbolsVariableTop[] = { 0xfdfc };
-        ucol_setVariableTop_ptr(pClonedCollator, ignoreSymbolsVariableTop, 1, pErr);
-    }
-
-#else // !defined(STATIC_ICU)
-
-        // by default, ICU alternate shifted handling only ignores punctuation, but
-        // IgnoreSymbols needs symbols and currency as well, so change the "variable top"
-        // to include all symbols and currency
-#if HAVE_SET_MAX_VARIABLE
-        ucol_setMaxVariable(pClonedCollator, UCOL_REORDER_CODE_CURRENCY, pErr);
-#else
-        // 0xfdfc is the last currency character before the first digit character
-        // in http://source.icu-project.org/repos/icu/icu/tags/release-52-1/source/data/unidata/FractionalUCA.txt
-        const UChar ignoreSymbolsVariableTop[] = { 0xfdfc };
-        ucol_setVariableTop(pClonedCollator, ignoreSymbolsVariableTop, 1, pErr);
-#endif
-
-#endif //!defined(STATIC_ICU)
     }
 
     ucol_setAttribute(pClonedCollator, UCOL_STRENGTH, strength, pErr);
@@ -423,6 +397,11 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
     if (strength < UCOL_TERTIARY && !isIgnoreCase)
     {
         ucol_setAttribute(pClonedCollator, UCOL_CASE_LEVEL, UCOL_ON, pErr);
+    }
+
+    if (isNumericOrdering)
+    {
+        ucol_setAttribute(pClonedCollator, UCOL_NUMERIC_COLLATION, UCOL_ON, pErr);
     }
 
     return pClonedCollator;

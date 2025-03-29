@@ -12,15 +12,19 @@ class DeadCodeElimination
     public static int Run()
     {
         SanityTest.Run();
+        Test110932Regression.Run();
         TestInstanceMethodOptimization.Run();
         TestReflectionInvokeSignatures.Run();
         TestAbstractTypeNeverDerivedVirtualsOptimization.Run();
         TestAbstractNeverDerivedWithDevirtualizedCall.Run();
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
         TestUnusedDefaultInterfaceMethod.Run();
+        TestInlinedDeadBranchElimination.Run();
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
+        TestTypeIs.Run();
         TestTypeEquals.Run();
+        TestTypeEqualityDeadBranchScanRemoval.Run();
         TestTypeIsEnum.Run();
         TestTypeIsValueType.Run();
         TestBranchesInGenericCodeRemoval.Run();
@@ -28,6 +32,7 @@ class DeadCodeElimination
         TestUnmodifiableInstanceFieldOptimization.Run();
         TestGetMethodOptimization.Run();
         TestTypeOfCodegenBranchElimination.Run();
+        TestInvisibleGenericsTrimming.Run();
 
         return 100;
     }
@@ -46,6 +51,34 @@ class DeadCodeElimination
                 throw new Exception();
 
             ThrowIfPresent(typeof(SanityTest), nameof(NotPresentType));
+        }
+    }
+
+    class Test110932Regression
+    {
+        static bool s_trueConst = true;
+        static bool s_falseConst = false;
+
+        interface I
+        {
+            static virtual bool GetValue() => false;
+        }
+
+        class C : I
+        {
+            static bool I.GetValue() => true;
+        }
+
+        public static void Run()
+        {
+            if (!Call<C>())
+                throw new Exception();
+        }
+        static bool Call<T>() where T : I
+        {
+            if (T.GetValue())
+                return s_trueConst;
+            return s_falseConst;
         }
     }
 
@@ -100,8 +133,13 @@ class DeadCodeElimination
 
             {
                 MethodInfo mi = typeof(TestReflectionInvokeSignatures).GetMethod(nameof(Invoke2));
-                mi.Invoke(null, new object[1]);
+                var args = new object[1];
+                mi.Invoke(null, args);
                 ThrowIfNotPresent(typeof(TestReflectionInvokeSignatures), nameof(Allocated1));
+                if (args[0].GetType().Name != nameof(Allocated1))
+                    throw new Exception();
+                if (!args[0].ToString().Contains(nameof(Allocated1)))
+                    throw new Exception();
             }
         }
     }
@@ -250,6 +288,37 @@ class DeadCodeElimination
         }
     }
 
+    class TestInlinedDeadBranchElimination
+    {
+        static int GetIntConstant() => 42;
+        static int GetIntConstantWrapper() => GetIntConstant();
+
+        class NeverReferenced1 { }
+
+        enum MyEnum { One, Two }
+
+        static MyEnum GetEnumConstant() => MyEnum.Two;
+
+        class NeverReferenced2 { }
+
+        public static void Run()
+        {
+            if (GetIntConstantWrapper() == 1)
+            {
+                Activator.CreateInstance(typeof(NeverReferenced1));
+            }
+
+            ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced1));
+
+            if (GetEnumConstant() == MyEnum.One)
+            {
+                Activator.CreateInstance(typeof(NeverReferenced2));
+            }
+
+            ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced2));
+        }
+    }
+
     class TestArrayElementTypeOperations
     {
         public static void Run()
@@ -268,15 +337,7 @@ class DeadCodeElimination
                     throw new Exception();
             }
 
-            // ...but not nullable...
-            {
-                Array arr = new Nullable<NeverAllocated2>[1];
-                arr.GetValue(0);
-                ThrowIfPresent(typeof(TestArrayElementTypeOperations), nameof(Marker2));
-            }
-
-
-            // ...or reference type element types
+            // ...but not reference type element types
             {
                 Array arr = new NeverAllocated3[1];
                 arr.GetValue(0);
@@ -340,28 +401,223 @@ class DeadCodeElimination
         }
     }
 
+
+    class TestTypeIs
+    {
+        class Never1 { }
+        class Canary1 { }
+
+        class Maybe1<T, U> { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetTheObject() => new object();
+
+        static volatile object s_sink;
+
+        public static void Run()
+        {
+#if !DEBUG
+            {
+                RunCheck(GetTheObject());
+
+                static void RunCheck(object t)
+                {
+                    if (t is Never1)
+                    {
+                        s_sink = new Canary1();
+                    }
+                }
+
+                ThrowIfPresent(typeof(TestTypeIs), nameof(Canary1));
+            }
+
+            {
+                RunCheck<object>(new Maybe1<object, string>());
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static void RunCheck<T>(object t)
+                {
+                    if (t is Maybe1<T, string>)
+                    {
+                        return;
+                    }
+                    throw new Exception();
+                }
+            }
+#endif
+        }
+    }
+
     class TestTypeEquals
     {
         sealed class Gen<T> { }
 
         sealed class Never { }
 
-        static Type s_type = null;
+        class Never2 { }
+        class Canary2 { }
+        class Never3 { }
+        class Canary3 { }
+        class Never4 { }
+        class Canary4 { }
+
+        class Maybe1<T, U> { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetTheType() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetThePointerType() => typeof(void*);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetTheObject() => new object();
+
+        static volatile object s_sink;
 
         public static void Run()
         {
             // This was asserting the BCL because Never would not have reflection metadata
             // despite the typeof
-            Console.WriteLine(s_type == typeof(Never));
+            Console.WriteLine(GetTheType() == typeof(Never));
 
             // This was a compiler crash
             Console.WriteLine(typeof(object) == typeof(Gen<>));
 
 #if !DEBUG
             ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
+
+            {
+                RunCheck(GetTheType());
+
+                static void RunCheck(Type t)
+                {
+                    if (t == typeof(Never2))
+                    {
+                        s_sink = new Canary2();
+                    }
+                }
+
+                ThrowIfPresent(typeof(TestTypeEquals), nameof(Canary2));
+            }
+
+            {
+
+                RunCheck(GetTheObject());
+
+                static void RunCheck(object o)
+                {
+                    if (o.GetType() == typeof(Never3))
+                    {
+                        s_sink = new Canary3();
+                    }
+                }
+
+                ThrowIfPresent(typeof(TestTypeEquals), nameof(Canary3));
+            }
+
+            {
+
+                RunCheck(GetTheObject());
+
+                static void RunCheck(object o)
+                {
+                    if (typeof(Never4) == o.GetType())
+                    {
+                        s_sink = new Canary4();
+                    }
+                }
+
+                ThrowIfPresent(typeof(TestTypeEquals), nameof(Canary4));
+            }
+
+            {
+                RunCheck(GetThePointerType());
+
+                static void RunCheck(Type t)
+                {
+                    if (t == typeof(void*))
+                    {
+                        return;
+                    }
+                    throw new Exception();
+                }
+            }
+
+            {
+                RunCheck<object>(typeof(Maybe1<object, string>));
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static void RunCheck<T>(Type t)
+                {
+                    if (t == typeof(Maybe1<T, string>))
+                    {
+                        return;
+                    }
+                    throw new Exception();
+                }
+            }
 #endif
         }
     }
+
+    class TestTypeEqualityDeadBranchScanRemoval
+    {
+        class NeverAllocated1 { }
+        class NeverAllocated2 { }
+        class NeverAllocated3 { }
+
+        class PossiblyAllocated1 { }
+        class PossiblyAllocated2 { }
+
+        class MyAttribute : Attribute
+        {
+            public Type TheType;
+
+            public MyAttribute(Type t) => TheType = t;
+        }
+
+        [My(typeof(NeverAllocated3))]
+        class AttributeHolder { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetNeverObject() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetNeverAllocated3Type() => typeof(AttributeHolder).GetCustomAttribute<MyAttribute>().TheType;
+
+        static volatile Type s_sink;
+
+        public static void Run()
+        {
+            if (GetNeverObject() == typeof(NeverAllocated1))
+            {
+                Console.WriteLine(new NeverAllocated1().ToString());
+                Console.WriteLine(new NeverAllocated2().ToString());
+            }
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEqualityDeadBranchScanRemoval), nameof(NeverAllocated1));
+            ThrowIfPresent(typeof(TestTypeEqualityDeadBranchScanRemoval), nameof(NeverAllocated2));
+#endif
+
+            if (GetNeverObject() == typeof(PossiblyAllocated1))
+            {
+                Console.WriteLine(new PossiblyAllocated1().ToString());
+                Console.WriteLine(new PossiblyAllocated2().ToString());
+            }
+            if (Environment.GetEnvironmentVariable("SURETHING") != null)
+                s_sink = typeof(PossiblyAllocated1);
+
+            if (GetNeverAllocated3Type() == typeof(NeverAllocated3))
+            {
+                Console.WriteLine($"{nameof(NeverAllocated3)} check succeeded");
+            }
+            else
+            {
+                throw new Exception();
+            }
+        }
+    }
+
 
     class TestTypeIsEnum
     {
@@ -794,6 +1050,39 @@ class DeadCodeElimination
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static Type GetAtom1() => typeof(Atom1);
+        }
+    }
+
+    class TestInvisibleGenericsTrimming
+    {
+        class NotPresentType1<T>;
+        class NotPresentType2<T>;
+
+        class PresentType<T>;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsNotPresentType1(object o) => o is NotPresentType1<object>;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsNotPresentType2(object o) => o.GetType() == typeof(NotPresentType2<object>);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsPresentType(object o) => o.GetType() == typeof(PresentType<object>);
+
+        public static void Run()
+        {
+            IsNotPresentType1(new object());
+#if !DEBUG
+            ThrowIfPresent(typeof(TestInvisibleGenericsTrimming), "NotPresentType1`1");
+#endif
+
+            IsNotPresentType2(new object());
+#if !DEBUG
+            ThrowIfPresent(typeof(TestInvisibleGenericsTrimming), "NotPresentType2`1");
+#endif
+
+            IsPresentType(new PresentType<object>());
+            ThrowIfNotPresent(typeof(TestInvisibleGenericsTrimming), "PresentType`1");
         }
     }
 

@@ -21,7 +21,6 @@
 #include "Crst.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
@@ -45,7 +44,15 @@ GPTR_IMPL(StressLog, g_pStressLog /*, &StressLog::theLog*/);
    variable-speed CPUs (for power management), this is not accurate, but may
    be good enough.
 */
-inline __declspec(naked) uint64_t getTimeStamp() {
+
+inline
+#ifdef TARGET_WINDOWS
+__declspec(naked)
+#else
+__attribute__((naked))
+#endif
+uint64_t getTimeStamp()
+{
 
    __asm {
         RDTSC   // read time stamp counter
@@ -464,7 +471,7 @@ inline void ThreadStressLog::Activate (Thread * /*pThread*/)
     // a previous record.  Update curPtr to reflect the last safe beginning of a record,
     // but curPtr shouldn't wrap around, otherwise it'll break our assumptions about stress
     // log
-    curPtr = (StressMsg*)((char*)curPtr - StressMsg::maxMsgSize());
+    curPtr = (StressMsg*)((char*)curPtr - StressMsg::maxMsgSize);
     if (curPtr < (StressMsg*)curWriteChunk->StartPtr())
     {
         curPtr = (StressMsg *)curWriteChunk->StartPtr();

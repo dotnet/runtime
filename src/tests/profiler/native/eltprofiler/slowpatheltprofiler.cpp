@@ -615,7 +615,7 @@ void SlowPathELTProfiler::PrintBytes(const BYTE *bytes, size_t length)
 
 bool SlowPathELTProfiler::ValidateInt(UINT_PTR ptr, int expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -625,7 +625,7 @@ bool SlowPathELTProfiler::ValidateInt(UINT_PTR ptr, int expected)
 
 bool SlowPathELTProfiler::ValidateFloat(UINT_PTR ptr, float expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -635,7 +635,7 @@ bool SlowPathELTProfiler::ValidateFloat(UINT_PTR ptr, float expected)
 
 bool SlowPathELTProfiler::ValidateDouble(UINT_PTR ptr, double expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -645,7 +645,7 @@ bool SlowPathELTProfiler::ValidateDouble(UINT_PTR ptr, double expected)
 
 bool SlowPathELTProfiler::ValidateString(UINT_PTR ptr, const WCHAR *expected)
 {
-    if (ptr == NULL || *(void **)ptr == NULL)
+    if (ptr == (UINT_PTR)NULL || *(void **)ptr == NULL)
     {
         return false;
     }
@@ -673,7 +673,7 @@ bool SlowPathELTProfiler::ValidateString(UINT_PTR ptr, const WCHAR *expected)
 
 bool SlowPathELTProfiler::ValidateMixedStruct(UINT_PTR ptr, MixedStruct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -684,7 +684,7 @@ bool SlowPathELTProfiler::ValidateMixedStruct(UINT_PTR ptr, MixedStruct expected
 
 bool SlowPathELTProfiler::ValidateLargeStruct(UINT_PTR ptr, LargeStruct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -702,7 +702,7 @@ bool SlowPathELTProfiler::ValidateLargeStruct(UINT_PTR ptr, LargeStruct expected
 
 bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x2Struct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -713,7 +713,7 @@ bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x2Struct
 
 bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x3Struct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -724,7 +724,7 @@ bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x3Struct
 
 bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x4Struct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -738,7 +738,7 @@ bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x4Struct
 
 bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x2Struct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -749,7 +749,7 @@ bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x2Struct
 
 bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x3Struct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -760,7 +760,7 @@ bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x3Struct
 
 bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x4Struct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -774,7 +774,7 @@ bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x4Struct
 
 bool SlowPathELTProfiler::ValidateIntegerStruct(UINT_PTR ptr, IntegerStruct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -785,7 +785,7 @@ bool SlowPathELTProfiler::ValidateIntegerStruct(UINT_PTR ptr, IntegerStruct expe
 
 bool SlowPathELTProfiler::ValidateIntegerSseStruct(UINT_PTR ptr, IntegerSseStruct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -798,7 +798,7 @@ bool SlowPathELTProfiler::ValidateIntegerSseStruct(UINT_PTR ptr, IntegerSseStruc
 
 bool SlowPathELTProfiler::ValidateSseIntegerStruct(UINT_PTR ptr, SseIntegerStruct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -811,7 +811,7 @@ bool SlowPathELTProfiler::ValidateSseIntegerStruct(UINT_PTR ptr, SseIntegerStruc
 
 bool SlowPathELTProfiler::ValidateMixedSseStruct(UINT_PTR ptr, MixedSseStruct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -825,7 +825,7 @@ bool SlowPathELTProfiler::ValidateMixedSseStruct(UINT_PTR ptr, MixedSseStruct ex
 
 bool SlowPathELTProfiler::ValidateSseMixedStruct(UINT_PTR ptr, SseMixedStruct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }
@@ -839,7 +839,7 @@ bool SlowPathELTProfiler::ValidateSseMixedStruct(UINT_PTR ptr, SseMixedStruct ex
 
 bool SlowPathELTProfiler::ValidateMixedMixedStruct(UINT_PTR ptr, MixedMixedStruct expected)
 {
-    if (ptr == NULL)
+    if (ptr == (UINT_PTR)NULL)
     {
         return false;
     }

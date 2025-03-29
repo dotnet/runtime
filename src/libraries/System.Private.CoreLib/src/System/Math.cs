@@ -151,8 +151,13 @@ namespace System
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
         }
 
+        /// <summary>Produces the full product of two unsigned 32-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <returns>The number containing the product of the specified numbers.</returns>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ulong BigMul(uint a, uint b)
+        public static unsafe ulong BigMul(uint a, uint b)
         {
 #if false // TARGET_32BIT
             // This generates slower code currently than the simple multiplication
@@ -167,10 +172,39 @@ namespace System
             return ((ulong)a) * b;
         }
 
+        /// <summary>Produces the full product of two 32-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <returns>The number containing the product of the specified numbers.</returns>
         public static long BigMul(int a, int b)
         {
             return ((long)a) * b;
         }
+
+
+        /// <summary>
+        /// Perform multiplication between 64 and 32 bit numbers, returning lower 64 bits in <paramref name="low"/>
+        /// </summary>
+        /// <returns>hi bits of the result</returns>
+        /// <remarks>REMOVE once BigMul(ulong, ulong) is treated as intrinsics and optimizes 32 by 64 multiplications</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ulong BigMul(ulong a, uint b, out ulong low)
+        {
+#if TARGET_64BIT
+            return Math.BigMul((ulong)a, (ulong)b, out low);
+#else
+            ulong prodL = ((ulong)(uint)a) * b;
+            ulong prodH = (prodL >> 32) + (((ulong)(uint)(a >> 32)) * b);
+
+            low = ((prodH << 32) | (uint)prodL);
+            return (prodH >> 32);
+#endif
+        }
+
+        /// <inheritdoc cref="BigMul(ulong, uint, out ulong)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ulong BigMul(uint a, ulong b, out ulong low)
+            => BigMul(b, a, out low);
 
         /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
@@ -238,13 +272,25 @@ namespace System
             return (long)high - ((a >> 63) & b) - ((b >> 63) & a);
         }
 
+        /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <returns>The full product of the specified numbers.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt128 BigMul(ulong a, ulong b)
+        {
+            ulong high = BigMul(a, b, out ulong low);
+            return new UInt128(high, low);
+        }
+
         /// <summary>Produces the full product of two 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
         /// <returns>The full product of the specified numbers.</returns>
-        internal static Int128 BigMul(long a, long b)
+        public static Int128 BigMul(long a, long b)
         {
-            long high = Math.BigMul(a, b, out long low);
+            long high = BigMul(a, b, out long low);
             return new Int128((ulong)high, (ulong)low);
         }
 

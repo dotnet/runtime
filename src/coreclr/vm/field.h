@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// COM+ Data Field Abstraction
+// CLR Data Field Abstraction
 //
 
 
@@ -285,7 +285,7 @@ public:
         SetOffset(FIELD_OFFSET_NEW_ENC);
     }
 
-    BOOL IsCollectible()    
+    BOOL IsCollectible()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -340,7 +340,6 @@ public:
     PTR_VOID   GetAddress(PTR_VOID o);
 
     PTR_VOID GetAddressNoThrowNoGC(PTR_VOID o);
-    void*   GetAddressGuaranteedInHeap(void *o);
 
     void*   GetValuePtr(OBJECTREF o);
     VOID    SetValuePtr(OBJECTREF o, void* pValue);
@@ -392,20 +391,6 @@ public:
         return GetApproxEnclosingMethodTable()->GetNumGenericArgs();
     }
 
-   PTR_BYTE GetBaseInDomainLocalModule(DomainLocalModule * pLocalModule)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (GetFieldType() == ELEMENT_TYPE_CLASS || GetFieldType() == ELEMENT_TYPE_VALUETYPE)
-        {
-            return pLocalModule->GetGCStaticsBasePointer(GetEnclosingMethodTable());
-        }
-        else
-        {
-            return pLocalModule->GetNonGCStaticsBasePointer(GetEnclosingMethodTable());
-        }
-    }
-
     PTR_BYTE GetBase()
     {
         CONTRACTL
@@ -417,7 +402,14 @@ public:
 
         MethodTable *pMT = GetEnclosingMethodTable();
 
-        return GetBaseInDomainLocalModule(pMT->GetDomainLocalModule());
+        if (GetFieldType() == ELEMENT_TYPE_CLASS || GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            return pMT->GetGCStaticsBasePointer();
+        }
+        else
+        {
+            return pMT->GetNonGCStaticsBasePointer();
+        }
     }
 
     // returns the address of the field
@@ -521,7 +513,10 @@ public:
         else {
             PTR_BYTE base = 0;
             if (!IsRVA()) // for RVA the base is ignored
+            {
+                GetEnclosingMethodTable()->EnsureStaticDataAllocated();
                 base = GetBase();
+            }
             return GetStaticAddress((void *)dac_cast<TADDR>(base));
         }
     }
@@ -723,7 +718,7 @@ public:
 #endif
 
 #ifndef DACCESS_COMPILE
-    REFLECTFIELDREF GetStubFieldInfo();
+    REFLECTFIELDREF AllocateStubFieldInfo();
 #endif
 };
 

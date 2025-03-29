@@ -52,6 +52,10 @@ namespace System.Configuration
                     throw new NotSupportedException(Obsoletions.BinaryFormatterMessage);
                 }
             }
+            else
+            {
+                SerializeAs = serializeAs;
+            }
             Attributes = attributes;
             ThrowOnErrorDeserializing = throwOnErrorDeserializing;
             ThrowOnErrorSerializing = throwOnErrorSerializing;

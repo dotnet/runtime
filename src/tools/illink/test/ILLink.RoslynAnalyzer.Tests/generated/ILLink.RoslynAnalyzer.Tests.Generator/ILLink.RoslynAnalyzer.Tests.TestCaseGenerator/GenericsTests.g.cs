@@ -7,10 +7,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 	public sealed partial class GenericsTests : LinkerTestBase
 	{
 
-		protected override string TestSuiteName => "Generics";
-
 		[Fact]
 		public Task ArrayVariantCasting ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task ByRefLike ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
@@ -65,6 +69,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task OverrideWithAnotherVirtualMethodOfSameNameWithDifferentParameterType ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task UnresolvedGenerics ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

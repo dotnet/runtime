@@ -9,6 +9,12 @@
 // Number of characters in a string literal. Excludes terminating NULL.
 #define STRING_LENGTH(str) (ARRAY_SIZE(str) - 1)
 
+#ifdef __clang_analyzer__
+#define ANALYZER_NORETURN __attribute((analyzer_noreturn))
+#else
+#define ANALYZER_NORETURN
+#endif
+
 #ifndef __has_builtin
 #define __has_builtin(x) 0
 #endif
@@ -30,6 +36,12 @@
 #  define FALLTHROUGH __attribute__((fallthrough))
 #else
 #  define FALLTHROUGH
+#endif
+
+#if defined(_MSC_VER)
+#define LIBC_CALLBACK __cdecl
+#else
+#define LIBC_CALLBACK
 #endif
 
 #if defined(_MSC_VER)

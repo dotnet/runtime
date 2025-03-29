@@ -72,46 +72,9 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long CompareExchange(ref long location1, long value, long comparand);
 
-        [return: NotNullIfNotNull(nameof(location1))]
-        [Intrinsic]
-        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class?
-        {
-            if (Unsafe.IsNullRef(ref location1))
-                throw new NullReferenceException();
-            // Besides avoiding coop handles for efficiency,
-            // and correctness, this also appears needed to
-            // avoid an assertion failure in the runtime, related to
-            // coop handles over generics.
-            //
-            // See CompareExchange(object) for comments.
-            //
-            // This is not entirely convincing due to lack of volatile.
-            //
-            T? result = null;
-            // T : class so call the object overload.
-            CompareExchange(ref Unsafe.As<T, object?>(ref location1), ref Unsafe.As<T, object?>(ref value), ref Unsafe.As<T, object?>(ref comparand), ref Unsafe.As<T, object?>(ref result!));
-            return result;
-        }
-
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long Exchange(ref long location1, long value);
-
-        [return: NotNullIfNotNull(nameof(location1))]
-        [Intrinsic]
-        public static T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value) where T : class?
-        {
-            if (Unsafe.IsNullRef(ref location1))
-                throw new NullReferenceException();
-            // See CompareExchange(T) for comments.
-            //
-            // This is not entirely convincing due to lack of volatile.
-            //
-            T? result = null;
-            // T : class so call the object overload.
-            Exchange(ref Unsafe.As<T, object?>(ref location1), ref Unsafe.As<T, object?>(ref value), ref Unsafe.As<T, object?>(ref result!));
-            return result;
-        }
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

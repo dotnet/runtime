@@ -10,13 +10,41 @@ namespace System
 {
     public static partial class Environment
     {
+        /// <summary>
+        /// Represents the CPU usage statistics of a process.
+        /// </summary>
+        /// <remarks>
+        /// The CPU usage statistics include information about the time spent by the process in the application code (user mode) and the operating system code (kernel mode),
+        /// as well as the total time spent by the process in both user mode and kernel mode.
+        /// </remarks>
+        public readonly struct ProcessCpuUsage
+        {
+            /// <summary>
+            /// Gets the amount of time the associated process has spent running code inside the application portion of the process (not the operating system code).
+            /// </summary>
+            public TimeSpan UserTime { get; internal init; }
+
+            /// <summary>
+            /// Gets the amount of time the process has spent running code inside the operating system code.
+            /// </summary>
+            public TimeSpan PrivilegedTime { get; internal init; }
+
+            /// <summary>
+            /// Gets the amount of time the process has spent utilizing the CPU including the process time spent in the application code and the process time spent in the operating system code.
+            /// </summary>
+            public TimeSpan TotalTime => UserTime + PrivilegedTime;
+        }
+
         public static int ProcessorCount { get; } = GetProcessorCount();
 
         /// <summary>
         /// Gets whether the current machine has only a single processor.
         /// </summary>
+#if !FEATURE_SINGLE_THREADED
         internal static bool IsSingleProcessor => ProcessorCount == 1;
-
+#else
+        internal const bool IsSingleProcessor = true;
+#endif
         private static volatile sbyte s_privilegedProcess;
 
         /// <summary>
@@ -67,7 +95,7 @@ namespace System
 
         public static void SetEnvironmentVariable(string variable, string? value)
         {
-            ValidateVariableAndValue(variable, ref value);
+            ValidateVariable(variable);
             SetEnvironmentVariableCore(variable, value);
         }
 
@@ -79,7 +107,7 @@ namespace System
                 return;
             }
 
-            ValidateVariableAndValue(variable, ref value);
+            ValidateVariable(variable);
 
             bool fromMachine = ValidateAndConvertRegistryTarget(target);
             SetEnvironmentVariableFromRegistry(variable, value, fromMachine: fromMachine);
@@ -234,7 +262,7 @@ namespace System
             throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(SR.Arg_EnumIllegalVal, target));
         }
 
-        private static void ValidateVariableAndValue(string variable, ref string? value)
+        private static void ValidateVariable(string variable)
         {
             ArgumentException.ThrowIfNullOrEmpty(variable);
 
@@ -243,12 +271,6 @@ namespace System
 
             if (variable.Contains('='))
                 throw new ArgumentException(SR.Argument_IllegalEnvVarName, nameof(variable));
-
-            if (string.IsNullOrEmpty(value) || value[0] == '\0')
-            {
-                // Explicitly null out value if it's empty
-                value = null;
-            }
         }
     }
 }

@@ -55,18 +55,22 @@ namespace System.Linq
 
             public override List<TSource> ToList()
             {
-                var list = new List<TSource>();
+                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TSource> builder = new(scratch);
 
                 Func<TSource, bool> predicate = _predicate;
                 foreach (TSource item in _source)
                 {
                     if (predicate(item))
                     {
-                        list.Add(item);
+                        builder.Add(item);
                     }
                 }
 
-                return list;
+                List<TSource> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override TSource? TryGetFirst(out bool found)
@@ -145,6 +149,21 @@ namespace System.Linq
                 found = false;
                 return default;
             }
+
+            public override bool Contains(TSource value)
+            {
+                Func<TSource, bool> predicate = _predicate;
+
+                foreach (TSource item in _source)
+                {
+                    if (predicate(item) && EqualityComparer<TSource>.Default.Equals(item, value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         private sealed partial class ArrayWhereIterator<TSource>
@@ -199,17 +218,21 @@ namespace System.Linq
 
             public static List<TSource> ToList(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate)
             {
-                var list = new List<TSource>();
+                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TSource> builder = new(scratch);
 
                 foreach (TSource item in source)
                 {
                     if (predicate(item))
                     {
-                        list.Add(item);
+                        builder.Add(item);
                     }
                 }
 
-                return list;
+                List<TSource> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override TSource? TryGetFirst(out bool found)
@@ -270,6 +293,21 @@ namespace System.Linq
 
                 found = false;
                 return default;
+            }
+
+            public override bool Contains(TSource value)
+            {
+                Func<TSource, bool> predicate = _predicate;
+
+                foreach (TSource item in _source)
+                {
+                    if (predicate(item) && EqualityComparer<TSource>.Default.Equals(item, value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
 
@@ -340,6 +378,21 @@ namespace System.Linq
                 found = false;
                 return default;
             }
+
+            public override bool Contains(TSource value)
+            {
+                Func<TSource, bool> predicate = _predicate;
+
+                foreach (TSource item in _source)
+                {
+                    if (predicate(item) && EqualityComparer<TSource>.Default.Equals(item, value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         private sealed partial class ArrayWhereSelectIterator<TSource, TResult>
@@ -398,17 +451,21 @@ namespace System.Linq
 
             public static List<TResult> ToList(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
-                var list = new List<TResult>();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
                 foreach (TSource item in source)
                 {
                     if (predicate(item))
                     {
-                        list.Add(selector(item));
+                        builder.Add(selector(item));
                     }
                 }
 
-                return list;
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override TResult? TryGetFirst(out bool found) => TryGetFirst(_source, _predicate, _selector, out found);
@@ -469,6 +526,21 @@ namespace System.Linq
                 found = false;
                 return default;
             }
+
+            public override bool Contains(TResult value) => Contains(_source, _predicate, _selector, value);
+
+            public static bool Contains(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector, TResult value)
+            {
+                foreach (TSource item in source)
+                {
+                    if (predicate(item) && EqualityComparer<TResult>.Default.Equals(selector(item), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         private sealed partial class ListWhereSelectIterator<TSource, TResult>
@@ -484,6 +556,8 @@ namespace System.Linq
             public override TResult? TryGetFirst(out bool found) => ArrayWhereSelectIterator<TSource, TResult>.TryGetFirst(CollectionsMarshal.AsSpan(_source), _predicate, _selector, out found);
 
             public override TResult? TryGetLast(out bool found) => ArrayWhereSelectIterator<TSource, TResult>.TryGetLast(CollectionsMarshal.AsSpan(_source), _predicate, _selector, out found);
+
+            public override bool Contains(TResult value) => ArrayWhereSelectIterator<TSource, TResult>.Contains(CollectionsMarshal.AsSpan(_source), _predicate, _selector, value);
         }
 
         private sealed partial class IEnumerableWhereSelectIterator<TSource, TResult>
@@ -538,7 +612,8 @@ namespace System.Linq
 
             public override List<TResult> ToList()
             {
-                var list = new List<TResult>();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
                 Func<TSource, bool> predicate = _predicate;
                 Func<TSource, TResult> selector = _selector;
@@ -546,11 +621,14 @@ namespace System.Linq
                 {
                     if (predicate(item))
                     {
-                        list.Add(selector(item));
+                        builder.Add(selector(item));
                     }
                 }
 
-                return list;
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override TResult? TryGetFirst(out bool found)
@@ -628,6 +706,21 @@ namespace System.Linq
 
                 found = false;
                 return default;
+            }
+
+            public override bool Contains(TResult value)
+            {
+                Func<TSource, bool> predicate = _predicate;
+
+                foreach (TSource item in _source)
+                {
+                    if (predicate(item) && EqualityComparer<TResult>.Default.Equals(_selector(item), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
     }

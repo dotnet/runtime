@@ -72,7 +72,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     break;
 
                 default:
-                    System.Diagnostics.Debug.Assert(false, "Unknown Semantic Tag type");
+                    System.Diagnostics.Debug.Fail("Unknown Semantic Tag type");
                     break;
             }
 #pragma warning restore 0618

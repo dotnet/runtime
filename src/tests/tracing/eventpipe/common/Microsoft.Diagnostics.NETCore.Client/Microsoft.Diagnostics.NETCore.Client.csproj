@@ -13,11 +13,13 @@
     <IsShipping>true</IsShipping>
     <BuildingOutsideDiagnostics>false</BuildingOutsideDiagnostics>
     <BuildingOutsideDiagnostics Condition="'$(GitHubRepositoryName)' != 'diagnostics'">true</BuildingOutsideDiagnostics>
+    <!-- TODO: Add package readme -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(BuildingOutsideDiagnostics)">
     <DefineConstants>$(DefineConstants);DIAGNOSTICS_RUNTIME</DefineConstants>
-    <NoWarn>CS1591,CS8073,CS0162</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;CS8073;CS0162</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

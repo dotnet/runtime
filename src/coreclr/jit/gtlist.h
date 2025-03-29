@@ -37,6 +37,7 @@ GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
+GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -46,7 +47,12 @@ GTNODE(CNS_INT          , GenTreeIntCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_LNG          , GenTreeLngCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_DBL          , GenTreeDblCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_STR          , GenTreeStrCon      ,0,0,GTK_LEAF)
+#if defined(FEATURE_SIMD)
 GTNODE(CNS_VEC          , GenTreeVecCon      ,0,0,GTK_LEAF)
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+GTNODE(CNS_MSK          , GenTreeMskCon      ,0,0,GTK_LEAF)
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 //-----------------------------------------------------------------------------
 //  Unary  operators (1 operand):
@@ -60,11 +66,7 @@ GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,0,GTK_BINOP|GTK_EXOP)
 GTNODE(KEEPALIVE        , GenTree            ,0,0,GTK_UNOP|GTK_NOVALUE)   // keep operand alive, generate no code, produce no result
 
 GTNODE(CAST             , GenTreeCast        ,0,0,GTK_UNOP|GTK_EXOP)      // conversion to another type
-#if defined(TARGET_ARM)
-GTNODE(BITCAST          , GenTreeMultiRegOp  ,0,1,GTK_UNOP)               // reinterpretation of bits as another type
-#else
 GTNODE(BITCAST          , GenTreeOp          ,0,1,GTK_UNOP)               // reinterpretation of bits as another type
-#endif
 GTNODE(CKFINITE         , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // Check for NaN
 GTNODE(LCLHEAP          , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // alloca()
 
@@ -211,6 +213,12 @@ GTNODE(MUL_LONG         , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
 // AndNot - emitted on ARM/ARM64 as the BIC instruction. Also used for creating AndNot HWINTRINSIC vector nodes in a cross-ISA manner.
 GTNODE(AND_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 
+// OrNot - emitted on ARM64 as the ORN instruction.
+GTNODE(OR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+
+// XorNot - emitted on ARM64 as the EON instruction.
+GTNODE(XOR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+
 #ifdef TARGET_ARM64
 GTNODE(BFIZ             , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
 #endif
@@ -310,11 +318,7 @@ GTNODE(EMITNOP          , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(PINVOKE_PROLOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // pinvoke prolog seq
 GTNODE(PINVOKE_EPILOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // pinvoke epilog seq
 GTNODE(RETURNTRAP       , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // a conditional call to wait on gc
-#if defined(TARGET_ARM)
-GTNODE(PUTARG_REG       , GenTreeMultiRegOp  ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in register
-#else
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in register
-#endif
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // operator that places outgoing arg in stack
 #if FEATURE_ARG_SPLIT
 GTNODE(PUTARG_SPLIT     , GenTreePutArgSplit ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in registers with stack (split struct in ARM32)

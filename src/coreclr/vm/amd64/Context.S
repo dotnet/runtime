@@ -12,6 +12,8 @@
 #define CONTEXT_INTEGER 2
 
 // Signature: EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
+// Note that this method is used to invoke EH funclets that take arguments in rcx and rdx, which is why those
+// registers are restored below in addition to the non-volatile registers.
 NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT, NoHandler
         push_nonvol_reg rbp
         set_cfa_register rbp, 0
@@ -44,7 +46,14 @@ NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT, NoHandler
         rdsspq  rax
         sub     r11, rax
         shr     r11, 3
-        incsspq r11
+        // the incsspq instruction uses only the lowest 8 bits of the argument, so we need to loop in case the increment is larger than 255
+        mov     rax, 255
+    Update_Loop:
+        cmp     r11, rax
+        cmovb   rax, r11
+        incsspq rax
+        sub     r11, rax
+        ja      Update_Loop
     No_Ssp_Update:
 
         // When user-mode shadow stacks are enabled, and for example the intent is to continue execution in managed code after

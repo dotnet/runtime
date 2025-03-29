@@ -838,7 +838,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Algorithm = new AlgorithmIdentifierAsn
                     {
                         Algorithm = PublicKey.Oid!.Value!,
-                        Parameters = PublicKey.EncodedParameters.RawData,
+                        Parameters = PublicKey.EncodedParameters?.RawData.ToNullableMemory(),
                     },
                     SubjectPublicKey = PublicKey.EncodedKeyValue.RawData,
                 },
@@ -890,7 +890,7 @@ namespace System.Security.Cryptography.X509Certificates
             };
 
             certificate.Encode(writer);
-            X509Certificate2 ret = new X509Certificate2(writer.Encode());
+            X509Certificate2 ret = writer.Encode(X509CertificateLoader.LoadCertificate);
             CryptoPool.Return(normalizedSerial);
             return ret;
         }

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //*****************************************************************************
-// MetaModelRO.cpp -- Read-only implementation of compressed COM+ metadata.
+// MetaModelRO.cpp -- Read-only implementation of compressed CLR metadata.
 //
 
 //
@@ -116,7 +116,7 @@ CMiniMd::Impl_GetStringW(
             *pcchBuffer = 0;
         goto ErrExit;
     }
-    iSize = ::WszMultiByteToWideChar(CP_UTF8, 0, szString, -1, szOut, cchBuffer);
+    iSize = ::MultiByteToWideChar(CP_UTF8, 0, szString, -1, szOut, cchBuffer);
     if (iSize == 0)
     {
         // What was the problem?
@@ -128,7 +128,7 @@ CMiniMd::Impl_GetStringW(
 
         // Truncation error; get the size required.
         if (pcchBuffer != NULL)
-            *pcchBuffer = ::WszMultiByteToWideChar(CP_UTF8, 0, szString, -1, NULL, 0);
+            *pcchBuffer = ::MultiByteToWideChar(CP_UTF8, 0, szString, -1, NULL, 0);
 
         if ((szOut != NULL) && (cchBuffer > 0))
         {   // null-terminate the truncated output string
@@ -411,7 +411,7 @@ CMiniMd::CommonGetCustomAttributeByNameEx(
                 IfFailGo(GetCustomAttributeRecord(ridStart, &pRec));
                 IfFailGo(getValueOfCustomAttribute(pRec, reinterpret_cast<const BYTE **>(ppData), pcbData));
                 if (ptkCA)
-                    *ptkCA = TokenFromRid(mdtCustomAttribute, ridStart);
+                    *ptkCA = TokenFromRid(ridStart, mdtCustomAttribute);
             }
             break;
         }

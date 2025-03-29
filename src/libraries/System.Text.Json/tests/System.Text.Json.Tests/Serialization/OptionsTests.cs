@@ -963,32 +963,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_NullabilityInfoFeatureSwitchDisabled_ReportsPropertiesAsNullable()
-        {
-            var options = new RemoteInvokeOptions()
-            {
-                RuntimeConfigurationOptions =
-                {
-                    ["System.Reflection.NullabilityInfoContext.IsSupported"] = false
-                }
-            };
-
-            RemoteExecutor.Invoke(static () =>
-            {
-                var value = new NullableAnnotationsTests.NotNullablePropertyClass();
-                string expectedJson = """{"Property":null}""";
-
-                Assert.Null(value.Property);
-                string json = JsonSerializer.Serialize(value);
-                Assert.Equal(expectedJson, json);
-                value = JsonSerializer.Deserialize<NullableAnnotationsTests.NotNullablePropertyClass>(json);
-                Assert.Null(value.Property);
-
-            }, options).Dispose();
-        }
-
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(null)]
         [InlineData(false)]
@@ -1026,34 +1000,6 @@ namespace System.Text.Json.Serialization.Tests
                 }
 
             }, arg, options).Dispose();
-        }
-
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_NullabilityInfoFeatureSwitchDisabled_RespectNullabilityAnnotationsEnabled_ThrowsInvalidOperationException()
-        {
-            var options = new RemoteInvokeOptions()
-            {
-                RuntimeConfigurationOptions =
-                {
-                    ["System.Reflection.NullabilityInfoContext.IsSupported"] = false
-                }
-            };
-
-            RemoteExecutor.Invoke(static () =>
-            {
-                var jsonOptions = new JsonSerializerOptions { RespectNullableAnnotations = true };
-                var value = new NullableAnnotationsTests.NotNullablePropertyClass();
-                string expectedJson = """{"Property":null}""";
-                InvalidOperationException ex;
-
-                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, jsonOptions));
-                Assert.Contains("System.Reflection.NullabilityInfoContext.IsSupported", ex.Message);
-
-                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<NullableAnnotationsTests.NotNullablePropertyClass>(expectedJson, jsonOptions));
-                Assert.Contains("System.Reflection.NullabilityInfoContext.IsSupported", ex.Message);
-
-            }, options).Dispose();
         }
 
         private static void GenericObjectOrJsonElementConverterTestHelper<T>(string converterName, object objectValue, string stringValue)
@@ -1228,10 +1174,10 @@ namespace System.Text.Json.Serialization.Tests
                 string effectiveMaxDepthAsStr = effectiveMaxDepth.ToString();
 
                 JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(myList, options));
-                Assert.Contains(effectiveMaxDepthAsStr, ex.ToString());
+                Assert.Contains(effectiveMaxDepthAsStr, ex.Message);
 
                 ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(myList, newOptions));
-                Assert.Contains(effectiveMaxDepthAsStr, ex.ToString());
+                Assert.Contains(effectiveMaxDepthAsStr, ex.Message);
             }
 
             // Zero max depth
@@ -1273,7 +1219,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void CopyConstructor_NullInput()
         {
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => new JsonSerializerOptions(null));
-            Assert.Contains("options", ex.ToString());
+            Assert.Contains("options", ex.Message);
         }
 
         [Fact]
@@ -1473,6 +1419,22 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions { TypeInfoResolver = defaultResolver };
 
             Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolverChain.Add(options.TypeInfoResolver));
+        }
+
+        [Fact]
+        public static void TypeInfoResolverChain_AddsModifier_WorksAsExpected()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/112735
+            bool isModifierInvoked = false;
+            var defaultResolver = new DefaultJsonTypeInfoResolver();
+            var options = new JsonSerializerOptions { TypeInfoResolver = JsonContext.Default };
+            options.TypeInfoResolverChain.Add(new DefaultJsonTypeInfoResolver());
+            options.TypeInfoResolver = options.TypeInfoResolver!.WithAddedModifier(_ => isModifierInvoked = true);
+            options.MakeReadOnly();
+
+            options.GetTypeInfo(typeof(List<List<List<string>>>)); // A type not in JsonContext.Default
+
+            Assert.True(isModifierInvoked);
         }
 
         [Fact]

@@ -43,7 +43,7 @@ from jitutil import run_command, copy_directory, copy_files, set_pipeline_variab
 
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (nativeaot, crossgen2, pmi, run, run_tiered, run_pgo)")
+parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (nativeaot, crossgen2, pmi, run, run_tiered, run_pgo, run_pgo_optrepeat)")
 parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks)")
 parser.add_argument("-payload_directory", required=True, help="Path to payload directory to create: subdirectories are created for the correlation payload as well as the per-partition work items")
 parser.add_argument("-source_directory", required=True, help="Path to source directory")
@@ -53,10 +53,11 @@ parser.add_argument("-platform", required=True, help="OS platform")
 parser.add_argument("-mch_file_tag", help="Tag to be used to mch files")
 parser.add_argument("-input_directory", help="Directory containing assemblies which SuperPMI will use for collection (for pmi/crossgen2 collections)")
 parser.add_argument("-max_size", help="Max size of each partition in MB (for pmi/crossgen2 collections)")
+parser.add_argument("-public_queues", action="store_true", help="Whether to set up for public queues (or internal ones, if not specified)")
 
 is_windows = platform.system() == "Windows"
 
-legal_collection_types = [ "nativeaot", "crossgen2", "pmi", "run", "run_tiered", "run_pgo" ]
+legal_collection_types = [ "nativeaot", "crossgen2", "pmi", "run", "run_tiered", "run_pgo", "run_pgo_optrepeat" ]
 
 directories_to_ignore = [
     "runtimes", # This appears to be the result of a nuget package that includes a bunch of native code
@@ -150,6 +151,7 @@ native_binaries_to_ignore = [
     "e_sqlite3.dll",
     "FileCheck.exe",
     "ilasm.exe",
+    "ilc.exe",
     "ildasm.exe",
     "jitinterface_arm.dll",
     "jitinterface_arm64.dll",
@@ -263,6 +265,11 @@ def setup_args(args):
                             max_size) * 1000 * 1000 if max_size is not None and max_size.isnumeric() else 0
                         # Convert to MB
                         )
+
+    coreclr_args.verify(args,
+                        "public_queues",
+                        lambda unused: True,
+                        "Whether to use public queues (or, if not specified, internal queues)")
     return coreclr_args
 
 
@@ -397,11 +404,8 @@ def setup_benchmark(workitem_directory, arch):
             print("Missing " + dotnet_install_script)
             return
 
-        # Sometimes the dotnet version installed by the script is latest and expect certain versions of SDK that
-        # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
-        # working version until we move to ".NET 8" in the script.
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--channels", "9.0", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--channels", "10.0", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
 
@@ -449,22 +453,44 @@ def main(main_args):
     arch = coreclr_args.arch
     platform_name = coreclr_args.platform.lower()
     helix_source_prefix = "official"
-    creator = ""
-    ci = True
 
     # Determine the Helix queue name to use when running jobs.
-    # Note that we run in the 'internal', not 'public', instance, so we must use 'internal' queues.
-    if platform_name == "windows":
-        helix_queue = "Windows.11.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86.Rt"
-    elif platform_name == "linux":
-        if arch == "arm":
-            helix_queue = "(Debian.12.Arm32)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7"
-        elif arch == "arm64":
-            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8"
-        else:
-            helix_queue = "Ubuntu.2204.Amd64"
-    elif platform_name == "osx":
-        helix_queue = "OSX.1200.ARM64" if arch == "arm64" else "OSX.1200.Amd64"
+    if coreclr_args.public_queues:
+        if platform_name == "windows":
+            if arch == "arm64": # public windows_arm64
+                helix_queue = "Windows.11.Arm64.Open"
+            else: # public windows_x64
+                helix_queue = "Windows.10.Amd64.Open"
+        elif platform_name == "linux":
+            if arch == "arm": # public linux_arm
+                helix_queue = "(Debian.12.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7"
+            elif arch == "arm64": # public linux_arm64
+                helix_queue = "(Ubuntu.2404.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-arm64v8"
+            else: # public linux_x64
+                helix_queue = "azurelinux.3.amd64.open"
+        elif platform_name == "osx":
+            if arch == "arm64": # public osx_arm64
+                helix_queue = "osx.13.arm64.open"
+            else: # public osx_x64
+                helix_queue = "OSX.1200.Amd64.Open"
+    else:
+        if platform_name == "windows":
+            if arch == "arm64": # internal windows_arm64
+                helix_queue = "Windows.11.Arm64"
+            else: # internal superpmi windows_x64
+                helix_queue = "Windows.10.Amd64.X86.Rt"
+        elif platform_name == "linux":
+            if arch == "arm": # internal linux_arm
+                helix_queue = "(Debian.12.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7"
+            elif arch == "arm64": # internal linux_arm64
+                helix_queue = "(Ubuntu.2404.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-arm64v8"
+            else: # internal linux_x64
+                helix_queue = "azurelinux.3.amd64"
+        elif platform_name == "osx":
+            if arch == "arm64": # internal osx_arm64
+                helix_queue = "OSX.1200.ARM64"
+            else: # internal osx_x64
+                helix_queue = "OSX.1200.Amd64"
 
     # Copy the superpmi scripts
 
@@ -606,7 +632,6 @@ def main(main_args):
     set_pipeline_variable("InputArtifacts", input_artifacts)
     set_pipeline_variable("Python", ' '.join(get_python_name()))
     set_pipeline_variable("Architecture", arch)
-    set_pipeline_variable("Creator", creator)
     set_pipeline_variable("Queue", helix_queue)
     set_pipeline_variable("HelixSourcePrefix", helix_source_prefix)
     set_pipeline_variable("MchFileTag", coreclr_args.mch_file_tag)

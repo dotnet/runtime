@@ -529,6 +529,27 @@ namespace ComInterfaceGenerator.Unit.Tests
                 void Method2();
             }
             """;
+
+        public string DerivedComInterfaceTypeMismatchInWrappers => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [GeneratedComInterface(Options = ComInterfaceOptions.ComObjectWrapper)]
+            [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+            partial interface IComInterface
+            {
+                void Method();
+            }
+
+            [GeneratedComInterface(Options = ComInterfaceOptions.ManagedObjectWrapper)]
+            [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+            partial interface {|#0:IComInterface2|} : IComInterface
+            {
+                void Method2();
+            }
+            """;
+
         public string DerivedComInterfaceTypeMultipleComInterfaceBases => $$"""
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
@@ -647,6 +668,36 @@ namespace ComInterfaceGenerator.Unit.Tests
                 event EventHandler Event;
 
                 public static event EventHandler StaticEvent;
+            }
+            """;
+
+        public string ForwarderWithPreserveSigAndRefKind(string refKind) => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            #nullable enable
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{GeneratedComInterface()}}
+            partial interface IValue
+            {
+            }
+
+            {{GeneratedComInterface()}}
+            partial interface INativeAPIBase
+            {
+                [PreserveSig]
+                int FindValue(int key, {{refKind}} IValue? value);
+            }
+
+            {{GeneratedComInterface()}}
+            unsafe partial interface INativeDerived : INativeAPIBase
+            {
+                [PreserveSig]
+                int GetName(out char* name);
             }
             """;
 
