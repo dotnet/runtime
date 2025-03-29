@@ -800,9 +800,9 @@ namespace ILCompiler
                 }
             }
 
-            public bool CanInline(MethodDesc caller, MethodDesc callee)
+            public bool CanInline(MethodDesc root, MethodDesc caller, MethodDesc callee)
             {
-                if (_baseGroup.CanInline(caller, callee))
+                if (_baseGroup.CanInline(root, caller, callee))
                 {
                     // Since the scanner doesn't look at instance methods whose owning type
                     // wasn't allocated (done through TentativeInstanceMethodNode),

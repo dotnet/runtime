@@ -1234,7 +1234,7 @@ namespace Internal.JitInterface
             // Add an early CanInline check to see if referring to the IL of the target methods is
             // permitted from within this MethodBeingCompiled, the full CanInline check will be performed
             // later.
-            if (!_compilation.CanInline(MethodBeingCompiled, method))
+            if (!_compilation.CanInline(MethodBeingCompiled, MethodBeingCompiled, method))
                 return false;
 
             MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
@@ -1258,7 +1258,7 @@ namespace Internal.JitInterface
             MethodDesc callerMethod = HandleToObject(callerHnd);
             MethodDesc calleeMethod = HandleToObject(calleeHnd);
 
-            if (_compilation.CanInline(callerMethod, calleeMethod))
+            if (_compilation.CanInline(MethodBeingCompiled, callerMethod, calleeMethod))
             {
                 // No restrictions on inlining
                 return CorInfoInline.INLINE_PASS;
@@ -1266,6 +1266,10 @@ namespace Internal.JitInterface
             else
             {
                 // Call may not be inlined
+                //
+                // Note despite returning INLINE_NEVER here, in compilations where jitting is possible
+                // the jit may still be able to inline this method. So we rely on reportInliningDecision
+                // to not propagate this into metadata to short-circuit future inlining attempts.
                 return CorInfoInline.INLINE_NEVER;
             }
         }
