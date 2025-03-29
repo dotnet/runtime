@@ -5579,7 +5579,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         {
             instruction shxaddIns = getShxaddVariant(scale, (genTypeSize(index) == 4));
 
-            if (shxaddIns != INS_none)
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zba) && (shxaddIns != INS_none))
             {
                 GetEmitter()->emitIns_R_R_R(shxaddIns, attr, node->GetRegNum(), index->GetRegNum(), base->GetRegNum());
             }
