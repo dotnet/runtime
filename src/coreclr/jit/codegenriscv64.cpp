@@ -839,7 +839,7 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     regNumber rAddr;
-    regNumber rCnt = REG_NA; // Invalid
+    regNumber rTarget = REG_NA; // Invalid
     regMaskTP regMask;
 
     regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
@@ -880,13 +880,11 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         uCntBytes -= 4;
     }
 
-    unsigned uCntSlots = uCntBytes / REGSIZE_BYTES; // How many register sized stack slots we're going to use.
-
-    // When uCntSlots is 9 or less, we will emit a sequence of sd instructions inline.
-    // When it is 10 or greater, we will emit a loop containing a sd instruction.
+    // When uCntBytes is 11 * REGSIZE_BYTES or less, we will emit a sequence of sd instructions inline.
+    // When it is 12 * REGSIZE_BYTES or greater, we will emit a loop containing a sd instruction.
     // In both of these cases the sd instruction will write two zeros to memory
     // and we will use a single str instruction at the end whenever we have an odd count.
-    if (uCntSlots >= 10)
+    if (uCntBytes >= 12 * REGSIZE_BYTES)
         useLoop = true;
 
     if (useLoop)
@@ -894,25 +892,39 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         // We pick the next lowest register number for rCnt
         noway_assert(availMask != RBM_NONE);
         regMask = genFindLowestBit(availMask);
-        rCnt    = genRegNumFromMask(regMask);
+        rTarget = genRegNumFromMask(regMask);
         availMask &= ~regMask;
 
-        noway_assert(uCntSlots >= 2);
-        assert((genRegMask(rCnt) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rCnt is not a live incoming
-                                                                                // argument reg
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
+        noway_assert(uCntBytes >= 2 * REGSIZE_BYTES);
+        assert((genRegMask(rTarget) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rTarget is not a live incoming
+                                                                                   // argument reg
 
-        // TODO-RISCV64: maybe optimize further
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
+        if (uCntBytes % (4 * REGSIZE_BYTES) == 0)
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rTarget, (ssize_t)uCntBytes);
 
-        // bne rCnt, zero, -4 * 4
-        ssize_t imm = -16;
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES);
-        GetEmitter()->emitIns_R_R_I(INS_bne, EA_PTRSIZE, rCnt, REG_R0, imm);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 16 + padding);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 24 + padding);
 
-        uCntBytes %= REGSIZE_BYTES * 2;
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES + 3 * padding);
+            GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rTarget, -5 << 2);
+
+            uCntBytes %= REGSIZE_BYTES * 4;
+        }
+        else
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rTarget, (ssize_t)uCntBytes);
+
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
+
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES + padding);
+            GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rTarget, -3 << 2);
+
+            uCntBytes %= REGSIZE_BYTES * 2;
+        }
     }
     else
     {
@@ -1145,8 +1157,7 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
     emitAttr  attr       = emitActualTypeSize(tree);
 
     GetEmitter()->emitIns_R_R_I(INS_addi, attr, targetReg, operandReg, 1);
-    // bne targetReg, zero, 2 * 4
-    GetEmitter()->emitIns_R_R_I(INS_bne, attr, targetReg, REG_R0, 8);
+    GetEmitter()->emitIns_R_I(INS_bnez, attr, targetReg, 2 << 2);
     GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, targetReg, -1);
 
     genProduceReg(tree);
@@ -1672,6 +1683,8 @@ void CodeGen::genLclHeap(GenTree* tree)
         // and localloc size is a multiple of STACK_ALIGN.
 
         // Loop:
+        BasicBlock* loop = genCreateTempLabel();
+        genDefineTempLabel(loop);
         emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -16);
 
         emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, 8);
@@ -1684,8 +1697,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         emit->emitIns_R_R_I(INS_addi, emitActualTypeSize(type), regCnt, regCnt, -16);
 
-        // goto Loop
-        emit->emitIns_R_R_I(INS_bne, EA_PTRSIZE, regCnt, REG_R0, -4 << 2);
+        emit->emitIns_J(INS_bnez, loop, regCnt);
 
         lastTouchDelta = 0;
     }
@@ -1741,11 +1753,13 @@ void CodeGen::genLclHeap(GenTree* tree)
         regSet.verifyRegUsed(rPageSize);
         emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_SPBASE, 0);
 
+        BasicBlock* tickleLoop = genCreateTempLabel();
+        genDefineTempLabel(tickleLoop);
         // tickle the page - this triggers a page fault when on the guard page
         emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, tempReg, 0);
         emit->emitIns_R_R_R(INS_sub, EA_4BYTE, tempReg, tempReg, rPageSize);
 
-        emit->emitIns_R_R_I(INS_bgeu, EA_PTRSIZE, tempReg, regCnt, -2 << 2);
+        emit->emitIns_J(INS_bgeu, tickleLoop, tempReg | (regCnt << 5));
 
         // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
         // we're going to assume the worst and probe.
@@ -5847,7 +5861,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         // tempReg = tempReg - 8
         GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -8);
         // if (tempReg != dstReg) goto loop;
-        GetEmitter()->emitIns_J(INS_bne, loop, (int)tempReg | ((int)dstReg << 5));
+        GetEmitter()->emitIns_J(INS_bne, loop, tempReg | (dstReg << 5));
         GetEmitter()->emitEnableGC();
 
         gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
@@ -6700,7 +6714,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
         noway_assert(excpRaisingBlock != nullptr);
 
         // Jump to the exception-throwing block on error.
-        emit->emitIns_J(ins, excpRaisingBlock, (int)reg1 | ((int)reg2 << 5)); // 5-bits;
+        emit->emitIns_J(ins, excpRaisingBlock, reg1 | (reg2 << 5)); // 5-bits;
     }
     else
     {

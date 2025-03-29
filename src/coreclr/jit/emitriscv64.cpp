@@ -51,6 +51,26 @@ const emitJumpKind emitReverseJumpKinds[] = {
 }
 
 /*****************************************************************************
+ * Look up the (conditional) jump kind for an instruction.
+ */
+
+/*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
+{
+    assert(emitter::isCondJumpInstruction(ins));
+
+    for (unsigned i = 0; i < ArrLen(emitJumpKindInstructions); i++)
+    {
+        if (ins == emitJumpKindInstructions[i])
+        {
+            emitJumpKind ret = (emitJumpKind)i;
+            assert(EJ_NONE < ret && ret < EJ_COUNT);
+            return ret;
+        }
+    }
+    unreached();
+}
+
+/*****************************************************************************
  * Reverse the conditional jump
  */
 
@@ -58,6 +78,17 @@ const emitJumpKind emitReverseJumpKinds[] = {
 {
     assert(jumpKind < EJ_COUNT);
     return emitReverseJumpKinds[jumpKind];
+}
+
+/*****************************************************************************
+ * Reverse the conditional jump instruction
+ */
+
+/*static*/ instruction emitter::emitReverseJumpIns(instruction ins)
+{
+    assert(emitter::isCondJumpInstruction(ins));
+
+    return emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(ins)));
 }
 
 /*****************************************************************************
@@ -554,6 +585,9 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             code |= ((imm >> 1) & 0x3ff) << 21;
             code |= ((imm >> 20) & 0x1) << 31;
             break;
+        case INS_bnez:
+        case INS_beqz:
+            return emitIns_R_R_I(ins, attr, reg, REG_ZERO, imm, opt);
         default:
             NO_WAY("illegal ins within emitIns_R_I!");
             break;
@@ -564,6 +598,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     id->idIns(ins);
     id->idReg1(reg);
     id->idAddr()->iiaSetInstrEncode(code);
+
     id->idCodeSize(4);
 
     appendToCurIG(id);
@@ -740,7 +775,7 @@ void emitter::emitIns_R_R_I(
         code |= reg2 << 15;                                        // rs1
         code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7); // imm
     }
-    else if (INS_beq <= ins && INS_bgeu >= ins)
+    else if (isCondJumpInstruction(ins))
     {
         assert(isGeneralRegister(reg1));
         assert(isGeneralRegister(reg2));
@@ -752,7 +787,6 @@ void emitter::emitIns_R_R_I(
         code |= ((imm >> 1) & 0xf) << 8;
         code |= ((imm >> 5) & 0x3f) << 25;
         code |= ((imm >> 12) & 0x1) << 31;
-        // TODO-RISCV64: Move jump logic to emitIns_J
         id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
     }
     else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
@@ -1169,29 +1203,31 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
-void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
-{
-    NYI_RISCV64("emitIns_J_R-----unimplemented/unused on RISCV64 yet----");
-}
-
 void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 {
-    assert(dst != nullptr);
-    //
-    // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JALR.
-    // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dst
+    assert(isCondJumpInstruction(ins) || isJumpInstruction(ins));
 
-    assert(dst->HasFlag(BBF_HAS_LABEL));
+    if (dst != nullptr)
+    {
+        assert(dst->HasFlag(BBF_HAS_LABEL));
+    }
 
     instrDescJmp* id = emitNewInstrJmp();
-    assert((INS_jal <= ins) && (ins <= INS_bgeu));
     id->idIns(ins);
     id->idReg1((regNumber)(instrCount & 0x1f));
     id->idReg2((regNumber)((instrCount >> 5) & 0x1f));
 
     id->idInsOpt(INS_OPTS_J);
     emitCounts_INS_OPTS_J++;
-    id->idAddr()->iiaBBlabel = dst;
+
+    if (dst != nullptr)
+    {
+        id->idAddr()->iiaBBlabel = dst;
+    }
+    else
+    {
+        id->idAddr()->iiaSetInstrCount(instrCount);
+    }
 
     if (emitComp->opts.compReloc)
     {
@@ -1200,18 +1236,16 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
     id->idjShort = false;
 
-    // TODO-RISCV64: maybe deleted this.
-    id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
 #ifdef DEBUG
     if (emitComp->opts.compLongAddress) // Force long branches
         id->idjKeepLong = 1;
 #endif // DEBUG
 
-    /* Record the jump's IG and offset within it */
+    // Record the jump's IG and offset within it
     id->idjIG   = emitCurIG;
     id->idjOffs = emitCurIGsize;
 
-    /* Append this jump to this IG's jump list */
+    // Append this jump to this IG's jump list
     id->idjNext      = emitCurIGjmpList;
     emitCurIGjmpList = id;
 
@@ -2302,9 +2336,6 @@ static inline void assertCodeLength(size_t code, uint8_t size)
 /*static*/ emitter::code_t emitter::insEncodeSTypeInstr(
     unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm12)
 {
-    static constexpr unsigned kLoMask = 0x1f; // 0b00011111
-    static constexpr unsigned kHiMask = 0x7f; // 0b01111111
-
     assertCodeLength(opcode, 7);
     assertCodeLength(funct3, 3);
     assertCodeLength(rs1, 5);
@@ -2312,10 +2343,15 @@ static inline void assertCodeLength(size_t code, uint8_t size)
     // This assert may be triggered by the untrimmed signed integers. Please refer to the TrimSigned helpers
     assertCodeLength(imm12, 12);
 
-    unsigned imm12Lo = imm12 & kLoMask;
-    unsigned imm12Hi = (imm12 >> 5) & kHiMask;
+    code_t code = opcode;
 
-    return opcode | (imm12Lo << 7) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (imm12Hi << 25);
+    code |= (imm12 & 0xFE0) << 20; // imm[11:5] -> 31:25
+    code |= rs2 << 20;             // rs2 -> 24:20
+    code |= rs1 << 15;             // rs1 -> 19:15
+    code |= funct3 << 12;          // funct3 -> 14:12
+    code |= (imm12 & 0x1F) << 7;   // imm[4:0] -> 11:7
+
+    return code;
 }
 
 /*****************************************************************************
@@ -2353,26 +2389,24 @@ static inline void assertCodeLength(size_t code, uint8_t size)
 /*static*/ emitter::code_t emitter::insEncodeBTypeInstr(
     unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm13)
 {
-    static constexpr unsigned kLoSectionMask = 0x0f; // 0b00001111
-    static constexpr unsigned kHiSectionMask = 0x3f; // 0b00111111
-    static constexpr unsigned kBitMask       = 0x01;
-
     assertCodeLength(opcode, 7);
     assertCodeLength(funct3, 3);
     assertCodeLength(rs1, 5);
     assertCodeLength(rs2, 5);
     // This assert may be triggered by the untrimmed signed integers. Please refer to the TrimSigned helpers
     assertCodeLength(imm13, 13);
-    assert((imm13 & 0x01) == 0);
 
-    unsigned imm12          = imm13 >> 1;
-    unsigned imm12LoSection = imm12 & kLoSectionMask;
-    unsigned imm12LoBit     = (imm12 >> 10) & kBitMask;
-    unsigned imm12HiSection = (imm12 >> 4) & kHiSectionMask;
-    unsigned imm12HiBit     = (imm12 >> 11) & kBitMask;
+    code_t code = opcode;
 
-    return opcode | (imm12LoBit << 7) | (imm12LoSection << 8) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) |
-           (imm12HiSection << 25) | (imm12HiBit << 31);
+    code |= (imm13 & 0x1000) << 19; // imm[12] -> 31
+    code |= (imm13 & 0x7E0) << 20;  // imm[10:5] -> 30:25
+    code |= (imm13 & 0x1E) << 7;    // imm[4:1] -> 11:8
+    code |= (imm13 & 0x800) >> 4;   // imm[11] -> 7
+    code |= funct3 << 12;           // funct3 -> 14:12
+    code |= rs1 << 15;              // rs1 -> 19:15
+    code |= rs2 << 20;              // rs2 -> 24:20
+
+    return code;
 }
 
 /*****************************************************************************
@@ -2388,24 +2422,20 @@ static inline void assertCodeLength(size_t code, uint8_t size)
 
 /*static*/ emitter::code_t emitter::insEncodeJTypeInstr(unsigned opcode, unsigned rd, unsigned imm21)
 {
-    static constexpr unsigned kHiSectionMask = 0x3ff; // 0b1111111111
-    static constexpr unsigned kLoSectionMask = 0xff;  // 0b11111111
-    static constexpr unsigned kBitMask       = 0x01;
-
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
     // This assert may be triggered by the untrimmed signed integers. Please refer to the TrimSigned helpers
     assertCodeLength(imm21, 21);
-    assert((imm21 & 0x01) == 0);
 
-    unsigned imm20          = imm21 >> 1;
-    unsigned imm20HiSection = imm20 & kHiSectionMask;
-    unsigned imm20HiBit     = (imm20 >> 19) & kBitMask;
-    unsigned imm20LoSection = (imm20 >> 11) & kLoSectionMask;
-    unsigned imm20LoBit     = (imm20 >> 10) & kBitMask;
+    code_t code = opcode;
 
-    return opcode | (rd << 7) | (imm20LoSection << 12) | (imm20LoBit << 20) | (imm20HiSection << 21) |
-           (imm20HiBit << 31);
+    code |= (imm21 & 0x100000) << 11; // imm[20] -> 31
+    code |= (imm21 & 0x7FE) << 20;    // imm[10:1] -> 30:21
+    code |= (imm21 & 0x800) << 9;     // imm[11] -> 20
+    code |= imm21 & 0xFF000;          // imm[19:12] -> 19:12
+    code |= rd << 7;
+
+    return code;
 }
 
 static constexpr unsigned kInstructionOpcodeMask = 0x7f;
@@ -2769,7 +2799,7 @@ unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs
 unsigned emitter::emitOutput_BTypeInstr_InvertComparation(
     BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, unsigned imm13) const
 {
-    unsigned insCode = emitInsCode(ins) ^ 0x1000;
+    unsigned insCode = emitInsCode(emitReverseJumpIns(ins));
 #ifdef DEBUG
     emitOutput_BTypeInstr_SanityCheck(ins, rs1, rs2);
 #endif // DEBUG
