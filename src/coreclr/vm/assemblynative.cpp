@@ -1497,7 +1497,7 @@ namespace
         // Since the TypeMap attributes are generic, we need to narrow the
         // search to only those that are instantiated over the "GroupType"
         // that is supplied by the caller.
-        mdTypeSpec targetTypeSpec = mdTypeSpecNil;
+        mdTypeSpec lastMatchingTypeSpec = mdTypeSpecNil;
         mdCustomAttribute tkAttribute;
         while (pImport->EnumNext(&hEnum, &tkAttribute))
         {
@@ -1509,17 +1509,16 @@ namespace
             _ASSERTE(TypeFromToken(tokenType) == mdtTypeSpec);
 
             // Determine if this TypeSpec contains the "GroupType" we are looking for.
-            if (targetTypeSpec == mdTypeSpecNil)
+            // There is no requirement in ECMA-335 that the same TypeSpec be used
+            // for the same generic instantiation. It is true for Roslyn assemblies so we
+            // will do a check as an optimization, but we must fall back and re-check
+            // the TypeSpec contents to be sure it doesn't match.
+            if (tokenType != lastMatchingTypeSpec)
             {
                 if (!IsTypeSpecForTypeMapGroup(groupTypeMT, pAssembly, tokenType))
                     continue;
 
-                targetTypeSpec = (mdTypeSpec)tokenType;
-            }
-            else if (tokenType != targetTypeSpec)
-            {
-                // Not the correct TypeSpec.
-                continue;
+                lastMatchingTypeSpec = (mdTypeSpec)tokenType;
             }
 
             // We've determined the attribute is the instantiation we want, now process the attribute contents.
