@@ -2141,10 +2141,10 @@ namespace System.Threading.Tasks
 
         internal void NotifyParentIfPotentiallyAttachedTask()
         {
-            if (Interlocked.Increment(ref s_notificationDepth) > MaxNotificationDepth)
+            if (++s_notificationDepth > MaxNotificationDepth)
             {
                 if (TplEventSource.Log.IsEnabled()) TplEventSource.Log.Write("TaskNotifyParentIfChildComplete: Notification recursion detected and limited at depth " + s_notificationDepth);
-                Interlocked.Decrement(ref s_notificationDepth);
+                --s_notificationDepth;
                 return;
             }
 
@@ -2164,7 +2164,7 @@ namespace System.Threading.Tasks
             }
             finally
             {
-                Interlocked.Decrement(ref s_notificationDepth);
+                --s_notificationDepth;
             }
         }
 
