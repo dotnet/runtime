@@ -19,50 +19,21 @@ namespace ILCompiler.DependencyAnalysis
         {
             switch (Id)
             {
-                case ReadyToRunHelperId.VirtualCall:
-                    {
-                        MethodDesc targetMethod = (MethodDesc)Target;
-
-                        Debug.Assert(!targetMethod.OwningType.IsInterface);
-                        Debug.Assert(!targetMethod.CanMethodBeInSealedVTable(factory));
-
-                        AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int32);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
-
-                        int pointerSize = factory.Target.PointerSize;
-
-                        int slot = 0;
-                        if (!relocsOnly)
-                        {
-                            slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
-                            Debug.Assert(slot != -1);
-                        }
-
-                        AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize), 0, AddrModeSize.Int32);
-                        encoder.EmitJmpToAddrMode(ref jmpAddrMode);
-                    }
-                    break;
-
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
                         bool hasLazyStaticConstructor = factory.PreinitializationManager.HasLazyStaticConstructor(target);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target));
 
                         if (!hasLazyStaticConstructor)
                         {
+                            encoder.EmitMOV(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitRET();
                         }
                         else
                         {
-                            // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
+                            // The fast path check is not necessary. It is always expanded by RyuJIT.
+                            encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitMOV(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int32);
-                            encoder.EmitCMP(ref initialized, 0);
-                            encoder.EmitRETIfEqual();
-
-                            encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase));
                         }
                     }
@@ -119,23 +90,19 @@ namespace ILCompiler.DependencyAnalysis
                         MetadataType target = (MetadataType)Target;
                         bool hasLazyStaticConstructor = factory.PreinitializationManager.HasLazyStaticConstructor(target);
                         encoder.EmitMOV(encoder.TargetRegister.Result, factory.TypeGCStaticsSymbol(target));
-                        AddrMode loadFromEax = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int32);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromEax);
 
                         if (!hasLazyStaticConstructor)
                         {
+                            AddrMode loadFromEax = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int32);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromEax);
                             encoder.EmitRET();
                         }
                         else
                         {
-                            // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
+                            // The fast path check is not necessary. It is always expanded by RyuJIT.
+                            AddrMode loadFromEax = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int32);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromEax);
                             encoder.EmitMOV(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int32);
-                            encoder.EmitCMP(ref initialized, 0);
-                            encoder.EmitRETIfEqual();
-
-                            encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
                         }
                     }
@@ -188,7 +155,28 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
-                        encoder.EmitINT3();
+                        MethodDesc targetMethod = (MethodDesc)Target;
+                        if (targetMethod.OwningType.IsInterface)
+                        {
+                            encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
+                            encoder.EmitJMP(factory.ExternSymbol("RhpResolveInterfaceMethod"));
+                        }
+                        else
+                        {
+                            if (relocsOnly)
+                                break;
+
+                            AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int32);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
+
+                            Debug.Assert(!targetMethod.CanMethodBeInSealedVTable(factory));
+
+                            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
+                            Debug.Assert(slot != -1);
+                            AddrMode loadFromSlot = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int32);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromSlot);
+                            encoder.EmitRET();
+                        }
                     }
                     break;
 

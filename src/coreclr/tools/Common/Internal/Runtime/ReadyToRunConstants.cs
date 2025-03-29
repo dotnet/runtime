@@ -57,7 +57,6 @@ namespace Internal.ReadyToRunConstants
     [Flags]
     public enum ReadyToRunFieldSigFlags : byte
     {
-        READYTORUN_FIELD_SIG_IndexInsteadOfToken = 0x08,
         READYTORUN_FIELD_SIG_MemberRefToken = 0x10,
         READYTORUN_FIELD_SIG_OwnerType = 0x40,
     }
@@ -141,7 +140,7 @@ namespace Internal.ReadyToRunConstants
         VirtualEntry = 0x16,                // For invoking a virtual method
         VirtualEntry_DefToken = 0x17,       // Smaller version of VirtualEntry - method is def token
         VirtualEntry_RefToken = 0x18,       // Smaller version of VirtualEntry - method is ref token
-        VirtualEntry_Slot = 0x19,           // Smaller version of VirtualEntry - type & slot
+        VirtualEntry_Slot = 0x19,           // Smaller version of VirtualEntry - type & slot - OBSOLETE, not currently used, and hasn't ever been used in R2R codegen since crossgen2 was introduced, and may not have ever been used.
 
         Helper = 0x1A,                      // Helper
         StringHandle = 0x1B,                // String handle
@@ -234,6 +233,7 @@ namespace Internal.ReadyToRunConstants
         WriteBarrier                = 0x30,
         CheckedWriteBarrier         = 0x31,
         ByRefWriteBarrier           = 0x32,
+        BulkWriteBarrier            = 0x33,
 
         // Array helpers
         Stelem_Ref                  = 0x38,
@@ -255,7 +255,7 @@ namespace Internal.ReadyToRunConstants
         GetString = 0x50,
 
         // Used by /Tuning for Profile optimizations
-        LogMethodEnter = 0x51,
+        LogMethodEnter = 0x51,  // No longer supported as of READYTORUN_MAJOR_VERSION 10.0
 
         // Reflection helpers
         GetRuntimeTypeHandle        = 0x54,
@@ -267,6 +267,7 @@ namespace Internal.ReadyToRunConstants
         Unbox                       = 0x5A,
         Unbox_Nullable              = 0x5B,
         NewMultiDimArr              = 0x5C,
+        Unbox_TypeTest              = 0x5D,
 
         // Helpers used with generic handle lookup cases
         NewObject                   = 0x60,
@@ -370,9 +371,6 @@ namespace Internal.ReadyToRunConstants
         CheckCastClassSpecial,
         CheckInstanceInterface,
         CheckInstanceClass,
-
-        MonitorEnterStatic,
-        MonitorExitStatic,
 
         NewMultiDimArrRare,
 

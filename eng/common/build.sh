@@ -42,6 +42,7 @@ usage()
   echo "  --prepareMachine         Prepare machine for CI run, clean up processes after build"
   echo "  --nodeReuse <value>      Sets nodereuse msbuild parameter ('true' or 'false')"
   echo "  --warnAsError <value>    Sets warnaserror msbuild parameter ('true' or 'false')"
+  echo "  --buildCheck <value>     Sets /check msbuild parameter"
   echo ""
   echo "Command line arguments not listed above are passed thru to msbuild."
   echo "Arguments can also be passed in with a single hyphen."
@@ -62,7 +63,6 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 restore=false
 build=false
 source_build=false
-vertical_build=false
 product_build=false
 rebuild=false
 test=false
@@ -77,6 +77,7 @@ clean=false
 
 warn_as_error=true
 node_reuse=true
+build_check=false
 binary_log=false
 exclude_ci_binary_log=false
 pipelines_log=false
@@ -141,13 +142,6 @@ while [[ $# > 0 ]]; do
       restore=true
       pack=true
       ;;
-    -verticalbuild|-vb)
-      build=true
-      vertical_build=true
-      product_build=true
-      restore=true
-      pack=true
-      ;;
     -test|-t)
       test=true
       ;;
@@ -180,6 +174,9 @@ while [[ $# > 0 ]]; do
     -nodereuse)
       node_reuse=$2
       shift
+      ;;
+    -buildcheck)
+      build_check=true
       ;;
     -runtimesourcefeed)
       runtime_source_feed=$2
@@ -232,16 +229,20 @@ function Build {
     bl="/bl:\"$log_dir/Build.binlog\""
   fi
 
+  local check=""
+  if [[ "$build_check" == true ]]; then
+    check="/check"
+  fi
+
   MSBuild $_InitializeToolset \
     $bl \
+    $check \
     /p:Configuration=$configuration \
     /p:RepoRoot="$repo_root" \
     /p:Restore=$restore \
     /p:Build=$build \
     /p:DotNetBuildRepo=$product_build \
-    /p:ArcadeBuildFromSource=$source_build \
     /p:DotNetBuildSourceOnly=$source_build \
-    /p:ArcadeBuildVertical=$vertical_build \
     /p:Rebuild=$rebuild \
     /p:Test=$test \
     /p:Pack=$pack \

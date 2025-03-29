@@ -14,7 +14,6 @@ BEGIN
 	MSG_FOR_URT_HR(HOST_E_INVALIDOPERATION) "Invalid operation."
 	MSG_FOR_URT_HR(HOST_E_CLRNOTAVAILABLE) "CLR has been disabled due to unrecoverable error."
 	MSG_FOR_URT_HR(FUSION_E_REF_DEF_MISMATCH) "The located assembly's manifest definition does not match the assembly reference."
-	MSG_FOR_URT_HR(FUSION_E_PRIVATE_ASM_DISALLOWED) "A strongly-named assembly is required."
 	MSG_FOR_URT_HR(FUSION_E_INVALID_NAME) "The given assembly name was invalid."
 	MSG_FOR_URT_HR(FUSION_E_APP_DOMAIN_LOCKED) "The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest."
 	MSG_FOR_URT_HR(COR_E_LOADING_REFERENCE_ASSEMBLY) "Reference assemblies cannot be loaded for execution."

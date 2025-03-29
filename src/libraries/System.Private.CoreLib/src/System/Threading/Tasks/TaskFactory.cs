@@ -2346,9 +2346,7 @@ namespace System.Threading.Tasks
             int numTasks = tasks.Count;
             for (int i = 0; i < numTasks; i++)
             {
-                Task task = tasks[i];
-                if (task == null) throw new ArgumentException(SR.Task_MultiTaskContinuation_NullTask, nameof(tasks));
-
+                Task task = tasks[i] ?? throw new ArgumentException(SR.Task_MultiTaskContinuation_NullTask, nameof(tasks));
                 if (checkArgsOnly) continue;
 
                 // If the promise has already completed, don't bother with checking any more tasks.

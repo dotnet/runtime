@@ -140,6 +140,7 @@ namespace System.Resources
             ReadResources();
         }
 
+        [FeatureSwitchDefinition("System.Resources.ResourceManager.AllowCustomResourceTypes")]
         internal static bool AllowCustomResourceTypes { get; } = AppContext.TryGetSwitch("System.Resources.ResourceManager.AllowCustomResourceTypes", out bool allowReflection) ? allowReflection : true;
 
         public void Close()

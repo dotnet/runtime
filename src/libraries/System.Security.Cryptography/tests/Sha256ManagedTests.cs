@@ -6,11 +6,13 @@ namespace System.Security.Cryptography.Tests
     /// <summary>
     /// Sha256Managed has a copy of the same implementation as SHA256
     /// </summary>
-    public class Sha256ManagedTests : Sha256Tests
+    public class Sha256ManagedTests : Sha256Tests<Sha256ManagedTests.Traits>
     {
-        protected override HashAlgorithm Create()
+        public sealed class Traits : IHashTrait
         {
-            return new SHA256Managed();
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => SHA256.HashSizeInBytes;
+            public static HashAlgorithm Create() => new SHA256Managed();
         }
     }
 }

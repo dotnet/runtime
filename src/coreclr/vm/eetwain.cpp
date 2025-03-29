@@ -430,7 +430,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             {
                 // This is an explicit (not special) var, so add its varNumber + 1 to our
                 // max count ("+1" because varNumber is zero-based).
-                oldNumVars = max(oldNumVars, unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1);
+                oldNumVars = max(oldNumVars, (unsigned)(unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1));
             }
         }
 
@@ -484,7 +484,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             {
                 // This is an explicit (not special) var, so add its varNumber + 1 to our
                 // max count ("+1" because varNumber is zero-based).
-                newNumVars = max(newNumVars, unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1);
+                newNumVars = max(newNumVars, (unsigned)(unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1));
             }
         }
 
@@ -843,7 +843,13 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
             dwRelOffset
             );
 
-    return gcInfoDecoder.IsInterruptible();
+    if (gcInfoDecoder.IsInterruptible())
+        return true;
+
+    if (gcInfoDecoder.IsSafePoint())
+        return true;
+
+    return false;
 }
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -865,86 +871,6 @@ bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
     return gcInfoDecoder.HasTailCalls();
 }
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-
-#if defined(TARGET_AMD64) && defined(_DEBUG)
-
-struct FindEndOfLastInterruptibleRegionState
-{
-    unsigned curOffset;
-    unsigned endOffset;
-    unsigned lastRangeOffset;
-};
-
-bool FindEndOfLastInterruptibleRegionCB (
-        UINT32 startOffset,
-        UINT32 stopOffset,
-        LPVOID hCallback)
-{
-    FindEndOfLastInterruptibleRegionState *pState = (FindEndOfLastInterruptibleRegionState*)hCallback;
-
-    //
-    // If the current range doesn't overlap the given range, keep searching.
-    //
-    if (   startOffset >= pState->endOffset
-        || stopOffset < pState->curOffset)
-    {
-        return false;
-    }
-
-    //
-    // If the range overlaps the end, then the last point is the end.
-    //
-    if (   stopOffset > pState->endOffset
-        /*&& startOffset < pState->endOffset*/)
-    {
-        // The ranges should be sorted in increasing order.
-        CONSISTENCY_CHECK(startOffset >= pState->lastRangeOffset);
-
-        pState->lastRangeOffset = pState->endOffset;
-        return true;
-    }
-
-    //
-    // See if the end of this range is the closet to the end that we've found
-    // so far.
-    //
-    if (stopOffset > pState->lastRangeOffset)
-        pState->lastRangeOffset = stopOffset;
-
-    return false;
-}
-
-/*
-    Locates the end of the last interruptible region in the given code range.
-    Returns 0 if the entire range is uninterruptible.  Returns the end point
-    if the entire range is interruptible.
-*/
-unsigned EECodeManager::FindEndOfLastInterruptibleRegion(unsigned curOffset,
-                                                         unsigned endOffset,
-                                                         GCInfoToken gcInfoToken)
-{
-#ifndef DACCESS_COMPILE
-    GcInfoDecoder gcInfoDecoder(
-            gcInfoToken,
-            DECODE_FOR_RANGES_CALLBACK
-            );
-
-    FindEndOfLastInterruptibleRegionState state;
-    state.curOffset = curOffset;
-    state.endOffset = endOffset;
-    state.lastRangeOffset = 0;
-
-    gcInfoDecoder.EnumerateInterruptibleRanges(&FindEndOfLastInterruptibleRegionCB, &state);
-
-    return state.lastRangeOffset;
-#else
-    DacNotImpl();
-    return NULL;
-#endif // #ifndef DACCESS_COMPILE
-}
-
-#endif // TARGET_AMD64 && _DEBUG
-
 
 #else // !USE_GC_INFO_DECODER
 
@@ -1180,7 +1106,6 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -1409,31 +1334,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
-#if defined(STRESS_HEAP) && defined(PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
-    // When we simulate a hijack during gcstress
-    //  we start with ActiveStackFrame and the offset
-    //  after the call
-    // We need to make it look like a non-leaf frame
-    //  so that it's treated like a regular hijack
-    if (flags & ActiveStackFrame)
-    {
-        GcInfoDecoder _gcInfoDecoder(
-                            gcInfoToken,
-                            DECODE_INTERRUPTIBILITY,
-                            curOffs
-                            );
-        if(!_gcInfoDecoder.IsInterruptible())
-        {
-            // This must be the offset after a call
-#ifdef _DEBUG
-            GcInfoDecoder _safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
-            _ASSERTE(_safePointDecoder.IsSafePoint(curOffs));
-#endif
-            flags &= ~((unsigned)ActiveStackFrame);
-        }
-    }
-#endif // STRESS_HEAP && PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-
 #ifdef _DEBUG
     if (flags & ActiveStackFrame)
     {
@@ -1442,42 +1342,9 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
                             );
-        _ASSERTE(_gcInfoDecoder.IsInterruptible());
+        _ASSERTE(_gcInfoDecoder.IsInterruptible() || _gcInfoDecoder.CouldBeSafePoint());
     }
 #endif
-
-    /* If we are not in the active method, we are currently pointing
-         * to the return address; at the return address stack variables
-         * can become dead if the call is the last instruction of a try block
-         * and the return address is the jump around the catch block. Therefore
-         * we simply assume an offset inside of call instruction.
-         * NOTE: The GcInfoDecoder depends on this; if you change it, you must
-         * revisit the GcInfoEncoder/Decoder
-         */
-
-    if (!(flags & ExecutionAborted))
-    {
-        if (!(flags & ActiveStackFrame))
-        {
-            curOffs--;
-            LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset due to flags !ExecutionAborted && !ActiveStackFrame. Now reporting GC refs for %s at offset %04x.\n",
-                methodName, curOffs));
-        }
-    }
-    else
-    {
-        /* However if ExecutionAborted, then this must be one of the
-         * ExceptionFrames. Handle accordingly
-         */
-        _ASSERTE(!(flags & AbortingCall) || !(flags & ActiveStackFrame));
-
-        if (flags & AbortingCall)
-        {
-            curOffs--;
-            LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset due to flags ExecutionAborted && AbortingCall. Now reporting GC refs for %s at offset %04x.\n",
-                methodName, curOffs));
-        }
-    }
 
     // Check if we have been given an override value for relOffset
     if (relOffsetOverride != NO_OVERRIDE_OFFSET)
@@ -1522,7 +1389,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     // A frame is non-leaf if we are executing a call, or a fault occurred in the function.
     // The only case in which we need to report scratch slots for a non-leaf frame
     //   is when execution has to be resumed at the point of interruption (via ResumableFrame)
-    //<TODO>Implement ResumableFrame</TODO>
     _ASSERTE( sizeof( BOOL ) >= sizeof( ActiveStackFrame ) );
     reportScratchSlots = (flags & ActiveStackFrame) != 0;
 
@@ -1650,7 +1516,6 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     hdrInfo     info;
     unsigned    stackDepth;
     TADDR       taArgBase;
-    unsigned    count;
 
     /* Extract the necessary information from the info block header */
 
@@ -1709,7 +1574,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     /* The 'this' pointer can never be located in the untracked table */
     /* as we only allow pinned and byrefs in the untracked table      */
 
-    count = info.untrackedCnt;
+    unsigned count = info.untrackedCnt;
     while (count-- > 0)
     {
         fastSkipSigned(table);
@@ -1947,6 +1812,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 
 void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
                                       EECodeInfo *    pCodeInfo,
+                                      unsigned        flags,
                                       CodeManState  * pState)
 {
     CONTRACTL {
@@ -1959,6 +1825,14 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
 
 #ifdef FEATURE_EH_FUNCLETS
     if (pCodeInfo->IsFunclet())
+    {
+        return NULL;
+    }
+#endif
+
+#ifdef HAS_LIGHTUNWIND
+    // LightUnwind does not track sufficient context to compute GS cookie address
+    if (flags & LightUnwind)
     {
         return NULL;
     }
@@ -2014,7 +1888,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
             // Detect the end of GS cookie scope by comparing its address with SP
             // gcInfoDecoder.GetGSCookieValidRangeEnd() is not accurate. It does not
             // account for GS cookie going out of scope inside epilog or multiple epilogs.
-            return (LPVOID) ((ptr >= pContext->SP) ? ptr : NULL);
+            return (ptr >= pContext->SP) ? (LPVOID)ptr : nullptr;
         }
     }
     return NULL;
@@ -2118,7 +1992,7 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKind * returnKind)
+bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind))
 {
     CONTRACTL{
         NOTHROW;
@@ -2141,7 +2015,7 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKi
     return true;
 #else // !USE_GC_INFO_DECODER
 
-    GcInfoDecoder gcInfoDecoder(gcInfoToken, GcInfoDecoderFlags(DECODE_RETURN_KIND | DECODE_REVERSE_PINVOKE_VAR));
+    GcInfoDecoder gcInfoDecoder(gcInfoToken, GcInfoDecoderFlags(DECODE_REVERSE_PINVOKE_VAR));
 
     if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
     {
@@ -2149,7 +2023,6 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKi
         return false;
     }
 
-    *returnKind = gcInfoDecoder.GetReturnKind();
     return true;
 #endif // USE_GC_INFO_DECODER
 }
@@ -2188,43 +2061,6 @@ const BYTE* EECodeManager::GetFinallyReturnAddr(PREGDISPLAY pReg)
 
     return *(const BYTE**)(size_t)(GetRegdisplaySP(pReg));
 }
-
-BOOL EECodeManager::IsInFilter(GCInfoToken gcInfoToken,
-                               unsigned offset,
-                               PCONTEXT pCtx,
-                               DWORD curNestLevel)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    /* Extract the necessary information from the info block header */
-
-    hdrInfo     info;
-
-    DecodeGCHdrInfo(gcInfoToken,
-                    offset,
-                    &info);
-
-    /* make sure that we have an ebp stack frame */
-
-    _ASSERTE(info.ebpFrame);
-    _ASSERTE(info.handlers); // <TODO> This will always be set. Remove it</TODO>
-
-    TADDR       baseSP;
-    DWORD       nestingLevel;
-
-    FrameType   frameType = GetHandlerFrameInfo(&info, pCtx->Ebp,
-                                                pCtx->Esp, (DWORD) IGNORE_VAL,
-                                                &baseSP, &nestingLevel);
-    _ASSERTE(frameType != FR_INVALID);
-
-//    _ASSERTE(nestingLevel == curNestLevel);
-
-    return frameType == FR_FILTER;
-}
-
 
 BOOL EECodeManager::LeaveFinally(GCInfoToken gcInfoToken,
                                 unsigned offset,
@@ -2441,3 +2277,60 @@ ULONG32 EECodeManager::GetStackParameterSize(EECodeInfo * pCodeInfo)
 #endif // TARGET_X86
 }
 
+#ifdef FEATURE_INTERPRETER
+
+bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
+                                              EECodeInfo     *pCodeInfo,
+                                              unsigned        flags,
+                                              CodeManState   *pState)
+{
+    // Interpreter-TODO: Implement this
+    return false;
+}
+
+bool InterpreterCodeManager::IsGcSafe(EECodeInfo *pCodeInfo,
+                                      DWORD       dwRelOffset)
+{
+    // Interpreter-TODO: Implement this
+    return true;
+}
+
+bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
+                                        EECodeInfo     *pCodeInfo,
+                                        unsigned        flags,
+                                        GCEnumCallback  pCallback,
+                                        LPVOID          hCallBack,
+                                        DWORD           relOffsetOverride)
+{
+    // Interpreter-TODO: Implement this
+    return false;
+}
+
+OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
+                                              EECodeInfo *    pCodeInfo)
+{
+    // Interpreter-TODO: Implement this
+    return NULL;
+}
+
+PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
+                                                 EECodeInfo *    pCodeInfo)
+{
+    // Interpreter-TODO: Implement this
+    return NULL;
+}
+
+GenericParamContextType InterpreterCodeManager::GetParamContextType(PREGDISPLAY     pContext,
+                                            EECodeInfo *    pCodeInfo)
+{
+    // Interpreter-TODO: Implement this
+    return GENERIC_PARAM_CONTEXT_NONE;
+}
+
+size_t InterpreterCodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
+{
+    // Interpreter-TODO: Implement this
+    return 0;
+}
+
+#endif // FEATURE_INTERPRETER

@@ -25,17 +25,9 @@ namespace System.Text.Json
             bool createExtensionProperty = true)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-#if DEBUG
-            if (jsonTypeInfo.Kind != JsonTypeInfoKind.Object)
-            {
-                string objTypeName = obj?.GetType().FullName ?? "<null>";
-                Debug.Fail($"obj.GetType() => {objTypeName}; {jsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
-            }
-#endif
-
             useExtensionProperty = false;
 
-            JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.GetProperty(
+            JsonPropertyInfo? jsonPropertyInfo = jsonTypeInfo.GetProperty(
                 unescapedPropertyName,
                 ref state.Current,
                 out byte[] utf8PropertyName);
@@ -47,7 +39,7 @@ namespace System.Text.Json
             state.Current.JsonPropertyName = utf8PropertyName;
 
             // Handle missing properties
-            if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
+            if (jsonPropertyInfo is null)
             {
                 if (jsonTypeInfo.EffectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                 {
@@ -69,6 +61,11 @@ namespace System.Text.Json
 
                     jsonPropertyInfo = dataExtProperty;
                     useExtensionProperty = true;
+                }
+                else
+                {
+                    // Populate with a placeholder value required by JsonPath calculations
+                    jsonPropertyInfo = JsonPropertyInfo.s_missingProperty;
                 }
             }
 

@@ -38,7 +38,7 @@ public:
         BOOL fSharedByGenericInstantiations; // TRUE if this is canonical type shared by instantiations
         BOOL fContainsGenericVariables; // TRUE if this is an open type
 
-        inline bmtGenericsInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtGenericsInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
         inline DWORD GetNumGenericArgs() const { LIMITED_METHOD_CONTRACT; return typeContext.m_classInst.GetNumArgs(); }
         inline BOOL HasInstantiation() const { LIMITED_METHOD_CONTRACT; return typeContext.m_classInst.GetNumArgs() != 0; }
         inline BOOL IsTypicalTypeDefinition() const { LIMITED_METHOD_CONTRACT; return !HasInstantiation() || fTypicalInstantiation; }
@@ -206,7 +206,6 @@ private:
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
     void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
-    void SetModuleDynamicID(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetModuleDynamicID(x); }
     void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); }
     void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); }
     void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); }
@@ -1283,7 +1282,6 @@ private:
         // Com Interop, ComWrapper classes extend from ComObject
         bool fIsComObjectType;                  // whether this class is an instance of ComObject class
 #ifdef FEATURE_COMINTEROP
-        bool fIsMngStandardItf;                 // Set to true if the interface is a manages standard interface.
         bool fComEventItfType;                  // Set to true if the class is a special COM event interface.
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_TYPEEQUIVALENCE
@@ -1300,7 +1298,7 @@ private:
         DWORD dwNonGCRegularStaticFieldBytes;
         DWORD dwNonGCThreadStaticFieldBytes;
 
-        inline bmtProperties() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtProperties() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtProperties
 
     // --------------------------------------------------------------------------------------------
@@ -1552,7 +1550,7 @@ private:
         DWORD NumParentPointerSeries;
         MethodNameHash *pParentMethodHash;
 
-        inline bmtParentInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtParentInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtParentInfo
 
     // --------------------------------------------------------------------------------------------
@@ -1834,7 +1832,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // Constructor
-        inline bmtInterfaceInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtInterfaceInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtInterfaceInfo
 
     // --------------------------------------------------------------------------------------------
@@ -1863,7 +1861,7 @@ private:
         inline bmtEnumFieldInfo(IMDInternalImport *pInternalImport)
         {
             LIMITED_METHOD_CONTRACT;
-            memset((void *)this, NULL, sizeof(*this));
+            memset((void *)this, 0, sizeof(*this));
             m_pInternalImport = pInternalImport;
         }
     };  // struct bmtEnumFieldInfo
@@ -1886,7 +1884,7 @@ private:
         //-----------------------------------------------------------------------------------------
         // Constructor
         inline bmtMethodInfo()
-            { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+            { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
 
         //-----------------------------------------------------------------------------------------
         // Add a declared method to the array
@@ -1966,7 +1964,7 @@ private:
         bool fHasCovariantOverride;
 
         //-----------------------------------------------------------------------------------------
-        inline bmtMetaDataInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtMetaDataInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtMetaDataInfo
 
     // --------------------------------------------------------------------------------------------
@@ -1979,7 +1977,7 @@ private:
 
 
         //-----------------------------------------------------------------------------------------
-        inline bmtMethAndFieldDescs() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtMethAndFieldDescs() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtMethAndFieldDescs
 
     // --------------------------------------------------------------------------------------------
@@ -2038,7 +2036,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // Constructor
-        inline bmtInternalInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtInternalInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtInternalInfo
 
 
@@ -2141,7 +2139,7 @@ private:
         //-----------------------------------------------------------------------------------------
         // Constructor
         inline bmtMethodImplInfo()
-            { LIMITED_METHOD_CONTRACT; memset((void*) this, NULL, sizeof(*this)); }
+            { LIMITED_METHOD_CONTRACT; memset((void*) this, 0, sizeof(*this)); }
 
         //-----------------------------------------------------------------------------------------
         // Returns TRUE if tok acts as a body for any methodImpl entry. FALSE, otherwise.
@@ -2266,7 +2264,6 @@ private:
         inline BOOL             IsMethodImpl();
         inline MethodClassification MethodType();
         inline bmtMDMethod     *GetMDMethod() const;
-        inline MethodDesc      *GetIntroducingMethodDesc();
         inline bmtMDMethod *    operator->();
         inline bmtMDMethod *    operator*() { WRAPPER_NO_CONTRACT; return GetMDMethod(); }
     };  // class DeclaredMethodIterator
@@ -2399,7 +2396,7 @@ public:
         Substitution * pInterfaceSubstitution;
         SigTypeContext typeContext;     // Exact type context used to supply final instantiation to substitution chains
 
-        inline bmtExactInterfaceInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtExactInterfaceInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtExactInterfaceInfo
 
 private:
@@ -2449,7 +2446,7 @@ public:
         Substitution **ppInterfaceSubstitutionChains;
         SigTypeContext typeContext;
 
-        inline bmtInterfaceAmbiguityCheckInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtInterfaceAmbiguityCheckInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtInterfaceAmbiguityCheckInfo
 
     static void
@@ -2881,11 +2878,13 @@ private:
 
     static ExplicitFieldTrust::TrustLevel CheckValueClassLayout(
         MethodTable * pMT,
-        bmtFieldLayoutTag* pFieldLayout);
+        bmtFieldLayoutTag* pFieldLayout,
+        UINT fieldBaseOffset);
 
     static ExplicitFieldTrust::TrustLevel CheckByRefLikeValueClassLayout(
         MethodTable * pMT,
-        bmtFieldLayoutTag* pFieldLayout);
+        bmtFieldLayoutTag* pFieldLayout,
+        UINT fieldBaseOffset);
 
     static ExplicitFieldTrust::TrustLevel MarkTagType(
         bmtFieldLayoutTag* field,
@@ -2952,6 +2951,7 @@ private:
                                 BOOL isIFace,
                                 BOOL fDynamicStatics,
                                 BOOL fHasGenericsStaticsInfo,
+                                bool fHasThreadStatics,
                                 BOOL fHasVirtualStaticMethods
 #ifdef FEATURE_COMINTEROP
                                 , BOOL bHasDynamicInterfaceMap

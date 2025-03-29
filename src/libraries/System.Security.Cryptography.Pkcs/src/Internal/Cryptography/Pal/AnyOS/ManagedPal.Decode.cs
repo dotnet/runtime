@@ -45,12 +45,12 @@ namespace Internal.Cryptography.Pal.AnyOS
                 {
                     if (certChoice.Certificate != null)
                     {
-                        originatorCerts.Add(new X509Certificate2(certChoice.Certificate.Value.ToArray()));
+                        originatorCerts.Add(X509CertificateLoader.LoadCertificate(certChoice.Certificate.Value.Span));
                     }
                 }
             }
 
-            unprotectedAttributes = SignerInfo.MakeAttributeCollection(data.UnprotectedAttributes);
+            unprotectedAttributes = PkcsHelpers.MakeAttributeCollection(data.UnprotectedAttributes);
 
             var recipientInfos = new List<RecipientInfo>();
 

@@ -27,7 +27,7 @@ namespace Mono.Linker.Tests.Cases.SingleFile
 			TestAssemblyGetFilesSuppressedByRAF ();
 		}
 
-		[ExpectedWarning("IL3000", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning("IL3000", Tool.Analyzer | Tool.NativeAot, "")]
 		static void TestAssemblyLocation()
 		{
 			var a = typeof (SingleFileIntrinsics).Assembly.Location;
@@ -39,7 +39,7 @@ namespace Mono.Linker.Tests.Cases.SingleFile
 			var a = typeof (SingleFileIntrinsics).Assembly.Location;
 		}
 
-		[ExpectedWarning ("IL3000", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3000", Tool.Analyzer | Tool.NativeAot, "")]
 		static void TestAssemblyNameCodeBase()
 		{
 			var a = typeof (SingleFileIntrinsics).Assembly.GetName ().CodeBase;
@@ -51,7 +51,7 @@ namespace Mono.Linker.Tests.Cases.SingleFile
 			var a = typeof (SingleFileIntrinsics).Assembly.GetName ().CodeBase;
 		}
 
-		[ExpectedWarning ("IL3000", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3000", Tool.Analyzer | Tool.NativeAot, "")]
 		static void TestAssemblyNameEscapedCodeBase ()
 		{
 			var a = typeof (SingleFileIntrinsics).Assembly.GetName ().EscapedCodeBase;
@@ -63,7 +63,7 @@ namespace Mono.Linker.Tests.Cases.SingleFile
 			var a = typeof (SingleFileIntrinsics).Assembly.GetName ().EscapedCodeBase;
 		}
 
-		[ExpectedWarning ("IL3001", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3001", Tool.Analyzer | Tool.NativeAot, "")]
 		static void TestAssemblyGetFile()
 		{
 			var a = typeof (SingleFileIntrinsics).Assembly.GetFile ("unknown");
@@ -75,8 +75,8 @@ namespace Mono.Linker.Tests.Cases.SingleFile
 			var a = typeof (SingleFileIntrinsics).Assembly.GetFile ("unknown");
 		}
 
-		[ExpectedWarning ("IL3001", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-		[ExpectedWarning ("IL3001", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3001", Tool.Analyzer | Tool.NativeAot, "")]
+		[ExpectedWarning ("IL3001", Tool.Analyzer | Tool.NativeAot, "")]
 		static void TestAssemblyGetFiles ()
 		{
 			var a = typeof (SingleFileIntrinsics).Assembly.GetFiles ();

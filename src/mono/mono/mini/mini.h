@@ -139,6 +139,9 @@ typedef struct SeqPointInfo SeqPointInfo;
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
+// Used by MonoImage:aot_module to indicate aot_module was not found
+#define AOT_MODULE_NOT_FOUND GINT_TO_POINTER (-1)
+
 typedef struct
 {
 	MonoClass *klass;
@@ -1676,7 +1679,7 @@ typedef struct {
 	G_UNLIKELY ((cfg)->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ ## flag)
 
 #define MONO_CFG_PROFILE_CALL_CONTEXT(cfg) \
-	(MONO_CFG_PROFILE (cfg, ENTER_CONTEXT) || MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT))
+	(MONO_CFG_PROFILE (cfg, ENTER_CONTEXT) || MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT) || MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT))
 
 typedef enum {
 	MONO_CFG_HAS_ALLOCA = 1 << 0,
@@ -1737,6 +1740,7 @@ typedef struct {
 	gint64 jit_compile_dominator_info;
 	gint64 jit_compute_natural_loops;
 	gint64 jit_insert_safepoints;
+	gint64 jit_insert_samplepoints;
 	gint64 jit_ssa_compute;
 	gint64 jit_ssa_cprop;
 	gint64 jit_ssa_deadce;
@@ -2122,6 +2126,7 @@ mono_bb_last_inst (MonoBasicBlock *bb, int filter)
 /* profiler support */
 void        mini_add_profiler_argument (const char *desc);
 void        mini_profiler_emit_enter (MonoCompile *cfg);
+void        mini_profiler_emit_samplepoint (MonoCompile *cfg);
 void        mini_profiler_emit_leave (MonoCompile *cfg, MonoInst *ret);
 void        mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target);
 void        mini_profiler_emit_call_finally (MonoCompile *cfg, MonoMethodHeader *header, unsigned char *ip, guint32 index, MonoExceptionClause *clause);
@@ -2183,7 +2188,17 @@ GString  *mono_print_ins_index_strbuf       (int i, MonoInst *ins);
 void      mono_print_ins                    (MonoInst *ins);
 void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg);
 void      mono_print_code                   (MonoCompile *cfg, const char *msg);
-const char* mono_inst_name (int op);
+#ifndef DISABLE_LOGGING
+#define M_PRI_INST "%s"
+const char * mono_inst_name(int opcode);
+#else
+#define M_PRI_INST "%d"
+static inline int
+mono_inst_name(int opcode)
+{
+        return opcode;
+}
+#endif
 int       mono_op_to_op_imm                 (int opcode);
 int       mono_op_imm_to_op                 (int opcode);
 int       mono_load_membase_to_load_mem     (int opcode);
@@ -2811,12 +2826,20 @@ void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint
 void mono_cfg_set_exception (MonoCompile *cfg, MonoExceptionType type);
 void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg);
 
+#if defined(HOST_WASM)
+#define MONO_TIME_TRACK(a, phase) \
+	{ \
+		(phase) ; \
+		a = 0; \
+	}
+#else
 #define MONO_TIME_TRACK(a, phase) \
 	{ \
 		gint64 start = mono_time_track_start (); \
 		(phase) ; \
 		mono_time_track_end (&(a), start); \
 	}
+#endif // HOST_WASM
 
 gint64 mono_time_track_start (void);
 void mono_time_track_end (gint64 *time, gint64 start);
@@ -2962,7 +2985,7 @@ MonoInst*   mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, 
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);
-gboolean    mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod *cmethod);
+gboolean    mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoCompile *cfg, MonoMethod *cmethod);
 
 MonoMethod*
 mini_method_to_shared (MonoMethod *method); // null if not shared
@@ -3014,5 +3037,11 @@ MonoMemoryManager* mini_get_default_mem_manager (void);
 
 MONO_COMPONENT_API int
 mono_wasm_get_debug_level (void);
+
+MonoMethod*
+mini_inflate_unsafe_accessor_wrapper (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error);
+
+MonoMethod *
+mini_replace_generated_method (MonoMethod *method, MonoError *error);
 
 #endif /* __MONO_MINI_H__ */

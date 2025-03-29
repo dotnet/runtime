@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { ENVIRONMENT_IS_WEB, mono_assert, runtimeHelpers } from "./globals";
-import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions } from "./types/internal";
+import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions, LogProfilerOptions } from "./types/internal";
 import { profiler_c_functions as cwraps } from "./cwraps";
 import { utf8ToString } from "./strings";
+import { free } from "./memory";
 
 // Initialize the AOT profiler with OPTIONS.
 // Requires the AOT profiler to be linked into the app.
@@ -14,7 +15,7 @@ import { utf8ToString } from "./strings";
 // sendTo defaults to 'WebAssembly.Runtime::DumpAotProfileData'.
 // DumpAotProfileData stores the data into INTERNAL.aotProfileData.
 //
-export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
+export function mono_wasm_init_aot_profiler (options: AOTProfilerOptions): void {
     mono_assert(runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "AOT profiler is not enabled, please use <WasmProfilers>aot;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
@@ -26,12 +27,31 @@ export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
     cwraps.mono_wasm_profiler_init_aot(arg);
 }
 
-export function mono_wasm_init_browser_profiler(options: BrowserProfilerOptions): void {
+export function mono_wasm_init_browser_profiler (options: BrowserProfilerOptions): void {
     mono_assert(runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
-    const arg = "browser:";
+    let arg = "browser:";
+    if (typeof options.callSpec === "string") {
+        arg += `callspec=${options.callSpec},`;
+    }
+    if (typeof options.sampleIntervalMs === "number") {
+        arg += `interval=${options.sampleIntervalMs},`;
+    }
     cwraps.mono_wasm_profiler_init_browser(arg);
+}
+
+export function mono_wasm_init_log_profiler (options: LogProfilerOptions): void {
+    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "Log profiler is not enabled, please use <WasmProfilers>log;</WasmProfilers> in your project file.");
+    mono_assert(options.takeHeapshot, "Log profiler is not enabled, the takeHeapshot method must be defined in LogProfilerOptions.takeHeapshot");
+    if (!options.configuration) {
+        options.configuration = "log:alloc,output=output.mlpd";
+    }
+    if (options.takeHeapshot) {
+        cwraps.mono_wasm_profiler_init_log(`${options.configuration},take-heapshot-method=${options.takeHeapshot}`);
+    } else {
+        cwraps.mono_wasm_profiler_init_log(options.configuration);
+    }
 }
 
 export const enum MeasuredBlock {
@@ -59,15 +79,16 @@ export type TimeStamp = {
     __brand: "TimeStamp"
 }
 
-export function startMeasure(): TimeStamp {
+export function startMeasure (): TimeStamp {
     if (runtimeHelpers.enablePerfMeasure) {
         return globalThis.performance.now() as any;
     }
     return undefined as any;
 }
 
-export function endMeasure(start: TimeStamp, block: string, id?: string) {
+export function endMeasure (start: TimeStamp, block: string, id?: string) {
     if (runtimeHelpers.enablePerfMeasure && start) {
+        // API is slightly different between web and Nodejs
         const options = ENVIRONMENT_IS_WEB
             ? { start: start as any }
             : { startTime: start as any };
@@ -76,26 +97,29 @@ export function endMeasure(start: TimeStamp, block: string, id?: string) {
     }
 }
 
-const stackFrames: number[] = [];
-export function mono_wasm_profiler_enter(): void {
-    if (runtimeHelpers.enablePerfMeasure) {
-        stackFrames.push(globalThis.performance.now());
-    }
+export function mono_wasm_profiler_now (): number {
+    return globalThis.performance.now();
+}
+
+export function mono_wasm_profiler_free_method (method: MonoMethod): void {
+    methodNames.delete(method as any);
 }
 
 const methodNames: Map<number, string> = new Map();
-export function mono_wasm_profiler_leave(method: MonoMethod): void {
-    if (runtimeHelpers.enablePerfMeasure) {
-        const start = stackFrames.pop();
-        const options = ENVIRONMENT_IS_WEB
-            ? { start: start }
-            : { startTime: start };
-        let methodName = methodNames.get(method as any);
-        if (!methodName) {
-            const chars = cwraps.mono_wasm_method_get_name(method);
-            methodName = utf8ToString(chars);
-            methodNames.set(method as any, methodName);
-        }
-        globalThis.performance.measure(methodName, options);
+export function mono_wasm_profiler_record (method: MonoMethod, start: number): void {
+    const options = ENVIRONMENT_IS_WEB
+        ? { start: start }
+        : { startTime: start };
+    let methodName = methodNames.get(method as any);
+    if (!methodName) {
+        const chars = cwraps.mono_wasm_method_get_name_ex(method);
+        methodName = utf8ToString(chars);
+        methodNames.set(method as any, methodName);
+        free(chars as any);
     }
+    globalThis.performance.measure(methodName, options);
+}
+
+export function mono_wasm_instrument_method (method:MonoMethod):number {
+    return runtimeHelpers.mono_wasm_instrument_method(method);
 }

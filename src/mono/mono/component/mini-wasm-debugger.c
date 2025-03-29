@@ -191,6 +191,7 @@ static void
 assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 {
 	PRINT_DEBUG_MSG (2, "assembly_loaded callback called for %s\n", assembly->aname.name);
+	mono_dbg_assembly_load (prof, assembly);
 	MonoImage *assembly_image = assembly->image;
 	MonoImage *pdb_image = NULL;
 
@@ -483,4 +484,4 @@ mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
 	fn_table->mono_wasm_single_step_hit = mono_wasm_single_step_hit;
 }
 
-#endif
+#endif // !HOST_WASI

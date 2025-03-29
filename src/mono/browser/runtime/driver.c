@@ -180,9 +180,12 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 	free (user_data);
 }
 
+static int runtime_initialized = 0;
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (int debug_level)
 {
+	runtime_initialized = 1;
 	const char *interp_opts = "";
 
 #ifndef INVARIANT_GLOBALIZATION
@@ -219,12 +222,23 @@ mono_wasm_load_runtime (int debug_level)
 	monovm_initialize (2, appctx_keys, appctx_values);
 
 #ifndef INVARIANT_TIMEZONE
-	mono_register_timezones_bundle ();
+	char* invariant_timezone = monoeg_g_getenv ("DOTNET_SYSTEM_TIMEZONE_INVARIANT");
+	if (strcmp(invariant_timezone, "true") != 0 && strcmp(invariant_timezone, "1") != 0)
+		mono_register_timezones_bundle ();
 #endif /* INVARIANT_TIMEZONE */
 
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
 	bindings_initialize_internals();
+}
+
+int initialize_runtime()
+{
+    if (runtime_initialized == 1)
+		return 0;
+	mono_wasm_load_runtime (0);
+
+	return 0;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -256,16 +270,26 @@ mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
 #ifndef DISABLE_THREADS
 
 extern void mono_threads_wasm_async_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
-extern void mono_threads_wasm_sync_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+extern void mono_threads_wasm_sync_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args);
+extern void mono_print_thread_dump (void *sigctx);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_print_thread_dump (void)
+{
+	mono_print_thread_dump (NULL);
+}
 
 // this is running on the target thread
 static void
 mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
 {
 	mono_wasm_invoke_jsexport (method, args);
-	// TODO assert receiver_should_free ?
-	if (args)
-		free (args);
+	if (args) {
+		MonoBoolean *is_receiver_should_free = (MonoBoolean *)(((char *) args) + 20/*JSMarshalerArgumentOffsets.ReceiverShouldFree*/);
+		if(*is_receiver_should_free != 0){
+			free (args);
+		}
+	}
 }
 
 // async
@@ -277,12 +301,14 @@ mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, v
 
 
 typedef void (*js_interop_event)(void* args);
+typedef void (*sync_context_pump)(void);
 extern js_interop_event before_sync_js_import;
 extern js_interop_event after_sync_js_import;
+extern sync_context_pump synchronization_context_pump_handler;
 
 // this is running on the target thread
-static void
-mono_wasm_invoke_jsexport_sync_send_cb (MonoMethod *method, void* args)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_sync (MonoMethod *method, void* args)
 {
 	before_sync_js_import (args);
 	mono_wasm_invoke_jsexport (method, args);
@@ -293,7 +319,12 @@ mono_wasm_invoke_jsexport_sync_send_cb (MonoMethod *method, void* args)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
 {
-	mono_threads_wasm_sync_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_sync_send_cb, method, args);
+	mono_threads_wasm_sync_run_in_target_thread_vii (target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_sync, method, args);
+}
+
+EMSCRIPTEN_KEEPALIVE void mono_wasm_synchronization_context_pump (void)
+{
+	synchronization_context_pump_handler ();
 }
 
 #endif /* DISABLE_THREADS */
@@ -328,12 +359,6 @@ mono_wasm_exit (int exit_code)
 	fflush (stdout);
 	fflush (stderr);
 	emscripten_force_exit (exit_code);
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_abort ()
-{
-	abort ();
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -419,14 +444,24 @@ mono_wasm_profiler_init_browser (const char *desc)
 
 #endif
 
+#ifdef ENABLE_LOG_PROFILER
+
+void mono_profiler_init_log (const char *desc);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_profiler_init_log (const char *desc)
+{
+	mono_profiler_init_log (desc);
+}
+
+#endif
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_init_finalizer_thread (void)
 {
 	// in the single threaded build, finalizers periodically run on the main thread instead.
 #ifndef DISABLE_THREADS
-	MONO_ENTER_GC_UNSAFE;
 	mono_gc_init_finalizer_thread ();
-	MONO_EXIT_GC_UNSAFE;
 #endif
 }
 
@@ -495,6 +530,21 @@ EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method)
 	const char *res;
 	MONO_ENTER_GC_UNSAFE;
 	res = mono_method_get_name (method);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
+}
+
+EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_name_ex (MonoMethod *method) {
+	char *res;
+	MONO_ENTER_GC_UNSAFE;
+	const char *method_name = mono_method_get_name (method);
+	// starts with .ctor or .cctor
+	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (res) < 7) {
+		res = (char *) malloc (128);
+		snprintf (res, 128,"%s.%s", mono_class_get_name (mono_method_get_class (method)), method_name);
+	} else {
+		res = strdup (method_name);
+	}
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }

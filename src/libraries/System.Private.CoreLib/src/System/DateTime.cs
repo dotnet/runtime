@@ -56,23 +56,6 @@ namespace System
           ISpanParsable<DateTime>,
           IUtf8SpanFormattable
     {
-        // Number of 100ns ticks per time unit
-        internal const int MicrosecondsPerMillisecond = 1000;
-        private const long TicksPerMicrosecond = 10;
-        private const long TicksPerMillisecond = TicksPerMicrosecond * MicrosecondsPerMillisecond;
-
-        private const int HoursPerDay = 24;
-        private const long TicksPerSecond = TicksPerMillisecond * 1000;
-        private const long TicksPerMinute = TicksPerSecond * 60;
-        private const long TicksPerHour = TicksPerMinute * 60;
-        private const long TicksPerDay = TicksPerHour * HoursPerDay;
-
-        // Number of milliseconds per time unit
-        private const int MillisPerSecond = 1000;
-        private const int MillisPerMinute = MillisPerSecond * 60;
-        private const int MillisPerHour = MillisPerMinute * 60;
-        private const int MillisPerDay = MillisPerHour * HoursPerDay;
-
         // Number of days in a non-leap year
         private const int DaysPerYear = 365;
         // Number of days in 4 years
@@ -89,23 +72,23 @@ namespace System
         // Number of days from 1/1/0001 to 12/31/1969
         internal const int DaysTo1970 = DaysPer400Years * 4 + DaysPer100Years * 3 + DaysPer4Years * 17 + DaysPerYear; // 719,162
         // Number of days from 1/1/0001 to 12/31/9999
-        private const int DaysTo10000 = DaysPer400Years * 25 - 366;  // 3652059
+        internal const int DaysTo10000 = DaysPer400Years * 25 - 366;  // 3652059
 
         internal const long MinTicks = 0;
-        internal const long MaxTicks = DaysTo10000 * TicksPerDay - 1;
-        private const long MaxMicroseconds = MaxTicks / TicksPerMicrosecond;
-        private const long MaxMillis = MaxTicks / TicksPerMillisecond;
-        private const long MaxSeconds = MaxTicks / TicksPerSecond;
-        private const long MaxMinutes = MaxTicks / TicksPerMinute;
-        private const long MaxHours = MaxTicks / TicksPerHour;
+        internal const long MaxTicks = DaysTo10000 * TimeSpan.TicksPerDay - 1;
+        private const long MaxMicroseconds = MaxTicks / TimeSpan.TicksPerMicrosecond;
+        private const long MaxMillis = MaxTicks / TimeSpan.TicksPerMillisecond;
+        private const long MaxSeconds = MaxTicks / TimeSpan.TicksPerSecond;
+        private const long MaxMinutes = MaxTicks / TimeSpan.TicksPerMinute;
+        private const long MaxHours = MaxTicks / TimeSpan.TicksPerHour;
         private const long MaxDays = (long)DaysTo10000 - 1;
 
-        internal const long UnixEpochTicks = DaysTo1970 * TicksPerDay;
-        private const long FileTimeOffset = DaysTo1601 * TicksPerDay;
-        private const long DoubleDateOffset = DaysTo1899 * TicksPerDay;
+        internal const long UnixEpochTicks = DaysTo1970 * TimeSpan.TicksPerDay;
+        private const long FileTimeOffset = DaysTo1601 * TimeSpan.TicksPerDay;
+        private const long DoubleDateOffset = DaysTo1899 * TimeSpan.TicksPerDay;
         // The minimum OA date is 0100/01/01 (Note it's year 100).
         // The maximum OA date is 9999/12/31
-        private const long OADateMinAsTicks = (DaysPer100Years - DaysPerYear) * TicksPerDay;
+        private const long OADateMinAsTicks = (DaysPer100Years - DaysPerYear) * TimeSpan.TicksPerDay;
         // All OA dates must be greater than (not >=) OADateMinAsDouble
         private const double OADateMinAsDouble = -657435.0;
         // All OA dates must be less than (not <=) OADateMaxAsDouble
@@ -119,7 +102,7 @@ namespace System
         private const uint EafMultiplier = (uint)(((1UL << 32) + DaysPer4Years - 1) / DaysPer4Years);   // 2,939,745
         private const uint EafDivider = EafMultiplier * 4;                                              // 11,758,980
 
-        private const ulong TicksPer6Hours = TicksPerHour * 6;
+        private const ulong TicksPer6Hours = TimeSpan.TicksPerHour * 6;
         private const int March1BasedDayOfNewYear = 306;              // Days between March 1 and January 1
 
         internal static ReadOnlySpan<uint> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
@@ -135,8 +118,7 @@ namespace System
         private const ulong TicksMask = 0x3FFFFFFFFFFFFFFF;
         private const ulong FlagsMask = 0xC000000000000000;
         private const long TicksCeiling = 0x4000000000000000;
-        private const ulong KindUnspecified = 0x0000000000000000;
-        private const ulong KindUtc = 0x4000000000000000;
+        internal const ulong KindUtc = 0x4000000000000000;
         private const ulong KindLocal = 0x8000000000000000;
         private const ulong KindLocalAmbiguousDst = 0xC000000000000000;
         private const int KindShift = 62;
@@ -152,7 +134,7 @@ namespace System
         //               savings time hour and it is in daylight savings time. This allows distinction of these
         //               otherwise ambiguous local times and prevents data loss when round tripping from Local to
         //               UTC time.
-        private readonly ulong _dateData;
+        internal readonly ulong _dateData;
 
         // Constructs a DateTime from a tick count. The ticks
         // argument specifies the date as the number of 100-nanosecond intervals
@@ -166,10 +148,11 @@ namespace System
 
         private DateTime(ulong dateData)
         {
-            this._dateData = dateData;
+            Debug.Assert((dateData & TicksMask) <= MaxTicks);
+            _dateData = dateData;
         }
 
-        internal static DateTime UnsafeCreate(long ticks) => new DateTime((ulong)ticks);
+        internal static DateTime CreateUnchecked(long ticks) => new DateTime((ulong)ticks);
 
         public DateTime(long ticks, DateTimeKind kind)
         {
@@ -221,8 +204,8 @@ namespace System
 
         private static void ThrowTicksOutOfRange() => throw new ArgumentOutOfRangeException("ticks", SR.ArgumentOutOfRange_DateTimeBadTicks);
         private static void ThrowInvalidKind() => throw new ArgumentException(SR.Argument_InvalidDateTimeKind, "kind");
-        private static void ThrowMillisecondOutOfRange() => throw new ArgumentOutOfRangeException("millisecond", SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
-        private static void ThrowMicrosecondOutOfRange() => throw new ArgumentOutOfRangeException("microsecond", SR.Format(SR.ArgumentOutOfRange_Range, 0, MicrosecondsPerMillisecond - 1));
+        internal static void ThrowMillisecondOutOfRange() => throw new ArgumentOutOfRangeException("millisecond", SR.Format(SR.ArgumentOutOfRange_Range, 0, TimeSpan.MillisecondsPerSecond - 1));
+        internal static void ThrowMicrosecondOutOfRange() => throw new ArgumentOutOfRangeException("microsecond", SR.Format(SR.ArgumentOutOfRange_Range, 0, TimeSpan.MicrosecondsPerMillisecond - 1));
         private static void ThrowDateArithmetic(int param) => throw new ArgumentOutOfRangeException(param switch { 0 => "value", 1 => "t", _ => "months" }, SR.ArgumentOutOfRange_DateArithmetic);
         private static void ThrowAddOutOfRange() => throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_AddValue);
 
@@ -304,20 +287,25 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(calendar);
 
-            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+            if ((uint)millisecond >= TimeSpan.MillisecondsPerSecond) ThrowMillisecondOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
             if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 ulong ticks = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
-                _dateData = ticks | ((ulong)kind << KindShift);
+                _dateData = ticks | ((ulong)(uint)kind << KindShift);
             }
             else
             {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, millisecond, calendar, kind);
-                ValidateLeapSecond();
+                _dateData = WithLeapSecond(calendar, year, month, day, hour, minute, millisecond, kind);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ulong WithLeapSecond(Calendar calendar, int year, int month, int day, int hour, int minute, int millisecond, DateTimeKind kind)
+        {
+            // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+            return ValidateLeapSecond(new DateTime(year, month, day, hour, minute, 59, millisecond, calendar, kind));
         }
 
         // Constructs a DateTime from a given year, month, day, hour,
@@ -325,33 +313,37 @@ namespace System
         //
         public DateTime(int year, int month, int day, int hour, int minute, int second)
         {
+            ulong ticks = DateToTicks(year, month, day);
             if (second != 60 || !SystemSupportsLeapSeconds)
             {
-                _dateData = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
+                _dateData = ticks + TimeToTicks(hour, minute, second);
             }
             else
             {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - DateTime is constructed using the user specified values, not a combination of different sources.  It would be intentional to throw if an invalid combination occurred.
-                this = new DateTime(year, month, day, hour, minute, 59);
-                ValidateLeapSecond();
+                _dateData = WithLeapSecond(ticks, hour, minute);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ulong WithLeapSecond(ulong ticks, int hour, int minute)
+        {
+            // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+            // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - DateTime is constructed using the user specified values, not a combination of different sources.  It would be intentional to throw if an invalid combination occurred.
+            return ValidateLeapSecond(new DateTime(ticks + TimeToTicks(hour, minute, 59)));
         }
 
         public DateTime(int year, int month, int day, int hour, int minute, int second, DateTimeKind kind)
         {
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
+            ulong ticks = DateToTicks(year, month, day) | ((ulong)(uint)kind << KindShift);
             if (second != 60 || !SystemSupportsLeapSeconds)
             {
-                ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
-                _dateData = ticks | ((ulong)kind << KindShift);
+                _dateData = ticks + TimeToTicks(hour, minute, second);
             }
             else
             {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, kind);
-                ValidateLeapSecond();
+                _dateData = WithLeapSecond(ticks, hour, minute);
             }
         }
 
@@ -368,10 +360,15 @@ namespace System
             }
             else
             {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, calendar);
-                ValidateLeapSecond();
+                _dateData = WithLeapSecond(calendar, year, month, day, hour, minute);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ulong WithLeapSecond(Calendar calendar, int year, int month, int day, int hour, int minute)
+        {
+            // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+            return ValidateLeapSecond(new DateTime(year, month, day, hour, minute, 59, calendar));
         }
 
         /// <summary>
@@ -422,8 +419,12 @@ namespace System
         /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond) =>
-            _dateData = Init(year, month, day, hour, minute, second, millisecond);
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond)
+            : this(year, month, day, hour, minute, second)
+        {
+            if ((uint)millisecond >= TimeSpan.MillisecondsPerSecond) ThrowMillisecondOutOfRange();
+            _dateData += (uint)millisecond * (uint)TimeSpan.TicksPerMillisecond;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
@@ -478,8 +479,12 @@ namespace System
         /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind) =>
-            _dateData = Init(year, month, day, hour, minute, second, millisecond, kind);
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind)
+            : this(year, month, day, hour, minute, second, kind)
+        {
+            if ((uint)millisecond >= TimeSpan.MillisecondsPerSecond) ThrowMillisecondOutOfRange();
+            _dateData += (uint)millisecond * (uint)TimeSpan.TicksPerMillisecond;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
@@ -541,10 +546,15 @@ namespace System
             }
             else
             {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, millisecond, calendar);
-                ValidateLeapSecond();
+                _dateData = WithLeapSecond(calendar, year, month, day, hour, minute, millisecond);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ulong WithLeapSecond(Calendar calendar, int year, int month, int day, int hour, int minute, int millisecond)
+        {
+            // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+            return ValidateLeapSecond(new DateTime(year, month, day, hour, minute, 59, millisecond, calendar));
         }
 
         /// <summary>
@@ -664,14 +674,10 @@ namespace System
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, DateTimeKind kind)
+            : this(year, month, day, hour, minute, second, millisecond, kind)
         {
-            ulong ticks = Init(year, month, day, hour, minute, second, millisecond, kind);
-            if ((uint)microsecond >= MicrosecondsPerMillisecond) ThrowMicrosecondOutOfRange();
-
-            ulong newTicks = (ticks & TicksMask) + (ulong)(microsecond * TicksPerMicrosecond);
-
-            Debug.Assert(newTicks <= MaxTicks);
-            _dateData = newTicks | (ticks & FlagsMask);
+            if ((uint)microsecond >= TimeSpan.MicrosecondsPerMillisecond) ThrowMicrosecondOutOfRange();
+            _dateData += (uint)microsecond * (uint)TimeSpan.TicksPerMicrosecond;
         }
 
         /// <summary>
@@ -799,44 +805,17 @@ namespace System
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar, DateTimeKind kind)
             : this(year, month, day, hour, minute, second, millisecond, calendar, kind)
         {
-            if ((uint)microsecond >= MicrosecondsPerMillisecond)
-            {
-                ThrowMicrosecondOutOfRange();
-            }
-            _dateData = new DateTime(_dateData).AddMicroseconds(microsecond)._dateData;
+            if ((uint)microsecond >= TimeSpan.MicrosecondsPerMillisecond) ThrowMicrosecondOutOfRange();
+            _dateData += (uint)microsecond * (uint)TimeSpan.TicksPerMicrosecond;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong Init(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind = DateTimeKind.Unspecified)
+        internal static ulong ValidateLeapSecond(DateTime value)
         {
-            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
-            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
-
-            if (second != 60 || !SystemSupportsLeapSeconds)
-            {
-                ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
-                ticks += (uint)millisecond * (uint)TicksPerMillisecond;
-                Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
-                return ticks | ((ulong)kind << KindShift);
-            }
-
-            // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-            DateTime dt = new(year, month, day, hour, minute, 59, millisecond, kind);
-
-            if (!IsValidTimeWithLeapSeconds(year, month, day, hour, 59, kind))
+            if (!IsValidTimeWithLeapSeconds(value))
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadHourMinuteSecond();
             }
-
-            return dt._dateData;
-        }
-
-        private void ValidateLeapSecond()
-        {
-            if (!IsValidTimeWithLeapSeconds(Year, Month, Day, Hour, Minute, Kind))
-            {
-                ThrowHelper.ThrowArgumentOutOfRange_BadHourMinuteSecond();
-            }
+            return value._dateData;
         }
 
         private DateTime(SerializationInfo info, StreamingContext context)
@@ -906,7 +885,7 @@ namespace System
         /// <returns>
         /// An object whose value is the sum of the date and time represented by this instance and the number of days represented by value.
         /// </returns>
-        public DateTime AddDays(double value) => AddUnits(value, MaxDays, TicksPerDay);
+        public DateTime AddDays(double value) => AddUnits(value, MaxDays, TimeSpan.TicksPerDay);
 
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of hours to the value of this instance.
@@ -915,7 +894,7 @@ namespace System
         /// <returns>
         /// An object whose value is the sum of the date and time represented by this instance and the number of hours represented by value.
         /// </returns>
-        public DateTime AddHours(double value) => AddUnits(value, MaxHours, TicksPerHour);
+        public DateTime AddHours(double value) => AddUnits(value, MaxHours, TimeSpan.TicksPerHour);
 
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of milliseconds to the value of this instance.
@@ -924,7 +903,7 @@ namespace System
         /// <returns>
         /// An object whose value is the sum of the date and time represented by this instance and the number of milliseconds represented by value.
         /// </returns>
-        public DateTime AddMilliseconds(double value) => AddUnits(value, MaxMillis, TicksPerMillisecond);
+        public DateTime AddMilliseconds(double value) => AddUnits(value, MaxMillis, TimeSpan.TicksPerMillisecond);
 
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of microseconds to the value of this instance.
@@ -950,7 +929,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// The resulting <see cref="DateTime"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
         /// </exception>
-        public DateTime AddMicroseconds(double value) => AddUnits(value, MaxMicroseconds, TicksPerMicrosecond);
+        public DateTime AddMicroseconds(double value) => AddUnits(value, MaxMicroseconds, TimeSpan.TicksPerMicrosecond);
 
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of minutes to the value of this instance.
@@ -959,7 +938,7 @@ namespace System
         /// <returns>
         /// An object whose value is the sum of the date and time represented by this instance and the number of minutes represented by value.
         /// </returns>
-        public DateTime AddMinutes(double value) => AddUnits(value, MaxMinutes, TicksPerMinute);
+        public DateTime AddMinutes(double value) => AddUnits(value, MaxMinutes, TimeSpan.TicksPerMinute);
 
         // Returns the DateTime resulting from adding the given number of
         // months to this DateTime. The result is computed by incrementing
@@ -978,10 +957,11 @@ namespace System
         // or equal to d that denotes a valid day in month m1 of year
         // y1.
         //
-        public DateTime AddMonths(int months)
+        public DateTime AddMonths(int months) => AddMonths(this, months);
+        private static DateTime AddMonths(DateTime date, int months)
         {
             if (months < -120000 || months > 120000) throw new ArgumentOutOfRangeException(nameof(months), SR.ArgumentOutOfRange_DateTimeBadMonths);
-            GetDate(out int year, out int month, out int day);
+            date.GetDate(out int year, out int month, out int day);
             int y = year, d = day;
             int m = month + months;
             int q = m > 0 ? (int)((uint)(m - 1) / 12) : m / 12 - 1;
@@ -993,7 +973,7 @@ namespace System
             int days = (int)(daysTo[m] - daysToMonth);
             if (d > days) d = days;
             uint n = DaysToYear((uint)y) + daysToMonth + (uint)d - 1;
-            return new DateTime(n * (ulong)TicksPerDay + UTicks % TicksPerDay | InternalKind);
+            return new DateTime(n * (ulong)TimeSpan.TicksPerDay + date.UTicks % TimeSpan.TicksPerDay | date.InternalKind);
         }
 
         /// <summary>
@@ -1003,7 +983,7 @@ namespace System
         /// <returns>
         /// An object whose value is the sum of the date and time represented by this instance and the number of seconds represented by value.
         /// </returns>
-        public DateTime AddSeconds(double value) => AddUnits(value, MaxSeconds, TicksPerSecond);
+        public DateTime AddSeconds(double value) => AddUnits(value, MaxSeconds, TimeSpan.TicksPerSecond);
 
         // Returns the DateTime resulting from adding the given number of
         // 100-nanosecond ticks to this DateTime. The value argument
@@ -1037,13 +1017,14 @@ namespace System
         // DateTime becomes 2/28. Otherwise, the month, day, and time-of-day
         // parts of the result are the same as those of this DateTime.
         //
-        public DateTime AddYears(int value)
+        public DateTime AddYears(int value) => AddYears(this, value);
+        private static DateTime AddYears(DateTime date, int value)
         {
             if (value < -10000 || value > 10000)
             {
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_DateTimeBadYears);
             }
-            GetDate(out int year, out int month, out int day);
+            date.GetDate(out int year, out int month, out int day);
             int y = year + value;
             if (y < 1 || y > 9999) ThrowDateArithmetic(0);
             uint n = DaysToYear((uint)y);
@@ -1059,7 +1040,7 @@ namespace System
                 n += DaysToMonth365[m];
             }
             n += (uint)d;
-            return new DateTime(n * (ulong)TicksPerDay + UTicks % TicksPerDay | InternalKind);
+            return new DateTime(n * (ulong)TimeSpan.TicksPerDay + date.UTicks % TimeSpan.TicksPerDay | date.InternalKind);
         }
 
         // Compares two DateTime values, returning an integer that indicates
@@ -1106,14 +1087,14 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
 
-            ReadOnlySpan<uint> days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
+            ReadOnlySpan<uint> days = RuntimeHelpers.IsKnownConstant(month) && month == 1 || IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
             if ((uint)day > days[month] - days[month - 1])
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
 
             uint n = DaysToYear((uint)year) + days[month - 1] + (uint)day - 1;
-            return n * (ulong)TicksPerDay;
+            return n * (ulong)TimeSpan.TicksPerDay;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1135,16 +1116,16 @@ namespace System
             }
 
             int totalSeconds = hour * 3600 + minute * 60 + second;
-            return (uint)totalSeconds * (ulong)TicksPerSecond;
+            return (uint)totalSeconds * (ulong)TimeSpan.TicksPerSecond;
         }
 
         internal static ulong TimeToTicks(int hour, int minute, int second, int millisecond)
         {
             ulong ticks = TimeToTicks(hour, minute, second);
 
-            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+            if ((uint)millisecond >= TimeSpan.MillisecondsPerSecond) ThrowMillisecondOutOfRange();
 
-            ticks += (uint)millisecond * (uint)TicksPerMillisecond;
+            ticks += (uint)millisecond * (uint)TimeSpan.TicksPerMillisecond;
 
             Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
 
@@ -1155,9 +1136,9 @@ namespace System
         {
             ulong ticks = TimeToTicks(hour, minute, second, millisecond);
 
-            if ((uint)microsecond >= MicrosecondsPerMillisecond) ThrowMicrosecondOutOfRange();
+            if ((uint)microsecond >= TimeSpan.MicrosecondsPerMillisecond) ThrowMicrosecondOutOfRange();
 
-            ticks += (uint)microsecond * (uint)TicksPerMicrosecond;
+            ticks += (uint)microsecond * (uint)TimeSpan.TicksPerMicrosecond;
 
             Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
 
@@ -1183,19 +1164,19 @@ namespace System
                 throw new ArgumentException(SR.Arg_OleAutDateInvalid);
 
             // Conversion to long will not cause an overflow here, as at this point the "value" is in between OADateMinAsDouble and OADateMaxAsDouble
-            long millis = (long)(value * MillisPerDay + (value >= 0 ? 0.5 : -0.5));
+            long millis = (long)(value * TimeSpan.MillisecondsPerDay + (value >= 0 ? 0.5 : -0.5));
             // The interesting thing here is when you have a value like 12.5 it all positive 12 days and 12 hours from 01/01/1899
             // However if you a value of -12.25 it is minus 12 days but still positive 6 hours, almost as though you meant -11.75 all negative
-            // This line below fixes up the millis in the negative case
+            // This line below fixes up the milliseconds in the negative case
             if (millis < 0)
             {
-                millis -= (millis % MillisPerDay) * 2;
+                millis -= (millis % TimeSpan.MillisecondsPerDay) * 2;
             }
 
-            millis += DoubleDateOffset / TicksPerMillisecond;
+            millis += DoubleDateOffset / TimeSpan.TicksPerMillisecond;
 
             if (millis < 0 || millis > MaxMillis) throw new ArgumentException(SR.Arg_OleAutDateScale);
-            return millis * TicksPerMillisecond;
+            return millis * TimeSpan.TicksPerMillisecond;
         }
 
         // Checks if this DateTime is equal to a given object. Returns
@@ -1232,7 +1213,7 @@ namespace System
                 // local date.
                 long ticks = dateData & (unchecked((long)TicksMask));
                 // Negative ticks are stored in the top part of the range and should be converted back into a negative number
-                if (ticks > TicksCeiling - TicksPerDay)
+                if (ticks > TicksCeiling - TimeSpan.TicksPerDay)
                 {
                     ticks -= TicksCeiling;
                 }
@@ -1240,13 +1221,9 @@ namespace System
                 // the UTC offset from MinValue and MaxValue to be consistent with Parse.
                 bool isAmbiguousLocalDst = false;
                 long offsetTicks;
-                if (ticks < MinTicks)
+                if ((ulong)ticks > MaxTicks)
                 {
-                    offsetTicks = TimeZoneInfo.GetLocalUtcOffset(MinValue, TimeZoneInfoOptions.NoThrowOnInvalidTime).Ticks;
-                }
-                else if (ticks > MaxTicks)
-                {
-                    offsetTicks = TimeZoneInfo.GetLocalUtcOffset(MaxValue, TimeZoneInfoOptions.NoThrowOnInvalidTime).Ticks;
+                    offsetTicks = TimeZoneInfo.GetLocalUtcOffset(ticks < MinTicks ? MinValue : MaxValue, TimeZoneInfoOptions.NoThrowOnInvalidTime).Ticks;
                 }
                 else
                 {
@@ -1260,7 +1237,7 @@ namespace System
                 // to compare times of day
                 if (ticks < 0)
                 {
-                    ticks += TicksPerDay;
+                    ticks += TimeSpan.TicksPerDay;
                 }
                 if ((ulong)ticks > MaxTicks)
                 {
@@ -1320,7 +1297,7 @@ namespace System
 
         public bool IsDaylightSavingTime()
         {
-            if (InternalKind == KindUtc)
+            if (_dateData >> KindShift == (int)DateTimeKind.Utc)
             {
                 return false;
             }
@@ -1330,7 +1307,7 @@ namespace System
         public static DateTime SpecifyKind(DateTime value, DateTimeKind kind)
         {
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
-            return new DateTime(value.UTicks | ((ulong)kind << KindShift));
+            return new DateTime(value.UTicks | ((ulong)(uint)kind << KindShift));
         }
 
         public long ToBinary()
@@ -1366,14 +1343,7 @@ namespace System
         // corresponds to this DateTime with the time-of-day part set to
         // zero (midnight).
         //
-        public DateTime Date
-        {
-            get
-            {
-                ulong ticks = UTicks;
-                return new DateTime((ticks - ticks % TicksPerDay) | InternalKind);
-            }
-        }
+        public DateTime Date => new((UTicks / TimeSpan.TicksPerDay * TimeSpan.TicksPerDay) | InternalKind);
 
         // Exactly the same as Year, Month, Day properties, except computing all of
         // year/month/day rather than just one of them. Used when all three
@@ -1381,17 +1351,18 @@ namespace System
         //
         // Implementation based on article https://arxiv.org/pdf/2102.06959.pdf
         //   Cassio Neri, Lorenz Schneider - Euclidean Affine Functions and Applications to Calendar Algorithms - 2021
-        internal void GetDate(out int year, out int month, out int day)
+        internal void GetDate(out int year, out int month, out int day) => GetDate(_dateData, out year, out month, out day);
+        private static void GetDate(ulong dateData, out int year, out int month, out int day)
         {
             // y100 = number of whole 100-year periods since 3/1/0000
             // r1 = (day number within 100-year period) * 4
-            (uint y100, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
+            (uint y100, uint r1) = Math.DivRem(((uint)((dateData & TicksMask) / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
             ulong u2 = Math.BigMul(EafMultiplier, r1 | 3U);
-            ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
-            int n3 = 2141 * daySinceMarch1 + 197913;
+            uint daySinceMarch1 = (uint)u2 / EafDivider;
+            uint n3 = 2141 * daySinceMarch1 + 197913;
             year = (int)(100 * y100 + (uint)(u2 >> 32));
             // compute month and day
-            month = (ushort)(n3 >> 16);
+            month = (int)(n3 >> 16);
             day = (ushort)n3 / 2141 + 1;
 
             // rollover December 31
@@ -1405,7 +1376,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void GetTime(out int hour, out int minute, out int second)
         {
-            ulong seconds = UTicks / TicksPerSecond;
+            ulong seconds = UTicks / TimeSpan.TicksPerSecond;
             ulong minutes = seconds / 60;
             second = (int)(seconds - (minutes * 60));
             ulong hours = minutes / 60;
@@ -1416,7 +1387,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void GetTime(out int hour, out int minute, out int second, out int millisecond)
         {
-            ulong milliseconds = UTicks / TicksPerMillisecond;
+            ulong milliseconds = UTicks / TimeSpan.TicksPerMillisecond;
             ulong seconds = milliseconds / 1000;
             millisecond = (int)(milliseconds - (seconds * 1000));
             ulong minutes = seconds / 60;
@@ -1430,8 +1401,8 @@ namespace System
         internal void GetTimePrecise(out int hour, out int minute, out int second, out int tick)
         {
             ulong ticks = UTicks;
-            ulong seconds = ticks / TicksPerSecond;
-            tick = (int)(ticks - (seconds * TicksPerSecond));
+            ulong seconds = ticks / TimeSpan.TicksPerSecond;
+            tick = (int)(ticks - (seconds * TimeSpan.TicksPerSecond));
             ulong minutes = seconds / 60;
             second = (int)(seconds - (minutes * 60));
             ulong hours = minutes / 60;
@@ -1461,7 +1432,7 @@ namespace System
         // Monday, 2 indicates Tuesday, 3 indicates Wednesday, 4 indicates
         // Thursday, 5 indicates Friday, and 6 indicates Saturday.
         //
-        public DayOfWeek DayOfWeek => (DayOfWeek)(((uint)(UTicks / TicksPerDay) + 1) % 7);
+        public DayOfWeek DayOfWeek => (DayOfWeek)(((uint)(UTicks / TimeSpan.TicksPerDay) + 1) % 7);
 
         // Returns the day-of-year part of this DateTime. The returned value
         // is an integer between 1 and 366.
@@ -1480,41 +1451,40 @@ namespace System
         // Returns the hour part of this DateTime. The returned value is an
         // integer between 0 and 23.
         //
-        public int Hour => (int)((uint)(UTicks / TicksPerHour) % 24);
+        public int Hour => (int)((uint)(UTicks / TimeSpan.TicksPerHour) % 24);
 
-        internal bool IsAmbiguousDaylightSavingTime() =>
-            InternalKind == KindLocalAmbiguousDst;
+        internal bool IsAmbiguousDaylightSavingTime() => _dateData >= KindLocalAmbiguousDst;
 
         public DateTimeKind Kind
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => InternalKind switch
+            get
             {
-                KindUnspecified => DateTimeKind.Unspecified,
-                KindUtc => DateTimeKind.Utc,
-                _ => DateTimeKind.Local,
-            };
+                uint kind = (uint)(_dateData >> KindShift);
+                // values 0-2 map directly to DateTimeKind, 3 (LocalAmbiguousDst) needs to be mapped to 2 (Local) using bit0 NAND bit1
+                return (DateTimeKind)(kind & ~(kind >> 1));
+            }
         }
 
         // Returns the millisecond part of this DateTime. The returned value
         // is an integer between 0 and 999.
         //
-        public int Millisecond => (int)((UTicks / TicksPerMillisecond) % 1000);
+        public int Millisecond => (int)((UTicks / TimeSpan.TicksPerMillisecond) % 1000);
 
         /// <summary>
         /// The microseconds component, expressed as a value between 0 and 999.
         /// </summary>
-        public int Microsecond => (int)((UTicks / TicksPerMicrosecond) % 1000);
+        public int Microsecond => (int)((UTicks / TimeSpan.TicksPerMicrosecond) % 1000);
 
         /// <summary>
         /// The nanoseconds component, expressed as a value between 0 and 900 (in increments of 100 nanoseconds).
         /// </summary>
-        public int Nanosecond => (int)(UTicks % TicksPerMicrosecond) * 100;
+        public int Nanosecond => (int)(UTicks % TimeSpan.TicksPerMicrosecond) * 100;
 
         // Returns the minute part of this DateTime. The returned value is
         // an integer between 0 and 59.
         //
-        public int Minute => (int)((UTicks / TicksPerMinute) % 60);
+        public int Minute => (int)((UTicks / TimeSpan.TicksPerMinute) % 60);
 
         // Returns the month part of this DateTime. The returned value is an
         // integer between 1 and 12.
@@ -1556,7 +1526,7 @@ namespace System
         // Returns the second part of this DateTime. The returned value is
         // an integer between 0 and 59.
         //
-        public int Second => (int)((UTicks / TicksPerSecond) % 60);
+        public int Second => (int)((UTicks / TimeSpan.TicksPerSecond) % 60);
 
         // Returns the tick count for this DateTime. The returned value is
         // the number of 100-nanosecond intervals that have elapsed since 1/1/0001
@@ -1567,7 +1537,7 @@ namespace System
         // Returns the time-of-day part of this DateTime. The returned value
         // is a TimeSpan that indicates the time elapsed since midnight.
         //
-        public TimeSpan TimeOfDay => new TimeSpan((long)(UTicks % TicksPerDay));
+        public TimeSpan TimeOfDay => new TimeSpan((long)(UTicks % TimeSpan.TicksPerDay));
 
         // Returns a DateTime representing the current date. The date part
         // of the returned value is the current date, and the time-of-day part of
@@ -1578,15 +1548,13 @@ namespace System
         // Returns the year part of this DateTime. The returned value is an
         // integer between 1 and 9999.
         //
-        public int Year
+        public int Year => GetYear(_dateData);
+        private static int GetYear(ulong dateData)
         {
-            get
-            {
-                // y100 = number of whole 100-year periods since 1/1/0001
-                // r1 = (day number within 100-year period) * 4
-                (uint y100, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U), DaysPer400Years);
-                return 1 + (int)(100 * y100 + (r1 | 3) / DaysPer4Years);
-            }
+            // y100 = number of whole 100-year periods since 1/1/0001
+            // r1 = (day number within 100-year period) * 4
+            (uint y100, uint r1) = Math.DivRem(((uint)((dateData & TicksMask) / TicksPer6Hours) | 3U), DaysPer400Years);
+            return 1 + (int)(100 * y100 + (r1 | 3) / DaysPer4Years);
         }
 
         // Checks whether a given year is a leap year. This method returns true if
@@ -1696,19 +1664,19 @@ namespace System
         {
             if (value == 0)
                 return 0.0;  // Returns OleAut's zero'ed date value.
-            if (value < TicksPerDay) // This is a fix for VB. They want the default day to be 1/1/0001 rathar then 12/30/1899.
+            if (value < TimeSpan.TicksPerDay) // This is a fix for VB. They want the default day to be 1/1/0001 rather than 12/30/1899.
                 value += DoubleDateOffset; // We could have moved this fix down but we would like to keep the bounds check.
             if (value < OADateMinAsTicks)
                 throw new OverflowException(SR.Arg_OleAutDateInvalid);
             // Currently, our max date == OA's max date (12/31/9999), so we don't
             // need an overflow check in that direction.
-            long millis = (value - DoubleDateOffset) / TicksPerMillisecond;
+            long millis = (value - DoubleDateOffset) / TimeSpan.TicksPerMillisecond;
             if (millis < 0)
             {
-                long frac = millis % MillisPerDay;
-                if (frac != 0) millis -= (MillisPerDay + frac) * 2;
+                long frac = millis % TimeSpan.MillisecondsPerDay;
+                if (frac != 0) millis -= (TimeSpan.MillisecondsPerDay + frac) * 2;
             }
-            return (double)millis / MillisPerDay;
+            return (double)millis / TimeSpan.MillisecondsPerDay;
         }
 
         // Converts the DateTime instance into an OLE Automation compatible
@@ -1810,9 +1778,7 @@ namespace System
             DateTimeFormat.TryFormat(this, utf8Destination, out bytesWritten, format, provider);
 
         public DateTime ToUniversalTime()
-        {
-            return TimeZoneInfo.ConvertTimeToUtc(this, TimeZoneInfoOptions.NoThrowOnInvalidTime);
-        }
+            => _dateData >> KindShift == (int)DateTimeKind.Utc ? this : TimeZoneInfo.ConvertTimeToUtc(this, TimeZoneInfoOptions.NoThrowOnInvalidTime);
 
         public static bool TryParse([NotNullWhen(true)] string? s, out DateTime result)
         {
@@ -2020,7 +1986,7 @@ namespace System
             {
                 return false;
             }
-            if ((uint)hour >= 24 || (uint)minute >= 60 || (uint)millisecond >= MillisPerSecond)
+            if ((uint)hour >= 24 || (uint)minute >= 60 || (uint)millisecond >= TimeSpan.MillisecondsPerSecond)
             {
                 return false;
             }
@@ -2030,20 +1996,23 @@ namespace System
             {
                 return false;
             }
-            ulong ticks = (DaysToYear((uint)year) + days[month - 1] + (uint)day - 1) * (ulong)TicksPerDay;
+            ulong ticks = (DaysToYear((uint)year) + days[month - 1] + (uint)day - 1) * (ulong)TimeSpan.TicksPerDay;
 
             if ((uint)second < 60)
             {
-                ticks += TimeToTicks(hour, minute, second) + (uint)millisecond * (uint)TicksPerMillisecond;
+                ticks += TimeToTicks(hour, minute, second) + (uint)millisecond * (uint)TimeSpan.TicksPerMillisecond;
             }
-            else if (second == 60 && SystemSupportsLeapSeconds && IsValidTimeWithLeapSeconds(year, month, day, hour, minute, DateTimeKind.Unspecified))
+            else if (second == 60 && SystemSupportsLeapSeconds)
             {
                 // if we have leap second (second = 60) then we'll need to check if it is valid time.
                 // if it is valid, then we adjust the second to 59 so DateTime will consider this second is last second
                 // of this minute.
                 // if it is not valid time, we'll eventually throw.
                 // although this is unspecified datetime kind, we'll assume the passed time is UTC to check the leap seconds.
-                ticks += TimeToTicks(hour, minute, 59) + 999 * TicksPerMillisecond;
+                ticks += TimeToTicks(hour, minute, 59) + 999 * TimeSpan.TicksPerMillisecond;
+
+                if (!IsValidTimeWithLeapSeconds(new DateTime(ticks)))
+                    return false;
             }
             else
             {

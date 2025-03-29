@@ -14,36 +14,36 @@ let theConsoleApi: any;
 let originalConsoleMethods: any;
 let threadNamePrefix: string;
 
-export function set_thread_prefix(threadPrefix: string) {
+export function set_thread_prefix (threadPrefix: string) {
     threadNamePrefix = threadPrefix;
 }
 
-export function mono_log_debug(msg: string, ...data: any[]) {
+export function mono_log_debug (messageFactory: string | (() => string)) {
     if (loaderHelpers.diagnosticTracing) {
-        console.debug(prefix + msg, ...data);
+        const message = (typeof messageFactory === "function"
+            ? messageFactory()
+            : messageFactory);
+        console.debug(prefix + message);
     }
 }
 
-export function mono_log_info(msg: string, ...data: any) {
+export function mono_log_info (msg: string, ...data: any) {
     console.info(prefix + msg, ...data);
 }
 
-export function mono_log_info_no_prefix(msg: string, ...data: any) {
+export function mono_log_info_no_prefix (msg: string, ...data: any) {
     console.info(msg, ...data);
 }
 
-export function mono_log_warn(msg: string, ...data: any) {
+export function mono_log_warn (msg: string, ...data: any) {
     console.warn(prefix + msg, ...data);
 }
 
-export function mono_log_error(msg: string, ...data: any) {
+export function mono_log_error (msg: string, ...data: any) {
     if (data && data.length > 0 && data[0] && typeof data[0] === "object") {
         // don't log silent errors
         if (data[0].silent) {
             return;
-        }
-        if (data[0].toString) {
-            console.error(prefix + msg, data[0].toString());
         }
         if (data[0].toString) {
             console.error(prefix + msg, data[0].toString());
@@ -54,7 +54,7 @@ export function mono_log_error(msg: string, ...data: any) {
 }
 let tick = "";
 let last = new Date().valueOf();
-function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
+function proxyConsoleMethod (prefix: string, func: any, asJson: boolean) {
     return function (...args: any[]) {
         try {
             let payload = args[0];
@@ -101,7 +101,7 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
     };
 }
 
-export function setup_proxy_console(id: string, console: Console, origin: string): void {
+export function setup_proxy_console (id: string, console: Console, origin: string): void {
     theConsoleApi = console as any;
     threadNamePrefix = id;
     originalConsoleMethods = {
@@ -117,14 +117,14 @@ export function setup_proxy_console(id: string, console: Console, origin: string
     setupWS();
 }
 
-export function teardown_proxy_console(message?: string) {
+export function teardown_proxy_console (message?: string) {
+    let counter = 30;
     const stop_when_ws_buffer_empty = () => {
         if (!consoleWebSocket) {
             if (message && originalConsoleMethods) {
                 originalConsoleMethods.log(message);
             }
-        }
-        else if (consoleWebSocket.bufferedAmount == 0) {
+        } else if (consoleWebSocket.bufferedAmount == 0 || counter == 0) {
             if (message) {
                 // tell xharness WasmTestMessagesProcessor we are done.
                 // note this sends last few bytes into the same WS
@@ -136,38 +136,37 @@ export function teardown_proxy_console(message?: string) {
             consoleWebSocket.removeEventListener("close", logWSClose);
             consoleWebSocket.close(1000, message);
             (consoleWebSocket as any) = undefined;
-        }
-        else {
+        } else {
+            counter--;
             globalThis.setTimeout(stop_when_ws_buffer_empty, 100);
         }
     };
     stop_when_ws_buffer_empty();
 }
 
-function send(msg: string) {
+function send (msg: string) {
     if (consoleWebSocket && consoleWebSocket.readyState === WebSocket.OPEN) {
         consoleWebSocket.send(msg);
-    }
-    else {
+    } else {
         originalConsoleMethods.log(msg);
     }
 }
 
-function logWSError(event: Event) {
+function logWSError (event: Event) {
     originalConsoleMethods.error(`[${threadNamePrefix}] proxy console websocket error: ${event}`, event);
 }
 
-function logWSClose(event: Event) {
+function logWSClose (event: Event) {
     originalConsoleMethods.debug(`[${threadNamePrefix}] proxy console websocket closed: ${event}`, event);
 }
 
-function setupWS() {
+function setupWS () {
     for (const m of methods) {
         theConsoleApi[m] = proxyConsoleMethod(`console.${m}`, send, true);
     }
 }
 
-function setupOriginal() {
+function setupOriginal () {
     for (const m of methods) {
         theConsoleApi[m] = proxyConsoleMethod(`console.${m}`, originalConsoleMethods.log, false);
     }

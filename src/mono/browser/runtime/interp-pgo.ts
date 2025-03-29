@@ -3,15 +3,15 @@
 import ProductVersion from "consts:productVersion";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { ENVIRONMENT_IS_WEB, Module, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_error, mono_log_warn } from "./logging";
-import { localHeapViewU8 } from "./memory";
+import { free, localHeapViewU8, malloc } from "./memory";
 import cwraps from "./cwraps";
 import { MonoConfigInternal } from "./types/internal";
 
 export const tablePrefix = "https://dotnet.generated.invalid/interp_pgo";
 
-export async function interp_pgo_save_data() {
+export async function interp_pgo_save_data () {
     if (!loaderHelpers.is_runtime_running()) {
         mono_log_info("Skipped saving interp_pgo table (already exited)");
         return;
@@ -31,7 +31,7 @@ export async function interp_pgo_save_data() {
             return;
         }
 
-        const pData = <any>Module._malloc(expectedSize);
+        const pData = <any>malloc(expectedSize);
         const saved = cwraps.mono_interp_pgo_save_table(pData, expectedSize) === 0;
         if (!saved) {
             mono_log_error("Failed to save interp_pgo table (Unknown error)");
@@ -47,13 +47,13 @@ export async function interp_pgo_save_data() {
 
         cleanupCache(tablePrefix, cacheKey); // no await
 
-        Module._free(pData);
+        free(pData);
     } catch (exc) {
         mono_log_error(`Failed to save interp_pgo table: ${exc}`);
     }
 }
 
-export async function interp_pgo_load_data() {
+export async function interp_pgo_load_data () {
     const cacheKey = await getCacheKey(tablePrefix);
     if (!cacheKey) {
         mono_log_error("Failed to create cache key for interp_pgo table");
@@ -66,17 +66,17 @@ export async function interp_pgo_load_data() {
         return;
     }
 
-    const pData = <any>Module._malloc(data.byteLength);
+    const pData = <any>malloc(data.byteLength);
     const u8 = localHeapViewU8();
     u8.set(new Uint8Array(data), pData);
 
     if (cwraps.mono_interp_pgo_load_table(pData, data.byteLength))
         mono_log_error("Failed to load interp_pgo table (Unknown error)");
 
-    Module._free(pData);
+    free(pData);
 }
 
-async function openCache(): Promise<Cache | null> {
+async function openCache (): Promise<Cache | null> {
     // cache integrity is compromised if the first request has been served over http (except localhost)
     // in this case, we want to disable caching and integrity validation
     if (ENVIRONMENT_IS_WEB && globalThis.window.isSecureContext === false) {
@@ -113,7 +113,7 @@ async function openCache(): Promise<Cache | null> {
     }
 }
 
-export async function getCacheEntry(cacheKey: string): Promise<ArrayBuffer | undefined> {
+export async function getCacheEntry (cacheKey: string): Promise<ArrayBuffer | undefined> {
     try {
         const cache = await openCache();
         if (!cache) {
@@ -130,7 +130,7 @@ export async function getCacheEntry(cacheKey: string): Promise<ArrayBuffer | und
     }
 }
 
-export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mimeType: string): Promise<boolean> {
+export async function storeCacheEntry (cacheKey: string, memory: ArrayBuffer, mimeType: string): Promise<boolean> {
     try {
         const cache = await openCache();
         if (!cache) {
@@ -157,7 +157,7 @@ export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mim
     }
 }
 
-export async function cleanupCache(prefix: string, protectKey: string) {
+export async function cleanupCache (prefix: string, protectKey: string) {
     try {
         const cache = await openCache();
         if (!cache) {
@@ -175,7 +175,7 @@ export async function cleanupCache(prefix: string, protectKey: string) {
 }
 
 // calculate hash of things which affect config hash
-export async function getCacheKey(prefix: string): Promise<string | null> {
+export async function getCacheKey (prefix: string): Promise<string | null> {
     if (!runtimeHelpers.subtle) {
         return null;
     }
@@ -198,7 +198,6 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.logExitCode;
     delete inputs.pthreadPoolInitialSize;
     delete inputs.pthreadPoolUnusedSize;
-    delete inputs.finalizerThreadStartDelayMs;
     delete inputs.asyncFlushOnExit;
     delete inputs.remoteSources;
     delete inputs.ignorePdbLoadErrors;
@@ -206,9 +205,7 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.enableDownloadRetry;
     delete inputs.extensions;
     delete inputs.runtimeId;
-    delete inputs.mainThreadingMode;
     delete inputs.jsThreadBlockingMode;
-    delete inputs.jsThreadInteropMode;
 
     inputs.GitHash = loaderHelpers.gitHash;
     inputs.ProductVersion = ProductVersion;

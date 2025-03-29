@@ -48,14 +48,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("_associatedData_").Append(nameMangler.GetMangledMethodName(_methodNode.Method));
+            sb.Append("_associatedData_"u8).Append(nameMangler.GetMangledMethodName(_methodNode.Method));
         }
 
         public static bool MethodHasAssociatedData(IMethodNode methodNode)
         {
             // Instantiating unboxing stubs. We need to store their non-unboxing target pointer (looked up by runtime)
             ISpecialUnboxThunkNode unboxThunk = methodNode as ISpecialUnboxThunkNode;
-            if(unboxThunk != null && unboxThunk.IsSpecialUnboxingThunk)
+            if (unboxThunk != null && unboxThunk.IsSpecialUnboxingThunk)
                 return true;
 
             return false;

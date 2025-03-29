@@ -71,9 +71,11 @@ namespace System.DirectoryServices.Protocols
     {
         // Not marked as readonly to enable passing to Unsafe.As in GetPinnableReference.
         private SecurityProtocol _securityProtocol;
+#pragma warning disable SYSLIB0058 // Use NegotiatedCipherSuite.
         private readonly CipherAlgorithmType _identifier;
         private readonly int _strength;
         private readonly HashAlgorithmType _hashAlgorithm;
+#pragma warning restore SYSLIB0058 // Use NegotiatedCipherSuite.
         private readonly int _hashStrength;
         private readonly int _keyExchangeAlgorithm;
         private readonly int _exchangeStrength;
@@ -83,17 +85,34 @@ namespace System.DirectoryServices.Protocols
         }
 
         public SecurityProtocol Protocol => _securityProtocol;
-
+#if NET10_0_OR_GREATER
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public CipherAlgorithmType AlgorithmIdentifier => _identifier;
 
+#if NET10_0_OR_GREATER
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public int CipherStrength => _strength;
 
+#if NET10_0_OR_GREATER
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public HashAlgorithmType Hash => _hashAlgorithm;
 
+#if NET10_0_OR_GREATER
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public int HashStrength => _hashStrength;
 
+#if NET10_0_OR_GREATER
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public int KeyExchangeAlgorithm => _keyExchangeAlgorithm;
 
+#if NET10_0_OR_GREATER
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public int ExchangeStrength => _exchangeStrength;
 
         internal ref readonly byte GetPinnableReference() => ref Unsafe.As<SecurityProtocol, byte>(ref _securityProtocol);
@@ -555,7 +574,7 @@ namespace System.DirectoryServices.Protocols
             {
                 // build server control
                 managedServerControls = LdapConnection.BuildControlArray(controls, true);
-                int structSize = Marshal.SizeOf(typeof(LdapControl));
+                int structSize = Marshal.SizeOf<LdapControl>();
                 if (managedServerControls != null)
                 {
                     serverControlArray = Utility.AllocHGlobalIntPtrArray(managedServerControls.Length + 1);
@@ -738,6 +757,12 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
+        public int ProtocolVersion
+        {
+            get => GetIntValueHelper(LdapOption.LDAP_OPT_VERSION);
+            set => SetIntValueHelper(LdapOption.LDAP_OPT_VERSION, value);
+        }
+
         private int GetIntValueHelper(LdapOption option)
         {
             if (_connection._disposed)
@@ -848,7 +873,7 @@ namespace System.DirectoryServices.Protocols
         {
             LdapReferralCallback value = new LdapReferralCallback()
             {
-                sizeofcallback = Marshal.SizeOf(typeof(LdapReferralCallback)),
+                sizeofcallback = Marshal.SizeOf<LdapReferralCallback>(),
                 query = tempCallback.QueryForConnection == null ? null : _queryDelegate,
                 notify = tempCallback.NotifyNewConnection == null ? null : _notifiyDelegate,
                 dereference = tempCallback.DereferenceConnection == null ? null : _dereferenceDelegate

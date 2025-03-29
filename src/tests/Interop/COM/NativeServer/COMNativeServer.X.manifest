@@ -22,6 +22,11 @@
     clsid="{C73C83E8-51A2-47F8-9B5C-4284458E47A6}"
     threadingModel="Both" />
 
+  <!-- MiscTypesTesting -->
+  <comClass
+    clsid="{CCFF894B-A27C-45E0-9B30-6C88D722E843}"
+    threadingModel="Both" />
+
   <!-- ErrorMarshalTesting -->
   <comClass
     clsid="{71CF5C45-106C-4B32-B418-43A463C6041F}"
@@ -35,6 +40,11 @@
   <!-- EventTesting -->
   <comClass
     clsid="{4DBD9B61-E372-499F-84DE-EFC70AA8A009}"
+    threadingModel="Both" />
+
+  <!-- DispatchCoerceTesting -->
+  <comClass
+    clsid="{661F9962-3477-416B-BE40-4CBA3190A562}"
     threadingModel="Both" />
 
   <!-- AggregationTesting -->

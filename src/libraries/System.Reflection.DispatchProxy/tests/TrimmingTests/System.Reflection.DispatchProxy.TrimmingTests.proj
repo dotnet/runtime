@@ -1,5 +1,12 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="DispatchProxyTest.cs">
+      <!-- https://github.com/dotnet/runtime/issues/73136 -->
+      <NativeAotIncompatible>true</NativeAotIncompatible>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

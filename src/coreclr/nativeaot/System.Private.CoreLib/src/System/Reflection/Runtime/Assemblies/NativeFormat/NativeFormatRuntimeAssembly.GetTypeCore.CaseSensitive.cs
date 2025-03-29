@@ -21,15 +21,12 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                 namespaceParts[numNamespaceParts - i - 1] = parts[i];
             string name = parts[numNamespaceParts];
 
-            foreach (QScopeDefinition scopeDefinition in AllScopes)
+            MetadataReader reader = Scope.Reader;
+            ScopeDefinitionHandle scopeDefinitionHandle = Scope.Handle;
+
+            NamespaceDefinition namespaceDefinition;
+            if (TryResolveNamespaceDefinitionCaseSensitive(reader, namespaceParts, scopeDefinitionHandle, out namespaceDefinition))
             {
-                MetadataReader reader = scopeDefinition.Reader;
-                ScopeDefinitionHandle scopeDefinitionHandle = scopeDefinition.Handle;
-
-                NamespaceDefinition namespaceDefinition;
-                if (!TryResolveNamespaceDefinitionCaseSensitive(reader, namespaceParts, scopeDefinitionHandle, out namespaceDefinition))
-                    continue;
-
                 // We've successfully drilled down the namespace chain. Now look for a top-level type matching the type name.
                 TypeDefinitionHandleCollection candidateTypes = namespaceDefinition.TypeDefinitions;
                 foreach (TypeDefinitionHandle candidateType in candidateTypes)

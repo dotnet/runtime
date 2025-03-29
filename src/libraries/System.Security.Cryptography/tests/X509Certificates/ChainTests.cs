@@ -216,7 +216,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         /// and trusted root. It will fail to build any chain if those are not valid.
         /// </summary>
         [Fact]
-        [OuterLoop]
+        [OuterLoop("May take a long time on some platforms", ~TestPlatforms.Browser)]
         [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android.")]
         public static void BuildChainExtraStoreUntrustedRoot()
         {
@@ -656,7 +656,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [ConditionalFact(nameof(TrustsMicrosoftDotComRoot))]
-        [OuterLoop(/* Modifies user certificate store */)]
+        [OuterLoop("Modifies user certificate store", ~TestPlatforms.Browser)]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible")]
         public static void BuildChain_MicrosoftDotCom_WithRootCertInUserAndSystemRootCertStores()
         {
@@ -932,8 +932,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Chain building on Android fails with an empty subject")]
-        public static void ChainWithEmptySubject()
+        public static void ChainWithEmptySubjectAndCritialSan()
         {
             using (var cert = new X509Certificate2(TestData.EmptySubjectCertificate))
             using (var issuer = new X509Certificate2(TestData.EmptySubjectIssuerCertificate))
@@ -1283,7 +1282,18 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
                 // minimum be marked UntrustedRoot.
 
                 Assert.False(chain.Build(cert));
-                AssertExtensions.HasFlag(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
+
+                if (PlatformDetection.IsAndroid)
+                {
+                    // Android always validates trust as part of building a path,
+                    // so violations comes back as PartialChain with no elements
+                    Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                    Assert.Equal(0, chain.ChainElements.Count);
+                }
+                else
+                {
+                    AssertExtensions.HasFlag(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
+                }
             }
         }
 
@@ -1308,6 +1318,12 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
                 {
                     Assert.False(chain.Build(cert));
                     AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                }
+                else if (PlatformDetection.IsAndroid)
+                {
+                    Assert.False(chain.Build(cert));
+                    AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                    Assert.Equal(0, chain.ChainElements.Count);
                 }
                 else if (PlatformDetection.IsOpenSslSupported)
                 {

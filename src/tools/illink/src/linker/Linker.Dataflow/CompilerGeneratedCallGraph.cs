@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Mono.Cecil;
+using ILLink.Shared.DataFlow;
 
 namespace Mono.Linker.Dataflow
 {

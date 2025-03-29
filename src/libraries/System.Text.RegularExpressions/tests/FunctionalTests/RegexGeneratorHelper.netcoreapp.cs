@@ -134,6 +134,12 @@ namespace System.Text.RegularExpressions.Tests
             return results[0];
         }
 
+        private static readonly CultureInfo s_cultureWithMinusNegativeSign = new CultureInfo("")
+        {
+            // To validate that generation still succeeds even when something other than '-' is used.
+            NumberFormat = new NumberFormatInfo() { NegativeSign = $"{(char)0x2212}" }
+        };
+
         internal static async Task<Regex[]> SourceGenRegexAsync(
             (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes, CancellationToken cancellationToken = default)
         {
@@ -177,7 +183,9 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     code.Append($", {SymbolDisplay.FormatLiteral(regex.culture.Name, quote: true)}");
                 }
-                code.AppendLine($")] public static partial Regex Get{count}();");
+
+                bool useProp = count % 2 == 0; // validate both methods and properties by alternating between them
+                code.AppendLine($")] public static partial Regex Get{count}{(useProp ? " { get; }" : "();")}");
 
                 count++;
             }
@@ -212,13 +220,24 @@ namespace System.Text.RegularExpressions.Tests
             comp = comp.ReplaceSyntaxTree(comp.SyntaxTrees.First(), CSharpSyntaxTree.ParseText(SourceText.From(code.ToString(), Encoding.UTF8), s_previewParseOptions));
 
             // Run the generator
-            GeneratorDriverRunResult generatorResults = s_generatorDriver.RunGenerators(comp!, cancellationToken).GetRunResult();
-            ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
-            if (generatorDiagnostics.Length != 0)
+            CultureInfo origCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = s_cultureWithMinusNegativeSign;
+            GeneratorDriverRunResult generatorResults;
+            ImmutableArray<Diagnostic> generatorDiagnostics;
+            try
             {
-                throw new ArgumentException(
-                    string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
-                    string.Join(Environment.NewLine, generatorDiagnostics));
+                generatorResults = s_generatorDriver.RunGenerators(comp!, cancellationToken).GetRunResult();
+                generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
+                if (generatorDiagnostics.Length != 0)
+                {
+                    throw new ArgumentException(
+                        string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
+                        string.Join(Environment.NewLine, generatorDiagnostics));
+                }
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = origCulture;
             }
 
             // Compile the assembly to a stream
@@ -238,12 +257,13 @@ namespace System.Text.RegularExpressions.Tests
             var alc = new RegexLoadContext(Environment.CurrentDirectory);
             Assembly a = alc.LoadFromStream(dll);
 
-            // Instantiate each regex using the newly created static Get method that was source generated.
+            // Instantiate each regex using the newly created static Get member that was source generated.
             var instances = new Regex[count];
             Type c = a.GetType("C")!;
             for (int i = 0; i < instances.Length; i++)
             {
-                instances[i] = (Regex)c.GetMethod($"Get{i}")!.Invoke(null, null)!;
+                string memberName = $"Get{i}";
+                instances[i] = (Regex)(c.GetMethod(memberName) ?? c.GetProperty(memberName).GetGetMethod())!.Invoke(null, null)!;
             }
 
             // Issue an unload on the ALC, so it'll be collected once the Regex instance is collected

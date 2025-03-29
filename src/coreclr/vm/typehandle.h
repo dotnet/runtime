@@ -27,7 +27,6 @@ class MethodTable;
 class EEClass;
 class Module;
 class Assembly;
-class BaseDomain;
 class MethodDesc;
 class TypeKey;
 class TypeHandleList;
@@ -268,7 +267,8 @@ public:
     // Note that if the TypeHandle is a valuetype, the caller is responsible
     // for checking that the valuetype is in its boxed form before calling
     // CanCastTo. Otherwise, the caller should be using IsBoxedAndCanCastTo()
-    typedef enum { CannotCast, CanCast, MaybeCast } CastResult;
+    // See CastCache.cs for matching managed type.
+    typedef enum { CannotCast = 0, CanCast = 1, MaybeCast = 2 } CastResult;
 
     BOOL CanCastTo(TypeHandle type, TypeHandlePairList *pVisited = NULL) const;
     BOOL IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pVisited) const;
@@ -331,22 +331,6 @@ public:
     // so the direct reference will be stored to the pDest argument. In case of unloadable
     // context, an index to the pinned table will be saved.
     void AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest);
-
-    FORCEINLINE static bool GetManagedClassObjectFromHandleFast(RUNTIMETYPEHANDLE handle, OBJECTREF* pRef)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // For a non-unloadable context, handle is expected to be either null (is not cached yet)
-        // or be a direct pointer to a frozen RuntimeType object
-
-        if (handle & 1)
-        {
-            // Clear the "is pinned object" bit from the managed reference
-            *pRef = (OBJECTREF)(handle - 1);
-            return true;
-        }
-        return false;
-    }
 #endif
 
     // Similar to IsCanonicalSubtype, but applied to a vector.
@@ -479,10 +463,11 @@ public:
     // PTR
     BOOL IsPointer() const;
 
+    // String
+    BOOL IsString() const;
+
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;
-
-    Module* GetDefiningModuleForOpenType() const;
 
     // Is type that has a type parameter (ARRAY, SZARRAY, BYREF, PTR)
     BOOL HasTypeParam() const;
@@ -518,7 +503,7 @@ public:
 #endif
 
     OBJECTREF GetManagedClassObject() const;
-    OBJECTREF GetManagedClassObjectFast() const;
+    OBJECTREF GetManagedClassObjectIfExists() const;
 
     static TypeHandle MergeArrayTypeHandlesToCommonParent(
         TypeHandle ta, TypeHandle tb);
@@ -526,9 +511,8 @@ public:
     static TypeHandle MergeTypeHandlesToCommonParent(
         TypeHandle ta, TypeHandle tb);
 
-
-    BOOL NotifyDebuggerLoad(AppDomain *domain, BOOL attaching) const;
-    void NotifyDebuggerUnload(AppDomain *domain) const;
+    BOOL NotifyDebuggerLoad(BOOL attaching) const;
+    void NotifyDebuggerUnload() const;
 
     // Execute the callback functor for each MethodTable that makes up the given type handle.  This method
     // does not invoke the functor for generic variables
@@ -617,6 +601,15 @@ public:
 };
 
 #if CHECK_INVARIANTS
+template <typename Dummy = TypeHandle>
+typename std::enable_if<has_Check<Dummy>::value, CHECK>::type CheckPointerImpl(Dummy th, IsNullOK ok)
+{
+    CHECK(th.Check());
+}
+
+template <typename Dummy = TypeHandle>
+typename std::enable_if<!has_Check<Dummy>::value, CHECK>::type CheckPointerImpl(Dummy th, IsNullOK ok) { CHECK_OK; }
+
 inline CHECK CheckPointer(TypeHandle th, IsNullOK ok = NULL_NOT_OK)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -631,10 +624,7 @@ inline CHECK CheckPointer(TypeHandle th, IsNullOK ok = NULL_NOT_OK)
     }
     else
     {
-        __if_exists(TypeHandle::Check)
-        {
-            CHECK(th.Check());
-        }
+        CheckPointerImpl(th, ok);
 #if 0
         CHECK(CheckInvariant(o));
 #endif
@@ -642,14 +632,11 @@ inline CHECK CheckPointer(TypeHandle th, IsNullOK ok = NULL_NOT_OK)
 
     CHECK_OK;
 }
-
 #endif  // CHECK_INVARIANTS
 
 /*************************************************************************/
 // Instantiation is representation of generic instantiation.
-// It is simple read-only array of TypeHandles. In NGen, the type handles
-// may be encoded using indirections. That's one reason why it is convenient
-// to have wrapper class that performs the decoding.
+// It is simple read-only array of TypeHandles.
 class Instantiation
 {
 public:
@@ -694,6 +681,14 @@ public:
         _ASSERTE(m_nArgs == 0 || m_pArgs != NULL);
     }
 #endif
+
+    Instantiation& operator=(const Instantiation& inst)
+    {
+        _ASSERTE(this != &inst);
+        m_pArgs = inst.m_pArgs;
+        m_nArgs = inst.m_nArgs;
+        return *this;
+    }
 
     // Return i-th instantiation argument
     TypeHandle operator[](DWORD iArg) const

@@ -832,7 +832,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
-        public void SendPing_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        public async Task SendPing_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
             if (localIpAddress == null)
@@ -847,7 +847,7 @@ namespace System.Net.NetworkInformation.Tests
             remoteInvokeStartInfo.EnvironmentVariables["LC_MESSAGES"] = envVar_LC_MESSAGES;
             remoteInvokeStartInfo.EnvironmentVariables["LC_ALL"] = envVar_LC_ALL;
 
-            RemoteExecutor.Invoke(address =>
+            await RemoteExecutor.Invoke(address =>
             {
                 SendBatchPing(
                     (ping) => ping.Send(address, TestSettings.PingTimeout),
@@ -855,7 +855,7 @@ namespace System.Net.NetworkInformation.Tests
                     {
                         PingResultValidator(pingReply, new IPAddress[] { IPAddress.Parse(address) }, null);
                     });
-            }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
+            }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).DisposeAsync();
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
@@ -866,7 +866,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
-        public void SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        public async Task SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
 
@@ -879,7 +879,7 @@ namespace System.Net.NetworkInformation.Tests
                 }
             };
 
-            RemoteExecutor.Invoke(async address =>
+            await RemoteExecutor.Invoke(async address =>
             {
                 await SendBatchPingAsync(
                     (ping) => ping.SendPingAsync(address),
@@ -887,7 +887,7 @@ namespace System.Net.NetworkInformation.Tests
                     {
                         PingResultValidator(pingReply, new IPAddress[] { IPAddress.Parse(address) }, null);
                     });
-            }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
+            }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).DisposeAsync();
         }
 
         [ConditionalFact(nameof(UsesPingUtility))]

@@ -1,17 +1,18 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
   [switch][Alias('h')]$help,
+  [switch]$pack,
   [switch][Alias('t')]$test,
   [ValidateSet("Debug","Release","Checked")][string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
   [string][Alias('v')]$verbosity = "minimal",
   [ValidateSet("windows","linux","osx","android","browser","wasi")][string]$os,
-  [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
   [switch]$testnobuild,
-  [ValidateSet("x86","x64","arm","arm64","wasm")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
+  [ValidateSet("x86","x64","arm","arm64","wasm")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()),
+  [switch]$cross = $false,
   [string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
@@ -30,7 +31,7 @@ function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -arch (-a)                     Target platform: x86, x64, arm, arm64, or wasm."
   Write-Host "                                 Pass a comma-separated list to build for multiple architectures."
-  Write-Host ("                                 [Default: {0} (Depends on your console's architecture.)]" -f [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())
+  Write-Host "                                 [Default: Your machine's architecture.]"
   Write-Host "  -binaryLog (-bl)               Output binary log."
   Write-Host "  -configuration (-c)            Build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR subset. It is the same as Debug, except code is"
@@ -76,10 +77,9 @@ function Get-Help() {
   Write-Host ""
 
   Write-Host "Libraries settings:"
-  Write-Host "  -allconfigurations      Build packages for all build configurations."
   Write-Host "  -coverage               Collect code coverage when testing."
-  Write-Host "  -framework (-f)         Build framework: net9.0 or net48."
-  Write-Host "                          [Default: net9.0]"
+  Write-Host "  -framework (-f)         Build framework: net10.0 or net481."
+  Write-Host "                          [Default: net10.0]"
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
   Write-Host ""
@@ -138,7 +138,7 @@ if (-not $PSBoundParameters.ContainsKey("subset") -and $properties.Length -gt 0 
 }
 
 if ($subset -eq 'help') {
-  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary"
+  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary /tl:false"
   exit 0
 }
 
@@ -261,6 +261,12 @@ if ($vs) {
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
   }
 
+  if ($librariesConfiguration)
+  {
+    # Respect the LibrariesConfiguration variable for building inside VS with different libraries configurations
+    $env:LIBRARIESCONFIGURATION=$librariesConfiguration
+  }
+
   # Respect the RuntimeFlavor variable for building inside VS with a different CoreLib and runtime
   if ($runtimeFlavor)
   {
@@ -305,7 +311,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "hostConfiguration"      { $arguments += " /p:HostConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
-    "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
+    "pack"                   { $arguments += " -pack /p:BuildAllConfigurations=true" }
     "properties"             { $arguments += " " + $properties }
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
     "cmakeargs"              { $arguments += " /p:CMakeArgs=`"$($PSBoundParameters[$argument])`"" }
@@ -322,7 +328,7 @@ foreach ($argument in $PSBoundParameters.Keys)
 }
 
 if ($env:TreatWarningsAsErrors -eq 'false') {
-  $arguments += " -warnAsError 0"
+  $arguments += " -warnAsError `$false"
 }
 
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211

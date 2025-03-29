@@ -15,12 +15,12 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	[AttributeUsage (AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
 	public class KeptOverrideAttribute : KeptAttribute
 	{
-		public Type TypeWithOverriddenMethodDeclaration;
-
 		public KeptOverrideAttribute (Type typeWithOverriddenMethod)
 		{
 			ArgumentNullException.ThrowIfNull (typeWithOverriddenMethod);
-			TypeWithOverriddenMethodDeclaration = typeWithOverriddenMethod;
+		}
+		public KeptOverrideAttribute (string typeWithOverriddenMethod)
+		{
 		}
 	}
 }

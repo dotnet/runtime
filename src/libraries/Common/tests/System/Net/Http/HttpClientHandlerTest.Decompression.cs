@@ -200,7 +200,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-#if NETCOREAPP
+#if NET
         [InlineData(DecompressionMethods.Brotli, "br", "")]
         [InlineData(DecompressionMethods.Brotli, "br", "br")]
         [InlineData(DecompressionMethods.Brotli, "br", "gzip")]
@@ -264,7 +264,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-#if NETCOREAPP
+#if NET
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli, "gzip; q=1.0, deflate; q=1.0, br; q=1.0", "")]
 #endif
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0, deflate; q=1.0", "")]

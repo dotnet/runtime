@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 
@@ -69,18 +70,25 @@ namespace System.Threading
                     AutoreleasePool.CreateAutoreleasePool();
 #endif
 
-                if (start is ThreadStart threadStart)
+                try
                 {
-                    threadStart();
+                    if (start is ThreadStart threadStart)
+                    {
+                        threadStart();
+                    }
+                    else
+                    {
+                        ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
+
+                        object? startArg = _startArg;
+                        _startArg = null;
+
+                        parameterizedThreadStart(startArg);
+                    }
                 }
-                else
+                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
                 {
-                    ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
-
-                    object? startArg = _startArg;
-                    _startArg = null;
-
-                    parameterizedThreadStart(startArg);
+                    // the handler returned "true" means the exception is now "handled" and we should gracefully exit.
                 }
 
 #if FEATURE_OBJCMARSHAL
@@ -150,23 +158,17 @@ namespace System.Threading
 
 #if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => true;
-        internal static bool IsInternalThreadStartSupported => true;
-#elif FEATURE_WASM_PERFTRACING
-        [UnsupportedOSPlatformGuard("browser")]
-        internal static bool IsThreadStartSupported => false;
-        internal static bool IsInternalThreadStartSupported => true;
 #else
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => false;
-        internal static bool IsInternalThreadStartSupported => false;
 #endif
 
-        internal static void ThrowIfNoThreadStart(bool internalThread = false)
+        internal static void ThrowIfNoThreadStart()
         {
             if (IsThreadStartSupported)
-                return;
-            if (IsInternalThreadStartSupported && internalThread)
                 return;
             throw new PlatformNotSupportedException();
         }
@@ -195,9 +197,12 @@ namespace System.Threading
 #endif
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
-        private void Start(object? parameter, bool captureContext, bool internalThread = false)
+        private void Start(object? parameter, bool captureContext)
         {
-            ThrowIfNoThreadStart(internalThread);
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
+            ThrowIfNoThreadStart();
 
             StartHelper? startHelper = _startHelper;
 
@@ -238,11 +243,9 @@ namespace System.Threading
 #endif
         public void UnsafeStart() => Start(captureContext: false);
 
-        internal void InternalUnsafeStart() => Start(captureContext: false, internalThread: true);
-
-        private void Start(bool captureContext, bool internalThread = false)
+        private void Start(bool captureContext)
         {
-            ThrowIfNoThreadStart(internalThread);
+            ThrowIfNoThreadStart();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
@@ -288,8 +291,6 @@ namespace System.Threading
                 startHelper._culture = value;
             }
         }
-
-        partial void ThreadNameChanged(string? value);
 
         public CultureInfo CurrentCulture
         {
@@ -373,6 +374,11 @@ namespace System.Threading
         internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
 #endif
 
+#if !MONO
+        [Intrinsic]
+        internal static void FastPollGC() => FastPollGC();
+#endif
+
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
         public string? Name
@@ -394,7 +400,7 @@ namespace System.Threading
 
         internal void SetThreadPoolWorkerThreadName()
         {
-            Debug.Assert(this == CurrentThread);
+            Debug.Assert(ThreadState.HasFlag(ThreadState.Unstarted) || this == CurrentThread);
             Debug.Assert(IsThreadPoolThread);
 
             lock (this)
@@ -404,7 +410,6 @@ namespace System.Threading
             }
         }
 
-#if !CORECLR
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread()
         {
@@ -416,7 +421,6 @@ namespace System.Threading
                 ResetThreadPoolThreadSlow();
             }
         }
-#endif
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ResetThreadPoolThreadSlow()
@@ -729,26 +733,46 @@ namespace System.Threading
         [ThreadStatic]
         public static bool ThrowOnBlockingWaitOnJSInteropThread;
 
-        public static void AssureBlockingPossible()
+        [ThreadStatic]
+        public static bool WarnOnBlockingWaitOnJSInteropThread;
+
+#pragma warning disable CS3001
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern unsafe void WarnAboutBlockingWait(char* stack, int length);
+
+        public static unsafe void AssureBlockingPossible()
         {
             if (ThrowOnBlockingWaitOnJSInteropThread)
             {
                 throw new PlatformNotSupportedException(SR.WasmThreads_BlockingWaitNotSupportedOnJSInterop);
             }
+            else if (WarnOnBlockingWaitOnJSInteropThread)
+            {
+                var st = $"Blocking the thread with JS interop is dangerous and could lead to deadlock. ManagedThreadId: {Environment.CurrentManagedThreadId}\n{Environment.StackTrace}";
+                fixed (char* stack = st)
+                {
+                    WarnAboutBlockingWait(stack, st.Length);
+                }
+            }
         }
+
+#pragma warning restore CS3001
 
         public static void ForceBlockingWait(Action<object?> action, object? state = null)
         {
             var flag = ThrowOnBlockingWaitOnJSInteropThread;
+            var wflag = WarnOnBlockingWaitOnJSInteropThread;
             try
             {
                 ThrowOnBlockingWaitOnJSInteropThread = false;
+                WarnOnBlockingWaitOnJSInteropThread = false;
 
                 action(state);
             }
             finally
             {
                 ThrowOnBlockingWaitOnJSInteropThread = flag;
+                WarnOnBlockingWaitOnJSInteropThread = wflag;
             }
         }
 #endif

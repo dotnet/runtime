@@ -10,7 +10,6 @@
 #include "rhassert.h"
 #include "slist.h"
 #include "shash.h"
-#include "varint.h"
 #include "rhbinder.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -29,9 +28,12 @@ TypeManager * TypeManager::Create(HANDLE osModule, void * pModuleHeader, void** 
     if (pReadyToRunHeader->Signature != ReadyToRunHeaderConstants::Signature)
         return nullptr;
 
-    // Only the current major version is supported currently
-    ASSERT(pReadyToRunHeader->MajorVersion == ReadyToRunHeaderConstants::CurrentMajorVersion);
-    if (pReadyToRunHeader->MajorVersion != ReadyToRunHeaderConstants::CurrentMajorVersion)
+    // Only the current version is supported currently
+    ASSERT((pReadyToRunHeader->MajorVersion == ReadyToRunHeaderConstants::CurrentMajorVersion) &&
+           (pReadyToRunHeader->MinorVersion == ReadyToRunHeaderConstants::CurrentMinorVersion));
+
+    if ((pReadyToRunHeader->MajorVersion != ReadyToRunHeaderConstants::CurrentMajorVersion) ||
+        (pReadyToRunHeader->MinorVersion != ReadyToRunHeaderConstants::CurrentMinorVersion))
         return nullptr;
 
     return new (nothrow) TypeManager(osModule, pReadyToRunHeader, pClasslibFunctions, nClasslibFunctions);

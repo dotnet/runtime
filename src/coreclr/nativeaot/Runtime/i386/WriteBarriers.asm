@@ -237,12 +237,8 @@ DEFINE_CHECKED_WRITE_BARRIER EDX, ESI
 DEFINE_CHECKED_WRITE_BARRIER EDX, EDI
 DEFINE_CHECKED_WRITE_BARRIER EDX, EBP
 
-;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at @RhpCheckedLockCmpXchgAVLocation@0
-;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 FASTCALL_FUNC RhpCheckedLockCmpXchg, 12
     mov             eax, [esp+4]
-ALTERNATE_ENTRY _RhpCheckedLockCmpXchgAVLocation
     lock cmpxchg    [ecx], edx
     jne             RhpCheckedLockCmpXchg_NoBarrierRequired_ECX_EDX
 
@@ -250,15 +246,11 @@ ALTERNATE_ENTRY _RhpCheckedLockCmpXchgAVLocation
 
 FASTCALL_ENDFUNC
 
-;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at @RhpCheckedXchgAVLocation@0
-;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 FASTCALL_FUNC RhpCheckedXchg, 8
 
     ;; Setup eax with the new object for the exchange, that way it will automatically hold the correct result
     ;; afterwards and we can leave edx unaltered ready for the GC write barrier below.
     mov             eax, edx
-ALTERNATE_ENTRY _RhpCheckedXchgAVLocation
     xchg            [ecx], eax
 
     DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, ECX, EDX, ret

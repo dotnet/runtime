@@ -219,7 +219,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cache = new MemoryCache(new MemoryCacheOptions
             {
-                SizeLimit = 10,
+                SizeLimit = 5,
                 CompactionPercentage = 0.5
             });
 
@@ -234,6 +234,31 @@ namespace Microsoft.Extensions.Caching.Memory
 
             Assert.Null(cache.Get("key"));
             AssertCacheSize(0, cache);
+        }
+
+        [Theory]
+        [InlineData(6)]
+        [InlineData(5)]
+        [InlineData(2)]
+        public void ReplaceOldEntryWithSameSizeOrLessNewEntryAtSizeLimitCapacity(int newValueSize)
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions
+            {
+                SizeLimit = 6
+            });
+
+            AssertCacheSize(0, cache);
+
+            cache.Set("key", "oldValue", new MemoryCacheEntryOptions { Size = 6 });
+
+            Assert.Equal("oldValue", cache.Get("key"));
+
+            AssertCacheSize(6, cache);
+
+            cache.Set("key", "newValue", new MemoryCacheEntryOptions { Size = newValueSize });
+
+            Assert.Equal("newValue", cache.Get("key"));
+            AssertCacheSize(newValueSize, cache);
         }
 
         [Fact]

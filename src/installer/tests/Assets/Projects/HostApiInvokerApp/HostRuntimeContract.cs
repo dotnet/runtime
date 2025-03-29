@@ -18,6 +18,7 @@ namespace HostApiInvokerApp
             public delegate* unmanaged[Stdcall]<byte*, byte*, nint, void*, nint> get_runtime_property;
             public delegate* unmanaged[Stdcall]<byte*, nint, nint, nint, byte> bundle_probe;
             public IntPtr pinvoke_override;
+            public delegate* unmanaged[Stdcall]<byte*, void**, nint, byte> external_assembly_probe;
         }
 #pragma warning restore CS0649
 
@@ -113,10 +114,10 @@ namespace HostApiInvokerApp
             switch (apiToTest)
             {
                 case $"{nameof(host_runtime_contract)}.{nameof(host_runtime_contract.get_runtime_property)}":
-                    Test_get_runtime_property(args[1..]);
+                    Test_get_runtime_property(args);
                     break;
                 case $"{nameof(host_runtime_contract)}.{nameof(host_runtime_contract.bundle_probe)}":
-                    Test_bundle_probe(args[1..]);
+                    Test_bundle_probe(args);
                     break;
                 default:
                     return false;

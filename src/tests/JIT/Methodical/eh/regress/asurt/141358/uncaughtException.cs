@@ -32,6 +32,7 @@ namespace test_uncaughtException
             testLog = new TestUtil.TestLog(expectedOut);
         }
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             //Start recording

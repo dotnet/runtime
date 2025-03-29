@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 using System.Security.Authentication;
@@ -31,7 +31,7 @@ namespace System.DirectoryServices.Protocols
         public int HighPart => _highPart;
     }
 
-#if NET7_0_OR_GREATER
+#if NET
     [NativeMarshalling(typeof(Marshaller))]
 #endif
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -49,7 +49,7 @@ namespace System.DirectoryServices.Protocols
         public string packageList;
         public int packageListLength;
 
-#if NET7_0_OR_GREATER
+#if NET
         [CustomMarshaller(typeof(SEC_WINNT_AUTH_IDENTITY_EX), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
         internal static class Marshaller
         {
@@ -157,6 +157,8 @@ namespace System.DirectoryServices.Protocols
         LDAP_OPT_ROOTDSE_CACHE = 0x9a, // Not Supported in Linux
         LDAP_OPT_DEBUG_LEVEL = 0x5001,
         LDAP_OPT_URI = 0x5006, // Not Supported in Windows
+        LDAP_OPT_X_TLS_CACERTDIR = 0x6003, // Not Supported in Windows
+        LDAP_OPT_X_TLS_NEWCTX = 0x600F, // Not Supported in Windows
         LDAP_OPT_X_SASL_REALM = 0x6101,
         LDAP_OPT_X_SASL_AUTHCID = 0x6102,
         LDAP_OPT_X_SASL_AUTHZID = 0x6103
@@ -176,20 +178,20 @@ namespace System.DirectoryServices.Protocols
         public int tv_usec;
     }
 
-#if NET7_0_OR_GREATER
+#if NET
     [NativeMarshalling(typeof(PinningMarshaller))]
 #endif
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class BerVal
     {
-        public int bv_len;
-        public IntPtr bv_val = IntPtr.Zero;
+        public CLong bv_len;
+        public nint bv_val = nint.Zero;
 
-#if NET7_0_OR_GREATER
+#if NET
         [CustomMarshaller(typeof(BerVal), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
         internal static unsafe class PinningMarshaller
         {
-            public static ref int GetPinnableReference(BerVal managed) => ref (managed is null ? ref Unsafe.NullRef<int>() : ref managed.bv_len);
+            public static ref CLong GetPinnableReference(BerVal managed) => ref (managed is null ? ref Unsafe.NullRef<CLong>() : ref managed.bv_len);
 
             // All usages in our currently supported scenarios will always go through GetPinnableReference
             public static int* ConvertToUnmanaged(BerVal _) => throw new UnreachableException();
@@ -207,7 +209,7 @@ namespace System.DirectoryServices.Protocols
         public LdapControl() { }
     }
 
-#if NET7_0_OR_GREATER
+#if NET
     [NativeMarshalling(typeof(Marshaller))]
 #endif
     [StructLayout(LayoutKind.Sequential)]
@@ -217,7 +219,7 @@ namespace System.DirectoryServices.Protocols
         public QUERYFORCONNECTIONInternal query;
         public NOTIFYOFNEWCONNECTIONInternal notify;
         public DEREFERENCECONNECTIONInternal dereference;
-#if NET7_0_OR_GREATER
+#if NET
         public static readonly unsafe int Size = sizeof(Marshaller.MarshalValue.Native);
 
         [CustomMarshaller(typeof(LdapReferralCallback), MarshalMode.ManagedToUnmanagedIn, typeof(MarshalValue))]

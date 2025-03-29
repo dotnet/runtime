@@ -69,7 +69,6 @@ namespace System.IO
                     string.Empty;
             }
 
-#pragma warning disable CS8500 // takes address of managed type
             ReadOnlySpan<char> tmpPath = path; // avoid address exposing the span and impacting the other code in the method that uses it
             return string.Create(appendPathSeparator ? tmpPath.Length + 1 : tmpPath.Length, (appendPathSeparator, RosPtr: (IntPtr)(&tmpPath)), static (dest, state) =>
             {
@@ -84,7 +83,6 @@ namespace System.IO
                 // all slashes should be forward slashes.
                 dest.Replace('\\', '/');
             });
-#pragma warning restore CS8500
         }
     }
 }

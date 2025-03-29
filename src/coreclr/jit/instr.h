@@ -85,7 +85,7 @@ enum instruction : uint32_t
 };
 
 //------------------------------------------------------------------------
-// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
+// IsSimdInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
 // Technically, K instructions would be considered under the VEX encoding umbrella, but due to
 // the instruction table encoding had to be pulled out with the rest of the `INST5` definitions.
 //
@@ -95,10 +95,10 @@ enum instruction : uint32_t
 // Returns:
 //    `true` if it is a sse or avx or avx512 instruction.
 //
-inline bool IsAvx512OrPriorInstruction(instruction ins)
+inline bool IsSimdInstruction(instruction ins)
 {
 #if defined(TARGET_XARCH)
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION);
+    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX10v2_INSTRUCTION);
 #else
     return false;
 #endif // TARGET_XARCH
@@ -213,9 +213,19 @@ enum insFlags : uint64_t
     Encoding_EVEX  = 1ULL << 40,
 
     KInstruction = 1ULL << 41,
+    KInstructionWithLBit = 1ULL << 42,
 
     // EVEX feature: embedded broadcast
-    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 42,
+    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 43,
+
+    // APX: REX2 prefix:
+    Encoding_REX2  = 1ULL << 44,
+
+    // APX: EVEX.ND:
+    INS_Flags_Has_NDD  = 1ULL << 45,    
+    
+    // APX: EVEX.NF:
+    INS_Flags_Has_NF  = 1ULL << 46,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
@@ -234,7 +244,7 @@ enum insOpts: unsigned
 
     INS_OPTS_EVEX_er_rz = 3,        // Round towards zero
 
-    // Two-bits: 0b0001_1100
+    // Three-bits: 0b0001_1100
     INS_OPTS_EVEX_aaa_MASK = 0x1C,  // mask for EVEX.aaa related features
 
     INS_OPTS_EVEX_em_k1 = 1 << 2,   // Embedded mask uses K1
@@ -254,7 +264,28 @@ enum insOpts: unsigned
     // One-bit:  0b0010_0000
     INS_OPTS_EVEX_z_MASK = 0x20,    // mask for EVEX.z related features
 
-    INS_OPTS_EVEX_em_zero,          // Embedded mask merges with zero
+    INS_OPTS_EVEX_em_zero = 1 << 5, // Embedded mask merges with zero
+
+    // One-bit:  0b0100_0000
+    INS_OPTS_EVEX_nd_MASK = 0x40,   // mask for APX-EVEX.nd related features
+
+    INS_OPTS_EVEX_nd = 1 << 6,      // NDD form for legacy instructions
+
+    // One-bit:  0b1000_0000
+    INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
+
+    INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
+    INS_OPTS_EVEX_dfv_byte_offset = 8, // save the bit offset for first dfv flag pos
+
+    INS_OPTS_EVEX_dfv_cf = 1 << 8,
+    INS_OPTS_EVEX_dfv_zf = 1 << 9,
+    INS_OPTS_EVEX_dfv_sf = 1 << 10,
+    INS_OPTS_EVEX_dfv_of = 1 << 11,
+
+    INS_OPTS_EVEX_dfv_MASK = 0xF00,
+
+    INS_OPTS_EVEX_NoApxPromotion = 1 << 12,    // Do not promote to APX-EVEX
+
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -376,13 +407,9 @@ enum insScalableOpts : unsigned
 
     INS_SCALABLE_OPTS_WITH_VECTOR_PAIR,    // Variants with {<Zn1>.<T>, <Zn2>.<T>} sve register pair (eg splice)
 
-    INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
+    INS_SCALABLE_OPTS_IMM_BITMASK,         // Variants with an immediate that is a bitmask
 
-    // Removable once REG_V0 and REG_P0 are distinct
-    INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)
-    INS_SCALABLE_OPTS_UNPREDICATED_WIDE, // Variants without a predicate and wide elements (eg asr)
-    INS_SCALABLE_OPTS_TO_PREDICATE,     // Variants moving to a predicate from a vector (e.g. pmov)
-    INS_SCALABLE_OPTS_TO_VECTOR         // Variants moving to a vector from a predicate (e.g. pmov)
+    INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
 };
 
 // Maps directly to the pattern used in SVE instructions such as cntb.
@@ -505,7 +532,6 @@ enum insOpts : unsigned
     INS_OPTS_JALR,   // see ::emitIns_J_R().
     INS_OPTS_J,      // see ::emitIns_J().
     INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
-    INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
 };

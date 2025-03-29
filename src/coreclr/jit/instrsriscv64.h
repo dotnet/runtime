@@ -35,7 +35,8 @@ INST(invalid,       "INVALID",        0,    BAD_CODE)
 INST(nop,           "nop",            0,    0x00000013)
 
 //// R_R
-INST(mov,           "mov",            0,    0x00000013)
+INST(mov,           "mv",             0,    0x00000013)
+INST(sext_w,        "sext.w",         0,    0x0000001b)
 
 ////R_I
 INST(lui,           "lui",            0,    0x00000037)
@@ -79,11 +80,6 @@ INST(csrrci,        "csrrci",         0,    0x00007073)
 
 INST(ecall,         "ecall",          0,    0x00000073)
 INST(ebreak,        "ebreak",         0,    0x00100073)
-INST(uret,          "uret",           0,    0x00200073)
-INST(sret,          "sret",           0,    0x10200073)
-INST(mret,          "mret",           0,    0x30200073)
-INST(wfi,           "wfi",            0,    0x10500073)
-INST(sfence_vma,    "sfence.vma",     0,    0x12000073)
 
 //// R_R_I
 INST(lb,            "lb",             LD,   0x00000003)
@@ -205,8 +201,8 @@ INST(fmin_d,        "fmin.d",         0,   0x2a000053)
 INST(fmax_d,        "fmax.d",         0,   0x2a001053)
 
 //// R_R
-INST(fcvt_s_d,      "fcvt.s.d",       0,   0x40101053)
-INST(fcvt_d_s,      "fcvt.d.s",       0,   0x42001053)
+INST(fcvt_s_d,      "fcvt.s.d",       0,   0x40100053)
+INST(fcvt_d_s,      "fcvt.d.s",       0,   0x42000053)
 
 //// R_R_R
 INST(feq_d,         "feq.d",          0,   0xa2002053)
@@ -215,10 +211,10 @@ INST(fle_d,         "fle.d",          0,   0xa2000053)
 
 //// R_R
 INST(fclass_d,      "fclass.d",       0,   0xe2001053)
-INST(fcvt_w_d,      "fcvt.w.d",       0,   0xc2001053)
-INST(fcvt_wu_d,     "fcvt.wu.d",      0,   0xc2101053)
-INST(fcvt_d_w,      "fcvt.d.w",       0,   0xd2001053)
-INST(fcvt_d_wu,     "fcvt.d.wu",      0,   0xd2101053)
+INST(fcvt_w_d,      "fcvt.w.d",       0,   0xc2000053)
+INST(fcvt_wu_d,     "fcvt.wu.d",      0,   0xc2100053)
+INST(fcvt_d_w,      "fcvt.d.w",       0,   0xd2000053)
+INST(fcvt_d_wu,     "fcvt.d.wu",      0,   0xd2100053)
 
 //// R_R_I
 INST(flw,           "flw",            LD,  0x00002007)

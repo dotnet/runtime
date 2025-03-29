@@ -46,6 +46,29 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
+        [OuterLoop("Uses external server.")]
+        [Fact]
+        public async Task GetAsync_ConcurrentRead_ThrowsInvalidOperationException()
+        {
+            using var client = new HttpClient(new WinHttpHandler());
+            using var response = await client.GetAsync("https://httpbin.org/stream-bytes/4096", HttpCompletionOption.ResponseHeadersRead);
+            using var stream = await response.Content.ReadAsStreamAsync();
+            var tasks = new Task[1_000];
+            for (int i = 0; i < tasks.Length; ++i)
+            {
+                tasks[i] = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await stream.ReadAsync(new byte[5]);
+                    }
+                    catch (InvalidOperationException ioe) when (ioe.Message.Contains("concurrent I/O")) // Expected exception for concurrent IO
+                    { }
+                });
+            }
+            await Task.WhenAll(tasks);
+        }
+
         [OuterLoop]
         [Theory]
         [InlineData(CookieUsePolicy.UseInternalCookieStoreOnly, "cookieName1", "cookieValue1")]
@@ -55,7 +78,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             string cookieName,
             string cookieValue)
         {
-            Uri uri = System.Net.Test.Common.Configuration.Http.RemoteHttp11Server.RedirectUriForDestinationUri(302, System.Net.Test.Common.Configuration.Http.RemoteEchoServer, 1);
+            Uri uri = System.Net.Test.Common.Configuration.Http.RemoteSecureHttp11Server.RedirectUriForDestinationUri(302, System.Net.Test.Common.Configuration.Http.SecureRemoteEchoServer, 1);
             var handler = new WinHttpHandler();
             handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
             handler.CookieUsePolicy = cookieUsePolicy;
@@ -98,37 +121,28 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         [OuterLoop]
         [Fact]
-        public async void SendAsync_SlowServerRespondsAfterDefaultReceiveTimeout_ThrowsHttpRequestException()
+        public async Task SendAsync_SlowServerRespondsAfterDefaultReceiveTimeout_ThrowsHttpRequestException()
         {
-            var handler = new WinHttpHandler();
-            using (var client = new HttpClient(handler))
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                var triggerResponseWrite = new TaskCompletionSource<bool>();
-                var triggerRequestWait = new TaskCompletionSource<bool>();
-
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                using var client = new HttpClient(new WinHttpHandler());
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                _output.WriteLine($"Exception: {ex}");
+                Assert.IsType<IOException>(ex.InnerException);
+                Assert.NotNull(ex.InnerException.InnerException);
+                Assert.Contains("The operation timed out", ex.InnerException.InnerException.Message);
+                tcs.TrySetResult(true);
+            },
+            async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
                 {
-                    Task serverTask = server.AcceptConnectionAsync(async connection =>
-                    {
-                        await connection.SendResponseAsync($"HTTP/1.1 200 OK\r\nContent-Length: 16000\r\n\r\n");
-
-                        triggerRequestWait.SetResult(true);
-                        await triggerResponseWrite.Task;
-                    });
-
-                    HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(async () =>
-                    {
-                        Task<HttpResponseMessage> t = client.GetAsync(url);
-                        await triggerRequestWait.Task;
-                        var _ = await t;
-                    });
-                    Assert.IsType<IOException>(ex.InnerException);
-                    Assert.NotNull(ex.InnerException.InnerException);
-                    Assert.Contains("The operation timed out", ex.InnerException.InnerException.Message);
-
-                    triggerResponseWrite.SetResult(true);
+                    await connection.ReadRequestDataAsync();
+                    await connection.SendResponseAsync(LoopbackServer.GetHttpResponseHeaders(contentLength: 1000));
+                    await tcs.Task;
                 });
-            }
+            });
         }
 
         [Fact]

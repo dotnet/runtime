@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
 using Test.Cryptography;
 using Xunit;
 
@@ -9,15 +8,46 @@ namespace System.Formats.Asn1.Tests.Reader
 {
     public sealed class ReadLength
     {
-        private delegate Asn1Tag ReadTagAndLengthDelegate(
+        private static Asn1Tag ReadTagAndLength(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
             out int? parsedLength,
-            out int bytesRead);
+            out int bytesRead)
+        {
+            Asn1Tag tag = Asn1Tag.Decode(source, out int tagLength);
+            parsedLength = AsnDecoder.DecodeLength(source.Slice(tagLength), ruleSet, out int lengthLength);
+            bytesRead = tagLength + lengthLength;
+            return tag;
+        }
 
-        private static ReadTagAndLengthDelegate ReadTagAndLength = (ReadTagAndLengthDelegate)
-            typeof(AsnDecoder).GetMethod("ReadTagAndLength", BindingFlags.Static | BindingFlags.NonPublic)
-                .CreateDelegate(typeof(ReadTagAndLengthDelegate));
+        private static bool TryReadTagAndLength(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out Asn1Tag tag,
+            out int? parsedLength,
+            out int bytesRead)
+        {
+            Asn1Tag localTag = Asn1Tag.Decode(source, out int tagLength);
+
+            bool read = AsnDecoder.TryDecodeLength(
+                source.Slice(tagLength),
+                ruleSet,
+                out parsedLength,
+                out int lengthLength);
+
+            if (read)
+            {
+                tag = localTag;
+                bytesRead = tagLength + lengthLength;
+            }
+            else
+            {
+                tag = default;
+                bytesRead = default;
+            }
+
+            return read;
+        }
 
         [Theory]
         [InlineData(4, 0, "0400")]
@@ -39,6 +69,13 @@ namespace System.Formats.Asn1.Tests.Reader
                 Assert.False(tag.IsConstructed, "tag.IsConstructed");
                 Assert.Equal(tagValue, tag.TagValue);
                 Assert.Equal(length, parsedLength.Value);
+
+                Assert.True(TryReadTagAndLength(inputBytes, rules, out tag, out parsedLength, out bytesRead));
+
+                Assert.Equal(inputBytes.Length, bytesRead);
+                Assert.False(tag.IsConstructed, "tag.IsConstructed");
+                Assert.Equal(tagValue, tag.TagValue);
+                Assert.Equal(length, parsedLength.Value);
             }
         }
 
@@ -51,10 +88,64 @@ namespace System.Formats.Asn1.Tests.Reader
 
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => new AsnReader(data, (AsnEncodingRules)invalidRuleSetValue));
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => ReadTagAndLength(data, (AsnEncodingRules)invalidRuleSetValue, out _, out _));
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => TryReadTagAndLength(data, (AsnEncodingRules)invalidRuleSetValue, out _, out _, out _));
+        }
+
+        private static void ReadValid(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            int? expectedLength,
+            int expectedBytesRead = -1)
+        {
+            if (expectedBytesRead < 0)
+            {
+                expectedBytesRead = source.Length;
+            }
+
+            ReadTagAndLength(
+                source,
+                ruleSet,
+                out int? length,
+                out int bytesRead);
+
+            Assert.Equal(expectedBytesRead, bytesRead);
+            Assert.Equal(expectedLength, length);
+
+            bool read = TryReadTagAndLength(
+                source,
+                ruleSet,
+                out _,
+                out length,
+                out bytesRead);
+
+            Assert.True(read);
+            Assert.Equal(expectedBytesRead, bytesRead);
+            Assert.Equal(expectedLength, length);
+        }
+
+        private static void ReadInvalid(byte[] source, AsnEncodingRules ruleSet)
+        {
+            Assert.Throws<AsnContentException>(
+                () => ReadTagAndLength(source, ruleSet, out _, out _));
+
+            Asn1Tag tag;
+            int? decodedLength;
+            int bytesConsumed;
+
+            Assert.False(
+                TryReadTagAndLength(source, ruleSet, out tag, out decodedLength, out bytesConsumed));
+
+            Assert.True(tag == default);
+            Assert.Null(decodedLength);
+            Assert.Equal(0, bytesConsumed);
         }
 
         [Theory]
-        [InlineData("")]
         [InlineData("05")]
         [InlineData("0481")]
         [InlineData("048201")]
@@ -64,8 +155,9 @@ namespace System.Formats.Asn1.Tests.Reader
         {
             byte[] inputData = inputHex.HexToByteArray();
 
-            Assert.Throws<AsnContentException>(
-                () => ReadTagAndLength(inputData, AsnEncodingRules.DER, out _, out _));
+            ReadInvalid(inputData, AsnEncodingRules.BER);
+            ReadInvalid(inputData, AsnEncodingRules.CER);
+            ReadInvalid(inputData, AsnEncodingRules.DER);
         }
 
         [Theory]
@@ -73,9 +165,6 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("0xFF-BER", AsnEncodingRules.BER, "04FF")]
         [InlineData("0xFF-CER", AsnEncodingRules.CER, "04FF")]
         [InlineData("0xFF-DER", AsnEncodingRules.DER, "04FF")]
-        [InlineData("CER definite constructed", AsnEncodingRules.CER, "30820500")]
-        [InlineData("BER indefinite primitive", AsnEncodingRules.BER, "0480" + "0000")]
-        [InlineData("CER indefinite primitive", AsnEncodingRules.CER, "0480" + "0000")]
         [InlineData("DER indefinite primitive", AsnEncodingRules.DER, "0480" + "0000")]
         [InlineData("DER non-minimal 0", AsnEncodingRules.DER, "048100")]
         [InlineData("DER non-minimal 7F", AsnEncodingRules.DER, "04817F")]
@@ -102,10 +191,28 @@ namespace System.Formats.Asn1.Tests.Reader
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, rules);
 
-            Assert.Throws<AsnContentException>(
-                () => ReadTagAndLength(inputData, rules, out _, out _));
+            ReadInvalid(inputData, rules);
+        }
+
+        [Theory]
+        [InlineData("CER definite constructed", AsnEncodingRules.CER, 0x0500, 4, "30820500")]
+        [InlineData("BER indefinite primitive", AsnEncodingRules.BER, null, 2, "0480" + "0000")]
+        [InlineData("CER indefinite primitive", AsnEncodingRules.CER, null, 2, "0480" + "0000")]
+        public static void ContextuallyInvalidLengths(
+            string description,
+            AsnEncodingRules rules,
+            int? expectedLength,
+            int expectedBytesRead,
+            string inputHex)
+        {
+            // These inputs will all throw from AsnDecoder.ReadTagAndLength, but require
+            // the tag as context.
+
+            _ = description;
+            byte[] inputData = inputHex.HexToByteArray();
+
+            ReadValid(inputData, rules, expectedLength, expectedBytesRead);
         }
 
         [Theory]
@@ -117,18 +224,8 @@ namespace System.Formats.Asn1.Tests.Reader
             //   NULL
             //   End-of-Contents
             byte[] data = { 0x30, 0x80, 0x05, 0x00, 0x00, 0x00 };
-            AsnReader reader = new AsnReader(data, ruleSet);
 
-            Asn1Tag tag = ReadTagAndLength(
-                data,
-                ruleSet,
-                out int? length,
-                out int bytesRead);
-
-            Assert.Equal(2, bytesRead);
-            Assert.False(length.HasValue, "length.HasValue");
-            Assert.Equal((int)UniversalTagNumber.Sequence, tag.TagValue);
-            Assert.True(tag.IsConstructed, "tag.IsConstructed");
+            ReadValid(data, ruleSet, null, 2);
         }
 
         [Theory]
@@ -138,42 +235,25 @@ namespace System.Formats.Asn1.Tests.Reader
         public static void BerNonMinimalLength(int expectedLength, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER);
 
-            Asn1Tag tag = ReadTagAndLength(
-                inputData,
-                AsnEncodingRules.BER,
-                out int? length,
-                out int bytesRead);
-
-            Assert.Equal(inputData.Length, bytesRead);
-            Assert.Equal(expectedLength, length.Value);
-            // ReadTagAndLength doesn't move the _data span forward.
-            Assert.True(reader.HasData, "reader.HasData");
+            ReadValid(inputData, AsnEncodingRules.BER, expectedLength);
+            ReadInvalid(inputData, AsnEncodingRules.CER);
+            ReadInvalid(inputData, AsnEncodingRules.DER);
         }
 
         [Theory]
-        [InlineData(AsnEncodingRules.BER, 4, 0, 5, "0483000000" + "0500")]
-        [InlineData(AsnEncodingRules.DER, 1, 1, 2, "0101" + "FF")]
-        [InlineData(AsnEncodingRules.CER, 0x10, null, 2, "3080" + "0500" + "0000")]
+        [InlineData(AsnEncodingRules.BER, 0, 5, "0483000000" + "0500")]
+        [InlineData(AsnEncodingRules.DER, 1, 2, "0101" + "FF")]
+        [InlineData(AsnEncodingRules.CER, null, 2, "3080" + "0500" + "0000")]
         public static void ReadWithDataRemaining(
             AsnEncodingRules ruleSet,
-            int tagValue,
             int? expectedLength,
             int expectedBytesRead,
             string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
 
-            Asn1Tag tag = ReadTagAndLength(
-                inputData,
-                ruleSet,
-                out int? length,
-                out int bytesRead);
-
-            Assert.Equal(expectedBytesRead, bytesRead);
-            Assert.Equal(tagValue, tag.TagValue);
-            Assert.Equal(expectedLength, length);
+            ReadValid(inputData, ruleSet, expectedLength, expectedBytesRead);
         }
     }
 }

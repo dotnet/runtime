@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Null(typeName);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        [ConditionalFact(typeof(TestConfiguration), nameof(TestConfiguration.IsBinaryFormatterEnabled))]
         public void BindToType_AllValuesTracked()
         {
             var s = new MemoryStream();

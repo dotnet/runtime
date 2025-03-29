@@ -99,7 +99,11 @@ static const char *
 runtimeconfig_json_get_buffer (MonovmRuntimeConfigArguments *arg, MonoFileMap **file_map, gpointer *buf_handle);
 
 static void
-runtimeconfig_json_read_props (const char *ptr, const char **endp, int nprops, gunichar2 **dest_keys, gunichar2 **dest_values);
+runtimeconfig_json_read_props (
+	const char *ptr, const char **endp, int nprops,
+	gunichar2 **dest_keys, guint32 *dest_key_lengths,
+	gunichar2 **dest_values, guint32 *dest_value_lengths
+);
 
 static MonoLoadFunc load_function = NULL;
 
@@ -612,6 +616,7 @@ try_load_from (MonoAssembly **assembly,
 
 	*assembly = NULL;
 	fullpath = g_build_filename (path1, path2, path3, path4, (const char*)NULL);
+	g_assert (fullpath);
 
 	found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
 
@@ -845,17 +850,19 @@ void
 mono_runtime_install_appctx_properties (void)
 {
 	ERROR_DECL (error);
-	gpointer args [3];
+	gpointer args [5];
 	int n_runtimeconfig_json_props = 0;
 	int n_combined_props;
 	gunichar2 **combined_keys;
 	gunichar2 **combined_values;
+	guint32 *combined_key_lengths;
+	guint32 *combined_value_lengths;
 	MonoFileMap *runtimeconfig_json_map = NULL;
 	gpointer runtimeconfig_json_map_handle = NULL;
 	const char *buffer_start = runtimeconfig_json_get_buffer (runtime_config_arg, &runtimeconfig_json_map, &runtimeconfig_json_map_handle);
 	const char *buffer = buffer_start;
 
-	MonoMethod *setup = mono_class_get_method_from_name_checked (mono_class_get_appctx_class (), "Setup", 3, 0, error);
+	MonoMethod *setup = mono_class_get_method_from_name_checked (mono_class_get_appctx_class (), "Setup", 5, 0, error);
 	g_assert (setup);
 
 	// FIXME: TRUSTED_PLATFORM_ASSEMBLIES is very large
@@ -866,19 +873,31 @@ mono_runtime_install_appctx_properties (void)
 
 	n_combined_props = n_appctx_props + n_runtimeconfig_json_props;
 	combined_keys = g_new0 (gunichar2 *, n_combined_props);
+	combined_key_lengths = g_new0 (guint32, n_combined_props);
 	combined_values = g_new0 (gunichar2 *, n_combined_props);
+	combined_value_lengths = g_new0 (guint32, n_combined_props);
 
 	for (int i = 0; i < n_appctx_props; ++i) {
-		combined_keys [i] = g_utf8_to_utf16 (appctx_keys [i], -1, NULL, NULL, NULL);
-		combined_values [i] = g_utf8_to_utf16 (appctx_values [i], -1, NULL, NULL, NULL);
+		glong num_chars;
+		combined_keys [i] = g_utf8_to_utf16 (appctx_keys [i], -1, NULL, &num_chars, NULL);
+		// HACK: items_written from g_utf8_to_utf16 includes the null terminator unless you pass an explicit length.
+		combined_key_lengths [i] = GLONG_TO_UINT32 (num_chars ? num_chars - 1 : 0);
+		combined_values [i] = g_utf8_to_utf16 (appctx_values [i], -1, NULL, &num_chars, NULL);
+		combined_value_lengths [i] = GLONG_TO_UINT32 (num_chars ? num_chars - 1 : 0);
 	}
 
-	runtimeconfig_json_read_props (buffer, &buffer, n_runtimeconfig_json_props, combined_keys + n_appctx_props, combined_values + n_appctx_props);
+	runtimeconfig_json_read_props (
+		buffer, &buffer, n_runtimeconfig_json_props,
+		combined_keys + n_appctx_props, combined_key_lengths + n_appctx_props,
+		combined_values + n_appctx_props, combined_value_lengths + n_appctx_props
+	);
 
-	/* internal static unsafe void Setup(char** pNames, char** pValues, int count) */
+	/* internal static unsafe void Setup(char** pNames, uint* pNameLengths, char** pValues, uint* pValueLengths, int count) */
 	args [0] = combined_keys;
-	args [1] = combined_values;
-	args [2] = &n_combined_props;
+	args [1] = combined_key_lengths;
+	args [2] = combined_values;
+	args [3] = combined_value_lengths;
+	args [4] = &n_combined_props;
 
 	mono_runtime_invoke_checked (setup, NULL, args, error);
 	mono_error_assert_ok (error);
@@ -899,6 +918,8 @@ mono_runtime_install_appctx_properties (void)
 	}
 	g_free (combined_keys);
 	g_free (combined_values);
+	g_free (combined_key_lengths);
+	g_free (combined_value_lengths);
 	for (int i = 0; i < n_appctx_props; ++i) {
 		g_free (appctx_keys [i]);
 		g_free (appctx_values [i]);
@@ -948,17 +969,24 @@ runtimeconfig_json_get_buffer (MonovmRuntimeConfigArguments *arg, MonoFileMap **
 }
 
 static void
-runtimeconfig_json_read_props (const char *ptr, const char **endp, int nprops, gunichar2 **dest_keys, gunichar2 **dest_values)
+runtimeconfig_json_read_props (
+	const char *ptr, const char **endp, int nprops,
+	gunichar2 **dest_keys, guint32 *dest_key_lengths,
+	gunichar2 **dest_values, guint32 *dest_value_lengths
+)
 {
 	for (int i = 0; i < nprops; ++i) {
 		int str_len;
+		glong chars_written;
 
 		str_len = mono_metadata_decode_value (ptr, &ptr);
-		dest_keys [i] = g_utf8_to_utf16 (ptr, str_len, NULL, NULL, NULL);
+		dest_keys [i] = g_utf8_to_utf16 (ptr, str_len, NULL, &chars_written, NULL);
+		dest_key_lengths [i] = GLONG_TO_UINT32 (chars_written);
 		ptr += str_len;
 
 		str_len = mono_metadata_decode_value (ptr, &ptr);
-		dest_values [i] = g_utf8_to_utf16 (ptr, str_len, NULL, NULL, NULL);
+		dest_values [i] = g_utf8_to_utf16 (ptr, str_len, NULL, &chars_written, NULL);
+		dest_value_lengths [i] = GLONG_TO_UINT32 (chars_written);
 		ptr += str_len;
 	}
 

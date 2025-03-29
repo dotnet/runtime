@@ -145,49 +145,6 @@ int _ungetwc_nolock( char16_t inChar, miniFILE* inStream )
 
 
 /***
-*   _safecrt_cfltcvt - convert a float to an ascii string.
-****/
-
-/* routine used for floating-point output */
-#define FORMATSIZE 30
-
-// taken from output.inl
-#define FL_ALTERNATE  0x00080   /* alternate form requested */
-
-errno_t _safecrt_cfltcvt(double *arg, char *buffer, size_t sizeInBytes, int type, int precision, int flags)
-{
-    char format[FORMATSIZE];
-    size_t formatlen = 0;
-    int retvalue;
-
-    if (flags & 1)
-    {
-        type -= 'a' - 'A';
-    }
-    formatlen = 0;
-    format[formatlen++] = '%';
-    if (flags & FL_ALTERNATE)
-    {
-        format[formatlen++] = '#';
-    }
-    format[formatlen++] = '.';
-    _itoa_s(precision, format + formatlen, FORMATSIZE - formatlen, 10);
-    formatlen = strlen(format);
-    format[formatlen++] = (char)type;
-    format[formatlen] = 0;
-
-    buffer[sizeInBytes - 1] = 0;
-    retvalue = snprintf(buffer, sizeInBytes, format, *arg);
-    if (buffer[sizeInBytes - 1] != 0 || retvalue <= 0)
-    {
-        buffer[0] = 0;
-        return EINVAL;
-    }
-    return 0;
-}
-
-
-/***
 *   _safecrt_fassign - convert a string into a float or double.
 ****/
 

@@ -19,7 +19,7 @@ namespace System.Text.RegularExpressions.Tests
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 (string pattern, RegexOptions options, string input, bool expectedSuccess)[] cases = PcreTestData_Cases(engine).ToArray();
-                Regex[] regexes = RegexHelpers.GetRegexesAsync(engine, cases.Select(c => (c.pattern, (CultureInfo?)null, (RegexOptions?)c.options, (TimeSpan?)null)).ToArray()).Result;
+                Regex[] regexes = RegexHelpers.GetRegexes(engine, cases.Select(c => (c.pattern, (CultureInfo?)null, (RegexOptions?)c.options, (TimeSpan?)null)).ToArray());
                 for (int i = 0; i < regexes.Length; i++)
                 {
                     yield return new object[] { regexes[i], cases[i].input, cases[i].expectedSuccess };
@@ -37,7 +37,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return ("The quick brown fox", RegexOptions.IgnoreCase, "The quick brown FOX", true);
             yield return ("The quick brown fox", RegexOptions.IgnoreCase, "What do you know about the quick brown fox?", true);
             yield return ("The quick brown fox", RegexOptions.IgnoreCase, "What do you know about THE QUICK BROWN FOX?", true);
-            yield return ("abcd\\t\\n\\r\\f\\a\\e\\071\\x3b\\$\\\\\\?caxyz", RegexOptions.None, "abcd\t\n\r\f\a\u001b9;$\\?caxyz", true);
+            yield return ("abcd\\t\\n\\r\\f\\a\\e\\071\\x3b\\$\\\\\\?caxyz", RegexOptions.None, "abcd\t\n\r\f\a\e9;$\\?caxyz", true);
             yield return ("a*abc?xyz+pqr{3}ab{2,}xy{4,5}pq{0,6}AB{0,}zz", RegexOptions.None, "abxyzpqrrrabbxyyyypqAzz", true);
             yield return ("a*abc?xyz+pqr{3}ab{2,}xy{4,5}pq{0,6}AB{0,}zz", RegexOptions.None, "aabxyzpqrrrabbxyyyypqAzz", true);
             yield return ("a*abc?xyz+pqr{3}ab{2,}xy{4,5}pq{0,6}AB{0,}zz", RegexOptions.None, "aaabxyzpqrrrabbxyyyypqAzz", true);

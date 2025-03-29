@@ -1,7 +1,7 @@
 *This blog post originally appeared on David Broman's blog on 12/11/2007*
 
 
-This is the first of some tips to help you debug your profiler.  Note that these tips assume you're using CLR 2.x (see [this entry](https://docs.microsoft.com/en-us/archive/blogs/davbr/versions-of-microsoft-net-framework-clr-and-your-profiler) for info on how CLR version numbers map to .NET Framework version numbers).  In today's post, I address a frequent question from profiler developers and users: "Why didn't my profiler load?".
+This is the first of some tips to help you debug your profiler.  Note that these tips assume you're using CLR 2.x (see [this entry](https://learn.microsoft.com/archive/blogs/davbr/versions-of-microsoft-net-framework-clr-and-your-profiler) for info on how CLR version numbers map to .NET Framework version numbers).  In today's post, I address a frequent question from profiler developers and users: "Why didn't my profiler load?".
 
 ## Event log (Windows only)
 

@@ -7,9 +7,25 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static bool Contains<TSource>(this IEnumerable<TSource> source, TSource value) =>
-            source is ICollection<TSource> collection ? collection.Contains(value) :
-            Contains(source, value, null);
+        public static bool Contains<TSource>(this IEnumerable<TSource> source, TSource value)
+        {
+            if (source is ICollection<TSource> collection)
+            {
+                return collection.Contains(value);
+            }
+
+            if (!IsSizeOptimized && source is Iterator<TSource> iterator)
+            {
+                return iterator.Contains(value);
+            }
+
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            return ContainsIterate(source, value, null);
+        }
 
         public static bool Contains<TSource>(this IEnumerable<TSource> source, TSource value, IEqualityComparer<TSource>? comparer)
         {
@@ -18,24 +34,43 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            // While it's tempting, this must not delegate to ICollection<TSource>.Contains, as the historical semantics
+            // of a null comparer with this method are to use EqualityComparer<TSource>.Default, and that might differ
+            // from the semantics encoded in ICollection<TSource>.Contains.
+
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
+            {
+                return span.Contains(value, comparer);
+            }
+
+            return ContainsIterate(source, value, comparer);
+        }
+
+        private static bool ContainsIterate<TSource>(IEnumerable<TSource> source, TSource value, IEqualityComparer<TSource>? comparer)
+        {
             if (comparer is null)
             {
-                foreach (TSource element in source)
+                if (typeof(TSource).IsValueType)
                 {
-                    if (EqualityComparer<TSource>.Default.Equals(element, value)) // benefits from devirtualization and likely inlining
+                    foreach (TSource element in source)
                     {
-                        return true;
+                        if (EqualityComparer<TSource>.Default.Equals(element, value))
+                        {
+                            return true;
+                        }
                     }
+
+                    return false;
                 }
+
+                comparer = EqualityComparer<TSource>.Default;
             }
-            else
+
+            foreach (TSource element in source)
             {
-                foreach (TSource element in source)
+                if (comparer.Equals(element, value))
                 {
-                    if (comparer.Equals(element, value))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 

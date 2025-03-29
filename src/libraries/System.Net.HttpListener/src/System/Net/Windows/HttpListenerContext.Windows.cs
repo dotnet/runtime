@@ -15,7 +15,7 @@ namespace System.Net
     public sealed unsafe partial class HttpListenerContext
     {
         private string? _mutualAuthentication;
-        internal HttpListenerSession ListenerSession { get; private set; }
+        internal HttpListenerSession ListenerSession { get; }
 
         internal HttpListenerContext(HttpListenerSession session, RequestContextBase memoryBlob)
         {

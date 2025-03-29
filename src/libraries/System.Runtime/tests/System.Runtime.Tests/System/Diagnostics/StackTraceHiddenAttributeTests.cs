@@ -8,7 +8,6 @@ using Xunit;
 namespace System.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/95981", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
     public class StackTraceHiddenAttributeTests
     {
         [Fact]

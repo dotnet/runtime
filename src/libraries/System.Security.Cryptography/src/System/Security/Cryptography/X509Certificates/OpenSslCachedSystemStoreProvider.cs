@@ -93,6 +93,9 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 lock (s_recheckStopwatch)
                 {
+                    ret = s_nativeCollections;
+                    elapsed = s_recheckStopwatch.Elapsed;
+
                     if (ret == null ||
                         elapsed > s_assumeInvalidInterval ||
                         LastWriteTimesHaveChanged())
@@ -214,7 +217,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (processedFiles.Contains(fileId))
                 {
-                   return true;
+                    return true;
                 }
 
                 using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(file, "rb"))

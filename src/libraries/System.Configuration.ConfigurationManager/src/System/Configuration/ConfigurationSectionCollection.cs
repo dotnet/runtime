@@ -88,7 +88,7 @@ namespace System.Configuration
                 throw ExceptionUtil.ParameterNullOrEmpty(nameof(name));
 
             // prevent GetConfig from returning config not in this collection
-#if NETCOREAPP
+#if NET
             if (name.Contains('/'))
 #else
             if (name.IndexOf('/') >= 0)

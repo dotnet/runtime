@@ -44,8 +44,7 @@ struct LazyMachState : public MachState{
     static void unwindLazyState(LazyMachState* baseState,
                                 MachState* lazyState,
                                 DWORD threadId,
-                                int funCallDepth = 1,
-                                HostCallPreference hostCallPreference = AllowHostCalls);
+                                int funCallDepth = 1);
 };
 
 inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)

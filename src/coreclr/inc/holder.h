@@ -10,14 +10,10 @@
 #include "staticcontract.h"
 #include "volatile.h"
 #include "palclr.h"
+#include <minipal/com/memory.h>
 
-#ifdef PAL_STDCPP_COMPAT
 #include <utility>
 #include <type_traits>
-#else
-#include "clr_std/utility"
-#include "clr_std/type_traits"
-#endif
 
 #if defined(FEATURE_COMINTEROP) && !defined(STRIKE)
 #include <Activation.h>
@@ -822,9 +818,9 @@ class Wrapper : public BaseWrapper<TYPE, FunctionBase<TYPE, ACQUIREF, RELEASEF>,
 #endif
 
 template <typename _TYPE, void (*_RELEASEF)(_TYPE*)>
-class SpecializedWrapper : public Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, NULL>
+class SpecializedWrapper : public Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, 0>
 {
-    using BaseT = Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, NULL>;
+    using BaseT = Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, 0>;
 public:
     FORCEINLINE SpecializedWrapper() : BaseT(NULL, FALSE)
     {
@@ -914,8 +910,10 @@ FORCEINLINE void DoTheRelease(TYPE *value)
 template<typename _TYPE>
 using DoNothingHolder = SpecializedWrapper<_TYPE, DoNothing<_TYPE*>>;
 
+#ifndef SOS_INCLUDE
 template<typename _TYPE>
 using ReleaseHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
+#endif // SOS_INCLUDE
 
 template<typename _TYPE>
 using NonVMComHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
@@ -1001,19 +999,6 @@ FORCEINLINE void Delete(TYPE *value)
 
 template<typename _TYPE>
 using NewHolder = SpecializedWrapper<_TYPE, Delete<_TYPE>>;
-
- //-----------------------------------------------------------------------------
-// NewExecutableHolder : New'ed memory holder for executable memory.
-//
-//  {
-//      NewExecutableHolder<Foo> foo = (Foo*) new (executable) Byte[num];
-//  } // delete foo on out of scope
-//-----------------------------------------------------------------------------
-// IJW
-template<class T> void DeleteExecutable(T *p);
-
-template<typename _TYPE>
-using NewExecutableHolder = SpecializedWrapper<_TYPE, DeleteExecutable<_TYPE>>;
 
 //-----------------------------------------------------------------------------
 // NewArrayHolder : New []'ed pointer holder
@@ -1130,7 +1115,6 @@ using FieldNuller = SpecializedWrapper<_TYPE, detail::ZeroMem<_TYPE>::Invoke>;
 FORCEINLINE void VoidCloseHandle(HANDLE h) { if (h != NULL) CloseHandle(h); }
 // (UINT_PTR) -1 is INVALID_HANDLE_VALUE
 FORCEINLINE void VoidCloseFileHandle(HANDLE h) { if (h != ((HANDLE)((LONG_PTR) -1))) CloseHandle(h); }
-FORCEINLINE void VoidFindClose(HANDLE h) { FindClose(h); }
 FORCEINLINE void VoidUnmapViewOfFile(void *ptr) { UnmapViewOfFile(ptr); }
 
 template <typename TYPE>
@@ -1140,7 +1124,6 @@ FORCEINLINE void TypeUnmapViewOfFile(TYPE *ptr) { UnmapViewOfFile(ptr); }
 //@TODO: Dangerous default value. Some Win32 functions return INVALID_HANDLE_VALUE, some return NULL (such as CreatEvent).
 typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseHandle, (UINT_PTR) -1> HandleHolder;
 typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseFileHandle, (UINT_PTR) -1> FileHandleHolder;
-typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidFindClose, (UINT_PTR) -1> FindHandleHolder;
 
 typedef Wrapper<void *, DoNothing, VoidUnmapViewOfFile> MapViewHolder;
 
@@ -1151,7 +1134,7 @@ typedef Wrapper<void *, DoNothing, VoidUnmapViewOfFile> MapViewHolder;
 // A holder for HMODULE.
 FORCEINLINE void HolderFreeLibrary(HMODULE h) { FreeLibrary(h); }
 
-typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, NULL> HModuleHolder;
+typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, 0> HModuleHolder;
 
 template <typename T> FORCEINLINE
 void DoLocalFree(T* pMem)
@@ -1213,7 +1196,7 @@ public:
 //
 //  {
 //      HKEYHolder hFoo = NULL;
-//      WszRegOpenKeyEx(HKEY_CLASSES_ROOT, L"Interface",0, KEY_READ, hFoo);
+//      RegOpenKeyEx(HKEY_CLASSES_ROOT, L"Interface",0, KEY_READ, hFoo);
 //
 //  } // close key on out of scope via RegCloseKey.
 //-----------------------------------------------------------------------------

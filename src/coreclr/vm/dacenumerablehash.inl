@@ -7,7 +7,7 @@
 // See DacEnumerableHash.h for a more detailed description.
 //
 
-#include "clr_std/type_traits"
+#include <type_traits>
 
 // Our implementation embeds entry data supplied by the hash sub-class into a larger entry structure
 // containing DacEnumerableHash metadata. We often end up returning pointers to the inner entry to sub-class code and
@@ -345,45 +345,50 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
     do
     {
         DWORD cBuckets = GetLength(curBuckets);
-
-        // Compute which bucket the entry belongs in based on the hash.
-        // +2 to skip "length" and "next" slots
-        DWORD dwBucket = iHash % cBuckets + SKIP_SPECIAL_SLOTS;
-
-        // Point at the first entry in the bucket chain that stores entries with the given hash code.
-        PTR_VolatileEntry pEntry = VolatileLoadWithoutBarrier(&curBuckets[dwBucket]);
-        TADDR expectedEndSentinel = ComputeEndSentinel(BaseEndSentinel(curBuckets), dwBucket);
-
-        // Walk the bucket chain one entry at a time.
-        while (!IsEndSentinel(pEntry))
+// DAC hardening for invalid process state
+#ifdef DACCESS_COMPILE
+        if (cBuckets > 0)
+#endif
         {
-            if (pEntry->m_iHashValue == iHash)
+            // Compute which bucket the entry belongs in based on the hash.
+            // +2 to skip "length" and "next" slots
+            DWORD dwBucket = iHash % cBuckets + SKIP_SPECIAL_SLOTS;
+
+            // Point at the first entry in the bucket chain that stores entries with the given hash code.
+            PTR_VolatileEntry pEntry = VolatileLoadWithoutBarrier(&curBuckets[dwBucket]);
+            TADDR expectedEndSentinel = ComputeEndSentinel(BaseEndSentinel(curBuckets), dwBucket);
+
+            // Walk the bucket chain one entry at a time.
+            while (!IsEndSentinel(pEntry))
             {
-                // We've found our match.
+                if (pEntry->m_iHashValue == iHash)
+                {
+                    // We've found our match.
 
-                // Record our current search state into the provided context so that a subsequent call to
-                // BaseFindNextEntryByHash can pick up the search where it left off.
-                pContext->m_pEntry = dac_cast<TADDR>(pEntry);
-                pContext->m_curBuckets = curBuckets;
-                pContext->m_expectedEndSentinel = dac_cast<TADDR>(expectedEndSentinel);
+                    // Record our current search state into the provided context so that a subsequent call to
+                    // BaseFindNextEntryByHash can pick up the search where it left off.
+                    pContext->m_pEntry = dac_cast<TADDR>(pEntry);
+                    pContext->m_curBuckets = curBuckets;
+                    pContext->m_expectedEndSentinel = dac_cast<TADDR>(expectedEndSentinel);
 
-                // Return the address of the sub-classes' embedded entry structure.
-                return VALUE_FROM_VOLATILE_ENTRY(pEntry);
+                    // Return the address of the sub-classes' embedded entry structure.
+                    return VALUE_FROM_VOLATILE_ENTRY(pEntry);
+                }
+
+                // Move to the next entry in the chain.
+                pEntry = VolatileLoadWithoutBarrier(&pEntry->m_pNextEntry);
             }
 
-            // Move to the next entry in the chain.
-            pEntry = VolatileLoadWithoutBarrier(&pEntry->m_pNextEntry);
-        }
-
-        if (!AcceptableEndSentinel(pEntry, expectedEndSentinel))
-        {
-            // If we hit this logic, we've managed to hit a case where the linked list was in the process of being
-            // moved to a new set of buckets while we were walking the list, and we walked part of the list of the
-            // bucket in the old hash table (which is fine), and part of the list in the new table, which may not
-            // be the correct bucket to walk. Most notably, the situation that can cause this will cause the list in
-            // the old bucket to be missing items. Restart the lookup, as the linked list is unlikely to still be under
-            // edit a second time.
-            continue;
+            if (!AcceptableEndSentinel(pEntry, expectedEndSentinel))
+            {
+                // If we hit this logic, we've managed to hit a case where the linked list was in the process of being
+                // moved to a new set of buckets while we were walking the list, and we walked part of the list of the
+                // bucket in the old hash table (which is fine), and part of the list in the new table, which may not
+                // be the correct bucket to walk. Most notably, the situation that can cause this will cause the list in
+                // the old bucket to be missing items. Restart the lookup, as the linked list is unlikely to still be under
+                // edit a second time.
+                continue;
+            }
         }
 
         // in a rare case if resize is in progress, look in the new table as well.
@@ -461,11 +466,6 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
 
 namespace HashTableDetail
 {
-    // Use the C++ detection idiom (https://isocpp.org/blog/2017/09/detection-idiom-a-stopgap-for-concepts-simon-brand) to call the
-    // derived table's EnumMemoryRegionsForEntry method if it defines one.
-    template <class... > struct make_void { using type = void; };
-    template <class... T> using void_t = typename make_void<T...>::type;
-
     template<typename B>
     struct negation : std::integral_constant<bool, !bool(B::value)> { };
     template <DAC_ENUM_HASH_PARAMS, typename = void>
@@ -540,7 +540,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseInitIterator(BaseIterator *
     LIMITED_METHOD_DAC_CONTRACT;
 
     pIterator->m_pTable = dac_cast<DPTR(DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>)>(this);
-    pIterator->m_pEntry = NULL;
+    pIterator->m_pEntry = (TADDR)0;
     //+2 to skip "length" and "next" slots
     pIterator->m_dwBucket = SKIP_SPECIAL_SLOTS;
 }
@@ -564,7 +564,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
 
     while (m_dwBucket < cBuckets + SKIP_SPECIAL_SLOTS)
     {
-        if (m_pEntry == NULL)
+        if (m_pEntry == (TADDR)0)
         {
             // This is our first lookup for a particular bucket, return the first
             // entry in that bucket.
@@ -583,7 +583,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
 
         // Otherwise we found the end of a bucket chain. Increment the current bucket and, if there are
         // buckets left to scan go back around again.
-        m_pEntry = NULL;
+        m_pEntry = (TADDR)0;
         m_dwBucket++;
     }
 

@@ -121,12 +121,15 @@ enum EtwGCSettingFlags
 
 #define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)) || \
+        (UserEventsHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)))
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)) || \
+        (UserEventsHelper::IsEnabled(Context, Level, Keyword)))
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)) || \
+        (UserEventsHelper::IsEnabled(Context, Level, Keyword)))
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) (TRUE)
 #else //defined(FEATURE_PERFTRACING)
 #define ETW_INLINE
@@ -221,6 +224,15 @@ struct ProfilingScanContext;
 #include <evntrace.h>
 #include <evntprov.h>
 #endif //!FEATURE_NATIVEAOT
+#else // !defined(HOST_UNIX)
+
+//
+// ETW and EventPipe Event Notification Callback Control Code Keywords
+//
+#define EVENT_CONTROL_CODE_DISABLE_PROVIDER 0
+#define EVENT_CONTROL_CODE_ENABLE_PROVIDER 1
+#define EVENT_CONTROL_CODE_CAPTURE_STATE 2
+
 #endif //!defined(HOST_UNIX)
 
 
@@ -651,6 +663,13 @@ public:
     static bool Enabled();
     static bool IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword);
 };
+
+class UserEventsHelper
+{
+public:
+    static bool Enabled();
+    static bool IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword);
+};
 #endif // defined(FEATURE_PERFTRACING)
 
 #endif // FEATURE_EVENT_TRACE
@@ -679,7 +698,6 @@ class Module;
 class Assembly;
 class MethodDesc;
 class MethodTable;
-class BaseDomain;
 class AppDomain;
 class SString;
 class CrawlFrame;
@@ -740,12 +758,11 @@ namespace ETW
 #ifdef FEATURE_EVENT_TRACE
         static VOID SendThreadRundownEvent();
         static VOID SendGCRundownEvent();
-        static VOID IterateDomain(BaseDomain *pDomain, DWORD enumerationOptions);
-        static VOID IterateAppDomain(AppDomain * pAppDomain, DWORD enumerationOptions);
+        static VOID IterateAppDomain(DWORD enumerationOptions);
         static VOID IterateCollectibleLoaderAllocator(AssemblyLoaderAllocator *pLoaderAllocator, DWORD enumerationOptions);
         static VOID IterateAssembly(Assembly *pAssembly, DWORD enumerationOptions);
         static VOID IterateModule(Module *pModule, DWORD enumerationOptions);
-        static VOID EnumerationHelper(Module *moduleFilter, BaseDomain *domainFilter, DWORD enumerationOptions);
+        static VOID EnumerationHelper(Module *moduleFilter, DWORD enumerationOptions);
         static DWORD GetEnumerationOptionsFromRuntimeKeywords();
     public:
         typedef union _EnumerationStructs
@@ -829,7 +846,7 @@ namespace ETW
         static VOID SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL bFireDomainModuleEvents=FALSE);
         static ULONG SendModuleRange(_In_ Module *pModule, _In_ DWORD dwEventOptions);
         static VOID SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions);
-        static VOID SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptions, LPCWSTR wszFriendlyName=NULL);
+        static VOID SendDomainEvent(DWORD dwEventOptions, LPCWSTR wszFriendlyName=NULL);
     public:
         typedef union _LoaderStructs
         {
@@ -867,23 +884,23 @@ namespace ETW
 
         }LoaderStructs;
 
-        static VOID DomainLoadReal(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName=NULL);
+        static VOID DomainLoadReal(_In_opt_ LPWSTR wszFriendlyName=NULL);
 
-        static VOID DomainLoad(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName = NULL)
+        static VOID DomainLoad(_In_opt_ LPWSTR wszFriendlyName = NULL)
         {
             if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
             {
-                DomainLoadReal(pDomain, wszFriendlyName);
+                DomainLoadReal(wszFriendlyName);
             }
         }
 
-        static VOID DomainUnload(AppDomain *pDomain);
+        static VOID DomainUnload();
         static VOID CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *pLoaderAllocator);
         static VOID ModuleLoad(Module *pModule, LONG liReportedSharedModule);
 #else
     public:
-        static VOID DomainLoad(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName=NULL) {};
-        static VOID DomainUnload(AppDomain *pDomain) {};
+        static VOID DomainLoad(_In_opt_ LPWSTR wszFriendlyName=NULL) {};
+        static VOID DomainUnload() {};
         static VOID CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *pLoaderAllocator) {};
         static VOID ModuleLoad(Module *pModule, LONG liReportedSharedModule) {};
 #endif // FEATURE_EVENT_TRACE
@@ -894,7 +911,7 @@ namespace ETW
     {
         friend class ETW::EnumerationLog;
 #ifdef FEATURE_EVENT_TRACE
-        static VOID SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions);
+        static VOID SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions);
         static VOID SendEventsForJitMethodsHelper(
             LoaderAllocator *pLoaderAllocatorFilter,
             DWORD dwEventOptions,
@@ -1323,16 +1340,18 @@ namespace ETW
 #define ETWLoaderStaticLoad 0 // Static reference load
 #define ETWLoaderDynamicLoad 1 // Dynamic assembly load
 
+#if defined (FEATURE_EVENT_TRACE)
+EXTERN_C DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
+EXTERN_C DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context;
+EXTERN_C DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context;
+EXTERN_C DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context;
+#endif // FEATURE_EVENT_TRACE
+
 #if defined(FEATURE_EVENT_TRACE) && !defined(HOST_UNIX)
 //
 // The ONE and only ONE global instantiation of this class
 //
 extern ETW::CEtwTracer *  g_pEtwTracer;
-
-EXTERN_C DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
-EXTERN_C DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context;
-EXTERN_C DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context;
-EXTERN_C DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context;
 
 //
 // Special Handling of Startup events

@@ -96,7 +96,6 @@ LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
     andi  $t1, $r21, (1 << CONTEXT_INTEGER_BIT)
     beqz  $t1, LOCAL_LABEL(No_Restore_CONTEXT_INTEGER)
 
-    ld.d  $tp, $a0, CONTEXT_Tp
     ld.d  $a1, $a0, CONTEXT_A1
     ld.d  $a2, $a0, CONTEXT_A2
     ld.d  $a3, $a0, CONTEXT_A3
@@ -132,13 +131,14 @@ LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
 
     ld.d  $ra, $t4, CONTEXT_Ra
     ld.d  $fp, $t4, CONTEXT_Fp
-    ld.d  $sp, $t4, CONTEXT_Sp
     ld.d  $r21, $t4, CONTEXT_Pc
-    ld.d  $t4, $t4, CONTEXT_T4
+    ld.d  $sp, $t4, CONTEXT_Sp
+    // NOTE: the r21 and t4 had been trashed.
     jirl  $r0, $r21, 0
 
 
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
+    ld.d  $r21, $t4, CONTEXT_R21
     ld.d  $t4, $t4, CONTEXT_T4
     jirl  $r0, $ra, 0
 LEAF_END RtlRestoreContext, _TEXT
@@ -184,7 +184,6 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
     ld.d  $t1, $sp, 8
     ld.d  $t3, $sp, 16
 
-    st.d  $tp, $a0, CONTEXT_Tp
     st.d  $a0, $a0, CONTEXT_A0
     st.d  $a1, $a0, CONTEXT_A1
     st.d  $a2, $a0, CONTEXT_A2
@@ -202,7 +201,7 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
     st.d  $t6, $a0, CONTEXT_T6
     st.d  $t7, $a0, CONTEXT_T7
     st.d  $t8, $a0, CONTEXT_T8
-    st.d  $r21,$a0, CONTEXT_X0
+    st.d  $r21,$a0, CONTEXT_R21
     st.d  $s0, $a0, CONTEXT_S0
     st.d  $s1, $a0, CONTEXT_S1
     st.d  $s2, $a0, CONTEXT_S2

@@ -33,6 +33,7 @@
 #include "mono/sgen/sgen-client.h"
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-proclib.h"
+#include "mono/utils/options.h"
 
 static int ms_block_size;
 
@@ -48,7 +49,13 @@ static int ms_block_size;
  * Don't allocate single blocks, but alloc a contingent of this many
  * blocks in one swoop.  This must be a power of two.
  */
+#ifndef TARGET_WASM
 #define MS_BLOCK_ALLOC_NUM	32
+#else
+// WASM doesn't support partial munmap, so we can't free individual blocks
+// we use posix_memalign and free the whole block at once
+#define MS_BLOCK_ALLOC_NUM	1
+#endif
 
 #define MS_NUM_MARK_WORDS	((ms_block_size / SGEN_ALLOC_ALIGN + sizeof (guint32) * 8 - 1) / (sizeof (guint32) * 8))
 
@@ -2133,7 +2140,7 @@ major_free_swept_blocks (size_t section_reserve)
 {
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Sweeping must have finished before freeing blocks");
 
-#if defined(HOST_WIN32) || defined(HOST_ORBIS) || defined (HOST_WASM)
+#if defined(HOST_WIN32) || defined(HOST_ORBIS)
 		/*
 		 * sgen_free_os_memory () asserts in mono_vfree () because windows doesn't like freeing the middle of
 		 * a VirtualAlloc ()-ed block.

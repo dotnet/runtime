@@ -101,6 +101,8 @@ public:
     static const SIZE_T CodeSize = 40;
 #elif defined(TARGET_RISCV64)
     static const SIZE_T CodeSize = 40;
+#elif defined(TARGET_WASM)
+    static const SIZE_T CodeSize = 0;
 #endif
 
 private:
@@ -397,7 +399,7 @@ public:
 inline const CallCountingStub *CallCountingStub::From(TADDR stubIdentifyingToken)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(stubIdentifyingToken != NULL);
+    _ASSERTE(stubIdentifyingToken != (TADDR)NULL);
 
     // The stubIdentifyingToken is the pointer to the CallCount
     const CallCountingStub *stub = CallCountingManager::GetCallCountingStub((CallCount*)stubIdentifyingToken);

@@ -16,12 +16,6 @@ LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, 
     }
     CONTRACTL_END;
 
-#ifdef FAILPOINTS_ENABLED
-        if (RFS_HashStack ())
-            return NULL;
-#endif
-
-
 #ifdef _DEBUG
         if (g_fEEStarted) {
             // On Debug build we make sure that a thread is not going to do memory allocation
@@ -121,7 +115,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
     // JIT_PatchedCode. Thus, their pages have the same protection, they live
     //  in the same region (and thus, its size is the same).
     //
-    // In EEStartupHelper, when we setup the UEF and then invoke InitJitHelpers1 and InitJitHelpers2,
+    // In EEStartupHelper, when we setup the UEF and then invoke InitJitHelpers1,
     // they perform some optimizations that result in the memory page protection being changed. When
     // the UEF is to be invoked, the OS does the check on the UEF's cached details against the current
     // memory pages. This check used to fail when on 64bit retail builds when JIT_PatchedCode was

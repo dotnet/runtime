@@ -577,94 +577,14 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity)]
-        [InlineData(float.NegativeInfinity, -3.14159265f, float.NegativeInfinity)]
-        [InlineData(float.NegativeInfinity, -0.0f, float.NegativeInfinity)]
-        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
-        [InlineData(float.NegativeInfinity, 0.0f, float.PositiveInfinity)]
-        [InlineData(float.NegativeInfinity, 3.14159265f, float.PositiveInfinity)]
-        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
-        [InlineData(-3.14159265f, float.NegativeInfinity, -3.14159265f)]
-        [InlineData(-3.14159265f, -3.14159265f, -3.14159265f)]
-        [InlineData(-3.14159265f, -0.0f, -3.14159265f)]
-        [InlineData(-3.14159265f, float.NaN, -3.14159265f)]
-        [InlineData(-3.14159265f, 0.0f, 3.14159265f)]
-        [InlineData(-3.14159265f, 3.14159265f, 3.14159265f)]
-        [InlineData(-3.14159265f, float.PositiveInfinity, 3.14159265f)]
-        [InlineData(-0.0f, float.NegativeInfinity, -0.0f)]
-        [InlineData(-0.0f, -3.14159265f, -0.0f)]
-        [InlineData(-0.0f, -0.0f, -0.0f)]
-        [InlineData(-0.0f, float.NaN, -0.0f)]
-        [InlineData(-0.0f, 0.0f, 0.0f)]
-        [InlineData(-0.0f, 3.14159265f, 0.0f)]
-        [InlineData(-0.0f, float.PositiveInfinity, 0.0f)]
-        [InlineData(float.NaN, float.NegativeInfinity, float.NaN)]
-        [InlineData(float.NaN, -3.14159265f, float.NaN)]
-        [InlineData(float.NaN, -0.0f, float.NaN)]
-        [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(float.NaN, 0.0f, float.NaN)]
-        [InlineData(float.NaN, 3.14159265f, float.NaN)]
-        [InlineData(float.NaN, float.PositiveInfinity, float.NaN)]
-        [InlineData(0.0f, float.NegativeInfinity, -0.0f)]
-        [InlineData(0.0f, -3.14159265f, -0.0f)]
-        [InlineData(0.0f, -0.0f, -0.0f)]
-        [InlineData(0.0f, float.NaN, -0.0f)]
-        [InlineData(0.0f, 0.0f, 0.0f)]
-        [InlineData(0.0f, 3.14159265f, 0.0f)]
-        [InlineData(0.0f, float.PositiveInfinity, 0.0f)]
-        [InlineData(3.14159265f, float.NegativeInfinity, -3.14159265f)]
-        [InlineData(3.14159265f, -3.14159265f, -3.14159265f)]
-        [InlineData(3.14159265f, -0.0f, -3.14159265f)]
-        [InlineData(3.14159265f, float.NaN, -3.14159265f)]
-        [InlineData(3.14159265f, 0.0f, 3.14159265f)]
-        [InlineData(3.14159265f, 3.14159265f, 3.14159265f)]
-        [InlineData(3.14159265f, float.PositiveInfinity, 3.14159265f)]
-        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
-        [InlineData(float.PositiveInfinity, -3.14159265f, float.NegativeInfinity)]
-        [InlineData(float.PositiveInfinity, -0.0f, float.NegativeInfinity)]
-        [InlineData(float.PositiveInfinity, float.NaN, float.NegativeInfinity)]
-        [InlineData(float.PositiveInfinity, 0.0f, float.PositiveInfinity)]
-        [InlineData(float.PositiveInfinity, 3.14159265f, float.PositiveInfinity)]
-        [InlineData(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity)]
+        [MemberData(nameof(GenericMathTestMemberData.CopySignSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void CopySign(float x, float y, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, MathF.CopySign(x, y), 0.0f);
         }
 
         [Theory]
-        [InlineData(float.NegativeInfinity, float.NaN, 0.0f)]
-        [InlineData(-3.14159265f, -1.0f, CrossPlatformMachineEpsilon * 10)]  // value: -(pi)
-        [InlineData(-2.71828183f, -0.911733918f, CrossPlatformMachineEpsilon)]       // value: -(e)
-        [InlineData(-2.30258509f, -0.668201510f, CrossPlatformMachineEpsilon)]       // value: -(ln(10))
-        [InlineData(-1.57079633f, 0.0f, CrossPlatformMachineEpsilon)]       // value: -(pi / 2)
-        [InlineData(-1.44269504f, 0.127751218f, CrossPlatformMachineEpsilon)]       // value: -(log2(e))
-        [InlineData(-1.41421356f, 0.155943695f, CrossPlatformMachineEpsilon)]       // value: -(sqrt(2))
-        [InlineData(-1.12837917f, 0.428125148f, CrossPlatformMachineEpsilon)]       // value: -(2 / sqrt(pi))
-        [InlineData(-1.0f, 0.540302306f, CrossPlatformMachineEpsilon)]
-        [InlineData(-0.785398163f, 0.707106781f, CrossPlatformMachineEpsilon)]       // value: -(pi / 4),        expected:  (1 / sqrt(2))
-        [InlineData(-0.707106781f, 0.760244597f, CrossPlatformMachineEpsilon)]       // value: -(1 / sqrt(2))
-        [InlineData(-0.693147181f, 0.769238901f, CrossPlatformMachineEpsilon)]       // value: -(ln(2))
-        [InlineData(-0.636619772f, 0.804109828f, CrossPlatformMachineEpsilon)]       // value: -(2 / pi)
-        [InlineData(-0.434294482f, 0.907167129f, CrossPlatformMachineEpsilon)]       // value: -(log10(e))
-        [InlineData(-0.318309886f, 0.949765715f, CrossPlatformMachineEpsilon)]       // value: -(1 / pi)
-        [InlineData(-0.0f, 1.0f, CrossPlatformMachineEpsilon * 10)]
-        [InlineData(float.NaN, float.NaN, 0.0f)]
-        [InlineData(0.0f, 1.0f, CrossPlatformMachineEpsilon * 10)]
-        [InlineData(0.318309886f, 0.949765715f, CrossPlatformMachineEpsilon)]       // value:  (1 / pi)
-        [InlineData(0.434294482f, 0.907167129f, CrossPlatformMachineEpsilon)]       // value:  (log10(e))
-        [InlineData(0.636619772f, 0.804109828f, CrossPlatformMachineEpsilon)]       // value:  (2 / pi)
-        [InlineData(0.693147181f, 0.769238901f, CrossPlatformMachineEpsilon)]       // value:  (ln(2))
-        [InlineData(0.707106781f, 0.760244597f, CrossPlatformMachineEpsilon)]       // value:  (1 / sqrt(2))
-        [InlineData(0.785398163f, 0.707106781f, CrossPlatformMachineEpsilon)]       // value:  (pi / 4),        expected:  (1 / sqrt(2))
-        [InlineData(1.0f, 0.540302306f, CrossPlatformMachineEpsilon)]
-        [InlineData(1.12837917f, 0.428125148f, CrossPlatformMachineEpsilon)]       // value:  (2 / sqrt(pi))
-        [InlineData(1.41421356f, 0.155943695f, CrossPlatformMachineEpsilon)]       // value:  (sqrt(2))
-        [InlineData(1.44269504f, 0.127751218f, CrossPlatformMachineEpsilon)]       // value:  (log2(e))
-        [InlineData(1.57079633f, 0.0f, CrossPlatformMachineEpsilon)]       // value:  (pi / 2)
-        [InlineData(2.30258509f, -0.668201510f, CrossPlatformMachineEpsilon)]       // value:  (ln(10))
-        [InlineData(2.71828183f, -0.911733918f, CrossPlatformMachineEpsilon)]       // value:  (e)
-        [InlineData(3.14159265f, -1.0f, CrossPlatformMachineEpsilon * 10)]  // value:  (pi)
-        [InlineData(float.PositiveInfinity, float.NaN, 0.0f)]
+        [MemberData(nameof(GenericMathTestMemberData.CosSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void Cos(float value, float expectedResult, float allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, MathF.Cos(value), allowedVariance);
@@ -710,39 +630,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(float.NegativeInfinity, 0.0f, CrossPlatformMachineEpsilon)]
-        [InlineData(-3.14159265f, 0.0432139183f, CrossPlatformMachineEpsilon / 10)]     // value: -(pi)
-        [InlineData(-2.71828183f, 0.0659880358f, CrossPlatformMachineEpsilon / 10)]     // value: -(e)
-        [InlineData(-2.30258509f, 0.1f, CrossPlatformMachineEpsilon)]          // value: -(ln(10))
-        [InlineData(-1.57079633f, 0.207879576f, CrossPlatformMachineEpsilon)]          // value: -(pi / 2)
-        [InlineData(-1.44269504f, 0.236290088f, CrossPlatformMachineEpsilon)]          // value: -(log2(e))
-        [InlineData(-1.41421356f, 0.243116734f, CrossPlatformMachineEpsilon)]          // value: -(sqrt(2))
-        [InlineData(-1.12837917f, 0.323557264f, CrossPlatformMachineEpsilon)]          // value: -(2 / sqrt(pi))
-        [InlineData(-1.0f, 0.367879441f, CrossPlatformMachineEpsilon)]
-        [InlineData(-0.785398163f, 0.455938128f, CrossPlatformMachineEpsilon)]          // value: -(pi / 4)
-        [InlineData(-0.707106781f, 0.493068691f, CrossPlatformMachineEpsilon)]          // value: -(1 / sqrt(2))
-        [InlineData(-0.693147181f, 0.5f, CrossPlatformMachineEpsilon)]          // value: -(ln(2))
-        [InlineData(-0.636619772f, 0.529077808f, CrossPlatformMachineEpsilon)]          // value: -(2 / pi)
-        [InlineData(-0.434294482f, 0.647721485f, CrossPlatformMachineEpsilon)]          // value: -(log10(e))
-        [InlineData(-0.318309886f, 0.727377349f, CrossPlatformMachineEpsilon)]          // value: -(1 / pi)
-        [InlineData(-0.0f, 1.0f, CrossPlatformMachineEpsilon * 10)]
-        [InlineData(float.NaN, float.NaN, 0.0f)]
-        [InlineData(0.0f, 1.0f, CrossPlatformMachineEpsilon * 10)]
-        [InlineData(0.318309886f, 1.37480223f, CrossPlatformMachineEpsilon * 10)]     // value:  (1 / pi)
-        [InlineData(0.434294482f, 1.54387344f, CrossPlatformMachineEpsilon * 10)]     // value:  (log10(e))
-        [InlineData(0.636619772f, 1.89008116f, CrossPlatformMachineEpsilon * 10)]     // value:  (2 / pi)
-        [InlineData(0.693147181f, 2.0f, CrossPlatformMachineEpsilon * 10)]     // value:  (ln(2))
-        [InlineData(0.707106781f, 2.02811498f, CrossPlatformMachineEpsilon * 10)]     // value:  (1 / sqrt(2))
-        [InlineData(0.785398163f, 2.19328005f, CrossPlatformMachineEpsilon * 10)]     // value:  (pi / 4)
-        [InlineData(1.0f, 2.71828183f, CrossPlatformMachineEpsilon * 10)]     //                          expected: (e)
-        [InlineData(1.12837917f, 3.09064302f, CrossPlatformMachineEpsilon * 10)]     // value:  (2 / sqrt(pi))
-        [InlineData(1.41421356f, 4.11325038f, CrossPlatformMachineEpsilon * 10)]     // value:  (sqrt(2))
-        [InlineData(1.44269504f, 4.23208611f, CrossPlatformMachineEpsilon * 10)]     // value:  (log2(e))
-        [InlineData(1.57079633f, 4.81047738f, CrossPlatformMachineEpsilon * 10)]     // value:  (pi / 2)
-        [InlineData(2.30258509f, 10.0f, CrossPlatformMachineEpsilon * 100)]    // value:  (ln(10))
-        [InlineData(2.71828183f, 15.1542622f, CrossPlatformMachineEpsilon * 100)]    // value:  (e)
-        [InlineData(3.14159265f, 23.1406926f, CrossPlatformMachineEpsilon * 100)]    // value:  (pi)
-        [InlineData(float.PositiveInfinity, float.PositiveInfinity, 0.0f)]
+        [MemberData(nameof(GenericMathTestMemberData.ExpSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void Exp(float value, float expectedResult, float allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, MathF.Exp(value), allowedVariance);
@@ -788,72 +676,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity, float.NaN)]
-        [InlineData(float.NegativeInfinity, -0.0f, float.NegativeInfinity, float.NaN)]
-        [InlineData(float.NegativeInfinity, -0.0f, -3.14159265f, float.NaN)]
-        [InlineData(float.NegativeInfinity, -0.0f, -0.0f, float.NaN)]
-        [InlineData(float.NegativeInfinity, -0.0f, float.NaN, float.NaN)]
-        [InlineData(float.NegativeInfinity, -0.0f, 0.0f, float.NaN)]
-        [InlineData(float.NegativeInfinity, -0.0f, 3.14159265f, float.NaN)]
-        [InlineData(float.NegativeInfinity, -0.0f, float.PositiveInfinity, float.NaN)]
-        [InlineData(float.NegativeInfinity, 0.0f, float.NegativeInfinity, float.NaN)]
-        [InlineData(float.NegativeInfinity, 0.0f, -3.14159265f, float.NaN)]
-        [InlineData(float.NegativeInfinity, 0.0f, -0.0f, float.NaN)]
-        [InlineData(float.NegativeInfinity, 0.0f, float.NaN, float.NaN)]
-        [InlineData(float.NegativeInfinity, 0.0f, 0.0f, float.NaN)]
-        [InlineData(float.NegativeInfinity, 0.0f, 3.14159265f, float.NaN)]
-        [InlineData(float.NegativeInfinity, 0.0f, float.PositiveInfinity, float.NaN)]
-        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity, float.NaN)]
-        [InlineData(-1e38f, 2.0f, 1e38f, -1e38f)]
-        [InlineData(-1e38f, 2.0f, float.PositiveInfinity, float.PositiveInfinity)]
-        [InlineData(-5, 4, -3, -23)]
-        [InlineData(-0.0f, float.NegativeInfinity, float.NegativeInfinity, float.NaN)]
-        [InlineData(-0.0f, float.NegativeInfinity, -3.14159265f, float.NaN)]
-        [InlineData(-0.0f, float.NegativeInfinity, -0.0f, float.NaN)]
-        [InlineData(-0.0f, float.NegativeInfinity, float.NaN, float.NaN)]
-        [InlineData(-0.0f, float.NegativeInfinity, 0.0f, float.NaN)]
-        [InlineData(-0.0f, float.NegativeInfinity, 3.14159265f, float.NaN)]
-        [InlineData(-0.0f, float.NegativeInfinity, float.PositiveInfinity, float.NaN)]
-        [InlineData(-0.0f, float.PositiveInfinity, float.NegativeInfinity, float.NaN)]
-        [InlineData(-0.0f, float.PositiveInfinity, -3.14159265f, float.NaN)]
-        [InlineData(-0.0f, float.PositiveInfinity, -0.0f, float.NaN)]
-        [InlineData(-0.0f, float.PositiveInfinity, float.NaN, float.NaN)]
-        [InlineData(-0.0f, float.PositiveInfinity, 0.0f, float.NaN)]
-        [InlineData(-0.0f, float.PositiveInfinity, 3.14159265f, float.NaN)]
-        [InlineData(-0.0f, float.PositiveInfinity, float.PositiveInfinity, float.NaN)]
-        [InlineData(0.0f, float.NegativeInfinity, float.NegativeInfinity, float.NaN)]
-        [InlineData(0.0f, float.NegativeInfinity, -3.14159265f, float.NaN)]
-        [InlineData(0.0f, float.NegativeInfinity, -0.0f, float.NaN)]
-        [InlineData(0.0f, float.NegativeInfinity, float.NaN, float.NaN)]
-        [InlineData(0.0f, float.NegativeInfinity, 0.0f, float.NaN)]
-        [InlineData(0.0f, float.NegativeInfinity, 3.14159265f, float.NaN)]
-        [InlineData(0.0f, float.NegativeInfinity, float.PositiveInfinity, float.NaN)]
-        [InlineData(0.0f, float.PositiveInfinity, float.NegativeInfinity, float.NaN)]
-        [InlineData(0.0f, float.PositiveInfinity, -3.14159265f, float.NaN)]
-        [InlineData(0.0f, float.PositiveInfinity, -0.0f, float.NaN)]
-        [InlineData(0.0f, float.PositiveInfinity, float.NaN, float.NaN)]
-        [InlineData(0.0f, float.PositiveInfinity, 0.0f, float.NaN)]
-        [InlineData(0.0f, float.PositiveInfinity, 3.14159265f, float.NaN)]
-        [InlineData(0.0f, float.PositiveInfinity, float.PositiveInfinity, float.NaN)]
-        [InlineData(5, 4, 3, 23)]
-        [InlineData(1e38f, 2.0f, -1e38f, 1e38f)]
-        [InlineData(1e38f, 2.0f, float.NegativeInfinity, float.NegativeInfinity)]
-        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity, float.NaN)]
-        [InlineData(float.PositiveInfinity, -0.0f, float.NegativeInfinity, float.NaN)]
-        [InlineData(float.PositiveInfinity, -0.0f, -3.14159265f, float.NaN)]
-        [InlineData(float.PositiveInfinity, -0.0f, -0.0f, float.NaN)]
-        [InlineData(float.PositiveInfinity, -0.0f, float.NaN, float.NaN)]
-        [InlineData(float.PositiveInfinity, -0.0f, 0.0f, float.NaN)]
-        [InlineData(float.PositiveInfinity, -0.0f, 3.14159265f, float.NaN)]
-        [InlineData(float.PositiveInfinity, -0.0f, float.PositiveInfinity, float.NaN)]
-        [InlineData(float.PositiveInfinity, 0.0f, float.NegativeInfinity, float.NaN)]
-        [InlineData(float.PositiveInfinity, 0.0f, -3.14159265f, float.NaN)]
-        [InlineData(float.PositiveInfinity, 0.0f, -0.0f, float.NaN)]
-        [InlineData(float.PositiveInfinity, 0.0f, float.NaN, float.NaN)]
-        [InlineData(float.PositiveInfinity, 0.0f, 0.0f, float.NaN)]
-        [InlineData(float.PositiveInfinity, 0.0f, 3.14159265f, float.NaN)]
-        [InlineData(float.PositiveInfinity, 0.0f, float.PositiveInfinity, float.NaN)]
-        [InlineData(float.PositiveInfinity, float.PositiveInfinity, float.NegativeInfinity, float.NaN)]
+        [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void FusedMultiplyAdd(float x, float y, float z, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, MathF.FusedMultiplyAdd(x, y, z), 0.0f);
@@ -925,46 +748,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(float.NegativeInfinity, float.NaN, 0.0f)]
-        [InlineData(-3.14159265f, float.NaN, 0.0f)]                               //                               value: -(pi)
-        [InlineData(-2.71828183f, float.NaN, 0.0f)]                               //                               value: -(e)
-        [InlineData(-1.41421356f, float.NaN, 0.0f)]                               //                               value: -(sqrt(2))
-        [InlineData(-1.0f, float.NaN, 0.0f)]
-        [InlineData(-0.693147181f, float.NaN, 0.0f)]                               //                               value: -(ln(2))
-        [InlineData(-0.434294482f, float.NaN, 0.0f)]                               //                               value: -(log10(e))
-        [InlineData(-0.0f, float.NegativeInfinity, 0.0f)]
-        [InlineData(float.NaN, float.NaN, 0.0f)]
-        [InlineData(0.0f, float.NegativeInfinity, 0.0f)]
-        [InlineData(0.0432139183f, -3.14159265f, CrossPlatformMachineEpsilon * 10)]    // expected: -(pi)
-        [InlineData(0.0659880358f, -2.71828183f, CrossPlatformMachineEpsilon * 10)]    // expected: -(e)
-        [InlineData(0.1f, -2.30258509f, CrossPlatformMachineEpsilon * 10)]    // expected: -(ln(10))
-        [InlineData(0.207879576f, -1.57079633f, CrossPlatformMachineEpsilon * 10)]    // expected: -(pi / 2)
-        [InlineData(0.236290088f, -1.44269504f, CrossPlatformMachineEpsilon * 10)]    // expected: -(log2(e))
-        [InlineData(0.243116734f, -1.41421356f, CrossPlatformMachineEpsilon * 10)]    // expected: -(sqrt(2))
-        [InlineData(0.323557264f, -1.12837917f, CrossPlatformMachineEpsilon * 10)]    // expected: -(2 / sqrt(pi))
-        [InlineData(0.367879441f, -1.0f, CrossPlatformMachineEpsilon * 10)]
-        [InlineData(0.455938128f, -0.785398163f, CrossPlatformMachineEpsilon)]         // expected: -(pi / 4)
-        [InlineData(0.493068691f, -0.707106781f, CrossPlatformMachineEpsilon)]         // expected: -(1 / sqrt(2))
-        [InlineData(0.5f, -0.693147181f, CrossPlatformMachineEpsilon)]         // expected: -(ln(2))
-        [InlineData(0.529077808f, -0.636619772f, CrossPlatformMachineEpsilon)]         // expected: -(2 / pi)
-        [InlineData(0.647721485f, -0.434294482f, CrossPlatformMachineEpsilon)]         // expected: -(log10(e))
-        [InlineData(0.727377349f, -0.318309886f, CrossPlatformMachineEpsilon)]         // expected: -(1 / pi)
-        [InlineData(1.0f, 0.0f, 0.0f)]
-        [InlineData(1.37480223f, 0.318309886f, CrossPlatformMachineEpsilon)]         // expected:  (1 / pi)
-        [InlineData(1.54387344f, 0.434294482f, CrossPlatformMachineEpsilon)]         // expected:  (log10(e))
-        [InlineData(1.89008116f, 0.636619772f, CrossPlatformMachineEpsilon)]         // expected:  (2 / pi)
-        [InlineData(2.0f, 0.693147181f, CrossPlatformMachineEpsilon)]         // expected:  (ln(2))
-        [InlineData(2.02811498f, 0.707106781f, CrossPlatformMachineEpsilon)]         // expected:  (1 / sqrt(2))
-        [InlineData(2.19328005f, 0.785398163f, CrossPlatformMachineEpsilon)]         // expected:  (pi / 4)
-        [InlineData(2.71828183f, 1.0f, CrossPlatformMachineEpsilon * 10)]    //                              value: (e)
-        [InlineData(3.09064302f, 1.12837917f, CrossPlatformMachineEpsilon * 10)]    // expected:  (2 / sqrt(pi))
-        [InlineData(4.11325038f, 1.41421356f, CrossPlatformMachineEpsilon * 10)]    // expected:  (sqrt(2))
-        [InlineData(4.23208611f, 1.44269504f, CrossPlatformMachineEpsilon * 10)]    // expected:  (log2(e))
-        [InlineData(4.81047738f, 1.57079633f, CrossPlatformMachineEpsilon * 10)]    // expected:  (pi / 2)
-        [InlineData(10.0f, 2.30258509f, CrossPlatformMachineEpsilon * 10)]    // expected:  (ln(10))
-        [InlineData(15.1542622f, 2.71828183f, CrossPlatformMachineEpsilon * 10)]    // expected:  (e)
-        [InlineData(23.1406926f, 3.14159265f, CrossPlatformMachineEpsilon * 10)]    // expected:  (pi)
-        [InlineData(float.PositiveInfinity, float.PositiveInfinity, 0.0f)]
+        [MemberData(nameof(GenericMathTestMemberData.LogSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void Log(float value, float expectedResult, float allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, MathF.Log(value), allowedVariance);
@@ -983,41 +767,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(float.NegativeInfinity, float.NaN, 0.0f)]
-        [InlineData(-0.113314732f, float.NaN, 0.0f)]
-        [InlineData(-0.0f, float.NegativeInfinity, 0.0f)]
-        [InlineData(float.NaN, float.NaN, 0.0f)]
-        [InlineData(0.0f, float.NegativeInfinity, 0.0f)]
-        [InlineData(0.113314732f, -3.14159265f, CrossPlatformMachineEpsilon * 10)]    // expected: -(pi)
-        [InlineData(0.151955223f, -2.71828183f, CrossPlatformMachineEpsilon * 10)]    // expected: -(e)
-        [InlineData(0.202699566f, -2.30258509f, CrossPlatformMachineEpsilon * 10)]    // expected: -(ln(10))
-        [InlineData(0.336622537f, -1.57079633f, CrossPlatformMachineEpsilon * 10)]    // expected: -(pi / 2)
-        [InlineData(0.367879441f, -1.44269504f, CrossPlatformMachineEpsilon * 10)]    // expected: -(log2(e))
-        [InlineData(0.375214227f, -1.41421356f, CrossPlatformMachineEpsilon * 10)]    // expected: -(sqrt(2))
-        [InlineData(0.457429347f, -1.12837917f, CrossPlatformMachineEpsilon * 10)]    // expected: -(2 / sqrt(pi))
-        [InlineData(0.5f, -1.0f, CrossPlatformMachineEpsilon * 10)]
-        [InlineData(0.580191810f, -0.785398163f, CrossPlatformMachineEpsilon)]         // expected: -(pi / 4)
-        [InlineData(0.612547327f, -0.707106781f, CrossPlatformMachineEpsilon)]         // expected: -(1 / sqrt(2))
-        [InlineData(0.618503138f, -0.693147181f, CrossPlatformMachineEpsilon)]         // expected: -(ln(2))
-        [InlineData(0.643218242f, -0.636619772f, CrossPlatformMachineEpsilon)]         // expected: -(2 / pi)
-        [InlineData(0.740055574f, -0.434294482f, CrossPlatformMachineEpsilon)]         // expected: -(log10(e))
-        [InlineData(0.802008879f, -0.318309886f, CrossPlatformMachineEpsilon)]         // expected: -(1 / pi)
-        [InlineData(1, 0.0f, 0.0f)]
-        [InlineData(1.24686899f, 0.318309886f, CrossPlatformMachineEpsilon)]         // expected:  (1 / pi)
-        [InlineData(1.35124987f, 0.434294482f, CrossPlatformMachineEpsilon)]         // expected:  (log10(e))
-        [InlineData(1.55468228f, 0.636619772f, CrossPlatformMachineEpsilon)]         // expected:  (2 / pi)
-        [InlineData(1.61680667f, 0.693147181f, CrossPlatformMachineEpsilon)]         // expected:  (ln(2))
-        [InlineData(1.63252692f, 0.707106781f, CrossPlatformMachineEpsilon)]         // expected:  (1 / sqrt(2))
-        [InlineData(1.72356793f, 0.785398163f, CrossPlatformMachineEpsilon)]         // expected:  (pi / 4)
-        [InlineData(2, 1.0f, CrossPlatformMachineEpsilon * 10)]    //                              value: (e)
-        [InlineData(2.18612996f, 1.12837917f, CrossPlatformMachineEpsilon * 10)]    // expected:  (2 / sqrt(pi))
-        [InlineData(2.66514414f, 1.41421356f, CrossPlatformMachineEpsilon * 10)]    // expected:  (sqrt(2))
-        [InlineData(2.71828183f, 1.44269504f, CrossPlatformMachineEpsilon * 10)]    // expected:  (log2(e))
-        [InlineData(2.97068642f, 1.57079633f, CrossPlatformMachineEpsilon * 10)]    // expected:  (pi / 2)
-        [InlineData(4.93340967f, 2.30258509f, CrossPlatformMachineEpsilon * 10)]    // expected:  (ln(10))
-        [InlineData(6.58088599f, 2.71828183f, CrossPlatformMachineEpsilon * 10)]    // expected:  (e)
-        [InlineData(8.82497783f, 3.14159265f, CrossPlatformMachineEpsilon * 10)]    // expected:  (pi)
-        [InlineData(float.PositiveInfinity, float.PositiveInfinity, 0.0f)]
+        [MemberData(nameof(GenericMathTestMemberData.Log2Single), MemberType = typeof(GenericMathTestMemberData))]
         public static void Log2(float value, float expectedResult, float allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, MathF.Log2(value), allowedVariance);
@@ -1070,23 +820,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
-        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
-        [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
-        [InlineData(float.MaxValue, float.MinValue, float.MaxValue)]
-        [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(float.NaN, 1.0f, float.NaN)]
-        [InlineData(1.0f, float.NaN, float.NaN)]
-        [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
-        [InlineData(float.NegativeInfinity, float.NaN, float.NaN)]
-        [InlineData(float.NaN, float.PositiveInfinity, float.NaN)]
-        [InlineData(float.NaN, float.NegativeInfinity, float.NaN)]
-        [InlineData(-0.0f, 0.0f, 0.0f)]
-        [InlineData(0.0f, -0.0f, 0.0f)]
-        [InlineData(2.0f, -3.0f, 2.0f)]
-        [InlineData(-3.0f, 2.0f, 2.0f)]
-        [InlineData(3.0f, -2.0f, 3.0f)]
-        [InlineData(-2.0f, 3.0f, 3.0f)]
+        [MemberData(nameof(GenericMathTestMemberData.MaxSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void Max(float x, float y, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, MathF.Max(x, y), 0.0f);
@@ -1116,23 +850,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
-        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
-        [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
-        [InlineData(float.MaxValue, float.MinValue, float.MaxValue)]
-        [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(float.NaN, 1.0f, float.NaN)]
-        [InlineData(1.0f, float.NaN, float.NaN)]
-        [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
-        [InlineData(float.NegativeInfinity, float.NaN, float.NaN)]
-        [InlineData(float.NaN, float.PositiveInfinity, float.NaN)]
-        [InlineData(float.NaN, float.NegativeInfinity, float.NaN)]
-        [InlineData(-0.0f, 0.0f, 0.0f)]
-        [InlineData(0.0f, -0.0f, 0.0f)]
-        [InlineData(2.0f, -3.0f, -3.0f)]
-        [InlineData(-3.0f, 2.0f, -3.0f)]
-        [InlineData(3.0f, -2.0f, 3.0f)]
-        [InlineData(-2.0f, 3.0f, 3.0f)]
+        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void MaxMagnitude(float x, float y, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, MathF.MaxMagnitude(x, y), 0.0f);
@@ -1162,23 +880,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
-        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
-        [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
-        [InlineData(float.MaxValue, float.MinValue, float.MinValue)]
-        [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(float.NaN, 1.0f, float.NaN)]
-        [InlineData(1.0f, float.NaN, float.NaN)]
-        [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
-        [InlineData(float.NegativeInfinity, float.NaN, float.NaN)]
-        [InlineData(float.NaN, float.PositiveInfinity, float.NaN)]
-        [InlineData(float.NaN, float.NegativeInfinity, float.NaN)]
-        [InlineData(-0.0f, 0.0f, -0.0f)]
-        [InlineData(0.0f, -0.0f, -0.0f)]
-        [InlineData(2.0f, -3.0f, -3.0f)]
-        [InlineData(-3.0f, 2.0f, -3.0f)]
-        [InlineData(3.0f, -2.0f, -2.0f)]
-        [InlineData(-2.0f, 3.0f, -2.0f)]
+        [MemberData(nameof(GenericMathTestMemberData.MinSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void Min(float x, float y, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, MathF.Min(x, y), 0.0f);
@@ -1203,23 +905,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
-        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
-        [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
-        [InlineData(float.MaxValue, float.MinValue, float.MinValue)]
-        [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(float.NaN, 1.0f, float.NaN)]
-        [InlineData(1.0f, float.NaN, float.NaN)]
-        [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
-        [InlineData(float.NegativeInfinity, float.NaN, float.NaN)]
-        [InlineData(float.NaN, float.PositiveInfinity, float.NaN)]
-        [InlineData(float.NaN, float.NegativeInfinity, float.NaN)]
-        [InlineData(-0.0f, 0.0f, -0.0f)]
-        [InlineData(0.0f, -0.0f, -0.0f)]
-        [InlineData(2.0f, -3.0f, 2.0f)]
-        [InlineData(-3.0f, 2.0f, 2.0f)]
-        [InlineData(3.0f, -2.0f, -2.0f)]
-        [InlineData(-2.0f, 3.0f, -2.0f)]
+        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void MinMagnitude(float x, float y, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, MathF.MinMagnitude(x, y), 0.0f);
@@ -1523,17 +1209,11 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void Round()
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public static void Round(float value, float expectedResult)
         {
-            Assert.Equal(0.0f, MathF.Round(0.0f));
-            Assert.Equal(1.0f, MathF.Round(1.4f));
-            Assert.Equal(2.0f, MathF.Round(1.5f));
-            Assert.Equal(2e7f, MathF.Round(2e7f));
-            Assert.Equal(0.0f, MathF.Round(-0.0f));
-            Assert.Equal(-1.0f, MathF.Round(-1.4f));
-            Assert.Equal(-2.0f, MathF.Round(-1.5f));
-            Assert.Equal(-2e7f, MathF.Round(-2e7f));
+            AssertExtensions.Equal(expectedResult, MathF.Round(value), 0.0f);
         }
 
         [Theory]
@@ -1637,80 +1317,14 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(float.NegativeInfinity, float.NaN, 0.0f)]
-        [InlineData(-3.14159265f, -0.0f, CrossPlatformMachineEpsilon)]       // value: -(pi)
-        [InlineData(-2.71828183f, -0.410781291f, CrossPlatformMachineEpsilon)]       // value: -(e)
-        [InlineData(-2.30258509f, -0.743980337f, CrossPlatformMachineEpsilon)]       // value: -(ln(10))
-        [InlineData(-1.57079633f, -1.0f, CrossPlatformMachineEpsilon * 10)]  // value: -(pi / 2)
-        [InlineData(-1.44269504f, -0.991806244f, CrossPlatformMachineEpsilon)]       // value: -(log2(e))
-        [InlineData(-1.41421356f, -0.987765946f, CrossPlatformMachineEpsilon)]       // value: -(sqrt(2))
-        [InlineData(-1.12837917f, -0.903719457f, CrossPlatformMachineEpsilon)]       // value: -(2 / sqrt(pi))
-        [InlineData(-1.0f, -0.841470985f, CrossPlatformMachineEpsilon)]
-        [InlineData(-0.785398163f, -0.707106781f, CrossPlatformMachineEpsilon)]       // value: -(pi / 4),        expected: -(1 / sqrt(2))
-        [InlineData(-0.707106781f, -0.649636939f, CrossPlatformMachineEpsilon)]       // value: -(1 / sqrt(2))
-        [InlineData(-0.693147181f, -0.638961276f, CrossPlatformMachineEpsilon)]       // value: -(ln(2))
-        [InlineData(-0.636619772f, -0.594480769f, CrossPlatformMachineEpsilon)]       // value: -(2 / pi)
-        [InlineData(-0.434294482f, -0.420770483f, CrossPlatformMachineEpsilon)]       // value: -(log10(e))
-        [InlineData(-0.318309886f, -0.312961796f, CrossPlatformMachineEpsilon)]       // value: -(1 / pi)
-        [InlineData(-0.0f, -0.0f, 0.0f)]
-        [InlineData(float.NaN, float.NaN, 0.0f)]
-        [InlineData(0.0f, 0.0f, 0.0f)]
-        [InlineData(0.318309886f, 0.312961796f, CrossPlatformMachineEpsilon)]       // value:  (1 / pi)
-        [InlineData(0.434294482f, 0.420770483f, CrossPlatformMachineEpsilon)]       // value:  (log10(e))
-        [InlineData(0.636619772f, 0.594480769f, CrossPlatformMachineEpsilon)]       // value:  (2 / pi)
-        [InlineData(0.693147181f, 0.638961276f, CrossPlatformMachineEpsilon)]       // value:  (ln(2))
-        [InlineData(0.707106781f, 0.649636939f, CrossPlatformMachineEpsilon)]       // value:  (1 / sqrt(2))
-        [InlineData(0.785398163f, 0.707106781f, CrossPlatformMachineEpsilon)]       // value:  (pi / 4),        expected:  (1 / sqrt(2))
-        [InlineData(1.0f, 0.841470985f, CrossPlatformMachineEpsilon)]
-        [InlineData(1.12837917f, 0.903719457f, CrossPlatformMachineEpsilon)]       // value:  (2 / sqrt(pi))
-        [InlineData(1.41421356f, 0.987765946f, CrossPlatformMachineEpsilon)]       // value:  (sqrt(2))
-        [InlineData(1.44269504f, 0.991806244f, CrossPlatformMachineEpsilon)]       // value:  (log2(e))
-        [InlineData(1.57079633f, 1.0f, CrossPlatformMachineEpsilon * 10)]  // value:  (pi / 2)
-        [InlineData(2.30258509f, 0.743980337f, CrossPlatformMachineEpsilon)]       // value:  (ln(10))
-        [InlineData(2.71828183f, 0.410781291f, CrossPlatformMachineEpsilon)]       // value:  (e)
-        [InlineData(3.14159265f, 0.0f, CrossPlatformMachineEpsilon)]       // value:  (pi)
-        [InlineData(float.PositiveInfinity, float.NaN, 0.0f)]
+        [MemberData(nameof(GenericMathTestMemberData.SinSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void Sin(float value, float expectedResult, float allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, MathF.Sin(value), allowedVariance);
         }
 
         [Theory]
-        [InlineData( float.NegativeInfinity,  float.NaN,     float.NaN,    0.0f,                             0.0f)]
-        [InlineData(-1e8f,                   -0.931639,     -0.36338508,   CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // https://github.com/dotnet/runtime/issues/98204
-        [InlineData(-3.14159265f,            -0.0f,         -1.0f,         CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon * 10)]  // value: -(pi)
-        [InlineData(-2.71828183f,            -0.410781291f, -0.911733918f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(e)
-        [InlineData(-2.30258509f,            -0.743980337f, -0.668201510f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(ln(10))
-        [InlineData(-1.57079633f,            -1.0f,          0.0f,         CrossPlatformMachineEpsilon * 10, CrossPlatformMachineEpsilon)]       // value: -(pi / 2)
-        [InlineData(-1.44269504f,            -0.991806244f,  0.127751218f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(log2(e))
-        [InlineData(-1.41421356f,            -0.987765946f,  0.155943695f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(sqrt(2))
-        [InlineData(-1.12837917f,            -0.903719457f,  0.428125148f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(2 / sqrt(pi))
-        [InlineData(-1.0f,                   -0.841470985f,  0.540302306f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]
-        [InlineData(-0.785398163f,           -0.707106781f,  0.707106781f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(pi / 4),        expected_sin: -(1 / sqrt(2)),    expected_cos: 1
-        [InlineData(-0.707106781f,           -0.649636939f,  0.760244597f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(1 / sqrt(2))
-        [InlineData(-0.693147181f,           -0.638961276f,  0.769238901f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(ln(2))
-        [InlineData(-0.636619772f,           -0.594480769f,  0.804109828f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(2 / pi)
-        [InlineData(-0.434294482f,           -0.420770483f,  0.907167129f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(log10(e))
-        [InlineData(-0.318309886f,           -0.312961796f,  0.949765715f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(1 / pi)
-        [InlineData(-0.0f,                   -0.0f,          1.0f,         0.0f,                             CrossPlatformMachineEpsilon * 10)]
-        [InlineData( float.NaN,               float.NaN,     float.NaN,    0.0f,                             0.0f)]
-        [InlineData( 0.0f,                    0.0f,          1.0f,         0.0f,                             CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 0.318309886f,            0.312961796f,  0.949765715f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (1 / pi)
-        [InlineData( 0.434294482f,            0.420770483f,  0.907167129f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (log10(e))
-        [InlineData( 0.636619772f,            0.594480769f,  0.804109828f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (2 / pi)
-        [InlineData( 0.693147181f,            0.638961276f,  0.769238901f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (ln(2))
-        [InlineData( 0.707106781f,            0.649636939f,  0.760244597f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (1 / sqrt(2))
-        [InlineData( 0.785398163f,            0.707106781f,  0.707106781f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (pi / 4),        expected_sin:  (1 / sqrt(2)),    expected_cos: 1
-        [InlineData( 1.0f,                    0.841470985f,  0.540302306f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]
-        [InlineData( 1.12837917f,             0.903719457f,  0.428125148f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (2 / sqrt(pi))
-        [InlineData( 1.41421356f,             0.987765946f,  0.155943695f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (sqrt(2))
-        [InlineData( 1.44269504f,             0.991806244f,  0.127751218f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (log2(e))
-        [InlineData( 1.57079633f,             1.0f,          0.0f,         CrossPlatformMachineEpsilon * 10, CrossPlatformMachineEpsilon)]       // value:  (pi / 2)
-        [InlineData( 2.30258509f,             0.743980337f, -0.668201510f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (ln(10))
-        [InlineData( 2.71828183f,             0.410781291f, -0.911733918f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (e)
-        [InlineData( 3.14159265f,             0.0f,         -1.0f,         CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon * 10)]  // value:  (pi)
-        [InlineData( 1e8f,                    0.931639,     -0.36338508,   CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // https://github.com/dotnet/runtime/issues/98204
-        [InlineData( float.PositiveInfinity,  float.NaN,     float.NaN,    0.0f,                             0.0f)]
+        [MemberData(nameof(GenericMathTestMemberData.SinCosSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void SinCos(float value, float expectedResultSin, float expectedResultCos, float allowedVarianceSin, float allowedVarianceCos)
         {
             (float resultSin, float resultCos) = MathF.SinCos(value);
@@ -1874,49 +1488,15 @@ namespace System.Tests
             AssertExtensions.Equal(expectedResult, MathF.Tanh(value), allowedVariance);
         }
 
-        [Fact]
-        public static void Truncate()
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.TruncateSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public static void Truncate(float value, float expectedResult)
         {
-            Assert.Equal(0.0f, MathF.Truncate(0.12345f));
-            Assert.Equal(3.0f, MathF.Truncate(3.14159f));
-            Assert.Equal(-3.0f, MathF.Truncate(-3.14159f));
-        }
-
-        public static IEnumerable<object[]> Round_ToEven_TestData()
-        {
-            yield return new object[] { 1f, 1f };
-            yield return new object[] { 0.5f, 0f };
-            yield return new object[] { 1.5f, 2f };
-            yield return new object[] { 2.5f, 2f };
-            yield return new object[] { 3.5f, 4f };
-            yield return new object[] { 0.49999997f, 0f };
-            yield return new object[] { 1.5f, 2f };
-            yield return new object[] { 2.5f, 2f };
-            yield return new object[] { 3.5f, 4f };
-            yield return new object[] { 4.5f, 4f };
-            yield return new object[] { 3.1415927f, 3f };
-            yield return new object[] { 2.7182817f, 3f };
-            yield return new object[] { 1385.4557f, 1385f };
-            yield return new object[] { 3423.4343f, 3423f };
-            yield return new object[] { 535345.5f, 535346f };
-            yield return new object[] { 535345.5f, 535346f };
-            yield return new object[] { 535345.5f, 535346f };
-            yield return new object[] { 535345.4f, 535345f };
-            yield return new object[] { 535345.6f, 535346f };
-            yield return new object[] { -2.7182817f, -3f };
-            yield return new object[] { 10f, 10f };
-            yield return new object[] { -10f, -10f };
-            yield return new object[] { -0f, -0f };
-            yield return new object[] { 0f, 0f };
-            yield return new object[] { float.NaN, float.NaN };
-            yield return new object[] { float.PositiveInfinity, float.PositiveInfinity };
-            yield return new object[] { float.NegativeInfinity, float.NegativeInfinity };
-            yield return new object[] { 3.4028235E+38f, 3.4028235E+38f };
-            yield return new object[] { -3.4028235E+38f, -3.4028235E+38f };
+            AssertExtensions.Equal(expectedResult, MathF.Truncate(value), 0.0f);
         }
 
         [Theory]
-        [MemberData(nameof(Round_ToEven_TestData))]
+        [MemberData(nameof(GenericMathTestMemberData.RoundToEvenSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void Round_ToEven_0(float value, float expected)
         {
             // Math.Round has special fast paths when MidpointRounding is a const
@@ -1925,41 +1505,8 @@ namespace System.Tests
             Assert.Equal(expected, MathF.Round(value, 0, MidpointRounding.ToEven));
         }
 
-        public static IEnumerable<object[]> Round_AwayFromZero_TestData()
-        {
-            yield return new object[] { 1f, 1f };
-            yield return new object[] { 0.5f, 1f };
-            yield return new object[] { 1.5f, 2f };
-            yield return new object[] { 2.5f, 3f };
-            yield return new object[] { 3.5f, 4f };
-            yield return new object[] { 0.49999997f, 0f };
-            yield return new object[] { 1.5f, 2f };
-            yield return new object[] { 2.5f, 3f };
-            yield return new object[] { 3.5f, 4f };
-            yield return new object[] { 4.5f, 5f };
-            yield return new object[] { 3.1415927f, 3f };
-            yield return new object[] { 2.7182817f, 3f };
-            yield return new object[] { 1385.4557f, 1385f };
-            yield return new object[] { 3423.4343f, 3423f };
-            yield return new object[] { 535345.5f, 535346f };
-            yield return new object[] { 535345.5f, 535346f };
-            yield return new object[] { 535345.5f, 535346f };
-            yield return new object[] { 535345.4f, 535345f };
-            yield return new object[] { 535345.6f, 535346f };
-            yield return new object[] { -2.7182817f, -3f };
-            yield return new object[] { 10f, 10f };
-            yield return new object[] { -10f, -10f };
-            yield return new object[] { -0f, -0f };
-            yield return new object[] { 0f, 0f };
-            yield return new object[] { float.NaN, float.NaN };
-            yield return new object[] { float.PositiveInfinity, float.PositiveInfinity };
-            yield return new object[] { float.NegativeInfinity, float.NegativeInfinity };
-            yield return new object[] { 3.4028235E+38f, 3.4028235E+38f };
-            yield return new object[] { -3.4028235E+38f, -3.4028235E+38f };
-        }
-
         [Theory]
-        [MemberData(nameof(Round_AwayFromZero_TestData))]
+        [MemberData(nameof(GenericMathTestMemberData.RoundAwayFromZeroSingle), MemberType = typeof(GenericMathTestMemberData))]
         public static void Round_AwayFromZero_0(float value, float expected)
         {
             // Math.Round has special fast paths when MidpointRounding is a const

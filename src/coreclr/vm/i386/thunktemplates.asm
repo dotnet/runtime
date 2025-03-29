@@ -28,7 +28,7 @@ labelValue TEXTEQU @CatStr(<$>, offset, <-_>, stub, <Code@0>)
 endm
 
 LEAF_ENTRY _StubPrecodeCode@0
-        mov     eax, dword ptr DATA_SLOT(StubPrecode, MethodDesc)
+        mov     eax, dword ptr DATA_SLOT(StubPrecode, SecretParam)
 SLOT_ADDRESS_PATCH_LABEL StubPrecode, MethodDesc
         jmp     dword ptr DATA_SLOT(StubPrecode, Target)
 SLOT_ADDRESS_PATCH_LABEL StubPrecode, Target

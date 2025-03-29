@@ -21,7 +21,6 @@
 #include "shash.h"
 #include "TypeManager.h"
 #include "MethodTable.h"
-#include "varint.h"
 
 #include "CommonMacros.inl"
 #include "slist.inl"
@@ -52,9 +51,9 @@ FCIMPLEND
 
 #if TARGET_UNIX
 #include "PalCreateDump.h"
-FCIMPL2(void, RhCreateCrashDumpIfEnabled, PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pExContext)
+FCIMPL1(void, RhCreateCrashDumpIfEnabled, PEXCEPTION_RECORD pExceptionRecord)
 {
-    PalCreateCrashDumpIfEnabled(pExceptionRecord, pExContext);
+    PalCreateCrashDumpIfEnabled(pExceptionRecord);
 }
 FCIMPLEND
 #endif
@@ -350,7 +349,7 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
 }
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-EXTERN_C void REDHAWK_CALLCONV RhpInitialDynamicInterfaceDispatch();
+EXTERN_C void F_CALL_CONV RhpInitialDynamicInterfaceDispatch();
 
 FCIMPL2(void *, RhNewInterfaceDispatchCell, MethodTable * pInterface, int32_t slotNumber)
 {

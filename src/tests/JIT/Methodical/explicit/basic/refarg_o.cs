@@ -52,6 +52,7 @@ namespace Test_refarg_o_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             int exitCode = Test(ref s_aa.m_aa);

@@ -3,6 +3,7 @@
 Once everything is setup tests related to TPM and our engine can be run using:
 
 ```bash
+export DOTNET_CRYPTOGRAPHY_TESTS_ENGINE_ENABLE=true
 ./test.sh
 ```
 
@@ -12,7 +13,7 @@ If TPM environmental variable similar to following is defined:
 
 ```bash
 # 0x81000007 is just an example, read further how to get it
-export DOTNET_CRYPTOGRAPHY_TESTS_ENGINE_TPM_ECDSA_KEY_HANDLE=0x81000007
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_ECDSA_KEY_HANDLE=0x81000007
 ```
 
 then tests using TPM will be run as well and they will use `0x81000007` handle.
@@ -114,7 +115,28 @@ export TSS2_LOG=all+TRACE
 
 Most of the time this should not be needed but it might be useful if you're seeing issues when interacting with the ENGINE.
 
-### Getting TPM handle
+# Testing instructions for OpenSSL Provider
+
+## Installation
+
+To install TPM2 provider refer to https://github.com/tpm2-software/tpm2-openssl - on Ubuntu following step can be used:
+
+```bash
+sudo apt install tpm2-openssl tpm2-tools tpm2-abrmd libtss2-tcti-tabrmd0
+```
+
+## Running provider tests
+
+In order to run provider tests you need to have TPM handles and set one or more of the following environmental variables:
+
+```csharp
+# Handle values are just an example - refer to 'Getting TPM handle' section for instructions on how to create or get them
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_ECDSA_KEY_HANDLE=0x81000007
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_ECDH_KEY_HANDLE=0x8100000d
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_KEY_HANDLE=0x81000003
+```
+
+# Getting TPM handle
 
 First, we will need `tpm2-tools`` installed:
 
@@ -122,7 +144,7 @@ First, we will need `tpm2-tools`` installed:
 sudo apt install tpm2-tools
 ```
 
-#### Getting TPM handles
+## Getting TPM handles
 
 If you already have a handle but you forgot what it is you can list all available handles using following command:
 
@@ -145,11 +167,31 @@ You can also extract public key like this if needed:
 tpm2_readpublic -c 0x81000007 -o /tmp/key.pub
 ```
 
-#### Testing handle with OpenSSL CLI
+## Creating specific persistent handle
+
+After you create a `ctx` file you can assign it to a specific handle rather than random:
+
+```bash
+tpm2_evictcontrol -C o -c primary.ctx 0x8100000c
+```
+
+For how to create `ctx` files see further `Creating keys and handles` section.
+
+## Removing (evicting) persistent handles
+
+Handle can be removed with `tpm2_evictcontrol -C o -c <persistent_handle>`, for example:
+
+```bash
+tpm2_evictcontrol -C o -c 0x81000001
+```
+
+Note that this command looks identical to the one for assigning handle but it has different effect when handle rather than `ctx` file is provided.
+
+### Testing handle with OpenSSL CLI
 
 In case you find issues with your handle you can test it using OpenSSL CLI, for example `0x81000004` can be tested like following:
 
-##### RSA key
+#### RSA key
 
 ```bash
 # create testdata file with some content
@@ -168,9 +210,35 @@ openssl pkey -engine tpm2tss -inform engine -in '0x81000007' -pubout -out testke
 openssl pkeyutl -verify -in testdata.dgst -sigfile testdata.sig -inkey testkey.pub -pubin -pkeyopt digest:sha256
 ```
 
-#### Creating keys and handles
+## Creating keys and handles
 
-##### ECDSA key
+### Quick recipe for creating handles
+
+Disclaimer: You should run this only on a test environment
+
+```bash
+# Create ECDSA, ECDH, RSA sign and RSA decrypt keys respectively
+tpm2_createprimary -C o -g sha256 -G ecc256:ecdsa-sha256:null -c ecdsa.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|sign'
+tpm2_createprimary -C o -g sha256 -G ecc256 -c ecdh.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|decrypt'
+tpm2_createprimary -C o -g sha256 -G rsa2048 -c rsa.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|sign|decrypt'
+
+# Create persistent handles for them
+tpm2_evictcontrol -C o -c ecdsa.ctx 0x81000007
+tpm2_evictcontrol -C o -c ecdh.ctx 0x8100000d
+tpm2_evictcontrol -C o -c rsa.ctx 0x81000003
+```
+
+#### Quick recipe for setup testing environments
+
+If you've used quick recipe for creating you can setup your environment variables like following:
+
+```bash
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_ECDSA_KEY_HANDLE=0x81000007
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_ECDH_KEY_HANDLE=0x8100000d
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_KEY_HANDLE=0x81000003
+```
+
+### ECDSA key (SHA256)
 
 ```bash
 tpm2_createprimary -C o -g sha256 -G ecc256:ecdsa-sha256:null -c primary.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|sign'
@@ -179,13 +247,36 @@ tpm2_createprimary -C o -g sha256 -G ecc256:ecdsa-sha256:null -c primary.ctx -a 
 tpm2_evictcontrol -C o -c primary.ctx
 ```
 
-##### RSA key (RSAPSS + SHA256)
+### ECDH key (SHA256)
 
-This is not used by tests but if needed for further testing:
+```bash
+tpm2_createprimary -C o -g sha256 -G ecc256 -c primary.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|decrypt'
+
+# To create permenent handle and print it:
+tpm2_evictcontrol -C o -c primary.ctx
+```
+
+### RSA key (signing or decryption + SHA256)
+
+In order to restrict key to only sign or decrypt remove the appropriate flag.
+In our tests some TLS scenarios RSA cert might still need decrypt operation for key exchange therefore we create RSA key that can do both.
 
 ```bash
 # To create key
-tpm2_createprimary -C o -g sha256 -G rsa2048:rsapss:null -c primary.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|sign'
+tpm2_createprimary -C o -g sha256 -G rsa2048 -c primary.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|sign|decrypt'
+
+# To restrict handle to i.e. only PSS following command can be used:
+# tpm2_createprimary -C o -g sha256 -G rsa2048:rsapss:null -c primary.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|sign'
+
+# To create permenent handle and print it:
+tpm2_evictcontrol -C o -c primary.ctx
+```
+
+### RSA key (decryption)
+
+```bash
+# To create key
+tpm2_createprimary -C o -g sha256 -G rsa2048 -c primary.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|decrypt'
 
 # To create permenent handle and print it:
 tpm2_evictcontrol -C o -c primary.ctx

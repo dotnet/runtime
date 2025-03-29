@@ -16,16 +16,18 @@ namespace ILCompiler.DependencyAnalysis
     public class DelegateTargetVirtualMethodNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MethodDesc _method;
+        private readonly bool _reflected;
 
-        public DelegateTargetVirtualMethodNode(MethodDesc method)
+        public DelegateTargetVirtualMethodNode(MethodDesc method, bool reflected)
         {
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
             _method = method;
+            _reflected = reflected;
         }
 
         protected override string GetName(NodeFactory factory)
         {
-            return "Delegate target method: " + _method.ToString();
+            return (_reflected ? "Reflected delegate target method:" : "Delegate target method: ") + _method.ToString();
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;

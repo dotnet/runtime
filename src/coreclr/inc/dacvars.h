@@ -84,6 +84,10 @@ DEFINE_DACVAR(PTR_EEJitManager, ExecutionManager__m_pEEJitManager, ExecutionMana
 #ifdef FEATURE_READYTORUN
 DEFINE_DACVAR(PTR_ReadyToRunJitManager, ExecutionManager__m_pReadyToRunJitManager, ExecutionManager::m_pReadyToRunJitManager)
 #endif
+#ifdef FEATURE_INTERPRETER
+DEFINE_DACVAR(PTR_InterpreterJitManager, ExecutionManager__m_pInterpreterJitManager, ExecutionManager::m_pInterpreterJitManager)
+DEFINE_DACVAR(PTR_InterpreterCodeManager, ExecutionManager__m_pInterpreterCodeMan, ExecutionManager::m_pInterpreterCodeMan)
+#endif
 
 DEFINE_DACVAR_NO_DUMP(VMHELPDEF *, dac__hlpFuncTable, ::hlpFuncTable)
 DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
@@ -91,7 +95,6 @@ DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
 DEFINE_DACVAR(PTR_StubManager, StubManager__g_pFirstManager, StubManager::g_pFirstManager)
 DEFINE_DACVAR(PTR_PrecodeStubManager, PrecodeStubManager__g_pManager, PrecodeStubManager::g_pManager)
 DEFINE_DACVAR(PTR_StubLinkStubManager, StubLinkStubManager__g_pManager, StubLinkStubManager::g_pManager)
-DEFINE_DACVAR(PTR_ThunkHeapStubManager, ThunkHeapStubManager__g_pManager, ThunkHeapStubManager::g_pManager)
 DEFINE_DACVAR(PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, JumpStubStubManager::g_pManager)
 DEFINE_DACVAR(PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
 DEFINE_DACVAR(PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
@@ -123,6 +126,7 @@ DEFINE_DACVAR(BOOL, dac__g_isNewExceptionHandlingEnabled, ::g_isNewExceptionHand
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
 
 DEFINE_DACVAR(INT32, ArrayBase__s_arrayBoundsZero, ArrayBase::s_arrayBoundsZero)
+DEFINE_DACVAR(BOOL, CodeVersionManager__s_HasNonDefaultILVersions, CodeVersionManager::s_HasNonDefaultILVersions)
 
 DEFINE_DACVAR(PTR_JITNotification, dac__g_pNotificationTable, ::g_pNotificationTable)
 DEFINE_DACVAR(ULONG32, dac__g_dacNotificationFlags, ::g_dacNotificationFlags)
@@ -139,12 +143,11 @@ DEFINE_DACVAR(ProfControlBlock, dac__g_profControlBlock, ::g_profControlBlock)
 DEFINE_DACVAR(PTR_DWORD, dac__g_card_table, ::g_card_table)
 DEFINE_DACVAR(PTR_BYTE, dac__g_lowest_address, ::g_lowest_address)
 DEFINE_DACVAR(PTR_BYTE, dac__g_highest_address, ::g_highest_address)
-DEFINE_DACVAR(gc_alloc_context, dac__g_global_alloc_context, ::g_global_alloc_context)
+DEFINE_DACVAR(ee_alloc_context, dac__g_global_alloc_context, ::g_global_alloc_context)
 
 DEFINE_DACVAR(IGCHeap, dac__g_pGCHeap, ::g_pGCHeap)
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pThinLockThreadIdDispenser, ::g_pThinLockThreadIdDispenser)
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pModuleIndexDispenser, ::g_pModuleIndexDispenser)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pObjectClass, ::g_pObjectClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pRuntimeTypeClass, ::g_pRuntimeTypeClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pCanonMethodTableClass, ::g_pCanonMethodTableClass)
@@ -174,10 +177,6 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pBaseCOMObject, ::g_pBaseCOMObject)
 #endif
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pIDynamicInterfaceCastableInterface, ::g_pIDynamicInterfaceCastableInterface)
-
-#ifdef FEATURE_ICASTABLE
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pICastableInterface, ::g_pICastableInterface)
-#endif // FEATURE_ICASTABLE
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pObjectFinalizerMD, ::g_pObjectFinalizerMD)
 

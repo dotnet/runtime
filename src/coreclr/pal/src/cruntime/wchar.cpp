@@ -24,7 +24,6 @@ Abstract:
 #include "config.h"
 #endif
 
-#include <wctype.h>
 #include <errno.h>
 #include <algorithm>
 
@@ -55,10 +54,10 @@ _wtoi(
               GetLastError());
         return -1;
     }
-    tempStr = (char *) PAL_malloc(len);
+    tempStr = (char *) malloc(len);
     if (!tempStr)
     {
-        ERROR("PAL_malloc failed\n");
+        ERROR("malloc failed\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return -1;
     }
@@ -67,12 +66,12 @@ _wtoi(
     {
         ASSERT("WideCharToMultiByte failed.  Error is %d\n",
               GetLastError());
-        PAL_free(tempStr);
+        free(tempStr);
         return -1;
     }
     ret = atoi(tempStr);
 
-    PAL_free(tempStr);
+    free(tempStr);
     LOGEXIT("_wtoi returns int %d\n", ret);
     PERF_EXIT(_wtoi);
     return ret;
@@ -261,10 +260,10 @@ PAL_wcstoul(
         res = 0;
         goto PAL_wcstoulExit;
     }
-    s_nptr = (char *)PAL_malloc(size);
+    s_nptr = (char *)malloc(size);
     if (!s_nptr)
     {
-        ERROR("PAL_malloc failed\n");
+        ERROR("malloc failed\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         res = 0;
         goto PAL_wcstoulExit;
@@ -310,7 +309,7 @@ PAL_wcstoul(
     }
 
 PAL_wcstoulExit:
-    PAL_free(s_nptr);
+    free(s_nptr);
     LOGEXIT("wcstoul returning unsigned long %lu\n", res);
     PERF_EXIT(wcstoul);
 
@@ -351,10 +350,10 @@ PAL__wcstoui64(
         res = 0;
         goto PAL__wcstoui64Exit;
     }
-    s_nptr = (char *)PAL_malloc(size);
+    s_nptr = (char *)malloc(size);
     if (!s_nptr)
     {
-        ERROR("PAL_malloc failed\n");
+        ERROR("malloc failed\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         res = 0;
         goto PAL__wcstoui64Exit;
@@ -381,7 +380,7 @@ PAL__wcstoui64(
     }
 
 PAL__wcstoui64Exit:
-    PAL_free(s_nptr);
+    free(s_nptr);
     LOGEXIT("_wcstoui64 returning unsigned long long %llu\n", res);
     PERF_EXIT(_wcstoui64);
 
@@ -896,7 +895,7 @@ PAL_wcstod( const wchar_16 * nptr, wchar_16 **endptr )
     if ( lpEndOfExpression != lpStartOfExpression )
     {
         Length = lpEndOfExpression - lpStartOfExpression;
-        lpStringRep = (LPSTR)PAL_malloc( Length + 1);
+        lpStringRep = (LPSTR)malloc( Length + 1);
 
         if ( lpStringRep )
         {
@@ -939,7 +938,7 @@ PAL_wcstod( const wchar_16 * nptr, wchar_16 **endptr )
         *endptr = lpEndOfExpression;
     }
 
-    PAL_free( lpStringRep );
+    free( lpStringRep );
     LOGEXIT( "wcstod returning %f.\n", RetVal );
     PERF_EXIT(wcstod);
     return RetVal;

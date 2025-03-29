@@ -59,9 +59,11 @@ namespace System.Text.RegularExpressions
                 // If we're too deep to analyze further, we can't trust what we've already computed, so stop iterating.
                 // Also bail if any of our results is already hitting the threshold, or if this node is RTL, which is
                 // not worth the complexity of handling.
+                // Or if we've already discovered more than the allowed number of prefixes.
                 if (!StackHelper.TryEnsureSufficientExecutionStack() ||
                     !results.TrueForAll(sb => sb.Length < MaxPrefixLength) ||
-                    (node.Options & RegexOptions.RightToLeft) != 0)
+                    (node.Options & RegexOptions.RightToLeft) != 0 ||
+                    results.Count > MaxPrefixes)
                 {
                     return false;
                 }
@@ -162,23 +164,30 @@ namespace System.Text.RegularExpressions
                                 int reps = node.Kind is RegexNodeKind.Set ? 1 : Math.Min(node.M, MaxPrefixLength);
                                 if (!ignoreCase)
                                 {
-                                    int existingCount = results.Count;
-
-                                    // Duplicate all of the existing strings for all of the new suffixes, other than the first.
-                                    foreach (char suffix in setChars.Slice(1, charCount - 1))
+                                    for (int rep = 0; rep < reps; rep++)
                                     {
+                                        int existingCount = results.Count;
+                                        if (existingCount * charCount > MaxPrefixes)
+                                        {
+                                            return false;
+                                        }
+
+                                        // Duplicate all of the existing strings for all of the new suffixes, other than the first.
+                                        foreach (char suffix in setChars.Slice(1, charCount - 1))
+                                        {
+                                            for (int existing = 0; existing < existingCount; existing++)
+                                            {
+                                                StringBuilder newSb = new StringBuilder().Append(results[existing]);
+                                                newSb.Append(suffix);
+                                                results.Add(newSb);
+                                            }
+                                        }
+
+                                        // Then append the first suffix to all of the existing strings.
                                         for (int existing = 0; existing < existingCount; existing++)
                                         {
-                                            StringBuilder newSb = new StringBuilder().Append(results[existing]);
-                                            newSb.Append(suffix, reps);
-                                            results.Add(newSb);
+                                            results[existing].Append(setChars[0]);
                                         }
-                                    }
-
-                                    // Then append the first suffix to all of the existing strings.
-                                    for (int existing = 0; existing < existingCount; existing++)
-                                    {
-                                        results[existing].Append(setChars[0], reps);
                                     }
                                 }
                                 else
@@ -247,6 +256,12 @@ namespace System.Text.RegularExpressions
                                 for (int i = 0; i < childCount; i++)
                                 {
                                     _ = FindPrefixesCore(node.Child(i), alternateBranchResults, ignoreCase);
+
+                                    // If we now have too many results, bail.
+                                    if ((allBranchResults?.Count ?? 0) + alternateBranchResults.Count > MaxPrefixes)
+                                    {
+                                        return false;
+                                    }
 
                                     Debug.Assert(alternateBranchResults.Count > 0);
                                     foreach (StringBuilder sb in alternateBranchResults)
@@ -359,7 +374,7 @@ namespace System.Text.RegularExpressions
                         }
 
                     // Alternation: find a string that's a shared prefix of all branches
-                    case RegexNodeKind.Alternate:
+                    case RegexNodeKind.Alternate when !rtl: // for RTL we'd need to be matching the suffixes of the alternation cases
                         {
                             int childCount = node.ChildCount();
 
@@ -535,25 +550,24 @@ namespace System.Text.RegularExpressions
 
             // For every entry, try to get the chars that make up the set, if there are few enough.
             // For any for which we couldn't get the small chars list, see if we can get other useful info.
-            Span<char> scratch = stackalloc char[128]; // limit based on what's currently efficiently handled by SearchValues
+            Span<char> scratch = stackalloc char[128];
             for (int i = 0; i < results.Count; i++)
             {
                 RegexFindOptimizations.FixedDistanceSet result = results[i];
                 result.Negated = RegexCharClass.IsNegated(result.Set);
 
-                int count = RegexCharClass.GetSetChars(result.Set, scratch);
-                if (count > 0)
+                if (RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive) &&
+                    (highInclusive - lowInclusive) > 1) // prefer IndexOfAny for tiny sets of 1 or 2 elements
                 {
-                    result.Chars = scratch.Slice(0, count).ToArray();
-                }
-
-                // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
-                if (thorough &&
-                    (result.Chars is null || result.Chars.Length > 2) &&
-                    RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
-                {
-                    result.Chars = null;
                     result.Range = (lowInclusive, highInclusive);
+                }
+                else
+                {
+                    int count = RegexCharClass.GetSetChars(result.Set, scratch);
+                    if (count > 0)
+                    {
+                        result.Chars = scratch.Slice(0, count).ToArray();
+                    }
                 }
 
                 results[i] = result;
@@ -1214,6 +1228,80 @@ namespace System.Text.RegularExpressions
             return null;
         }
 
+        /// <summary>Finds a positive lookahead node that can be considered to start the pattern.</summary>
+        public static RegexNode? FindLeadingPositiveLookahead(RegexNode node)
+        {
+            RegexNode? positiveLookahead = null;
+            FindLeadingPositiveLookahead(node, ref positiveLookahead);
+            return positiveLookahead;
+
+            // Returns whether to keep examining subsequent nodes in a concatenation.
+            static bool FindLeadingPositiveLookahead(RegexNode node, ref RegexNode? positiveLookahead)
+            {
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
+                {
+                    return false;
+                }
+
+                while (true)
+                {
+                    if ((node.Options & RegexOptions.RightToLeft) != 0)
+                    {
+                        return false;
+                    }
+
+                    switch (node.Kind)
+                    {
+                        case RegexNodeKind.PositiveLookaround:
+                            // Got one.
+                            positiveLookahead = node;
+                            return false;
+
+                        case RegexNodeKind.Bol:
+                        case RegexNodeKind.Eol:
+                        case RegexNodeKind.Beginning:
+                        case RegexNodeKind.Start:
+                        case RegexNodeKind.EndZ:
+                        case RegexNodeKind.End:
+                        case RegexNodeKind.Boundary:
+                        case RegexNodeKind.ECMABoundary:
+                        case RegexNodeKind.NegativeLookaround:
+                        case RegexNodeKind.Empty:
+                            // Skip past zero-width nodes.
+                            return true;
+
+                        case RegexNodeKind.Atomic:
+                        case RegexNodeKind.Capture:
+                            // Process the child instead of the group, which adds no semantics for this purpose.
+                            node = node.Child(0);
+                            continue;
+
+                        case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M >= 1:
+                            // Process the child and then stop. We don't know how many times the
+                            // loop will actually repeat, only that it must execute at least once.
+                            FindLeadingPositiveLookahead(node.Child(0), ref positiveLookahead);
+                            return false;
+
+                        case RegexNodeKind.Concatenate:
+                            // Check each child, stopping the search if processing it says we can't process further.
+                            int childCount = node.ChildCount();
+                            for (int i = 0; i < childCount; i++)
+                            {
+                                if (!FindLeadingPositiveLookahead(node.Child(i), ref positiveLookahead))
+                                {
+                                    return false;
+                                }
+                            }
+
+                            return true;
+
+                        default:
+                            return false;
+                    }
+                }
+            }
+        }
+
         /// <summary>Computes the leading anchor of a node.</summary>
         public static RegexNodeKind FindLeadingAnchor(RegexNode node) =>
             FindLeadingOrTrailingAnchor(node, leading: true);
@@ -1249,7 +1337,14 @@ namespace System.Text.RegularExpressions
 
                     case RegexNodeKind.Atomic:
                     case RegexNodeKind.Capture:
-                        // For groups, continue exploring the sole child.
+                    case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when leading && node.M >= 1:
+                    case RegexNodeKind.PositiveLookaround when leading && (node.Options & RegexOptions.RightToLeft) == 0:
+                        // For atomic and capture groups, for the purposes of finding anchors they add no semantics around the child.
+                        // Loops are like atomic and captures for the purposes of finding leading anchors, as long as the loop has
+                        // at least one guaranteed iteration (if its min is 0, any anchors inside might not apply).
+                        // Positive lookaheads are also relevant as long as we're looking for leading anchors, as an anchor
+                        // at the beginning of a starting positive lookahead has the same semantics as the same anchor at the
+                        // beginning of the pattern.
                         node = node.Child(0);
                         continue;
 
@@ -1260,15 +1355,35 @@ namespace System.Text.RegularExpressions
                         {
                             int childCount = node.ChildCount();
                             RegexNode? child = null;
+                            RegexNodeKind bestAnchorFound = RegexNodeKind.Unknown;
                             if (leading)
                             {
                                 for (int i = 0; i < childCount; i++)
                                 {
-                                    if (node.Child(i).Kind is not (RegexNodeKind.Empty or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround))
+                                    RegexNode tmpChild = node.Child(i);
+                                    switch (tmpChild.Kind)
                                     {
-                                        child = node.Child(i);
-                                        break;
+                                        case RegexNodeKind.Empty or RegexNodeKind.NegativeLookaround:
+                                        case RegexNodeKind.PositiveLookaround when ((node.Options | tmpChild.Options) & RegexOptions.RightToLeft) != 0:
+                                            // Skip over zero-width assertions.
+                                            continue;
+
+                                        case RegexNodeKind.PositiveLookaround:
+                                            // Except for positive lookaheads at the beginning of the pattern, as any anchor it has at
+                                            // its beginning can also be used.
+                                            bestAnchorFound = ChooseBetterAnchor(bestAnchorFound, FindLeadingOrTrailingAnchor(tmpChild, leading));
+                                            if (IsBestAnchor(bestAnchorFound))
+                                            {
+                                                return bestAnchorFound;
+                                            }
+
+                                            // Now that we know what anchor might be in the lookahead, skip the zero-width assertion
+                                            // and continue examining subsequent nodes of the concatenation.
+                                            continue;
                                     }
+
+                                    child = tmpChild;
+                                    break;
                                 }
                             }
                             else
@@ -1283,13 +1398,57 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
-                            if (child is not null)
+                            if (bestAnchorFound is not RegexNodeKind.Unknown)
                             {
+                                // We found a leading anchor in a positive lookahead. If we don't have a child node, then
+                                // just return the anchor we got. If we do have a child node, recur into it to find any anchor
+                                // it has, and then choose the best between that and the lookahead.
+                                Debug.Assert(leading);
+                                return child is not null ?
+                                    ChooseBetterAnchor(bestAnchorFound, FindLeadingAnchor(child)) :
+                                    bestAnchorFound;
+                            }
+                            else if (child is not null)
+                            {
+                                // Loop around to process the child node.
                                 node = child;
                                 continue;
                             }
 
                             goto default;
+
+                            // Decide which of two anchors we'd rather search for, based on which yields the fastest
+                            // search, e.g. Beginning means we only have one place to search, whereas worse Bol could be at the
+                            // start of any line, and even worse Boundary could be at the start or end of any word.
+                            static RegexNodeKind ChooseBetterAnchor(RegexNodeKind anchor1, RegexNodeKind anchor2)
+                            {
+                                return
+                                    anchor1 == RegexNodeKind.Unknown ? anchor2 :
+                                    anchor2 == RegexNodeKind.Unknown ? anchor1 :
+                                    RankAnchorQuality(anchor1) >= RankAnchorQuality(anchor2) ? anchor1 :
+                                    anchor2;
+
+                                static int RankAnchorQuality(RegexNodeKind node) =>
+                                    node switch
+                                    {
+                                        RegexNodeKind.Beginning => 3,
+                                        RegexNodeKind.Start => 3,
+                                        RegexNodeKind.End => 3,
+                                        RegexNodeKind.EndZ => 3,
+
+                                        RegexNodeKind.Bol => 2,
+                                        RegexNodeKind.Eol => 2,
+
+                                        RegexNodeKind.Boundary => 1,
+                                        RegexNodeKind.ECMABoundary => 1,
+
+                                        _ => 0
+                                    };
+                            }
+
+                            static bool IsBestAnchor(RegexNodeKind anchor) =>
+                                // Keep in sync with ChooseBetterAnchor
+                                anchor is RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.End or RegexNodeKind.EndZ;
                         }
 
                     case RegexNodeKind.Alternate:

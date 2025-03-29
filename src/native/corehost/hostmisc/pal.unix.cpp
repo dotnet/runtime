@@ -269,7 +269,7 @@ bool pal::get_default_breadcrumb_store(string_t* recv)
 {
     recv->clear();
     pal::string_t ext;
-    if (pal::getenv(_X("CORE_BREADCRUMBS"), &ext) && pal::realpath(&ext))
+    if (pal::getenv(_X("CORE_BREADCRUMBS"), &ext) && pal::fullpath(&ext))
     {
         // We should have the path in ext.
         trace::info(_X("Realpath CORE_BREADCRUMBS [%s]"), ext.c_str());
@@ -301,7 +301,7 @@ bool pal::get_default_servicing_directory(string_t* recv)
 {
     recv->clear();
     pal::string_t ext;
-    if (pal::getenv(_X("CORE_SERVICING"), &ext) && pal::realpath(&ext))
+    if (pal::getenv(_X("CORE_SERVICING"), &ext) && pal::fullpath(&ext))
     {
         // We should have the path in ext.
         trace::info(_X("Realpath CORE_SERVICING [%s]"), ext.c_str());
@@ -332,7 +332,7 @@ bool pal::get_default_servicing_directory(string_t* recv)
 
 bool is_read_write_able_directory(pal::string_t& dir)
 {
-    return pal::realpath(&dir) &&
+    return pal::fullpath(&dir) &&
         (access(dir.c_str(), R_OK | W_OK | X_OK) == 0);
 }
 
@@ -456,7 +456,7 @@ bool get_install_location_from_file(const pal::string_t& file_path, bool& file_f
 {
     file_found = true;
     bool install_location_found = false;
-    FILE* install_location_file = pal::file_open(file_path, "r");
+    FILE* install_location_file = pal::file_open(file_path, _X("r"));
     if (install_location_file != nullptr)
     {
         if (!get_line_from_file(install_location_file, install_location))
@@ -591,6 +591,22 @@ bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::str
         append_path(recv, get_arch_name(arch));
     }
 #endif
+#elif defined(TARGET_FREEBSD)
+    int mib[2];
+    char buf[PATH_MAX];
+    size_t len = PATH_MAX;
+
+    mib[0] = CTL_USER;
+    mib[1] = USER_LOCALBASE;
+    if (::sysctl(mib, 2, buf, &len, NULL, 0) == 0)
+    {
+        recv->assign(buf);
+        recv->append(_X("/share/dotnet"));
+    }
+    else
+    {
+        recv->assign(_X("/usr/local/share/dotnet"));
+    }
 #else
     recv->assign(_X("/usr/share/dotnet"));
 #endif
@@ -803,12 +819,10 @@ pal::string_t pal::get_current_os_rid_platform()
     {
         // Read the file to get ID and VERSION_ID data that will be used
         // to construct the RID.
-        std::fstream fsVersionFile;
-
-        fsVersionFile.open(versionFile, std::fstream::in);
+        FILE* fsVersionFile = pal::file_open(versionFile, _X("r"));
 
         // Proceed only if we were able to open the file
-        if (fsVersionFile.good())
+        if (fsVersionFile != nullptr)
         {
             pal::string_t line;
             pal::string_t strID(_X("ID="));
@@ -818,11 +832,8 @@ pal::string_t pal::get_current_os_rid_platform()
 
             bool fFoundID = false, fFoundVersion = false;
 
-            // Read the first line
-            std::getline(fsVersionFile, line);
-
             // Loop until we are at the end of file
-            while (!fsVersionFile.eof())
+            while (get_line_from_file(fsVersionFile, line))
             {
                 // Look for ID if we have not found it already
                 if (!fFoundID)
@@ -856,13 +867,10 @@ pal::string_t pal::get_current_os_rid_platform()
                     // We have everything we need to form the RID - break out of the loop.
                     break;
                 }
-
-                // Read the next line
-                std::getline(fsVersionFile, line);
             }
 
             // Close the file now that we are done with it.
-            fsVersionFile.close();
+            fclose(fsVersionFile);
 
             if (fFoundID)
             {
@@ -942,6 +950,11 @@ bool pal::getenv(const pal::char_t* name, pal::string_t* recv)
     }
 
     return (recv->length() > 0);
+}
+
+bool pal::fullpath(pal::string_t* path, bool skip_error_logging)
+{
+    return realpath(path, skip_error_logging);
 }
 
 bool pal::realpath(pal::string_t* path, bool skip_error_logging)
@@ -1103,16 +1116,5 @@ bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const st
 #else
     // On Linux, paths are case-sensitive
     return path1 == path2;
-#endif
-}
-
-#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
-extern void initialize_static_createdump();
-#endif
-
-void pal::initialize_createdump()
-{
-#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
-    initialize_static_createdump();
 #endif
 }

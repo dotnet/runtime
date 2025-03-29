@@ -117,7 +117,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
                 TestState.AdditionalReferences.Add(TestUtils.GetAncillaryReference());
 
-                SolutionTransforms.Add(CSharpVerifierHelper.GetAllDiagonsticsEnabledTransform(GetDiagnosticAnalyzers()));
+                SolutionTransforms.Add(CSharpVerifierHelper.GetAllDiagnosticsEnabledTransform(GetDiagnosticAnalyzers()));
             }
 
             protected override CompilationWithAnalyzers CreateCompilationWithAnalyzers(Compilation compilation, ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerOptions options, CancellationToken cancellationToken)

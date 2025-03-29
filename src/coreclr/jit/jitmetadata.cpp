@@ -47,6 +47,20 @@ void JitMetrics::report(Compiler* comp)
 }
 
 //------------------------------------------------------------------------
+// JitMetrics::mergeToRoot: Merge inlinee compiler metrics to root compiler instance
+//
+// Parameters:
+//   inlineeComp - inlinee compiler instance
+//
+void JitMetrics::mergeToRoot(Compiler* inlineeComp)
+{
+    Compiler* const root = inlineeComp->impInlineRoot();
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) root->Metrics.name += inlineeComp->Metrics.name;
+#include "jitmetadatalist.h"
+}
+
+//------------------------------------------------------------------------
 // printMetric: Print a double metric value to jitstdout.
 //
 // Parameters:

@@ -44,6 +44,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/utils/mono-math.h>
@@ -352,8 +353,8 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return OP_STORER8_MEMBASE_REG;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
@@ -364,7 +365,7 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_STOREX_MEMBASE;
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
@@ -419,6 +420,7 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_VALUETYPE:
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_LOADX_MEMBASE;
+		return OP_LOADV_MEMBASE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_LOADV_MEMBASE;
 	case MONO_TYPE_GENERICINST:
@@ -602,7 +604,7 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	mono_bblock_insert_before_ins (bb, ins, temp);
 
 	if (opcode2 == -1)
-		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+		g_error ("mono_op_imm_to_op failed for " M_PRI_INST "\n", mono_inst_name (ins->opcode));
 	ins->opcode = GINT_TO_OPCODE (opcode2);
 
 	if (ins->opcode == OP_LOCALLOC)
@@ -1056,6 +1058,8 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 		if (cfg->disable_reuse_stack_slots)
 			reuse_slot = FALSE;
 
+		MonoClass *class_of_t = NULL;
+
 		t = mini_get_underlying_type (t);
 		switch (t->type) {
 		case MONO_TYPE_GENERICINST:
@@ -1068,8 +1072,9 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 			if (!vtype_stack_slots)
 				vtype_stack_slots = (StackSlotInfo *)mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * vtype_stack_slots_size);
 			int i;
+			class_of_t = mono_class_from_mono_type_internal (t);
 			for (i = 0; i < nvtypes; ++i)
-				if (t->data.klass == vtype_stack_slots [i].vtype)
+				if (class_of_t == vtype_stack_slots [i].vtype)
 					break;
 			if (i < nvtypes)
 				slot_info = &vtype_stack_slots [i];
@@ -1083,7 +1088,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 					vtype_stack_slots = new_slots;
 					vtype_stack_slots_size = new_slots_size;
 				}
-				vtype_stack_slots [nvtypes].vtype = t->data.klass;
+				vtype_stack_slots [nvtypes].vtype = class_of_t;
 				slot_info = &vtype_stack_slots [nvtypes];
 				nvtypes ++;
 			}
@@ -1367,6 +1372,8 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 		if (cfg->disable_reuse_stack_slots)
 			reuse_slot = FALSE;
 
+		MonoClass *class_of_t = NULL;
+
 		t = mini_get_underlying_type (t);
 		switch (t->type) {
 		case MONO_TYPE_GENERICINST:
@@ -1379,8 +1386,9 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			if (!vtype_stack_slots)
 				vtype_stack_slots = (StackSlotInfo *)mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * vtype_stack_slots_size);
 			int i;
+			class_of_t = mono_class_from_mono_type_internal (t);
 			for (i = 0; i < nvtypes; ++i)
-				if (t->data.klass == vtype_stack_slots [i].vtype)
+				if (class_of_t == vtype_stack_slots [i].vtype)
 					break;
 			if (i < nvtypes)
 				slot_info = &vtype_stack_slots [i];
@@ -1394,7 +1402,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 					vtype_stack_slots = new_slots;
 					vtype_stack_slots_size = new_slots_size;
 				}
-				vtype_stack_slots [nvtypes].vtype = t->data.klass;
+				vtype_stack_slots [nvtypes].vtype = class_of_t;
 				slot_info = &vtype_stack_slots [nvtypes];
 				nvtypes ++;
 			}
@@ -2745,6 +2753,47 @@ insert_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 	}
 }
 
+static bool
+skip_insert_safepoint (MonoCompile *cfg)
+{
+	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
+		/* These wrappers are called from the wrapper for the polling function, leading to potential stack overflow */
+		if (info && info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER &&
+				(info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_state_poll ||
+				 info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_thread_interruption_checkpoint ||
+				 info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_exit_gc_safe_region_unbalanced)) {
+			if (cfg->verbose_level > 1)
+				printf ("SKIPPING SAFEPOINTS for the polling function icall\n");
+			return TRUE;
+		}
+	}
+
+	if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		if (cfg->verbose_level > 1)
+			printf ("SKIPPING SAFEPOINTS for native-to-managed wrappers.\n");
+		return TRUE;
+	}
+
+	if (cfg->method->wrapper_type == MONO_WRAPPER_OTHER) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
+
+		if (info && (info->subtype == WRAPPER_SUBTYPE_INTERP_IN || info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)) {
+			/* These wrappers shouldn't do any icalls */
+			if (cfg->verbose_level > 1)
+				printf ("SKIPPING SAFEPOINTS for interp-in wrappers.\n");
+			return TRUE;
+		}
+	}
+
+	if (cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
+		if (cfg->verbose_level > 1)
+			printf ("SKIPPING SAFEPOINTS for write barrier wrappers.\n");
+		return TRUE;
+	}
+	return FALSE;
+}
+
 /*
 This code inserts safepoints into managed code at important code paths.
 Those are:
@@ -2770,39 +2819,7 @@ insert_safepoints (MonoCompile *cfg)
 		}
 	}
 
-	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
-		/* These wrappers are called from the wrapper for the polling function, leading to potential stack overflow */
-		if (info && info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER &&
-				(info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_state_poll ||
-				 info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_thread_interruption_checkpoint ||
-				 info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_exit_gc_safe_region_unbalanced)) {
-			if (cfg->verbose_level > 1)
-				printf ("SKIPPING SAFEPOINTS for the polling function icall\n");
-			return;
-		}
-	}
-
-	if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-		if (cfg->verbose_level > 1)
-			printf ("SKIPPING SAFEPOINTS for native-to-managed wrappers.\n");
-		return;
-	}
-
-	if (cfg->method->wrapper_type == MONO_WRAPPER_OTHER) {
-		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
-
-		if (info && (info->subtype == WRAPPER_SUBTYPE_INTERP_IN || info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)) {
-			/* These wrappers shouldn't do any icalls */
-			if (cfg->verbose_level > 1)
-				printf ("SKIPPING SAFEPOINTS for interp-in wrappers.\n");
-			return;
-		}
-	}
-
-	if (cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
-		if (cfg->verbose_level > 1)
-			printf ("SKIPPING SAFEPOINTS for write barrier wrappers.\n");
+	if (skip_insert_safepoint (cfg)) {
 		return;
 	}
 
@@ -2832,6 +2849,62 @@ insert_safepoints (MonoCompile *cfg)
 
 }
 
+static void
+insert_samplepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
+{
+	if (cfg->verbose_level > 1)
+		printf ("ADDING SAMPLE POINT TO BB%d\n", bblock->block_num);
+
+	// store the previous instruction list and make the bb empty
+	MonoInst *begin = bblock->code;
+	MonoInst *end = bblock->last_ins;
+	bblock->code = bblock->last_ins = NULL;
+
+	// insert the samplepoint at the start of the bb
+	MonoBasicBlock *prev_cbb = cfg->cbb;
+	cfg->cbb = bblock;
+	mini_profiler_emit_samplepoint (cfg);
+	cfg->cbb = prev_cbb;
+	
+	// append the previous instruction list to the end of the bb
+	if (begin) {
+		if(bblock->code) {
+			begin->prev = bblock->last_ins;
+			bblock->last_ins->next = begin;
+			bblock->last_ins = end;
+		} else {
+			bblock->code = begin;
+			bblock->last_ins = end;
+		}
+	}
+}
+
+static void
+insert_samplepoints (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+
+	if (skip_insert_safepoint (cfg)) {
+		return;
+	}
+
+	if (cfg->verbose_level > 1)
+		printf ("INSERTING SAMPLEPOINTS\n");
+	if (cfg->verbose_level > 2)
+		mono_print_code (cfg, "BEFORE SAMPLEPOINTS");
+
+	for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
+		if (bb->loop_body_start || (bb->flags & BB_EXCEPTION_HANDLER)) {
+			insert_samplepoint (cfg, bb);
+		}
+	}
+
+	// we don't need samplepoint event on method entry, there is already a method entry event
+
+	if (cfg->verbose_level > 2)
+		mono_print_code (cfg, "AFTER SAMPLEPOINTS");
+
+}
 
 static void
 mono_insert_branches_between_bblocks (MonoCompile *cfg)
@@ -3037,6 +3110,9 @@ is_simd_supported (MonoCompile *cfg)
 {
 #ifdef DISABLE_SIMD
     return FALSE;
+#endif
+#ifndef MONO_ARCH_SIMD_INTRINSICS
+	return FALSE;
 #endif
 	// FIXME: Clean this up
 #ifdef TARGET_WASM
@@ -3326,8 +3402,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 				MonoExceptionClause *clause1 = &cfg->header->clauses [i];
 				MonoExceptionClause *clause2 = &cfg->header->clauses [j];
 
-				if (i != j && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
-					if (clause1->flags == MONO_EXCEPTION_CLAUSE_NONE && clause2->flags != MONO_EXCEPTION_CLAUSE_NONE) {
+				if (clause1->flags == MONO_EXCEPTION_CLAUSE_NONE && clause2->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+					if (clause1->try_offset >= clause2->handler_offset && clause1->try_offset <= (clause2->handler_offset + clause2->handler_len)) {
 						can_deopt = FALSE;
 						break;
 					}
@@ -3380,7 +3456,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (trace)
 		cfg->prof_flags = (MonoProfilerCallInstrumentationFlags)(
 			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER | MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT |
-			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE | MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT);
+			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE | MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT | 
+			MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT | MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT);
 
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
 	if (mini_debug_options.mdb_optimizations || MONO_CFG_PROFILE_CALL_CONTEXT (cfg)) {
@@ -3671,6 +3748,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (mono_threads_are_safepoints_enabled ()) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_insert_safepoints, insert_safepoints (cfg));
 		mono_cfg_dump_ir (cfg, "insert_safepoints");
+	}
+
+	if (MONO_CFG_PROFILE (cfg, SAMPLEPOINT) || MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT)) {
+		MONO_TIME_TRACK (mono_jit_stats.jit_insert_samplepoints, insert_samplepoints (cfg));
+		mono_cfg_dump_ir (cfg, "insert_samplepoints");
 	}
 
 	/* after method_to_ir */
@@ -4319,6 +4401,7 @@ mini_handle_call_res_devirt (MonoMethod *cmethod)
 
 		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
 		mono_error_assert_ok (error);
+		g_assert (inst);
 
 		// EqualityComparer<T>.Default returns specific types depending on T
 		// FIXME: Special case more types: byte, string, nullable, enum ?
@@ -4367,6 +4450,7 @@ mini_jit_init (void)
 	mono_counters_register ("JIT/compile_dominator_info", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_compile_dominator_info);
 	mono_counters_register ("JIT/compute_natural_loops", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_compute_natural_loops);
 	mono_counters_register ("JIT/insert_safepoints", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_insert_safepoints);
+	mono_counters_register ("JIT/insert_samplepoints", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_insert_samplepoints);
 	mono_counters_register ("JIT/ssa_compute", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_compute);
 	mono_counters_register ("JIT/ssa_cprop", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_cprop);
 	mono_counters_register ("JIT/ssa_deadce", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_deadce);
@@ -4609,3 +4693,61 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 	}
 }
 
+MonoMethod*
+mini_inflate_unsafe_accessor_wrapper (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
+{
+	MonoMethod *generic_wrapper = mono_marshal_get_unsafe_accessor_wrapper (extern_decl, accessor_kind, member_name);
+	MonoMethod *inflated_wrapper = mono_class_inflate_generic_method_checked (generic_wrapper, ctx, error);
+	return inflated_wrapper;
+}
+
+
+static MonoMethod*
+inflate_unsafe_accessor_like_decl (MonoMethod *extern_method_inst, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
+{
+	g_assert (extern_method_inst->is_inflated);
+	MonoMethodInflated *infl = (MonoMethodInflated*)extern_method_inst;
+	MonoMethod *extern_decl = infl->declaring;
+	MonoGenericContext *ctx = &infl->context;
+	return mini_inflate_unsafe_accessor_wrapper (extern_decl, ctx, accessor_kind, member_name, error);
+}
+
+/**
+ * Replaces some extern \c method by a wrapper.
+ *
+ * Unsafe accessor methods are static extern methods with no header.  Calls to
+ * them are replaced by calls to a wrapper.  So during AOT compilation when we
+ * collect methods to AOT, we replace these methods by the wrappers, too.
+ *
+ * Returns the wrapper method, or \c NULL if it doesn't need to be replaced.
+ * On error returns NULL and sets \c error.
+ */
+MonoMethod*
+mini_replace_generated_method (MonoMethod *method, MonoError *error)
+{
+	if (G_LIKELY (mono_method_metadata_has_header (method)))
+		return NULL;
+
+	/* Unsafe accessors methods.  Replace attempts to compile the accessor method by
+	 * its wrapper.
+	 */
+	char *member_name = NULL;
+	int accessor_kind = -1;
+	if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+		MonoMethod *wrapper = NULL;
+		if (method->is_inflated) {
+			wrapper = inflate_unsafe_accessor_like_decl (method, (MonoUnsafeAccessorKind)accessor_kind, member_name, error);
+		} else {
+			wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+		}
+		if (is_ok (error)) {
+			if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_AOT)) {
+				char * method_name = mono_method_get_full_name (wrapper);
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Replacing generated method by %s", method_name);
+				g_free (method_name);
+			}
+			return wrapper;
+		}
+	}
+	return NULL;
+}

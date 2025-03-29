@@ -2,8 +2,6 @@
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmProfilers>aot;</WasmProfilers>
-    <WasmBuildNative>true</WasmBuildNative>
-    <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
 
   <ItemGroup>

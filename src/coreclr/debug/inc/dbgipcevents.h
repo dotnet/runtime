@@ -10,7 +10,7 @@
 #ifndef _DbgIPCEvents_h_
 #define _DbgIPCEvents_h_
 
-#include <new.hpp>
+#include <new>
 #include <cor.h>
 #include <cordebug.h>
 #include <corjit.h> // for ICorDebugInfo::VarLocType & VarLoc
@@ -24,6 +24,8 @@
 #include "dbgappdomain.h"
 
 #include "./common.h"
+
+using std::nothrow;
 
 //-----------------------------------------------------------------------------
 // V3 additions to IPC protocol between LS and RS.
@@ -768,7 +770,7 @@ public:
     //
     // Operators to emulate Pointer semantics.
     //
-    bool IsNull() { SUPPORTS_DAC; return m_addr == NULL; }
+    bool IsNull() { SUPPORTS_DAC; return m_addr == (TADDR)0; }
 
     static VMPTR_This NullPtr()
     {
@@ -780,7 +782,7 @@ public:
 #endif // _PREFAST_
 
         VMPTR_This dummy;
-        dummy.m_addr = NULL;
+        dummy.m_addr = (TADDR)NULL;
         return dummy;
 
 #ifdef _PREFAST_
@@ -1936,6 +1938,9 @@ C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
 C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif
+#elif defined(TARGET_WASM)
+#define DBG_TARGET_REGNUM_SP 0
+#define DBG_TARGET_REGNUM_AMBIENT_SP 0
 #else
 #error Target registers are not defined for this platform
 #endif
@@ -2053,6 +2058,19 @@ struct MSLAYOUT DebuggerIPCEvent
             mdMethodDef funcMetadataToken;
             VMPTR_Module pModule;
         } DisableOptData;
+
+        struct MSLAYOUT
+        {
+            BOOL enableEvents;
+            VMPTR_Object vmObj;
+        } ForceCatchHandlerFoundData;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Module vmModule;
+            mdTypeDef    classMetadataToken;
+            BOOL Enabled;
+        } CustomNotificationData;
 
         struct MSLAYOUT
         {

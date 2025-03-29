@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer;
 using ILLink.Shared.DataFlow;
@@ -11,16 +12,17 @@ namespace ILLink.Shared.TrimAnalysis
 {
 	internal partial record MethodReturnValue
 	{
-		public MethodReturnValue (IMethodSymbol methodSymbol)
-			: this (methodSymbol, FlowAnnotations.GetMethodReturnValueAnnotation (methodSymbol))
+		public MethodReturnValue (IMethodSymbol methodSymbol, bool isNewObj)
+			: this (methodSymbol, isNewObj, FlowAnnotations.GetMethodReturnValueAnnotation (methodSymbol))
 		{
 		}
 
-		public MethodReturnValue (IMethodSymbol methodSymbol, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public MethodReturnValue (IMethodSymbol methodSymbol, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
+			Debug.Assert (!isNewObj || methodSymbol.MethodKind == MethodKind.Constructor, "isNewObj can only be true for constructors");
 			MethodSymbol = methodSymbol;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-			StaticType = new (methodSymbol.ReturnType);
+			StaticType = new (isNewObj ? methodSymbol.ContainingType : methodSymbol.ReturnType);
 		}
 
 		public readonly IMethodSymbol MethodSymbol;

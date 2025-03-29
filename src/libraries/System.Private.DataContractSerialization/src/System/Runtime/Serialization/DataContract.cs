@@ -1516,8 +1516,8 @@ namespace System.Runtime.Serialization.DataContracts
         {
             string? clrNs = type.Namespace ?? string.Empty;
             string? ns =
-                GetGlobalDataContractNamespace(clrNs, type.Module.GetCustomAttributes(typeof(ContractNamespaceAttribute)).ToArray()) ??
-                GetGlobalDataContractNamespace(clrNs, type.Assembly.GetCustomAttributes(typeof(ContractNamespaceAttribute)).ToArray());
+                GetGlobalDataContractNamespace(clrNs, type.Module.GetCustomAttributes<ContractNamespaceAttribute>().ToArray()) ??
+                GetGlobalDataContractNamespace(clrNs, type.Assembly.GetCustomAttributes<ContractNamespaceAttribute>().ToArray());
 
             if (ns == null)
             {
@@ -2228,13 +2228,13 @@ namespace System.Runtime.Serialization.DataContracts
         /// </SecurityNote>
         internal static bool IsAssemblyFriendOfSerialization(Assembly assembly)
         {
-            InternalsVisibleToAttribute[] internalsVisibleAttributes = (InternalsVisibleToAttribute[])assembly.GetCustomAttributes(typeof(InternalsVisibleToAttribute));
+            InternalsVisibleToAttribute[] internalsVisibleAttributes = (InternalsVisibleToAttribute[])assembly.GetCustomAttributes<InternalsVisibleToAttribute>();
             foreach (InternalsVisibleToAttribute internalsVisibleAttribute in internalsVisibleAttributes)
             {
                 string internalsVisibleAttributeAssemblyName = internalsVisibleAttribute.AssemblyName;
 
                 if (internalsVisibleAttributeAssemblyName.Trim().Equals("System.Runtime.Serialization") ||
-                    Globals.FullSRSInternalsVisibleRegex().IsMatch(internalsVisibleAttributeAssemblyName))
+                    Globals.FullSRSInternalsVisibleRegex.IsMatch(internalsVisibleAttributeAssemblyName))
                 {
                     return true;
                 }

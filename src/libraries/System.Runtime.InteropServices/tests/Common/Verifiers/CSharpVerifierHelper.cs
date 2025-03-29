@@ -7,8 +7,6 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.Interop.UnitTests.Verifiers
 {
@@ -30,7 +28,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
             return commandLineArguments.CompilationOptions.SpecificDiagnosticOptions;
         }
 
-        internal static Func<Solution, ProjectId, Solution> GetAllDiagonsticsEnabledTransform(IEnumerable<DiagnosticAnalyzer> analyzers)
+        internal static Func<Solution, ProjectId, Solution> GetAllDiagnosticsEnabledTransform(IEnumerable<DiagnosticAnalyzer> analyzers)
         {
             return (solution, projectId) =>
             {
@@ -69,47 +67,6 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                         .AddRange(TestUtils.BindingRedirectWarnings));
                 solution = solution.WithProjectCompilationOptions(projectId, compilationOptions);
                 return solution;
-            };
-        }
-
-        internal static Func<Solution, ProjectId, Solution> GetTargetFrameworkAnalyzerOptionsProviderTransform(TestTargetFramework targetFramework)
-        {
-            return (solution, projectId) =>
-            {
-                var project = solution.GetProject(projectId)!;
-                string tfmEditorConfig = targetFramework switch
-                {
-                    TestTargetFramework.Framework => """
-                        is_global = true
-                        build_property.TargetFrameworkIdentifier = .NETFramework
-                        build_property.TargetFrameworkVersion = v4.8
-                        """,
-                    TestTargetFramework.Standard => """
-                        is_global = true
-                        build_property.TargetFrameworkIdentifier = .NETStandard
-                        build_property.TargetFrameworkVersion = v2.0
-                        """,
-                    TestTargetFramework.Core => """
-                        is_global = true
-                        build_property.TargetFrameworkIdentifier = .NETCoreApp
-                        build_property.TargetFrameworkVersion = v3.1
-                        """,
-                    TestTargetFramework.Net6 => """
-                        is_global = true
-                        build_property.TargetFrameworkIdentifier = .NETCoreApp
-                        build_property.TargetFrameworkVersion = v6.0
-                        """,
-                    // Replicate the product case where we don't have these properties
-                    // since we don't have a good mechanism to ship MSBuild files from dotnet/runtime
-                    // in the SDK.
-                    TestTargetFramework.Net => string.Empty,
-                    _ => throw new System.Diagnostics.UnreachableException()
-                };
-                return solution.AddAnalyzerConfigDocument(
-                    DocumentId.CreateNewId(projectId),
-                    "TargetFrameworkConfig.editorconfig",
-                    SourceText.From(tfmEditorConfig, encoding: System.Text.Encoding.UTF8),
-                    filePath: "/TargetFrameworkConfig.editorconfig");
             };
         }
     }

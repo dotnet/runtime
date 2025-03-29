@@ -85,7 +85,7 @@ namespace System
         internal const ulong BiasedExponentMask = 0x7FF0_0000_0000_0000;
         internal const int BiasedExponentShift = 52;
         internal const int BiasedExponentLength = 11;
-        internal const ushort ShiftedExponentMask = (ushort)(BiasedExponentMask >> BiasedExponentShift);
+        internal const ushort ShiftedBiasedExponentMask = (ushort)(BiasedExponentMask >> BiasedExponentShift);
 
         internal const ulong TrailingSignificandMask = 0x000F_FFFF_FFFF_FFFF;
 
@@ -154,7 +154,7 @@ namespace System
 
         internal static ushort ExtractBiasedExponentFromBits(ulong bits)
         {
-            return (ushort)((bits >> BiasedExponentShift) & ShiftedExponentMask);
+            return (ushort)((bits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
         }
 
         internal static ulong ExtractTrailingSignificandFromBits(ulong bits)
@@ -177,8 +177,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInfinity(double d)
         {
-            ulong bits = BitConverter.DoubleToUInt64Bits(d);
-            return (bits & ~SignMask) == PositiveInfinityBits;
+            ulong bits = BitConverter.DoubleToUInt64Bits(Abs(d));
+            return bits == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is NaN.</summary>
@@ -224,8 +224,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNormal(double d)
         {
-            ulong bits = BitConverter.DoubleToUInt64Bits(d);
-            return ((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
+            ulong bits = BitConverter.DoubleToUInt64Bits(Abs(d));
+            return (bits - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
@@ -242,8 +242,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsSubnormal(double d)
         {
-            ulong bits = BitConverter.DoubleToUInt64Bits(d);
-            return ((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+            ulong bits = BitConverter.DoubleToUInt64Bits(Abs(d));
+            return (bits - 1) < MaxTrailingSignificand;
         }
 
         [NonVersionable]
@@ -354,33 +354,33 @@ namespace System
 
         public override string ToString()
         {
-            return Number.FormatDouble(m_value, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
-            return Number.FormatDouble(m_value, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatDouble(m_value, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return Number.FormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+            return Number.TryFormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
+            return Number.TryFormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
 
         public static double Parse(string s) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null);
@@ -655,6 +655,25 @@ namespace System
         [Intrinsic]
         public static double Ceiling(double x) => Math.Ceiling(x);
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        [Intrinsic]
+        public static TInteger ConvertToInteger<TInteger>(double value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        [Intrinsic]
+        public static TInteger ConvertToIntegerNative<TInteger>(double value)
+            where TInteger : IBinaryInteger<TInteger>
+        {
+            if (typeof(TInteger).IsPrimitive)
+            {
+                // We need this to be recursive so indirect calls (delegates
+                // for example) produce the same result as direct invocation
+                return ConvertToIntegerNative<TInteger>(value);
+            }
+            return TInteger.CreateSaturating(value);
+        }
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         [Intrinsic]
         public static double Floor(double x) => Math.Floor(x);
@@ -703,97 +722,53 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(short))
+            if (BinaryPrimitives.TryWriteInt16BigEndian(destination, Exponent))
             {
-                short exponent = Exponent;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
                 bytesWritten = sizeof(short);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(short))
+            if (BinaryPrimitives.TryWriteInt16LittleEndian(destination, Exponent))
             {
-                short exponent = Exponent;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
                 bytesWritten = sizeof(short);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ulong))
+            if (BinaryPrimitives.TryWriteUInt64BigEndian(destination, Significand))
             {
-                ulong significand = Significand;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(ulong);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ulong))
+            if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination, Significand))
             {
-                ulong significand = Significand;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(ulong);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //
@@ -852,12 +827,14 @@ namespace System
         public static int ILogB(double x) => Math.ILogB(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
-        public static double Lerp(double value1, double value2, double amount) => (value1 * (1.0 - amount)) + (value2 * amount);
+        public static double Lerp(double value1, double value2, double amount) => MultiplyAddEstimate(value1, 1.0 - amount, value2 * amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        [Intrinsic]
         public static double ReciprocalEstimate(double x) => Math.ReciprocalEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        [Intrinsic]
         public static double ReciprocalSqrtEstimate(double x) => Math.ReciprocalSqrtEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
@@ -961,7 +938,24 @@ namespace System
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        public static double Clamp(double value, double min, double max) => Math.Clamp(value, min, max);
+        public static double Clamp(double value, double min, double max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return Min(Max(value, min), max);
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
+        public static double ClampNative(double value, double min, double max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return MinNative(MaxNative(value, min), max);
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static double CopySign(double value, double sign) => Math.CopySign(value, sign);
@@ -969,6 +963,10 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         [Intrinsic]
         public static double Max(double x, double y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
+        [Intrinsic]
+        public static double MaxNative(double x, double y) => (x > y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -996,6 +994,10 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         [Intrinsic]
         public static double Min(double x, double y) => Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
+        [Intrinsic]
+        public static double MinNative(double x, double y) => (x < y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1192,6 +1194,17 @@ namespace System
             return y;
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        public static double MultiplyAddEstimate(double left, double right, double addend)
+        {
+#if MONO
+            return (left * right) + addend;
+#else
+            return MultiplyAddEstimate(left, right, addend);
+#endif
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<double>.TryConvertFromChecked<TOther>(TOther value, out double result)
@@ -1213,6 +1226,7 @@ namespace System
             return TryConvertFrom(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFrom<TOther>(TOther value, out double result)
             where TOther : INumberBase<TOther>
         {
@@ -1362,6 +1376,7 @@ namespace System
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(double value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
@@ -1498,8 +1513,8 @@ namespace System
                     ulong xBits = BitConverter.DoubleToUInt64Bits(ax);
                     ulong yBits = BitConverter.DoubleToUInt64Bits(ay);
 
-                    uint xExp = (uint)((xBits >> BiasedExponentShift) & ShiftedExponentMask);
-                    uint yExp = (uint)((yBits >> BiasedExponentShift) & ShiftedExponentMask);
+                    uint xExp = (uint)((xBits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
+                    uint yExp = (uint)((yBits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
 
                     int expDiff = (int)(xExp - yExp);
                     double expFix = 1.0;
@@ -2299,6 +2314,10 @@ namespace System
         static double IBinaryFloatParseAndFormatInfo<double>.BitsToFloat(ulong bits) => BitConverter.UInt64BitsToDouble(bits);
 
         static ulong IBinaryFloatParseAndFormatInfo<double>.FloatToBits(double value) => BitConverter.DoubleToUInt64Bits(value);
+
+        static int IBinaryFloatParseAndFormatInfo<double>.MaxRoundTripDigits => 17;
+
+        static int IBinaryFloatParseAndFormatInfo<double>.MaxPrecisionCustomFormat => 15;
 
         //
         // Helpers

@@ -126,7 +126,7 @@ namespace System.Security.Cryptography
                     byte[]? rent = null;
 
                     // RSA up through 4096 stackalloc
-                    if (keySizeBytes <= 512)
+                    if ((uint)keySizeBytes <= 512)
                     {
                         tmp = stackalloc byte[keySizeBytes];
                     }
@@ -434,7 +434,11 @@ namespace System.Security.Cryptography
                         AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                         spki.Encode(writer);
 
-                        SafeRsaHandle key = Interop.AndroidCrypto.DecodeRsaSubjectPublicKeyInfo(writer.Encode());
+                        SafeRsaHandle key = writer.Encode(static (encoded) =>
+                        {
+                            return Interop.AndroidCrypto.DecodeRsaSubjectPublicKeyInfo(encoded);
+                        });
+
                         if (key is null || key.IsInvalid)
                         {
                             key?.Dispose();

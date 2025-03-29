@@ -54,7 +54,7 @@ namespace System.Data.OleDb
             throw new NotImplementedException();
         }
 
-        // Doc and type layout: https://docs.microsoft.com/windows/win32/api/oaidl/nn-oaidl-ierrorinfo
+        // Doc and type layout: https://learn.microsoft.com/windows/win32/api/oaidl/nn-oaidl-ierrorinfo
         private sealed class ErrorInfoWrapper : UnsafeNativeMethods.IErrorInfo, IDisposable
         {
             private readonly IntPtr _wrappedInstance;

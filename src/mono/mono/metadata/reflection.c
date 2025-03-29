@@ -392,7 +392,7 @@ mono_type_normalize (MonoType *type)
 	if (type->type != MONO_TYPE_GENERICINST)
 		return type;
 
-	gclass = type->data.generic_class;
+	gclass = m_type_data_get_generic_class_unchecked (type);
 	ginst = gclass->context.class_inst;
 	if (!ginst->is_open)
 		return type;
@@ -403,7 +403,7 @@ mono_type_normalize (MonoType *type)
 
 	for (guint i = 0; i < ginst->type_argc; ++i) {
 		MonoType *t = ginst->type_argv [i], *norm;
-		if (t->type != MONO_TYPE_VAR || t->data.generic_param->num != i || t->data.generic_param->owner != gcontainer)
+		if (t->type != MONO_TYPE_VAR || m_type_data_get_generic_param_unchecked (t)->num != i || m_type_data_get_generic_param_unchecked (t)->owner != gcontainer)
 			is_denorm_gtd = FALSE;
 		norm = mono_type_normalize (t);
 		argv [i] = norm;
@@ -438,6 +438,48 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
 	return ret;
+}
+
+/* LOCKING: assumes the loader lock is taken */
+static MonoReflectionType*
+mono_type_get_object_checked_alloc_helper (MonoType *type, MonoMemoryManager *memory_manager, MonoDomain *domain, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoReflectionType *res, *cached;
+	/* This is stored in vtables/JITted code so it has to be pinned */
+	MonoReflectionTypeHandle res_handle = MONO_HANDLE_CAST (MonoReflectionType, mono_object_new_pinned_handle (mono_defaults.runtimetype_class, error));
+	goto_if_nok (error, exit);
+
+	res = MONO_HANDLE_RAW (res_handle);
+
+	res->type = type;
+	if (memory_manager->collectible) {
+		MonoObject *loader_alloc = mono_gchandle_get_target_internal (mono_mem_manager_get_loader_alloc (memory_manager));
+		g_assert (loader_alloc);
+		MONO_OBJECT_SETREF_INTERNAL (res, m_keepalive, loader_alloc);
+	}
+
+	mono_mem_manager_lock (memory_manager);
+	if (memory_manager->collectible)
+		cached = (MonoReflectionType *)mono_weak_hash_table_lookup (memory_manager->weak_type_hash, type);
+	else
+		cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+	if (cached) {
+		res = cached;
+		MONO_HANDLE_ASSIGN_RAW (res_handle, res);
+	} else {
+		if (memory_manager->collectible)
+			mono_weak_hash_table_insert (memory_manager->weak_type_hash, type, res);
+		else
+			mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+		if (type->type == MONO_TYPE_VOID && !m_type_is_byref (type))
+			domain->typeof_void = (MonoObject*)res;
+	}
+	mono_mem_manager_unlock (memory_manager);
+
+exit:
+	HANDLE_FUNCTION_RETURN_OBJ (res_handle);
 }
 
 MonoReflectionType*
@@ -528,7 +570,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		goto leave;
 	}
 
-	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !m_class_was_typebuilder (type->data.generic_class->container_class)) {
+	if ((type->type == MONO_TYPE_GENERICINST) && m_type_data_get_generic_class_unchecked (type)->is_dynamic && !m_class_was_typebuilder (m_type_data_get_generic_class_unchecked (type)->container_class)) {
 		/* This can happen if a TypeBuilder for a generic class K<T,U>
 		 * had reflection_create_generic_class) called on it, but not
 		 * ves_icall_TypeBuilder_create_runtime_class.  This can happen
@@ -554,33 +596,9 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		res = &mono_class_get_ref_info_raw (klass)->type; /* FIXME use handles */
 		goto leave;
 	}
-	/* This is stored in vtables/JITted code so it has to be pinned */
-	res = (MonoReflectionType *)mono_object_new_pinned (mono_defaults.runtimetype_class, error);
-	goto_if_nok (error, leave);
 
-	res->type = type;
-	if (memory_manager->collectible) {
-		MonoObject *loader_alloc = mono_gchandle_get_target_internal (mono_mem_manager_get_loader_alloc (memory_manager));
-		g_assert (loader_alloc);
-		MONO_OBJECT_SETREF_INTERNAL (res, m_keepalive, loader_alloc);
-	}
 
-	mono_mem_manager_lock (memory_manager);
-	if (memory_manager->collectible)
-		cached = (MonoReflectionType *)mono_weak_hash_table_lookup (memory_manager->weak_type_hash, type);
-	else
-		cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
-	if (cached) {
-		res = cached;
-	} else {
-		if (memory_manager->collectible)
-			mono_weak_hash_table_insert (memory_manager->weak_type_hash, type, res);
-		else
-			mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
-		if (type->type == MONO_TYPE_VOID && !m_type_is_byref (type))
-			domain->typeof_void = (MonoObject*)res;
-	}
-	mono_mem_manager_unlock (memory_manager);
+	res = mono_type_get_object_checked_alloc_helper (type, memory_manager, domain, error);
 
 leave:
 	mono_loader_unlock ();
@@ -1012,19 +1030,21 @@ add_parameter_object_to_array (MonoMethod *method, MonoObjectHandle member, int 
 			def_value = get_dbnull (dbnull, error);
 		goto_if_nok (error, leave);
 	} else {
-		MonoType blob_type;
+		MonoType blob_type = { 0 };
 
 		blob_type.type = (MonoTypeEnum)blob_type_enum;
-		blob_type.data.klass = NULL;
 		if (blob_type_enum == MONO_TYPE_CLASS)
-			blob_type.data.klass = mono_defaults.object_class;
-		else if ((sig_param->type == MONO_TYPE_VALUETYPE) && m_class_is_enumtype (sig_param->data.klass)) {
+			m_type_data_set_klass_unchecked (&blob_type, mono_defaults.object_class);
+		else if ((sig_param->type == MONO_TYPE_VALUETYPE) && m_class_is_enumtype (m_type_data_get_klass_unchecked (sig_param))) {
 			/* For enums, types [i] contains the base type */
 
 			blob_type.type = MONO_TYPE_VALUETYPE;
-			blob_type.data.klass = mono_class_from_mono_type_internal (sig_param);
-		} else
-			blob_type.data.klass = mono_class_from_mono_type_internal (&blob_type);
+			m_type_data_set_klass_unchecked (&blob_type, mono_class_from_mono_type_internal (sig_param));
+		} else {
+			// FIXME: Should this be called on sig_param, not &blob_type? The other similar if/elseif/else chain in the codebase doesn't match this.
+			// See icall.c mono_type_from_blob_type
+			m_type_data_set_klass (&blob_type, mono_class_from_mono_type_internal (&blob_type));
+		}
 
 		def_value = mono_get_object_from_blob (&blob_type, blob, MONO_HANDLE_NEW (MonoString, NULL), error);
 		goto_if_nok (error, leave);
@@ -1530,8 +1550,17 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p)
 	}
 	assembly->name = p;
 	s = p;
-	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@' || g_ascii_isspace (*p)))
-		p++;
+	guchar *inptr = (guchar *) p;
+	while (*p && (*p != ',') && (*p != '\0')) {
+		if (quoted && (*p == '"'))
+			break;
+		guint length = g_utf8_jump_table[*inptr];
+		if (!g_utf8_validate_part (inptr, length)) {
+			return 0;
+		}
+		p += length;
+		inptr += length;
+	}
 	if (quoted) {
 		if (*p != '"')
 			return 1;
@@ -1630,7 +1659,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p)
 			found_sep = 1;
 			continue;
 		}
-		/* failed */
+		/* Done processing */
 		if (!found_sep)
 			return 1;
 	}

@@ -11,9 +11,11 @@ namespace Server.Contract
         public const string NumericTesting = "53169A33-E85D-4E3C-B668-24E438D0929B";
         public const string ArrayTesting = "B99ABE6A-DFF6-440F-BFB6-55179B8FE18E";
         public const string StringTesting = "C73C83E8-51A2-47F8-9B5C-4284458E47A6";
+        public const string MiscTypesTesting = "CCFF894B-A27C-45E0-9B30-6C88D722E843";
         public const string ErrorMarshalTesting = "71CF5C45-106C-4B32-B418-43A463C6041F";
         public const string DispatchTesting = "0F8ACD0C-ECE0-4F2A-BD1B-6BFCA93A0726";
         public const string EventTesting = "4DBD9B61-E372-499F-84DE-EFC70AA8A009";
+        public const string DispatchCoerceTesting = "661F9962-3477-416B-BE40-4CBA3190A562";
         public const string AggregationTesting = "4CEFE36D-F377-4B6E-8C34-819A8BB9CB04";
         public const string ColorTesting = "C222F472-DA5A-4FC6-9321-92F4F7053A65";
         public const string LicenseTesting = "66DB7882-E2B0-471D-92C7-B2B52A0EA535";
@@ -21,5 +23,9 @@ namespace Server.Contract
         public const string ConsumeNETServerTesting = "DE4ACF53-5957-4D31-8BE2-EA6C80683246";
         public const string InspectableTesting = "CE137261-6F19-44F5-A449-EF963B3F987E";
         public const string TrackMyLifetimeTesting = "4F54231D-9E11-4C0B-8E0B-2EBD8B0E5811";
+        public const string ClassInterfaceNotSetTesting = "B8314D5A-DE70-435B-AD97-8F88820D1F3C";
+        public const string ClassInterfaceNoneTesting = "ED4D9C70-1C9F-406B-B51F-87DD977AF3B2";
+        public const string ClassInterfaceAutoDispatchTesting = "C1A0AE72-791B-4380-946E-B7BABDEA1701";
+        public const string ClassInterfaceAutoDualTesting = "95696E2C-742F-4639-A9D4-5D36EE021C49";
     }
 }

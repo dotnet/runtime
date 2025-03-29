@@ -34,12 +34,13 @@ struct METHODTOKEN
     RangeSection * m_pRangeSection;
 
     // CodeHeader* for EEJitManager
+    // InterpreterCodeHeader* for InterpreterJitManager
     // PTR_RUNTIME_FUNCTION for managed native code
     TADDR m_pCodeHeader;
 
     BOOL IsNull() const
     {
-        return m_pCodeHeader == NULL;
+        return m_pCodeHeader == 0;
     }
 };
 

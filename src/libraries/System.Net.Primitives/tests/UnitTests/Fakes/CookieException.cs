@@ -7,7 +7,7 @@ namespace System.Net
     public class CookieException : FormatException
     {
         public CookieException() : base() { }
-        internal CookieException(string message) : base(message) { }
-        internal CookieException(string message, Exception inner) : base(message, inner) { }
+        public CookieException(string message) : base(message) { }
+        public CookieException(string message, Exception inner) : base(message, inner) { }
     }
 }

@@ -184,7 +184,7 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineMethodSpec(QCall::ModuleHandle pMod
 
     // Define the Method
     IfFailThrow( pRCW->GetEmitter()->DefineMethodSpec(tkParent,         //ParentTypeDef
-                                                      (PCCOR_SIGNATURE)pSignature, //Blob value of a COM+ signature
+                                                      (PCCOR_SIGNATURE)pSignature, //Blob value of a signature
                                                       sigLength,            //Size of the signature blob
                                                       &memberE) );              //[OUT]methodToken
 
@@ -208,7 +208,7 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineMethod(QCall::ModuleHandle pModule,
     IfFailThrow( pRCW->GetEmitter()->DefineMethod(tkParent,        //ParentTypeDef
                                                   wszName,         //Name of Member
                                                   attributes,               //Member Attributes (public, etc);
-                                                  (PCCOR_SIGNATURE)pSignature,  //Blob value of a COM+ signature
+                                                  (PCCOR_SIGNATURE)pSignature,  //Blob value of a signature
                                                   sigLength,            //Size of the signature blob
                                                   0,                        //Code RVA
                                                   miIL | miManaged,         //Implementation Flags is default to managed IL
@@ -347,7 +347,7 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
 
     unsigned codeSizeAligned     = fatHeader.GetCodeSize();
     if (moreSections)
-        codeSizeAligned = AlignUp(codeSizeAligned, 4); // to insure EH section aligned
+        codeSizeAligned = AlignUp(codeSizeAligned, 4); // to ensure EH section aligned
     unsigned headerSize          = COR_ILMETHOD::Size(&fatHeader, numExceptions != 0);
 
     //Create the exception handlers.
@@ -460,7 +460,7 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
         // add the starting address of the il blob to the il blob hash table
         // we need to find this information from out of process for debugger inspection
         // APIs so we have to store this information where we can get it later
-        pModule->SetDynamicIL(mdToken(tk), TADDR(startBuf), FALSE);
+        pModule->SetDynamicIL(mdToken(tk), TADDR(startBuf));
 
         DWORD       dwImplFlags;
 
@@ -560,7 +560,7 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineProperty(QCall::ModuleHandle pModul
             tkParent,                       // ParentTypeDef
             wszName,                        // Name of Member
             attr,                     // property Attributes (prDefaultProperty, etc);
-            (PCCOR_SIGNATURE)pSignature,    // Blob value of a COM+ signature
+            (PCCOR_SIGNATURE)pSignature,    // Blob value of a signature
             sigLength,                // Size of the signature blob
             ELEMENT_TYPE_VOID,              // don't specify the default value
             0,                              // no default value
@@ -894,9 +894,6 @@ void UpdateRuntimeStateForAssemblyCustomAttribute(Module* pModule, mdToken tkCus
         DomainAssembly* pDomainAssembly = pAssembly->GetDomainAssembly();
 
         DWORD actualFlags;
-        actualFlags =  ((DWORD)pDomainAssembly->GetDebuggerInfoBits() & mask) | flags;
-        pDomainAssembly->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)actualFlags);
-
         actualFlags = ((DWORD)pAssembly->GetDebuggerInfoBits() & mask) | flags;
         pAssembly->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)actualFlags);
 

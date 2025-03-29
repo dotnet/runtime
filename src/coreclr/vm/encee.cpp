@@ -231,7 +231,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                     IfFailGo(E_INVALIDARG);
                 }
 
-                SetDynamicIL(token, (TADDR)(pLocalILMemory + dwMethodRVA), FALSE);
+                SetDynamicIL(token, (TADDR)(pLocalILMemory + dwMethodRVA));
 
                 // use module to resolve to method
                 MethodDesc *pMethod;
@@ -343,8 +343,8 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
             module,
             tkMethod,
             AssemblyIterationFlags(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (it.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (it.Next(pAssembly.This()))
         {
             MethodDesc* pMD = it.Current();
             pMD->ResetCodeEntryPointForEnC();
@@ -535,7 +535,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     LOG((LF_ENC, LL_INFO100, "EnCModule::JitUpdatedFunction for %s::%s\n",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
-    PCODE jittedCode = NULL;
+    PCODE jittedCode = (PCODE)NULL;
 
     GCX_COOP();
 
@@ -551,7 +551,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     // so that gc can crawl the stack and do the right thing.
     _ASSERTE(pOrigContext);
     Thread *pCurThread = GetThread();
-    FrameWithCookie<ResumableFrame> resFrame(pOrigContext);
+    ResumableFrame resFrame(pOrigContext);
     resFrame.Push(pCurThread);
 
     CONTEXT *pCtxTemp = NULL;
@@ -648,7 +648,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 
     // JIT-compile the updated version of the method
     PCODE jittedCode = JitUpdatedFunction(pMD, pOrigContext);
-    if ( jittedCode == NULL )
+    if ( jittedCode == (PCODE)NULL )
         return CORDBG_E_ENC_JIT_CANT_UPDATE;
 
     GCX_COOP();

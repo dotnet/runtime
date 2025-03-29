@@ -356,7 +356,7 @@ inline HRESULT BaseAssemblySpec::Init(mdToken tkAssemblyRef,
                                             NULL,        // [OUT] Count of bytes in the public key or token.
                                             NULL,        // [OUT] Hash Algorithm
                                             NULL,        // [OUT] Buffer to fill with name.
-                                            NULL,        // [IN] Size of buffer in wide chars.
+                                            0,           // [IN] Size of buffer in wide chars.
                                             &cchName,    // [OUT] Actual # of wide chars in name.
                                             &sContext,   // [OUT] Assembly MetaData.
                                             NULL));       // [OUT] Flags.
@@ -380,7 +380,7 @@ inline HRESULT BaseAssemblySpec::Init(mdToken tkAssemblyRef,
                                             NULL,        // [OUT] Pointer to the public key or token.
                                             NULL,        // [OUT] Count of bytes in the public key or token.
                                             NULL,        // [OUT] Buffer to fill with name.
-                                            NULL,        // [IN] Size of buffer in wide chars.
+                                            0,           // [IN] Size of buffer in wide chars.
                                             &cchName,    // [OUT] Actual # of wide chars in name.
                                             &sContext,   // [OUT] Assembly MetaData.
                                             NULL,        // [OUT] Hash blob.

@@ -14,18 +14,21 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _DECOMPOSELONGS_H_
 
 #include "compiler.h"
+#include "lower.h"
 
 class DecomposeLongs
 {
 public:
-    DecomposeLongs(Compiler* compiler) : m_compiler(compiler)
+    DecomposeLongs(Compiler* compiler, Lowering* lowering)
+        : m_compiler(compiler)
+        , m_lowering(lowering)
     {
     }
 
     void PrepareForDecomposition();
     void DecomposeBlock(BasicBlock* block);
 
-    static void DecomposeRange(Compiler* compiler, LIR::Range& range);
+    static void DecomposeRange(Compiler* compiler, Lowering* lowering, LIR::Range& range);
 
 private:
     inline LIR::Range& Range() const
@@ -63,6 +66,8 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* DecomposeHWIntrinsic(LIR::Use& use);
     GenTree* DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHWIntrinsic* node);
+    GenTree* DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIntrinsic* node);
+    GenTree* DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
 
     GenTree* OptimizeCastFromDecomposedLong(GenTreeCast* cast, GenTree* nextNode);
@@ -72,12 +77,13 @@ private:
     GenTree* RepresentOpAsLocalVar(GenTree* op, GenTree* user, GenTree** edge);
     GenTree* EnsureIntSized(GenTree* node, bool signExtend);
 
-    GenTree* StoreNodeToVar(LIR::Use& use);
+    GenTree*          StoreNodeToVar(LIR::Use& use);
     static genTreeOps GetHiOper(genTreeOps oper);
     static genTreeOps GetLoOper(genTreeOps oper);
 
     // Data
     Compiler*   m_compiler;
+    Lowering*   m_lowering;
     LIR::Range* m_range;
 };
 

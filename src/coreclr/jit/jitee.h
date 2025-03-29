@@ -19,11 +19,11 @@ public:
         JIT_FLAG_OSR                     = 7, // Generate alternate version for On Stack Replacement
         JIT_FLAG_ALT_JIT                 = 8, // JIT should consider itself an ALT_JIT
         JIT_FLAG_FROZEN_ALLOC_ALLOWED    = 9, // JIT is allowed to use *_MAYBEFROZEN allocators
-        JIT_FLAG_MAKEFINALCODE           = 10, // Use the final code generator, i.e., not the interpreter.
-        JIT_FLAG_READYTORUN              = 11, // Use version-resilient code generation
+        // JIT_FLAG_UNUSED               = 10,
+        JIT_FLAG_AOT                     = 11, // Do ahead-of-time code generation (ReadyToRun or NativeAOT)
         JIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         JIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
-        JIT_FLAG_PREJIT                  = 14, // prejit is the execution engine.
+        // JIT_FLAG_UNUSED               = 14,
         JIT_FLAG_RELOC                   = 15, // Generate relocatable code
         JIT_FLAG_IL_STUB                 = 16, // method is an IL stub
         JIT_FLAG_PROCSPLIT               = 17, // JIT should separate code into hot and cold sections
@@ -44,23 +44,21 @@ public:
         JIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
 
-#if defined(TARGET_XARCH)
-        JIT_FLAG_VECTOR512_THROTTLING    = 31, // On Xarch, 512-bit vector usage may incur CPU frequency throttling
-#endif
-
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,
         // something needs to change.
     };
     // clang-format on
 
-    JitFlags() : m_jitFlags(0)
+    JitFlags()
+        : m_jitFlags(0)
     {
         // empty
     }
 
     // Convenience constructor to set exactly one flags.
-    JitFlags(JitFlag flag) : m_jitFlags(0)
+    JitFlags(JitFlag flag)
+        : m_jitFlags(0)
     {
         Set(flag);
     }
@@ -82,17 +80,17 @@ public:
 
     void Set(JitFlag flag)
     {
-        m_jitFlags |= 1ULL << (unsigned __int64)flag;
+        m_jitFlags |= 1ULL << (uint64_t)flag;
     }
 
     void Clear(JitFlag flag)
     {
-        m_jitFlags &= ~(1ULL << (unsigned __int64)flag);
+        m_jitFlags &= ~(1ULL << (uint64_t)flag);
     }
 
     bool IsSet(JitFlag flag) const
     {
-        return (m_jitFlags & (1ULL << (unsigned __int64)flag)) != 0;
+        return (m_jitFlags & (1ULL << (uint64_t)flag)) != 0;
     }
 
     bool IsEmpty() const
@@ -121,11 +119,9 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_OSR, JIT_FLAG_OSR);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT, JIT_FLAG_ALT_JIT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED, JIT_FLAG_FROZEN_ALLOC_ALLOWED);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE, JIT_FLAG_MAKEFINALCODE);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN, JIT_FLAG_READYTORUN);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_AOT, JIT_FLAG_AOT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE, JIT_FLAG_PROF_ENTERLEAVE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE, JIT_FLAG_PROF_NO_PINVOKE_INLINE);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PREJIT, JIT_FLAG_PREJIT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_RELOC, JIT_FLAG_RELOC);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB, JIT_FLAG_IL_STUB);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT, JIT_FLAG_PROCSPLIT);
@@ -146,14 +142,10 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI, JIT_FLAG_SOFTFP_ABI);
 #endif // TARGET_ARM
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING, JIT_FLAG_VECTOR512_THROTTLING);
-#endif // TARGET_ARM
-
 #undef FLAGS_EQUAL
     }
 
 private:
-    unsigned __int64            m_jitFlags;
+    uint64_t                    m_jitFlags;
     CORINFO_InstructionSetFlags m_instructionSetFlags;
 };

@@ -3,7 +3,7 @@
 
 "use strict";
 
-import { dotnet, exit } from './_framework/dotnet.js'
+import { dotnet, exit } from './dotnet.js'
 
 let runBenchmark;
 let setTasks;
@@ -85,7 +85,7 @@ class MainApp {
             setExclusions(exclusions.join(','));
         }
 
-        const r = await fetch("/bootstrap.flag", {
+        const r = await fetch("/rewrite=bootstrap.flag", {
             method: 'POST',
             body: "ok"
         });
@@ -96,15 +96,19 @@ class MainApp {
             if (resultString.length == 0) break;
             document.getElementById("out").innerHTML += resultString;
             console.log(resultString);
+            await fetch("/log=bench-log.txt", {
+                method: 'POST',
+                body: resultString
+            });
         }
 
         document.getElementById("out").innerHTML += "Finished";
-        const r1 = await fetch("/results.json", {
+        const r1 = await fetch("/rewrite=results.json", {
             method: 'POST',
             body: getFullJsonResults()
         });
         console.log("post request complete, response: ", r1);
-        const r2 = await fetch("/results.html", {
+        const r2 = await fetch("/rewrite=results.html", {
             method: 'POST',
             body: document.getElementById("out").innerHTML
         });
@@ -205,7 +209,9 @@ class MainApp {
     }
 
     removeFrame() {
-        this._frame.contentWindow.muteErrors();
+        if (this._frame.contentWindow.muteErrors !== undefined)
+            this._frame.contentWindow.muteErrors();
+
         document.body.removeChild(this._frame);
     }
 }
@@ -223,11 +229,6 @@ try {
         //  console to see statistics on how much code it generated and whether any new opcodes
         //  are causing traces to fail to compile
         .withRuntimeOptions(["--jiterpreter-stats-enabled"])
-        // We enable interpreter PGO so that you can exercise it in local tests, i.e.
-        //  run browser-bench one, then refresh the tab to measure the performance improvement
-        //  on the second run of browser-bench. The overall speed of the benchmarks won't
-        //  improve much, but the time spent generating code during the run will go down
-        .withInterpreterPgo(true, 30)
         .withElementOnExit()
         .withExitCodeLogging()
         .create();

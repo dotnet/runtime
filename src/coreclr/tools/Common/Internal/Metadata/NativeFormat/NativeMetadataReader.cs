@@ -62,7 +62,7 @@ namespace Internal.Metadata.NativeFormat
         MaxValue = 0xFFFF,
     }
 
-    public partial struct Handle
+    public readonly partial struct Handle
     {
         public override bool Equals(object obj)
         {
@@ -89,7 +89,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal void Validate(params HandleType[] permittedTypes)
         {
-            var myHandleType = (HandleType)(_value >> 24);
+            var myHandleType = (HandleType)((uint)_value >> 25);
             foreach (var hType in permittedTypes)
             {
                 if (myHandleType == hType)
@@ -106,41 +106,20 @@ namespace Internal.Metadata.NativeFormat
 
         public Handle(HandleType type, int offset)
         {
-            _value = (int)type << 24 | (int)offset;
+            _value = (int)type << 25 | (int)offset;
         }
 
-        public HandleType HandleType
-        {
-            get
-            {
-                return (HandleType)(_value >> 24);
-            }
-        }
+        public HandleType HandleType => (HandleType)((uint)_value >> 25);
 
-        internal int Offset
-        {
-            get
-            {
-                return (this._value & 0x00FFFFFF);
-            }
-        }
+        internal int Offset => _value & 0x01FFFFFF;
 
-        public bool IsNull(MetadataReader reader)
-        {
-            return reader.IsNull(this);
-        }
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
-        public int ToIntToken()
-        {
-            return _value;
-        }
+        public int ToIntToken() => _value;
 
-        public static Handle FromIntToken(int value)
-        {
-            return new Handle(value);
-        }
+        public static Handle FromIntToken(int value) => new Handle(value);
 
-        internal int _value;
+        internal readonly int _value;
 
 #if DEBUG
         public override string ToString()
@@ -165,14 +144,14 @@ namespace Internal.Metadata.NativeFormat
     /// ConstantReferenceValue can only be used to encapsulate null reference values,
     /// and therefore does not actually store the value.
     /// </summary>
-    public partial struct ConstantReferenceValue
+    public readonly partial struct ConstantReferenceValue
     {
         /// Always returns null value.
         public object Value
         { get { return null; } }
     } // ConstantReferenceValue
 
-    public partial struct ConstantStringValueHandle
+    public readonly partial struct ConstantStringValueHandle
     {
         public bool StringEquals(string value, MetadataReader reader)
         {
@@ -215,7 +194,7 @@ namespace Internal.Metadata.NativeFormat
         {
             get
             {
-                return new Handle() { _value = ((int)HandleType.Null) << 24 };
+                return new Handle(((int)HandleType.Null) << 25);
             }
         }
 

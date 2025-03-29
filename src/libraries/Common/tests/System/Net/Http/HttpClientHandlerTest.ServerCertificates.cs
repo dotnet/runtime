@@ -97,6 +97,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/110578")]
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -116,7 +117,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls()
         {
-            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.GetRemoteServers())
             {
                 if (remoteServer.IsSecure)
                 {
@@ -228,8 +229,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77726")]
         [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/106634", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine))]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
             using (HttpClient client = CreateHttpClient())
@@ -382,7 +383,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void HttpClientUsesSslCertEnvironmentVariables()
+        public async Task HttpClientUsesSslCertEnvironmentVariables()
         {
             // We set SSL_CERT_DIR and SSL_CERT_FILE to empty locations.
             // The HttpClient should fail to validate the server certificate.
@@ -395,7 +396,7 @@ namespace System.Net.Http.Functional.Tests
             File.WriteAllText(sslCertFile, "");
             psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
 
-            RemoteExecutor.Invoke(async (useVersionString, allowAllCertificatesString) =>
+            await RemoteExecutor.Invoke(async (useVersionString, allowAllCertificatesString) =>
             {
                 const string Url = "https://www.microsoft.com";
                 var version = Version.Parse(useVersionString);
@@ -405,7 +406,7 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient(handler, useVersionString);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
-            }, UseVersion.ToString(), AllowAllCertificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, UseVersion.ToString(), AllowAllCertificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
         }
     }
 }

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
@@ -24,14 +25,23 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("2.16.840.1.113730.3.4.9", control.Type);
 
-            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 };
+#if NETFRAMEWORK
+            var expected = new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 };
+#else
+            var expected = new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 };
+#endif
             Assert.Equal(expected, control.GetValue());
         }
 
         public static IEnumerable<object[]> Ctor_BeforeCount_AfterCount_Offset_Data()
         {
-            yield return new object[] { 0, 0, 0, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
-            yield return new object[] { 10, 10, 10, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 10, 2, 1, 10, 160, 132, 0, 0, 0, 6, 2, 1, 10, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 10, 2, 1, 10, 160, 6, 2, 1, 10, 2, 1, 0 } };
+#if NETFRAMEWORK
+            yield return new object[] { 0, 0, 0, new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } };
+            yield return new object[] { 10, 10, 10, new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 10, 2, 1, 10, 160, 132, 0, 0, 0, 6, 2, 1, 10, 2, 1, 0 } };
+#else
+            yield return new object[] { 0, 0, 0, new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
+            yield return new object[] { 10, 10, 10, new byte[] { 48, 14, 2, 1, 10, 2, 1, 10, 160, 6, 2, 1, 10, 2, 1, 0 } };
+#endif
         }
 
         [Theory]
@@ -54,8 +64,13 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> Ctor_BeforeCount_AfterCount_StringTarget_Data()
         {
-            yield return new object[] { 0, 0, null, new byte[0], (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
-            yield return new object[] { 10, 10, "abc", new byte[] { 97, 98, 99 }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 10, 2, 1, 10, 129, 3, 97, 98, 99 } : new byte[] { 48, 11, 2, 1, 10, 2, 1, 10, 129, 3, 97, 98, 99 } };
+#if NETFRAMEWORK
+            yield return new object[] { 0, 0, null, new byte[0], new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } };
+            yield return new object[] { 10, 10, "abc", new byte[] { 97, 98, 99 }, new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 10, 2, 1, 10, 129, 3, 97, 98, 99 } };
+#else
+            yield return new object[] { 0, 0, null, new byte[0], new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
+            yield return new object[] { 10, 10, "abc", new byte[] { 97, 98, 99 }, new byte[] { 48, 11, 2, 1, 10, 2, 1, 10, 129, 3, 97, 98, 99 } };
+#endif
         }
 
         [Theory]
@@ -79,8 +94,13 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> Ctor_BeforeCount_AfterCount_ByteArrayTarget_Data()
         {
-            yield return new object[] { 0, 0, null, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } : new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
-            yield return new object[] { 10, 10, new byte[] { 1, 2, 3 }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 10, 2, 1, 10, 129, 3, 1, 2, 3 } : new byte[] { 48, 11, 2, 1, 10, 2, 1, 10, 129, 3, 1, 2, 3 } };
+#if NETFRAMEWORK
+            yield return new object[] { 0, 0, null, new byte[] { 48, 132, 0, 0, 0, 18, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0 } };
+            yield return new object[] { 10, 10, new byte[] { 1, 2, 3 }, new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 10, 2, 1, 10, 129, 3, 1, 2, 3 } };
+#else
+            yield return new object[] { 0, 0, null, new byte[] { 48, 14, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0 } };
+            yield return new object[] { 10, 10, new byte[] { 1, 2, 3 }, new byte[] { 48, 11, 2, 1, 10, 2, 1, 10, 129, 3, 1, 2, 3 } };
+#endif
         }
 
         [Theory]
@@ -124,6 +144,14 @@ namespace System.DirectoryServices.Protocols.Tests
             AssertExtensions.Throws<ArgumentException>("value", () => new VlvRequestControl(0, 0, -1));
         }
 
+#if NET
+        [Fact]
+        public void Ctor_InvalidUtf8Target_ThrowsEncoderFallbackException()
+        {
+            AssertExtensions.Throws<EncoderFallbackException>(() => new VlvRequestControl(0, 0, "\uDD74\uD800"));
+        }
+#endif
+
         [Fact]
         public void EstimateCount_SetValid_GetReturnsExpected()
         {
@@ -146,7 +174,11 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.NotSame(contextId, control.ContextId);
             Assert.Equal(contextId, control.ContextId);
 
-            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 23, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0, 4, 3, 1, 2, 3 } : new byte[] { 48, 19, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0, 4, 3, 1, 2, 3 };
+#if NETFRAMEWORK
+            var expected = new byte[] { 48, 132, 0, 0, 0, 23, 2, 1, 0, 2, 1, 0, 160, 132, 0, 0, 0, 6, 2, 1, 0, 2, 1, 0, 4, 3, 1, 2, 3 };
+#else
+            var expected = new byte[] { 48, 19, 2, 1, 0, 2, 1, 0, 160, 6, 2, 1, 0, 2, 1, 0, 4, 3, 1, 2, 3 };
+#endif
             Assert.Equal(expected, control.GetValue());
         }
     }

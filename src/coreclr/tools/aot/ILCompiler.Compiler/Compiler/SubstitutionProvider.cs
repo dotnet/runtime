@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Resources;
@@ -33,9 +34,78 @@ namespace ILCompiler
                 AssemblyFeatureInfo info = _hashtable.GetOrCreateValue(ecmaMethod.Module);
                 if (info.BodySubstitutions != null && info.BodySubstitutions.TryGetValue(ecmaMethod, out BodySubstitution result))
                     return result;
+
+                if (TryGetFeatureCheckValue(ecmaMethod, out bool value))
+                    return BodySubstitution.Create(value ? 1 : 0);
             }
 
             return null;
+        }
+
+        private bool TryGetFeatureCheckValue(EcmaMethod method, out bool value)
+        {
+            value = false;
+
+            if (!method.Signature.IsStatic)
+                return false;
+
+            if (!method.Signature.ReturnType.IsWellKnownType(WellKnownType.Boolean))
+                return false;
+
+            if (FindProperty(method) is not PropertyPseudoDesc property)
+                return false;
+
+            if (property.SetMethod != null)
+                return false;
+
+            foreach (var featureSwitchDefinitionAttribute in property.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute"))
+            {
+                if (featureSwitchDefinitionAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: string switchName }])
+                    continue;
+
+                // If there's a FeatureSwitchDefinition, don't continue looking for FeatureGuard.
+                // We don't want to infer feature switch settings from FeatureGuard.
+                return _hashtable._switchValues.TryGetValue(switchName, out value);
+            }
+
+            foreach (var featureGuardAttribute in property.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute"))
+            {
+                if (featureGuardAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: EcmaType featureType }])
+                    continue;
+
+                if (featureType.Namespace == "System.Diagnostics.CodeAnalysis")
+                {
+                    switch (featureType.Name)
+                    {
+                        case "RequiresAssemblyFilesAttribute":
+                        case "RequiresUnreferencedCodeAttribute":
+                        case "RequiresDynamicCodeAttribute":
+                            return true;
+                    }
+                }
+            }
+
+            return false;
+
+            static PropertyPseudoDesc FindProperty(EcmaMethod method)
+            {
+                if ((method.Attributes & MethodAttributes.SpecialName) == 0)
+                    return null;
+
+                if (method.OwningType is not EcmaType declaringType)
+                    return null;
+
+                var reader = declaringType.MetadataReader;
+                foreach (PropertyDefinitionHandle propertyHandle in reader.GetTypeDefinition(declaringType.Handle).GetProperties())
+                {
+                    PropertyDefinition propertyDef = reader.GetPropertyDefinition(propertyHandle);
+                    var property = new PropertyPseudoDesc(declaringType, propertyHandle);
+                    if (property.GetMethod == method)
+                        return property;
+                }
+
+                return null;
+            }
         }
 
         public object GetSubstitution(FieldDesc field)

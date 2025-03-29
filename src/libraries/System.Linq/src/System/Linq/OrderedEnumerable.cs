@@ -32,34 +32,32 @@ namespace System.Linq
             public TElement? TryGetLast(Func<TElement, bool> predicate, out bool found)
             {
                 CachingComparer<TElement> comparer = GetComparer();
-                using (IEnumerator<TElement> e = _source.GetEnumerator())
+                using IEnumerator<TElement> e = _source.GetEnumerator();
+                TElement value;
+                do
                 {
-                    TElement value;
-                    do
+                    if (!e.MoveNext())
                     {
-                        if (!e.MoveNext())
-                        {
-                            found = false;
-                            return default;
-                        }
-
-                        value = e.Current;
-                    }
-                    while (!predicate(value));
-
-                    comparer.SetElement(value);
-                    while (e.MoveNext())
-                    {
-                        TElement x = e.Current;
-                        if (predicate(x) && comparer.Compare(x, false) >= 0)
-                        {
-                            value = x;
-                        }
+                        found = false;
+                        return default;
                     }
 
-                    found = true;
-                    return value;
+                    value = e.Current;
                 }
+                while (!predicate(value));
+
+                comparer.SetElement(value);
+                while (e.MoveNext())
+                {
+                    TElement x = e.Current;
+                    if (predicate(x) && comparer.Compare(x, false) >= 0)
+                    {
+                        value = x;
+                    }
+                }
+
+                found = true;
+                return value;
             }
         }
 
@@ -339,12 +337,9 @@ namespace System.Linq
             private int[] ComputeMap(TElement[] elements, int count)
             {
                 ComputeKeys(elements, count);
-                int[] map = new int[count];
-                for (int i = 0; i < map.Length; i++)
-                {
-                    map[i] = i;
-                }
 
+                int[] map = new int[count];
+                FillIncrementing(map, 0);
                 return map;
             }
 

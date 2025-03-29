@@ -63,6 +63,20 @@ build_native()
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
 
+    SAVED_CFLAGS="${CFLAGS}"
+    SAVED_CXXFLAGS="${CXXFLAGS}"
+    SAVED_LDFLAGS="${LDFLAGS}"
+
+    # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
+    # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
+    # See https://github.com/dotnet/runtime/issues/35727 for more information.
+    # 
+    # These flags MUST be exported before gen-buildsys.sh runs or cmake will ignore them
+    #
+    export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
+    export CXXFLAGS="${CXXFLAGS} ${EXTRA_CXXFLAGS}"
+    export LDFLAGS="${LDFLAGS} ${EXTRA_LDFLAGS}"
+
     if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
         if [[ "$hostArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
@@ -79,15 +93,15 @@ build_native()
     fi
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
+        # Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
+        local ANDROID_API_LEVEL=21
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
         fi
 
-        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
-
-        # keep ANDROID_PLATFORM in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-21 $cmakeArgs"
+        cmakeArgs="-DANDROID_BUILD=1 -C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
+        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-${ANDROID_API_LEVEL} -DANDROID_NATIVE_API_LEVEL=${ANDROID_API_LEVEL} $cmakeArgs"
 
         # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
         __Compiler="default"
@@ -109,7 +123,7 @@ build_native()
 
         # set default iOS simulator deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
         if [[ "$__TargetArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
         elif [[ "$__TargetArch" == arm64 ]]; then
@@ -123,7 +137,7 @@ build_native()
 
         # set default iOS device deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
         if [[ "$__TargetArch" == arm64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
         else
@@ -135,7 +149,7 @@ build_native()
 
         # set default tvOS simulator deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
         if [[ "$__TargetArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
         elif [[ "$__TargetArch" == arm64 ]]; then
@@ -149,7 +163,7 @@ build_native()
 
         # set default tvOS device deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
         if [[ "$__TargetArch" == arm64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
         else
@@ -193,17 +207,6 @@ build_native()
         echo "Finish configuration & skipping \"$message\" build."
         return
     fi
-
-    SAVED_CFLAGS="${CFLAGS}"
-    SAVED_CXXFLAGS="${CXXFLAGS}"
-    SAVED_LDFLAGS="${LDFLAGS}"
-
-    # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
-    # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
-    # See https://github.com/dotnet/runtime/issues/35727 for more information.
-    export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
-    export CXXFLAGS="${CXXFLAGS} ${EXTRA_CXXFLAGS}"
-    export LDFLAGS="${LDFLAGS} ${EXTRA_LDFLAGS}"
 
     local exit_code
     if [[ "$__StaticAnalyzer" == 1 ]]; then
@@ -485,7 +488,6 @@ while :; do
         hostarch|-hostarch)
             if [[ -n "$2" ]]; then
                 __HostArch="$2"
-                __ExplicitHostArch=1
                 shift
             else
                 echo "ERROR: 'hostarch' requires a non-empty option argument"

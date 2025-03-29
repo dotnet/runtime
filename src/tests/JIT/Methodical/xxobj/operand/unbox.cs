@@ -48,6 +48,7 @@ namespace JitTest_unbox_operand_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             if (unbox_ldobj() != 0)

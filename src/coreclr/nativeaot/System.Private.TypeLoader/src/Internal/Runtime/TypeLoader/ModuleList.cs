@@ -20,7 +20,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Module handle is the TypeManager associated with this module.
         /// </summary>
-        public TypeManagerHandle Handle { get; private set; }
+        public TypeManagerHandle Handle { get; }
 
         /// <summary>
         /// Initialize module info and construct per-module metadata reader.
@@ -49,7 +49,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Module metadata reader for NativeFormat metadata
         /// </summary>
-        public MetadataReader MetadataReader { get; private set; }
+        public MetadataReader MetadataReader { get; }
 
         internal unsafe bool TryFindBlob(ReflectionMapBlob blobId, out byte* pBlob, out uint cbBlob)
         {
@@ -393,24 +393,6 @@ namespace Internal.Runtime.TypeLoader
         public static NativeFormatModuleInfoEnumerable EnumerateModules(TypeManagerHandle preferredModule)
         {
             return new NativeFormatModuleInfoEnumerable(Instance._loadedModuleMap, preferredModule);
-        }
-    }
-
-    public static partial class RuntimeSignatureHelper
-    {
-        public static ModuleInfo GetModuleInfo(this Internal.Runtime.CompilerServices.RuntimeSignature methodSignature)
-        {
-            if (methodSignature.IsNativeLayoutSignature)
-            {
-                return ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(methodSignature.ModuleHandle));
-            }
-            else
-            {
-                ModuleInfo moduleInfo;
-                bool success = ModuleList.Instance.TryGetModuleInfoByHandle(new TypeManagerHandle(methodSignature.ModuleHandle), out moduleInfo);
-                Debug.Assert(success);
-                return moduleInfo;
-            }
         }
     }
 }

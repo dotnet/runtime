@@ -221,6 +221,7 @@ namespace BigFrames_skippage2
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             SmallFrameSize(); // Make sure this is JITted first, so the call from Test1() is not to the prestub.

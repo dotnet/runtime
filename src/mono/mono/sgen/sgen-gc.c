@@ -2733,32 +2733,9 @@ gc_pump_callback (void)
 }
 #endif
 
-#if defined(HOST_BROWSER) || defined(HOST_WASI)
-extern gboolean mono_wasm_enable_gc;
-#endif
-
 void
 sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean forced_serial, gboolean stw)
 {
-#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
-	if (!mono_wasm_enable_gc) {
-		g_assert (stw); //can't handle non-stw mode (IE, domain unload)
-		//we ignore forced_serial
-
-		//There's a window for racing where we're executing other bg jobs before the GC, they trigger a GC request and it overrides this one.
-		//I belive this case to be benign as it will, in the worst case, upgrade a minor to a major collection.
-		if (gc_request.generation_to_collect <= generation_to_collect) {
-			gc_request.requested_size = requested_size;
-			gc_request.generation_to_collect = generation_to_collect;
-			gc_request.reason = reason;
-			sgen_client_schedule_background_job (gc_pump_callback);
-		}
-
-		sgen_degraded_mode = 1; //enable degraded mode so allocation can continue
-		return;
-	}
-#endif
-
 	sgen_perform_collection_inner (requested_size, generation_to_collect, reason, forced_serial, stw);
 }
 /*
@@ -2848,6 +2825,9 @@ sgen_gc_invoke_finalizers (void)
 
 	g_assert (!pending_unqueued_finalizer);
 
+	gboolean gchandle_allocated = FALSE;
+	guint32 gchandle = 0;
+
 	/* FIXME: batch to reduce lock contention */
 	while (sgen_have_pending_finalizers ()) {
 		GCObject *obj;
@@ -2878,8 +2858,16 @@ sgen_gc_invoke_finalizers (void)
 		if (!obj)
 			break;
 
+		// We explicitly pin the object via a gchandle so we don't rely on the ref being
+		// present on stack/regs which is not scannable on WASM.
+		if (!gchandle_allocated) {
+			gchandle = sgen_gchandle_new (obj, TRUE);
+			gchandle_allocated = TRUE;
+		} else {
+			sgen_gchandle_set_target (gchandle, obj);
+		}
+
 		count++;
-		/* the object is on the stack so it is pinned */
 		/*g_print ("Calling finalizer for object: %p (%s)\n", obj, sgen_client_object_safe_name (obj));*/
 		sgen_client_run_finalize (obj);
 	}
@@ -2888,6 +2876,9 @@ sgen_gc_invoke_finalizers (void)
 		mono_memory_write_barrier ();
 		pending_unqueued_finalizer = FALSE;
 	}
+
+	if (gchandle_allocated)
+		sgen_gchandle_free (gchandle);
 
 	return count;
 }
@@ -3895,7 +3886,7 @@ sgen_gc_init (void)
 
 	memset (&remset, 0, sizeof (remset));
 
-	sgen_card_table_init (&remset);
+	sgen_card_table_init (&remset, remset_consistency_checks);
 
 	sgen_register_root (NULL, 0, sgen_make_user_root_descriptor (sgen_mark_normal_gc_handles), ROOT_TYPE_NORMAL, MONO_ROOT_SOURCE_GC_HANDLE, GINT_TO_POINTER (ROOT_TYPE_NORMAL), "GC Handles (SGen, Normal)");
 

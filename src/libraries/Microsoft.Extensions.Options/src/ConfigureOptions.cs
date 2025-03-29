@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Options
     public class ConfigureOptions<TOptions> : IConfigureOptions<TOptions> where TOptions : class
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="ConfigureOptions{TOptions}"/>.
         /// </summary>
         /// <param name="action">The action to register.</param>
         public ConfigureOptions(Action<TOptions>? action)
@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions>? Action { get; }
 

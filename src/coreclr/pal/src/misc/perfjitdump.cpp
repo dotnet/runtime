@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // ===========================================================================
 
-#if defined(__linux__)
-#define JITDUMP_SUPPORTED
-#endif
-
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 
 #include <cstddef>
+
+#if defined(__linux__) || defined(__APPLE__)
+#define JITDUMP_SUPPORTED
+#endif
 
 #ifdef JITDUMP_SUPPORTED
 
@@ -29,6 +29,10 @@
 
 #include "../inc/llvm/ELF.h"
 
+#if defined(HOST_AMD64)
+#include <x86intrin.h>
+#endif
+
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
 namespace
@@ -37,6 +41,7 @@ namespace
     {
         JIT_DUMP_MAGIC = 0x4A695444,
         JIT_DUMP_VERSION = 1,
+        JITDUMP_FLAGS_ARCH_TIMESTAMP = 1 << 0,
 
 #if defined(HOST_X86)
         ELF_MACHINE = EM_386,
@@ -61,25 +66,35 @@ namespace
         JIT_CODE_LOAD = 0,
     };
 
-    uint64_t GetTimeStampNS()
+    static bool UseArchTimeStamp()
     {
-#if HAVE_CLOCK_MONOTONIC
-        struct timespec ts;
-        int result = clock_gettime(CLOCK_MONOTONIC, &ts);
+        static bool initialized = false;
+        static bool useArchTimestamp = false;
 
-        if (result != 0)
+        if (!initialized)
         {
-            ASSERT("clock_gettime(CLOCK_MONOTONIC) failed: %d\n", result);
-            return 0;
-        }
-        else
-        {
-            return  ts.tv_sec * 1000000000ULL + ts.tv_nsec;
-        }
-#else
-    #error "The PAL jitdump requires clock_gettime(CLOCK_MONOTONIC) to be supported."
+#if defined(HOST_AMD64)
+            const char* archTimestamp = getenv("JITDUMP_USE_ARCH_TIMESTAMP");
+            useArchTimestamp = (archTimestamp != nullptr && strcmp(archTimestamp, "1") == 0);
 #endif
+            initialized = true;
+        }
+
+        return useArchTimestamp;
     }
+
+    static uint64_t GetTimeStampNS()
+    {
+#if defined(HOST_AMD64)
+        if (UseArchTimeStamp()) {
+            return static_cast<uint64_t>(__rdtsc());
+        }
+#endif
+        LARGE_INTEGER result;
+        QueryPerformanceCounter(&result);
+        return result.QuadPart;
+    }
+
 
     struct FileHeader
     {
@@ -91,7 +106,7 @@ namespace
             pad1(0),
             pid(getpid()),
             timestamp(GetTimeStampNS()),
-            flags(0)
+            flags(UseArchTimeStamp() ? JITDUMP_FLAGS_ARCH_TIMESTAMP : 0)
         {}
 
         uint32_t magic;
@@ -115,7 +130,7 @@ namespace
     {
         JitCodeLoadRecord() :
             pid(getpid()),
-            tid(syscall(SYS_gettid))
+            tid((uint32_t)THREADSilentGetCurrentThreadId())
         {
             header.id = JIT_CODE_LOAD;
             header.timestamp = GetTimeStampNS();
@@ -170,6 +185,19 @@ struct PerfJitDumpState
     {
         int result = 0;
 
+        // On platforms where JITDUMP is used, the PAL QueryPerformanceFrequency
+        // returns tccSecondsToNanoSeconds, meaning QueryPerformanceCounter
+        // will return a direct nanosecond value. If this isn't true,
+        // then some other method will need to be used to implement GetTimeStampNS.
+        // Validate this is true once in Start here.
+        LARGE_INTEGER freq;
+        QueryPerformanceFrequency(&freq);
+        if (freq.QuadPart != tccSecondsToNanoSeconds)
+        {
+            _ASSERTE(!"QueryPerformanceFrequency does not return tccSecondsToNanoSeconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
+            FatalError();
+        }
+
         // Write file header
         FileHeader header;
 
@@ -203,12 +231,18 @@ struct PerfJitDumpState
         if (result == -1)
             return FatalError();
 
+#if !defined(__APPLE__)
         // mmap jitdump file
-        // this is a marker for perf inject to find the jitdumpfile
+        // this is a marker for perf inject to find the jitdumpfile on linux.
+        // On OSX, samply and others hook open and mmap is not needed. It also fails on OSX,
+        // likely because of PROT_EXEC and hardened runtime
         mmapAddr = mmap(nullptr, sizeof(FileHeader), PROT_READ | PROT_EXEC, MAP_PRIVATE, fd, 0);
 
         if (mmapAddr == MAP_FAILED)
             return FatalError();
+#else
+        mmapAddr = NULL;
+#endif
 
         enabled = true;
 
@@ -308,16 +342,13 @@ exit:
         {
             enabled = false;
 
-            if (result != 0)
-                return FatalError();
+            if (mmapAddr != NULL)
+            {
+                result = munmap(mmapAddr, sizeof(FileHeader));
 
-            if (!enabled)
-                goto exit;
-
-            result = munmap(mmapAddr, sizeof(FileHeader));
-
-            if (result == -1)
-                return FatalError();
+                if (result == -1)
+                    return FatalError();
+            }
 
             mmapAddr = MAP_FAILED;
 
@@ -333,7 +364,7 @@ exit:
 
             fd = -1;
         }
-exit:
+
         return 0;
     }
 };

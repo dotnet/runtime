@@ -16,9 +16,17 @@ inline LOADERALLOCATORREF LoaderAllocator::GetExposedObject()
 }
 #endif
 
-inline void GlobalLoaderAllocator::Init(BaseDomain *pDomain)
+inline bool LoaderAllocator::IsExposedObjectLive()
 {
-    LoaderAllocator::Init(pDomain, m_ExecutableHeapInstance);
+    LIMITED_METHOD_CONTRACT;
+    if (m_hLoaderAllocatorObjectHandle == 0)
+        return false;
+    return !ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle);
+}
+
+inline void GlobalLoaderAllocator::Init()
+{
+    LoaderAllocator::Init(m_ExecutableHeapInstance);
 }
 
 inline BOOL LoaderAllocatorID::Equals(LoaderAllocatorID *pId)
@@ -44,7 +52,7 @@ inline void LoaderAllocatorID::AddDomainAssembly(DomainAssembly* pAssembly)
     // Link domain assembly together
     if (m_pDomainAssembly != NULL)
     {
-        pAssembly->SetNextDomainAssemblyInSameALC(m_pDomainAssembly);
+        pAssembly->GetAssembly()->SetNextAssemblyInSameALC(m_pDomainAssembly);
     }
     m_pDomainAssembly = pAssembly;
 }
@@ -123,7 +131,7 @@ FORCEINLINE BOOL LoaderAllocator::GetHandleValueFastPhase2(LOADERHANDLE handle, 
         return FALSE;
 
     LOADERALLOCATORREF loaderAllocator = dac_cast<LOADERALLOCATORREF>(loaderAllocatorAsObjectRef);
-    PTRARRAYREF handleTable = loaderAllocator->GetHandleTable();
+    PTRARRAYREF handleTable = loaderAllocator->DangerousGetHandleTable();
     UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
     *pValue = handleTable->GetAt(index);
 
@@ -141,7 +149,7 @@ FORCEINLINE OBJECTREF LoaderAllocator::GetHandleValueFastCannotFailType2(LOADERH
     /* This is lockless access to the handle table, be careful */
     OBJECTREF loaderAllocatorAsObjectRef = ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
     LOADERALLOCATORREF loaderAllocator = dac_cast<LOADERALLOCATORREF>(loaderAllocatorAsObjectRef);
-    PTRARRAYREF handleTable = loaderAllocator->GetHandleTable();
+    PTRARRAYREF handleTable = loaderAllocator->DangerousGetHandleTable();
     UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
 
     return handleTable->GetAt(index);
@@ -198,6 +206,19 @@ inline DWORD SegmentedHandleIndexStack::Pop()
     }
 
     return m_TOSSegment->m_data[--m_TOSIndex];
+}
+
+inline SegmentedHandleIndexStack::~SegmentedHandleIndexStack()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    while (m_TOSSegment != NULL)
+    {
+        Segment* prevSegment = m_TOSSegment->m_prev;
+        delete m_TOSSegment;
+        m_TOSSegment = prevSegment;
+    }
+    m_freeSegment = NULL;
 }
 
 inline bool SegmentedHandleIndexStack::IsEmpty()

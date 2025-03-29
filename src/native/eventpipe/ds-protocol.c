@@ -80,7 +80,7 @@ ds_ipc_advertise_cookie_v1_get (void)
 void
 ds_ipc_advertise_cookie_v1_init (void)
 {
-	ep_rt_create_activity_id ((uint8_t *)&_ds_ipc_advertise_cooike_v1, EP_GUID_SIZE);
+	ep_thread_create_activity_id ((uint8_t *)&_ds_ipc_advertise_cooike_v1, EP_GUID_SIZE);
 }
 
 /**

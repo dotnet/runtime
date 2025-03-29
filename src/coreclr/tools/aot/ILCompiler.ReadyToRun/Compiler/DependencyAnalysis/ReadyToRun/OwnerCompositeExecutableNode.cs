@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__ReadyToRunHeader_OwnerCompositeExecutable");
+            sb.Append("__ReadyToRunHeader_OwnerCompositeExecutable"u8);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

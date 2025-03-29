@@ -257,5 +257,11 @@ namespace ILCompiler.DependencyAnalysis.ARM
             EmitBEQ(4);
             EmitRET();
         }
+
+        // dmb
+        public void EmitDMB()
+        {
+            Builder.EmitUInt(0x8F5FF3BF);
+        }
     }
 }

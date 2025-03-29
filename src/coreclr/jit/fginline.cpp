@@ -69,7 +69,7 @@ bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* 
 {
     // We disallow inlining the exact same instantiation.
     if ((ancestor->GetCallee() == inlineInfo->fncHandle) &&
-        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
+        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHandle))
     {
         JITDUMP("Call site is trivially recursive\n");
         return true;
@@ -80,7 +80,7 @@ bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* 
     // involved this can quickly consume a large amount of resources, so try to
     // verify that we aren't inlining recursively with complex contexts.
     if (info.compCompHnd->haveSameMethodDefinition(inlineInfo->fncHandle, ancestor->GetCallee()) &&
-        ContextComplexityExceeds(inlineInfo->inlineCandidateInfo->exactContextHnd, 64))
+        ContextComplexityExceeds(inlineInfo->inlineCandidateInfo->exactContextHandle, 64))
     {
         JITDUMP("Call site is recursive with a complex generic context\n");
         return true;
@@ -204,7 +204,9 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
 {
-    bool m_madeChanges = false;
+    bool       m_madeChanges  = false;
+    Statement* m_curStmt      = nullptr;
+    Statement* m_firstNewStmt = nullptr;
 
 public:
     enum
@@ -214,13 +216,32 @@ public:
         UseExecutionOrder = true,
     };
 
-    SubstitutePlaceholdersAndDevirtualizeWalker(Compiler* comp) : GenTreeVisitor(comp)
+    SubstitutePlaceholdersAndDevirtualizeWalker(Compiler* comp)
+        : GenTreeVisitor(comp)
     {
     }
 
-    bool MadeChanges()
+    bool MadeChanges() const
     {
         return m_madeChanges;
+    }
+
+    // ------------------------------------------------------------------------
+    // WalkStatement: Walk the tree of a statement, and return the first newly
+    // added statement if any, otherwise return the original statement.
+    //
+    // Arguments:
+    //    stmt - the statement to walk.
+    //
+    // Return Value:
+    //    The first newly added statement if any, or the original statement.
+    //
+    Statement* WalkStatement(Statement* stmt)
+    {
+        m_curStmt      = stmt;
+        m_firstNewStmt = nullptr;
+        WalkTree(m_curStmt->GetRootNodePointer(), nullptr);
+        return m_firstNewStmt == nullptr ? m_curStmt : m_firstNewStmt;
     }
 
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -261,10 +282,8 @@ public:
             {
                 GenTree* effectiveValue = value->gtEffectiveVal();
 
-                noway_assert(
-                    !varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
-                    !m_compiler->IsMultiRegReturnedType(effectiveValue->AsRetExpr()->gtInlineCandidate->gtRetClsHnd,
-                                                        CorInfoCallConvExtension::Managed));
+                noway_assert(!varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
+                             !effectiveValue->AsRetExpr()->gtInlineCandidate->HasMultiRegRetVal());
             }
         }
 
@@ -318,18 +337,9 @@ private:
     //
     void UpdateInlineReturnExpressionPlaceHolder(GenTree** use, GenTree* parent)
     {
-        CORINFO_CLASS_HANDLE retClsHnd = NO_CLASS_HANDLE;
-
         while ((*use)->OperIs(GT_RET_EXPR))
         {
             GenTree* tree = *use;
-            // We are going to copy the tree from the inlinee,
-            // so record the handle now.
-            //
-            if (varTypeIsStruct(tree))
-            {
-                retClsHnd = tree->AsRetExpr()->gtInlineCandidate->gtRetClsHnd;
-            }
 
             // Skip through chains of GT_RET_EXPRs (say from nested inlines)
             // to the actual tree to use.
@@ -397,6 +407,20 @@ private:
 #endif // DEBUG
         }
 
+        // If the inline was rejected and returns a retbuffer, then mark that
+        // local as DNER now so that promotion knows to leave it up to physical
+        // promotion.
+        if ((*use)->IsCall())
+        {
+            CallArg* retBuffer = (*use)->AsCall()->gtArgs.GetRetBufferArg();
+            if ((retBuffer != nullptr) && retBuffer->GetNode()->OperIs(GT_LCL_ADDR))
+            {
+                m_compiler->lvaSetVarDoNotEnregister(retBuffer->GetNode()->AsLclVarCommon()->GetLclNum()
+                                                         DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
+            }
+        }
+
+#if FEATURE_MULTIREG_RET
         // If an inline was rejected and the call returns a struct, we may
         // have deferred some work when importing call for cases where the
         // struct is returned in multiple registers.
@@ -405,55 +429,23 @@ private:
         // candidates.
         //
         // Do the deferred work now.
-        if (retClsHnd != NO_CLASS_HANDLE)
+        if ((*use)->IsCall() && varTypeIsStruct(*use) && (*use)->AsCall()->HasMultiRegRetVal())
         {
-            Compiler::structPassingKind howToReturnStruct;
-            var_types                   returnType =
-                m_compiler->getReturnTypeForStruct(retClsHnd, CorInfoCallConvExtension::Managed, &howToReturnStruct);
-
-            switch (howToReturnStruct)
+            // See assert below, we only look one level above for a store parent.
+            if (parent->OperIsStore())
             {
-#if FEATURE_MULTIREG_RET
-                // Force multi-reg nodes into the "lcl = node()" form if necessary.
-                // TODO-ASG: this code could be improved substantially. There is no need
-                // to introduce temps if the inlinee is not actually a multi-reg node.
-                //
-                case Compiler::SPK_ByValue:
-                case Compiler::SPK_ByValueAsHfa:
-                {
-                    // See assert below, we only look one level above for a store parent.
-                    if (parent->OperIsStore())
-                    {
-                        // The inlinee can only be the value.
-                        assert(parent->Data() == *use);
-                        AttachStructInlineeToStore(parent, retClsHnd);
-                    }
-                    else
-                    {
-                        // Just store the inlinee to a variable to keep it simple.
-                        *use = StoreStructInlineeToVar(*use, retClsHnd);
-                    }
-                    m_madeChanges = true;
-                }
-                break;
-
-#endif // FEATURE_MULTIREG_RET
-
-                case Compiler::SPK_EnclosingType:
-                case Compiler::SPK_PrimitiveType:
-                    // No work needs to be done, the call has struct type and should keep it.
-                    break;
-
-                case Compiler::SPK_ByReference:
-                    // We should have already added the return buffer
-                    // when we first imported the call
-                    break;
-
-                default:
-                    noway_assert(!"Unexpected struct passing kind");
-                    break;
+                // The inlinee can only be the value.
+                assert(parent->Data() == *use);
+                AttachStructInlineeToStore(parent, (*use)->AsCall()->gtRetClsHnd);
             }
+            else
+            {
+                // Just store the inlinee to a variable to keep it simple.
+                *use = StoreStructInlineeToVar(*use, (*use)->AsCall()->gtRetClsHnd);
+            }
+            m_madeChanges = true;
         }
+#endif
     }
 
 #if FEATURE_MULTIREG_RET
@@ -474,7 +466,7 @@ private:
         GenTree* dst     = store;
         GenTree* inlinee = store->Data();
 
-        // We need to force all assignments from multi-reg nodes into the "lcl = node()" form.
+        // We need to force all stores from multi-reg nodes into the "lcl = node()" form.
         if (inlinee->IsMultiRegNode())
         {
             // Special case: we already have a local, the only thing to do is mark it appropriately. Except
@@ -503,7 +495,7 @@ private:
     //
     GenTree* StoreStructInlineeToVar(GenTree* inlinee, CORINFO_CLASS_HANDLE retClsHnd)
     {
-        assert(!inlinee->OperIs(GT_MKREFANY, GT_RET_EXPR));
+        assert(!inlinee->OperIs(GT_RET_EXPR));
 
         unsigned   lclNum = m_compiler->lvaGrabTemp(false DEBUGARG("RetBuf for struct inline return candidates."));
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
@@ -597,25 +589,65 @@ private:
                 }
 #endif // DEBUG
 
-                CORINFO_CONTEXT_HANDLE context                = nullptr;
+                CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
+                InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
                 CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
 
-                if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0)
-                {
-                    context = call->gtLateDevirtualizationInfo->exactContextHnd;
-                    // Note: we might call this multiple times for the same trees.
-                    // If the devirtualization below succeeds, the call becomes
-                    // non-virtual and we won't get here again. If it does not
-                    // succeed we might get here again so we keep the late devirt
-                    // info.
-                }
-
                 CORINFO_CONTEXT_HANDLE contextInput = context;
+                context                             = nullptr;
                 m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
+
+                if (!call->IsVirtual())
+                {
+                    assert(context != nullptr);
+                    assert(inlinersContext != nullptr);
+                    CORINFO_CALL_INFO callInfo = {};
+                    callInfo.hMethod           = method;
+                    callInfo.methodFlags       = methodFlags;
+                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext);
+
+                    if (call->IsInlineCandidate())
+                    {
+                        Statement* newStmt = nullptr;
+                        GenTree**  callUse = nullptr;
+                        if (m_compiler->gtSplitTree(m_compiler->compCurBB, m_curStmt, call, &newStmt, &callUse, true))
+                        {
+                            if (m_firstNewStmt == nullptr)
+                            {
+                                m_firstNewStmt = newStmt;
+                            }
+                        }
+
+                        // If the call is the root expression in a statement, and it returns void,
+                        // we can inline it directly without creating a RET_EXPR.
+                        if (parent != nullptr || call->gtReturnType != TYP_VOID)
+                        {
+                            Statement* stmt = m_compiler->gtNewStmt(call);
+                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
+                            if (m_firstNewStmt == nullptr)
+                            {
+                                m_firstNewStmt = stmt;
+                            }
+
+                            GenTreeRetExpr* retExpr =
+                                m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
+                                                                           genActualType(call->TypeGet()));
+                            call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+
+                            JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
+                            DISPTREE(retExpr);
+
+                            *pTree = retExpr;
+                        }
+
+                        JITDUMP("New inline candidate due to late devirtualization:\n");
+                        DISPTREE(call);
+                    }
+                }
                 m_madeChanges = true;
             }
         }
@@ -632,9 +664,9 @@ private:
 
                 if (lcl->lvSingleDef)
                 {
-                    bool                 isExact   = false;
-                    bool                 isNonNull = false;
-                    CORINFO_CLASS_HANDLE newClass  = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
+                    bool                 isExact;
+                    bool                 isNonNull;
+                    CORINFO_CLASS_HANDLE newClass = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
 
                     if (newClass != NO_CLASS_HANDLE)
                     {
@@ -648,7 +680,7 @@ private:
             //
             if (value->OperIs(GT_LCL_VAR) && (value->AsLclVar()->GetLclNum() == lclNum))
             {
-                JITDUMP("... removing self-assignment\n");
+                JITDUMP("... removing self-store\n");
                 DISPTREE(tree);
                 tree->gtBashToNOP();
                 m_madeChanges = true;
@@ -665,25 +697,35 @@ private:
             {
                 JITDUMP(" ... found foldable jtrue at [%06u] in " FMT_BB "\n", m_compiler->dspTreeID(tree),
                         block->bbNum);
+                m_compiler->Metrics.InlinerBranchFold++;
 
                 // We have a constant operand, and should have the all clear to optimize.
                 // Update side effects on the tree, assert there aren't any, and bash to nop.
                 m_compiler->gtUpdateNodeSideEffects(tree);
                 assert((tree->gtFlags & GTF_SIDE_EFFECT) == 0);
                 tree->gtBashToNOP();
-                m_madeChanges = true;
+                m_madeChanges          = true;
+                FlowEdge* removedEdge  = nullptr;
+                FlowEdge* retainedEdge = nullptr;
 
                 if (condTree->IsIntegralConst(0))
                 {
-                    m_compiler->fgRemoveRefPred(block->GetTrueEdge());
-                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
-                    block->SetFlags(BBF_NONE_QUIRK);
+                    removedEdge  = block->GetTrueEdge();
+                    retainedEdge = block->GetFalseEdge();
                 }
                 else
                 {
-                    m_compiler->fgRemoveRefPred(block->GetFalseEdge());
-                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
+                    removedEdge  = block->GetFalseEdge();
+                    retainedEdge = block->GetTrueEdge();
                 }
+
+                m_compiler->fgRemoveRefPred(removedEdge);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+
+                // Update profile, make it consistent if possible.
+                //
+                m_compiler->fgRepairProfileCondToUncond(block, retainedEdge, removedEdge,
+                                                        &m_compiler->Metrics.ProfileInconsistentInlinerBranchFold);
             }
         }
         else
@@ -734,6 +776,11 @@ PhaseStatus Compiler::fgInline()
         JitConfig.JitPrintInlinedMethods().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
 #endif // DEBUG
 
+    if (fgPgoConsistent)
+    {
+        Metrics.ProfileConsistentBeforeInline++;
+    }
+
     noway_assert(fgFirstBB != nullptr);
 
     BasicBlock*                                 block = fgFirstBB;
@@ -743,17 +790,10 @@ PhaseStatus Compiler::fgInline()
     do
     {
         // Make the current basic block address available globally
-        compCurBB = block;
-
-        for (Statement* const stmt : block->Statements())
+        compCurBB       = block;
+        Statement* stmt = block->firstStmt();
+        while (stmt != nullptr)
         {
-
-#if defined(DEBUG)
-            // In debug builds we want the inline tree to show all failed
-            // inlines. Some inlines may fail very early and never make it to
-            // candidate stage. So scan the tree looking for those early failures.
-            fgWalkTreePre(stmt->GetRootNodePointer(), fgFindNonInlineCandidate, stmt);
-#endif
             // See if we need to replace some return value place holders.
             // Also, see if this replacement enables further devirtualization.
             //
@@ -768,7 +808,7 @@ PhaseStatus Compiler::fgInline()
             // possible further optimization, as the (now complete) GT_RET_EXPR
             // replacement may have enabled optimizations by providing more
             // specific types for trees or variables.
-            walker.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            stmt = walker.WalkStatement(stmt);
 
             GenTree* expr = stmt->GetRootNode();
 
@@ -818,6 +858,13 @@ PhaseStatus Compiler::fgInline()
                 madeChanges = true;
                 stmt->SetRootNode(expr->AsOp()->gtOp1);
             }
+
+#if defined(DEBUG)
+            // In debug builds we want the inline tree to show all failed
+            // inlines.
+            fgWalkTreePre(stmt->GetRootNodePointer(), fgFindNonInlineCandidate, stmt);
+#endif
+            stmt = stmt->GetNextStmt();
         }
 
         block = block->Next();
@@ -856,13 +903,13 @@ PhaseStatus Compiler::fgInline()
 
 #endif // DEBUG
 
-    if (madeChanges)
+    if (fgPgoConsistent)
     {
-        // Optional quirk to keep this as zero diff. Some downstream phases are bbNum sensitive
-        // but rely on the ambient bbNums.
-        //
-        fgRenumberBlocks();
+        Metrics.ProfileConsistentAfterInline++;
     }
+
+    Metrics.InlineCount   = m_inlineStrategy->GetInlineCount();
+    Metrics.InlineAttempt = m_inlineStrategy->GetImportCount();
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -952,6 +999,12 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
             noway_assert(fgMorphStmt->GetRootNode() == call);
             fgMorphStmt->SetRootNode(gtNewNothingNode());
         }
+
+        // Inlinee compiler may have determined call does not return; if so, update this compiler's state.
+        if (call->IsNoReturn())
+        {
+            setMethodHasNoReturnCalls();
+        }
     }
 }
 
@@ -981,6 +1034,19 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
 {
     // Don't expect any surprises here.
     assert(result->IsCandidate());
+
+#if defined(DEBUG)
+    // Fail if we're inlining and we've reached the acceptance limit.
+    //
+    int      limit   = JitConfig.JitInlineLimit();
+    unsigned current = m_inlineStrategy->GetInlineCount();
+
+    if ((limit >= 0) && (current >= static_cast<unsigned>(limit)))
+    {
+        result->NoteFatal(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
+        return;
+    }
+#endif // defined(DEBUG)
 
     if (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
     {
@@ -1112,7 +1178,7 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
         return;
     }
 
-    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate", false);
+    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate", true);
     InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
 
     // Try and recover the reason left behind when the jit decided
@@ -1177,6 +1243,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.retExprClassHnd        = nullptr;
     inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
+    inlineInfo.inlInstParamArgInfo    = nullptr;
 #ifdef FEATURE_SIMD
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
@@ -1217,80 +1284,80 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     param.inlineInfo          = &inlineInfo;
     bool success              = eeRunWithErrorTrap<Param>(
         [](Param* pParam) {
-            // Init the local var info of the inlinee
-            pParam->pThis->impInlineInitVars(pParam->inlineInfo);
+        // Init the local var info of the inlinee
+        pParam->pThis->impInlineInitVars(pParam->inlineInfo);
 
-            if (pParam->inlineInfo->inlineResult->IsCandidate())
+        if (pParam->inlineInfo->inlineResult->IsCandidate())
+        {
+            /* Clear the temp table */
+            memset(pParam->inlineInfo->lclTmpNum, -1, sizeof(pParam->inlineInfo->lclTmpNum));
+
+            //
+            // Prepare the call to jitNativeCode
+            //
+
+            pParam->inlineInfo->InlinerCompiler = pParam->pThis;
+            if (pParam->pThis->impInlineInfo == nullptr)
             {
-                /* Clear the temp table */
-                memset(pParam->inlineInfo->lclTmpNum, -1, sizeof(pParam->inlineInfo->lclTmpNum));
+                pParam->inlineInfo->InlineRoot = pParam->pThis;
+            }
+            else
+            {
+                pParam->inlineInfo->InlineRoot = pParam->pThis->impInlineInfo->InlineRoot;
+            }
 
-                //
-                // Prepare the call to jitNativeCode
-                //
+            // The inline context is part of debug info and must be created
+            // before we start creating statements; we lazily create it as
+            // late as possible, which is here.
+            pParam->inlineInfo->inlineContext =
+                pParam->inlineInfo->InlineRoot->m_inlineStrategy
+                    ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt,
+                                              pParam->inlineInfo->iciCall);
+            pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
+            pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHandle;
 
-                pParam->inlineInfo->InlinerCompiler = pParam->pThis;
-                if (pParam->pThis->impInlineInfo == nullptr)
-                {
-                    pParam->inlineInfo->InlineRoot = pParam->pThis;
-                }
-                else
-                {
-                    pParam->inlineInfo->InlineRoot = pParam->pThis->impInlineInfo->InlineRoot;
-                }
+            JITLOG_THIS(pParam->pThis,
+                                     (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
+                         pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
+                         pParam->pThis->dspPtr(pParam->inlineInfo->tokenLookupContextHandle)));
 
-                // The inline context is part of debug info and must be created
-                // before we start creating statements; we lazily create it as
-                // late as possible, which is here.
-                pParam->inlineInfo->inlineContext =
-                    pParam->inlineInfo->InlineRoot->m_inlineStrategy
-                        ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext,
-                                     pParam->inlineInfo->iciStmt, pParam->inlineInfo->iciCall);
-                pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
-                pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
+            JitFlags compileFlagsForInlinee = *pParam->pThis->opts.jitFlags;
 
-                JITLOG_THIS(pParam->pThis,
-                            (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
-                             pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
-                             pParam->pThis->dspPtr(pParam->inlineInfo->tokenLookupContextHandle)));
-
-                JitFlags compileFlagsForInlinee = *pParam->pThis->opts.jitFlags;
-
-                // The following flags are lost when inlining.
-                // (This is checked in Compiler::compInitOptions().)
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
+            // The following flags are lost when inlining.
+            // (This is checked in Compiler::compInitOptions().)
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
 
 #ifdef DEBUG
-                if (pParam->pThis->verbose)
-                {
-                    printf("\nInvoking compiler for the inlinee method %s :\n",
-                           pParam->pThis->eeGetMethodFullName(pParam->fncHandle));
-                }
+            if (pParam->pThis->verbose)
+            {
+                printf("\nInvoking compiler for the inlinee method %s :\n",
+                       pParam->pThis->eeGetMethodFullName(pParam->fncHandle));
+            }
 #endif // DEBUG
 
-                int result =
-                    jitNativeCode(pParam->fncHandle, pParam->inlineCandidateInfo->methInfo.scope,
-                                  pParam->pThis->info.compCompHnd, &pParam->inlineCandidateInfo->methInfo,
-                                  (void**)pParam->inlineInfo, nullptr, &compileFlagsForInlinee, pParam->inlineInfo);
+            int result =
+                jitNativeCode(pParam->fncHandle, pParam->inlineCandidateInfo->methInfo.scope,
+                              pParam->pThis->info.compCompHnd, &pParam->inlineCandidateInfo->methInfo,
+                              (void**)pParam->inlineInfo, nullptr, &compileFlagsForInlinee, pParam->inlineInfo);
 
-                if (result != CORJIT_OK)
+            if (result != CORJIT_OK)
+            {
+                // If we haven't yet determined why this inline fails, use
+                // a catch-all something bad happened observation.
+                InlineResult* innerInlineResult = pParam->inlineInfo->inlineResult;
+
+                if (!innerInlineResult->IsFailure())
                 {
-                    // If we haven't yet determined why this inline fails, use
-                    // a catch-all something bad happened observation.
-                    InlineResult* innerInlineResult = pParam->inlineInfo->inlineResult;
-
-                    if (!innerInlineResult->IsFailure())
-                    {
-                        innerInlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_FAILURE);
-                    }
+                    innerInlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_FAILURE);
                 }
             }
-        },
+        }
+    },
         &param);
     if (!success)
     {
@@ -1329,7 +1396,8 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // (This could happen for example for a BBJ_THROW block fall through a BBJ_RETURN block which
     // causes the BBJ_RETURN block not to be imported at all.)
     // Fail the inlining attempt
-    if ((inlineCandidateInfo->fncRetType != TYP_VOID) && (inlineCandidateInfo->retExpr->gtSubstExpr == nullptr))
+    if ((inlineCandidateInfo->methInfo.args.retType != CORINFO_TYPE_VOID) &&
+        (inlineCandidateInfo->retExpr->gtSubstExpr == nullptr))
     {
 #ifdef DEBUG
         if (verbose)
@@ -1450,7 +1518,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             // Inlinee contains just one BB. So just insert its statement list to topBlock.
             if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
             {
+                JITDUMP("\nInserting inlinee code into " FMT_BB "\n", iciBlock->bbNum);
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
+            }
+            else
+            {
+                JITDUMP("\ninlinee was empty\n");
             }
 
             // Copy inlinee bbFlags to caller bbFlags.
@@ -1486,6 +1559,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             fgInlineAppendStatements(pInlineInfo, iciBlock, stmtAfter);
             insertInlineeBlocks = false;
         }
+        else
+        {
+            JITDUMP("\ninlinee was single-block, but not BBJ_RETURN\n");
+        }
     }
 
     //
@@ -1493,21 +1570,191 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     if (insertInlineeBlocks)
     {
+        JITDUMP("\nInserting inlinee blocks\n");
         bottomBlock              = fgSplitBlockAfterStatement(topBlock, stmtAfter);
         unsigned const baseBBNum = fgBBNumMax;
+
+        JITDUMP("split " FMT_BB " after the inlinee call site; after portion is now " FMT_BB "\n", topBlock->bbNum,
+                bottomBlock->bbNum);
 
         // The newly split block is not special so doesn't need to be kept.
         //
         bottomBlock->RemoveFlags(BBF_DONT_REMOVE);
 
+        // If the inlinee has EH, merge the EH tables, and figure out how much of
+        // a shift we need to make in the inlinee blocks EH indicies.
+        //
+        unsigned const inlineeRegionCount = InlineeCompiler->compHndBBtabCount;
+        const bool     inlineeHasEH       = inlineeRegionCount > 0;
+        unsigned       inlineeIndexShift  = 0;
+
+        if (inlineeHasEH)
+        {
+            // If the call site also has EH, we need to insert the inlinee clauses
+            // so they are a child of the call site's innermost enclosing region.
+            // Figure out what this is.
+            //
+            bool           inTryRegion     = false;
+            unsigned const enclosingRegion = ehGetMostNestedRegionIndex(iciBlock, &inTryRegion);
+
+            // We will insert the inlinee clauses in bulk before this index.
+            //
+            unsigned insertBeforeIndex = 0;
+
+            if (enclosingRegion == 0)
+            {
+                // The call site is not in an EH region, so we can put the inlinee EH clauses
+                // at the end of root method's the EH table.
+                //
+                // For example, if the root method already has EH#0, and the inlinee has 2 regions
+                //
+                //   enclosingRegion   will be 0
+                //   inlineeIndexShift will be 1
+                //   insertBeforeIndex will be 1
+                //
+                //   inlinee eh0 -> eh1
+                //   inlinee eh1 -> eh2
+                //
+                //   root eh0 -> eh0
+                //
+                inlineeIndexShift = compHndBBtabCount;
+                insertBeforeIndex = compHndBBtabCount;
+            }
+            else
+            {
+                // The call site is in an EH region, so we can put the inlinee EH clauses
+                // just before the enclosing region
+                //
+                // Note enclosingRegion is region index + 1. So EH#0 will be represented by 1 here.
+                //
+                // For example, if the enclosing EH regions are try#2 and hnd#3, and the inlinee has 2 eh clauses
+                //
+                //   enclosingRegion   will be 3  (try2 + 1)
+                //   inlineeIndexShift will be 2
+                //   insertBeforeIndex will be 2
+                //
+                //   inlinee eh0 -> eh2
+                //   inlinee eh1 -> eh3
+                //
+                //   root eh0 -> eh0
+                //   root eh1 -> eh1
+                //
+                //   root eh2 -> eh4
+                //   root eh3 -> eh5
+                //
+                inlineeIndexShift = enclosingRegion - 1;
+                insertBeforeIndex = enclosingRegion - 1;
+            }
+
+            JITDUMP(
+                "Inlinee has EH. In root method, inlinee's %u EH region indices will shift by %u and become EH#%02u ... EH#%02u (%p)\n",
+                inlineeRegionCount, inlineeIndexShift, insertBeforeIndex, insertBeforeIndex + inlineeRegionCount - 1,
+                &inlineeIndexShift);
+
+            if (enclosingRegion != 0)
+            {
+                JITDUMP("Inlinee is nested within current %s EH#%02u (which will become EH#%02u)\n",
+                        inTryRegion ? "try" : "hnd", enclosingRegion - 1, enclosingRegion - 1 + inlineeRegionCount);
+            }
+            else
+            {
+                JITDUMP("Inlinee is not nested inside any EH region\n");
+            }
+
+            // Grow the EH table.
+            //
+            // TODO: verify earlier that this won't fail...
+            //
+            EHblkDsc* const outermostEbd =
+                fgTryAddEHTableEntries(insertBeforeIndex, inlineeRegionCount, /* deferAdding */ false);
+            assert(outermostEbd != nullptr);
+
+            // fgTryAddEHTableEntries has adjusted the indices of all root method blocks and EH clauses
+            // to accommodate the new entries. No other changes to those are needed.
+            //
+            // We just need to add in and fix up the new entries from the inlinee.
+            //
+            // Fetch the new enclosing try/handler table indicies.
+            //
+            const unsigned enclosingTryIndex =
+                iciBlock->hasTryIndex() ? iciBlock->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+            const unsigned enclosingHndIndex =
+                iciBlock->hasHndIndex() ? iciBlock->getHndIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+
+            // Copy over the EH table entries from inlinee->root and adjust their enclosing indicies.
+            //
+            for (unsigned XTnum = 0; XTnum < inlineeRegionCount; XTnum++)
+            {
+                unsigned newXTnum      = XTnum + inlineeIndexShift;
+                compHndBBtab[newXTnum] = InlineeCompiler->compHndBBtab[XTnum];
+                EHblkDsc* const ebd    = &compHndBBtab[newXTnum];
+
+                if (ebd->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    ebd->ebdEnclosingTryIndex += (unsigned short)inlineeIndexShift;
+                }
+                else
+                {
+                    ebd->ebdEnclosingTryIndex = (unsigned short)enclosingTryIndex;
+                }
+
+                if (ebd->ebdEnclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    ebd->ebdEnclosingHndIndex += (unsigned short)inlineeIndexShift;
+                }
+                else
+                {
+                    ebd->ebdEnclosingHndIndex = (unsigned short)enclosingHndIndex;
+                }
+            }
+        }
+
+        // Fetch the new enclosing try/handler indicies for blocks.
+        // Note these are represented differently than the EH table indices.
+        //
+        const unsigned blockEnclosingTryIndex = iciBlock->hasTryIndex() ? iciBlock->getTryIndex() + 1 : 0;
+        const unsigned blockEnclosingHndIndex = iciBlock->hasHndIndex() ? iciBlock->getHndIndex() + 1 : 0;
+
         // Set the try and handler index and fix the jump types of inlinee's blocks.
         //
         for (BasicBlock* const block : InlineeCompiler->Blocks())
         {
-            noway_assert(!block->hasTryIndex());
-            noway_assert(!block->hasHndIndex());
-            block->copyEHRegion(iciBlock);
-            block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP);
+            if (block->hasTryIndex())
+            {
+                JITDUMP("Inlinee " FMT_BB " has old try index %u, shift %u, new try index %u\n", block->bbNum,
+                        (unsigned)block->bbTryIndex, inlineeIndexShift,
+                        (unsigned)(block->bbTryIndex + inlineeIndexShift));
+                block->bbTryIndex += (unsigned short)inlineeIndexShift;
+            }
+            else
+            {
+                block->bbTryIndex = (unsigned short)blockEnclosingTryIndex;
+            }
+
+            if (block->hasHndIndex())
+            {
+                block->bbHndIndex += (unsigned short)inlineeIndexShift;
+            }
+            else
+            {
+                block->bbHndIndex = (unsigned short)blockEnclosingHndIndex;
+            }
+
+            // Sanity checks
+            //
+            if (iciBlock->hasTryIndex())
+            {
+                assert(block->hasTryIndex());
+                assert(block->getTryIndex() <= iciBlock->getTryIndex());
+            }
+
+            if (iciBlock->hasHndIndex())
+            {
+                assert(block->hasHndIndex());
+                assert(block->getHndIndex() <= iciBlock->getHndIndex());
+            }
+
+            block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT);
 
             // Update block nums appropriately
             //
@@ -1530,16 +1777,11 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert(!block->HasFlag(BBF_HAS_JMP));
-                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
+                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottom block " FMT_BB "\n", block->bbNum,
                         bottomBlock->bbNum);
 
                 FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
-
-                if (block == InlineeCompiler->fgLastBB)
-                {
-                    block->SetFlags(BBF_NONE_QUIRK);
-                }
             }
         }
 
@@ -1553,7 +1795,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         fgRedirectTargetEdge(topBlock, InlineeCompiler->fgFirstBB);
 
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
-        topBlock->SetFlags(BBF_NONE_QUIRK);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);
 
         //
@@ -1567,7 +1808,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     }
 
     //
-    // At this point, we have successully inserted inlinee's code.
+    // At this point, we have successfully inserted inlinee's code.
     //
 
     //
@@ -1580,6 +1821,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
+    compMaskConvertUsed |= InlineeCompiler->compMaskConvertUsed;
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
@@ -1587,13 +1829,18 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     info.compNeedsConsecutiveRegisters |= InlineeCompiler->info.compNeedsConsecutiveRegisters;
 #endif
 
-    // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
-    // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
-    if (InlineeCompiler->fgHasSwitch && opts.compProcedureSplitting)
+    if (InlineeCompiler->fgHasSwitch)
     {
-        opts.compProcedureSplitting = false;
-        JITDUMP("Turning off procedure splitting for this method, as inlinee compiler encountered switch tables; "
-                "implementation limitation.\n");
+        fgHasSwitch = true;
+
+        // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
+        // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
+        if (opts.compProcedureSplitting)
+        {
+            opts.compProcedureSplitting = false;
+            JITDUMP("Turning off procedure splitting for this method, as inlinee compiler encountered switch tables; "
+                    "implementation limitation.\n");
+        }
     }
 
 #ifdef FEATURE_SIMD
@@ -1628,8 +1875,15 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         }
     }
 
+    // Update no-return call count
+    optNoReturnCallCount += InlineeCompiler->optNoReturnCallCount;
+
+#ifdef DEBUG
+    // Update metrics
+    Metrics.mergeToRoot(InlineeCompiler);
+#endif
+
     // Update optMethodFlags
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     unsigned optMethodFlagsBefore = optMethodFlags;
@@ -1644,6 +1898,72 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 InlineeCompiler->optMethodFlags, optMethodFlags);
     }
 #endif
+
+    // Update profile consistency
+    //
+    // If inlinee is inconsistent, root method will be inconsistent too.
+    //
+    if (!InlineeCompiler->fgPgoConsistent)
+    {
+        if (fgPgoConsistent)
+        {
+            JITDUMP("INLINER: profile data in root now inconsistent -- inlinee had inconsistency\n");
+            Metrics.ProfileInconsistentInlinee++;
+            fgPgoConsistent = false;
+        }
+    }
+
+    // If we inline a no-return call at a site with profile weight,
+    // we will introduce inconsistency.
+    //
+    if (InlineeCompiler->fgReturnCount == 0)
+    {
+        JITDUMP("INLINER: no-return inlinee\n");
+
+        if (iciBlock->bbWeight > 0)
+        {
+            if (fgPgoConsistent)
+            {
+                JITDUMP("INLINER: profile data in root now inconsistent -- no-return inlinee at call site in " FMT_BB
+                        " with weight " FMT_WT "\n",
+                        iciBlock->bbNum, iciBlock->bbWeight);
+                Metrics.ProfileInconsistentNoReturnInlinee++;
+                fgPgoConsistent = false;
+            }
+        }
+        else
+        {
+            // Inlinee scaling should assure this is so.
+            //
+            assert(InlineeCompiler->fgFirstBB->bbWeight == 0);
+        }
+    }
+
+    // If the call site is not in a try and the callee has a throw,
+    // we may introduce inconsistency.
+    //
+    if (InlineeCompiler->fgThrowCount > 0)
+    {
+        JITDUMP("INLINER: may-throw inlinee\n");
+
+        if (iciBlock->bbWeight > 0)
+        {
+            if (fgPgoConsistent)
+            {
+                JITDUMP("INLINER: profile data in root now inconsistent -- may-throw inlinee at call site in " FMT_BB
+                        " with weight " FMT_WT "\n",
+                        iciBlock->bbNum, iciBlock->bbWeight);
+                Metrics.ProfileInconsistentMayThrowInlinee++;
+                fgPgoConsistent = false;
+            }
+        }
+        else
+        {
+            // Inlinee scaling should assure this is so.
+            //
+            assert(InlineeCompiler->fgFirstBB->bbWeight == 0);
+        }
+    }
 
     // If an inlinee needs GS cookie we need to make sure that the cookie will not be allocated at zero stack offset.
     // Note that if the root method needs GS cookie then this has already been taken care of.
@@ -1665,6 +1985,175 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 }
 
 //------------------------------------------------------------------------
+// fgInsertInlineeArgument: wire up the given argument from the callsite with the inlinee
+//
+// Arguments:
+//    argInfo   - information about the argument
+//    block     - block to insert the argument into
+//    afterStmt - statement to insert the argument after
+//    newStmt   - updated with the new statement
+//    callDI    - debug info for the call
+//
+void Compiler::fgInsertInlineeArgument(
+    const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI)
+{
+    const bool argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
+    CallArg*   arg            = argInfo.arg;
+    GenTree*   argNode        = arg->GetNode();
+
+    assert(!argNode->OperIs(GT_RET_EXPR));
+
+    if (argInfo.argHasTmp)
+    {
+        noway_assert(argInfo.argIsUsed);
+
+        /* argBashTmpNode is non-NULL iff the argument's value was
+           referenced exactly once by the original IL. This offers an
+           opportunity to avoid an intermediate temp and just insert
+           the original argument tree.
+
+           However, if the temp node has been cloned somewhere while
+           importing (e.g. when handling isinst or dup), or if the IL
+           took the address of the argument, then argBashTmpNode will
+           be set (because the value was only explicitly retrieved
+           once) but the optimization cannot be applied.
+         */
+
+        GenTree* argSingleUseNode = argInfo.argBashTmpNode;
+
+        if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_MOREUSES) && argIsSingleDef)
+        {
+            // Change the temp in-place to the actual argument.
+            // We currently do not support this for struct arguments, so it must not be a GT_BLK.
+            assert(argNode->gtOper != GT_BLK);
+            argSingleUseNode->ReplaceWith(argNode, this);
+            return;
+        }
+        else
+        {
+            // We're going to assign the argument value to the temp we use for it in the inline body.
+            GenTree* store = gtNewTempStore(argInfo.argTmpNum, argNode);
+
+            *newStmt = gtNewStmt(store, callDI);
+            fgInsertStmtAfter(block, *afterStmt, *newStmt);
+            *afterStmt = *newStmt;
+            DISPSTMT(*afterStmt);
+        }
+    }
+    else if (argInfo.argIsByRefToStructLocal)
+    {
+        // Do nothing. Arg was directly substituted as we read
+        // the inlinee.
+    }
+    else
+    {
+        // The argument is either not used or a const or lcl var
+        noway_assert(!argInfo.argIsUsed || argInfo.argIsInvariant || argInfo.argIsLclVar);
+        noway_assert((argInfo.argIsLclVar == 0) ==
+                     (argNode->gtOper != GT_LCL_VAR || (argNode->gtFlags & GTF_GLOB_REF)));
+
+        // If the argument has side effects, append it
+        if (argInfo.argHasSideEff)
+        {
+            noway_assert(argInfo.argIsUsed == false);
+            *newStmt    = nullptr;
+            bool append = true;
+
+            if (argNode->gtOper == GT_BLK)
+            {
+                // Don't put GT_BLK node under a GT_COMMA.
+                // Codegen can't deal with it.
+                // Just hang the address here in case there are side-effect.
+                *newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callDI);
+            }
+            else
+            {
+                // In some special cases, unused args with side effects can
+                // trigger further changes.
+                //
+                // (1) If the arg is a static field access and the field access
+                // was produced by a call to EqualityComparer<T>.get_Default, the
+                // helper call to ensure the field has a value can be suppressed.
+                // This helper call is marked as a "Special DCE" helper during
+                // importation, over in fgGetStaticsCCtorHelper.
+                //
+                // (2) NYI. If we find that the actual arg expression
+                // has no side effects, we can skip appending all
+                // together. This will help jit TP a bit.
+                //
+                assert(!argNode->OperIs(GT_RET_EXPR));
+
+                // For case (1)
+                //
+                // Look for the following tree shapes
+                // prejit: (IND (ADD (CONST, CALL(special dce helper...))))
+                // jit   : (COMMA (CALL(special dce helper...), (FIELD ...)))
+                if (argNode->gtOper == GT_COMMA)
+                {
+                    // Look for (COMMA (CALL(special dce helper...), (FIELD ...)))
+                    GenTree* op1 = argNode->AsOp()->gtOp1;
+                    GenTree* op2 = argNode->AsOp()->gtOp2;
+                    if (op1->IsCall() && ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
+                        op2->OperIs(GT_IND) && op2->gtGetOp1()->IsIconHandle() && ((op2->gtFlags & GTF_EXCEPT) == 0))
+                    {
+                        JITDUMP("\nPerforming special dce on unused arg [%06u]:"
+                                " actual arg [%06u] helper call [%06u]\n",
+                                argNode->gtTreeID, argNode->gtTreeID, op1->gtTreeID);
+                        // Drop the whole tree
+                        append = false;
+                    }
+                }
+                else if (argNode->gtOper == GT_IND)
+                {
+                    // Look for (IND (ADD (CONST, CALL(special dce helper...))))
+                    GenTree* addr = argNode->AsOp()->gtOp1;
+
+                    if (addr->gtOper == GT_ADD)
+                    {
+                        GenTree* op1 = addr->AsOp()->gtOp1;
+                        GenTree* op2 = addr->AsOp()->gtOp2;
+                        if (op1->IsCall() && ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
+                            op2->IsCnsIntOrI())
+                        {
+                            // Drop the whole tree
+                            JITDUMP("\nPerforming special dce on unused arg [%06u]:"
+                                    " actual arg [%06u] helper call [%06u]\n",
+                                    argNode->gtTreeID, argNode->gtTreeID, op1->gtTreeID);
+                            append = false;
+                        }
+                    }
+                }
+            }
+
+            if (!append)
+            {
+                assert(*newStmt == nullptr);
+                JITDUMP("Arg tree side effects were discardable, not appending anything for arg\n");
+            }
+            else
+            {
+                // If we don't have something custom to append,
+                // just append the arg node as an unused value.
+                if (*newStmt == nullptr)
+                {
+                    *newStmt = gtNewStmt(gtUnusedValNode(argNode), callDI);
+                }
+
+                fgInsertStmtAfter(block, *afterStmt, *newStmt);
+                *afterStmt = *newStmt;
+                DISPSTMT(*afterStmt);
+            }
+        }
+        else if (argNode->IsBoxedValue())
+        {
+            // Try to clean up any unnecessary boxing side effects
+            // since the box itself will be ignored.
+            gtTryRemoveBoxUpstreamEffects(argNode);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // fgInlinePrependStatements: prepend statements needed to match up
 // caller and inlined callee
 //
@@ -1683,29 +2172,19 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 //    * Passing of call arguments via temps
 //
 //    Newly added statements are placed just after the original call
-//    and are are given the same inline context as the call any calls
+//    and are given the same inline context as the call any calls
 //    added here will appear to have been part of the immediate caller.
-
+//
 Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 {
     BasicBlock*      block     = inlineInfo->iciBlock;
     Statement*       callStmt  = inlineInfo->iciStmt;
     const DebugInfo& callDI    = callStmt->GetDebugInfo();
-    Statement*       postStmt  = callStmt->GetNextStmt();
     Statement*       afterStmt = callStmt; // afterStmt is the place where the new statements should be inserted after.
     Statement*       newStmt   = nullptr;
     GenTreeCall*     call      = inlineInfo->iciCall->AsCall();
 
     noway_assert(call->gtOper == GT_CALL);
-
-#ifdef DEBUG
-    if (0 && verbose)
-    {
-        printf("\nfgInlinePrependStatements for iciCall= ");
-        printTreeID(call);
-        printf(":\n");
-    }
-#endif
 
     // Prepend statements for any initialization / side effects
 
@@ -1727,7 +2206,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     if (call->gtFlags & GTF_CALL_NULLCHECK && !inlineInfo->thisDereferencedFirst)
     {
         // Call impInlineFetchArg to "reserve" a temp for the "this" pointer.
-        GenTree* thisOp = impInlineFetchArg(0, inlArgInfo, lclVarInfo);
+        GenTree* thisOp = impInlineFetchArg(inlArgInfo[0], lclVarInfo[0]);
         if (fgAddrCouldBeNull(thisOp))
         {
             nullcheck = gtNewNullCheck(thisOp, block);
@@ -1736,184 +2215,32 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         }
     }
 
-    /* Treat arguments that had to be assigned to temps */
-    if (inlineInfo->argCnt)
+#ifdef DEBUG
+    if (call->gtArgs.CountUserArgs() > 0)
     {
+        JITDUMP("\nArguments setup:\n");
+    }
+#endif
 
-#ifdef DEBUG
-        if (verbose)
+    unsigned ilArgNum = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        InlArgInfo* argInfo = nullptr;
+        switch (arg.GetWellKnownArg())
         {
-            printf("\nArguments setup:\n");
+            case WellKnownArg::RetBuffer:
+                continue;
+            case WellKnownArg::InstParam:
+                argInfo = inlineInfo->inlInstParamArgInfo;
+                break;
+            default:
+                assert(ilArgNum < inlineInfo->argCnt);
+                argInfo = &inlineInfo->inlArgInfo[ilArgNum++];
+                break;
         }
-#endif // DEBUG
 
-        for (unsigned argNum = 0; argNum < inlineInfo->argCnt; argNum++)
-        {
-            const InlArgInfo& argInfo        = inlArgInfo[argNum];
-            const bool        argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
-            CallArg*          arg            = argInfo.arg;
-            GenTree*          argNode        = arg->GetNode();
-
-            assert(!argNode->OperIs(GT_RET_EXPR));
-
-            if (argInfo.argHasTmp)
-            {
-                noway_assert(argInfo.argIsUsed);
-
-                /* argBashTmpNode is non-NULL iff the argument's value was
-                   referenced exactly once by the original IL. This offers an
-                   opportunity to avoid an intermediate temp and just insert
-                   the original argument tree.
-
-                   However, if the temp node has been cloned somewhere while
-                   importing (e.g. when handling isinst or dup), or if the IL
-                   took the address of the argument, then argBashTmpNode will
-                   be set (because the value was only explicitly retrieved
-                   once) but the optimization cannot be applied.
-                 */
-
-                GenTree* argSingleUseNode = argInfo.argBashTmpNode;
-
-                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_MOREUSES) && argIsSingleDef)
-                {
-                    // Change the temp in-place to the actual argument.
-                    // We currently do not support this for struct arguments, so it must not be a GT_BLK.
-                    assert(argNode->gtOper != GT_BLK);
-                    argSingleUseNode->ReplaceWith(argNode, this);
-                    continue;
-                }
-                else
-                {
-                    // We're going to assign the argument value to the temp we use for it in the inline body.
-                    GenTree* store = gtNewTempStore(argInfo.argTmpNum, argNode);
-
-                    newStmt = gtNewStmt(store, callDI);
-                    fgInsertStmtAfter(block, afterStmt, newStmt);
-                    afterStmt = newStmt;
-
-                    DISPSTMT(afterStmt);
-                }
-            }
-            else if (argInfo.argIsByRefToStructLocal)
-            {
-                // Do nothing. Arg was directly substituted as we read
-                // the inlinee.
-            }
-            else
-            {
-                // The argument is either not used or a const or lcl var
-                noway_assert(!argInfo.argIsUsed || argInfo.argIsInvariant || argInfo.argIsLclVar);
-                noway_assert((argInfo.argIsLclVar == 0) ==
-                             (argNode->gtOper != GT_LCL_VAR || (argNode->gtFlags & GTF_GLOB_REF)));
-
-                // If the argument has side effects, append it
-                if (argInfo.argHasSideEff)
-                {
-                    noway_assert(argInfo.argIsUsed == false);
-                    newStmt     = nullptr;
-                    bool append = true;
-
-                    if (argNode->gtOper == GT_BLK || argNode->gtOper == GT_MKREFANY)
-                    {
-                        // Don't put GT_BLK node under a GT_COMMA.
-                        // Codegen can't deal with it.
-                        // Just hang the address here in case there are side-effect.
-                        newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callDI);
-                    }
-                    else
-                    {
-                        // In some special cases, unused args with side effects can
-                        // trigger further changes.
-                        //
-                        // (1) If the arg is a static field access and the field access
-                        // was produced by a call to EqualityComparer<T>.get_Default, the
-                        // helper call to ensure the field has a value can be suppressed.
-                        // This helper call is marked as a "Special DCE" helper during
-                        // importation, over in fgGetStaticsCCtorHelper.
-                        //
-                        // (2) NYI. If we find that the actual arg expression
-                        // has no side effects, we can skip appending all
-                        // together. This will help jit TP a bit.
-                        //
-                        assert(!argNode->OperIs(GT_RET_EXPR));
-
-                        // For case (1)
-                        //
-                        // Look for the following tree shapes
-                        // prejit: (IND (ADD (CONST, CALL(special dce helper...))))
-                        // jit   : (COMMA (CALL(special dce helper...), (FIELD ...)))
-                        if (argNode->gtOper == GT_COMMA)
-                        {
-                            // Look for (COMMA (CALL(special dce helper...), (FIELD ...)))
-                            GenTree* op1 = argNode->AsOp()->gtOp1;
-                            GenTree* op2 = argNode->AsOp()->gtOp2;
-                            if (op1->IsCall() &&
-                                ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
-                                op2->OperIs(GT_IND) && op2->gtGetOp1()->IsIconHandle() &&
-                                ((op2->gtFlags & GTF_EXCEPT) == 0))
-                            {
-                                JITDUMP("\nPerforming special dce on unused arg [%06u]:"
-                                        " actual arg [%06u] helper call [%06u]\n",
-                                        argNode->gtTreeID, argNode->gtTreeID, op1->gtTreeID);
-                                // Drop the whole tree
-                                append = false;
-                            }
-                        }
-                        else if (argNode->gtOper == GT_IND)
-                        {
-                            // Look for (IND (ADD (CONST, CALL(special dce helper...))))
-                            GenTree* addr = argNode->AsOp()->gtOp1;
-
-                            if (addr->gtOper == GT_ADD)
-                            {
-                                GenTree* op1 = addr->AsOp()->gtOp1;
-                                GenTree* op2 = addr->AsOp()->gtOp2;
-                                if (op1->IsCall() &&
-                                    ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
-                                    op2->IsCnsIntOrI())
-                                {
-                                    // Drop the whole tree
-                                    JITDUMP("\nPerforming special dce on unused arg [%06u]:"
-                                            " actual arg [%06u] helper call [%06u]\n",
-                                            argNode->gtTreeID, argNode->gtTreeID, op1->gtTreeID);
-                                    append = false;
-                                }
-                            }
-                        }
-                    }
-
-                    if (!append)
-                    {
-                        assert(newStmt == nullptr);
-                        JITDUMP("Arg tree side effects were discardable, not appending anything for arg\n");
-                    }
-                    else
-                    {
-                        // If we don't have something custom to append,
-                        // just append the arg node as an unused value.
-                        if (newStmt == nullptr)
-                        {
-                            newStmt = gtNewStmt(gtUnusedValNode(argNode), callDI);
-                        }
-
-                        fgInsertStmtAfter(block, afterStmt, newStmt);
-                        afterStmt = newStmt;
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            gtDispStmt(afterStmt);
-                        }
-#endif // DEBUG
-                    }
-                }
-                else if (argNode->IsBoxedValue())
-                {
-                    // Try to clean up any unnecessary boxing side effects
-                    // since the box itself will be ignored.
-                    gtTryRemoveBoxUpstreamEffects(argNode);
-                }
-            }
-        }
+        assert(argInfo != nullptr);
+        fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
     }
 
     // Add the CCTOR check if asked for.
@@ -1924,7 +2251,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
     if (inlineInfo->inlineCandidateInfo->initClassResult & CORINFO_INITCLASS_USE_HELPER)
     {
-        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHnd);
+        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHandle);
 
         tree    = fgGetSharedCCtor(exactClass);
         newStmt = gtNewStmt(tree, callDI);

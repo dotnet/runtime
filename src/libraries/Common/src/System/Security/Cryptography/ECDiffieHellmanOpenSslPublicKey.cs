@@ -20,14 +20,19 @@ namespace System.Security.Cryptography
             // If ecKey is valid it has already been up-ref'd, so we can just use this handle as-is.
             SafeEcKeyHandle key = Interop.Crypto.EvpPkeyGetEcKey(pkeyHandle);
 
-            if (key.IsInvalid)
+            if (key == null || key.IsInvalid)
             {
-                Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
-                key.Dispose();
-                throw e;
-            }
+                key?.Dispose();
 
-            _key = new ECOpenSsl(key);
+                // This may happen when EVP_PKEY was created by provider and getting EC_KEY is not possible.
+                // Since you cannot mix EC_KEY and EVP_PKEY params API we need to export and re-import the public key.
+                ECParameters ecParams = ECOpenSsl.ExportParameters(pkeyHandle, includePrivateParameters: false);
+                _key = new ECOpenSsl(ecParams);
+            }
+            else
+            {
+                _key = new ECOpenSsl(key);
+            }
         }
 
         internal ECDiffieHellmanOpenSslPublicKey(ECParameters parameters)
@@ -80,25 +85,7 @@ namespace System.Security.Cryptography
         internal SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             SafeEcKeyHandle currentKey = GetKey();
-            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
-
-            try
-            {
-                // Wrapping our key in an EVP_PKEY will up_ref our key.
-                // When the EVP_PKEY is Disposed it will down_ref the key.
-                // So everything should be copacetic.
-                if (!Interop.Crypto.EvpPkeySetEcKey(pkeyHandle, currentKey))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                return pkeyHandle;
-            }
-            catch
-            {
-                pkeyHandle.Dispose();
-                throw;
-            }
+            return Interop.Crypto.CreateEvpPkeyFromEcKey(currentKey);
         }
 
         [MemberNotNull(nameof(_key))]

@@ -178,7 +178,7 @@ namespace Internal.TypeSystem.Interop
             Module = owningModule;
             ManagedStructType = managedStructType;
             _interopStateManager = interopStateManager;
-            _hasInvalidLayout = false;
+            _hasInvalidLayout = !managedStructType.HasLayout();
             _typeForFieldIteration = managedStructType.IsInlineArray ? new TypeWithRepeatedFields(managedStructType) : managedStructType;
 
             Stack<MetadataType> typesBeingLookedAt = (s_typesBeingLookedAt ??= new Stack<MetadataType>());
@@ -248,29 +248,6 @@ namespace Internal.TypeSystem.Interop
             ClassLayoutMetadata result;
             result.PackingSize = layout.PackingSize;
             result.Size = layout.Size;
-
-            if (IsExplicitLayout)
-            {
-                result.Offsets = new FieldAndOffset[layout.Offsets.Length];
-
-                Debug.Assert(layout.Offsets.Length <= _fields.Length);
-
-                int layoutIndex = 0;
-                for (int index = 0; index < _fields.Length; index++)
-                {
-                    if (_fields[index].Name == layout.Offsets[layoutIndex].Field.Name)
-                    {
-                        result.Offsets[layoutIndex] = new FieldAndOffset(_fields[index], layout.Offsets[layoutIndex].Offset);
-                        layoutIndex++;
-                    }
-                }
-
-                Debug.Assert(layoutIndex == layout.Offsets.Length);
-            }
-            else
-            {
-                result.Offsets = null;
-            }
 
             return result;
         }
@@ -437,6 +414,14 @@ namespace Internal.TypeSystem.Interop
                 get
                 {
                     return _managedField.Name;
+                }
+            }
+
+            public override LayoutInt MetadataOffset
+            {
+                get
+                {
+                    return _managedField.MetadataOffset;
                 }
             }
 

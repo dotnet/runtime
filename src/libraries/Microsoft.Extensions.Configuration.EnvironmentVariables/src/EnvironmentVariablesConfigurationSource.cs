@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// Builds the <see cref="EnvironmentVariablesConfigurationProvider"/> for this source.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
-        /// <returns>A <see cref="EnvironmentVariablesConfigurationProvider"/></returns>
+        /// <returns>A <see cref="EnvironmentVariablesConfigurationProvider"/>.</returns>
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
             return new EnvironmentVariablesConfigurationProvider(Prefix);

@@ -11,29 +11,14 @@ namespace System.Linq
     {
         public static TSource[] ToArray<TSource>(this IEnumerable<TSource> source)
         {
-            if (source is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-#if !OPTIMIZE_FOR_SIZE
-            if (source is Iterator<TSource> iterator)
+            if (!IsSizeOptimized && source is Iterator<TSource> iterator)
             {
                 return iterator.ToArray();
             }
-#endif
 
             if (source is ICollection<TSource> collection)
             {
-                int count = collection.Count;
-                if (count != 0)
-                {
-                    var result = new TSource[count];
-                    collection.CopyTo(result, 0);
-                    return result;
-                }
-
-                return [];
+                return ICollectionToArray(collection);
             }
 
             return EnumerableToArray(source);
@@ -41,6 +26,11 @@ namespace System.Linq
             [MethodImpl(MethodImplOptions.NoInlining)] // avoid large stack allocation impacting other paths
             static TSource[] EnumerableToArray(IEnumerable<TSource> source)
             {
+                if (source is null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                }
+
                 SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
                 SegmentedArrayBuilder<TSource> builder = new(scratch);
 
@@ -52,6 +42,19 @@ namespace System.Linq
             }
         }
 
+        private static TSource[] ICollectionToArray<TSource>(ICollection<TSource> collection)
+        {
+            int count = collection.Count;
+            if (count != 0)
+            {
+                var result = new TSource[count];
+                collection.CopyTo(result, 0);
+                return result;
+            }
+
+            return [];
+        }
+
         public static List<TSource> ToList<TSource>(this IEnumerable<TSource> source)
         {
             if (source is null)
@@ -59,12 +62,10 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-#if !OPTIMIZE_FOR_SIZE
-            if (source is Iterator<TSource> iterator)
+            if (!IsSizeOptimized && source is Iterator<TSource> iterator)
             {
                 return iterator.ToList();
             }
-#endif
 
             return new List<TSource>(source);
         }
@@ -259,12 +260,5 @@ namespace System.Linq
         /// <summary>Default initial capacity to use when creating sets for internal temporary storage.</summary>
         /// <remarks>This is based on the implicit size used in previous implementations, which used a custom Set type.</remarks>
         private const int DefaultInternalSetCapacity = 7;
-
-        private static TSource[] HashSetToArray<TSource>(HashSet<TSource> set)
-        {
-            var result = new TSource[set.Count];
-            set.CopyTo(result);
-            return result;
-        }
     }
 }

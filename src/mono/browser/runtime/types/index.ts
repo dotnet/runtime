@@ -6,11 +6,11 @@ import type { EmscriptenModule, NativePointer } from "./emscripten";
 export interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the blazor.boot.json will be downloaded and applied by default.
+     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: MonoConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./blazor.boot.json is a default config file location.
+     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
      */
     withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
@@ -65,6 +65,10 @@ export interface DotnetHostBuilder {
      * from a custom source, such as an external CDN.
      */
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
+    /**
+     * Downloads all the assets but doesn't create the runtime instance.
+     */
+    download(): Promise<void>;
     /**
      * Starts the runtime and returns promise of the API object.
      */
@@ -149,10 +153,6 @@ export type MonoConfig = {
      */
     pthreadPoolUnusedSize?: number,
     /**
-     * Delay in milliseconds before starting the finalizer thread
-     */
-    finalizerThreadStartDelayMs?: number,
-    /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
      */
@@ -203,11 +203,15 @@ export type ResourceExtensions = { [extensionName: string]: ResourceList };
 
 export interface ResourceGroups {
     hash?: string;
+    fingerprinting?: { [name: string]: string },
+    coreAssembly?: ResourceList; // nullable only temporarily
     assembly?: ResourceList; // nullable only temporarily
     lazyAssembly?: ResourceList; // nullable only temporarily
+    corePdb?: ResourceList;
     pdb?: ResourceList;
 
     jsModuleWorker?: ResourceList;
+    jsModuleDiagnostics?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -220,6 +224,7 @@ export interface ResourceGroups {
     modulesAfterRuntimeReady?: ResourceList
 
     extensions?: ResourceExtensions
+    coreVfs?: { [virtualPath: string]: ResourceList };
     vfs?: { [virtualPath: string]: ResourceList };
 }
 
@@ -239,7 +244,11 @@ export type ResourceList = { [name: string]: string | null | "" };
  * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
  * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
-export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
+export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | Promise<BootModule> | null | undefined;
+
+export type BootModule = {
+    config: MonoConfig
+}
 
 export interface LoadingResource {
     name: string;
@@ -247,7 +256,7 @@ export interface LoadingResource {
     response: Promise<Response>;
 }
 
-// Types of assets that can be in the _framework/blazor.boot.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
+// Types of assets that can be in the _framework/dotnet.boot.js file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 export interface AssetEntry {
     /**
      * the name of the asset, including extension.
@@ -314,6 +323,10 @@ export type SingleAssetBehaviors =
      */
     | "js-module-threads"
     /**
+     * The javascript module for diagnostic server and client.
+     */
+    | "js-module-diagnostics"
+    /**
      * The javascript module for runtime.
      */
     | "js-module-runtime"
@@ -322,17 +335,13 @@ export type SingleAssetBehaviors =
      */
     | "js-module-native"
     /**
-     * Typically blazor.boot.json
+     * Typically dotnet.boot.js
      */
     | "manifest"
     /**
      * The debugging symbols
      */
     | "symbols"
-    /**
-     * Load segmentation rules file for Hybrid Globalization.
-     */
-    | "segmentation-rules";
 
 export type AssetBehaviors = SingleAssetBehaviors |
     /**
@@ -380,11 +389,7 @@ export const enum GlobalizationMode {
     /**
      * Use user defined icu file.
      */
-    Custom = "custom",
-    /**
-     * Operate in hybrid globalization mode with small ICU files, using native platform functions.
-     */
-    Hybrid = "hybrid"
+    Custom = "custom"
 }
 
 export type DotnetModuleConfig = {
@@ -455,6 +460,10 @@ export type APIType = {
     /**
      * Writes to the WASM linear memory
      */
+    setHeapB8: (offset: NativePointer, value: number | boolean) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
     setHeapU8: (offset: NativePointer, value: number) => void;
     /**
      * Writes to the WASM linear memory
@@ -500,6 +509,10 @@ export type APIType = {
      * Reads from the WASM linear memory
      */
     getHeapB32: (offset: NativePointer) => boolean;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapB8: (offset: NativePointer) => boolean;
     /**
      * Reads from the WASM linear memory
      */

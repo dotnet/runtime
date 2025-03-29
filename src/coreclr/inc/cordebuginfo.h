@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Keep in sync with llvm/tools/objwriter/cordebuginfo.h in current objwriter branch in https://github.com/dotnet/llvm-project repo
+// Keep in sync with src\coreclr\tools\Common\JitInterface\CorInfoTypes.VarInfo.cs
 //
 
 /**********************************************************************************/
@@ -213,6 +213,8 @@ public:
         REGNUM_T5,
         REGNUM_T6,
         REGNUM_PC,
+#elif TARGET_WASM
+        REGNUM_PC, // wasm doesn't have registers
 #else
         PORTABILITY_WARNING("Register numbers not defined on this platform")
 #endif

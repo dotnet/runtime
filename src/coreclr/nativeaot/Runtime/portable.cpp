@@ -13,7 +13,6 @@
 
 #include "slist.h"
 #include "shash.h"
-#include "varint.h"
 #include "holder.h"
 #include "rhbinder.h"
 #include "Crst.h"
@@ -33,7 +32,7 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C void* F_CALL_CONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
 static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements)
 {
@@ -64,8 +63,9 @@ FCIMPL1(Object *, RhpNewFast, MethodTable* pEEType)
     size_t size = pEEType->GetBaseSize();
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= size)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= size)
     {
         acontext->alloc_ptr = alloc_ptr + size;
         Object* pObject = (Object *)alloc_ptr;
@@ -112,8 +112,9 @@ FCIMPL2(Array *, RhpNewArray, MethodTable * pArrayEEType, int numElements)
     size = ALIGN_UP(size, sizeof(uintptr_t));
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= size)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= size)
     {
         acontext->alloc_ptr = alloc_ptr + size;
         Array* pObject = (Array*)alloc_ptr;
@@ -165,8 +166,9 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
         paddedSize += 12;
     }
 
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
     {
         acontext->alloc_ptr = alloc_ptr + paddedSize;
         if (requiresPadding)
@@ -199,8 +201,9 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
         paddedSize += 12;
     }
 
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
     {
         acontext->alloc_ptr = alloc_ptr + paddedSize;
         if (requiresPadding)
@@ -248,8 +251,9 @@ FCIMPL2(Array*, RhpNewArrayAlign8, MethodTable* pArrayEEType, int numElements)
         paddedSize += 12;
     }
 
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
     {
         acontext->alloc_ptr = alloc_ptr + paddedSize;
         if (requiresAlignObject)
@@ -318,12 +322,6 @@ FCIMPL0(void, RhpInterfaceDispatch64)
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpVTableOffsetDispatch)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;
 void * ReturnFromUniversalTransition;
@@ -331,28 +329,6 @@ void * ReturnFromUniversalTransition;
 // @TODO Implement UniversalTransition_DebugStepTailCall
 EXTERN_C void * ReturnFromUniversalTransition_DebugStepTailCall;
 void * ReturnFromUniversalTransition_DebugStepTailCall;
-
-#endif // USE_PORTABLE_HELPERS
-
-#if defined(USE_PORTABLE_HELPERS)
-//
-// Return address hijacking
-//
-FCIMPL0(void, RhpGcStressHijack)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-FCIMPL0(void, RhpGcProbeHijack)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-#endif // defined(USE_PORTABLE_HELPERS) || defined(TARGET_UNIX)
-
-#if defined(USE_PORTABLE_HELPERS)
 
 #if !defined (HOST_ARM64)
 FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
@@ -374,7 +350,6 @@ FCIMPLEND
 
 FCIMPL3(Object *, RhpCheckedLockCmpXchg, Object ** location, Object * value, Object * comparand)
 {
-    // @TODO: USE_PORTABLE_HELPERS - Null check
     Object * ret = (Object *)PalInterlockedCompareExchangePointer((void * volatile *)location, value, comparand);
     InlineCheckedWriteBarrier(location, value);
     return ret;
@@ -387,34 +362,6 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
     Object * ret = (Object *)PalInterlockedExchangePointer((void * volatile *)location, value);
     InlineCheckedWriteBarrier(location, value);
     return ret;
-}
-FCIMPLEND
-
-FCIMPL3(uint8_t, RhpLockCmpXchg8, uint8_t * location, uint8_t value, uint8_t comparand)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return 0;
-}
-FCIMPLEND
-
-FCIMPL3(int16_t, RhpLockCmpXchg16, int16_t * location, int16_t value, int16_t comparand)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return 0;
-}
-FCIMPLEND
-
-FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
-{
-    // @TODO: USE_PORTABLE_HELPERS - Null check
-    return PalInterlockedCompareExchange(location, value, comparand);
-}
-FCIMPLEND
-
-FCIMPL3(int64_t, RhpLockCmpXchg64, int64_t * location, int64_t value, int64_t comparand)
-{
-    // @TODO: USE_PORTABLE_HELPERS - Null check
-    return PalInterlockedCompareExchange64(location, value, comparand);
 }
 FCIMPLEND
 

@@ -22,6 +22,8 @@ namespace System.Runtime
     //
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [StackTraceHidden]
+    [DebuggerStepThrough]
     [EagerStaticClassConstruction]
     internal static class TypeCast
     {
@@ -61,7 +63,6 @@ namespace System.Runtime
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
         // this test must deal with all kinds of type tests
-        [RuntimeExport("RhTypeCast_IsInstanceOfAny")]
         public static unsafe object? IsInstanceOfAny(MethodTable* pTargetType, object? obj)
         {
             if (obj != null)
@@ -92,7 +93,6 @@ namespace System.Runtime
             return IsInstanceOfAny_NoCacheLookup(pTargetType, obj);
         }
 
-        [RuntimeExport("RhTypeCast_IsInstanceOfInterface")]
         public static unsafe object? IsInstanceOfInterface(MethodTable* pTargetType, object? obj)
         {
             Debug.Assert(pTargetType->IsInterface);
@@ -146,12 +146,17 @@ namespace System.Runtime
                         interfaceMap++;
                         interfaceCount--;
                     } while (interfaceCount > 0);
+                }
 
-                extra:
-                    if (mt->IsIDynamicInterfaceCastable)
-                    {
-                        goto slowPath;
-                    }
+            extra:
+                // NOTE: this check is outside the `if (interfaceCount != 0)` check because
+                // we could have devirtualized and inlined all uses of IDynamicInterfaceCastable
+                // (and optimized the interface MethodTable away) and still have a type that
+                // is legitimately marked IDynamicInterfaceCastable (without having the MethodTable
+                // of IDynamicInterfaceCastable in the interface list).
+                if (mt->IsIDynamicInterfaceCastable)
+                {
+                    goto slowPath;
                 }
 
                 obj = null;
@@ -177,7 +182,6 @@ namespace System.Runtime
             return obj;
         }
 
-        [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
         public static unsafe object? IsInstanceOfClass(MethodTable* pTargetType, object? obj)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "IsInstanceOfClass called with parameterized MethodTable");
@@ -241,7 +245,6 @@ namespace System.Runtime
             return obj;
         }
 
-        [RuntimeExport("RhTypeCast_IsInstanceOfException")]
         public static unsafe bool IsInstanceOfException(MethodTable* pTargetType, object? obj)
         {
             // Based on IsInstanceOfClass
@@ -272,7 +275,6 @@ namespace System.Runtime
         // ChkCast test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the ChkCastInterface and ChkCastClass functions,
         // this test must deal with all kinds of type tests
-        [RuntimeExport("RhTypeCast_CheckCastAny")]
         public static unsafe object CheckCastAny(MethodTable* pTargetType, object obj)
         {
             CastResult result;
@@ -300,7 +302,6 @@ namespace System.Runtime
             return objRet;
         }
 
-        [RuntimeExport("RhTypeCast_CheckCastInterface")]
         public static unsafe object CheckCastInterface(MethodTable* pTargetType, object obj)
         {
             Debug.Assert(pTargetType->IsInterface);
@@ -386,7 +387,6 @@ namespace System.Runtime
             return ThrowInvalidCastException(pTargetType);
         }
 
-        [RuntimeExport("RhTypeCast_CheckCastClass")]
         public static unsafe object CheckCastClass(MethodTable* pTargetType, object obj)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "CheckCastClass called with parameterized MethodTable");
@@ -404,13 +404,12 @@ namespace System.Runtime
 
         // Optimized helper for classes. Assumes that the trivial cases
         // has been taken care of by the inlined check
-        [RuntimeExport("RhTypeCast_CheckCastClassSpecial")]
         private static unsafe object CheckCastClassSpecial(MethodTable* pTargetType, object obj)
         {
-            Debug.Assert(!pTargetType->IsParameterizedType, "CheckCastClass called with parameterized MethodTable");
-            Debug.Assert(!pTargetType->IsFunctionPointer, "CheckCastClass called with function pointer MethodTable");
-            Debug.Assert(!pTargetType->IsInterface, "CheckCastClass called with interface MethodTable");
-            Debug.Assert(!pTargetType->HasGenericVariance, "CheckCastClass with variant MethodTable");
+            Debug.Assert(!pTargetType->IsParameterizedType, "CheckCastClassSpecial called with parameterized MethodTable");
+            Debug.Assert(!pTargetType->IsFunctionPointer, "CheckCastClassSpecial called with function pointer MethodTable");
+            Debug.Assert(!pTargetType->IsInterface, "CheckCastClassSpecial called with interface MethodTable");
+            Debug.Assert(!pTargetType->HasGenericVariance, "CheckCastClassSpecial with variant MethodTable");
 
             MethodTable* mt = obj.GetMethodTable();
             Debug.Assert(mt != pTargetType, "The check for the trivial cases should be inlined by the JIT");
@@ -704,7 +703,7 @@ namespace System.Runtime
                         break;
 
                     default:
-                        Debug.Assert(false, "unknown generic variance type");
+                        Debug.Fail("unknown generic variance type");
                         break;
                 }
             }
@@ -737,23 +736,66 @@ namespace System.Runtime
             throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
         }
 
-        internal struct ArrayElement
+        private static unsafe void ThrowIndexOutOfRangeException(object?[] array)
         {
-            public object Value;
+            // Throw the index out of range exception defined by the classlib, using the input array's MethodTable*
+            // to find the correct classlib.
+            throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.IndexOutOfRange);
+        }
+
+        private static unsafe void ThrowArrayMismatchException(object?[] array)
+        {
+            // Throw the array type mismatch exception defined by the classlib, using the input array's MethodTable*
+            // to find the correct classlib.
+            throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
         }
 
         //
         // Array stelem/ldelema helpers with RyuJIT conventions
         //
-        [RuntimeExport("RhpStelemRef")]
-        public static unsafe void StelemRef(Array array, nint index, object obj)
+        public static unsafe ref object? LdelemaRef(object?[] array, nint index, MethodTable* elementType)
         {
-            // This is supported only on arrays
-            Debug.Assert(array.GetMethodTable()->IsArray, "first argument must be an array");
+            Debug.Assert(array is null || array.GetMethodTable()->IsArray, "first argument must be an array");
 
 #if INPLACE_RUNTIME
-            // this will throw appropriate exceptions if array is null or access is out of range.
-            ref object element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
+            // This will throw NullReferenceException if obj is null.
+            if ((nuint)index >= (uint)array.Length)
+                ThrowIndexOutOfRangeException(array);
+
+            Debug.Assert(index >= 0);
+            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
+#else
+            if (array is null)
+            {
+                throw elementType->GetClasslibException(ExceptionIDs.NullReference);
+            }
+            if ((nuint)index >= (uint)array.Length)
+            {
+                throw elementType->GetClasslibException(ExceptionIDs.IndexOutOfRange);
+            }
+            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
+            ref object element = ref Unsafe.Add(ref rawData, index);
+#endif
+            MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
+
+            if (elementType != arrayElemType)
+                ThrowArrayMismatchException(array);
+
+            return ref element;
+        }
+
+        public static unsafe void StelemRef(object?[] array, nint index, object? obj)
+        {
+            // This is supported only on arrays
+            Debug.Assert(array is null || array.GetMethodTable()->IsArray, "first argument must be an array");
+
+#if INPLACE_RUNTIME
+            // This will throw NullReferenceException if obj is null.
+            if ((nuint)index >= (uint)array.Length)
+                ThrowIndexOutOfRangeException(array);
+
+            Debug.Assert(index >= 0);
+            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
 #else
             if (array is null)
             {
@@ -796,7 +838,7 @@ namespace System.Runtime
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void StelemRef_Helper(ref object element, MethodTable* elementType, object obj)
+        private static unsafe void StelemRef_Helper(ref object? element, MethodTable* elementType, object obj)
         {
             CastResult result = s_castCache.TryGet((nuint)obj.GetMethodTable() + (int)AssignmentVariation.BoxedSource, (nuint)elementType);
             if (result == CastResult.CanCast)
@@ -808,58 +850,17 @@ namespace System.Runtime
             StelemRef_Helper_NoCacheLookup(ref element, elementType, obj);
         }
 
-        private static unsafe void StelemRef_Helper_NoCacheLookup(ref object element, MethodTable* elementType, object obj)
+        private static unsafe void StelemRef_Helper_NoCacheLookup(ref object? element, MethodTable* elementType, object obj)
         {
             object? castedObj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (castedObj != null)
+            if (castedObj == null)
             {
-                InternalCalls.RhpAssignRef(ref element, obj);
-                return;
+                // Throw the array type mismatch exception defined by the classlib, using the input array's
+                // MethodTable* to find the correct classlib.
+                throw elementType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
 
-            // Throw the array type mismatch exception defined by the classlib, using the input array's
-            // MethodTable* to find the correct classlib.
-            throw elementType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
-        }
-
-        [RuntimeExport("RhpLdelemaRef")]
-        public static unsafe ref object LdelemaRef(Array array, nint index, IntPtr elementType)
-        {
-            Debug.Assert(array is null || array.GetMethodTable()->IsArray, "first argument must be an array");
-
-#if INPLACE_RUNTIME
-            // this will throw appropriate exceptions if array is null or access is out of range.
-            ref object element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
-#else
-            if (array is null)
-            {
-                throw ((MethodTable*)elementType)->GetClasslibException(ExceptionIDs.NullReference);
-            }
-            if ((uint)index >= (uint)array.Length)
-            {
-                throw ((MethodTable*)elementType)->GetClasslibException(ExceptionIDs.IndexOutOfRange);
-            }
-            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
-            ref object element = ref Unsafe.Add(ref rawData, index);
-#endif
-
-            MethodTable* elemType = (MethodTable*)elementType;
-            MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
-
-            if (elemType == arrayElemType)
-            {
-                return ref element;
-            }
-
-            return ref ThrowArrayMismatchException(array);
-        }
-
-        // This weird structure is for parity with CoreCLR - allows potentially to be tailcalled
-        private static unsafe ref object ThrowArrayMismatchException(Array array)
-        {
-            // Throw the array type mismatch exception defined by the classlib, using the input array's MethodTable*
-            // to find the correct classlib.
-            throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
+            InternalCalls.RhpAssignRef(ref element, obj);
         }
 
         private static unsafe object IsInstanceOfArray(MethodTable* pTargetType, object obj)
@@ -1054,10 +1055,14 @@ namespace System.Runtime
             bool result = TypeCast.AreTypesAssignableInternalUncached(pSourceType, pTargetType, variation, &newList);
 
             //
-            // Update the cache
+            // Update the cache. We only consider type-based conversion rules here.
+            // Therefore a negative result cannot rule out convertibility for IDynamicInterfaceCastable.
             //
-            nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
-            s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, result);
+            if (result || !(pTargetType->IsInterface && pSourceType->IsIDynamicInterfaceCastable))
+            {
+                nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
+                s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, result);
+            }
 
             return result;
         }
@@ -1240,13 +1245,11 @@ namespace System.Runtime
             }
 
             //
-            // Update the cache
+            // Update the cache. We only consider type-based conversion rules here.
+            // Therefore a negative result cannot rule out convertibility for IDynamicInterfaceCastable.
             //
-            if (!pSourceType->IsIDynamicInterfaceCastable)
+            if (retObj != null || !(pTargetType->IsInterface && pSourceType->IsIDynamicInterfaceCastable))
             {
-                //
-                // Update the cache
-                //
                 nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
                 s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, retObj != null);
             }
@@ -1281,14 +1284,11 @@ namespace System.Runtime
                 obj = CheckCastClass(pTargetType, obj);
             }
 
-            if (!pSourceType->IsIDynamicInterfaceCastable)
-            {
-                //
-                // Update the cache
-                //
-                nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
-                s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
-            }
+            //
+            // Update the cache
+            //
+            nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
+            s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
 
             return obj;
         }

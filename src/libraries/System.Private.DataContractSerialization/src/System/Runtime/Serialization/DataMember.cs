@@ -170,8 +170,8 @@ namespace System.Runtime.Serialization.DataContracts
                 {
                     if (_memberType == null)
                     {
-                        if (MemberInfo is FieldInfo field)
-                            _memberType = field.FieldType;
+                        if (MemberInfo is FieldInfo fieldInfo)
+                            _memberType = fieldInfo.FieldType;
                         else if (MemberInfo is PropertyInfo prop)
                             _memberType = prop.PropertyType;
                         else

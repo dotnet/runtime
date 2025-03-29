@@ -68,7 +68,8 @@ LEAF_ENTRY RhCommonStub, _TEXT
         ;; store thunk address in thread static
         mov     edx, [eax]
         mov     eax, [eax + POINTER_SIZE]                          ;;   eax <- target slot data
-        mov     [ecx + OFFSET ThunkParamSlot], edx                 ;;   ThunkParamSlot <- context slot data
+        add     ecx, SECTIONREL ThunkParamSlot
+        mov     [ecx], edx                 ;;   ThunkParamSlot <- context slot data
 
         ;; restore the regs we used
         pop     edx
@@ -95,7 +96,8 @@ FASTCALL_FUNC RhGetCurrentThunkContext, 0
         mov     ecx, [__tls_index]
         mov     edx, fs:[__tls_array]
         mov     ecx, [edx + ecx * POINTER_SIZE]
-        mov     eax, [ecx + OFFSET ThunkParamSlot]                 ;;   eax <- ThunkParamSlot
+        add     ecx, SECTIONREL ThunkParamSlot
+        mov     eax, [ecx]                 ;;   eax <- ThunkParamSlot
         ret
 FASTCALL_ENDFUNC
 

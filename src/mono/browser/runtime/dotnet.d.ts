@@ -1,7 +1,7 @@
 //! Licensed to the .NET Foundation under one or more agreements.
 //! The .NET Foundation licenses this file to you under the MIT license.
 //!
-//! This is generated file, see src/mono/wasm/runtime/rollup.config.js
+//! This is generated file, see src/mono/browser/runtime/rollup.config.js
 
 //! This is not considered public API with backward compatibility guarantees. 
 
@@ -20,6 +20,7 @@ declare interface Int32Ptr extends NativePointer {
 declare interface EmscriptenModule {
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
+    _sbrk(size: number): VoidPtr;
     out(message: string): void;
     err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
@@ -31,6 +32,7 @@ declare interface EmscriptenModule {
     UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     stringToUTF8Array(str: string, heap: Uint8Array, outIdx: number, maxBytesToWrite: number): void;
+    lengthBytesUTF8(str: string): number;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     addFunction(fn: Function, signature: string): number;
@@ -56,11 +58,11 @@ declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Arra
 interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the blazor.boot.json will be downloaded and applied by default.
+     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: MonoConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./blazor.boot.json is a default config file location.
+     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
      */
     withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
@@ -115,6 +117,10 @@ interface DotnetHostBuilder {
      * from a custom source, such as an external CDN.
      */
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
+    /**
+     * Downloads all the assets but doesn't create the runtime instance.
+     */
+    download(): Promise<void>;
     /**
      * Starts the runtime and returns promise of the API object.
      */
@@ -195,10 +201,6 @@ type MonoConfig = {
      */
     pthreadPoolUnusedSize?: number;
     /**
-     * Delay in milliseconds before starting the finalizer thread
-     */
-    finalizerThreadStartDelayMs?: number;
-    /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
      */
@@ -245,10 +247,16 @@ type ResourceExtensions = {
 };
 interface ResourceGroups {
     hash?: string;
+    fingerprinting?: {
+        [name: string]: string;
+    };
+    coreAssembly?: ResourceList;
     assembly?: ResourceList;
     lazyAssembly?: ResourceList;
+    corePdb?: ResourceList;
     pdb?: ResourceList;
     jsModuleWorker?: ResourceList;
+    jsModuleDiagnostics?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -260,6 +268,9 @@ interface ResourceGroups {
     modulesAfterConfigLoaded?: ResourceList;
     modulesAfterRuntimeReady?: ResourceList;
     extensions?: ResourceExtensions;
+    coreVfs?: {
+        [virtualPath: string]: ResourceList;
+    };
     vfs?: {
         [virtualPath: string]: ResourceList;
     };
@@ -281,7 +292,10 @@ type ResourceList = {
  * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
  * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
-type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
+type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | Promise<BootModule> | null | undefined;
+type BootModule = {
+    config: MonoConfig;
+};
 interface LoadingResource {
     name: string;
     url: string;
@@ -350,6 +364,10 @@ type SingleAssetBehaviors =
  */
  | "js-module-threads"
 /**
+ * The javascript module for diagnostic server and client.
+ */
+ | "js-module-diagnostics"
+/**
  * The javascript module for runtime.
  */
  | "js-module-runtime"
@@ -358,17 +376,13 @@ type SingleAssetBehaviors =
  */
  | "js-module-native"
 /**
- * Typically blazor.boot.json
+ * Typically dotnet.boot.js
  */
  | "manifest"
 /**
  * The debugging symbols
  */
- | "symbols"
-/**
- * Load segmentation rules file for Hybrid Globalization.
- */
- | "segmentation-rules";
+ | "symbols";
 type AssetBehaviors = SingleAssetBehaviors | 
 /**
  * Load asset as a managed resource assembly.
@@ -414,11 +428,7 @@ declare const enum GlobalizationMode {
     /**
      * Use user defined icu file.
      */
-    Custom = "custom",
-    /**
-     * Operate in hybrid globalization mode with small ICU files, using native platform functions.
-     */
-    Hybrid = "hybrid"
+    Custom = "custom"
 }
 type DotnetModuleConfig = {
     config?: MonoConfig;
@@ -486,6 +496,10 @@ type APIType = {
     /**
      * Writes to the WASM linear memory
      */
+    setHeapB8: (offset: NativePointer, value: number | boolean) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
     setHeapU8: (offset: NativePointer, value: number) => void;
     /**
      * Writes to the WASM linear memory
@@ -531,6 +545,10 @@ type APIType = {
      * Reads from the WASM linear memory
      */
     getHeapB32: (offset: NativePointer) => boolean;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapB8: (offset: NativePointer) => boolean;
     /**
      * Reads from the WASM linear memory
      */
@@ -672,4 +690,4 @@ declare global {
 }
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-export { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { type AssetBehaviors, type AssetEntry, type CreateDotnetRuntimeType, type DotnetHostBuilder, type DotnetModuleConfig, type EmscriptenModule, GlobalizationMode, type IMemoryView, type ModuleAPI, type MonoConfig, type RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

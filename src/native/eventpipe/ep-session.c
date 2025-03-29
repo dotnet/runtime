@@ -34,6 +34,8 @@ ep_session_remove_dangling_session_states (EventPipeSession *session);
  * EventPipeSession.
  */
 
+#ifndef PERFTRACING_DISABLE_THREADS
+
 EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 {
 	EP_ASSERT (data != NULL);
@@ -84,6 +86,28 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	return (ep_rt_thread_start_func_return_t)0;
 }
 
+#else // PERFTRACING_DISABLE_THREADS
+
+static size_t streaming_loop_tick(EventPipeSession *const session) {
+	bool events_written = false;
+	bool ok;
+	if (!ep_session_get_streaming_enabled (session)){
+		session->streaming_thread = NULL;
+		ep_session_dec_ref (session);
+		return 1; // done
+	}
+	EP_GCX_PREEMP_ENTER
+	ok = ep_session_write_all_buffers_to_file (session, &events_written);
+	EP_GCX_PREEMP_EXIT
+	if (!ok) {
+		ep_disable ((EventPipeSessionID)session);
+		return 1; // done
+	}
+	return 0; // continue
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
+
 static
 void
 session_create_streaming_thread (EventPipeSession *session)
@@ -98,9 +122,15 @@ session_create_streaming_thread (EventPipeSession *session)
 	if (!ep_rt_wait_event_is_valid (&session->rt_thread_shutdown_event))
 		EP_UNREACHABLE ("Unable to create stream flushing thread shutdown event.");
 
+#ifndef PERFTRACING_DISABLE_THREADS
 	ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 	if (!ep_rt_thread_create ((void *)streaming_thread, (void *)session, EP_THREAD_TYPE_SESSION, &thread_id))
 		EP_UNREACHABLE ("Unable to create stream flushing thread.");
+#else
+	ep_session_inc_ref (session);
+	ep_rt_volatile_store_uint32_t (&session->started, 1);
+	ep_rt_queue_job ((void *)streaming_loop_tick, (void *)session);
+#endif
 }
 
 static
@@ -133,7 +163,7 @@ ep_session_alloc (
 	IpcStream *stream,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	bool stackwalk_requested,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
@@ -156,6 +186,7 @@ ep_session_alloc (
 
 	EventPipeSession *instance = ep_rt_object_alloc (EventPipeSession);
 	ep_raise_error_if_nok (instance != NULL);
+	ep_session_inc_ref (instance);
 
 	instance->providers = ep_session_provider_list_alloc (providers, providers_len);
 	ep_raise_error_if_nok (instance->providers != NULL);
@@ -164,7 +195,7 @@ ep_session_alloc (
 	instance->rundown_enabled = 0;
 	instance->session_type = session_type;
 	instance->format = format;
-	instance->rundown_requested = rundown_requested;
+	instance->rundown_keyword = rundown_keyword;
 	instance->synchronous_callback = sync_callback;
 	instance->callback_additional_data = callback_additional_data;
 
@@ -219,7 +250,7 @@ ep_on_exit:
 ep_on_error:
 	ep_file_stream_writer_free (file_stream_writer);
 	ep_ipc_stream_writer_free (ipc_stream_writer);
-	ep_session_free (instance);
+	ep_session_dec_ref (instance);
 
 	instance = NULL;
 	ep_exit_error_handler ();
@@ -268,11 +299,20 @@ ep_on_error:
 }
 
 void
-ep_session_free (EventPipeSession *session)
+ep_session_inc_ref (EventPipeSession *session)
+{
+	ep_rt_atomic_inc_uint32_t (&session->ref_count);
+}
+
+void
+ep_session_dec_ref (EventPipeSession *session)
 {
 	ep_return_void_if_nok (session != NULL);
 
 	EP_ASSERT (!ep_session_get_streaming_enabled (session));
+
+	if (ep_rt_atomic_dec_uint32_t (&session->ref_count) != 0)
+		return;
 
 	ep_rt_wait_event_free (&session->rt_thread_shutdown_event);
 
@@ -317,17 +357,7 @@ ep_session_enable_rundown (EventPipeSession *session)
 	ep_requires_lock_held ();
 
 	bool result = false;
-
-	//! This is CoreCLR specific keywords for native ETW events (ending up in event pipe).
-	//! The keywords below seems to correspond to:
-	//!  GCKeyword                          (0x00000001)
-	//!  LoaderKeyword                      (0x00000008)
-	//!  JitKeyword                         (0x00000010)
-	//!  NgenKeyword                        (0x00000020)
-	//!  unused_keyword                     (0x00000100)
-	//!  JittedMethodILToNativeMapKeyword   (0x00020000)
-	//!  ThreadTransferKeyword              (0x80000000)
-	const uint64_t keywords = 0x80020139;
+	const uint64_t keywords = ep_session_get_rundown_keyword (session);
 	const EventPipeEventLevel verbose_logging_level = EP_EVENT_LEVEL_VERBOSE;
 
 	EventPipeProviderConfiguration rundown_provider;

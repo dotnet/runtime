@@ -203,6 +203,18 @@ mono_jiterp_try_newstr (MonoString **destination, int length) {
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_try_newarr (MonoArray **destination, MonoVTable *vtable, int length) {
+	if (length < 0)
+		return 0;
+	ERROR_DECL(error);
+	*destination = mono_array_new_specific_checked (vtable, length, error);
+	if (!is_ok (error))
+		*destination = 0;
+	mono_error_cleanup (error); // FIXME: do not swallow the error
+	return *destination != 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_gettype_ref (
 	MonoObject **destination, MonoObject **source
 ) {
@@ -559,18 +571,6 @@ mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 	sp_args = (stackval*)context->stack_pointer;
 
 	return sp_args;
-}
-
-EMSCRIPTEN_KEEPALIVE int32_t
-mono_jiterp_cas_i32 (volatile int32_t *addr, int32_t newVal, int32_t expected)
-{
-	return mono_atomic_cas_i32 (addr, newVal, expected);
-}
-
-EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_cas_i64 (volatile int64_t *addr, int64_t *newVal, int64_t *expected, int64_t *oldVal)
-{
-	*oldVal = mono_atomic_cas_i64 (addr, *newVal, *expected);
 }
 
 static int opcode_value_table [MINT_LASTOP] = { 0 };
@@ -977,7 +977,7 @@ mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod)
 					JiterpreterOpcode *opcode = (JiterpreterOpcode *)p;
 					guint32 trace_index = opcode->trace_index;
 					need_extra_free = FALSE;
-					mono_jiterp_free_method_data_js (method, imethod, trace_index);
+					mono_wasm_free_method_data (method, imethod, trace_index);
 					break;
 				}
 			}
@@ -988,7 +988,7 @@ mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod)
 	if (need_extra_free) {
 		// HACK: Perform a single free operation to clear out any stuff from the jit queues
 		// This will happen if we didn't encounter any jiterpreter traces in the method
-		mono_jiterp_free_method_data_js (method, imethod, 0);
+		mono_wasm_free_method_data (method, imethod, 0);
 	}
 }
 
@@ -1021,8 +1021,28 @@ mono_jiterp_get_options_as_json ()
 	return mono_options_get_as_json ();
 }
 
+EMSCRIPTEN_KEEPALIVE gint32
+mono_jiterp_get_option_as_int (const char *name)
+{
+	MonoOptionType type;
+	void *value_address;
+
+	if (!mono_options_get (name, &type, &value_address))
+		return INT32_MIN;
+
+	switch (type) {
+		case MONO_OPTION_BOOL:
+		case MONO_OPTION_BOOL_READONLY:
+			return (*(guint8 *)value_address) != 0;
+		case MONO_OPTION_INT:
+			return *(gint32 *)value_address;
+		default:
+			return INT32_MIN;
+	}
+}
+
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_object_has_component_size (MonoObject ** ppObj)
+mono_jiterp_object_has_component_size (MonoObject **ppObj)
 {
 	MonoObject *obj = *ppObj;
 	if (!obj)
@@ -1157,6 +1177,7 @@ mono_jiterp_stelem_ref (
 	return 1;
 }
 
+
 // keep in sync with jiterpreter-enums.ts JiterpMember
 enum {
 	JITERP_MEMBER_VT_INITIALIZED = 0,
@@ -1179,7 +1200,9 @@ enum {
 	JITERP_MEMBER_VTABLE_KLASS,
 	JITERP_MEMBER_CLASS_RANK,
 	JITERP_MEMBER_CLASS_ELEMENT_CLASS,
-	JITERP_MEMBER_BOXED_VALUE_DATA
+	JITERP_MEMBER_BOXED_VALUE_DATA,
+	JITERP_MEMBER_BACKWARD_BRANCH_TAKEN,
+	JITERP_MEMBER_BAILOUT_OPCODE_COUNT,
 };
 
 
@@ -1222,6 +1245,10 @@ mono_jiterp_get_member_offset (int member) {
 		// see mono_object_get_data
 		case JITERP_MEMBER_BOXED_VALUE_DATA:
 			return MONO_ABI_SIZEOF (MonoObject);
+		case JITERP_MEMBER_BACKWARD_BRANCH_TAKEN:
+			return offsetof (JiterpreterCallInfo, backward_branch_taken);
+		case JITERP_MEMBER_BAILOUT_OPCODE_COUNT:
+			return offsetof (JiterpreterCallInfo, bailout_opcode_count);
 		default:
 			g_assert_not_reached();
 	}
@@ -1242,7 +1269,9 @@ enum {
 	JITERP_COUNTER_BACK_BRANCHES_NOT_EMITTED,
 	JITERP_COUNTER_ELAPSED_GENERATION,
 	JITERP_COUNTER_ELAPSED_COMPILATION,
-	JITERP_COUNTER_MAX = JITERP_COUNTER_ELAPSED_COMPILATION
+	JITERP_COUNTER_SWITCH_TARGETS_OK,
+	JITERP_COUNTER_SWITCH_TARGETS_FAILED,
+	JITERP_COUNTER_MAX = JITERP_COUNTER_SWITCH_TARGETS_FAILED
 };
 
 #define JITERP_COUNTER_UNIT 100
@@ -1491,7 +1520,11 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_allocate_table_entry (int type) {
 	g_assert ((type >= 0) && (type <= JITERPRETER_TABLE_LAST));
 	JiterpreterTableInfo *table = &tables[type];
-	g_assert (table->first_index > 0);
+	// Handle unlikely condition where the jiterpreter is engaged before initialize_table runs at all (i.e. tiering disabled)
+	if (table->first_index <= 0) {
+		g_printf ("MONO_WASM: Jiterpreter table %d is not yet initialized\n", type);
+		return 0;
+	}
 
 	// Handle extremely unlikely race condition (allocate_table_entry called while another thread is in initialize_table)
 #ifdef DISABLE_THREADS
@@ -1571,6 +1604,7 @@ static void
 free_queue (void *ptr) {
 	mono_os_mutex_lock (&queue_mutex);
 	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+	g_assert (shared_queues);
 	g_ptr_array_remove_fast (shared_queues, ptr);
 	g_ptr_array_free ((GPtrArray *)ptr, TRUE);
 	mono_os_mutex_unlock (&queue_mutex);
@@ -1612,8 +1646,9 @@ get_queue (int queue) {
 	GPtrArray *result = NULL;
 	if ((result = (GPtrArray *)mono_native_tls_get_value (key)) == NULL) {
 		g_assert (mono_native_tls_set_value (key, result = g_ptr_array_new ()));
-		mono_os_mutex_lock (&queue_mutex);
 		// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+		mono_os_mutex_lock (&queue_mutex);
+		g_assert (shared_queues);
 		g_ptr_array_add (shared_queues, result);
 		mono_os_mutex_unlock (&queue_mutex);
 	}
@@ -1623,8 +1658,11 @@ get_queue (int queue) {
 // Purges this item from all queues
 void
 mono_jiterp_tlqueue_purge_all (gpointer item) {
-	mono_os_mutex_lock (&queue_mutex);
+	// HACK: Call get_queue_key to ensure the queues are initialized before enumerating them
+	get_queue_key (0);
+
 	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+	mono_os_mutex_lock (&queue_mutex);
 	for (int i = 0; i < shared_queues->len; i++) {
 		GPtrArray *queue = (GPtrArray *)g_ptr_array_index (shared_queues, i);
 		gboolean ok = g_ptr_array_remove_fast (queue, item);

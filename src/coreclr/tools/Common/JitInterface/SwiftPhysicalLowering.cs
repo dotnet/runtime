@@ -101,7 +101,7 @@ namespace Internal.JitInterface
                 return LoweredType.Opaque;
             }
 
-            protected override bool NeedsRecursiveLayout(int offset, TypeDesc fieldType) => fieldType.IsValueType && !fieldType.IsPrimitiveNumeric;
+            protected override bool NeedsRecursiveLayout(TypeDesc fieldType) => fieldType.IsValueType && !fieldType.IsPrimitiveNumeric;
 
             private List<FieldLayoutInterval> CreateConsolidatedIntervals()
             {
@@ -199,9 +199,9 @@ namespace Internal.JitInterface
                             }
                             else
                             {
+                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_BYTE, opaqueIntervalStart));
                                 opaqueIntervalStart++;
                                 remainingIntervalSize--;
-                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_BYTE, opaqueIntervalStart));
                             }
                         }
                     }

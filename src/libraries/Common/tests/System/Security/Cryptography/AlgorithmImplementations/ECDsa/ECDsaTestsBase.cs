@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class ECDsaTestsBase : EccTestBase
     {
-#if NETCOREAPP
+#if NET
         internal static void Verify256(ECDsa e, bool expected)
         {
             byte[] sig = ("998791331eb2e1f4259297f5d9cb82fa20dec98e1cb0900e6b8f014a406c3d02cbdbf5238bde471c3155fc25565524301429"

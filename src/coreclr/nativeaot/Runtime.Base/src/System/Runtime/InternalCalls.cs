@@ -150,15 +150,11 @@ namespace System.Runtime
 
         [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpAssignRef(ref object address, object obj);
+        internal static extern unsafe void RhpAssignRef(ref object? address, object? obj);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(Redhawk.BaseName, "RhpGcSafeZeroMemory")]
         internal static extern unsafe ref byte RhpGcSafeZeroMemory(ref byte dmem, nuint size);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(Redhawk.BaseName, "memmove")]
-        internal static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(Redhawk.BaseName, "RhBulkMoveWithWriteBarrier")]
@@ -251,9 +247,11 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void RhpValidateExInfoStack();
 
+#if TARGET_WINDOWS
         [RuntimeImport(Redhawk.BaseName, "RhpCopyContextFromExInfo")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
+#endif
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetThreadAbortException")]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -280,7 +278,7 @@ namespace System.Runtime
 
         // Indicate that the current round of finalizations is complete.
         [DllImport(Redhawk.BaseName)]
-        internal static extern void RhpSignalFinalizationComplete(uint fCount);
+        internal static extern void RhpSignalFinalizationComplete(uint fCount, int observedFullGcCount);
 
         [DllImport(Redhawk.BaseName)]
         internal static extern ulong RhpGetTickCount64();

@@ -18,7 +18,7 @@ namespace System.Numerics.Tensors
         /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T"/>.Cos(<paramref name="x" />[i])</c>.
         /// </para>
         /// <para>
-        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians"/> or multiply by <typeparamref name="T"/>.Pi/180 to convert degrees to radians.
+        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians(System.Single)"/> or multiply by <typeparamref name="T"/>.Pi/180 to convert degrees to radians.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -60,12 +60,24 @@ namespace System.Numerics.Tensors
             // 3. Reconstruction
             //      Hence, cos(x) = sin(x + pi/2) = (-1)^N * sin(f)
 
-            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+            public static bool Vectorizable => (typeof(T) == typeof(float))
+                                            || (typeof(T) == typeof(double));
 
             public static T Invoke(T x) => T.Cos(x);
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Cos(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Cos(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(float))
                 {
                     return CosOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
@@ -75,10 +87,22 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(double));
                     return CosOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
+#endif
             }
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Cos(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Cos(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(float))
                 {
                     return CosOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
@@ -88,10 +112,22 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(double));
                     return CosOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
+#endif
             }
 
             public static Vector512<T> Invoke(Vector512<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Cos(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Cos(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(float))
                 {
                     return CosOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
@@ -101,9 +137,25 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(double));
                     return CosOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
+#endif
             }
         }
 
+#if NET9_0_OR_GREATER
+        // These are still used by CosPiOperator
+
+        private readonly struct CosOperatorSingle
+        {
+            internal const uint MaxVectorizedValue = 0x4A989680u;
+            internal const uint SignMask = 0x7FFFFFFFu;
+        }
+
+        private readonly struct CosOperatorDouble
+        {
+            internal const ulong SignMask = 0x7FFFFFFFFFFFFFFFul;
+            internal const ulong MaxVectorizedValue = 0x4160000000000000ul;
+        }
+#else
         /// <summary>float.Cos(x)</summary>
         private readonly struct CosOperatorSingle : IUnaryOperator<float, float>
         {
@@ -241,11 +293,14 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorDouble>(x);
                 }
 
+                // dn = int(x / pi + 1/2) - 1/2
                 Vector128<double> almHuge = Vector128.Create(AlmHuge);
-                Vector128<double> dn = (uxMasked * Vector128.Create(1 / double.Pi)) + Vector128.Create(double.Pi / 2) + almHuge;
+                Vector128<double> half = Vector128.Create(0.5);
+                Vector128<double> dn = (uxMasked * Vector128.Create(1 / double.Pi)) + half + almHuge;
                 Vector128<ulong> odd = dn.AsUInt64() << 63;
-                dn = dn - almHuge - Vector128.Create(0.5);
+                dn = dn - almHuge - half;
 
+                // f = x - (n*pi)
                 Vector128<double> f = uxMasked;
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-double.Pi), f);
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(Pi_Tail2), f);
@@ -276,11 +331,14 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorDouble>(x);
                 }
 
+                // dn = int(x / pi + 1/2) - 1/2
                 Vector256<double> almHuge = Vector256.Create(AlmHuge);
-                Vector256<double> dn = (uxMasked * Vector256.Create(1 / double.Pi)) + Vector256.Create(double.Pi / 2) + almHuge;
+                Vector256<double> half = Vector256.Create(0.5);
+                Vector256<double> dn = (uxMasked * Vector256.Create(1 / double.Pi)) + half + almHuge;
                 Vector256<ulong> odd = dn.AsUInt64() << 63;
-                dn = dn - almHuge - Vector256.Create(0.5);
+                dn = dn - almHuge - half;
 
+                // f = x - (n*pi)
                 Vector256<double> f = uxMasked;
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-double.Pi), f);
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(Pi_Tail2), f);
@@ -311,11 +369,14 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorDouble>(x);
                 }
 
+                // dn = int(x / pi + 1/2) - 1/2
                 Vector512<double> almHuge = Vector512.Create(AlmHuge);
-                Vector512<double> dn = (uxMasked * Vector512.Create(1 / double.Pi)) + Vector512.Create(double.Pi / 2) + almHuge;
+                Vector512<double> half = Vector512.Create(0.5);
+                Vector512<double> dn = (uxMasked * Vector512.Create(1 / double.Pi)) + half + almHuge;
                 Vector512<ulong> odd = dn.AsUInt64() << 63;
-                dn = dn - almHuge - Vector512.Create(0.5);
+                dn = dn - almHuge - half;
 
+                // f = x - (n*pi)
                 Vector512<double> f = uxMasked;
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-double.Pi), f);
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(Pi_Tail2), f);
@@ -338,5 +399,6 @@ namespace System.Numerics.Tensors
                 return (poly.AsUInt64() ^ odd).AsDouble();
             }
         }
+#endif
     }
 }

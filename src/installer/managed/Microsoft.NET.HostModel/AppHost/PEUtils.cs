@@ -42,6 +42,39 @@ namespace Microsoft.NET.HostModel.AppHost
         }
 
         /// <summary>
+        /// Remove the CET Compat bit from extended DLL characteristics
+        /// </summary>
+        /// <param name="file">Memory-mapped PE file</param>
+        /// <param name="accessor"></param>
+        internal static void RemoveCetCompatBit(MemoryMappedFile file, MemoryMappedViewAccessor accessor)
+        {
+            using (PEReader reader = new PEReader(file.CreateViewStream(0, 0, MemoryMappedFileAccess.Read)))
+            {
+                // https://learn.microsoft.com/windows/win32/debug/pe-format#debug-type
+                const int IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS = 20;
+                foreach (DebugDirectoryEntry entry in reader.ReadDebugDirectory())
+                {
+                    if ((int)entry.Type != IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS)
+                        continue;
+
+                    // Get the extended DLL characteristics from the debug directory entry data
+                    ushort dllCharacteristics = AsLittleEndian(accessor.ReadUInt16(entry.DataPointer));
+
+                    // Check for the CET compat bit
+                    // https://learn.microsoft.com/windows/win32/debug/pe-format#extended-dll-characteristics
+                    const ushort IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT = 0x1;
+                    if ((dllCharacteristics & IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT) == 0)
+                        break;
+
+                    // Clear the CET compat bit
+                    dllCharacteristics = (ushort)(dllCharacteristics & ~IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT);
+                    accessor.Write(entry.DataPointer, AsLittleEndian(dllCharacteristics));
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
         /// This method will attempt to set the subsystem to GUI. The apphost file should be a windows PE file.
         /// </summary>
         /// <param name="accessor">The memory accessor which has the apphost file opened.</param>

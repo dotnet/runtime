@@ -16,12 +16,14 @@
     <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
     <EnableXlfLocalization>false</EnableXlfLocalization>
     <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <NoWarn>$(NoWarn);CA1866</NoWarn>
     <ContractProject>$(MSBuildThisFileDirectory)ref\Mono.Linker.csproj</ContractProject>
     <RollForward>Major</RollForward>
     <UseAppHost>false</UseAppHost>
     <NoWarn>$(NoWarn);NU5131</NoWarn>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
     <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <Target Name="_ComputePackRuntimeConfigFilePath">
@@ -72,7 +74,12 @@
   <ItemGroup>
     <AdditionalFiles Include="BannedSymbols.txt" />
     <Compile Remove="ref\**\*.cs" />
-    <Compile Include="..\..\external\corert\**\*.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Mono.Linker.Tests" />
   </ItemGroup>
 
   <ItemGroup>

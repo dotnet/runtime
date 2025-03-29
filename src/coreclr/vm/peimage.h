@@ -18,7 +18,7 @@
 #include "peimagelayout.h"
 #include "sstring.h"
 #include "holder.h"
-#include <bundle.h>
+#include <assemblyprobeextension.h>
 
 class SimpleRWLock;
 // --------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ public:
     static void Startup();
 
     ~PEImage();
-    PEImage();
+    explicit PEImage(const WCHAR* path);
 
     BOOL Equals(PEImage* pImage);
 
@@ -119,9 +119,9 @@ public:
     static PTR_PEImage OpenImage(
         LPCWSTR pPath,
         MDInternalImportFlags flags = MDInternalImport_Default,
-        BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
+        ProbeExtensionResult probeExtensionResult = ProbeExtensionResult::Invalid());
 
-    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle = TRUE);
+    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle, BOOL isExternalData);
     void AddToHashMap();
 #endif
 
@@ -138,9 +138,11 @@ public:
 
     BOOL IsFile();
     BOOL IsInBundle() const;
+    BOOL IsExternalData() const;
+    void* GetExternalData(INT64* size);
     INT64 GetOffset() const;
     INT64 GetSize() const;
-    INT64 GetUncompressedSize() const;
+    BOOL IsCompressed(INT64* uncompressedSize = NULL) const;
 
     HANDLE GetFileHandle();
     HRESULT TryOpenFile(bool takeLock = false);
@@ -182,8 +184,8 @@ public:
     void SetModuleFileNameHintForDAC();
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    const SString &GetModuleFileNameHintForDAC();
 #endif
+    const SString &GetModuleFileNameHintForDAC();
 
 private:
 #ifndef DACCESS_COMPILE
@@ -206,24 +208,26 @@ private:
     // Private routines
     // ------------------------------------------------------------
 
-    void Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
+    void Init(ProbeExtensionResult probeExtensionResult);
 
     struct PEImageLocator
     {
-
         LPCWSTR m_pPath;
         BOOL m_bIsInBundle;
+        BOOL m_bIsExternalData;
 
-        PEImageLocator(LPCWSTR pPath, BOOL bIsInBundle)
-            : m_pPath(pPath),
-              m_bIsInBundle(bIsInBundle)
+        PEImageLocator(LPCWSTR pPath, BOOL bIsInBundle, BOOL bIsExternalData)
+            : m_pPath(pPath)
+            , m_bIsInBundle(bIsInBundle)
+            , m_bIsExternalData(bIsExternalData)
         {
         }
 
         PEImageLocator(PEImage * pImage)
             : m_pPath(pImage->m_path.GetUnicode())
+            , m_bIsInBundle(pImage->IsInBundle())
+            , m_bIsExternalData(pImage->IsExternalData())
         {
-            m_bIsInBundle = pImage->IsInBundle();
         }
     };
 
@@ -237,7 +241,6 @@ public:
         Crst            m_lock;
         void*           m_base;
         DWORD           m_flags;
-        PTR_LoaderHeap  m_DllThunkHeap;
 
         // the fixup for the next iteration in FixupVTables
         // we use it to make sure that we do not try to fix up the same entry twice
@@ -251,19 +254,15 @@ public:
 
     public:
         IJWFixupData(void* pBase);
-        ~IJWFixupData();
         void* GetBase() { LIMITED_METHOD_CONTRACT; return m_base; }
         Crst* GetLock() { LIMITED_METHOD_CONTRACT; return &m_lock; }
         BOOL IsFixedUp() { LIMITED_METHOD_CONTRACT; return m_flags & e_FIXED_UP; }
         void SetIsFixedUp() { LIMITED_METHOD_CONTRACT; m_flags |= e_FIXED_UP; }
-        PTR_LoaderHeap  GetThunkHeap();
         void MarkMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
         BOOL IsMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
     };
 
     static IJWFixupData* GetIJWData(void* pBase);
-    static PTR_LoaderHeap GetDllThunkHeap(void* pBase);
-    static void UnloadIJWModule(void* pBase);
 
 private:
 
@@ -285,16 +284,16 @@ private:
     // Instance fields
     // ------------------------------------------------------------
 
-    SString   m_path;
+    const SString   m_path;
     ULONG     m_pathHash;
     LONG      m_refCount;
 
     // means this is a unique (deduped) instance.
     BOOL      m_bInHashMap;
 
-    // If this image is located within a single-file bundle, the location within the bundle.
-    // If m_bundleFileLocation is valid, it takes precedence over m_path for loading.
-    BundleFileLocation m_bundleFileLocation;
+    // Valid if this image is from a probe extension (single-file bundle, external data).
+    // If m_probeExtensionResult is valid, it takes precedence over m_path for loading.
+    ProbeExtensionResult m_probeExtensionResult;
 
     // valid handle if we tried to open the file/path and succeeded.
     HANDLE m_hFile;
@@ -302,12 +301,10 @@ private:
     DWORD m_dwPEKind;
     DWORD m_dwMachine;
 
-    // This variable will have the data of module name.
-    // It is only used by DAC to remap fusion loaded modules back to
-    // disk IL. This really is a workaround. The real fix is for fusion loader
-    // hook (public API on hosting) to take an additional file name hint.
-    // We are piggy backing on the fact that module name is the same as file name!!!
-    SString   m_sModuleFileNameHintUsedByDac; // This is only used by DAC
+    // This only used by DAC
+    // For assemblies loaded from a path or single-file bundle, this is the file name portion of the path
+    // For assemblies loaded from memory, this is the module file name from metadata
+    SString   m_sModuleFileNameHintUsedByDac;
 
     enum
     {

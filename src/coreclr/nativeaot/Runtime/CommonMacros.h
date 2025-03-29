@@ -17,7 +17,7 @@
 #define STDCALL
 #endif
 
-#define REDHAWK_CALLCONV FASTCALL
+#define F_CALL_CONV FASTCALL
 #define QCALLTYPE
 
 #ifdef _MSC_VER
@@ -89,16 +89,6 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #define ZeroMemory(_dst, _size) memset((_dst), 0, (_size))
 #endif
 
-//-------------------------------------------------------------------------------------------------
-// min/max
-
-#ifndef min
-#define min(_a, _b) ((_a) < (_b) ? (_a) : (_b))
-#endif
-#ifndef max
-#define max(_a, _b) ((_a) < (_b) ? (_b) : (_a))
-#endif
-
 #endif // !DACCESS_COMPILE
 
 //-------------------------------------------------------------------------------------------------
@@ -129,41 +119,19 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
+#elif defined(HOST_LOONGARCH64) || defined (HOST_RISCV64)
+
+#define LOG2_PTRSIZE 3
+#define POINTER_SIZE 8
+
 #else
 #error Unsupported target architecture
 #endif
 
 #ifndef __GCENV_BASE_INCLUDED__
 
-#if defined(HOST_WASM)
-#define OS_PAGE_SIZE    0x4
-#else
 #define OS_PAGE_SIZE    PalOsPageSize()
-#endif
 
-#if defined(HOST_AMD64)
-
-#define DATA_ALIGNMENT  8
-
-#elif defined(HOST_X86)
-
-#define DATA_ALIGNMENT  4
-
-#elif defined(HOST_ARM)
-
-#define DATA_ALIGNMENT  4
-
-#elif defined(HOST_ARM64)
-
-#define DATA_ALIGNMENT  8
-
-#elif defined(HOST_WASM)
-
-#define DATA_ALIGNMENT  4
-
-#else
-#error Unsupported target architecture
-#endif
 #endif // __GCENV_BASE_INCLUDED__
 
 #if defined(TARGET_ARM)
@@ -219,6 +187,46 @@ typedef uint8_t CODE_LOCATION;
     _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_DECL_ALTNAME(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__)))))
 #define FCIMPL_RENAME(_rettype, ...) \
     _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_IMPL_ALTNAME(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__)))))
+#define FCIMPL_RENAME_ARGSIZE(_rettype, _method, _argSize) \
+    _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_XSTRINGIFY(/alternatename:_method=@_method##_FCall@_argSize))))
+
+#define FCIMPL1_F(_rettype, _method, a) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 4) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a) \
+    {
+#define FCIMPL1_D(_rettype, _method, a) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 8) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a) \
+    {
+#define FCIMPL1_L FCIMPL1_D
+#define FCIMPL2_FF(_rettype, _method, a, b) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 8) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (b, a) \
+    {
+#define FCIMPL2_DD(_rettype, _method, a, b) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 16) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (b, a) \
+    {
+#define FCIMPL2_FI(_rettype, _method, a, b) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 8) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, b) \
+    {
+#define FCIMPL2_DI(_rettype, _method, a, b) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 12) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, b) \
+    {
+#define FCIMPL3_FFF(_rettype, _method, a, b, c) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 12) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (c, b, a) \
+    {
+#define FCIMPL3_DDD(_rettype, _method, a, b, c) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 24) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (c, b, a) \
+    {
+#define FCIMPL3_ILL(_rettype, _method, a, b, c) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 20) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, c, b) \
+    {
 
 #else
 
@@ -228,11 +236,40 @@ typedef uint8_t CODE_LOCATION;
 #define FCALL_METHOD_ARGS(dummy, ...) (__VA_ARGS__)
 #define FCALL_METHOD_ARGS_(tuple) FCALL_METHOD_ARGS tuple
 
+#define FCIMPL1_F(_rettype, _method, a) \
+    EXTERN_C _rettype F_CALL_CONV _method (a) \
+    {
+#define FCIMPL1_D(_rettype, _method, a) \
+    EXTERN_C _rettype F_CALL_CONV _method (a) \
+    {
+#define FCIMPL1_L FCIMPL1_D
+#define FCIMPL2_FF(_rettype, _method, a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    {
+#define FCIMPL2_DD(_rettype, _method, a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    {
+#define FCIMPL2_FI(_rettype, _method, a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    {
+#define FCIMPL2_DI(_rettype, _method, a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    {
+#define FCIMPL3_FFF(_rettype, _method, a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    {
+#define FCIMPL3_DDD(_rettype, _method, a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    {
+#define FCIMPL3_ILL(_rettype, _method, a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    {
+
 #endif
 
 #define FCDECL_(_rettype, ...) \
     FCDECL_RENAME(_rettype, __VA_ARGS__) \
-    EXTERN_C _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__))
+    EXTERN_C _rettype F_CALL_CONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__))
 #define FCDECL0(_rettype, _method) FCDECL_(_rettype, _method)
 #define FCDECL1(_rettype, _method, a) FCDECL_(_rettype, _method, a)
 #define FCDECL2(_rettype, _method, a, b) FCDECL_(_rettype, _method, a, b)
@@ -242,7 +279,7 @@ typedef uint8_t CODE_LOCATION;
 
 #define FCIMPL_(_rettype, ...) \
     FCIMPL_RENAME(_rettype, __VA_ARGS__) \
-    EXTERN_C _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__)) \
+    EXTERN_C _rettype F_CALL_CONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__)) \
     {
 #define FCIMPL0(_rettype, _method) FCIMPL_(_rettype, _method)
 #define FCIMPL1(_rettype, _method, a) FCIMPL_(_rettype, _method, a)
@@ -256,14 +293,11 @@ typedef uint8_t CODE_LOCATION;
 
 typedef bool CLR_BOOL;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-// The return value is artificially widened on x86 and amd64
 typedef int32_t FC_BOOL_RET;
-#else
-typedef bool FC_BOOL_RET;
-#endif
+typedef int32_t FC_BOOL_ARG;
 
 #define FC_RETURN_BOOL(x)   do { return !!(x); } while(0)
+#define FC_ACCESS_BOOL(x) ((uint8_t)x != 0)
 
 #ifndef DACCESS_COMPILE
 #define IN_DAC(x)
@@ -286,7 +320,7 @@ enum STARTUP_TIMELINE_EVENT_ID
 };
 
 #ifdef PROFILE_STARTUP
-extern unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
+extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
 #define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = PalQueryPerformanceCounter();
 #else // PROFILE_STARTUP
 #define STARTUP_TIMELINE_EVENT(eventid)

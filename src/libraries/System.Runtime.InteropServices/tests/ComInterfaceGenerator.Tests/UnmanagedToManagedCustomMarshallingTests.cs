@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
+using Microsoft.Diagnostics.Runtime;
 using SharedTypes;
 using Xunit;
 using static ComInterfaceGenerator.Tests.UnmanagedToManagedCustomMarshallingTests;
@@ -156,11 +157,11 @@ namespace ComInterfaceGenerator.Tests
             try
             {
                 var values = new int[] { 1, 32, 63, 124, 255 };
-
                 int freeCalls = IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree;
-
-                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, values, values.Length, out int _);
-
+                int oldValue = startingValue + 100;
+                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, values, values.Length, out oldValue);
+                Assert.Equal(values.Sum(), impl.GetData().i);
+                Assert.Equal(startingValue, oldValue);
                 Assert.Equal(freeCalls, IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree);
             }
             finally
@@ -181,11 +182,11 @@ namespace ComInterfaceGenerator.Tests
             try
             {
                 var values = new int[] { 1, 32, 63, 124, 255 };
-
                 int freeCalls = IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree;
-
-                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, ref values, values.Length, out int _);
-
+                int oldValue = startingValue + 100;
+                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, ref values, values.Length, out oldValue);
+                Assert.Equal(values.Sum(), impl.GetData().i);
+                Assert.Equal(startingValue, oldValue);
                 Assert.Equal(freeCalls + values.Length, IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree);
             }
             finally

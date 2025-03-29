@@ -111,9 +111,7 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('TypedReference')
                 RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType?)DeclaringType);
-#pragma warning restore CS8500
             }
         }
 
@@ -127,9 +125,7 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('TypedReference')
                 return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
-#pragma warning restore CS8500
             }
         }
 

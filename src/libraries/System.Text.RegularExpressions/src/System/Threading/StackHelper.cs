@@ -12,7 +12,7 @@ namespace System.Threading
         /// <summary>Tries to ensure there is sufficient stack to execute the average .NET function.</summary>
         public static bool TryEnsureSufficientExecutionStack()
         {
-#if NETCOREAPP2_0_OR_GREATER
+#if NET
             return RuntimeHelpers.TryEnsureSufficientExecutionStack();
 #else
             try
