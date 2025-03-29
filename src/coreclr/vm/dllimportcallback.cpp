@@ -20,6 +20,9 @@
 #include "stubgen.h"
 #include "appdomain.inl"
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
 
 struct UM2MThunk_Args
 {
@@ -249,6 +252,9 @@ UMEntryThunk* UMEntryThunk::CreateUMEntryThunk()
        
         UMEntryThunkData *pData = (UMEntryThunkData *)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
         p = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(size, 1));
+#ifdef FEATURE_PERFMAP
+        PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)p, size, PerfMapStubType::IndividualWithinBlock);
+#endif
         pData->m_pUMEntryThunk = p;
         p->Init(p, dac_cast<TADDR>(pData), NULL, dac_cast<TADDR>(PRECODE_UMENTRY_THUNK));
         pamTracker->SuppressRelease();

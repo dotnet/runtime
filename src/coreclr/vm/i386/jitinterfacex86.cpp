@@ -366,7 +366,7 @@ void *JIT_TrialAlloc::GenAllocSFast(Flags flags)
     // Jump to the framed helper
     sl.X86EmitNearJump(sl.NewExternalCodeLabel((LPVOID)JIT_New));
 
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap(), NEWSTUB_FL_NONE, "AllocSFast");
 
     return (void *)pStub->GetEntryPoint();
 }
@@ -498,7 +498,7 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
     // Jump to the slow version of JIT_Box
     sl.X86EmitNearJump(sl.NewExternalCodeLabel((LPVOID) JIT_Box));
 
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap(), NEWSTUB_FL_NONE, "Box");
 
     return (void *)pStub->GetEntryPoint();
 }
@@ -656,7 +656,7 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
     _ASSERTE(target->e.m_pExternalAddress);
     sl.X86EmitNearJump(target);
 
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap(), NEWSTUB_FL_NONE, "AllocArray");
 
     return (void *)pStub->GetEntryPoint();
 }
@@ -744,7 +744,7 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
     CodeLabel * target = sl.NewExternalCodeLabel((LPVOID)FramedAllocateString);
     sl.X86EmitNearJump(target);
 
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap(), NEWSTUB_FL_NONE, "AllocString");
 
     return (void *)pStub->GetEntryPoint();
 }
