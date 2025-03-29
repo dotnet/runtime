@@ -100,6 +100,16 @@ bool emitter::IsAVXVNNIInstruction(instruction ins)
     return (ins >= INS_FIRST_AVXVNNI_INSTRUCTION) && (ins <= INS_LAST_AVXVNNI_INSTRUCTION);
 }
 
+bool emitter::IsAVXVNNIINT8Instruction(instruction ins)
+{
+    return (ins >= INS_FIRST_AVXVNNIINT8_INSTRUCTION) && (ins <= INS_LAST_AVXVNNIINT8_INSTRUCTION);
+}
+
+bool emitter::IsAVXVNNIINT16Instruction(instruction ins)
+{
+    return (ins >= INS_FIRST_AVXVNNIINT16_INSTRUCTION) && (ins <= INS_LAST_AVXVNNIINT16_INSTRUCTION);
+}
+
 bool emitter::IsBMIInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
@@ -2888,7 +2898,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         if (sizePrefix == 0)
         {
             // no simd prefix for EVEX2 - AVX10.2 and above
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) || emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT8) || emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT16));
         }
         else if (isPrefix(sizePrefix))
         {
@@ -4289,7 +4299,7 @@ bool emitter::EncodedBySSE38orSSE3A(instruction ins) const
 
 #if defined(DEBUG)
     insCode = (insCode >> 16) & 0xFF;
-    assert((insCode == 0x66) || (insCode == 0xF2) || (insCode == 0xF3));
+    assert((insCode == 0x00) || (insCode == 0x66) || (insCode == 0xF2) || (insCode == 0xF3));
 #endif // DEBUG
 
     return true;
@@ -9980,7 +9990,7 @@ void emitter::emitIns_SIMD_R_R_R_A(instruction   ins,
                                    GenTreeIndir* indir,
                                    insOpts       instOptions)
 {
-    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins) || IsAVXVNNIINT8Instruction(ins) || IsAVXVNNIINT16Instruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -10013,7 +10023,7 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
                                    int                  offs,
                                    insOpts              instOptions)
 {
-    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins) || IsAVXVNNIINT8Instruction(ins) || IsAVXVNNIINT16Instruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -10044,7 +10054,7 @@ void emitter::emitIns_SIMD_R_R_R_R(instruction ins,
                                    regNumber   op3Reg,
                                    insOpts     instOptions)
 {
-    if (IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins))
+    if (IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins) || IsAVXVNNIINT8Instruction(ins) || IsAVXVNNIINT16Instruction(ins))
     {
         assert(UseSimdEncoding());
 
@@ -10131,7 +10141,7 @@ void emitter::emitIns_SIMD_R_R_R_S(instruction ins,
                                    int         offs,
                                    insOpts     instOptions)
 {
-    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins) || IsAVXVNNIINT8Instruction(ins) || IsAVXVNNIINT16Instruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2

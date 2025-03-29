@@ -56,6 +56,10 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX10v2_V512_X64;
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
+        case InstructionSet_AVXVNNIINT8:
+            return InstructionSet_AVXVNNIINT8_X64;
+        case InstructionSet_AVXVNNIINT16:
+                return InstructionSet_AVXVNNIINT16_X64;
         case InstructionSet_AES:
             return InstructionSet_AES_X64;
         case InstructionSet_BMI1:
@@ -151,6 +155,10 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_GFNI_V512;
         case InstructionSet_PCLMULQDQ:
             return InstructionSet_PCLMULQDQ_V512;
+        case InstructionSet_AVXVNNIINT8:
+            return InstructionSet_AVXVNNIINT8_V512;
+        case InstructionSet_AVXVNNIINT16:
+            return InstructionSet_AVXVNNIINT16_V512;
         default:
             return InstructionSet_NONE;
     }
@@ -189,6 +197,17 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
                 else if (strcmp(className + 6, "2") == 0)
                 {
                     return InstructionSet_AVX10v2;
+                }
+            }
+            else if (strncmp(className + 3, "VnniInt", 7) == 0)
+            {
+                if (strcmp(className + 10, "8") == 0)
+                {
+                    return InstructionSet_AVXVNNIINT8;
+                }
+                else if (strcmp(className + 10, "16") == 0)
+                {
+                    return InstructionSet_AVXVNNIINT16;
                 }
             }
             else if (strcmp(className + 3, "2") == 0)
@@ -932,6 +951,12 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX10v2_X64:
         case InstructionSet_AVX10v2_V512:
         case InstructionSet_AVX10v2_V512_X64:
+        case InstructionSet_AVXVNNIINT8:
+        case InstructionSet_AVXVNNIINT8_X64:
+        case InstructionSet_AVXVNNIINT8_V512:
+        case InstructionSet_AVXVNNIINT16:
+        case InstructionSet_AVXVNNIINT16_X64:
+        case InstructionSet_AVXVNNIINT16_V512:
         case InstructionSet_EVEX:
         case InstructionSet_GFNI:
         case InstructionSet_GFNI_X64:

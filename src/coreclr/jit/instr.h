@@ -98,7 +98,7 @@ enum instruction : uint32_t
 inline bool IsSimdInstruction(instruction ins)
 {
 #if defined(TARGET_XARCH)
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX10v2_INSTRUCTION);
+    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVXVNNIINT8_INSTRUCTION);
 #else
     return false;
 #endif // TARGET_XARCH
