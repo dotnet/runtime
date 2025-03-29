@@ -106,7 +106,7 @@ namespace System
         private static partial long GetTotalMemory();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
-        private static partial void _Collect(int generation, int mode);
+        private static partial void _Collect(int generation, int mode, [MarshalAs(UnmanagedType.U1)] bool lowMemoryPressure);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetMaxGeneration();
@@ -174,7 +174,7 @@ namespace System
         public static void Collect()
         {
             // -1 says to GC all generations.
-            _Collect(-1, (int)InternalGCCollectionMode.Blocking);
+            _Collect(-1, (int)InternalGCCollectionMode.Blocking, lowMemoryPressure: false);
         }
 
         public static void Collect(int generation, GCCollectionMode mode)
@@ -190,13 +190,17 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
         {
+            Collect(generation, mode, blocking, compacting, lowMemoryPressure: false);
+        }
+
+        internal static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting, bool lowMemoryPressure)
+        {
             ArgumentOutOfRangeException.ThrowIfNegative(generation);
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
             {
                 throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
             }
-
 
             int iInternalModes = 0;
 
@@ -222,7 +226,9 @@ namespace System
             }
 
             if (compacting)
+            {
                 iInternalModes |= (int)InternalGCCollectionMode.Compacting;
+            }
 
             if (blocking)
             {
@@ -233,7 +239,7 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
 
-            _Collect(generation, iInternalModes);
+            _Collect(generation, (int)iInternalModes, lowMemoryPressure);
         }
 
         public static int CollectionCount(int generation)

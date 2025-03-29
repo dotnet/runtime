@@ -48,6 +48,10 @@
 #include "variant.h"
 #endif // FEATURE_COMINTEROP
 
+#if defined(FEATURE_COMWRAPPERS)
+#include "interoplibinterface_comwrappers.h"
+#endif
+
 #include "interoplibinterface.h"
 
 #include "stubhelpers.h"

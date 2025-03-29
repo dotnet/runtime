@@ -1197,12 +1197,6 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     if (pRCW)
         pRCW->MinorCleanup();
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMWRAPPERS
-    void* eoc;
-    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
-        ComWrappersNative::MarkExternalComObjectContextCollected(eoc);
-#endif // FEATURE_COMWRAPPERS
 }
 
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
@@ -1247,8 +1241,6 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
-    pInteropInfo->ClearManagedObjectComWrappers(&ComWrappersNative::DestroyManagedObjectComWrapper);
-
     void* eoc;
     if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
     {
