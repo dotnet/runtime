@@ -548,26 +548,8 @@ inline bool CORDebuggerAttached()
 
 
 //
-// Define stuff for precedence between profiling and debugging
-// flags that can both be set.
+// Note: Profiler now influences dwDebuggerBits initialization
 //
-
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-
-#ifdef DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits)        \
-         (CORProfilerDisableOptimizations() ||            \
-          !CORDebuggerAllowJITOpts(dwDebuggerBits))
-
-#else // !DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits)        \
-         CORProfilerDisableOptimizations()
-
-#endif// DEBUGGING_SUPPORTED
-
-#else // !defined(PROFILING_SUPPORTED) && !defined(PROFILING_SUPPORTED_DATA)
 
 #ifdef DEBUGGING_SUPPORTED
 
@@ -579,8 +561,6 @@ inline bool CORDebuggerAttached()
 #define CORDisableJITOptimizations(dwDebuggerBits) FALSE
 
 #endif// DEBUGGING_SUPPORTED
-
-#endif// defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
 
 

@@ -478,6 +478,16 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
+#ifdef PROFILING_SUPPORTED
+    // set profiler related JIT flags
+    if(CORProfilerDisableInlining()){
+        m_dwTransientFlags |= PROF_DISABLE_INLINING;
+    }
+    if(CORProfilerDisableOptimizations()){
+        m_dwTransientFlags |= PROF_DISABLE_OPTIMIZATIONS;
+    }
+#endif //PROFILING_SUPPORTED
+    
 
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
@@ -503,6 +513,11 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 
     m_dwTransientFlags &= ~DEBUGGER_INFO_MASK_PRIV;
     m_dwTransientFlags |= (newBits << DEBUGGER_INFO_SHIFT_PRIV);
+
+    // if modules was initialized while Profiler disabled optimizations, disallow optimizations
+    if(m_dwTransientFlags & PROF_DISABLE_OPTIMIZATIONS){
+        m_dwTransientFlags &= ~DEBUGGER_ALLOW_JIT_OPTS_PRIV;
+    }
 
 #ifdef DEBUGGING_SUPPORTED
     if (IsEditAndContinueCapable())

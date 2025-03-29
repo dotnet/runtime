@@ -627,6 +627,8 @@ private:
         IS_ETW_NOTIFIED             = 0x00000020,
 
         IS_REFLECTION_EMIT          = 0x00000040,
+        PROF_DISABLE_OPTIMIZATIONS  = 0x00000080,   // indicates if Profiler disabled JIT optimization event mask was set when loaded
+        PROF_DISABLE_INLINING       = 0x00000100,   // indicates if Profiler disabled JIT Inlining event mask was set when loaded
 
         //
         // Note: The values below must match the ones defined in
@@ -914,6 +916,8 @@ protected:
         _ASSERTE((m_dwTransientFlags & IS_EDIT_AND_CONTINUE) == 0 || IsEditAndContinueCapable());
         return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
     }
+    
+    BOOL IsInliningDisabled() const {WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return (m_dwTransientFlags & PROF_DISABLE_INLINING) != 0; }
 
 #ifdef FEATURE_METADATA_UPDATER
     // Holds a table of EnCEEClassData object for classes in this module that have been modified
