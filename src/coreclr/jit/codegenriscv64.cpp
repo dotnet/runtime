@@ -4576,6 +4576,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; these nodes are simply markers for debug info.
             break;
 
+        case GT_SHXADD:
+        case GT_SHXADD_UW:
+            genShxaddInstruction(treeNode->AsShxadd());
+            break;
+
         default:
         {
 #ifdef DEBUG
@@ -5526,7 +5531,16 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // dest = base + (index << scale)
         if (node->gtElemSize <= 64)
         {
-            genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale, tempReg);
+            instruction shxaddIns = getShxaddVariant(scale, (genTypeSize(index) == 4));
+
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zba) && (shxaddIns != INS_none))
+            {
+                GetEmitter()->emitIns_R_R_R(shxaddIns, attr, node->GetRegNum(), index->GetRegNum(), base->GetRegNum());
+            }
+            else
+            {
+                genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale, tempReg);
+            }
         }
         else
         {
@@ -6634,6 +6648,49 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     }
 
     genProduceReg(lea);
+}
+
+instruction CodeGen::getShxaddVariant(int scale, bool useUnsignedVariant)
+{
+    if (useUnsignedVariant)
+    {
+        switch (scale)
+        {
+            case 1:
+                return INS_sh1add_uw;
+            case 2:
+                return INS_sh2add_uw;
+            case 3:
+                return INS_sh3add_uw;
+        }
+    }
+    else
+    {
+        switch (scale)
+        {
+            case 1:
+                return INS_sh1add;
+            case 2:
+                return INS_sh2add;
+            case 3:
+                return INS_sh3add;
+        }
+    }
+    return INS_none;
+}
+
+void CodeGen::genShxaddInstruction(GenTreeShxadd* shxadd)
+{
+    instruction shxaddIns = getShxaddVariant(shxadd->shammt, shxadd->IsUnsignedVariant());
+
+    assert(shxaddIns != INS_none);
+
+    genConsumeOperands(shxadd);
+
+    GetEmitter()->emitIns_R_R_R(shxaddIns, EA_PTRSIZE, shxadd->GetRegNum(), shxadd->Index()->GetRegNum(),
+                                shxadd->Base()->GetRegNum());
+
+    genProduceReg(shxadd);
 }
 
 //------------------------------------------------------------------------

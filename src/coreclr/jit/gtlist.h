@@ -223,6 +223,11 @@ GTNODE(XOR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(BFIZ             , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
 #endif
 
+#ifdef TARGET_RISCV64
+GTNODE(SHXADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Represents sh1add, sh2add, and sh3add instructions.
+GTNODE(SHXADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Represents sh1add.uw, sh2add.uw, and sh3add.uw instructions.
+#endif
+
 //-----------------------------------------------------------------------------
 //  LIR specific compare and conditional branch/set nodes:
 //-----------------------------------------------------------------------------
