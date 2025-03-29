@@ -3,10 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
@@ -15,45 +12,6 @@ namespace System.Runtime.InteropServices
     /// </summary>
     public static class TypeMapping
     {
-#if !NATIVEAOT
-        private static Lock s_lock = new Lock();
-        private static Dictionary<Type, TypeMapLazyDictionary> s_externalTypeMapsByGroup = new Dictionary<Type, TypeMapLazyDictionary>();
-
-        [RequiresUnreferencedCode("Lazy TypeMap isn't supported in the Trimmer")]
-        private static TypeMapLazyDictionary CreateOrGet(RuntimeType typeGroup)
-        {
-            TypeMapLazyDictionary? typeMaps;
-            lock (s_lock)
-            {
-                if (s_externalTypeMapsByGroup.TryGetValue(typeGroup, out typeMaps))
-                {
-                    return typeMaps;
-                }
-            }
-
-            RuntimeAssembly? entry = (RuntimeAssembly?)Assembly.GetEntryAssembly();
-            if (entry is null)
-            {
-                // [TODO] Do we throw here?
-                throw new NotSupportedException();
-            }
-
-            // We create a new type map starting from the entry assembly.
-            // This is done outside of the lock since it could be expensive.
-            TypeMapLazyDictionary newTypeMaps = new(typeGroup, entry);
-            lock (s_lock)
-            {
-                if (!s_externalTypeMapsByGroup.TryGetValue(typeGroup, out typeMaps))
-                {
-                    s_externalTypeMapsByGroup.Add(typeGroup, newTypeMaps);
-                    typeMaps = newTypeMaps;
-                }
-
-                return typeMaps;
-            }
-        }
-#endif
-
         /// <summary>
         /// Returns the External type type map generated for the current application.
         /// </summary>
@@ -68,7 +26,7 @@ namespace System.Runtime.InteropServices
 #if NATIVEAOT
             throw new NotImplementedException();
 #else
-            return CreateOrGet((RuntimeType)typeof(TTypeMapGroup)).GetExternalTypeMap();
+            return TypeMapLazyDictionary.CreateExternalTypeMap((RuntimeType)typeof(TTypeMapGroup));
 #endif
         }
 
@@ -86,7 +44,7 @@ namespace System.Runtime.InteropServices
 #if NATIVEAOT
             throw new NotImplementedException();
 #else
-            return CreateOrGet((RuntimeType)typeof(TTypeMapGroup)).GetProxyTypeMap();
+            return TypeMapLazyDictionary.CreateProxyTypeMap((RuntimeType)typeof(TTypeMapGroup));
 #endif
         }
     }

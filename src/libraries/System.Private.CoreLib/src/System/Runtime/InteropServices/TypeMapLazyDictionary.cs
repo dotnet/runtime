@@ -14,22 +14,32 @@ using System.Text;
 namespace System.Runtime.InteropServices
 {
     [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
-    internal sealed partial class TypeMapLazyDictionary
+    internal static partial class TypeMapLazyDictionary
     {
-        private readonly LazyExternalTypeDictionary _externalTypeMap;
-        private readonly LazyProxyTypeDictionary _proxyTypeMap;
-
         private ref struct CallbackContext
         {
-            [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
-            public CallbackContext()
+            private LazyExternalTypeDictionary? _externalTypeMap;
+            private LazyProxyTypeDictionary? _proxyTypeMap;
+
+            public LazyExternalTypeDictionary ExternalTypeMap
             {
-                ExternalTypeMap = new LazyExternalTypeDictionary();
-                ProxyTypeMap = new LazyProxyTypeDictionary();
+                [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
+                get
+                {
+                    _externalTypeMap ??= new LazyExternalTypeDictionary();
+                    return _externalTypeMap;
+                }
             }
 
-            public LazyExternalTypeDictionary ExternalTypeMap;
-            public LazyProxyTypeDictionary ProxyTypeMap;
+            public LazyProxyTypeDictionary ProxyTypeMap
+            {
+                [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
+                get
+                {
+                    _proxyTypeMap ??= new LazyProxyTypeDictionary();
+                    return _proxyTypeMap;
+                }
+            }
         }
 
         // See assemblynative.hpp for native version.
@@ -111,22 +121,48 @@ namespace System.Runtime.InteropServices
             context->ProxyTypeMap.Add(parsedSource, parsedProxy);
         }
 
-        public unsafe TypeMapLazyDictionary(RuntimeType groupType, RuntimeAssembly startingAssembly)
+        private static unsafe CallbackContext CreateMaps(
+            RuntimeType groupType,
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, void> newExternalTypeEntry,
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, void> newProxyTypeEntry)
         {
-            CallbackContext context = new();
+            RuntimeAssembly? startingAssembly = (RuntimeAssembly?)Assembly.GetEntryAssembly();
+            if (startingAssembly is null)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_TypeMapMissingEntryAssembly);
+            }
+
+            CallbackContext context;
             ProcessAttributes(
                 new QCallAssembly(ref startingAssembly),
                 new QCallTypeHandle(ref groupType),
-                &NewExternalTypeEntry,
-                &NewProxyTypeEntry,
+                newExternalTypeEntry,
+                newProxyTypeEntry,
                 &context);
-
-            _externalTypeMap = context.ExternalTypeMap;
-            _proxyTypeMap = context.ProxyTypeMap;
+            return context;
         }
 
-        public IReadOnlyDictionary<string, Type> GetExternalTypeMap() => _externalTypeMap;
-        public IReadOnlyDictionary<Type, Type> GetProxyTypeMap() => _proxyTypeMap;
+        public static IReadOnlyDictionary<string, Type> CreateExternalTypeMap(RuntimeType groupType)
+        {
+            unsafe
+            {
+                return CreateMaps(
+                    groupType,
+                    &NewExternalTypeEntry,
+                    null).ExternalTypeMap;
+            }
+        }
+
+        public static IReadOnlyDictionary<Type, Type> CreateProxyTypeMap(RuntimeType groupType)
+        {
+            unsafe
+            {
+                return CreateMaps(
+                    groupType,
+                    null,
+                    &NewProxyTypeEntry).ProxyTypeMap;
+            }
+        }
 
         private abstract class LazyTypeLoadDictionary<TKey> : IReadOnlyDictionary<TKey, Type> where TKey : notnull
         {

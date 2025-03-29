@@ -1656,7 +1656,7 @@ namespace System.Runtime.InteropServices
         public string? Scope { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true)]
-    public sealed class TypeMapAttribute<TTypeMapGroup> : Attribute
+    public sealed class TypeMapAttribute<TTypeMapGroup> : System.Attribute
     {
         public TypeMapAttribute(string value, System.Type target) { }
 
@@ -1664,12 +1664,12 @@ namespace System.Runtime.InteropServices
         public TypeMapAttribute(string value, System.Type target, System.Type trimTarget) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true)]
-    public sealed class TypeMapAssemblyTargetAttribute<TTypeMapGroup> : Attribute
+    public sealed class TypeMapAssemblyTargetAttribute<TTypeMapGroup> : System.Attribute
     {
         public TypeMapAssemblyTargetAttribute(string assemblyName) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true)]
-    public sealed class TypeMapAssociationAttribute<TTypeMapGroup> : Attribute
+    public sealed class TypeMapAssociationAttribute<TTypeMapGroup> : System.Attribute
     {
         public TypeMapAssociationAttribute(System.Type source, System.Type proxy) { }
     }

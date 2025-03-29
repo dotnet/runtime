@@ -226,6 +226,6 @@ public class TypeMap
         Console.WriteLine(nameof(Validate_EmptyOrInvalidMappings));
 
         Assert.Throws<COMException>(() => TypeMapping.GetOrCreateExternalTypeMapping<InvalidExternalTypeName>());
-        Assert.Throws<COMException>(() => TypeMapping.GetOrCreateProxyTypeMapping<InvalidExternalTypeName>());
+        Assert.Throws<COMException>(() => TypeMapping.GetOrCreateProxyTypeMapping<InvalidSourceTypeName>());
     }
 }

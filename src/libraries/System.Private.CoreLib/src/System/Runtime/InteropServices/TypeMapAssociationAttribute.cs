@@ -18,9 +18,9 @@ namespace System.Runtime.InteropServices
         /// <param name="source">Target type.</param>
         /// <param name="proxy">Type to associated with <paramref name="source"/>.</param>
         /// <remarks>
-        /// This mapping will only exist in the type map if the Trimmer observes
+        /// This mapping will only exist in the type map if trimming observes
         /// an allocation using the <see cref="System.Type"/> represented by <paramref name="source"/>.
         /// </remarks>
-        public TypeMapAssociationAttribute(System.Type source, System.Type proxy) { }
+        public TypeMapAssociationAttribute(Type source, Type proxy) { }
     }
 }

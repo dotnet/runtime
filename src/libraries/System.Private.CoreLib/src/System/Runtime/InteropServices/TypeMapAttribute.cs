@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices
         /// <param name="target">Type value</param>
         /// <param name="trimTarget">Type used by Trimmer to determine type map inclusion.</param>
         /// <remarks>
-        /// This mapping is only included in the type map if the Trimmer observes a type check
+        /// This mapping is only included in the type map if trimming observes a type check
         /// using the <see cref="System.Type"/> represented by <paramref name="trimTarget"/>.
         /// </remarks>
         [RequiresUnreferencedCode("Interop types may be removed by trimming")]

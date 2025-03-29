@@ -1663,8 +1663,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     QCALL_CONTRACT;
     _ASSERTE(pAssembly != NULL);
     _ASSERTE(!pGroupType.AsTypeHandle().IsNull());
-    _ASSERTE(newExternalTypeEntry != NULL);
-    _ASSERTE(newProxyTypeEntry != NULL);
+    _ASSERTE(newExternalTypeEntry != NULL || newProxyTypeEntry != NULL);
 
     BEGIN_QCALL;
 
@@ -1683,19 +1682,25 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
             groupTypeMT,
             currAssembly);
 
-        MappingsProcessor onExternalType{ currAssembly, newExternalTypeEntry, context };
-        ProcessTypeMapAttribute(
-            TypeMapAttributeName,
-            onExternalType,
-            groupTypeMT,
-            currAssembly);
+        if (newExternalTypeEntry != NULL)
+        {
+            MappingsProcessor onExternalType{ currAssembly, newExternalTypeEntry, context };
+            ProcessTypeMapAttribute(
+                TypeMapAttributeName,
+                onExternalType,
+                groupTypeMT,
+                currAssembly);
+        }
 
-        MappingsProcessor onProxyType{ currAssembly, newProxyTypeEntry, context };
-        ProcessTypeMapAttribute(
-            TypeMapAssociationAttributeName,
-            onProxyType,
-            groupTypeMT,
-            currAssembly);
+        if (newProxyTypeEntry != NULL)
+        {
+            MappingsProcessor onProxyType{ currAssembly, newProxyTypeEntry, context };
+            ProcessTypeMapAttribute(
+                TypeMapAssociationAttributeName,
+                onProxyType,
+                groupTypeMT,
+                currAssembly);
+        }
     }
 
     END_QCALL;
