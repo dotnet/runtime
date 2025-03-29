@@ -138,6 +138,15 @@
   <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
     <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
+  <data name="Argument_PrivateSeedWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The private seed is not the correct size for the indicated algorithm.</value>
+  </data>
+  <data name="Argument_PublicKeyWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The public key is not the correct size for the indicated algorithm.</value>
+  </data>
+  <data name="Argument_SecretKeyWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The secret key is not the correct size for the indicated algorithm.</value>
+  </data>
   <data name="Argument_SignatureContextTooLong255" xml:space="preserve">
     <value>The specified signature context exceeds the maximum length of 255 bytes.</value>
   </data>

@@ -392,6 +392,10 @@
              Link="Common\System\Security\Cryptography\Oids.Shared.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"
              Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PbeEncryptionAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\PbeEncryptionAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PbeParameters.cs"
+             Link="Common\System\Security\Cryptography\PbeParameters.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
              Link="Common\System\Security\Cryptography\PemLabels.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
@@ -572,8 +576,6 @@
     <Compile Include="System\Security\Cryptography\OidLookup.cs" />
     <Compile Include="System\Security\Cryptography\PaddingMode.cs" />
     <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.cs" />
-    <Compile Include="System\Security\Cryptography\PbeEncryptionAlgorithm.cs" />
-    <Compile Include="System\Security\Cryptography\PbeParameters.cs" />
     <Compile Include="System\Security\Cryptography\PemEncoding.cs" />
     <Compile Include="System\Security\Cryptography\PemEnumerator.cs" />
     <Compile Include="System\Security\Cryptography\PemFields.cs" />

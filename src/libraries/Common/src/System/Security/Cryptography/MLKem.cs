@@ -390,7 +390,6 @@ namespace System.Security.Cryptography
                 throw new ObjectDisposedException(typeof(MLKem).FullName);
             }
 #endif
-
         }
 
         /// <summary>

@@ -22,7 +22,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <CreatePackageOverridesTemplateProperty Include="ProductVersion=$(ProductVersion)" />
+      <CreatePackageOverridesTemplateProperty Include="ProductVersion=$(Version)" />
     </ItemGroup>
 
     <GenerateFileFromTemplate

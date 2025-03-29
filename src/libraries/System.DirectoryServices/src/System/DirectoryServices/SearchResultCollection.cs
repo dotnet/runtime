@@ -215,7 +215,7 @@ namespace System.DirectoryServices
         }
 
         /// <summary>Provides an enumerator implementation for the array of <see cref="SearchResult"/>.</summary>
-        private struct AlreadyReadResultsEnumerator : IEnumerator
+        private sealed class AlreadyReadResultsEnumerator : IEnumerator
         {
             private readonly IEnumerator _innerEnumerator;
 
