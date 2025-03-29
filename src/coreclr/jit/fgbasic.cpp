@@ -368,6 +368,16 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex)
                   (succCount - succIndex - 1) * sizeof(FlowEdge*));
     }
 
+    // If the block has other successors, distribute the removed edge's likelihood among the remaining successor edges.
+    if (succCount > 1)
+    {
+        const weight_t likelihoodIncrease = succEdge->getLikelihood() / (succCount - 1);
+        for (unsigned i = 0; i < (succCount - 1); i++)
+        {
+            succTab[i]->addLikelihood(likelihoodIncrease);
+        }
+    }
+
 #ifdef DEBUG
     // We only expect to see a successor once in the table.
     for (unsigned i = succIndex; i < (succCount - 1); i++)
@@ -424,6 +434,16 @@ void Compiler::fgRemoveEhfSuccessor(FlowEdge* succEdge)
                 assert(succTab[i]->getDestinationBlock() != succEdge->getDestinationBlock());
             }
 #endif // DEBUG
+        }
+    }
+
+    // If the block has other successors, distribute the removed edge's likelihood among the remaining successor edges.
+    if (succCount > 1)
+    {
+        const weight_t likelihoodIncrease = succEdge->getLikelihood() / (succCount - 1);
+        for (unsigned i = 0; i < (succCount - 1); i++)
+        {
+            succTab[i]->addLikelihood(likelihoodIncrease);
         }
     }
 
