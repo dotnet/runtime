@@ -1802,6 +1802,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_IsNegative:
         case NI_Vector64_IsNegative:
         case NI_Vector128_IsNegative:
         {
@@ -1846,6 +1847,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_IsPositive:
         case NI_Vector64_IsPositive:
         case NI_Vector128_IsPositive:
         {
@@ -1855,6 +1857,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_IsPositiveInfinity:
         case NI_Vector64_IsPositiveInfinity:
         case NI_Vector128_IsPositiveInfinity:
         {
