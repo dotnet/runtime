@@ -2875,6 +2875,9 @@ AsyncMethodSignatureKind ClassifyAsyncMethodSignatureCore(SigPointer sig, Module
     if (elemType == ELEMENT_TYPE_GENERICINST)
     {
         IfFailThrow(sig.GetElemType(&elemType));
+        if (elemType == ELEMENT_TYPE_INTERNAL)
+            return AsyncMethodSignatureKind::NormalMethod;
+
         *pIsValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
         IfFailThrow(sig.GetToken(&tk));
         IfFailThrow(sig.GetData(&data));
