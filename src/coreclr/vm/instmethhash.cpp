@@ -118,7 +118,8 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
                                                 mdMethodDef token,
                                                 BOOL unboxingStub,
                                                 Instantiation inst,
-                                                BOOL getSharedNotStub)
+                                                BOOL getSharedNotStub,
+                                                bool isAsync2Variant)
 {
     CONTRACTL
     {
@@ -158,6 +159,11 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
         if (TypeHandle(pMD->GetMethodTable()) != declaringType)
         {
             continue;  // Next iteration of the for loop
+        }
+
+        if (pMD->IsAsync2VariantMethod() != isAsync2Variant)
+        {
+            continue;
         }
 
         if (!inst.IsEmpty())
@@ -202,7 +208,7 @@ BOOL InstMethodHashTable::ContainsMethodDesc(MethodDesc* pMD)
 
     return FindMethodDesc(
         pMD->GetMethodTable(), pMD->GetMemberDef(), pMD->IsUnboxingStub(),
-        pMD->GetMethodInstantiation(), pMD->RequiresInstArg()) != NULL;
+        pMD->GetMethodInstantiation(), pMD->RequiresInstArg(), pMD->IsAsync2VariantMethod()) != NULL;
 }
 
 #endif // #ifndef DACCESS_COMPILE

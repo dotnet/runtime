@@ -3902,6 +3902,11 @@ void LinearScan::processKills(RefPosition* killRefPosition)
     regsBusyUntilKill &= ~killRefPosition->getKilledRegisters();
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE,
                                     killRefPosition->getKilledRegisters()));
+
+    if (killRefPosition->busyUntilNextKill)
+    {
+        regsBusyUntilKill |= killRefPosition->getKilledRegisters();
+    }
 }
 
 //------------------------------------------------------------------------

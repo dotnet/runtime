@@ -50,10 +50,71 @@ GVAL_DECL(TADDR, g_MiniMetaDataBuffAddress);
 
 EXTERN_C VOID STDCALL NDirectImportThunk();
 
-#define METHOD_TOKEN_REMAINDER_BIT_COUNT 12
+#define METHOD_TOKEN_REMAINDER_BIT_COUNT 11
 #define METHOD_TOKEN_REMAINDER_MASK ((1 << METHOD_TOKEN_REMAINDER_BIT_COUNT) - 1)
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
+
+enum class AsyncMethodKind
+{
+    // Regular methods not returning tasks
+    // These are "normal" methods that do not get other variants.
+    // Note: Generic T-returning methods are NotAsync, even if T could be a Task.
+    NotAsync,
+
+    // Regular methods that return Task/ValueTask
+    // These methods have a synthetic variant that is an Async2-callable helper.
+    TaskReturning,
+
+    // Task-returning methods marked as MethodImpl::Async in metadata.
+    // These methods have bodies that are actually thunks to Async2 implementation variants (Async2VariantImpl)
+    RuntimeAsync,
+
+    //=============================================================
+    // On {TaskReturning, Async2VariantThunk} and {RuntimeAsync, Async2VariantImpl} pairs:
+    //
+    // When we see a Task-returning method we create 2 method varaints that logically match the same method definition.
+    // One variant has the same signature/callconv as the defining method and another is a matching Async2 variant.
+    // Depending on whether the definition was a runtime async method or an ordinary Task-returning method,
+    // one variant is the actual implementation and another is a thunk.
+    //
+    // The signature of the Async2 variant is formed from the original signature by replacing Task return type with
+    // modreq'd element type:
+    //   Example: "Task<int> Foo();"  ===> "modreq(Task`) int Foo();"
+    //   Example: "ValueTask Bar();"  ===> "modreq(ValueTask) void Bar();"
+    //
+    // It is possible to get from one variant to another unambiguously via GetAsyncOtherVariant.
+    //
+    // Async2 methods are called with CORINFO_CALLCONV_ASYNCCALL call convention.
+    // 
+    // NOTE: not all Async2 methods are "variants" from a pair, see Async2ExplicitImpl below.
+    //=============================================================
+
+    // The following methods use special calling convention (CORINFO_CALLCONV_ASYNCCALL)
+    // These methods are emitted by the JIT as resumable state machines and also take an extra
+    // parameter and extra return - the continuation object.
+
+    // Async2 methods with actual IL implementation of a MethodImpl::Async method.
+    Async2VariantImpl,
+
+    // Async2 methods with synthetic bodies that forward to a TaskReturning method.
+    Async2VariantThunk,
+
+    // Methods that are explicitly declared as Async2 in metadata while not Task returning.
+    // This is a special case used in a few infrastructure methods like `Await`.
+    // Such methods do not get non-Async2 variants/thunks and can only be called from another Async2 method.
+    // NOTE: These methods have the original signature and it is not possible to tell if the method is Async2
+    //       from the signature alone, thus all these methods are also JIT intrinsics.
+    Async2ExplicitImpl,
+};
+
+struct AsyncMethodData
+{
+    AsyncMethodKind kind;
+    Signature sig;
+};
+
+typedef DPTR(struct AsyncMethodData) PTR_AsyncMethodData;
 
 //=============================================================
 // Splits methoddef token into two pieces for
@@ -128,8 +189,8 @@ enum MethodDescFlags
     // Has slot for native code
     mdfHasNativeCodeSlot                = 0x0020,
 
-    // Method was added via Edit And Continue
-    mdfEnCAddedMethod                   = 0x0040,
+    // HasAsyncMethodData
+    mdfHasAsyncMethodData               = 0x0040,
 
     // Method is static
     mdfStatic                           = 0x0080,
@@ -165,6 +226,36 @@ struct MethodDescCodeData final
     PCODE TemporaryEntryPoint;
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
+
+enum class AsyncVariantLookup
+{
+    MatchingAsyncVariant = 0,
+    AsyncOtherVariant
+};
+
+enum class AsyncMethodSignatureKind
+{
+    TaskReturningMethod,
+    TaskNonGenericReturningMethod,
+    Async2Method,
+    Async2MethodNonGeneric,
+    NormalMethod
+};
+
+inline bool IsAsyncSigNormal(AsyncMethodSignatureKind input)
+{
+    return input == AsyncMethodSignatureKind::NormalMethod;
+}
+
+inline bool IsAsyncSigAsync2(AsyncMethodSignatureKind input)
+{
+    return (input == AsyncMethodSignatureKind::Async2Method) || (input == AsyncMethodSignatureKind::Async2MethodNonGeneric);
+}
+
+inline bool IsAsyncSigTaskReturning(AsyncMethodSignatureKind input)
+{
+    return (input == AsyncMethodSignatureKind::TaskReturningMethod) || (input == AsyncMethodSignatureKind::TaskNonGenericReturningMethod);
+}
 
 // The size of this structure needs to be a multiple of MethodDesc::ALIGNMENT
 //
@@ -602,7 +693,8 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return mcFCall == GetClassification()
-            || mcArray == GetClassification();
+            || mcArray == GetClassification()
+            || IsAsyncThunkMethod();
     }
 
     inline DWORD IsArray() const
@@ -803,7 +895,7 @@ public:
             MODE_ANY;
         }
         CONTRACTL_END;
-        return IsIL() && !IsUnboxingStub() && GetRVA();
+        return IsIL() && !IsUnboxingStub() && GetRVA() && !IsRuntimeSupplied();
     }
 
     COR_ILMETHOD* GetILHeader();
@@ -1399,6 +1491,10 @@ public:
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = 0);
 
     PTR_PCODE GetAddrOfNativeCodeSlot();
+    PTR_AsyncMethodData GetAddrOfAsyncMethodData() const;
+#ifndef DACCESS_COMPILE
+    const AsyncMethodData& GetAsyncMethodData() { _ASSERTE(HasAsyncMethodData()); return *GetAddrOfAsyncMethodData(); }
+#endif
 
     BOOL MayHaveNativeCode();
 
@@ -1545,12 +1641,18 @@ public:
                                                         BOOL allowInstParam,
                                                         BOOL forceRemotableMethod = FALSE,
                                                         BOOL allowCreate = TRUE,
+                                                        AsyncVariantLookup variantLookup = AsyncVariantLookup::MatchingAsyncVariant,
                                                         ClassLoadLevel level = CLASS_LOADED);
 
     // Normalize methoddesc for reflection
     static MethodDesc* FindOrCreateAssociatedMethodDescForReflection(MethodDesc *pMethod,
                                                                      TypeHandle instType,
                                                                      Instantiation methodInst);
+
+    MethodDesc* GetAsyncOtherVariant(BOOL allowInstParam = TRUE)
+    {
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
+    }
 
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
@@ -1662,8 +1764,11 @@ protected:
     enum {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
         // have a fairly strong justification for existence.
-        enum_flag3_TokenRemainderMask                       = 0x0FFF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
+        enum_flag3_TokenRemainderMask                       = 0x07FF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
                                                                       // for this method.
+        // Method was added via Edit And Continue
+        enum_flag3_EnCAddedMethod                           = 0x0800,
+
         // enum_flag3_HasPrecode implies that enum_flag3_HasStableEntryPoint is set.
         enum_flag3_HasStableEntryPoint                      = 0x1000,   // The method entrypoint is stable (either precode or actual code)
         enum_flag3_HasPrecode                               = 0x2000,   // Precode has been allocated for this method
@@ -1744,17 +1849,91 @@ public:
         m_wFlags |= mdfHasNativeCodeSlot;
     }
 
+    // Historically we use "Async2" to mean methods that can be called via CORINFO_CALLCONV_ASYNCCALL
+    // CONSIDER: We could have a better name for the concept, but it is hard to beat shortness of "Async2"
+    inline bool IsAsync2Method() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+        auto asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return asyncKind == AsyncMethodKind::Async2VariantThunk ||
+            asyncKind == AsyncMethodKind::Async2VariantImpl ||
+            asyncKind == AsyncMethodKind::Async2ExplicitImpl;
+    }
+
+    // Is this an Async2-callable variant method?
+    // If yes, the method has another non-Async2 variant.
+    inline bool IsAsync2VariantMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+        auto asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return asyncKind == AsyncMethodKind::Async2VariantThunk ||
+            asyncKind == AsyncMethodKind::Async2VariantImpl;
+    }
+
+    // Is this a small(ish) synthetic Task/async2 adapter to an async2/Task implementation?
+    // If yes, the method has another variant, which has the actual user-defined method body.
+    // Depending on whether user defined method was runtime async or not, the corresponding thunk
+    // will be an ordinary or async2 variant.
+    inline bool IsAsyncThunkMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        auto asyncType = GetAddrOfAsyncMethodData()->kind;
+        return asyncType == AsyncMethodKind::Async2VariantThunk ||
+            asyncType == AsyncMethodKind::RuntimeAsync;
+    }
+
+    inline bool IsTaskReturningMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+        auto asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return asyncKind == AsyncMethodKind::RuntimeAsync ||
+            asyncKind == AsyncMethodKind::TaskReturning;
+    }
+
+    inline bool IsStructMethodOperatingOnCopy()
+    {
+        if (!GetMethodTable()->IsValueType() || IsStatic())
+            return false;
+
+        if (!HasAsyncMethodData())
+            return false;
+
+        // Only async2 methods backed by actual user code operate on copies.
+        // Thunks with runtime-supplied implementation do not.
+        return GetAddrOfAsyncMethodData()->kind == AsyncMethodKind::Async2VariantImpl;
+    }
+
+    inline bool HasAsyncMethodData() const
+    {
+        return (m_wFlags & mdfHasAsyncMethodData) != 0;
+    }
+
+    inline void SetHasAsyncMethodData()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_wFlags |= mdfHasAsyncMethodData;
+    }
+
 #ifdef FEATURE_METADATA_UPDATER
     inline BOOL IsEnCAddedMethod()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdfEnCAddedMethod) != 0;
+        return (m_wFlags3AndTokenRemainder & enum_flag3_EnCAddedMethod) != 0;
     }
 
     inline void SetIsEnCAddedMethod()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdfEnCAddedMethod;
+        m_wFlags3AndTokenRemainder |= enum_flag3_EnCAddedMethod;
     }
 #else
     inline BOOL IsEnCAddedMethod()
@@ -1885,8 +2064,17 @@ private:
     PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
     PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
 
-public:
+    bool TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
+    void EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
+    void EmitAsync2MethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
+    SigPointer GetAsync2ThunkResultTypeSig();
+    int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
+    int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
+    int GetTokenForAwaitAwaiterInstantiatedOverTaskAwaiterType(ILCodeStream* pCode, TypeHandle taskAwaiterType);
+public:
+    static void CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder* stubSigBuilder);
+    bool TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
 #endif // DACCESS_COMPILE
 
 #ifdef HAVE_GCCOVER
@@ -1933,6 +2121,7 @@ public:
     BOOL MayUsePrecompiledCode();
     virtual PCODE IsJitCancellationRequested();
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
+    virtual PTR_PCODE GetNativeCodeSlot();
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
 #ifdef FEATURE_ON_STACK_REPLACEMENT
@@ -2217,7 +2406,7 @@ class MethodDescChunk
     friend class MethodDesc;
 
     enum {
-        enum_flag_TokenRangeMask                           = 0x0FFF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
+        enum_flag_TokenRangeMask                           = 0x1FFF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
                                                                      // These are separate to allow the flags space available and used to be obvious here
                                                                      // and for the logic that splits the token to be algorithmically generated based on the
                                                                      // #define
@@ -2239,6 +2428,7 @@ public:
                                         DWORD classification,
                                         BOOL fNonVtableSlot,
                                         BOOL fNativeCodeSlot,
+                                        BOOL fAsyncMethodData,
                                         MethodTable *initialMT,
                                         class AllocMemTracker *pamTracker,
                                         Module* pLoaderModule = NULL);
@@ -2522,6 +2712,8 @@ public:
 
         StubDelegateInvokeMethod,
 
+        StubAsyncResume,
+
         StubLast
     };
 
@@ -2590,6 +2782,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pszMethodName;
+    }
+
+    void SetMethodName(PTR_CUTF8 name)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        m_pszMethodName = name;
     }
 
     // Based on the current flags, compute the equivalent as COR metadata.
@@ -3457,7 +3655,8 @@ public:
     static InstantiatedMethodDesc* FindLoadedInstantiatedMethodDesc(MethodTable *pMT,
                                                                     mdMethodDef methodDef,
                                                                     Instantiation methodInst,
-                                                                    BOOL getSharedNotStub);
+                                                                    BOOL getSharedNotStub,
+                                                                    BOOL asyncThunk);
 
 private:
 
@@ -3651,6 +3850,8 @@ struct ReadyToRunStandaloneMethodMetadata
 ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(MethodDesc *pMD);
 void InitReadyToRunStandaloneMethodMetadata();
 #endif // FEATURE_READYTORUN
+
+AsyncMethodSignatureKind ClassifyAsyncMethodSignature(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *pIsValueType);
 
 #include "method.inl"
 

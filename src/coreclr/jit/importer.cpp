@@ -846,7 +846,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 
             // Make sure we don't pass something other than a local address to the return buffer arg.
             // It is allowed to pass current's method return buffer as it is a local too.
-            if (fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(srcCall->gtRetClsHnd))
+            if ((fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(srcCall->gtRetClsHnd)) ||
+                (compIsAsync2() && !destAddr->OperIs(GT_LCL_ADDR)))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
@@ -972,7 +973,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 
             // Make sure we don't pass something other than a local address to the return buffer arg.
             // It is allowed to pass current's method return buffer as it is a local too.
-            if (fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(call->gtRetClsHnd))
+            if ((fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(call->gtRetClsHnd)) ||
+                (compIsAsync2() && !destAddr->OperIs(GT_LCL_ADDR)))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, call->gtRetClsHnd, false);
@@ -5977,6 +5979,85 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
            block->HasFlag(BBF_BACKWARD_JUMP);
 }
 
+//------------------------------------------------------------------------
+// impMatchAwaitPattern: check if a method call starts an Await pattern
+//                       that can be optimized for runtime async
+//
+// Arguments:
+//   codeAddr - IL after call[virt]
+//   codeEndp - End of IL code stream
+//   configVal - [out] set to 0 or 1, accordingly, if we saw ConfigureAwait(0|1)
+//
+// Returns:
+//    true if this is an Await that we can optimize
+//
+bool Compiler::impMatchAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
+{
+    // If we see the following code pattern in runtime async methods:
+    //
+    //    call[virt] <Method>
+    //    [ OPTIONAL ]
+    //       ldc.i4.0 / ldc.i4.1
+    //       call[virt] <ConfigureAwait>
+    //    call       <Await>
+    //
+    // We emit an eqivalent of:
+    //
+    //    call[virt] <RtMethod>
+    //
+    //    where "RtMethod" is the runtime-async counterpart of a Task-returning method.
+    //
+    //  NOTE: we could potentially check if Method is not a thunk and, in cases when we can tell,
+    //        bypass this optimization. Otherwise in a non-thunk case we would be
+    //        replacing the pattern with a call to a thunk, which contains roughly the same code.
+
+    const BYTE* nextOpcode = codeAddr + sizeof(mdToken);
+    // There must be enough space after ldc for {call + tk + call + tk}
+    if (nextOpcode + 2 * (1 + sizeof(mdToken)) < codeEndp)
+    {
+        uint8_t nextOp     = getU1LittleEndian(nextOpcode);
+        uint8_t nextNextOp = getU1LittleEndian(nextOpcode + 1);
+        if ((nextOp != CEE_LDC_I4_0 && nextOp != CEE_LDC_I4_1) ||
+            (nextNextOp != CEE_CALL && nextNextOp != CEE_CALLVIRT))
+        {
+            goto checkForAwait;
+        }
+
+        // check if the token after {ldc, call[virt]} is ConfigAwait
+        CORINFO_RESOLVED_TOKEN nextCallTok;
+        impResolveToken(nextOpcode + 2, &nextCallTok, CORINFO_TOKENKIND_Method);
+
+        if (!eeIsIntrinsic(nextCallTok.hMethod) ||
+            lookupNamedIntrinsic(nextCallTok.hMethod) != NI_System_Threading_Tasks_Task_ConfigureAwait)
+        {
+            goto checkForAwait;
+        }
+
+        *configVal = nextOp == CEE_LDC_I4_0 ? 0 : 1;
+        // skip {ldc; call; <ConfigureAwait>}
+        nextOpcode += 1 + 1 + sizeof(mdToken);
+    }
+
+checkForAwait:
+
+    if ((nextOpcode + sizeof(mdToken) < codeEndp) && (getU1LittleEndian(nextOpcode) == CEE_CALL))
+    {
+        // resolve the next token
+        CORINFO_RESOLVED_TOKEN nextCallTok;
+        impResolveToken(nextOpcode + 1, &nextCallTok, CORINFO_TOKENKIND_Method);
+
+        // check if it is an Await intrinsic
+        if (eeIsIntrinsic(nextCallTok.hMethod) &&
+            lookupNamedIntrinsic(nextCallTok.hMethod) == NI_System_Runtime_CompilerServices_RuntimeHelpers_Await)
+        {
+            // yes, this is an Await
+            return true;
+        }
+    }
+
+    return false;
+}
+
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
@@ -6696,6 +6777,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (compIsForInlining())
                 {
+                    if ((lclNum == 0) && compIsStructMethodThatOperatesOnCopy())
+                    {
+                        BADCODE("Illegal starg 0 in function");
+                    }
+
                     op1 = impInlineFetchArg(impInlineInfo->inlArgInfo[lclNum], impInlineInfo->lclVarInfo[lclNum]);
                     noway_assert(op1->gtOper == GT_LCL_VAR);
                     lclNum = op1->AsLclVar()->GetLclNum();
@@ -6709,6 +6795,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (lclNum == info.compThisArg)
                 {
                     lclNum = lvaArg0Var;
+
+                    if (compIsStructMethodThatOperatesOnCopy())
+                    {
+                        BADCODE("Illegal starg 0 in function");
+                    }
                 }
 
                 // We should have seen this arg write in the prescan
@@ -6928,6 +7019,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         return;
                     }
 
+                    if ((lclNum == 0) && compIsStructMethodThatOperatesOnCopy())
+                    {
+                        BADCODE("Illegal ldarga 0 in function");
+                    }
+
                     op1->ChangeType(TYP_BYREF);
                     op1->SetOper(GT_LCL_ADDR);
                     op1->AsLclFld()->SetLclOffs(0);
@@ -6940,6 +7036,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (lclNum == info.compThisArg)
                 {
                     lclNum = lvaArg0Var;
+
+                    if (compIsStructMethodThatOperatesOnCopy())
+                    {
+                        BADCODE("Illegal ldarga 0 in function");
+                    }
                 }
 
                 goto ADRVAR;
@@ -8993,7 +9094,41 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // many other places.  We unfortunately embed that knowledge here.
                 if (opcode != CEE_CALLI)
                 {
-                    _impResolveToken(CORINFO_TOKENKIND_Method);
+                    bool isAwait = false;
+                    // TODO: The configVal should be wired to the actual implementation
+                    //       that control the flow of sync context.
+                    //       We do not have that yet.
+                    int configVal = -1; // -1 not congigured, 0/1 configured to false/true
+                    if (compIsAsync2() && JitConfig.JitOptimizeAwait())
+                    {
+                        isAwait = impMatchAwaitPattern(codeAddr, codeEndp, &configVal);
+                    }
+
+                    if (isAwait)
+                    {
+                        _impResolveToken(CORINFO_TOKENKIND_Await);
+                        if (resolvedToken.hMethod != NULL)
+                        {
+                            // There is a runtime async variant that is implicitly awaitable, just call that.
+                            // if configured, skip {ldc call ConfigureAwait}
+                            if (configVal >= 0)
+                                codeAddr += 2 + sizeof(mdToken);
+
+                            // Skip the call to `Await`
+                            codeAddr += 1 + sizeof(mdToken);
+                        }
+                        else
+                        {
+                            // This can happen in rare cases when the Task-returning method is not a runtime Async
+                            // function. For example "T M1<T>(T arg) => arg" when called with a Task argument. Treat
+                            // that as a regualr call that is Awaited
+                            _impResolveToken(CORINFO_TOKENKIND_Method);
+                        }
+                    }
+                    else
+                    {
+                        _impResolveToken(CORINFO_TOKENKIND_Method);
+                    }
 
                     eeGetCallInfo(&resolvedToken,
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
@@ -10949,6 +11084,14 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
         if (lclNum == info.compThisArg)
         {
             lclNum = lvaArg0Var;
+
+            // Redirect to copy in some struct instance methods
+            if (lvaThisCopyVar != BAD_VAR_NUM)
+            {
+                GenTree* lclAddr = gtNewLclVarAddrNode(lvaThisCopyVar, TYP_BYREF);
+                impPushOnStack(lclAddr, makeTypeInfoForLocal(lclNum));
+                return;
+            }
         }
 
         impLoadVar(lclNum, offset);
@@ -13241,7 +13384,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         switch (arg.GetWellKnownArg())
         {
             case WellKnownArg::RetBuffer:
-                // This does not appear in the table of inline arg info; do not include them
+            case WellKnownArg::AsyncContinuation:
+                // These do not appear in the table of inline arg info; do not include them
                 continue;
             case WellKnownArg::InstParam:
                 pInlineInfo->inlInstParamArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
@@ -13257,6 +13401,17 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         if (inlineResult->IsFailure())
         {
             return;
+        }
+
+        if ((arg.GetWellKnownArg() == WellKnownArg::ThisPointer) &&
+            ((methInfo->options & CORINFO_OPT_COPY_STRUCT_INSTANCE) != 0))
+        {
+            // Method call to a struct instance method that operates on a copy.
+            // We will load the instance as part of copying, so set up flags to
+            // indicate that there is a side effect.
+            argInfo->argIsByRefToCopy = true;
+            argInfo->argHasGlobRef    = true;
+            argInfo->argHasSideEff    = true;
         }
     }
 
@@ -13644,7 +13799,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
 {
     // Cache the relevant arg and lcl info for this argument.
     // We will modify argInfo but not lclVarInfo.
-    const bool      argCanBeModified = argInfo.argHasLdargaOp || argInfo.argHasStargOp;
+    const bool      argCanBeModified = argInfo.argHasLdargaOp || argInfo.argHasStargOp || argInfo.argIsByRefToCopy;
     const var_types lclTyp           = lclInfo.lclTypeInfo;
     GenTree*        op1              = nullptr;
 
@@ -13707,7 +13862,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             }
         }
     }
-    else if (argInfo.argIsByRefToStructLocal && !argInfo.argHasStargOp)
+    else if (argInfo.argIsByRefToStructLocal && !argInfo.argHasStargOp && !argInfo.argIsByRefToCopy)
     {
         /* Argument is a by-ref address to a struct, a normed struct, or its field.
            In these cases, don't spill the byref to a local, simply clone the tree and use it.
@@ -13802,7 +13957,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             // if it is a struct, because it requires some additional handling.
 
             if ((!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
-                 !argInfo.argHasCallerLocalRef))
+                 !argInfo.argHasCallerLocalRef && !argInfo.argIsByRefToStructLocal))
             {
                 /* Get a *LARGE* LCL_VAR node */
                 op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp));

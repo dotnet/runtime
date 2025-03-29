@@ -1641,8 +1641,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
         GetEmitter()->emitIns_Call(emitter::EC_INDIR_R, compiler->eeFindHelper(helper),
                                    INDEBUG_LDISASM_COMMA(nullptr) NULL, // addr
-                                   argSize, retSize, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                   gcInfo.gcRegByrefSetCur, DebugInfo(),
+                                   argSize, retSize,
+                                   false, // hasAsyncRet
+                                   gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(),
                                    callTargetReg, // ireg
                                    REG_NA, 0, 0,  // xreg, xmul, disp
                                    false          // isJump
@@ -1651,10 +1652,11 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     else
     {
         GetEmitter()->emitIns_Call(emitter::EC_FUNC_TOKEN, compiler->eeFindHelper(helper),
-                                   INDEBUG_LDISASM_COMMA(nullptr) addr, argSize, retSize, gcInfo.gcVarPtrSetCur,
-                                   gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(), REG_NA, REG_NA, 0,
-                                   0,    /* ilOffset, ireg, xreg, xmul, disp */
-                                   false /* isJump */
+                                   INDEBUG_LDISASM_COMMA(nullptr) addr, argSize, retSize,
+                                   false, // hasAsyncRet
+                                   gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(),
+                                   REG_NA, REG_NA, 0, 0, /* ilOffset, ireg, xreg, xmul, disp */
+                                   false                 /* isJump */
         );
     }
 
@@ -2084,7 +2086,16 @@ regMaskTP CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskC
     // We can't do this optimization with callee saved floating point registers because
     // the stack would be allocated in a wrong spot.
     if (maskCalleeSavedFloat != RBM_NONE)
+    {
         return RBM_NONE;
+    }
+
+    // We similarly skip it for async2 due to the extra async continuation
+    // return that may be overridden by the pop.
+    if (compiler->compIsAsync2())
+    {
+        return RBM_NONE;
+    }
 
     // Allocate space for small frames by pushing extra registers. It generates smaller and faster code
     // that extra sub sp,XXX/add sp,XXX.

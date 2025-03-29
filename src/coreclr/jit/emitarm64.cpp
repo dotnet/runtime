@@ -9106,6 +9106,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            ssize_t          argSize,
                            emitAttr         retSize,
                            emitAttr         secondRetSize,
+                           bool             hasAsyncRet,
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
                            regMaskTP        byrefRegs,
@@ -9170,7 +9171,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         /* Indirect call, virtual calls */
 
-        id = emitNewInstrCallInd(argCnt, 0 /* disp */, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+        id = emitNewInstrCallInd(argCnt, 0 /* disp */, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize,
+                                 hasAsyncRet);
     }
     else
     {
@@ -9179,7 +9181,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         assert(callType == EC_FUNC_TOKEN);
 
-        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize, hasAsyncRet);
     }
 
     /* Update the emitter's live GC ref sets */

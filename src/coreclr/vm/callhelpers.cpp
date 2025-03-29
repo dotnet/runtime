@@ -327,7 +327,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
         _ASSERTE(isCallConv(m_methodSig.GetCallingConvention(), IMAGE_CEE_CS_CALLCONV_DEFAULT));
-        _ASSERTE(!(m_methodSig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE));
+        _ASSERTE(!m_methodSig.HasGenericContextArg());
 
 #ifdef DEBUGGING_SUPPORTED
         if (CORDebuggerTraceCall())

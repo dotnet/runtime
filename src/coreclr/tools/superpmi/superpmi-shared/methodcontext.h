@@ -574,6 +574,10 @@ public:
     void dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& value);
     void repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut);
 
+    void recGetAsync2Info(const CORINFO_ASYNC2_INFO* pAsync2Info);
+    void dmpGetAsync2Info(DWORD key, const Agnostic_CORINFO_ASYNC2_INFO& value);
+    void repGetAsync2Info(CORINFO_ASYNC2_INFO* pAsync2InfoOut);
+
     void recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
     void dmpGetGSCookie(DWORD key, DLDL value);
     void repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
@@ -870,6 +874,10 @@ public:
         CORINFO_SIG_INFO* sig,
         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
         CORINFO_TAILCALL_HELPERS* pResult);
+
+    void recGetAsyncResumptionStub(CORINFO_METHOD_HANDLE hnd);
+    void dmpGetAsyncResumptionStub(DWORD key, DWORDLONG handle);
+    CORINFO_METHOD_HANDLE repGetAsyncResumptionStub();
 
     void recUpdateEntryPointForTailCall(const CORINFO_CONST_LOOKUP& origEntryPoint, const CORINFO_CONST_LOOKUP& newEntryPoint);
     void dmpUpdateEntryPointForTailCall(const Agnostic_CORINFO_CONST_LOOKUP& origEntryPoint, const Agnostic_CORINFO_CONST_LOOKUP& newEntryPoint);
@@ -1208,6 +1216,8 @@ enum mcPackets
     Packet_GetMethodInstantiationArgument = 227,
     Packet_GetInstantiatedEntry = 228,
     Packet_NotifyInstructionSetUsage = 229,
+    Packet_GetAsync2Info = 230,
+    Packet_GetAsyncResumptionStub = 231,
 };
 
 void SetDebugDumpVariables();

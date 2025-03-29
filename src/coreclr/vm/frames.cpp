@@ -1353,7 +1353,8 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ReturnKind returnKind = m_Thread->GetHijackReturnKind();
+    bool hasAsyncRet;
+    ReturnKind returnKind = m_Thread->GetHijackReturnKind(&hasAsyncRet);
     _ASSERTE(IsValidReturnKind(returnKind));
 
     int regNo = 0;
@@ -1391,6 +1392,15 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 
         regNo++;
     } while (moreRegisters);
+
+    if (hasAsyncRet)
+    {
+        PTR_PTR_Object objPtr = dac_cast<PTR_PTR_Object>(&m_Args->AsyncRet);
+        LOG((LF_GC, INFO3, "Hijack Frame Promoting Async Continuation Return" FMT_ADDR "to",
+            DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*objPtr))));
+        (*fn)(objPtr, sc, CHECK_APP_DOMAIN);
+        LOG((LF_GC, INFO3, FMT_ADDR "\n", DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*objPtr))));
+    }
 }
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK
@@ -1501,6 +1511,9 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 
         if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
             msig.SetHasParamTypeArg();
+
+        if (pFunction->IsAsync2Method())
+            msig.SetIsAsyncCall();
 
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
     }
@@ -2293,9 +2306,17 @@ void ComputeCallRefMap(MethodDesc* pMD,
     // See code:getMethodSigInternal
     //
     assert(!isDispatchCell || !pMD->RequiresInstArg() || pMD->GetMethodTable()->IsInterface());
-    if (pMD->RequiresInstArg() && !isDispatchCell)
+    if (!isDispatchCell)
     {
-        msig.SetHasParamTypeArg();
+        if (pMD->RequiresInstArg())
+        {
+            msig.SetHasParamTypeArg();
+        }
+
+        if (pMD->IsAsync2Method())
+        {
+            msig.SetIsAsyncCall();
+        }
     }
 
     ArgIterator argit(&msig);

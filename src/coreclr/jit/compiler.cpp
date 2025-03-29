@@ -488,8 +488,9 @@ Compiler::Compiler(ArenaAllocator*       arena,
     info.compILCodeSize   = methodInfo->ILCodeSize;
     info.compILImportSize = 0;
 
-    info.compHasNextCallRetAddr = false;
-    info.compIsVarArgs          = false;
+    info.compHasNextCallRetAddr    = false;
+    info.compIsVarArgs             = false;
+    info.compUsesAsyncContinuation = false;
 }
 
 //------------------------------------------------------------------------
@@ -3159,6 +3160,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             printf("OPTIONS: Jit invoked for AOT\n");
         }
+
+        if (compIsAsync2())
+        {
+            printf("OPTIONS: compilation is an async2 state machine\n");
+        }
     }
 #endif
 
@@ -5001,6 +5007,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
     }
 #endif // TARGET_ARM
+
+    if (compIsAsync2())
+    {
+        DoPhase(this, PHASE_ASYNC2, &Compiler::TransformAsync2);
+    }
 
     // Assign registers to variables, etc.
 

@@ -2394,6 +2394,19 @@ PhaseStatus Compiler::fgAddInternal()
 
             madeChanges = true;
         }
+
+        if (lvaThisCopyVar != BAD_VAR_NUM)
+        {
+            ClassLayout* layout = lvaGetDesc(lvaThisCopyVar)->GetLayout();
+            GenTree*     addr   = gtNewLclVarNode(info.compThisArg);
+            GenTree*     store  = gtNewStoreLclVarNode(lvaThisCopyVar, gtNewBlkIndir(layout, addr));
+            Statement*   stmt   = fgNewStmtAtBeg(fgFirstBB, store);
+
+            JITDUMP("\nCopy \"this\" to V%02u for struct instance method operating on copy\n", lvaThisCopyVar);
+            DISPSTMT(stmt);
+
+            madeChanges = true;
+        }
     }
 
     // Merge return points if required or beneficial
@@ -2449,7 +2462,18 @@ PhaseStatus Compiler::fgAddInternal()
         }
         else
         {
-            merger.SetMaxReturns(MergedReturns::ReturnCountHardLimit);
+            unsigned limit = MergedReturns::ReturnCountHardLimit;
+#ifdef JIT32_GCENCODER
+            // For the jit32 GC encoder the limit is an actual hard limit. In
+            // async2 functions we will be introducing another return during
+            // the async2 transformation, so make sure there's a free epilog
+            // for it.
+            if (compIsAsync2())
+            {
+                limit--;
+            }
+#endif
+            merger.SetMaxReturns(limit);
         }
     }
 
