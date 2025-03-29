@@ -958,7 +958,20 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
     {
         if (pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING)
         {
-            pThread->SetThreadStateNC(Thread::TSNC_UnhandledException2ndPass);
+            if (!pThread->HasThreadStateNC(Thread::TSNC_UnhandledException2ndPass))
+            {
+                pThread->SetThreadStateNC(Thread::TSNC_UnhandledException2ndPass);
+                GCX_COOP();
+                // The 3rd argument passes to PopExplicitFrame is normally the parent SP to correctly handle InlinedCallFrame embbeded
+                // in parent managed frame. But at this point there are no further managed frames are on the stack, so we can pass NULL.
+                // Also don't pop the GC frames, their destructor will pop them as the exception propagates.
+                // NOTE: this needs to be popped in the 2nd pass to ensure that crash dumps and Watson get the dump with these still 
+                // present.
+                ExInfo *pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+                void *sp = (void*)GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
+                PopExplicitFrames(pThread, sp, NULL /* targetCallerSp */, false /* popGCFrames */);
+                ExInfo::PopExInfos(pThread, sp);
+            }
         }
 
         return ExceptionContinueSearch;
@@ -8714,15 +8727,6 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
                 else
                 {
 #ifdef HOST_WINDOWS
-                    {
-                        GCX_COOP();
-                        void *sp = (void*)GetRegdisplaySP(pThis->m_crawl.GetRegisterSet());
-                        // The 3rd argument passes to PopExplicitFrame is normally the parent SP to correctly handle InlinedCallFrame embbeded
-                        // in parent managed frame. But at this point there are no further managed frames are on the stack, so we can pass NULL.
-                        // Also don't pop the GC frames, their destructor will pop them as the exception propagates.
-                        PopExplicitFrames(pThread, sp, NULL /* targetCallerSp */, false /* popGCFrames */);
-                        ExInfo::PopExInfos(pThread, sp);
-                    }
                     GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
                     RaiseException(pTopExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE, pTopExInfo->m_ptrs.ExceptionRecord->NumberParameters, pTopExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
