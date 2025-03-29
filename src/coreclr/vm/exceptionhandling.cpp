@@ -7790,6 +7790,8 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
         exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
 
+        EH_LOG((LL_INFO100, "Calling catch funclet at %p\n", pHandlerIP));
+
 #ifdef USE_FUNCLET_CALL_HELPER
         // Invoke the catch funclet.
         // Since the actual caller of the funclet is the assembly helper, pass the reference
@@ -7881,6 +7883,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         }
         if (uAbortAddr)
         {
+            STRESS_LOG2(LF_EH, LL_INFO10, "Thread abort in progress, resuming under control: IP=%p, SP=%p\n", dwResumePC, GetSP(pvRegDisplay->pCurrentContext));
 #ifdef TARGET_AMD64
 #ifdef TARGET_UNIX
             pvRegDisplay->pCurrentContext->Rdi = dwResumePC;
@@ -7898,7 +7901,10 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 
             SetIP(pvRegDisplay->pCurrentContext, uAbortAddr);
         }
-
+        else
+        {
+            STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
+        }
         ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
     }
     else
@@ -7982,6 +7988,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #ifdef HOST_WINDOWS
         if (pLongJmpBuf != NULL)
         {
+            STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of longjmp through native frames at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
             SetIP(pvRegDisplay->pCurrentContext, (PCODE)PropagateLongJmpThroughNativeFrames);
             pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)pLongJmpBuf;
             pvRegDisplay->pCurrentContext->SECOND_ARG_REG = (size_t)longJmpReturnValue;
@@ -7989,6 +7996,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         else
 #endif
         {
+            STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of managed exception through native frames at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
             SetIP(pvRegDisplay->pCurrentContext, (PCODE)(void (*)(Object*))PropagateExceptionThroughNativeFrames);
             pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)OBJECTREFToObject(exceptionObj.Get());
         }
@@ -8046,6 +8054,8 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
     uResumePC = codeInfo.GetJitManager()->GetCodeAddressForRelOffset(codeInfo.GetMethodToken(), static_cast<DWORD>(ulRelOffset));
 
     SetIP(pvRegDisplay->pCurrentContext, uResumePC);
+    
+    STRESS_LOG2(LF_EH, LL_INFO100, "Resuming at interception location at IP=%p, SP=%p\n", uResumePC, GetSP(pvRegDisplay->pCurrentContext));
     ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
 }
 
@@ -8070,6 +8080,7 @@ extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvReg
     // Profiler, debugger and ETW events
     TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
     exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, spForDebugger);
+    EH_LOG((LL_INFO100, "Calling finally funclet at %p\n", pHandlerIP));
 #ifdef USE_FUNCLET_CALL_HELPER
     // Invoke the finally funclet.
     // Since the actual caller of the funclet is the assembly helper, pass the reference
@@ -8116,6 +8127,8 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
     // Profiler, debugger and ETW events
     TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
     pExInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &pExInfo->m_CurrentClause, (DWORD_PTR)pFilterIP, spForDebugger);
+    EH_LOG((LL_INFO100, "Calling filter funclet at %p\n", pFilterIP));
+
     EX_TRY
     {
 #ifdef USE_FUNCLET_CALL_HELPER
@@ -8140,6 +8153,7 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
         // Exceptions that occur in the filter funclet are swallowed and the return value is simulated
         // to be false.
         dwResult = EXCEPTION_CONTINUE_SEARCH;
+        EH_LOG((LL_INFO100, "Filter funclet has thrown an exception\n"));
     }
     EX_END_CATCH(SwallowAllExceptions);
 
@@ -8174,6 +8188,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterato
     pJitMan->JitTokenToMethodRegionInfo(MethToken, pMethodRegionInfo);
     pExtendedEHEnum->EHCount = pJitMan->InitializeEHEnumeration(MethToken, pEHEnum);
 
+    EH_LOG((LL_INFO100, "Initialized EH enumeration, %d clauses found\n", pExtendedEHEnum->EHCount));    
     END_QCALL;
 
     return pExtendedEHEnum->EHCount != 0;
@@ -8220,29 +8235,40 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
         // Clear special flags - like COR_ILEXCEPTION_CLAUSE_CACHED_CLASS
         ULONG flags = (CorExceptionFlag)(EHClause.Flags & 0x0f);
 
+        EH_LOG((LL_INFO100, "EHEnumNext: [0x%x..0x%x)%s, handler=%p\n",
+            pEHClause->_tryStartOffset, pEHClause->_tryEndOffset,
+            pEHClause->_isSameTry ? ", isSameTry" : "", pEHClause->_handlerAddress));
+
         if (flags & COR_ILEXCEPTION_CLAUSE_DUPLICATED)
         {
+            EH_LOG((LL_INFO100, " duplicated clause\n"));
             result = FALSE;
         }
         else if (flags == COR_ILEXCEPTION_CLAUSE_NONE)
         {
             pEHClause->_clauseKind = RH_EH_CLAUSE_TYPED;
             pEHClause->_pTargetType = pJitMan->ResolveEHClause(&EHClause, &pFrameIter->m_crawl).AsMethodTable();
+            EH_LOG((LL_INFO100, " typed clause, target type=%p (%s)\n",
+                pEHClause->_pTargetType, ((MethodTable*)pEHClause->_pTargetType)->GetDebugClassName()));
         }
         else if (flags & COR_ILEXCEPTION_CLAUSE_FILTER)
         {
             pEHClause->_clauseKind = RH_EH_CLAUSE_FILTER;
+            EH_LOG((LL_INFO100, " filter clause, filter=%p\n", pEHClause->_filterAddress));
         }
         else if (flags & COR_ILEXCEPTION_CLAUSE_FINALLY)
         {
             pEHClause->_clauseKind = RH_EH_CLAUSE_FAULT;
+            EH_LOG((LL_INFO100, " finally clause\n"));
         }
         else if (flags & COR_ILEXCEPTION_CLAUSE_FAULT)
         {
+            EH_LOG((LL_INFO100, " fault clause\n"));
             pEHClause->_clauseKind = RH_EH_CLAUSE_FAULT;
         }
         else
         {
+            EH_LOG((LL_INFO100, " unknown clause\n"));
             result = FALSE;
         }
 #ifdef HOST_WINDOWS
@@ -8252,6 +8278,12 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
         {
             break;
         }
+#ifdef HOST_WINDOWS
+        else
+        {
+            EH_LOG((LL_INFO100, "EHEnumNext: clause skipped due to longjmp processing\n"));
+        }
+#endif // HOST_WINDOWS
     }
     END_QCALL;
 
@@ -8546,9 +8578,13 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
         pThis->UpdateIsRuntimeWrappedExceptions();
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pExInfo);
+        EH_LOG((LL_INFO100, "SfiInit (pass %d): Exception stack walking starting at IP=%p, SP=%p, method %s::%s\n",
+            pExInfo->m_passNumber, controlPC, GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()),
+            pThis->m_crawl.GetFunction()->m_pszDebugClassName, pThis->m_crawl.GetFunction()->m_pszDebugMethodName));
     }
     else
     {
+        EH_LOG((LL_INFO100, "SfiInit: No more managed frames found on stack\n"));
         // There are no managed frames on the stack, fail fast and report unhandled exception
         LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
 #ifdef HOST_WINDOWS
@@ -8619,6 +8655,9 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
         bool isFilterFunclet = false;
         bool isPropagatingToExternalNativeCode = false;
 
+        EH_LOG((LL_INFO100, "SfiNext: reached native frame at IP=%p, SP=%p, invalidRevPInvoke=%d\n",
+            GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext), GetSP(pThis->m_crawl.GetRegisterSet()->pCallerContext), invalidRevPInvoke));
+
         if (invalidRevPInvoke)
         {
 #ifdef HOST_UNIX
@@ -8643,10 +8682,12 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
         {
             if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
             {
+                EH_LOG((LL_INFO100, "SfiNext: the native frame is CallDescrWorkerInternal"));
                 invalidRevPInvoke = TRUE;
             }
             else if (pThis->m_crawl.IsFilterFunclet())
             {
+                EH_LOG((LL_INFO100, "SfiNext: current frame is filter funclet"));
                 invalidRevPInvoke = TRUE;
             }
             else
@@ -8680,6 +8721,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 #endif
                )
             {
+                EH_LOG((LL_INFO100, "SfiNext (pass %d): no more managed frames on the stack, the exception is unhandled", pTopExInfo->m_passNumber));
                 if (pTopExInfo->m_passNumber == 1)
                 {
                     LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs);
@@ -8716,11 +8758,13 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
         retVal = pThis->Next();
         if (retVal == SWA_FAILED)
         {
+            EH_LOG((LL_INFO100, "SfiNext (pass=%d): failed to get next frame", pTopExInfo->m_passNumber));
             break;
         }
 
         if (pThis->GetFrameState() == StackFrameIterator::SFITER_DONE)
         {
+            EH_LOG((LL_INFO100, "SfiNext (pass=%d): no more managed frames found on stack", pTopExInfo->m_passNumber));
             retVal = SWA_FAILED;
             break;
         }
@@ -8761,8 +8805,11 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 
                             // Unwind to the frame of the prevExInfo
                             ExInfo* pPrevExInfo = pThis->GetNextExInfo();
-                            pThis->SkipTo(&pPrevExInfo->m_frameIter);
+                            EH_LOG((LL_INFO100, "SfiNext: collided with previous exception handling, skipping from IP=%p, SP=%p to IP=%p, SP=%p\n", 
+                                    GetControlPC(&pTopExInfo->m_regDisplay), GetRegdisplaySP(&pTopExInfo->m_regDisplay),
+                                    GetControlPC(&pPrevExInfo->m_regDisplay), GetRegdisplaySP(&pPrevExInfo->m_regDisplay)));
 
+                            pThis->SkipTo(&pPrevExInfo->m_frameIter);
                             pThis->ResetNextExInfoForSP(pThis->m_crawl.GetRegisterSet()->SP);
                         }
                     }
@@ -8813,6 +8860,12 @@ Exit:;
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pTopExInfo);
 
+        if (pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
+        {
+            EH_LOG((LL_INFO100, "SfiNext (pass %d): returning managed frame at IP=%p, SP=%p, method %s::%s\n",
+                pTopExInfo->m_passNumber, controlPC, GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()),
+                pThis->m_crawl.GetFunction()->m_pszDebugClassName, pThis->m_crawl.GetFunction()->m_pszDebugMethodName));
+        }
         return TRUE;
     }
 
