@@ -502,7 +502,22 @@ void Lowering::LowerRotate(GenTree* tree)
 //
 bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
 {
+    if (comp->opts.OptimizationDisabled())
+    {
+        return false;
+    }
+
     if (!tree->OperIs(GT_ADD))
+    {
+        return false;
+    }
+
+    if (tree->isContained())
+    {
+        return false;
+    }
+
+    if ((tree->gtFlags & GTF_ALL_EFFECT) != 0)
     {
         return false;
     }
@@ -510,12 +525,12 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
     GenTree* base  = nullptr;
     GenTree* shift = nullptr;
 
-    if (!tree->gtOp2->IsCnsIntOrI() && (tree->gtOp1->OperIs(GT_LSH) || tree->gtOp1->OperIs(GT_MUL)))
+    if (tree->gtOp1->OperIs(GT_LSH) || tree->gtOp1->OperIs(GT_MUL))
     {
         shift = tree->gtOp1;
         base  = tree->gtOp2;
     }
-    else if (!tree->gtOp1->IsCnsIntOrI() && (tree->gtOp2->OperIs(GT_LSH) || tree->gtOp2->OperIs(GT_MUL)))
+    else if (tree->gtOp2->OperIs(GT_LSH) || tree->gtOp2->OperIs(GT_MUL))
     {
         shift = tree->gtOp2;
         base  = tree->gtOp1;
@@ -527,8 +542,26 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
 
     GenTree*     index = shift->gtGetOp1();
     unsigned int scale = shift->GetScaledIndex();
+    if (scale == 0)
+    {
+        return false;
+    }
 
-    if (scale == 0 || base->IsRegOptional() || index->IsRegOptional())
+    assert(base->IsValue());
+    assert(index->IsValue());
+
+    if (base->isContained() || index->isContained())
+    {
+        return false;
+    }
+
+    if (!varTypeIsIntegralOrI(base) || !varTypeIsIntegralOrI(index))
+    {
+        return false;
+    }
+
+    // If base / index are constants, it's better to use immediate instructions.
+    if (base->IsCnsIntOrI() || index->IsCnsIntOrI())
     {
         return false;
     }
@@ -566,10 +599,10 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
         const bool         castUnsigned = varTypeIsUnsigned(castType);
         const unsigned     castSize     = genTypeSize(castType);
 
-        bool isZeroExtendIntToLong = varTypeIsIntegral(srcType) && varTypeIsIntegral(castType) && srcSize == 4 &&
+        bool isZeroExtendIntToLong = varTypeIsIntegralOrI(srcType) && varTypeIsIntegralOrI(castType) && srcSize == 4 &&
                                      castSize == 8 && (castUnsigned || srcUnsigned);
 
-        if (isZeroExtendIntToLong && !varTypeIsGC(cast))
+        if (isZeroExtendIntToLong)
         {
             JITDUMP("Removing unused node:\n  ");
             DISPNODE(cast);
