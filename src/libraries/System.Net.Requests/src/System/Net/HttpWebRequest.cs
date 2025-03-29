@@ -1096,10 +1096,31 @@ namespace System.Net
             {
                 // We're calling SendRequest with async, because we need to open the connection and send the request
                 // Otherwise, sync path will block the current thread until the request is sent.
+                CancellationTokenSource cts = new();
+                cts.CancelAfter(Timeout);
                 TaskCompletionSource<Stream> getStreamTcs = new();
                 TaskCompletionSource completeTcs = new();
+                cts.Token.Register(() => {
+
+                });
                 _sendRequestTask = SendRequest(async: true, new RequestStreamContent(getStreamTcs, completeTcs));
-                _requestStream = new RequestStream(await getStreamTcs.Task.ConfigureAwait(false), completeTcs);
+                Task<Stream> getStreamTask = getStreamTcs.Task;
+                try
+                {
+                    Task result = await Task.WhenAny((Task)getStreamTask, (Task)_sendRequestTask).ConfigureAwait(false);
+                    if (result == _sendRequestTask)
+                    {
+                        await _sendRequestTask.ConfigureAwait(false); // Propagate the exception
+                        // If we successfully completed the request without getting the stream,
+                        // return a null stream to avoid blocking.
+                        return Stream.Null; 
+                    }
+                    _requestStream = new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
+                }
+                catch (TimeoutException)
+                {
+                    throw new WebException(SR.net_timeout, WebExceptionStatus.Timeout);
+                }
             }
             else
             {
@@ -1174,6 +1195,7 @@ namespace System.Net
 
             _sendRequestMessage = new HttpRequestMessage(HttpMethod.Parse(_originVerb), _requestUri);
             _sendRequestCts = new CancellationTokenSource();
+            _sendRequestCts.CancelAfter(Timeout);
             _httpClient = GetCachedOrCreateHttpClient(async, out _disposeRequired);
 
             if (content is not null)
