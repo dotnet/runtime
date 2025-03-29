@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\DefaultBrowserSample.targets" />
+  <PropertyGroup>
+    <WasmPerfTracing>true</WasmPerfTracing>
+    <WasmPerfInstrumentation>Sample.</WasmPerfInstrumentation>
+    <MetricsSupport>true</MetricsSupport>
+    <EventSourceSupport>true</EventSourceSupport>
+
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    <WasmNativeStrip>false</WasmNativeStrip>
+
+  </PropertyGroup>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
+  </ItemGroup>
+</Project>

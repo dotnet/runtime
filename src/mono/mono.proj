@@ -857,6 +857,11 @@ JS_ENGINES = [NODE_JS]
       <_MonoAotBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
     </ItemGroup>
 
+    <!-- browser target specific options -->
+    <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <MonoAOTCMakeArgs Condition="'$(WasmEnableThreads)' != 'true'" Include="-DFEATURE_PERFTRACING_DISABLE_THREADS=1" />
+    </ItemGroup>
+
     <!-- WASM specific options -->
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <MonoAotAbi Condition="'$(TargetsBrowser)' == 'true'">wasm32-unknown-none</MonoAotAbi>

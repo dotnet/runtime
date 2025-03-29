@@ -53,6 +53,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? OutputDir { get; set; }
 
     /// <summary>
+    /// WasmPerfInstrumentation enables instrumentation of the AOT'd code for performance analysis.
+    /// </summary>
+    public string? WasmPerfInstrumentation { get; set; }
+
+    /// <summary>
     /// Target triple passed to the AOT compiler.
     /// </summary>
     public string? Triple { get; set; }
@@ -1020,6 +1025,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var envVariables = new Dictionary<string, string>
         {
             {"MONO_PATH", monoPaths },
+            {"DOTNET_WasmPerfInstrumentation", WasmPerfInstrumentation ?? "false" },
             {"MONO_ENV_OPTIONS", string.Empty} // we do not want options to be provided out of band to the cross compilers
         };
 

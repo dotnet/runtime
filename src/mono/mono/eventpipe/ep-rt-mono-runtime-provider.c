@@ -1092,6 +1092,7 @@ walk_managed_stack_for_thread (
 		stack_walk_data->top_frame = false;
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
+	case FRAME_TYPE_IL_STATE:
 	case FRAME_TYPE_INTERP:
 		if (frame->ji) {
 			stack_walk_data->async_frame |= frame->ji->async;
@@ -1380,6 +1381,34 @@ sample_current_thread_stack_trace ()
 	}
 }
 
+static void
+ep_write_empty_profile_event ()
+{
+	MonoContext ctx;
+	MonoThreadInfo *thread_info = mono_thread_info_current ();
+	SampleProfileStackWalkData stack_walk_data;
+	SampleProfileStackWalkData *data= &stack_walk_data;
+	THREAD_INFO_TYPE adapter = { { 0 } };
+	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, sample_current_thread_stack_trace);
+
+	data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
+	data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&ctx);
+	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
+	data->stack_walk_data.stack_contents = &data->stack_contents;
+	data->stack_walk_data.top_frame = true;
+	data->stack_walk_data.async_frame = false;
+	data->stack_walk_data.safe_point_frame = false;
+	data->stack_walk_data.runtime_invoke_frame = false;
+	ep_stack_contents_reset (&data->stack_contents);
+
+	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+
+	mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
+	uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
+	ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
+}
+
+
 static double desired_sample_interval_ms;
 
 static double last_sample_time;
@@ -1394,7 +1423,10 @@ static double profiler_now ()
 	return mono_wasm_profiler_now ();
 }
 #else
-#error "Not implemented"
+static double profiler_now ()
+{
+	EP_UNREACHABLE ("Not implemented");
+}
 #endif
 
 static void update_sample_frequency ()
@@ -1407,7 +1439,7 @@ static void update_sample_frequency ()
 		// recalculate ideal number of skips per period
 		double skips_per_ms = ((double)sample_skip_counter) / ms_since_last_sample;
 		double newskips_per_period = (skips_per_ms * ((double)desired_sample_interval_ms));
-		skips_per_period = ((newskips_per_period + ((double)sample_skip_counter) + ((double)prev_skips_per_period)) / 3);
+		skips_per_period = (int)((newskips_per_period + ((double)sample_skip_counter) + ((double)prev_skips_per_period)) / 3.0);
 		prev_skips_per_period = sample_skip_counter;
 	} else {
 		skips_per_period = 0;
@@ -1446,24 +1478,36 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 	sample_current_thread_stack_trace ();
 }
 
-#ifdef HOST_BROWSER
-int mono_wasm_instrument_method ();
+char *monoeg_g_getenv(const char *variable);
+static const char *instrumentation_method_filter = NULL;
+static const char all[] = "ALL";
 
+// if the method full name contains the filter string, we instrument it
+// if there is no filter do not instrument anything
+// if the filter is "true" instrument everything
 static MonoProfilerCallInstrumentationFlags
 method_filter (MonoProfiler *prof, MonoMethod *method)
 {
-	if (!mono_wasm_instrument_method (method)){
+	if (instrumentation_method_filter == NULL) {
 		return MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
 	}
 
-	return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
-			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
-			MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
-}
+	if (instrumentation_method_filter == all) {
+		return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
+				MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
+				MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
+	}
 
-#else
-#error "Not implemented"
-#endif
+	MonoProfilerCallInstrumentationFlags flags = MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
+	char *method_name = mono_method_full_name (method, 0);
+	if (strstr (method_name, instrumentation_method_filter) != NULL) {
+		flags =	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
+				MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
+				MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
+	}
+	g_free (method_name);
+	return flags;
+}
 
 void
 ep_rt_mono_sampling_provider_component_init (void)
@@ -1473,6 +1517,16 @@ ep_rt_mono_sampling_provider_component_init (void)
 	// this has negative performance impact even when the EP client is not connected!
 	// but it has to be enabled before managed code starts running, because the instrumentation needs to be in place
 	mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_mono_sampling_profiler_provider, method_filter);
+
+	instrumentation_method_filter = monoeg_g_getenv ("DOTNET_WasmPerfInstrumentation");
+	if (instrumentation_method_filter != NULL) {
+		if(strcmp (instrumentation_method_filter, "0") == 0 || g_ascii_strcasecmp (instrumentation_method_filter, "false") == 0) {
+			instrumentation_method_filter = NULL;
+		}
+		else if(strcmp (instrumentation_method_filter, "1") == 0 || g_ascii_strcasecmp (instrumentation_method_filter, "true") == 0) {
+			instrumentation_method_filter = all;
+		}
+	}
 }
 
 void
@@ -1501,6 +1555,13 @@ ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 	mono_profiler_set_method_samplepoint_callback (_ep_rt_mono_sampling_profiler_provider, method_samplepoint);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, method_enter);
 	mono_profiler_set_method_exception_leave_callback (_ep_rt_mono_sampling_profiler_provider, method_exc_leave);
+
+#ifdef HOST_BROWSER
+	// in order to satisfy dotnet-gcdump, which is requesting one sample event, before the asking for GC dump
+	// see https://github.com/dotnet/diagnostics/blob/d2f05caf4a97d8dc2a75d910d5d0c1170e2ed640/src/Tools/dotnet-gcdump/DotNetHeapDump/EventPipeDotNetHeapDumper.cs#L135-L145
+	// in browser, managed code is not running unless there is user interaction, so we need to fire an empty event
+	ep_write_empty_profile_event ();
+#endif
 }
 
 void
