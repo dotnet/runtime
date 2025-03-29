@@ -457,9 +457,9 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private static bool IsAllGCPointers(LowLevelList<bool> bitfield)
+        private static bool IsAllGCPointers(bool[] bitfield)
         {
-            int count = bitfield.Count;
+            int count = bitfield.Length;
             Debug.Assert(count > 0);
 
             for (int i = 0; i < count; i++)
@@ -471,7 +471,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        private static unsafe int CreateArrayGCDesc(LowLevelList<bool> bitfield, int rank, bool isSzArray, void* gcdesc)
+        private static unsafe int CreateArrayGCDesc(bool[] bitfield, int rank, bool isSzArray, void* gcdesc)
         {
             if (bitfield == null)
                 return 0;
@@ -495,7 +495,7 @@ namespace Internal.Runtime.TypeLoader
             int first = -1;
             int last = 0;
             short numPtrs = 0;
-            while (i < bitfield.Count)
+            while (i < bitfield.Length)
             {
                 if (bitfield[i])
                 {
@@ -513,7 +513,7 @@ namespace Internal.Runtime.TypeLoader
                     numSeries++;
                     numPtrs = 0;
 
-                    while ((i < bitfield.Count) && (bitfield[i]))
+                    while ((i < bitfield.Length) && (bitfield[i]))
                     {
                         numPtrs++;
                         i++;
@@ -531,7 +531,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (numSeries > 0)
                 {
-                    *ptr-- = (short)((first + bitfield.Count - last) * IntPtr.Size);
+                    *ptr-- = (short)((first + bitfield.Length - last) * IntPtr.Size);
                     *ptr-- = numPtrs;
 
                     *(void**)gcdesc = (void*)-numSeries;
@@ -542,7 +542,7 @@ namespace Internal.Runtime.TypeLoader
             return numSeries;
         }
 
-        private static unsafe int CreateGCDesc(LowLevelList<bool> bitfield, int size, bool isValueType, bool isStatic, void* gcdesc)
+        private static unsafe int CreateGCDesc(bool[] bitfield, int size, bool isValueType, bool isStatic, void* gcdesc)
         {
             int offs = 0;
             // if this type is a class we have to account for the gcdesc.
@@ -558,7 +558,7 @@ namespace Internal.Runtime.TypeLoader
 
             int numSeries = 0;
             int i = 0;
-            while (i < bitfield.Count)
+            while (i < bitfield.Length)
             {
                 if (bitfield[i])
                 {
@@ -566,7 +566,7 @@ namespace Internal.Runtime.TypeLoader
                     int seriesOffset = i * IntPtr.Size + offs;
                     int seriesSize = 0;
 
-                    while ((i < bitfield.Count) && (bitfield[i]))
+                    while ((i < bitfield.Length) && (bitfield[i]))
                     {
                         seriesSize += IntPtr.Size;
                         i++;
