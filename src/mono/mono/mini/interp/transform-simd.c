@@ -85,6 +85,7 @@ static guint16 sri_vector128_methods [] = {
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
 	SN_Divide,
+	SN_Dot,
 	SN_Equals,
 	SN_EqualsAny,
 	SN_ExtractMostSignificantBits,
@@ -101,6 +102,7 @@ static guint16 sri_vector128_methods [] = {
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
 	SN_Shuffle,
+	SN_Truncate,
 	SN_WidenLower,
 	SN_WidenUpper,
 	SN_Xor,
@@ -1092,6 +1094,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Subtract:
 			case SN_Multiply:
 			case SN_Divide:
+			case SN_Dot:
 			case SN_Ceiling:
 			case SN_Floor:
 			case SN_Abs:
@@ -1102,6 +1105,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_ShiftLeft:
 			case SN_ShiftRightLogical:
 			case SN_ShiftRightArithmetic:
+			case SN_Truncate:
 				cmethod_name = cmethod->name;
 				break;
 			case SN_get_IsHardwareAccelerated:
