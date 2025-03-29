@@ -5636,14 +5636,6 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 
     for (int jmpTargetIdx = 0; jmpTargetIdx < jumpCount; jmpTargetIdx++)
     {
-        // Is this target a default case?
-        if (hasDefault && (jmpTargetIdx == jumpCount - 1))
-        {
-            // We probably can create some useful assertions for the default case as well.
-            // e.g. (uint)X > maxValue (O1K_CONSTANT_LOOP_BND_UN)
-            break;
-        }
-
         // The value for each target is jmpTargetIdx - offset.
         if (CheckedOps::SubOverflows(jmpTargetIdx, offset, false))
         {
@@ -5660,17 +5652,56 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             continue;
         }
 
-        // Create "VN == value" assertion.
-        AssertionDsc assertion   = {};
-        assertion.assertionKind  = OAK_EQUAL;
-        assertion.op1.lclNum     = BAD_VAR_NUM; // O1K_LCLVAR relies only on op1.vn in Global Assertion Prop
-        assertion.op1.vn         = opVN;
-        assertion.op1.kind       = O1K_LCLVAR;
-        assertion.op2.vn         = vnStore->VNForIntCon(value);
-        assertion.op2.u1.iconVal = value;
-        assertion.op2.kind       = O2K_CONST_INT;
-        assertion.op2.SetIconFlag(GTF_EMPTY);
-        AssertionInfo newAssertIdx = optAddAssertion(&assertion);
+        AssertionInfo newAssertIdx = NO_ASSERTION_INDEX;
+
+        // Is this target a default case?
+        if (hasDefault && (jmpTargetIdx == jumpCount - 1))
+        {
+            // For default case we can create "BND > maxValue" assertion
+            // if opVN is a checked bound. Example:
+            //
+            //   void Test(ReadOnlySpan<byte> name)
+            //   {
+            //       switch (name.Length)
+            //       {
+            //           case 0: ...
+            //           case 1: ...
+            //           ...
+            //           case 7: ...
+            //           default: %name.Length is >= 8 here%
+            //       }
+            //
+            if (vnStore->IsVNCheckedBound(opVN) && (value > 0))
+            {
+                AssertionDsc dsc   = {};
+                dsc.assertionKind  = OAK_NOT_EQUAL;
+                dsc.op1.kind       = O1K_CONSTANT_LOOP_BND;
+                dsc.op1.vn         = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
+                dsc.op2.kind       = O2K_CONST_INT;
+                dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
+                dsc.op2.u1.iconVal = 0;
+                dsc.op2.SetIconFlag(GTF_EMPTY);
+                newAssertIdx = optAddAssertion(&dsc);
+            }
+            else
+            {
+                continue;
+            }
+        }
+        else
+        {
+            // Create "VN == value" assertion.
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = OAK_EQUAL;
+            dsc.op1.lclNum     = BAD_VAR_NUM; // O1K_LCLVAR relies only on op1.vn in Global Assertion Prop
+            dsc.op1.vn         = opVN;
+            dsc.op1.kind       = O1K_LCLVAR;
+            dsc.op2.vn         = vnStore->VNForIntCon(value);
+            dsc.op2.u1.iconVal = value;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+            newAssertIdx = optAddAssertion(&dsc);
+        }
 
         if (newAssertIdx.HasAssertion())
         {
