@@ -7949,6 +7949,8 @@ protected:
 };
 
 #if defined(TARGET_RISCV64)
+// GenTreeShxadd (GT_SHXADD & GT_SHXADD_UW)
+// Carries the shift amount.
 struct GenTreeShxadd : public GenTreeOp
 {
     unsigned int shammt;
