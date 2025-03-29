@@ -901,7 +901,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     // handle other cases recursively.
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
-                    if (hwintrinsicChild->OperIs(GT_CNS_INT, GT_CNS_LNG))
+                    if (hwintrinsicChild->IsIntegralConst())
                     {
                         // a special case is when the operand of CreateScalarUnsafe is an integer type,
                         // CreateScalarUnsafe node will be folded, so we directly match a pattern of
