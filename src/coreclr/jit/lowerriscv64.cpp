@@ -584,6 +584,11 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
     tree->ChangeOper(GT_SHXADD);
     tree->AsShxadd()->shammt = shammt;
 
+    JITDUMP("Base:\n  ");
+    DISPNODE(tree->AsShxadd()->Base());
+    JITDUMP("Index:\n  ");
+    DISPNODE(tree->AsShxadd()->Index());
+
     JITDUMP("New SHXADD node:\n  ");
     DISPNODE(tree);
     JITDUMP("\n");
@@ -611,6 +616,9 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
 
             tree->gtOp2 = src;
             tree->ChangeOper(GT_SHXADD_UW);
+
+            JITDUMP("Index:\n  ");
+            DISPNODE(tree->AsShxadd()->Index());
 
             JITDUMP("Transformed SHXADD node to SHXADD_UW node:\n  ");
             DISPNODE(tree);
