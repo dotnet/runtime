@@ -376,10 +376,6 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
 #endif // DEBUG
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    eeIsNativeAotAbi = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-#endif
-
     if (compIsForInlining())
     {
         m_inlineStrategy = nullptr;
@@ -2213,6 +2209,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitHideAlignBehindJmp          = true;
     opts.compJitOptimizeStructHiddenBuffer  = true;
     opts.compJitUnrollLoopMaxIterationCount = DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT;
+#endif
+
+#if defined(FEATURE_EH_WINDOWS_X86)
+    usesFunclets = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FUNCLET_ABI);
 #endif
 
 #ifdef TARGET_XARCH

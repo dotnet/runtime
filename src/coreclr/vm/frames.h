@@ -1049,6 +1049,10 @@ public:
     SoftwareExceptionFrame() : Frame(FrameIdentifier::SoftwareExceptionFrame) {
         LIMITED_METHOD_CONTRACT;
     }
+
+#ifdef TARGET_X86
+    SoftwareExceptionFrame(TransitionBlock *pTransitionBlock);
+#endif
 #endif
 
     TADDR GetReturnAddressPtr_Impl()
@@ -1057,8 +1061,10 @@ public:
         return PTR_HOST_MEMBER_TADDR(SoftwareExceptionFrame, this, m_ReturnAddress);
     }
 
+#ifndef DACCESS_COMPILE
     void Init();
     void InitAndLink(Thread *pThread);
+#endif
 
     Interception GetInterception_Impl()
     {
@@ -2701,6 +2707,10 @@ public:
     // the stackalloc size, which is variable.
     TADDR               m_pSPAfterProlog;
 #endif // TARGET_ARM
+
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS) && !defined(UNIX_X86_ABI)
+    EXCEPTION_REGISTRATION_RECORD m_ExceptionRecord;
+#endif
 
 public:
     //---------------------------------------------------------------

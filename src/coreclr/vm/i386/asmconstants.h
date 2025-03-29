@@ -203,6 +203,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_InterfaceInfo_t == sizeof(InterfaceInfo_t))
 
 #ifdef FEATURE_COMINTEROP
 
+#ifndef FEATURE_EH_FUNCLETS
 #define SIZEOF_FrameHandlerExRecord 0x0c
 #define OFFSETOF__FrameHandlerExRecord__m_ExReg__Next 0
 #define OFFSETOF__FrameHandlerExRecord__m_ExReg__Handler 4
@@ -211,6 +212,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_FrameHandlerExRecord == sizeof(FrameHandlerExRecord
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_ExReg__Next == offsetof(FrameHandlerExRecord, m_ExReg) + offsetof(EXCEPTION_REGISTRATION_RECORD, Next))
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_ExReg__Handler == offsetof(FrameHandlerExRecord, m_ExReg) + offsetof(EXCEPTION_REGISTRATION_RECORD, Handler))
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(FrameHandlerExRecord, m_pEntryFrame))
+#endif
 
 #ifdef _DEBUG
 #ifndef STACK_OVERWRITE_BARRIER_SIZE
@@ -277,6 +279,11 @@ ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCallerReturnAddress == offsetof(Inlin
 
 #define               InlinedCallFrame__m_pCalleeSavedFP 0x14
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCalleeSavedFP == offsetof(InlinedCallFrame, m_pCalleeSavedFP));
+
+#if defined(FEATURE_EH_FUNCLETS) && !defined(UNIX_X86_ABI)
+#define               InlinedCallFrame__m_ExceptionRecord 0x1c
+ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_ExceptionRecord == offsetof(InlinedCallFrame, m_ExceptionRecord));
+#endif
 
 // ResolveCacheElem from src/vm/virtualcallstub.h
 #define ResolveCacheElem__pMT               0x00

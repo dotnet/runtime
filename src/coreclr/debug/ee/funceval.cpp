@@ -3990,7 +3990,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 }
 
 
-#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX)
+#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX) && !defined(TARGET_X86)
 
 EXTERN_C EXCEPTION_DISPOSITION
 FuncEvalHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
@@ -4028,7 +4028,6 @@ FuncEvalHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
     return ExceptionCollidedUnwind;
 }
 
-
-#endif // FEATURE_EH_FUNCLETS && !TARGET_UNIX
+#endif // FEATURE_EH_FUNCLETS && !TARGET_UNIX && !TARGET_X86
 
 #endif // ifndef DACCESS_COMPILE

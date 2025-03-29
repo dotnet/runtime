@@ -8444,10 +8444,10 @@ public:
     }
 
 #if defined(FEATURE_EH_WINDOWS_X86)
-    bool eeIsNativeAotAbi = false;
+    bool usesFunclets = false;
     bool UsesFunclets() const
     {
-        return eeIsNativeAotAbi;
+        return usesFunclets;
     }
 
     bool UsesCallFinallyThunks() const

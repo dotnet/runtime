@@ -4228,6 +4228,9 @@ namespace Internal.JitInterface
             if (targetArchitecture == TargetArchitecture.RiscV64)
                 flags.Set(CorJitFlag.CORJIT_FLAG_FRAMED);
 
+            if (targetArchitecture == TargetArchitecture.X86)
+                flags.Set(CorJitFlag.CORJIT_FLAG_FUNCLET_ABI);
+
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
                 // Validate UnmanagedCallersOnlyAttribute usage

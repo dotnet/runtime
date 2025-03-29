@@ -2,6 +2,7 @@
     <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeaturePerfTracing>true</FeaturePerfTracing>
+        <FeatureEHFunclets>true</FeatureEHFunclets>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
     </PropertyGroup>
 
@@ -20,10 +21,6 @@
 
     <PropertyGroup Condition="'$(TargetsOSX)' == 'true' OR '$(TargetsMacCatalyst)' == 'true' OR '$(TargetsiOS)' == 'true' OR '$(TargetstvOS)' == 'true'">
         <FeatureObjCMarshal>true</FeatureObjCMarshal>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="!('$(TargetsWindows)' == 'true' AND '$(Platform)' == 'x86')">
-        <FeatureEHFunclets>true</FeatureEHFunclets>
     </PropertyGroup>
 
     <PropertyGroup>

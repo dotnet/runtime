@@ -1403,6 +1403,9 @@ namespace Internal.JitInterface
         // ARM only
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
+
+        // X86 only
+        CORJIT_FLAG_FUNCLET_ABI             = 29, // Enable funclets for exception handling
     }
 
     public struct CORJIT_FLAGS
