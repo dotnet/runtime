@@ -449,7 +449,6 @@ DEFINE_METASIG(IM(Int_RetBool, i, F))
 DEFINE_METASIG(IM(Int_Int_RetVoid, i i, v))
 DEFINE_METASIG(IM(Int_Int_Int_RetVoid, i i i, v))
 DEFINE_METASIG(IM(Int_Int_Int_Int_RetVoid, i i i i, v))
-DEFINE_METASIG_T(IM(Obj_EventArgs_RetVoid, j C(EVENT_ARGS), v))
 
 DEFINE_METASIG_T(IM(Exception_RetVoid, C(EXCEPTION), v))
 
