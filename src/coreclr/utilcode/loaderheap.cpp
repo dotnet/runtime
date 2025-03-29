@@ -533,33 +533,36 @@ class LoaderHeapSniffer
             STATIC_CONTRACT_NOTHROW;
             STATIC_CONTRACT_FORBID_FAULT;
 
-            printf("\n------------- LoaderHeapEvents (in reverse time order!) --------------------");
+            minipal_log_print_info("\n------------- LoaderHeapEvents (in reverse time order!) --------------------");
 
+            StackSString buf;
             LoaderHeapEvent *pEvent = pHeap->m_pEventList;
             while (pEvent)
             {
-                printf("\n");
+                minipal_log_print_info("\n");
+
                 switch (pEvent->m_allocationType)
                 {
-                    case kAllocMem:         printf("AllocMem        "); break;
-                    case kFreedMem:         printf("BackoutMem      "); break;
+                    case kAllocMem:         buf.AppendUTF8("AllocMem        "); break;
+                    case kFreedMem:         buf.AppendUTF8("BackoutMem      "); break;
 
                 }
-                printf(" ptr = 0x%-8p", pEvent->m_pMem);
-                printf(" rqsize = 0x%-8x", (DWORD)pEvent->m_dwRequestedSize);
-                printf(" actsize = 0x%-8x", (DWORD)pEvent->m_dwSize);
-                printf(" (at %s@%d)", pEvent->m_szFile, pEvent->m_lineNum);
+                buf.AppendPrintf(" ptr = 0x%-8p", pEvent->m_pMem);
+                buf.AppendPrintf(" rqsize = 0x%-8x", (DWORD)pEvent->m_dwRequestedSize);
+                buf.AppendPrintf(" actsize = 0x%-8x", (DWORD)pEvent->m_dwSize);
+                buf.AppendPrintf(" (at %s@%d)", pEvent->m_szFile, pEvent->m_lineNum);
                 if (pEvent->m_allocationType == kFreedMem)
                 {
-                    printf(" (original allocation at %s@%d)", pEvent->m_szAllocFile, pEvent->m_allocLineNum);
+                    buf.AppendPrintf(" (original allocation at %s@%d)", pEvent->m_szAllocFile, pEvent->m_allocLineNum);
                 }
+
+                minipal_log_print_info(buf.GetUTF8());
+                buf.Clear();
 
                 pEvent = pEvent->m_pNext;
 
             }
-            printf("\n------------- End of LoaderHeapEvents --------------------------------------");
-            printf("\n");
-
+            minipal_log_print_info("\n------------- End of LoaderHeapEvents --------------------------------------\n");
         }
 
 
@@ -1925,10 +1928,11 @@ void UnlockedLoaderHeap::DumpFreeList()
     LIMITED_METHOD_CONTRACT;
     if (m_pFirstFreeBlock == NULL)
     {
-        printf("FREEDUMP: FreeList is empty\n");
+        minipal_log_print_info("FREEDUMP: FreeList is empty\n");
     }
     else
     {
+        InlineSString<128> buf;
         LoaderHeapFreeBlock *pBlock = m_pFirstFreeBlock;
         while (pBlock != NULL)
         {
@@ -1950,10 +1954,13 @@ void UnlockedLoaderHeap::DumpFreeList()
                 }
             }
 
-            printf("Addr = %pxh, Size = %xh", pBlock, ((ULONG)dwsize));
-            if (ccbad) printf(" *** ERROR: NOT CC'd ***");
-            if (sizeunaligned) printf(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
-            printf("\n");
+            buf.Printf("Addr = %pxh, Size = %xh", pBlock, ((ULONG)dwsize));
+            if (ccbad) buf.AppendUTF8(" *** ERROR: NOT CC'd ***");
+            if (sizeunaligned) buf.AppendUTF8(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
+            buf.AppendUTF8("\n");
+
+            minipal_log_print_info(buf.GetUTF8());
+            buf.Clear();
 
             pBlock = pBlock->m_pNext;
         }
