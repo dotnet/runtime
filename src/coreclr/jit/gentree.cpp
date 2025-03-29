@@ -28355,6 +28355,7 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 //
 genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar)
 {
+    //TODO-VL: Update this method with SVE_ intrinsics as well
     *isScalar = false;
 
     switch (id)
@@ -28978,6 +28979,9 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
                 break;
             case NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero:
                 sveId = NI_Sve_ConvertToUInt64;
+                break;
+            case NI_AdvSimd_Arm64_Divide:
+                sveId = NI_Sve_Divide;
                 break;
             case NI_AdvSimd_Max:
             case NI_AdvSimd_Arm64_Max:
