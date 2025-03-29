@@ -7293,7 +7293,15 @@ MethodDesc * MethodTable::IntroducedMethodIterator::GetFirst(MethodTable *pMT)
 {
     LIMITED_METHOD_CONTRACT;
     MethodDescChunk * pChunk = pMT->GetClass()->GetChunks();
-    return (pChunk != NULL) ? pChunk->GetFirstMethodDesc() : NULL;
+    if (pChunk == NULL)
+        return NULL;
+
+    MethodDesc* md = pChunk->GetFirstMethodDesc();
+    if (!md->IsAsync2VariantMethod())
+        return md;
+
+    // skip async2 variants, the other variant will be reported instead
+    return GetNext(md);
 }
 
 //==========================================================================================
@@ -7302,26 +7310,30 @@ MethodDesc * MethodTable::IntroducedMethodIterator::GetNext(MethodDesc * pMD)
     WRAPPER_NO_CONTRACT;
 
     MethodDescChunk * pChunk = pMD->GetMethodDescChunk();
-
-    // Check whether the next MethodDesc is still within the bounds of the current chunk
-    TADDR pNext = dac_cast<TADDR>(pMD) + pMD->SizeOf();
-    TADDR pEnd = dac_cast<TADDR>(pChunk) + pChunk->SizeOf();
-
-    if (pNext < pEnd)
+    do
     {
-        // Just skip to the next method in the same chunk
-        pMD = PTR_MethodDesc(pNext);
-    }
-    else
-    {
-        _ASSERTE(pNext == pEnd);
+        // Check whether the next MethodDesc is still within the bounds of the current chunk
+        TADDR pNext = dac_cast<TADDR>(pMD) + pMD->SizeOf();
+        TADDR pEnd = dac_cast<TADDR>(pChunk) + pChunk->SizeOf();
 
-        // We have walked all the methods in the current chunk. Move on
-        // to the next chunk.
-        pChunk = pChunk->GetNextChunk();
+        if (pNext < pEnd)
+        {
+            // Just skip to the next method in the same chunk
+            pMD = PTR_MethodDesc(pNext);
+        }
+        else
+        {
+            _ASSERTE(pNext == pEnd);
 
-        pMD = (pChunk != NULL) ? pChunk->GetFirstMethodDesc() : NULL;
-    }
+            // We have walked all the methods in the current chunk. Move on
+            // to the next chunk.
+            pChunk = pChunk->GetNextChunk();
+
+            pMD = (pChunk != NULL) ? pChunk->GetFirstMethodDesc() : NULL;
+        }
+
+    // skip async2 variants, the other variant will be reported instead
+    } while (pMD != NULL && pMD->IsAsync2VariantMethod());
 
     return pMD;
 }
