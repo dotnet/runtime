@@ -1970,7 +1970,6 @@ PhaseStatus Compiler::optOptimizeBools()
             {
                 if (TryOptimizeIntBoolOp(this, b1) > 0)
                 {
-                    numReturn++;
                     retry = true;
                 }
 
