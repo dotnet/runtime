@@ -1094,7 +1094,6 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Subtract:
 			case SN_Multiply:
 			case SN_Divide:
-			case SN_Dot:
 			case SN_Ceiling:
 			case SN_Floor:
 			case SN_Abs:
@@ -1110,8 +1109,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_get_IsHardwareAccelerated:
 			case SN_get_IsSupported:
-				// We don't want to emit the IsSupported or IsHardwareAccelerated methods for Vector(128)? here
-				return FALSE;
+			case SN_Dot: // wasm simd opcode is different from the C# intrinsic
 			default:
 				// Only transform the name if we expect it to work
 				return FALSE;
