@@ -24,17 +24,25 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 {
     public class SigningTests
     {
-        internal static bool IsSigned(string filePath)
+        public static bool IsSigned(string filePath)
         {
             // Validate the signature if we can, otherwise, at least ensure there is a signature LoadCommand present
-            if (Codesign.IsAvailable)
-                return Codesign.Run("--verify", filePath).ExitCode == 0;
-
-            using var appHostSourceStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
-            using var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
-            using var managedSignedAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
-            return MachObjectFile.Create(managedSignedAccessor).HasSignature;
+            using (var appHostSourceStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
+            using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
+            using (var managedSignedAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite))
+            {
+                if (!MachObjectFile.Create(managedSignedAccessor).HasSignature) {
+                    return false;
+                }
+            }
+            if (Codesign.IsAvailable && Codesign.Run("--verify", filePath).ExitCode != 0)
+            {
+                return false;
+            }
+            return true;
         }
+
+        public static bool IsMachOImage(string filePath) => MachObjectFile.IsMachOImage(filePath);
 
         static readonly string[] liveBuiltHosts = new string[] { Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath };
         static List<string> GetTestFilePaths(TestArtifact testArtifact)
@@ -187,7 +195,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         /// <summary>
         /// AdHoc sign a test file. This should look similar to HostWriter.CreateAppHost.
         /// </summary>
-        internal static void AdHocSignFile(string originalFilePath, string managedSignedPath, string fileName)
+        public static void AdHocSignFile(string originalFilePath, string managedSignedPath, string fileName)
         {
             Assert.NotEqual(originalFilePath, managedSignedPath);
             // Open the source host file.
@@ -198,8 +206,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                     appHostSourceStream.CopyTo(appHostDestinationStream);
                 }
                 var appHostLength = appHostDestinationStream.Length;
-                var destinationFileName = Path.GetFileName(managedSignedPath);
-                var appHostSignedLength = appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, destinationFileName);
+                var appHostSignedLength = appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, fileName);
 
                 using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, appHostSignedLength, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
                 using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostSignedLength, MemoryMappedFileAccess.ReadWrite))
@@ -209,6 +216,31 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 }
                 appHostDestinationStream.SetLength(appHostLength);
             }
+        }
+
+        public static void AdHocSignFileInPlace(string managedSignedPath)
+        {
+            var tmpFile = Path.GetTempFileName();
+            var mode = File.GetUnixFileMode(managedSignedPath);
+            using (FileStream appHostDestinationStream = new FileStream(tmpFile, FileMode.Create, FileAccess.ReadWrite))
+            {
+                using (FileStream appHostSourceStream = new(managedSignedPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    appHostSourceStream.CopyTo(appHostDestinationStream);
+                }
+                var appHostLength = appHostDestinationStream.Length;
+                var appHostSignedLength = appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, tmpFile);
+
+                using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, appHostSignedLength, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+                using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostSignedLength, MemoryMappedFileAccess.ReadWrite))
+                {
+                    var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
+                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, tmpFile);
+                }
+                appHostDestinationStream.SetLength(appHostLength);
+            }
+            File.Move(tmpFile, managedSignedPath, true);
+            File.SetUnixFileMode(managedSignedPath, mode);
         }
 
         /// <summary>

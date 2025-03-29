@@ -120,7 +120,11 @@ namespace Microsoft.NET.HostModel.AppHost
                 RetryUtil.RetryOnIOError(() =>
                 {
                     bool isMachOImage;
-                    using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite))
+                    // MacOS requires a new inode to be created when updating a signed file, so we'll delete the file and create a new one.
+                    if (File.Exists(appHostDestinationFilePath))
+                        File.Delete(appHostDestinationFilePath);
+
+                    using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.CreateNew, FileAccess.ReadWrite))
                     {
                         using (FileStream appHostSourceStream = new(appHostSourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
                         {
@@ -149,9 +153,8 @@ namespace Microsoft.NET.HostModel.AppHost
                             {
                                 if (enableMacOSCodeSign)
                                 {
-                                    string fileName = Path.GetFileName(appHostDestinationFilePath);
                                     MachObjectFile machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
+                                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, destinationFileName);
                                 }
                                 else if (MachObjectFile.RemoveCodeSignatureIfPresent(memoryMappedViewAccessor, out long? length))
                                 {
@@ -169,24 +172,7 @@ namespace Microsoft.NET.HostModel.AppHost
                         }
                     }
                 });
-
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
-                    const int EINTR = 4;
-                    int chmodReturnCode = 0;
-
-                    do
-                    {
-                        chmodReturnCode = chmod(appHostDestinationFilePath, filePermissionOctal);
-                    }
-                    while (chmodReturnCode == -1 && Marshal.GetLastWin32Error() == EINTR);
-
-                    if (chmodReturnCode == -1)
-                    {
-                        throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {appHostDestinationFilePath}.");
-                    }
-                }
+                Chmod755(appHostDestinationFilePath);
             }
             catch (Exception ex)
             {
@@ -209,9 +195,11 @@ namespace Microsoft.NET.HostModel.AppHost
         /// </summary>
         /// <param name="appHostPath">The path of Apphost template, which has the place holder</param>
         /// <param name="bundleHeaderOffset">The offset to the location of bundle header</param>
+        /// <param name="macosCodesign">Whether to ad-hoc sign the bundle as a Mach-O executable</param>
         public static void SetAsBundle(
             string appHostPath,
-            long bundleHeaderOffset)
+            long bundleHeaderOffset,
+            bool macosCodesign = false)
         {
             byte[] bundleHeaderPlaceholder = {
                 // 8 bytes represent the bundle header-offset
@@ -226,17 +214,58 @@ namespace Microsoft.NET.HostModel.AppHost
 
             // Re-write the destination apphost with the proper contents.
             RetryUtil.RetryOnIOError(() =>
-                BinaryUtils.SearchAndReplace(appHostPath,
-                                             bundleHeaderPlaceholder,
-                                             BitConverter.GetBytes(bundleHeaderOffset),
-                                             pad0s: false));
+            {
+                string tmpFile = null;
+                try
+                {
+                    // MacOS keeps a cache of file signatures. To avoid using the cached value,
+                    // we need to create a new inode with the contents of the old file, sign it,
+                    // and copy it the original file path.
+                    tmpFile = Path.GetTempFileName();
+                    using (FileStream newBundleStream = new FileStream(tmpFile, FileMode.Create, FileAccess.ReadWrite))
+                    {
+                        using (FileStream oldBundleStream = new FileStream(appHostPath, FileMode.Open, FileAccess.Read))
+                        {
+                            oldBundleStream.CopyTo(newBundleStream);
+                        }
 
-            RetryUtil.RetryOnIOError(() =>
-                MachOUtils.AdjustHeadersForBundle(appHostPath));
+                        long bundleSize = newBundleStream.Length;
+                        long mmapFileSize = macosCodesign
+                            ? bundleSize + MachObjectFile.GetSignatureSizeEstimate((uint)bundleSize, Path.GetFileName(appHostPath))
+                            : bundleSize;
+                        using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(newBundleStream, null, mmapFileSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
+                        using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+                        {
+                            BinaryUtils.SearchAndReplace(accessor,
+                                                        bundleHeaderPlaceholder,
+                                                        BitConverter.GetBytes(bundleHeaderOffset),
+                                                        pad0s: false);
 
-            // Memory-mapped write does not updating last write time
-            RetryUtil.RetryOnIOError(() =>
-                File.SetLastWriteTimeUtc(appHostPath, DateTime.UtcNow));
+                            if (MachObjectFile.IsMachOImage(accessor))
+                            {
+                                var machObjectFile = MachObjectFile.Create(accessor);
+                                if (machObjectFile.HasSignature)
+                                    throw new AppHostMachOFormatException(MachOFormatError.SignNotRemoved);
+
+                                bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
+                                if (!wasBundled)
+                                    throw new InvalidOperationException("The single-file bundle was unable to be created. This is likely because the bundled content is too large.");
+
+                                if (macosCodesign)
+                                    bundleSize = machObjectFile.CreateAdHocSignature(accessor, Path.GetFileName(appHostPath));
+                            }
+                        }
+                        newBundleStream.SetLength(bundleSize);
+                    }
+                    File.Copy(tmpFile, appHostPath, overwrite: true);
+                    Chmod755(appHostPath);
+                }
+                finally
+                {
+                    if (tmpFile is not null)
+                        File.Delete(tmpFile);
+                }
+            });
         }
 
         /// <summary>
@@ -300,6 +329,26 @@ namespace Microsoft.NET.HostModel.AppHost
                 pathBytes.CopyTo(searchOptionsBytes, 2);
 
             return searchOptionsBytes;
+        }
+
+        private static void Chmod755(string pathName)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+            var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
+            const int EINTR = 4;
+            int chmodReturnCode;
+
+            do
+            {
+                chmodReturnCode = chmod(pathName, filePermissionOctal);
+            }
+            while (chmodReturnCode == -1 && Marshal.GetLastWin32Error() == EINTR);
+
+            if (chmodReturnCode == -1)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {pathName}.");
+            }
         }
 
         [LibraryImport("libc", SetLastError = true)]
