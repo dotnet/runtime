@@ -5591,6 +5591,103 @@ void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& ac
     }
 }
 
+//------------------------------------------------------------------------
+// optCreateJumpTableImpliedAssertions: Create assertions for the switch statement
+//     for each of its jump targets.
+//
+// Arguments:
+//      switchBb - The switch statement block.
+//
+bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
+{
+    assert(!optLocalAssertionProp);
+    assert(switchBb->KindIs(BBJ_SWITCH));
+    assert(switchBb->lastStmt() != nullptr);
+
+    GenTree* switchTree = switchBb->lastStmt()->GetRootNode()->gtEffectiveVal();
+    assert(switchTree->OperIs(GT_SWITCH));
+
+    // bbsCount is uint32_t, but it's unlikely to be more than INT32_MAX.
+    noway_assert(switchBb->GetSwitchTargets()->bbsCount <= INT32_MAX);
+
+    ValueNum opVN = optConservativeNormalVN(switchTree->gtGetOp1());
+    if (opVN == ValueNumStore::NoVN)
+    {
+        return false;
+    }
+
+    var_types type = vnStore->TypeOfVN(opVN);
+    if (type != TYP_INT)
+    {
+        // TODO-CQ: TYP_LONG requires a bit more logic since GT_SWITCH's op is always TYP_INT-typed,
+        // so longs are casted to int before the switch.
+        return false;
+    }
+
+    // Typically, the switch value is ADD(X, -cns), so we actually want to create the assertions
+    // for X rather than for ADD node.
+    //
+    int offset = 0;
+    vnStore->PeelOffsetsI32(&opVN, &offset);
+    bool modified = false;
+
+    int        jumpCount  = static_cast<int>(switchBb->GetSwitchTargets()->bbsCount);
+    FlowEdge** jumpTable  = switchBb->GetSwitchTargets()->bbsDstTab;
+    bool       hasDefault = switchBb->GetSwitchTargets()->bbsHasDefault;
+
+    for (int jmpTargetIdx = 0; jmpTargetIdx < jumpCount; jmpTargetIdx++)
+    {
+        // Is this target a default case?
+        const bool isDefault = hasDefault && (jmpTargetIdx == jumpCount - 1);
+
+        if (isDefault)
+        {
+            // We probably can create some useful assertions for the default case as well.
+            // e.g. (uint)X > maxValue (O1K_CONSTANT_LOOP_BND_UN)
+            break;
+        }
+
+        // The value for each target is jmpTargetIdx - offset.
+        if (CheckedOps::SubOverflows(jmpTargetIdx, offset, false))
+        {
+            continue;
+        }
+        int value = jmpTargetIdx - offset;
+
+        BasicBlock* target = jumpTable[jmpTargetIdx]->getDestinationBlock();
+
+        // We can only make "X == caseValue" assertions for blocks with a single edge from the switch.
+        if ((target->GetUniquePred(this) != switchBb) || (fgGetPredForBlock(target, switchBb)->getDupCount() > 1))
+        {
+            // Same here, we still might be able to create some useful assertions, e.g. X != 0, etc.
+            continue;
+        }
+
+        // Create "VN == value" assertion.
+        AssertionDsc assertion   = {};
+        assertion.assertionKind  = OAK_EQUAL;
+        assertion.op1.lclNum     = BAD_VAR_NUM;
+        assertion.op1.vn         = opVN;
+        assertion.op1.kind       = O1K_LCLVAR;
+        assertion.op2.vn         = vnStore->VNForIntCon(value);
+        assertion.op2.u1.iconVal = value;
+        assertion.op2.kind       = O2K_CONST_INT;
+        assertion.op2.SetIconFlag(GTF_EMPTY);
+        AssertionInfo newAssertIdx = optAddAssertion(&assertion);
+
+        if (newAssertIdx.HasAssertion())
+        {
+            GenTree*   tree    = gtNewNothingNode();
+            Statement* newStmt = fgNewStmtFromTree(tree);
+            fgInsertStmtAtBeg(target, newStmt);
+            modified = true;
+            tree->SetAssertionInfo(newAssertIdx);
+        }
+    }
+
+    return modified;
+}
+
 /*****************************************************************************
  *
  *   Given a set of active assertions this method computes the set
@@ -6397,7 +6494,8 @@ PhaseStatus Compiler::optAssertionPropMain()
     optAssertionInit(false);
 
     noway_assert(optAssertionCount == 0);
-    bool madeChanges = false;
+    bool madeChanges      = false;
+    bool containsSwitches = false;
 
     // Assertion prop can speculatively create trees.
     INDEBUG(const unsigned baseTreeID = compGenTreeID);
@@ -6405,9 +6503,10 @@ PhaseStatus Compiler::optAssertionPropMain()
     // First discover all assertions and record them in the table.
     for (BasicBlock* const block : Blocks())
     {
-        compCurBB = block;
-
+        compCurBB           = block;
         fgRemoveRestOfBlock = false;
+
+        containsSwitches |= block->KindIs(BBJ_SWITCH);
 
         Statement* stmt = block->firstStmt();
         while (stmt != nullptr)
@@ -6450,6 +6549,17 @@ PhaseStatus Compiler::optAssertionPropMain()
 
             // Advance the iterator
             stmt = stmt->GetNextStmt();
+        }
+    }
+
+    if (containsSwitches)
+    {
+        for (BasicBlock* const block : Blocks())
+        {
+            if (block->KindIs(BBJ_SWITCH))
+            {
+                madeChanges |= optCreateJumpTableImpliedAssertions(block);
+            }
         }
     }
 
