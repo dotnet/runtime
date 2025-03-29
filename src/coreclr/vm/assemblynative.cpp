@@ -1506,7 +1506,11 @@ namespace
 
             mdToken tokenType;
             IfFailThrow(pImport->GetParentToken(tokenMember, &tokenType));
-            _ASSERTE(TypeFromToken(tokenType) == mdtTypeSpec);
+
+            // Ensure the parent token is a TypeSpec.
+            // This can occur if the attribute is redefined externally.
+            if (TypeFromToken(tokenType) != mdtTypeSpec)
+                continue;
 
             // Determine if this TypeSpec contains the "GroupType" we are looking for.
             // There is no requirement in ECMA-335 that the same TypeSpec be used
