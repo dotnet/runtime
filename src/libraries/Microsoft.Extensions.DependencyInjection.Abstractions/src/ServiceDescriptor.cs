@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -262,7 +263,17 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 if (KeyedImplementationFactory != null)
                 {
-                    return lifetime + $"{nameof(KeyedImplementationFactory)}: {KeyedImplementationFactory.Method}";
+#if NET9_0_OR_GREATER
+                    DiagnosticMethodInfo? dmi = DiagnosticMethodInfo.Create(KeyedImplementationFactory);
+                    string declaringTypeName = dmi?.DeclaringTypeName ?? "?";
+                    string methodName = dmi?.Name ?? "?";
+#else
+                    MethodInfo mi = KeyedImplementationFactory.Method;
+                    string? declaringTypeName = mi.DeclaringType?.FullName;
+                    string methodName = mi.Name;
+#endif
+
+                    return lifetime + $"{nameof(KeyedImplementationFactory)}: {declaringTypeName}.{methodName}";
                 }
 
                 return lifetime + $"{nameof(KeyedImplementationInstance)}: {KeyedImplementationInstance}";
@@ -276,7 +287,17 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 if (ImplementationFactory != null)
                 {
-                    return lifetime + $"{nameof(ImplementationFactory)}: {ImplementationFactory.Method}";
+#if NET9_0_OR_GREATER
+                    DiagnosticMethodInfo? dmi = DiagnosticMethodInfo.Create(ImplementationFactory);
+                    string declaringTypeName = dmi?.DeclaringTypeName ?? "?";
+                    string methodName = dmi?.Name ?? "?";
+#else
+                    MethodInfo mi = ImplementationFactory.Method;
+                    string? declaringTypeName = mi.DeclaringType?.FullName;
+                    string methodName = mi.Name;
+#endif
+
+                    return lifetime + $"{nameof(ImplementationFactory)}: {declaringTypeName}.{methodName}";
                 }
 
                 return lifetime + $"{nameof(ImplementationInstance)}: {ImplementationInstance}";
