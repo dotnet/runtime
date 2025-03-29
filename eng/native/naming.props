@@ -30,16 +30,16 @@
       </PropertyGroup>
     </Otherwise>
   </Choose>
-  
+
   <Choose>
-    <When Condition="$(PackageRID.StartsWith('win'))">
+    <When Condition="$(OutputRID.StartsWith('win'))">
       <PropertyGroup>
         <LibSuffix>.dll</LibSuffix>
         <StaticLibSuffix>.lib</StaticLibSuffix>
         <SymbolsSuffix>.pdb</SymbolsSuffix>
       </PropertyGroup>
     </When>
-    <When Condition="$(PackageRID.StartsWith('osx')) or $(PackageRID.StartsWith('maccatalyst')) or $(PackageRID.StartsWith('ios')) or $(PackageRID.StartsWith('tvos'))">
+    <When Condition="$(OutputRID.StartsWith('osx')) or $(OutputRID.StartsWith('maccatalyst')) or $(OutputRID.StartsWith('ios')) or $(OutputRID.StartsWith('tvos'))">
       <PropertyGroup>
         <LibPrefix>lib</LibPrefix>
         <LibSuffix>.dylib</LibSuffix>
