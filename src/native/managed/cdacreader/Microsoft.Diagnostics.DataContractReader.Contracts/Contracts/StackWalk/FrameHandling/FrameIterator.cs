@@ -144,18 +144,12 @@ internal sealed class FrameIterator
     {
         foreach (FrameType frameType in Enum.GetValues<FrameType>())
         {
-            TargetPointer foundFrameIdentifier;
-            try
+            if (target.TryReadGlobal(frameType.ToString() + "Identifier", out ulong? id))
             {
-                // not all Frames are in all builds, so we need to catch the exception
-                foundFrameIdentifier = target.ReadGlobalPointer(frameType.ToString() + "Identifier");
-                if (frameIdentifier == foundFrameIdentifier)
+                if (frameIdentifier == new TargetPointer(id.Value))
                 {
                     return frameType;
                 }
-            }
-            catch (InvalidOperationException)
-            {
             }
         }
 
