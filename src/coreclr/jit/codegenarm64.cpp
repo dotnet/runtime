@@ -2507,8 +2507,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     if (vecCon->IsAllBitsSet())
                     {
                         // Use Scalable_B because for Ones, it doesn't matter.
-                        emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, 0xFF, INS_OPTS_SCALABLE_B,
-                                          INS_SCALABLE_OPTS_IMM_BITMASK);
+                        emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, -1, INS_OPTS_SCALABLE_B);
                     }
                     else if (vecCon->IsZero())
                     {

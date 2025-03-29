@@ -1529,6 +1529,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_ARM64)
+                            case NI_Vector_get_AllBitsSet:
+                            case NI_Vector_get_One:
+                            case NI_Vector_get_Zero:
                             case NI_Vector64_get_AllBitsSet:
                             case NI_Vector64_get_One:
                             case NI_Vector64_get_Zero:
