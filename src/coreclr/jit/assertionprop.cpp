@@ -5596,13 +5596,17 @@ void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& ac
 //     for each of its jump targets.
 //
 // Arguments:
-//      switchBb - The switch statement block.
+//     switchBb - The switch statement block.
+//
+// Returns:
+//     true if any modifications were made, false otherwise.
 //
 bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 {
     assert(!optLocalAssertionProp);
     assert(switchBb->KindIs(BBJ_SWITCH));
     assert(switchBb->lastStmt() != nullptr);
+    bool modified = false;
 
     GenTree* switchTree = switchBb->lastStmt()->GetRootNode()->gtEffectiveVal();
     assert(switchTree->OperIs(GT_SWITCH));
@@ -5613,23 +5617,18 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
     ValueNum opVN = optConservativeNormalVN(switchTree->gtGetOp1());
     if (opVN == ValueNumStore::NoVN)
     {
-        return false;
+        return modified;
     }
 
-    var_types type = vnStore->TypeOfVN(opVN);
-    if (type != TYP_INT)
+    if (vnStore->TypeOfVN(opVN) != TYP_INT)
     {
-        // TODO-CQ: TYP_LONG requires a bit more logic since GT_SWITCH's op is always TYP_INT-typed,
-        // so longs are casted to int before the switch.
-        return false;
+        // Should probably be an assert instead - GT_SWITCH is expected to be TYP_INT.
+        return modified;
     }
 
-    // Typically, the switch value is ADD(X, -cns), so we actually want to create the assertions
-    // for X rather than for ADD node.
-    //
+    // Typically, the switch value is ADD(X, -cns), so we actually want to create the assertions for X
     int offset = 0;
     vnStore->PeelOffsetsI32(&opVN, &offset);
-    bool modified = false;
 
     int        jumpCount  = static_cast<int>(switchBb->GetSwitchTargets()->bbsCount);
     FlowEdge** jumpTable  = switchBb->GetSwitchTargets()->bbsDstTab;
@@ -5638,9 +5637,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
     for (int jmpTargetIdx = 0; jmpTargetIdx < jumpCount; jmpTargetIdx++)
     {
         // Is this target a default case?
-        const bool isDefault = hasDefault && (jmpTargetIdx == jumpCount - 1);
-
-        if (isDefault)
+        if (hasDefault && (jmpTargetIdx == jumpCount - 1))
         {
             // We probably can create some useful assertions for the default case as well.
             // e.g. (uint)X > maxValue (O1K_CONSTANT_LOOP_BND_UN)
@@ -5654,10 +5651,10 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
         }
         int value = jmpTargetIdx - offset;
 
-        BasicBlock* target = jumpTable[jmpTargetIdx]->getDestinationBlock();
-
         // We can only make "X == caseValue" assertions for blocks with a single edge from the switch.
-        if ((target->GetUniquePred(this) != switchBb) || (fgGetPredForBlock(target, switchBb)->getDupCount() > 1))
+        BasicBlock* target = jumpTable[jmpTargetIdx]->getDestinationBlock();
+        if ((target->GetUniquePred(this) != switchBb) || (fgGetPredForBlock(target, switchBb)->getDupCount() > 1) ||
+            !BasicBlock::sameEHRegion(target, switchBb))
         {
             // Same here, we still might be able to create some useful assertions, e.g. X != 0, etc.
             continue;
@@ -5666,7 +5663,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
         // Create "VN == value" assertion.
         AssertionDsc assertion   = {};
         assertion.assertionKind  = OAK_EQUAL;
-        assertion.op1.lclNum     = BAD_VAR_NUM;
+        assertion.op1.lclNum     = BAD_VAR_NUM; // O1K_LCLVAR relies only on op1.vn in Global Assertion Prop
         assertion.op1.vn         = opVN;
         assertion.op1.kind       = O1K_LCLVAR;
         assertion.op2.vn         = vnStore->VNForIntCon(value);
@@ -5677,9 +5674,10 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 
         if (newAssertIdx.HasAssertion())
         {
-            GenTree*   tree    = gtNewNothingNode();
-            Statement* newStmt = fgNewStmtFromTree(tree);
-            fgInsertStmtAtBeg(target, newStmt);
+            // TODO-Cleanup: We shouldn't attach assertions to nodes in Global Assertion Prop.
+            // It limits the ability to create multiple assertions for the same node.
+            GenTree* tree = gtNewNothingNode();
+            fgInsertStmtAtBeg(target, fgNewStmtFromTree(tree));
             modified = true;
             tree->SetAssertionInfo(newAssertIdx);
         }
