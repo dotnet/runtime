@@ -1100,15 +1100,22 @@ namespace System.Net
                 TaskCompletionSource completeTcs = new();
                 _sendRequestTask = SendRequest(async: true, new RequestStreamContent(getStreamTcs, completeTcs));
                 Task<Stream> getStreamTask = getStreamTcs.Task;
-                Task result = await Task.WhenAny((Task)getStreamTask, (Task)_sendRequestTask).ConfigureAwait(false);
-                if (result == _sendRequestTask)
+                try
                 {
-                    await _sendRequestTask.ConfigureAwait(false); // Propagate the exception
-                    // If we successfully completed the request without getting the stream,
-                    // return a null stream to avoid blocking.
-                    return Stream.Null;
+                    Task result = await Task.WhenAny((Task)getStreamTask, (Task)_sendRequestTask).ConfigureAwait(false);
+                    if (result == _sendRequestTask)
+                    {
+                        await _sendRequestTask.ConfigureAwait(false); // Propagate the exception
+                        // If we successfully completed the request without getting the stream,
+                        // return a null stream to avoid blocking.
+                        return Stream.Null;
+                    }
+                    _requestStream = new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
                 }
-                _requestStream = new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
+                catch (Exception ex)
+                {
+                    throw WebException.CreateCompatibleException(ex);
+                }
             }
             else
             {
