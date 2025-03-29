@@ -50,7 +50,6 @@ SIMD_METHOD(Create)
 SIMD_METHOD(CreateScalar)
 SIMD_METHOD(CreateScalarUnsafe)
 SIMD_METHOD(Divide)
-SIMD_METHOD(Dot)
 
 SIMD_METHOD(Equals)
 SIMD_METHOD(EqualsAny)
