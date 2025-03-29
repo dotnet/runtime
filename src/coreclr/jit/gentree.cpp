@@ -28987,6 +28987,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
             case NI_AdvSimd_Arm64_Min:
                 sveId = NI_Sve_Min;
                 break;
+            case NI_AdvSimd_Multiply:
+            case NI_AdvSimd_Arm64_Multiply:
+                sveId = NI_Sve_Multiply;
+                break;
             case NI_AdvSimd_Not:
                 sveId = NI_Sve_Not;
                 break;
