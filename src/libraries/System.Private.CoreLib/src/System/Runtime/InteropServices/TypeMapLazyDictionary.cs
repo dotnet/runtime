@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 namespace System.Runtime.InteropServices
@@ -40,6 +41,8 @@ namespace System.Runtime.InteropServices
                     return _proxyTypeMap;
                 }
             }
+
+            public ExceptionDispatchInfo? CreationException { get; set; }
         }
 
         // See assemblynative.hpp for native version.
@@ -77,18 +80,25 @@ namespace System.Runtime.InteropServices
             Debug.Assert(arg->Utf8String1 != null);
             Debug.Assert(arg->Utf8String2 != null);
 
-            string externalTypeName = new((sbyte*)arg->Utf8String1, 0, arg->StringLen1, Encoding.UTF8);
-            string targetType = new((sbyte*)arg->Utf8String2, 0, arg->StringLen2, Encoding.UTF8);
-
-            TypeName parsedTarget = TypeNameParser.Parse(targetType, throwOnError: true)!;
-            if (parsedTarget.AssemblyName is null)
+            try
             {
-                // The assembly name is not included in the type name, so use the fallback assembly name.
-                Debug.Assert(arg->Utf8String3 != null);
-                string fallbackAssemblyName = new((sbyte*)arg->Utf8String3, 0, arg->StringLen3, Encoding.UTF8);
-                parsedTarget = CreateNewTypeName(targetType, fallbackAssemblyName);
+                string externalTypeName = new((sbyte*)arg->Utf8String1, 0, arg->StringLen1, Encoding.UTF8);
+                string targetType = new((sbyte*)arg->Utf8String2, 0, arg->StringLen2, Encoding.UTF8);
+
+                TypeName parsedTarget = TypeNameParser.Parse(targetType, throwOnError: true)!;
+                if (parsedTarget.AssemblyName is null)
+                {
+                    // The assembly name is not included in the type name, so use the fallback assembly name.
+                    Debug.Assert(arg->Utf8String3 != null);
+                    string fallbackAssemblyName = new((sbyte*)arg->Utf8String3, 0, arg->StringLen3, Encoding.UTF8);
+                    parsedTarget = CreateNewTypeName(targetType, fallbackAssemblyName);
+                }
+                context->ExternalTypeMap.Add(externalTypeName, parsedTarget);
             }
-            context->ExternalTypeMap.Add(externalTypeName, parsedTarget);
+            catch (Exception ex)
+            {
+                context->CreationException = ExceptionDispatchInfo.Capture(ex);
+            }
         }
 
         [UnmanagedCallersOnly]
@@ -99,26 +109,33 @@ namespace System.Runtime.InteropServices
             Debug.Assert(arg->Utf8String1 != null);
             Debug.Assert(arg->Utf8String2 != null);
 
-            string sourceType = new((sbyte*)arg->Utf8String1, 0, arg->StringLen1, Encoding.UTF8);
-            string proxyType = new((sbyte*)arg->Utf8String2, 0, arg->StringLen2, Encoding.UTF8);
-
-            TypeName parsedSource = TypeNameParser.Parse(sourceType, throwOnError: true)!;
-            TypeName parsedProxy = TypeNameParser.Parse(proxyType, throwOnError: true)!;
-            if (parsedSource.AssemblyName is null || parsedProxy.AssemblyName is null)
+            try
             {
-                // The assembly name is not included in the type name, so use the fallback assembly name.
-                Debug.Assert(arg->Utf8String3 != null);
-                string fallbackAssemblyName = new((sbyte*)arg->Utf8String3, 0, arg->StringLen3, Encoding.UTF8);
-                if (parsedSource.AssemblyName is null)
+                string sourceType = new((sbyte*)arg->Utf8String1, 0, arg->StringLen1, Encoding.UTF8);
+                string proxyType = new((sbyte*)arg->Utf8String2, 0, arg->StringLen2, Encoding.UTF8);
+
+                TypeName parsedSource = TypeNameParser.Parse(sourceType, throwOnError: true)!;
+                TypeName parsedProxy = TypeNameParser.Parse(proxyType, throwOnError: true)!;
+                if (parsedSource.AssemblyName is null || parsedProxy.AssemblyName is null)
                 {
-                    parsedSource = CreateNewTypeName(sourceType, fallbackAssemblyName);
+                    // The assembly name is not included in the type name, so use the fallback assembly name.
+                    Debug.Assert(arg->Utf8String3 != null);
+                    string fallbackAssemblyName = new((sbyte*)arg->Utf8String3, 0, arg->StringLen3, Encoding.UTF8);
+                    if (parsedSource.AssemblyName is null)
+                    {
+                        parsedSource = CreateNewTypeName(sourceType, fallbackAssemblyName);
+                    }
+                    if (parsedProxy.AssemblyName is null)
+                    {
+                        parsedProxy = CreateNewTypeName(proxyType, fallbackAssemblyName);
+                    }
                 }
-                if (parsedProxy.AssemblyName is null)
-                {
-                    parsedProxy = CreateNewTypeName(proxyType, fallbackAssemblyName);
-                }
+                context->ProxyTypeMap.Add(parsedSource, parsedProxy);
             }
-            context->ProxyTypeMap.Add(parsedSource, parsedProxy);
+            catch (Exception ex)
+            {
+                context->CreationException = ExceptionDispatchInfo.Capture(ex);
+            }
         }
 
         private static unsafe CallbackContext CreateMaps(
@@ -139,6 +156,9 @@ namespace System.Runtime.InteropServices
                 newExternalTypeEntry,
                 newProxyTypeEntry,
                 &context);
+
+            context.CreationException?.Throw();
+
             return context;
         }
 

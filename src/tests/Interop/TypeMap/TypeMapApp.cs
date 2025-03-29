@@ -50,8 +50,11 @@ using DupType_MapString = Lib.AliasedName;
 [assembly: TypeMapAssociation<C2<string>.I1>(typeof(object), typeof(string))]
 [assembly: TypeMapAssociation<C2<string>.I2<string>>(typeof(object), typeof(string))]
 
-[assembly: TypeMap<InvalidExternalTypeName>(null!, typeof(object))]
-[assembly: TypeMapAssociation<InvalidSourceTypeName>(null!, typeof(object))]
+[assembly: TypeMap<InvalidTypeNameKey>(null!, typeof(object))]
+[assembly: TypeMapAssociation<InvalidTypeNameKey>(null!, typeof(object))]
+
+[assembly: TypeMap<DuplicateTypeNameKey>("1", typeof(object))]
+[assembly: TypeMap<DuplicateTypeNameKey>("1", typeof(object))]
 
 [assembly: TypeMapAssociation<DuplicateTypeNameKey>(typeof(DupType_MapObject), typeof(object))]
 [assembly: TypeMapAssociation<DuplicateTypeNameKey>(typeof(DupType_MapString), typeof(string))]
@@ -149,6 +152,14 @@ public class TypeMap
     }
 
     [Fact]
+    public static void Validate_ExternalTypeMapping_DuplicateTypeKey()
+    {
+        Console.WriteLine(nameof(Validate_ExternalTypeMapping_DuplicateTypeKey));
+
+        Assert.Throws<ArgumentException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeNameKey>());
+    }
+
+    [Fact]
     public static void Validate_ProxyTypeMapping_DuplicateTypeKey()
     {
         Console.WriteLine(nameof(Validate_ProxyTypeMapping_DuplicateTypeKey));
@@ -225,7 +236,7 @@ public class TypeMap
     {
         Console.WriteLine(nameof(Validate_EmptyOrInvalidMappings));
 
-        Assert.Throws<COMException>(() => TypeMapping.GetOrCreateExternalTypeMapping<InvalidExternalTypeName>());
-        Assert.Throws<COMException>(() => TypeMapping.GetOrCreateProxyTypeMapping<InvalidSourceTypeName>());
+        Assert.Throws<COMException>(() => TypeMapping.GetOrCreateExternalTypeMapping<InvalidTypeNameKey>());
+        Assert.Throws<COMException>(() => TypeMapping.GetOrCreateProxyTypeMapping<InvalidTypeNameKey>());
     }
 }

@@ -19,10 +19,8 @@ public class TypicalUseCase { }
 
 public class DuplicateTypeNameKey { }
 
+public class InvalidTypeNameKey { }
+
 public class MultipleTypeMapAssemblies { }
 
 public class UnknownAssemblyReference { }
-
-public class InvalidExternalTypeName { } // TypeMapAttribute
-
-public class InvalidSourceTypeName { } // TypeMapAssociationAttribute
