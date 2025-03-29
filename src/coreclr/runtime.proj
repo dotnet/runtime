@@ -77,6 +77,7 @@
       <_CoreClrBuildArg Condition="'$(ClrSpmiSubset)' == 'true'" Include="-component spmi" />
       <_CoreClrBuildArg Condition="'$(ClrCrossComponentsSubset)' == 'true'" Include="-component crosscomponents" />
       <_CoreClrBuildArg Condition="'$(ClrDebugSubset)' == 'true'" Include="-component debug" />
+      <_CoreClrBuildArg Condition="'$(ClrCdacSubset)' == 'true'" Include= "-component cdac" />
     </ItemGroup>
 
     <PropertyGroup Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(HostCrossOS)' == '' and '$(ANDROID_NDK_ROOT)' != ''">
@@ -85,8 +86,8 @@
 
     <ItemGroup Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(HostCrossOS)' == '' and '$(ANDROID_NDK_ROOT)' != ''">
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DANDROID_STL=c++_static&quot;"/>
-      
-      <!-- 
+
+      <!--
         Only apply this setting on non-windows builds. Our windows build has a hard
         time with a value that has spaces in it.
       -->

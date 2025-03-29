@@ -30,9 +30,77 @@ namespace System.Threading
         **
         ** Exceptions: ArgumentNullException if object is null.
         =========================================================================*/
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void Enter(object obj);
+        public static void Enter(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj, null);
 
+            if (!TryEnter_FastPath(obj))
+            {
+                Enter_Slowpath(obj);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool TryEnter_FastPath(object obj);
+
+        // These must match the values in syncblk.h
+        private enum EnterHelperResult
+        {
+            Contention = 0,
+            Entered = 1,
+            UseSlowPath = 2
+        }
+
+        // These must match the values in syncblk.h
+        private enum LeaveHelperAction
+        {
+            None = 0,
+            Signal = 1,
+            Yield = 2,
+            Contention = 3,
+            Error = 4,
+        };
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern EnterHelperResult TryEnter_FastPath_WithTimeout(object obj, int timeout);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_Enter_Slowpath")]
+        private static partial void Enter_Slowpath(ObjectHandleOnStack obj);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Enter_Slowpath(object obj)
+        {
+            Enter_Slowpath(ObjectHandleOnStack.Create(ref obj));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_TryEnter_Slowpath")]
+        private static partial int TryEnter_Slowpath(ObjectHandleOnStack obj, int timeout);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool TryEnter_Slowpath(object obj)
+        {
+            if (TryEnter_Slowpath(ObjectHandleOnStack.Create(ref obj), 0) != 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool TryEnter_Slowpath(object obj, int timeout)
+        {
+            if (TryEnter_Slowpath(ObjectHandleOnStack.Create(ref obj), timeout) != 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
 
         // Use a ref bool instead of out to ensure that unverifiable code must
         // initialize this value to something.  If we used out, the value
@@ -44,7 +112,13 @@ namespace System.Threading
             if (lockTaken)
                 ThrowLockTakenException();
 
-            ReliableEnter(obj, ref lockTaken);
+            ArgumentNullException.ThrowIfNull(obj, null);
+
+            if (!TryEnter_FastPath(obj))
+            {
+                Enter_Slowpath(obj);
+            }
+            lockTaken = true;
             Debug.Assert(lockTaken);
         }
 
@@ -55,9 +129,16 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void ReliableEnter(object obj, ref bool lockTaken);
+        private static extern LeaveHelperAction Exit_FastPath(object obj);
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_Exit_Slowpath")]
+        private static partial void Exit_Slowpath(ObjectHandleOnStack obj, LeaveHelperAction exitBehavior);
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Exit_Slowpath(LeaveHelperAction exitBehavior, object obj)
+        {
+            Exit_Slowpath(ObjectHandleOnStack.Create(ref obj), exitBehavior);
+        }
 
         /*=========================================================================
         ** Release the monitor lock. If one or more threads are waiting to acquire the
@@ -68,8 +149,37 @@ namespace System.Threading
         **             SynchronizationLockException if the current thread does not
         **             own the lock.
         =========================================================================*/
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void Exit(object obj);
+        public static void Exit(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj, null);
+
+            LeaveHelperAction exitBehavior = Exit_FastPath(obj);
+
+            if (exitBehavior == LeaveHelperAction.None)
+                return;
+
+            Exit_Slowpath(exitBehavior, obj);
+        }
+
+        // Used to implement synchronized methods on non Windows-X86 architectures
+        internal static void ExitIfLockTaken(object obj, ref bool lockTaken)
+        {
+            ArgumentNullException.ThrowIfNull(obj, null);
+
+            if (lockTaken)
+            {
+                LeaveHelperAction exitBehavior = Exit_FastPath(obj);
+
+                if (exitBehavior == LeaveHelperAction.None)
+                {
+                    lockTaken = false;
+                    return;
+                }
+
+                Exit_Slowpath(exitBehavior, obj);
+                lockTaken = false;
+            }
+        }
 
         /*=========================================================================
         ** Similar to Enter, but will never block. That is, if the current thread can
@@ -80,9 +190,41 @@ namespace System.Threading
         =========================================================================*/
         public static bool TryEnter(object obj)
         {
-            bool lockTaken = false;
-            TryEnter(obj, 0, ref lockTaken);
-            return lockTaken;
+            ArgumentNullException.ThrowIfNull(obj, null);
+
+            EnterHelperResult tryEnterResult = TryEnter_FastPath_WithTimeout(obj, 0);
+            if (tryEnterResult == EnterHelperResult.Entered)
+            {
+                return true;
+            }
+            else if (tryEnterResult == EnterHelperResult.Contention)
+            {
+                return false;
+            }
+
+            return TryEnter_Slowpath(obj);
+        }
+
+        private static void TryEnter_Timeout_WithLockTaken(object obj, int millisecondsTimeout, ref bool lockTaken)
+        {
+            if (millisecondsTimeout >= -1)
+            {
+                EnterHelperResult tryEnterResult = TryEnter_FastPath_WithTimeout(obj, millisecondsTimeout);
+                if (tryEnterResult == EnterHelperResult.Entered)
+                {
+                    lockTaken = true;
+                    return;
+                }
+                else if (millisecondsTimeout == 0 && (tryEnterResult == EnterHelperResult.Contention))
+                {
+                    return;
+                }
+            }
+
+            if (TryEnter_Slowpath(obj, millisecondsTimeout))
+            {
+                lockTaken = true;
+            }
         }
 
         // The JIT should inline this method to allow check of lockTaken argument to be optimized out
@@ -92,7 +234,9 @@ namespace System.Threading
             if (lockTaken)
                 ThrowLockTakenException();
 
-            ReliableEnterTimeout(obj, 0, ref lockTaken);
+            ArgumentNullException.ThrowIfNull(obj, null);
+
+            TryEnter_Timeout_WithLockTaken(obj, 0, ref lockTaken);
         }
 
         /*=========================================================================
@@ -103,13 +247,24 @@ namespace System.Threading
         ** Exceptions: ArgumentNullException if object is null.
         **             ArgumentException if timeout < -1 (Timeout.Infinite).
         =========================================================================*/
-        // The JIT should inline this method to allow check of lockTaken argument to be optimized out
-        // in the typical case. Note that the method has to be transparent for inlining to be allowed by the VM.
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
-            bool lockTaken = false;
-            TryEnter(obj, millisecondsTimeout, ref lockTaken);
-            return lockTaken;
+            ArgumentNullException.ThrowIfNull(obj, null);
+
+            if (millisecondsTimeout >= -1)
+            {
+                EnterHelperResult tryEnterResult = TryEnter_FastPath_WithTimeout(obj, millisecondsTimeout);
+                if (tryEnterResult == EnterHelperResult.Entered)
+                {
+                    return true;
+                }
+                else if (millisecondsTimeout == 0 && (tryEnterResult == EnterHelperResult.Contention))
+                {
+                    return false;
+                }
+            }
+
+            return TryEnter_Slowpath(obj, millisecondsTimeout);
         }
 
         // The JIT should inline this method to allow check of lockTaken argument to be optimized out
@@ -119,11 +274,10 @@ namespace System.Threading
             if (lockTaken)
                 ThrowLockTakenException();
 
-            ReliableEnterTimeout(obj, millisecondsTimeout, ref lockTaken);
-        }
+            ArgumentNullException.ThrowIfNull(obj, null);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void ReliableEnterTimeout(object obj, int timeout, ref bool lockTaken);
+            TryEnter_Timeout_WithLockTaken(obj, millisecondsTimeout, ref lockTaken);
+        }
 
         public static bool IsEntered(object obj)
         {

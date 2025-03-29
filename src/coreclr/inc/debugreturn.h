@@ -18,9 +18,6 @@
 #define DEBUG_ASSURE_NO_RETURN_BEGIN(arg)    { char* __noReturnInThisBlock_##arg = ::new (nothrow) char[1];
 #define DEBUG_ASSURE_NO_RETURN_END(arg)      ::delete[] __noReturnInThisBlock_##arg; }
 
-#define DEBUG_OK_TO_RETURN_BEGIN(arg)        { ::delete[] __noReturnInThisBlock_##arg;
-#define DEBUG_OK_TO_RETURN_END(arg)          __noReturnInThisBlock_##arg = ::new (nothrow) char[1]; }
-
 #define DEBUG_ASSURE_SAFE_TO_RETURN TRUE
 #define return return
 
@@ -106,18 +103,12 @@ typedef __SafeToReturn __ReturnOK;
 #define DEBUG_ASSURE_NO_RETURN_BEGIN(arg) { typedef __YouCannotUseAReturnStatementHere __ReturnOK; if (0 && __ReturnOK::used()) { } else {
 #define DEBUG_ASSURE_NO_RETURN_END(arg)   } }
 
-#define DEBUG_OK_TO_RETURN_BEGIN(arg) { typedef __SafeToReturn __ReturnOK; if (0 && __ReturnOK::used()) { } else {
-#define DEBUG_OK_TO_RETURN_END(arg) } }
-
 #else // defined(_DEBUG) && !defined(JIT_BUILD) && (!defined(_MSC_FULL_VER) || _MSC_FULL_VER > 190024315)
 
 #define DEBUG_ASSURE_SAFE_TO_RETURN TRUE
 
 #define DEBUG_ASSURE_NO_RETURN_BEGIN(arg) {
 #define DEBUG_ASSURE_NO_RETURN_END(arg) }
-
-#define DEBUG_OK_TO_RETURN_BEGIN(arg) {
-#define DEBUG_OK_TO_RETURN_END(arg) }
 
 #endif // defined(_DEBUG) && !defined(JIT_BUILD) && (!defined(_MSC_FULL_VER) || _MSC_FULL_VER > 190024315)
 
