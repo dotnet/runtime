@@ -5657,8 +5657,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
         // Is this target a default case?
         if (hasDefault && (jmpTargetIdx == jumpCount - 1))
         {
-            // For default case we can create "BND > maxValue" assertion
-            // if opVN is a checked bound. Example:
+            // For default case we can create "X >= maxValue" assertion. Example:
             //
             //   void Test(ReadOnlySpan<byte> name)
             //   {
@@ -5671,16 +5670,26 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             //           default: %name.Length is >= 8 here%
             //       }
             //
-            if (vnStore->IsVNCheckedBound(opVN) && (value > 0))
+            if (value > 0)
             {
                 AssertionDsc dsc   = {};
                 dsc.assertionKind  = OAK_NOT_EQUAL;
-                dsc.op1.kind       = O1K_CONSTANT_LOOP_BND;
-                dsc.op1.vn         = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
                 dsc.op2.kind       = O2K_CONST_INT;
                 dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
                 dsc.op2.u1.iconVal = 0;
                 dsc.op2.SetIconFlag(GTF_EMPTY);
+                if (vnStore->IsVNCheckedBound(opVN))
+                {
+                    // Create "arrBnd >= value" assertion
+                    dsc.op1.kind = O1K_CONSTANT_LOOP_BND;
+                    dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
+                }
+                else
+                {
+                    // Create "X u>= value" assertion
+                    dsc.op1.kind = O1K_CONSTANT_LOOP_BND_UN;
+                    dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
+                }
                 newAssertIdx = optAddAssertion(&dsc);
             }
             else
