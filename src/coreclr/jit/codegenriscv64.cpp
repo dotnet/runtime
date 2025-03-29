@@ -401,7 +401,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // TODO-RISCV64: Implement varargs (NYI_RISCV64)
 
     assert(block != NULL);
-    assert(block->HasFlag(BBF_FUNCLET_BEG));
+    assert(compiler->bbIsFuncletBeg(block));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 

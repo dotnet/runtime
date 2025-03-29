@@ -426,45 +426,43 @@ enum BasicBlockFlags : uint64_t
     BBF_IMPORTED             = MAKE_BBFLAG( 4), // BB byte-code has been imported
     BBF_INTERNAL             = MAKE_BBFLAG( 5), // BB has been added by the compiler
     BBF_NEEDS_GCPOLL         = MAKE_BBFLAG( 6), // BB may need a GC poll because it uses the slow tail call helper
-    BBF_FUNCLET_BEG          = MAKE_BBFLAG( 7), // BB is the beginning of a funclet
-    BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 8), // First block of a cloned finally region
-    BBF_CLONED_FINALLY_END   = MAKE_BBFLAG( 9), // Last block of a cloned finally region
-    BBF_HAS_NULLCHECK        = MAKE_BBFLAG(10), // BB contains a null check
-    BBF_HAS_SUPPRESSGC_CALL  = MAKE_BBFLAG(11), // BB contains a call to a method with SuppressGCTransitionAttribute
-    BBF_RUN_RARELY           = MAKE_BBFLAG(12), // BB is rarely run (catch clauses, blocks with throws etc)
-    BBF_LOOP_HEAD            = MAKE_BBFLAG(13), // BB is the head of a loop (can reach a predecessor)
-    BBF_HAS_LABEL            = MAKE_BBFLAG(14), // BB needs a label
-    BBF_LOOP_ALIGN           = MAKE_BBFLAG(15), // Block is lexically the first block in a loop we intend to align.
-    BBF_HAS_ALIGN            = MAKE_BBFLAG(16), // BB ends with 'align' instruction
-    BBF_HAS_JMP              = MAKE_BBFLAG(17), // BB executes a JMP instruction (instead of return)
-    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(18), // BB has a GC safe point (e.g. a call)
-    BBF_HAS_IDX_LEN          = MAKE_BBFLAG(19), // BB contains simple index or length expressions on an SD array local var.
-    BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(20), // BB contains simple index, length, or lower bound expressions on an MD array local var.
-    BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(21), // Block has a multi-dimensional array reference
-    BBF_HAS_NEWOBJ           = MAKE_BBFLAG(22), // BB contains 'new' of an object type.
+    BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 7), // First block of a cloned finally region
+    BBF_CLONED_FINALLY_END   = MAKE_BBFLAG( 8), // Last block of a cloned finally region
+    BBF_HAS_NULLCHECK        = MAKE_BBFLAG( 9), // BB contains a null check
+    BBF_HAS_SUPPRESSGC_CALL  = MAKE_BBFLAG(10), // BB contains a call to a method with SuppressGCTransitionAttribute
+    BBF_RUN_RARELY           = MAKE_BBFLAG(11), // BB is rarely run (catch clauses, blocks with throws etc)
+    BBF_LOOP_HEAD            = MAKE_BBFLAG(12), // BB is the head of a loop (can reach a predecessor)
+    BBF_HAS_LABEL            = MAKE_BBFLAG(13), // BB needs a label
+    BBF_LOOP_ALIGN           = MAKE_BBFLAG(14), // Block is lexically the first block in a loop we intend to align.
+    BBF_HAS_ALIGN            = MAKE_BBFLAG(15), // BB ends with 'align' instruction
+    BBF_HAS_JMP              = MAKE_BBFLAG(16), // BB executes a JMP instruction (instead of return)
+    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(17), // BB has a GC safe point (e.g. a call)
+    BBF_HAS_IDX_LEN          = MAKE_BBFLAG(18), // BB contains simple index or length expressions on an SD array local var.
+    BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(19), // BB contains simple index, length, or lower bound expressions on an MD array local var.
+    BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(20), // Block has a multi-dimensional array reference
+    BBF_HAS_NEWOBJ           = MAKE_BBFLAG(21), // BB contains 'new' of an object type.
 
-    BBF_RETLESS_CALL                   = MAKE_BBFLAG(23), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+    BBF_RETLESS_CALL                   = MAKE_BBFLAG(22), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
                                                           // BBJ_CALLFINALLYRET); see isBBCallFinallyPair().
-    BBF_COLD                           = MAKE_BBFLAG(24), // BB is cold
-    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(25), // BB weight is computed from profile data
-    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(26), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+    BBF_COLD                           = MAKE_BBFLAG(23), // BB is cold
+    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(24), // BB weight is computed from profile data
+    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(25), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
                                                           // as BBJ_ALWAYS. Used on x86 for the final step block out of a finally.
-    BBF_HAS_CALL                       = MAKE_BBFLAG(27), // BB contains a call
-    BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(28), // Block is dominated by exceptional entry.
-    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(29), // BB is surrounded by a backward jump/switch arc
-    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(30), // Block is a source of a backward jump
-    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(31), // Block is a target of a backward jump
-    BBF_PATCHPOINT                     = MAKE_BBFLAG(32), // Block is a patchpoint
-    BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(33), // Block is a partial compilation patchpoint
-    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(34), // BB contains a call needing a histogram profile
-    BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(35), // BB has pred that has potential tail call
-    BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(36), // Block has recursive tailcall that may turn into a loop
-    BBF_NO_CSE_IN                      = MAKE_BBFLAG(37), // Block should kill off any incoming CSE
-    BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(38), // Ok to add pred edge to this block, even when "safe" edge creation disabled
-    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(39), // Block has a node that needs a value probing
-
-    BBF_HAS_NEWARR                     = MAKE_BBFLAG(40), // BB contains 'new' of an array type.
-    BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(41), // BB *likely* has a bounds check (after rangecheck phase).
+    BBF_HAS_CALL                       = MAKE_BBFLAG(26), // BB contains a call
+    BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(27), // Block is dominated by exceptional entry.
+    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(28), // BB is surrounded by a backward jump/switch arc
+    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(29), // Block is a source of a backward jump
+    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(30), // Block is a target of a backward jump
+    BBF_PATCHPOINT                     = MAKE_BBFLAG(31), // Block is a patchpoint
+    BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(32), // Block is a partial compilation patchpoint
+    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(33), // BB contains a call needing a histogram profile
+    BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(34), // BB has pred that has potential tail call
+    BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(35), // Block has recursive tailcall that may turn into a loop
+    BBF_NO_CSE_IN                      = MAKE_BBFLAG(36), // Block should kill off any incoming CSE
+    BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(37), // Ok to add pred edge to this block, even when "safe" edge creation disabled
+    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(38), // Block has a node that needs a value probing
+    BBF_HAS_NEWARR                     = MAKE_BBFLAG(39), // BB contains 'new' of an array type.
+    BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(40), // BB *likely* has a bounds check (after rangecheck phase).
 
     // The following are sets of flags.
 
