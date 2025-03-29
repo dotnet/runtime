@@ -1024,7 +1024,6 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 {
 	const char *cmethod_name = cmethod->name;
 	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod_name);
-	// We don't early-out for an unrecognized method, we will generate an NIY later
 	MonoClass *vector_klass;
 
 	bool is_packedsimd = strcmp (m_class_get_name (cmethod->klass), "PackedSimd") == 0;
@@ -1061,59 +1060,57 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		return FALSE;
 
 #if HOST_BROWSER
-	if (!is_packedsimd ) {
-		// transform the method name from the Vector(128)? name to the packed simd name
+	if (!is_packedsimd) {
+		// transform the method name from the Vector(128|) name to the packed simd name
 		// FIXME: This is a hack, but it works for now.
 		id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod_name);
-		if (id == SN_get_IsSupported || id == SN_get_IsHardwareAccelerated) {
-			return FALSE;
-		} else if (id == SN_LessThan) {
-			cmethod_name = "CompareLessThan";
-		} else if (id == SN_LessThanOrEqual) {
-			cmethod_name = "CompareLessThanOrEqual";
-		} else if (id == SN_GreaterThan) {
-			cmethod_name = "CompareGreaterThan";
-		} else if (id == SN_GreaterThanOrEqual) {
-			cmethod_name = "CompareGreaterThanOrEqual";
-		} else if (id == SN_Equals) {
-			cmethod_name = "CompareEqual";
-		} else if (id == SN_Add) {
-			cmethod_name = "Add";
-		} else if (id == SN_AndNot) {
-			cmethod_name = "AndNot";
-		} else if (id == SN_Subtract) {
-			cmethod_name = "Subtract";
-		} else if (id == SN_Multiply) {
-			cmethod_name = "Multiply";
-		} else if (id == SN_Divide) {
-			cmethod_name = "Divide";
-		} else if (id == SN_BitwiseAnd) {
-			cmethod_name = "And";
-		} else if (id == SN_BitwiseOr) {
-			cmethod_name = "Or";
-		} else if (id == SN_Ceiling) {
-			cmethod_name = "Ceiling";
-		} else if (id == SN_Floor) {
-			cmethod_name = "Floor";
-		} else if (id == SN_Xor) {
-			cmethod_name = "Xor";
-		} else if (id == SN_ShiftLeft) {
-			cmethod_name = "ShiftLeft";
-		} else if (id == SN_ShiftRightLogical) {
-			cmethod_name = "ShiftRightLogical";
-		} else if (id == SN_ShiftRightArithmetic) {
-			cmethod_name = "ShiftRightArithmetic";
-		} else if (id == SN_Negate) {
-			cmethod_name = "Negate";
-		} else if (id == SN_Abs) {
-			cmethod_name = "Abs";
-		} else if (id == SN_Min) {
-			cmethod_name = "Min";
-		} else if (id == SN_Max) {
-			cmethod_name = "Max";
-		} else {
-			// Only transform the name if we expect it to work
-			return FALSE;
+
+		switch (id) {
+			case SN_LessThan:
+				cmethod_name = "CompareLessThan";
+				break;
+			case SN_LessThanOrEqual:
+				cmethod_name = "CompareLessThanOrEqual";
+				break;
+			case SN_GreaterThan:
+				cmethod_name = "CompareGreaterThan";
+				break;
+			case SN_GreaterThanOrEqual:
+				cmethod_name = "CompareGreaterThanOrEqual";
+				break;
+			case SN_Equals:
+				cmethod_name = "CompareEqual";
+				break;
+			case SN_BitwiseAnd:
+				cmethod_name = "And";
+				break;
+			case SN_BitwiseOr:
+				cmethod_name = "Or";
+				break;
+			case SN_Add:
+			case SN_AndNot:
+			case SN_Subtract:
+			case SN_Multiply:
+			case SN_Divide:
+			case SN_Ceiling:
+			case SN_Floor:
+			case SN_Abs:
+			case SN_Negate:
+			case SN_Min:
+			case SN_Max:
+			case SN_Xor:
+			case SN_ShiftLeft:
+			case SN_ShiftRightLogical:
+			case SN_ShiftRightArithmetic:
+				cmethod_name = cmethod->name;
+				break;
+			case SN_get_IsHardwareAccelerated:
+			case SN_get_IsSupported:
+				// We don't want to emit the IsSupported or IsHardwareAccelerated methods for Vector(128)? here
+				return FALSE;
+			default:
+				// Only transform the name if we expect it to work
+				return FALSE;
 		}
 	}
 	gint16 simd_opcode = -1;
