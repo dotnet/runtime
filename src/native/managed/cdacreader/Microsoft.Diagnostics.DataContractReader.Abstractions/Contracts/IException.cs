@@ -19,8 +19,8 @@ public interface IException : IContract
 {
     static string IContract.Name { get; } = nameof(Exception);
 
-    public virtual TargetPointer GetNestedExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException) => throw new NotImplementedException();
-    public virtual ExceptionData GetExceptionData(TargetPointer managedException) => throw new NotImplementedException();
+    TargetPointer GetNestedExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException) => throw new NotImplementedException();
+    ExceptionData GetExceptionData(TargetPointer managedException) => throw new NotImplementedException();
 }
 
 public readonly struct Exception : IException

@@ -36,19 +36,19 @@ public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
 
-    public virtual ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
+    ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
 
-    public virtual TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual string GetPath(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
+    ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
+    string GetPath(ModuleHandle handle) => throw new NotImplementedException();
+    string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
 
-    public virtual TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
+    ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
 
-    public virtual TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
-    public virtual bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
+    bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader
