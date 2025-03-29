@@ -201,10 +201,14 @@ virtual ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo) = 0;
     (if UpdateAllRegs), callee-UNsaved registers are trashed)
     Returns success of operation.
 */
-virtual bool UnwindStackFrame(PREGDISPLAY     pContext,
+virtual bool UnwindStackFrame(PREGDISPLAY     pRD,
                               EECodeInfo     *pCodeInfo,
                               unsigned        flags,
                               CodeManState   *pState) = 0;
+
+#ifdef FEATURE_EH_FUNCLETS
+virtual void EnsureCallerContextIsValid(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0) = 0;
+#endif // FEATURE_EH_FUNCLETS
 
 /*
     Is the function currently at a "GC safe point" ?
@@ -338,6 +342,9 @@ virtual HRESULT FixContextForEnC(PCONTEXT        pCtx,
 
 #endif // #ifndef DACCESS_COMPILE
 
+#ifdef FEATURE_EH_FUNCLETS
+    size_t GetCallerSp( PREGDISPLAY  pRD );
+#endif
 
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
@@ -396,7 +403,6 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
     Get the number of bytes used for stack parameters.
     This is currently only used on x86.
 */
-virtual
 ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
 
 /*
@@ -407,9 +413,8 @@ ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
     (if UpdateAllRegs), callee-UNsaved registers are trashed)
     Returns success of operation.
 */
-virtual
 bool UnwindStackFrame(
-                PREGDISPLAY     pContext,
+                PREGDISPLAY     pRD,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags,
                 CodeManState   *pState);
@@ -437,12 +442,10 @@ void LightUnwindStackFrame(
     Is the function currently at a "GC safe point" ?
     Can call EnumGcRefs() successfully
 */
-virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
                 DWORD           dwRelOffset);
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-virtual
 bool HasTailCalls(EECodeInfo *pCodeInfo);
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
 
@@ -453,7 +456,6 @@ bool HasTailCalls(EECodeInfo *pCodeInfo);
     object have to be individually enumerated).
     Returns success of operation.
 */
-virtual
 bool EnumGcRefs(PREGDISPLAY     pContext,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags,
@@ -471,7 +473,6 @@ bool EnumGcRefsConservative(PREGDISPLAY     pRD,
                             LPVOID          hCallBack);
 #endif // FEATURE_CONSERVATIVE_GC
 
-virtual
 OBJECTREF GetInstance(
                 PREGDISPLAY     pContext,
                 EECodeInfo *    pCodeInfo);
@@ -480,13 +481,12 @@ OBJECTREF GetInstance(
     Returns the extra argument passed to shared generic code if it is still alive.
     Returns NULL in all other cases.
 */
-virtual
 PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
                          EECodeInfo *    pCodeInfo);
 
 // Returns the type of the context parameter (this, methodtable, methoddesc, or none)
-virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
-                                                    EECodeInfo *    pCodeInfo);
+GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
+                                            EECodeInfo *    pCodeInfo);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 /*
@@ -507,7 +507,6 @@ PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
     Returns the offset of the GuardStack cookie if it exists.
     Returns NULL if there is no cookie.
 */
-virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        EECodeInfo    * pCodeInfo,
                        unsigned        flags,
@@ -518,7 +517,6 @@ void * GetGSCookieAddr(PREGDISPLAY     pContext,
 /*
   Returns true if the given IP is in the given method's prolog or an epilog.
 */
-virtual
 bool IsInPrologOrEpilog(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
@@ -527,7 +525,6 @@ bool IsInPrologOrEpilog(
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
 */
-virtual
 bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
@@ -537,7 +534,6 @@ bool IsInSynchronizedRegion(
 /*
   Returns the size of a given function.
 */
-virtual
 size_t GetFunctionSize(GCInfoToken gcInfoToken);
 
 /*
@@ -546,7 +542,7 @@ size_t GetFunctionSize(GCInfoToken gcInfoToken);
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind));
+bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind));
 
 #ifndef USE_GC_INFO_DECODER
 /*
@@ -586,8 +582,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_EH_FUNCLETS
-    static void EnsureCallerContextIsValid( PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
-    static size_t GetCallerSp( PREGDISPLAY  pRD );
+    virtual void EnsureCallerContextIsValid( PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
 #ifdef TARGET_X86
     static size_t GetResumeSp( PCONTEXT  pContext );
 #endif // TARGET_X86
@@ -663,17 +658,20 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
 virtual
 ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo)
 {
-    // Interpreter-TODO: Implement this if needed
-    _ASSERTE(FALSE);
     return 0;
 }
 
 virtual
 bool UnwindStackFrame(
-                PREGDISPLAY     pContext,
+                PREGDISPLAY     pRD,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags,
                 CodeManState   *pState);
+
+#ifdef FEATURE_EH_FUNCLETS
+virtual 
+void EnsureCallerContextIsValid(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
+#endif // FEATURE_EH_FUNCLETS
 
 virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
@@ -714,8 +712,6 @@ void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        unsigned        flags,
                        CodeManState  * pState)
 {
-    // Interpreter-TODO: Implement this if needed
-    _ASSERTE(FALSE);
     return NULL;
 }
 

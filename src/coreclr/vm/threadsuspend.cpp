@@ -4782,7 +4782,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
 #endif
                         }
 #elif defined(TARGET_X86) || defined(TARGET_AMD64)
-                        pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
+                        pES->m_ppvRetAddrPtr = (void **) (pCF->GetCodeManager()->GetCallerSp(pRDT) - sizeof(void*));
 #else // TARGET_X86 || TARGET_AMD64
                         PORTABILITY_ASSERT("Platform NYI");
 #endif // _TARGET_???_

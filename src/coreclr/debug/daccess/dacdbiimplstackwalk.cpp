@@ -19,6 +19,10 @@
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 typedef IDacDbiInterface::StackWalkHandle StackWalkHandle;
 
 

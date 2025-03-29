@@ -35,6 +35,10 @@
 
 #include "argdestination.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 #define CHECK_APP_DOMAIN    0
 
 #ifdef DACCESS_COMPILE
@@ -2078,6 +2082,44 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress_Impl()
     }
 }
 #endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_INTERPRETER
+PTR_InterpMethodContextFrame InterpreterFrame::GetTopInterpMethodContextFrame()
+{
+    LIMITED_METHOD_CONTRACT;
+    PTR_InterpMethodContextFrame pFrame = m_pTopInterpMethodContextFrame;
+    _ASSERTE(pFrame != NULL);
+
+    // The pFrame points to the last known topmost interpreter frame for the related InterpExecMethod.
+    // For regular execution, it is always the current topmost one. However, in the case of a dump
+    // debugging or a native runtime debugging, it may be pointing to a higher or lower frame and
+    // we need to seek to the right one.
+    if (pFrame->ip != NULL)
+    {
+        // The frame is active, so it is either the topmost one or we need to seek towards the top
+        // of the stack.
+        while ((pFrame->pNext != NULL) && (pFrame->pNext->ip != NULL))
+        {
+            pFrame = pFrame->pNext;
+        }
+    }
+    else
+    {
+        // The frame is not active, which means it a frame that was used before, but the interpreter
+        // already returned from it and zeroed its ip. The frame is ready for reuse by another call.
+        // We need to seek for an active one towards the bottom of the stack.
+        // It can also represent a case when the interpreter hasn't started interpreting the method
+        // yet, but the frame was already created.
+        while (pFrame->pParent != NULL && pFrame->ip == NULL)
+        {
+            pFrame = pFrame->pParent;
+        }
+    }
+
+    return pFrame;
+}
+
+#endif // FEATURE_INTERPRETER
 
 #ifndef DACCESS_COMPILE
 //=================================================================================

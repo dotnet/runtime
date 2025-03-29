@@ -23,13 +23,14 @@ struct StackVal
 
 struct InterpMethodContextFrame
 {
-    InterpMethodContextFrame *pParent;
+    PTR_InterpMethodContextFrame pParent;
     const int32_t *startIp; // from startIp we can obtain InterpMethod and MethodDesc
     int8_t *pStack;
     int8_t *pRetVal;
     const int32_t *ip; // This ip is updated only when execution can leave the frame
-    InterpMethodContextFrame *pNext;
+    PTR_InterpMethodContextFrame pNext;
 
+#ifndef DACCESS_COMPILE
     void ReInit(InterpMethodContextFrame *pParent, const int32_t *startIp, int8_t *pRetVal, int8_t *pStack)
     {
         this->pParent = pParent;
@@ -38,6 +39,7 @@ struct InterpMethodContextFrame
         this->pStack = pStack;
         this->ip = NULL;
     }
+#endif // DACCESS_COMPILE
 };
 
 struct InterpThreadContext
@@ -53,6 +55,6 @@ struct InterpThreadContext
 };
 
 InterpThreadContext* InterpGetThreadContext();
-void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext);
+void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext);
 
 #endif

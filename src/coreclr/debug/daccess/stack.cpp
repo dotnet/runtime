@@ -10,7 +10,9 @@
 //*****************************************************************************
 
 #include "stdafx.h"
-
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
 //----------------------------------------------------------------------------
 //
 // ClrDataStackWalk.
