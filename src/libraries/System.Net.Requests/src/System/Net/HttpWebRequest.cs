@@ -1111,8 +1111,9 @@ namespace System.Net
                     if (result == _sendRequestTask)
                     {
                         await _sendRequestTask.ConfigureAwait(false); // Propagate the exception
-                        return Stream.Null; // If we successfully completed the request without getting the stream
-                        // We just need to return a null stream, to avoid blocking.
+                        // If we successfully completed the request without getting the stream,
+                        // return a null stream to avoid blocking.
+                        return Stream.Null; 
                     }
                     _requestStream = new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
                 }
