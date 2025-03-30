@@ -5645,12 +5645,25 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 
         // We can only make "X == caseValue" assertions for blocks with a single edge from the switch.
         BasicBlock* target = jumpTable[jmpTargetIdx]->getDestinationBlock();
-        if ((target->GetUniquePred(this) != switchBb) || (fgGetPredForBlock(target, switchBb)->getDupCount() > 1) ||
-            !BasicBlock::sameEHRegion(target, switchBb))
+        if (target->GetUniquePred(this) != switchBb)
         {
-            // Same here, we still might be able to create some useful assertions, e.g. X != 0, etc.
+            // Target block is potentially reachable from multiple blocks (outside the switch).
             continue;
         }
+
+        if (fgGetPredForBlock(target, switchBb)->getDupCount() > 1)
+        {
+            // We have just one predecessor (BBJ_SWITCH), but there may be multiple edges (cases) per target.
+            continue;
+        }
+
+        // Make sure we don't have any PHI nodes in the target block.
+#if DEBUG
+        for (Statement* stmt : target->Statements())
+        {
+            assert(!stmt->IsPhiDefnStmt());
+        }
+#endif
 
         AssertionInfo newAssertIdx = NO_ASSERTION_INDEX;
 
@@ -6532,19 +6545,22 @@ PhaseStatus Compiler::optAssertionPropMain()
     optAssertionInit(false);
 
     noway_assert(optAssertionCount == 0);
-    bool madeChanges      = false;
-    bool containsSwitches = false;
+    bool madeChanges = false;
 
     // Assertion prop can speculatively create trees.
     INDEBUG(const unsigned baseTreeID = compGenTreeID);
 
     // First discover all assertions and record them in the table.
+    ArrayStack<BasicBlock*> switchBlocks(getAllocator(CMK_AssertionProp));
     for (BasicBlock* const block : Blocks())
     {
         compCurBB           = block;
         fgRemoveRestOfBlock = false;
 
-        containsSwitches |= block->KindIs(BBJ_SWITCH);
+        if (block->KindIs(BBJ_SWITCH))
+        {
+            switchBlocks.Push(block);
+        }
 
         Statement* stmt = block->firstStmt();
         while (stmt != nullptr)
@@ -6590,15 +6606,9 @@ PhaseStatus Compiler::optAssertionPropMain()
         }
     }
 
-    if (containsSwitches)
+    for (int i = 0; i < switchBlocks.Height(); i++)
     {
-        for (BasicBlock* const block : Blocks())
-        {
-            if (block->KindIs(BBJ_SWITCH))
-            {
-                madeChanges |= optCreateJumpTableImpliedAssertions(block);
-            }
-        }
+        madeChanges |= optCreateJumpTableImpliedAssertions(switchBlocks.Bottom(i));
     }
 
     if (optAssertionCount == 0)
