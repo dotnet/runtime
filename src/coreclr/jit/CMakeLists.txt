@@ -54,7 +54,7 @@ function(create_standalone_jit)
     set(JIT_ARCH_SOURCES ${JIT_RISCV64_SOURCES})
     set(JIT_ARCH_HEADERS ${JIT_RISCV64_HEADERS})
   else()
-    clr_unknown_arch()
+    message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
   endif()
 
   add_jit(${TARGETDETAILS_TARGET})
@@ -499,7 +499,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
   set(JIT_ARCH_SOURCES ${JIT_WASM32_SOURCES})
   set(JIT_ARCH_HEADERS ${JIT_WASM32_HEADERS})
 else()
-  clr_unknown_arch()
+  message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
 endif()
 
 

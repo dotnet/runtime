@@ -72,7 +72,7 @@ function(create_platform_unwinder)
   elseif(TARGETDETAILS_ARCH STREQUAL "arm64")
     set(ARCH_SOURCES_DIR arm64)
   else()
-    clr_unknown_arch()
+    message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
   endif()
 
   set(UNWINDER_SOURCES ${ARCH_SOURCES_DIR}/unwinder.cpp)
