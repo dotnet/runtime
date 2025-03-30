@@ -60,20 +60,40 @@ struct OptTestInfo
 class IntBoolOpDsc
 {
 private:
+    IntBoolOpDsc(Compiler* comp)
+    {
+        ctsArray          = nullptr;
+        ctsArrayLength    = 0;
+        ctsArrayCapacity  = 0;
+        lclVarArr         = nullptr;
+        lclVarArrLength   = 0;
+        lclVarArrCapacity = 0;
+        start             = nullptr;
+        end               = nullptr;
+        m_comp            = comp;
+    }
+
+private:
     GenTree** lclVarArr;
     int32_t   lclVarArrLength;
+    int32_t   lclVarArrCapacity;
     ssize_t*  ctsArray;
     int32_t   ctsArrayLength;
+    int32_t   ctsArrayCapacity;
     GenTree*  start;
     GenTree*  end;
     Compiler* m_comp;
 
 public:
-    static IntBoolOpDsc* GetNextIntBoolOp(GenTree* b3, Compiler* comp);
-    bool                 TryOptimize();
-    void                 Reinit();
-    bool                 EndIsNull();
-    GenTree*             GetLclVarArrayFirst();
+    static IntBoolOpDsc GetNextIntBoolOp(GenTree* b3, Compiler* comp);
+    bool                TryOptimize();
+    void                Reinit();
+    bool                EndIsNull();
+    GenTree*            GetLclVarArrayFirst();
+
+private:
+    void AppendToLclVarArray(GenTree* b3);
+    void AppendToCtsArray(ssize_t b3);
 };
 
 //-----------------------------------------------------------------------------
@@ -1471,7 +1491,8 @@ void IntBoolOpDsc::Reinit()
         ctsArray = nullptr;
     }
 
-    ctsArrayLength = 0;
+    ctsArrayLength   = 0;
+    ctsArrayCapacity = 0;
 
     if (lclVarArr != nullptr)
     {
@@ -1479,7 +1500,8 @@ void IntBoolOpDsc::Reinit()
         lclVarArr = nullptr;
     }
 
-    lclVarArrLength = 0;
+    lclVarArrLength   = 0;
+    lclVarArrCapacity = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -1513,49 +1535,37 @@ GenTree* GetNextOrOp(GenTree* b4)
 //
 // Notes:
 //      We look for consecutive blocks that have GT_OR, GT_LCL_VAR, GT_CNS_INT nodes.
-IntBoolOpDsc* IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
+IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
 {
-    if (b3 == nullptr)
-    {
-        return nullptr;
-    }
-
-    IntBoolOpDsc* intBoolOpDsc    = reinterpret_cast<IntBoolOpDsc*>(malloc(sizeof(IntBoolOpDsc)));
-    intBoolOpDsc->ctsArray        = nullptr;
-    intBoolOpDsc->ctsArrayLength  = 0;
-    intBoolOpDsc->lclVarArr       = nullptr;
-    intBoolOpDsc->lclVarArrLength = 0;
-    intBoolOpDsc->start           = nullptr;
-    intBoolOpDsc->end             = nullptr;
-    intBoolOpDsc->m_comp          = comp;
-    int orOpCount                 = 2;
+    IntBoolOpDsc intBoolOpDsc = IntBoolOpDsc(comp);
+    int          orOpCount    = 2;
 
     GenTree* b4 = GetNextOrOp(b3->gtPrev);
 
     if (b4 != nullptr)
     {
-        intBoolOpDsc->start = b4->gtNext;
-        b4                  = b4->gtPrev;
+        intBoolOpDsc.start = b4->gtNext;
+        b4                 = b4->gtPrev;
     }
 
     while (b4 != nullptr)
     {
         if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT) || !b4->TypeIs(TYP_INT))
         {
-            if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
+            if (intBoolOpDsc.ctsArrayLength >= 2 && intBoolOpDsc.lclVarArrLength >= 2)
             {
-                intBoolOpDsc->end = b4;
+                intBoolOpDsc.end = b4;
                 return intBoolOpDsc;
             }
             else
             {
-                intBoolOpDsc->Reinit();
+                intBoolOpDsc.Reinit();
                 b4 = GetNextOrOp(b4);
 
                 if (b4 != nullptr)
                 {
-                    orOpCount           = 2;
-                    intBoolOpDsc->start = b4->gtNext;
+                    orOpCount          = 2;
+                    intBoolOpDsc.start = b4->gtNext;
                 }
                 else
                 {
@@ -1566,13 +1576,13 @@ IntBoolOpDsc* IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
 
         if (orOpCount <= 0)
         {
-            if (intBoolOpDsc->ctsArrayLength >= 2 && intBoolOpDsc->lclVarArrLength >= 2)
+            if (intBoolOpDsc.ctsArrayLength >= 2 && intBoolOpDsc.lclVarArrLength >= 2)
             {
-                intBoolOpDsc->end = b4;
+                intBoolOpDsc.end = b4;
                 return intBoolOpDsc;
             }
 
-            intBoolOpDsc->Reinit();
+            intBoolOpDsc.Reinit();
 
             if (!b4->OperIs(GT_OR))
             {
@@ -1581,8 +1591,8 @@ IntBoolOpDsc* IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
 
             if (b4 != nullptr)
             {
-                orOpCount           = 2;
-                intBoolOpDsc->start = b4->gtNext;
+                orOpCount          = 2;
+                intBoolOpDsc.start = b4->gtNext;
             }
             else
             {
@@ -1595,37 +1605,14 @@ IntBoolOpDsc* IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
             {
                 case GT_LCL_VAR:
                 {
-                    intBoolOpDsc->lclVarArrLength++;
-                    if (intBoolOpDsc->lclVarArr == nullptr)
-                    {
-                        intBoolOpDsc->lclVarArr =
-                            reinterpret_cast<GenTree**>(malloc(sizeof(GenTree*) * intBoolOpDsc->lclVarArrLength));
-                    }
-                    else
-                    {
-                        intBoolOpDsc->lclVarArr = reinterpret_cast<GenTree**>(
-                            realloc(intBoolOpDsc->lclVarArr, sizeof(GenTree*) * intBoolOpDsc->lclVarArrLength));
-                    }
-
-                    intBoolOpDsc->lclVarArr[intBoolOpDsc->lclVarArrLength - 1] = b4;
+                    intBoolOpDsc.AppendToLclVarArray(b4);
                     orOpCount--;
                     break;
                 }
                 case GT_CNS_INT:
                 {
-                    intBoolOpDsc->ctsArrayLength++;
-                    if (intBoolOpDsc->ctsArray == nullptr)
-                    {
-                        intBoolOpDsc->ctsArray =
-                            reinterpret_cast<ssize_t*>(malloc(sizeof(ssize_t) * intBoolOpDsc->ctsArrayLength));
-                    }
-                    else
-                    {
-                        intBoolOpDsc->ctsArray = reinterpret_cast<ssize_t*>(
-                            realloc(intBoolOpDsc->ctsArray, sizeof(ssize_t) * intBoolOpDsc->ctsArrayLength));
-                    }
-                    ssize_t constant                                         = b4->AsIntConCommon()->IconValue();
-                    intBoolOpDsc->ctsArray[intBoolOpDsc->ctsArrayLength - 1] = constant;
+                    ssize_t constant = b4->AsIntConCommon()->IconValue();
+                    intBoolOpDsc.AppendToCtsArray(constant);
                     orOpCount--;
                     break;
                 }
@@ -1785,6 +1772,58 @@ GenTree* IntBoolOpDsc::GetLclVarArrayFirst()
 }
 
 //-----------------------------------------------------------------------------
+// AppendToLclVarArray:   Append the lcl var tree to lcl var arrays
+//
+// Arguments:
+//      tree        lcl var tree
+//
+void IntBoolOpDsc::AppendToLclVarArray(GenTree* tree)
+{
+    if (lclVarArrLength == lclVarArrCapacity)
+    {
+        if (lclVarArrCapacity == 0)
+        {
+            lclVarArrCapacity = 4;
+            lclVarArr         = reinterpret_cast<GenTree**>(malloc(sizeof(GenTree*) * lclVarArrCapacity));
+        }
+        else
+        {
+            lclVarArrCapacity = lclVarArrCapacity * 2;
+            lclVarArr         = reinterpret_cast<GenTree**>(realloc(lclVarArr, sizeof(GenTree*) * lclVarArrCapacity));
+        }
+    }
+
+    lclVarArrLength++;
+    lclVarArr[lclVarArrLength - 1] = tree;
+}
+
+//-----------------------------------------------------------------------------
+// AppendToCtsArray:   Append the constant to constant arrays
+//
+// Arguments:
+//      cts        constant value
+//
+void IntBoolOpDsc::AppendToCtsArray(ssize_t cts)
+{
+    if (ctsArrayLength == ctsArrayCapacity)
+    {
+        if (ctsArrayCapacity == 0)
+        {
+            ctsArrayCapacity = 4;
+            ctsArray         = reinterpret_cast<ssize_t*>(malloc(sizeof(ssize_t) * ctsArrayCapacity));
+        }
+        else
+        {
+            ctsArrayCapacity = ctsArrayCapacity * 2;
+            ctsArray         = reinterpret_cast<ssize_t*>(realloc(ctsArray, sizeof(ssize_t) * ctsArrayCapacity));
+        }
+    }
+
+    ctsArrayLength++;
+    ctsArray[ctsArrayLength - 1] = cts;
+}
+
+//-----------------------------------------------------------------------------
 // TryOptimizeIntBoolOp:   Procedure that looks for constant INT OR operations to fold and if found, folds them
 //
 // Arguments:
@@ -1802,25 +1841,19 @@ unsigned int Compiler::TryOptimizeIntBoolOp(BasicBlock* b1)
         GenTree* b3 = b2->GetRootNode();
         if (b3 != nullptr && b3->OperIs(GT_RETURN))
         {
-            IntBoolOpDsc* intBoolOpDsc = IntBoolOpDsc::GetNextIntBoolOp(b3, this);
+            IntBoolOpDsc intBoolOpDsc = IntBoolOpDsc::GetNextIntBoolOp(b3, this);
 
-            if (intBoolOpDsc == nullptr)
+            if (intBoolOpDsc.TryOptimize())
             {
-                return 0;
-            }
-
-            if (intBoolOpDsc->TryOptimize())
-            {
-                if (intBoolOpDsc->EndIsNull())
+                if (intBoolOpDsc.EndIsNull())
                 {
-                    b2->SetTreeList(intBoolOpDsc->GetLclVarArrayFirst());
+                    b2->SetTreeList(intBoolOpDsc.GetLclVarArrayFirst());
                 }
 
                 result++;
             }
 
-            intBoolOpDsc->Reinit();
-            free(intBoolOpDsc);
+            intBoolOpDsc.Reinit();
         }
     }
 
