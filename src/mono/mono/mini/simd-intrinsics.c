@@ -6431,9 +6431,11 @@ emit_wasm_supported_intrinsics (
 				op = OP_XOP_X_X_X;
 
 				switch (arg0_type) {
+				case MONO_TYPE_U2:
 				case MONO_TYPE_I2:
 						c0 = INTRINS_WASM_NARROW_UNSIGNED_V16;
 						break;
+				case MONO_TYPE_U4:
 				case MONO_TYPE_I4:
 						c0 = INTRINS_WASM_NARROW_UNSIGNED_V8;
 						break;
