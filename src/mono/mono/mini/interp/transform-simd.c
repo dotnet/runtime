@@ -1047,7 +1047,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	// NOTE: Linker substitutions (used in AOT) will prevent this from running.
 	if ((id == SN_get_IsSupported) || (id == SN_get_IsHardwareAccelerated)) {
 		if (!is_packedsimd) {
-			// We don't want to emit the IsSupported or IsHardwareAccelerated methods for Vector(128)? here
+			// We don't want to emit the IsSupported or IsHardwareAccelerated methods for Vector* here
 			return FALSE;
 		}
 #if HOST_BROWSER
@@ -1066,7 +1066,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		// transform the method name from the Vector(128|) name to the packed simd name
 		// FIXME: This is a hack, but it works for now.
 		id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod_name);
-
+		gboolean is_unsigned = (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_U2 || t->type == MONO_TYPE_U4 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_U);
 		switch (id) {
 			case SN_LessThan:
 				cmethod_name = "CompareLessThan";
@@ -1088,6 +1088,27 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_BitwiseOr:
 				cmethod_name = "Or";
+				break;
+			case SN_WidenLower:
+			    if (is_unsigned) {
+					cmethod_name = "ZeroExtendWideningLower";
+				} else {
+					cmethod_name = "SignExtendWideningLower";
+				}
+				break;
+			case SN_WidenUpper:
+			    if (is_unsigned) {
+					cmethod_name = "ZeroExtendWideningUpper";
+				} else {
+					cmethod_name = "SignExtendWideningUpper";
+				}
+				break;
+			case SN_Narrow:
+				if (is_unsigned) {
+					cmethod_name = "ConvertNarrowingSaturateUnsigned";
+				} else {
+					cmethod_name = "ConvertNarrowingSaturateSigned";
+				}
 				break;
 			case SN_Add:
 			case SN_AndNot:
@@ -1128,9 +1149,8 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		if (!is_packedsimd) {
 			// We didn't find a match, but that is expected for Vector(128)?
 			return FALSE;
-		} else {
-			g_warning ("MONO interpreter: Unimplemented method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
 		}
+		g_warning ("MONO interpreter: Unimplemented method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
 
 		// If we're missing a packedsimd method but the packedsimd method was AOT'd, we can
 		//  just let the interpreter generate a native call to the AOT method instead of

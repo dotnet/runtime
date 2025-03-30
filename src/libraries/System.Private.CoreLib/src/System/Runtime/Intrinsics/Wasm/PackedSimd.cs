@@ -1432,9 +1432,17 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<byte>  ConvertNarrowingSaturateUnsigned(Vector128<short> lower, Vector128<short> upper) => ConvertNarrowingSaturateUnsigned(lower, upper);
 
+        /// <summary>  i8x16.narrow_i16x8_u</summary>
+        [Intrinsic]
+        public static Vector128<byte>  ConvertNarrowingSaturateUnsigned(Vector128<ushort> lower, Vector128<ushort> upper) => ConvertNarrowingSaturateUnsigned(lower, upper);
+
         /// <summary>  i16x8.narrow_i32x4_u</summary>
         [Intrinsic]
         public static Vector128<ushort> ConvertNarrowingSaturateUnsigned(Vector128<int>  lower, Vector128<int>   upper) => ConvertNarrowingSaturateUnsigned(lower, upper);
+
+        /// <summary>  i16x8.narrow_i32x4_u</summary>
+        [Intrinsic]
+        public static Vector128<ushort> ConvertNarrowingSaturateUnsigned(Vector128<uint>  lower, Vector128<uint>   upper) => ConvertNarrowingSaturateUnsigned(lower, upper);
 
         /// <summary>  i16x8.extend_low_i8x16_s</summary>
         [Intrinsic]
