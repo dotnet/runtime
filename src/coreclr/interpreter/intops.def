@@ -11,6 +11,7 @@ OPDEF(INTOP_RET_VT, "ret.vt", 3, 0, 1, InterpOpInt)
 OPDEF(INTOP_RET_VOID, "ret.void", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_INITLOCALS, "initlocals", 3, 0, 0, InterpOpTwoInts)
+OPDEF(INTOP_MEMBAR, "membar", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_LDC_I4, "ldc.i4", 3, 1, 0, InterpOpInt)
 OPDEF(INTOP_LDC_I4_0, "ldc.i4.0", 2, 1, 0, InterpOpNoArgs)

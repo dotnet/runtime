@@ -64,6 +64,10 @@ MAIN_LOOP:
                 memset(stack + ip[1], 0, ip[2]);
                 ip += 3;
                 break;
+            case INTOP_MEMBAR:
+                MemoryBarrier();
+                ip++;
+                break;
             case INTOP_LDC_I4:
                 LOCAL_VAR(ip[1], int32_t) = ip[2];
                 ip += 3;

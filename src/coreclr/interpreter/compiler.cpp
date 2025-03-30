@@ -2621,7 +2621,11 @@ retry_emit:
 
                 m_ip += 5;
                 if (volatile_)
-                    assert(0); // FIXME Acquire membar
+                {
+                    // Acquire membar
+                    AddIns(INTOP_MEMBAR);
+                    volatile_ = false;
+                }
                 break;
             }
             case CEE_STFLD:
@@ -2638,7 +2642,11 @@ retry_emit:
                 InterpType interpFieldType = GetInterpType(fieldType);
 
                 if (volatile_)
-                    assert(0); // FIXME Release membar
+                {
+                    // Release memory barrier
+                    AddIns(INTOP_MEMBAR);
+                    volatile_ = false;
+                }
 
                 if (isStatic)
                 {
@@ -2682,7 +2690,11 @@ retry_emit:
                 EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, true);
 
                 if (volatile_)
-                    assert(0); // FIXME Acquire membar
+                {
+                    // Acquire memory barrier
+                    AddIns(INTOP_MEMBAR);
+                    volatile_ = false;
+                }
                 m_ip += 5;
                 break;
             }
@@ -2699,7 +2711,11 @@ retry_emit:
                 InterpType interpFieldType = GetInterpType(fieldType);
 
                 if (volatile_)
-                    assert(0); // FIXME Release membar
+                {
+                    // Release memory barrier
+                    AddIns(INTOP_MEMBAR);
+                    volatile_ = false;
+                }
 
                 EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, false);
                 m_ip += 5;
@@ -2756,7 +2772,11 @@ retry_emit:
                 }
                 EmitLdind(interpType, NULL, 0);
                 if (volatile_)
-                    assert(0); // FIXME Acquire membar
+                {
+                    // Acquire memory barrier
+                    AddIns(INTOP_MEMBAR);
+                    volatile_ = false;
+                }
                 m_ip++;
                 break;
             }
@@ -2800,7 +2820,11 @@ retry_emit:
                         assert(0);
                 }
                 if (volatile_)
-                    assert(0); // FIXME Release membar
+                {
+                    // Release memory barrier
+                    AddIns(INTOP_MEMBAR);
+                    volatile_ = false;
+                }
                 EmitStind(interpType, NULL, 0, false);
                 m_ip++;
                 break;
