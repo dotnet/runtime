@@ -6557,11 +6557,6 @@ PhaseStatus Compiler::optAssertionPropMain()
         compCurBB           = block;
         fgRemoveRestOfBlock = false;
 
-        if (block->KindIs(BBJ_SWITCH))
-        {
-            switchBlocks.Push(block);
-        }
-
         Statement* stmt = block->firstStmt();
         while (stmt != nullptr)
         {
@@ -6603,6 +6598,11 @@ PhaseStatus Compiler::optAssertionPropMain()
 
             // Advance the iterator
             stmt = stmt->GetNextStmt();
+        }
+
+        if (block->KindIs(BBJ_SWITCH))
+        {
+            switchBlocks.Push(block);
         }
     }
 
