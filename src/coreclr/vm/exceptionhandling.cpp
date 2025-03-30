@@ -8130,8 +8130,8 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
         // it will retrieve the framepointer for accessing the locals in the parent
         // method.
         dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
-#ifdef TARGET_X86
-                                       GetRegdisplayFP(pvRegDisplay),
+#ifdef USE_CURRENT_CONTEXT_IN_FILTER
+                                       GetFrameRestoreBase(pvRegDisplay->pCurrentContext),
 #else
                                        GetFrameRestoreBase(pvRegDisplay->pCallerContext),
 #endif
