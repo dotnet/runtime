@@ -1702,6 +1702,13 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         goto exit_bad_code;
     }
 
+    if ((methodInfo->options & CORINFO_OPT_INIT_LOCALS) && m_ILLocalsSize > 0)
+    {
+        AddIns(INTOP_INITLOCALS);
+        m_pLastIns->data[0] = m_ILLocalsOffset;
+        m_pLastIns->data[1] = m_ILLocalsSize;
+    }
+
     codeEnd = m_ip + m_ILCodeSize;
 
     linkBBlocks = true;
