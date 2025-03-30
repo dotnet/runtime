@@ -438,12 +438,11 @@ namespace System.Reflection.Metadata
             return !IsMaxDepthExceeded(options, depth);
         }
 
-#if SYSTEM_REFLECTION_METADATA
         [DoesNotReturn]
         internal static void ThrowInvalidOperation_NotSimpleName(string fullName)
         {
+            // This message is defined in both System.Private.CoreLib and System.Reflection.Metadata
             throw new InvalidOperationException(SR.Format(SR.Arg_NotSimpleTypeName, fullName));
         }
-#endif
     }
 }
