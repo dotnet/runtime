@@ -342,7 +342,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
             AppDomain::GetCurrentDomain(),
             module,
             tkMethod,
-            pMethod->IsAsync2VariantMethod(),
+            /* fIsAsync2Variant */false, // TODO: EnC doesn't handle async2 variants now
             AssemblyIterationFlags(kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<Assembly *> pAssembly;
         while (it.Next(pAssembly.This()))

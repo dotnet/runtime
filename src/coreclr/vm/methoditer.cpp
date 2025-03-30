@@ -57,7 +57,7 @@ BOOL LoadedMethodDescIterator::Next(
         return FALSE;
     }
 
-    if (m_fIsAsync2Variant)
+    if (m_fIsAsync2Variant && m_mainMD->IsTaskReturningMethod())
     {
         m_mainMD = m_mainMD->GetMethodTable()->GetParallelMethodDesc(m_mainMD, AsyncVariantLookup::AsyncOtherVariant);
 
@@ -250,7 +250,7 @@ LoadedMethodDescIterator::Start(
     mdMethodDef     md,
     MethodDesc      *pMethodDesc)
 {
-    Start(pAppDomain, pModule, md, pMethodDesc->IsAsync2VariantMethod());
+    Start(pAppDomain, pModule, md, /*m_fIsAsync2Variant*/ false); // TODO: EnC doesn't handle async2 variants now
     m_mainMD = pMethodDesc;
 }
 
