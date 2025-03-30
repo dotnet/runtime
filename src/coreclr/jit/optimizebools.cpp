@@ -87,11 +87,12 @@ private:
 public:
     static IntBoolOpDsc GetNextIntBoolOp(GenTree* b3, Compiler* comp);
     bool                TryOptimize();
-    void                Reinit();
     bool                EndIsNull();
     GenTree*            GetLclVarArrayFirst();
+    void                Free();
 
 private:
+    void Reinit();
     void AppendToLclVarArray(GenTree* b3);
     void AppendToCtsArray(ssize_t b3);
 };
@@ -1482,6 +1483,17 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //
 void IntBoolOpDsc::Reinit()
 {
+    start           = nullptr;
+    end             = nullptr;
+    ctsArrayLength  = 0;
+    lclVarArrLength = 0;
+}
+
+//-----------------------------------------------------------------------------
+// Free:   Procedure that frees IntBoolOpDsc reference
+//
+void IntBoolOpDsc::Free()
+{
     start = nullptr;
     end   = nullptr;
 
@@ -1633,7 +1645,7 @@ IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
 }
 
 //-----------------------------------------------------------------------------
-// TryOptimize:   Procedure that fold constant INT OR operations
+// TryOptimize:   Function that fold constant INT OR operations
 //
 // Arguments:
 //      compiler        compiler reference
@@ -1772,7 +1784,7 @@ GenTree* IntBoolOpDsc::GetLclVarArrayFirst()
 }
 
 //-----------------------------------------------------------------------------
-// AppendToLclVarArray:   Append the lcl var tree to lcl var arrays
+// AppendToLclVarArray:   Procedure that append the lcl var tree to lcl var arrays
 //
 // Arguments:
 //      tree        lcl var tree
@@ -1853,7 +1865,7 @@ unsigned int Compiler::TryOptimizeIntBoolOp(BasicBlock* b1)
                 result++;
             }
 
-            intBoolOpDsc.Reinit();
+            intBoolOpDsc.Free();
         }
     }
 
