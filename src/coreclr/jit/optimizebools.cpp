@@ -1841,8 +1841,8 @@ void IntBoolOpDsc::AppendToCtsArray(ssize_t cts)
 //      True if the block was folded and false elsewhere
 bool Compiler::TryOptimizeIntBoolOp(BasicBlock* b1)
 {
-    bool folded = false;
-    Statement*   b2     = b1->firstStmt();
+    bool       folded = false;
+    Statement* b2     = b1->firstStmt();
     if (b2 != nullptr)
     {
         GenTree* b3 = b2->GetRootNode();
