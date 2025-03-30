@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
 using Xunit;
 using Xunit.Sdk;
@@ -335,7 +336,9 @@ namespace System.Security.Cryptography.Tests
         {
             MLKemContract kem = new(MLKemAlgorithm.MLKem512);
             kem.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => kem.Encapsulate(out _));
+            Assert.Throws<ObjectDisposedException>(() => kem.Decapsulate(
+                new byte[kem.Algorithm.CiphertextSizeInBytes],
+                new byte[kem.Algorithm.SharedSecretSizeInBytes]));
         }
 
         [Theory]
@@ -375,6 +378,433 @@ namespace System.Security.Cryptography.Tests
             };
 
             kem.Decapsulate(ciphertextBuffer.Span, sharedSecretBuffer.Span);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void Decapsulate_Written_WrongCiphertextLength(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm);
+            AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
+                new byte[algorithm.CiphertextSizeInBytes - 1],
+                new byte[algorithm.SharedSecretSizeInBytes],
+                out _));
+
+            AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
+                new byte[algorithm.CiphertextSizeInBytes + 1],
+                new byte[algorithm.SharedSecretSizeInBytes],
+                out _));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void Decapsulate_Written_SharedSecretTooShort(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm);
+            AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Decapsulate(
+                new byte[algorithm.CiphertextSizeInBytes],
+                new byte[algorithm.SharedSecretSizeInBytes - 1],
+                out _));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void Decapsulate_Written_Diposed(MLKemAlgorithm algorithm)
+        {
+            MLKemContract kem = new(algorithm);
+            kem.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => kem.Decapsulate(
+                new byte[algorithm.CiphertextSizeInBytes],
+                new byte[algorithm.SharedSecretSizeInBytes],
+                out _));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void Decapsulate_Written_Oversized_Works(MLKemAlgorithm algorithm)
+        {
+            byte[] ciphertextBuffer = new byte[algorithm.CiphertextSizeInBytes];
+            byte[] sharedSecretBuffer = new byte[algorithm.SharedSecretSizeInBytes + 42];
+
+            using MLKemContract kem = new(algorithm)
+            {
+                OnDecapsulateCore = (ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
+                {
+                    AssertSameBuffer(ciphertextBuffer, ciphertext);
+                    AssertSameBuffer(sharedSecretBuffer.AsSpan(0, algorithm.SharedSecretSizeInBytes), sharedSecret);
+                }
+            };
+
+            kem.Decapsulate(ciphertextBuffer, sharedSecretBuffer, out int sharedSecretBytesWritten);
+            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecretBytesWritten);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void Decapsulate_Written_Exact_Works(MLKemAlgorithm algorithm)
+        {
+            byte[] ciphertextBuffer = new byte[algorithm.CiphertextSizeInBytes];
+            byte[] sharedSecretBuffer = new byte[algorithm.SharedSecretSizeInBytes];
+
+            using MLKemContract kem = new(algorithm)
+            {
+                OnDecapsulateCore = (ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
+                {
+                    AssertSameBuffer(ciphertextBuffer, ciphertext);
+                    AssertSameBuffer(sharedSecretBuffer, sharedSecret);
+                }
+            };
+
+            kem.Decapsulate(ciphertextBuffer, sharedSecretBuffer, out int sharedSecretBytesWritten);
+            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecretBytesWritten);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void Decapsulate_Allocated_NullCiphertext(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm);
+            AssertExtensions.Throws<ArgumentNullException>("ciphertext", () => kem.Decapsulate((byte[])null));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void Decapsulate_Allocated_CiphertextWrongSize(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm);
+
+            AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
+                new byte[algorithm.CiphertextSizeInBytes - 1]));
+
+            AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
+                new byte[algorithm.CiphertextSizeInBytes + 1]));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void Decapsulate_Allocated_Works(MLKemAlgorithm algorithm)
+        {
+            byte[] ciphertextBuffer = new byte[algorithm.CiphertextSizeInBytes];
+
+            using MLKemContract kem = new(algorithm)
+            {
+                OnDecapsulateCore = (ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
+                {
+                    AssertSameBuffer(ciphertextBuffer, ciphertext);
+                    sharedSecret.Fill(0x55);
+                }
+            };
+
+            byte[] sharedSecret = kem.Decapsulate(ciphertextBuffer);
+            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecret.Length);
+            AssertExtensions.FilledWith<byte>(0x55, sharedSecret);
+        }
+
+        [Fact]
+        public static void Decapsulate_Allocated_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem768);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() =>
+                kem.Decapsulate(new byte[MLKemAlgorithm.MLKem768.CiphertextSizeInBytes]));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ExportPrivateSeed_Written_WrongSize(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm);
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                kem.ExportPrivateSeed(new byte[algorithm.PrivateSeedSizeInBytes - 1]));
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                kem.ExportPrivateSeed(new byte[algorithm.PrivateSeedSizeInBytes + 1]));
+        }
+
+        [Fact]
+        public static void ExportPrivateSeed_Written_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem1024);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() =>
+                kem.ExportPrivateSeed(new byte[MLKemAlgorithm.MLKem1024.PrivateSeedSizeInBytes]));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ExportPrivateSeed_Written_Works(MLKemAlgorithm algorithm)
+        {
+            byte[] privateSeedBuffer = new byte[algorithm.PrivateSeedSizeInBytes];
+            using MLKemContract kem = new(algorithm)
+            {
+                 OnExportPrivateSeedCore = (Span<byte> destination) =>
+                 {
+                    AssertSameBuffer(privateSeedBuffer, destination);
+                 }
+            };
+
+            kem.ExportPrivateSeed(privateSeedBuffer);
+        }
+
+        [Fact]
+        public static void ExportPrivateSeed_Allocated_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem1024);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportPrivateSeed());
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ExportPrivateSeed_Allocated_Works(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm)
+            {
+                 OnExportPrivateSeedCore = (Span<byte> destination) =>
+                 {
+                    destination.Fill(0x42);
+                 }
+            };
+
+            byte[] exported = kem.ExportPrivateSeed();
+            AssertExtensions.FilledWith<byte>(0x42, exported);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ExportDecapsulationKey_Written_WrongSize(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm);
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                kem.ExportDecapsulationKey(new byte[algorithm.DecapsulationKeySizeInBytes - 1]));
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                kem.ExportDecapsulationKey(new byte[algorithm.DecapsulationKeySizeInBytes + 1]));
+        }
+
+        [Fact]
+        public static void ExportDecapsulationKey_Written_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem1024);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() =>
+                kem.ExportDecapsulationKey(new byte[MLKemAlgorithm.MLKem1024.DecapsulationKeySizeInBytes]));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ExportDecapsulationKey_Written_Works(MLKemAlgorithm algorithm)
+        {
+            byte[] privateSeedBuffer = new byte[algorithm.DecapsulationKeySizeInBytes];
+            using MLKemContract kem = new(algorithm)
+            {
+                 OnExportDecapsulationKeyCore = (Span<byte> destination) =>
+                 {
+                    AssertSameBuffer(privateSeedBuffer, destination);
+                 }
+            };
+
+            kem.ExportDecapsulationKey(privateSeedBuffer);
+        }
+
+        [Fact]
+        public static void ExportDecapsulationKey_Allocated_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem1024);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportDecapsulationKey());
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ExportDecapsulationKey_Allocated_Works(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm)
+            {
+                 OnExportDecapsulationKeyCore = (Span<byte> destination) =>
+                 {
+                    destination.Fill(0x42);
+                 }
+            };
+
+            byte[] exported = kem.ExportDecapsulationKey();
+            AssertExtensions.FilledWith<byte>(0x42, exported);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ExportEncapsulationKey_Written_WrongSize(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm);
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                kem.ExportEncapsulationKey(new byte[algorithm.EncapsulationKeySizeInBytes - 1]));
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                kem.ExportEncapsulationKey(new byte[algorithm.EncapsulationKeySizeInBytes + 1]));
+        }
+
+        [Fact]
+        public static void ExportEncapsulationKey_Written_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem1024);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() =>
+                kem.ExportEncapsulationKey(new byte[MLKemAlgorithm.MLKem1024.EncapsulationKeySizeInBytes]));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ExportEncapsulationKey_Written_Works(MLKemAlgorithm algorithm)
+        {
+            byte[] privateSeedBuffer = new byte[algorithm.EncapsulationKeySizeInBytes];
+            using MLKemContract kem = new(algorithm)
+            {
+                 OnExportEncapsulationKeyCore = (Span<byte> destination) =>
+                 {
+                    AssertSameBuffer(privateSeedBuffer, destination);
+                 }
+            };
+
+            kem.ExportEncapsulationKey(privateSeedBuffer);
+        }
+
+        [Fact]
+        public static void ExportEncapsulationKey_Allocated_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem1024);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportEncapsulationKey());
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ExportEncapsulationKey_Allocated_Works(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm)
+            {
+                 OnExportEncapsulationKeyCore = (Span<byte> destination) =>
+                 {
+                    destination.Fill(0x42);
+                 }
+            };
+
+            byte[] exported = kem.ExportEncapsulationKey();
+            AssertExtensions.FilledWith<byte>(0x42, exported);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void TryExportSubjectPublicKeyInfo_Buffers(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm)
+            {
+                 OnExportEncapsulationKeyCore = (Span<byte> destination) =>
+                 {
+                    destination.Fill(0x42);
+                    Assert.Equal(algorithm.EncapsulationKeySizeInBytes, destination.Length);
+                 }
+            };
+
+            byte[] destination = new byte[2048];
+            destination.AsSpan().Fill(0xFF);
+            AssertExtensions.TrueExpression(kem.TryExportSubjectPublicKeyInfo(destination, out int written));
+            ReadSubjectPublicKeyInfo(
+                destination.AsMemory(0, written),
+                out string oid,
+                out ReadOnlyMemory<byte>? parameters,
+                out ReadOnlyMemory<byte> publicKey);
+
+            Assert.Equal(oid, MapAlgorithmOid(algorithm));
+            AssertExtensions.FalseExpression(parameters.HasValue);
+            AssertExtensions.FilledWith<byte>(0x42, publicKey.Span);
+            AssertExtensions.FilledWith<byte>(0xFF, destination.AsSpan(written));
+        }
+
+        [Fact]
+        public static void TryExportSubjectPublicKeyInfo_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => kem.TryExportSubjectPublicKeyInfo([], out _));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ExportSubjectPublicKeyInfo_Allocated(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm)
+            {
+                 OnExportEncapsulationKeyCore = (Span<byte> destination) =>
+                 {
+                    destination.Fill(0x42);
+                    Assert.Equal(algorithm.EncapsulationKeySizeInBytes, destination.Length);
+                 }
+            };
+
+            byte[] spki = kem.ExportSubjectPublicKeyInfo();
+            ReadSubjectPublicKeyInfo(
+                spki,
+                out string oid,
+                out ReadOnlyMemory<byte>? parameters,
+                out ReadOnlyMemory<byte> publicKey);
+
+            Assert.Equal(oid, MapAlgorithmOid(algorithm));
+            AssertExtensions.FalseExpression(parameters.HasValue);
+            AssertExtensions.FilledWith<byte>(0x42, publicKey.Span);
+        }
+
+        [Fact]
+        public static void ExportSubjectPublicKeyInfo_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportSubjectPublicKeyInfo());
+        }
+
+        private static string MapAlgorithmOid(MLKemAlgorithm algorithm)
+        {
+            if (algorithm == MLKemAlgorithm.MLKem512)
+            {
+                return "2.16.840.1.101.3.4.4.1";
+            }
+            else if (algorithm == MLKemAlgorithm.MLKem768)
+            {
+                return "2.16.840.1.101.3.4.4.2";
+            }
+            else if (algorithm == MLKemAlgorithm.MLKem1024)
+            {
+                return "2.16.840.1.101.3.4.4.3";
+            }
+
+            Assert.Fail($"Unknown algorithm {algorithm.Name}.");
+            return null;
+        }
+
+        private static void ReadSubjectPublicKeyInfo(
+            ReadOnlyMemory<byte> source,
+            out string oid,
+            out ReadOnlyMemory<byte>? algorithmParameters,
+            out ReadOnlyMemory<byte> subjectPublicKey)
+        {
+            AsnReader outer = new(source, AsnEncodingRules.DER);
+            AsnReader reader = outer.ReadSequence();
+            outer.ThrowIfNotEmpty();
+
+            AsnReader spkiAlgorithm = reader.ReadSequence();
+            oid = spkiAlgorithm.ReadObjectIdentifier();
+
+            if (spkiAlgorithm.HasData)
+            {
+                algorithmParameters = spkiAlgorithm.ReadEncodedValue();
+            }
+            else
+            {
+                algorithmParameters = null;
+            }
+
+            spkiAlgorithm.ThrowIfNotEmpty();
+
+            AssertExtensions.TrueExpression(reader.TryReadPrimitiveBitString(out int unusedBits, out subjectPublicKey));
+            reader.ThrowIfNotEmpty();
+            Assert.Equal(0, unusedBits);
         }
 
         private static void AssertSameBuffer(ReadOnlySpan<byte> buffer1, ReadOnlySpan<byte> buffer2)
@@ -483,7 +913,7 @@ namespace System.Security.Cryptography.Tests
         {
             if (_disposed)
             {
-                Assert.Fail($"Unexpected call to ${caller} after Dispose.");
+                Assert.Fail($"Unexpected call to {caller} after Dispose.");
             }
 
             return callback ?? throw new XunitException($"Unexpected call to {caller}.");
