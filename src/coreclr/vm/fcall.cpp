@@ -65,48 +65,6 @@ NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, 
     return NULL;
 }
 
-/**************************************************************************************/
-/* erect a frame in the FCALL and then poll the GC, objToProtect will be protected
-   during the poll and the updated object returned.  */
-
-NOINLINE Object* FC_GCPoll(void* __me, Object* objToProtect)
-{
-    CONTRACTL {
-        THROWS;
-        // This isn't strictly true... But the guarantee that we make here is
-        // that we won't trigger without having setup a frame.
-        UNCHECKED(GC_NOTRIGGER);
-    } CONTRACTL_END;
-
-    FC_CAN_TRIGGER_GC();
-    INCONTRACT(FCallCheck __fCallCheck(__FILE__, __LINE__));
-
-    Thread  *thread = GetThread();
-    if (thread->CatchAtSafePoint())    // Does someone want this thread stopped?
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objToProtect);
-
-#ifdef _DEBUG
-        BOOL GCOnTransition = FALSE;
-        if (g_pConfig->FastGCStressLevel()) {
-            GCOnTransition = GC_ON_TRANSITIONS (FALSE);
-        }
-#endif
-        CommonTripThread();
-#ifdef _DEBUG
-        if (g_pConfig->FastGCStressLevel()) {
-            GC_ON_TRANSITIONS (GCOnTransition);
-        }
-#endif
-
-        HELPER_METHOD_FRAME_END();
-    }
-
-    FC_CAN_TRIGGER_GC_END();
-
-    return objToProtect;
-}
-
 #ifdef ENABLE_CONTRACTS
 
 /**************************************************************************************/
@@ -177,20 +135,6 @@ DEBUG_NOINLINE FCallCheck::~FCallCheck()
     //
     //      Call    HELPER_METHOD_POLL()
     //      or use  HELPER_METHOD_FRAME_END_POLL
-    //
-    // If you don't have a helper frame you can used
-    //
-    //      FC_GC_POLL_AND_RETURN_OBJREF        or
-    //      FC_GC_POLL                          or
-    //      FC_GC_POLL_RET
-    //
-    // Note that these must be at GC safe points.  In particular
-    // all object references that are NOT protected will be trashed.
-
-
-    // There is a special poll called FC_GC_POLL_NOT_NEEDED
-    // which says the code path is short enough that a GC poll is not need
-    // you should not use this in most cases.
 
     _ASSERTE(unbreakableLockCount == m_pThread->GetUnbreakableLockCount() ||
              (!m_pThread->HasUnbreakableLock() && !m_pThread->HasThreadStateNC(Thread::TSNC_OwnsSpinLock)));
