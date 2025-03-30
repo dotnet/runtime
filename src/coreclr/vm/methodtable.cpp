@@ -8227,6 +8227,8 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             {
                 differsByAsyncVariant = true;
                 pMethodDecl = pMethodDecl->GetAsyncOtherVariant();
+                if (verifyImplemented)
+                    return pMethodDecl;
             }
             else
             {
