@@ -3719,6 +3719,8 @@ MethodTableBuilder::EnumerateClassMethods()
                     type,
                     implType);
 
+                _ASSERTE(pNewMethod->IsAsync2Variant());
+
                 pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
                 pDeclaredMethod->SetAsyncOtherVariant(pNewMethod);
             }
