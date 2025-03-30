@@ -42,6 +42,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>TextUtf8RawTextWriter.tt</DependentUpon>
     </Compile>
+    <Compile Include="System\Xml\Xsl\Runtime\XsltMethods.cs" />
     <None Include="System\Xml\Core\HtmlEncodedRawTextWriter.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>HtmlEncodedRawTextWriter.cs</LastGenOutput>
