@@ -5,8 +5,16 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    public class SlhDsaConstructionTests : SlhDsaTestsBase
+    public sealed class SlhDsaDefaultConstructionTests : SlhDsaConstructionTestsBase
     {
+        protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) => SlhDsa.GenerateKey(algorithm);
+        protected override SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> seed) =>
+            SlhDsa.ImportSlhDsaPrivateSeed(algorithm, seed);
+        protected override SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+            SlhDsa.ImportSlhDsaPublicKey(algorithm, source);
+        protected override SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+            SlhDsa.ImportSlhDsaSecretKey(algorithm, source);
+
         [Fact]
         public static void NullArgumentValidation()
         {
@@ -17,7 +25,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AlgorithmsData))]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public static void ArgumentValidation(SlhDsaAlgorithm algorithm)
         {
             int publicKeySize = algorithm.PublicKeySizeInBytes;
@@ -34,8 +42,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             // TODO add remaining imports
         }
 
-        [ConditionalTheory(nameof(NotSupportedOnPlatform))]
-        [MemberData(nameof(AlgorithmsData))]
+        [ConditionalTheory(typeof(SlhDsaTestData), nameof(SlhDsaTestData.IsNotSupported))]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public static void ThrowIfNotSupported_NonNullArguments(SlhDsaAlgorithm algorithm)
         {
             // The private seed and public key sizes are both smaller so this can be used for all three:
@@ -54,18 +62,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<PlatformNotSupportedException>(() => SlhDsa.ImportSubjectPublicKeyInfo(ReadOnlySpan<byte>.Empty));
         }
 
-        [ConditionalTheory(nameof(SupportedOnPlatform))]
-        [MemberData(nameof(AlgorithmsData))]
-        public static void AlgorithmMatches(SlhDsaAlgorithm algorithm)
-        {
-            using SlhDsa slhDsa = SlhDsa.GenerateKey(algorithm);
-            Assert.Equal(algorithm, slhDsa.Algorithm);
-
-            // TODO add remaining imports
-        }
-
-        [ConditionalTheory(nameof(SupportedOnPlatform))]
-        [MemberData(nameof(AlgorithmsData))]
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public static void SlhDsaIsOnlyPublicAncestor(SlhDsaAlgorithm algorithm)
         {
             AssertSlhDsaIsOnlyPublicAncestor(() => SlhDsa.GenerateKey(algorithm));

@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Tests
 
         private static bool PlatformSupportsMLKem()
         {
-            if (PlatformDetection.IsOpenSslSupported && PlatformDetection.OpenSslVersion >= new Version(3, 5))
+            if (PlatformDetection.IsOpenSsl3_5)
             {
                 return true;
             }

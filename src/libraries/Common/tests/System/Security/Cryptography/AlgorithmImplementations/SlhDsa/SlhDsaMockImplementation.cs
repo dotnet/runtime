@@ -8,16 +8,16 @@ namespace System.Security.Cryptography.SLHDsa.Tests
     /// <summary>
     /// Instrumented derived class for testing the base functionality of <see cref="SlhDsa"/>.
     /// </summary>
-    internal sealed class SlhDsaTestImplementation : SlhDsa
+    internal sealed class SlhDsaMockImplementation : SlhDsa
     {
         /// <summary>
         /// Creates an instance of SlhDsaTestImplementation with all virtual methods overridden with a call to Assert.Fail.
         /// </summary>
         /// <param name="algorithm">Specifies the algorithm used for the test implementation.</param>
         /// <returns>Returns a configured instance of SlhDsaTestImplementation.</returns>
-        internal static SlhDsaTestImplementation CreateOverriddenCoreMethodsFail(SlhDsaAlgorithm algorithm)
+        internal static SlhDsaMockImplementation CreateOverriddenCoreMethodsFail(SlhDsaAlgorithm algorithm)
         {
-            return new SlhDsaTestImplementation(algorithm)
+            return new SlhDsaMockImplementation(algorithm)
             {
                 ExportSlhDsaPrivateSeedCoreHook = _ => Assert.Fail(),
                 ExportSlhDsaPublicKeyCoreHook = _ => Assert.Fail(),
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             };
         }
 
-        public SlhDsaTestImplementation(SlhDsaAlgorithm algorithm)
+        public SlhDsaMockImplementation(SlhDsaAlgorithm algorithm)
             : base(algorithm)
         {
         }
