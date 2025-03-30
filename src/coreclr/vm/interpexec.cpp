@@ -7,6 +7,8 @@
 
 #include "interpexec.h"
 
+typedef void* (*HELPER_FTN_PP)(void*);
+
 thread_local InterpThreadContext *t_pThreadContext = NULL;
 
 InterpThreadContext* InterpGetThreadContext()
@@ -507,7 +509,14 @@ MAIN_LOOP:
                 LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) + LOCAL_VAR(ip[3], double);
                 ip += 4;
                 break;
-
+            case INTOP_ADD_I4_IMM:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) + ip[3];
+                ip += 4;
+                break;
+            case INTOP_ADD_I8_IMM:
+                LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) + ip[3];
+                ip += 4;
+                break;
             case INTOP_SUB_I4:
                 LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) - LOCAL_VAR(ip[3], int32_t);
                 ip += 4;
@@ -813,6 +822,23 @@ MAIN_LOOP:
                 NULL_CHECK(src);
                 LOCAL_VAR(ip[1], char*) = src + ip[3];
                 ip += 4;
+                break;
+            }
+
+            case INTOP_CALL_HELPER_PP:
+            {
+                HELPER_FTN_PP helperFtn = (HELPER_FTN_PP)pMethod->pDataItems[ip[2]];
+                HELPER_FTN_PP* helperFtnSlot = (HELPER_FTN_PP*)pMethod->pDataItems[ip[3]];
+                void* helperArg = pMethod->pDataItems[ip[4]];
+
+                if (!helperFtn)
+                    helperFtn = *helperFtnSlot;
+                // This can call either native or compiled managed code. For an interpreter
+                // only configuration, this might be problematic, at least performance wise.
+                // FIXME We will need to handle exception throwing here.
+                LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+
+                ip += 5;
                 break;
             }
 

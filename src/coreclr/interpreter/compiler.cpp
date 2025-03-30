@@ -1592,7 +1592,7 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
 
 }
 
-void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo)
+void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
 {
     switch (pFieldInfo->fieldAccessor)
     {
@@ -1607,6 +1607,50 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo)
             m_pLastIns->data[0] = GetDataItemIndex(pFieldInfo->fieldLookup.addr);
             break;
         }
+        case CORINFO_FIELD_STATIC_TLS_MANAGED:
+        case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
+        {
+            void *helperArg = NULL;
+            switch (pFieldInfo->helper)
+            {
+                case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+                case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+                case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
+                    helperArg = (void*)(size_t)m_compHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
+                    break;
+                case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+                    helperArg = (void*)(size_t)m_compHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
+                    break;
+                case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+                case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+                case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+                case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+                    helperArg = (void*)m_compHnd->getClassThreadStaticDynamicInfo(pResolvedToken->hClass);
+                    break;
+                default:
+                    // TODO
+                    assert(0);
+                    break;
+            }
+            void *helperFtnSlot;
+            void *helperFtn = m_compHnd->getHelperFtn(pFieldInfo->helper, &helperFtnSlot);
+            // Call helper to obtain thread static base address
+            AddIns(INTOP_CALL_HELPER_PP);
+            m_pLastIns->data[0] = GetDataItemIndex(helperFtn);
+            m_pLastIns->data[1] = GetDataItemIndex(helperFtnSlot);
+            m_pLastIns->data[2] = GetDataItemIndex(helperArg);
+            PushInterpType(InterpTypeByRef, NULL);
+            m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+
+            // Add field offset
+            m_pStackPointer--;
+            AddIns(INTOP_ADD_P_IMM);
+            m_pLastIns->data[0] = (int32_t)pFieldInfo->offset;
+            m_pLastIns->SetSVar(m_pStackPointer[0].var);
+            PushInterpType(InterpTypeByRef, NULL);
+            m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+            break;
+        }
         default:
             // TODO
             assert(0);
@@ -1614,9 +1658,9 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo)
     }
 }
 
-void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, bool isLoad)
+void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad)
 {
-    EmitStaticFieldAddress(pFieldInfo);
+    EmitStaticFieldAddress(pFieldInfo, pResolvedToken);
     if (isLoad)
         EmitLdind(interpFieldType, pFieldInfo->structType, 0);
     else
@@ -2501,7 +2545,7 @@ retry_emit:
                 {
                     // Pop unused object reference
                     m_pStackPointer--;
-                    EmitStaticFieldAddress(&fieldInfo);
+                    EmitStaticFieldAddress(&fieldInfo, &resolvedToken);
                 }
                 else
                 {
@@ -2534,7 +2578,7 @@ retry_emit:
                 {
                     // Pop unused object reference
                     m_pStackPointer--;
-                    EmitStaticFieldAccess(interpFieldType, &fieldInfo, true);
+                    EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, true);
                 }
                 else
                 {
@@ -2591,7 +2635,7 @@ retry_emit:
 
                 if (isStatic)
                 {
-                    EmitStaticFieldAccess(interpFieldType, &fieldInfo, false);
+                    EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, false);
                     // Pop the unused object reference
                     m_pStackPointer--;
                 }
@@ -2612,7 +2656,7 @@ retry_emit:
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
 
-                EmitStaticFieldAddress(&fieldInfo);
+                EmitStaticFieldAddress(&fieldInfo, &resolvedToken);
 
                 m_ip += 5;
                 break;
@@ -2628,7 +2672,7 @@ retry_emit:
                 CorInfoType fieldType = fieldInfo.fieldType;
                 InterpType interpFieldType = GetInterpType(fieldType);
 
-                EmitStaticFieldAccess(interpFieldType, &fieldInfo, true);
+                EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, true);
 
                 if (volatile_)
                     assert(0); // FIXME Acquire membar
@@ -2650,7 +2694,7 @@ retry_emit:
                 if (volatile_)
                     assert(0); // FIXME Release membar
 
-                EmitStaticFieldAccess(interpFieldType, &fieldInfo, false);
+                EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, false);
                 m_ip += 5;
                 break;
             }

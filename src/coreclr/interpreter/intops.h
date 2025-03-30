@@ -43,11 +43,13 @@ int CEEOpcodeSize(const uint8_t *ip, const uint8_t *codeEnd);
 #define INTOP_LDNULL INTOP_LDC_I8_0
 #define INTOP_LDIND_I INTOP_LDIND_I8
 #define INTOP_STIND_I INTOP_STIND_I8
+#define INTOP_ADD_P_IMM INTOP_ADD_I8_IMM
 #else
 #define INTOP_MOV_P INTOP_MOV_4
 #define INTOP_LDNULL INTOP_LDC_I4_0
 #define INTOP_LDIND_I INTOP_LDIND_I4
 #define INTOP_STIND_I INTOP_STIND_I4
+#define INTOP_ADD_P_IMM INTOP_ADD_I4_IMM
 #endif
 
 static inline bool InterpOpIsEmitNop(int32_t opcode)

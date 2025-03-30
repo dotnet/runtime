@@ -133,6 +133,9 @@ OPDEF(INTOP_CONV_U8_R4, "conv.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U8_R8, "conv.u8.r8", 3, 1, 1, InterpOpNoArgs)
 // Unary operations end
 
+OPDEF(INTOP_ADD_I4_IMM, "add.i4.imm", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_ADD_I8_IMM, "add.i8.imm", 4, 1, 1, InterpOpInt)
+
 // Binary operations
 
 OPDEF(INTOP_ADD_I4, "add.i4", 4, 1, 2, InterpOpNoArgs)
@@ -222,6 +225,8 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodToken)
 OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodToken)
 OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodToken)
+
+OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 5, 1, 0, InterpOpThreeInts)
 
 OPDEF(INTOP_FAILFAST, "failfast", 1, 0, 0, InterpOpNoArgs)
 
