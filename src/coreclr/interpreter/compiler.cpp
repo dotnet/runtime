@@ -2705,6 +2705,106 @@ retry_emit:
                 m_ip += 5;
                 break;
             }
+            case CEE_LDIND_I1:
+            case CEE_LDIND_U1:
+            case CEE_LDIND_I2:
+            case CEE_LDIND_U2:
+            case CEE_LDIND_I4:
+            case CEE_LDIND_U4:
+            case CEE_LDIND_I8:
+            case CEE_LDIND_I:
+            case CEE_LDIND_R4:
+            case CEE_LDIND_R8:
+            case CEE_LDIND_REF:
+            {
+                InterpType interpType = InterpTypeVoid;
+                switch(opcode)
+                {
+                    case CEE_LDIND_I1:
+                        interpType = InterpTypeI1;
+                        break;
+                    case CEE_LDIND_U1:
+                        interpType = InterpTypeU1;
+                        break;
+                    case CEE_LDIND_I2:
+                        interpType = InterpTypeI2;
+                        break;
+                    case CEE_LDIND_U2:
+                        interpType = InterpTypeU2;
+                        break;
+                    case CEE_LDIND_I4:
+                    case CEE_LDIND_U4:
+                        interpType = InterpTypeI4;
+                        break;
+                    case CEE_LDIND_I8:
+                        interpType = InterpTypeI8;
+                        break;
+                    case CEE_LDIND_I:
+                        interpType = InterpTypeI;
+                        break;
+                    case CEE_LDIND_R4:
+                        interpType = InterpTypeR4;
+                        break;
+                    case CEE_LDIND_R8:
+                        interpType = InterpTypeR8;
+                        break;
+                    case CEE_LDIND_REF:
+                        interpType = InterpTypeO;
+                        break;
+                    default:
+                        assert(0);
+                }
+                EmitLdind(interpType, NULL, 0);
+                if (volatile_)
+                    assert(0); // FIXME Acquire membar
+                m_ip++;
+                break;
+            }
+            case CEE_STIND_I1:
+            case CEE_STIND_I2:
+            case CEE_STIND_I4:
+            case CEE_STIND_I8:
+            case CEE_STIND_I:
+            case CEE_STIND_R4:
+            case CEE_STIND_R8:
+            case CEE_STIND_REF:
+            {
+                InterpType interpType = InterpTypeVoid;
+                switch(opcode)
+                {
+                    case CEE_STIND_I1:
+                        interpType = InterpTypeI1;
+                        break;
+                    case CEE_STIND_I2:
+                        interpType = InterpTypeI2;
+                        break;
+                    case CEE_STIND_I4:
+                        interpType = InterpTypeI4;
+                        break;
+                    case CEE_STIND_I8:
+                        interpType = InterpTypeI8;
+                        break;
+                    case CEE_STIND_I:
+                        interpType = InterpTypeI;
+                        break;
+                    case CEE_STIND_R4:
+                        interpType = InterpTypeR4;
+                        break;
+                    case CEE_STIND_R8:
+                        interpType = InterpTypeR8;
+                        break;
+                    case CEE_STIND_REF:
+                        interpType = InterpTypeO;
+                        break;
+                    default:
+                        assert(0);
+                }
+                if (volatile_)
+                    assert(0); // FIXME Release membar
+                EmitStind(interpType, NULL, 0, false);
+                m_ip++;
+                break;
+            }
             case CEE_PREFIX1:
                 m_ip++;
                 switch (*m_ip + 256)
