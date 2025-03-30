@@ -5386,7 +5386,7 @@ public:
     FoldResult fgFoldConditional(BasicBlock* block);
 
     bool fgFoldCondToReturnBlock(BasicBlock* block);
-    unsigned int TryOptimizeIntBoolOp(BasicBlock* block);
+    bool TryOptimizeIntBoolOp(BasicBlock* block);
 
     struct MorphUnreachableInfo
     {

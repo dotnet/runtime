@@ -1647,10 +1647,6 @@ IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
 //-----------------------------------------------------------------------------
 // TryOptimize:   Function that fold constant INT OR operations
 //
-// Arguments:
-//      compiler        compiler reference
-//      intBoolOpDsc    the reference for INT OR operations to be folded
-//
 // Return:
 //      True if it could optimize the operation and false elsewhere
 //
@@ -1810,7 +1806,7 @@ void IntBoolOpDsc::AppendToLclVarArray(GenTree* tree)
 }
 
 //-----------------------------------------------------------------------------
-// AppendToCtsArray:   Append the constant to constant arrays
+// AppendToCtsArray:   Procedure that appends the constant to constant arrays
 //
 // Arguments:
 //      cts        constant value
@@ -1839,14 +1835,13 @@ void IntBoolOpDsc::AppendToCtsArray(ssize_t cts)
 // TryOptimizeIntBoolOp:   Procedure that looks for constant INT OR operations to fold and if found, folds them
 //
 // Arguments:
-//      compiler        compiler reference
 //      b1              the block code to inspect for operations to fold
 //
 // Return:
-//      1 if a block was folded, 0 if not
-unsigned int Compiler::TryOptimizeIntBoolOp(BasicBlock* b1)
+//      True if the block was folded and false elsewhere
+bool Compiler::TryOptimizeIntBoolOp(BasicBlock* b1)
 {
-    unsigned int result = 0;
+    bool folded = false;
     Statement*   b2     = b1->firstStmt();
     if (b2 != nullptr)
     {
@@ -1862,14 +1857,14 @@ unsigned int Compiler::TryOptimizeIntBoolOp(BasicBlock* b1)
                     b2->SetTreeList(intBoolOpDsc.GetLclVarArrayFirst());
                 }
 
-                result++;
+                folded = true;
             }
 
             intBoolOpDsc.Free();
         }
     }
 
-    return result;
+    return folded;
 }
 
 //-----------------------------------------------------------------------------
@@ -2041,7 +2036,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             if (b1->KindIs(BBJ_RETURN))
             {
-                if (TryOptimizeIntBoolOp(b1) > 0)
+                if (TryOptimizeIntBoolOp(b1))
                 {
                     numCond++;
                     retry = true;
