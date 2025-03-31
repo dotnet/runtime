@@ -1941,10 +1941,10 @@ namespace ILCompiler
                         && parameters[0] is ArrayInstance array
                         && parameters[1] is RuntimeFieldHandleValue fieldHandle
                         && fieldHandle.Field.IsStatic && fieldHandle.Field.HasRva
-                        && fieldHandle.Field is Internal.TypeSystem.Ecma.EcmaField ecmaField)
+                        && fieldHandle.Field is Internal.TypeSystem.Ecma.EcmaField ecmaField
+                        && Internal.TypeSystem.Ecma.EcmaFieldExtensions.TryGetFieldRvaData(ecmaField, out byte[] arrayRvaData))
                     {
-                        byte[] rvaData = Internal.TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(ecmaField);
-                        return array.TryInitialize(rvaData);
+                        return array.TryInitialize(arrayRvaData);
                     }
                     return false;
                 case "CreateSpan":
@@ -1954,14 +1954,14 @@ namespace ILCompiler
                         && parameters[0] is RuntimeFieldHandleValue createSpanFieldHandle
                         && createSpanFieldHandle.Field.IsStatic && createSpanFieldHandle.Field.HasRva
                         && createSpanFieldHandle.Field is Internal.TypeSystem.Ecma.EcmaField createSpanEcmaField
-                        && method.Instantiation[0].IsValueType)
+                        && method.Instantiation[0].IsValueType
+                        && Internal.TypeSystem.Ecma.EcmaFieldExtensions.TryGetFieldRvaData(createSpanEcmaField, out byte[] spanRvaData))
                     {
                         var elementType = (MetadataType)method.Instantiation[0];
                         int elementSize = elementType.InstanceFieldSize.AsInt;
-                        byte[] rvaData = Internal.TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(createSpanEcmaField);
-                        if (rvaData.Length % elementSize != 0)
+                        if (spanRvaData.Length % elementSize != 0)
                             return false;
-                        retVal = new ReadOnlySpanValue(elementType, rvaData, 0, rvaData.Length);
+                        retVal = new ReadOnlySpanValue(elementType, spanRvaData, 0, spanRvaData.Length);
                         return true;
                     }
                     return false;

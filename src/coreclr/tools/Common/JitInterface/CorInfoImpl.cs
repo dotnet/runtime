@@ -4480,9 +4480,10 @@ namespace Internal.JitInterface
             Debug.Assert(field.IsStatic);
             Debug.Assert(field.HasRva);
 
-            if (!field.IsThreadStatic && field.IsInitOnly && field is EcmaField ecmaField)
+            if (!field.IsThreadStatic && field.IsInitOnly && field is EcmaField ecmaField
+                && ecmaField.TryGetFieldRvaData(out byte[] rvaDataBytes))
             {
-                ReadOnlySpan<byte> rvaData = ecmaField.GetFieldRvaData();
+                ReadOnlySpan<byte> rvaData = rvaDataBytes;
                 if (rvaData.Length >= bufferSize && valueOffset <= rvaData.Length - bufferSize)
                 {
                     rvaData.Slice(valueOffset, bufferSize).CopyTo(new Span<byte>(buffer, bufferSize));

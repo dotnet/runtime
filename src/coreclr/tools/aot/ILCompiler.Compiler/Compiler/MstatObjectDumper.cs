@@ -78,7 +78,7 @@ namespace ILCompiler
                 case FieldRvaDataNode rvaDataNode:
                     _fieldRvas.OpCode(ILOpCode.Ldtoken);
                     _fieldRvas.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(rvaDataNode.Field));
-                    _fieldRvas.LoadConstantI4(rvaDataNode.Field.GetFieldRvaData().Length);
+                    _fieldRvas.LoadConstantI4(rvaDataNode.Field.FieldType.GetElementSize().AsInt);
                     _fieldRvas.LoadConstantI4(AppendMangledName(DependencyNodeCore<NodeFactory>.GetNodeName(node, factory)));
                     // Breakdown of RVA data was introduced in MSTAT 2.1. Readers of 2.0 should still see it in the
                     // global blobs section. We can remove it from there in 3.0.
