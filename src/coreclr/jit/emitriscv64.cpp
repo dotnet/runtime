@@ -5194,11 +5194,10 @@ unsigned emitter::get_curTotalCodeSize()
 //    are NOT accurate and just a function feature.
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    insExecutionCharacteristics result = {
-        .insThroughput       = PERFSCORE_LATENCY_1C,
-        .insLatency          = PERFSCORE_THROUGHPUT_1C,
-        .insMemoryAccessKind = PERFSCORE_MEMORY_NONE,
-    };
+    insExecutionCharacteristics result;
+    result.insThroughput       = PERFSCORE_LATENCY_1C;
+    result.insLatency          = PERFSCORE_THROUGHPUT_1C;
+    result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
 
     unsigned codeSize = id->idCodeSize();
     assert((codeSize >= 4) && (codeSize % sizeof(code_t) == 0));
