@@ -324,7 +324,7 @@ namespace System.Net.Http.Headers
             return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, CultureInfo.InvariantCulture, out result);
         }
 
-        internal static void DumpHeaders(StringBuilder sb, params HttpHeaders?[] headers)
+        internal static void DumpHeaders(ref ValueStringBuilder sb, params HttpHeaders?[] headers)
         {
             // Appends all headers as string similar to:
             // {
@@ -333,22 +333,14 @@ namespace System.Net.Http.Headers
             //    HeaderName2: Value1
             //    ...
             // }
-            sb.AppendLine("{");
+            sb.Append('{');
+            sb.Append(Environment.NewLine);
 
             for (int i = 0; i < headers.Length; i++)
             {
                 if (headers[i] is HttpHeaders hh)
                 {
-                    foreach (KeyValuePair<string, HeaderStringValues> header in hh.NonValidated)
-                    {
-                        foreach (string headerValue in header.Value)
-                        {
-                            sb.Append("  ");
-                            sb.Append(header.Key);
-                            sb.Append(": ");
-                            sb.AppendLine(headerValue);
-                        }
-                    }
+                    hh.Dump(ref sb, indentLines: true);
                 }
             }
 
