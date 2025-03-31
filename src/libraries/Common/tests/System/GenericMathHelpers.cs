@@ -463,6 +463,14 @@ namespace System
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, provider, out result);
     }
 
+    public static class Utf8SpanParsableHelper<TSelf>
+        where TSelf : IUtf8SpanParsable<TSelf>
+    {
+        public static TSelf Parse(ReadOnlySpan<byte> s, IFormatProvider provider) => TSelf.Parse(s, provider);
+
+        public static bool TryParse(ReadOnlySpan<byte> s, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, provider, out result);
+    }
+
     public static class SubtractionOperatorsHelper<TSelf, TOther, TResult>
         where TSelf : ISubtractionOperators<TSelf, TOther, TResult>
     {
