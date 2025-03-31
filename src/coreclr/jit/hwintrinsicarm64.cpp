@@ -2674,6 +2674,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_Truncate:
         case NI_Vector64_Truncate:
         case NI_Vector128_Truncate:
         {
