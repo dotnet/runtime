@@ -2142,6 +2142,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_MultiplyAddEstimate:
         case NI_Vector64_MultiplyAddEstimate:
         case NI_Vector128_MultiplyAddEstimate:
         {

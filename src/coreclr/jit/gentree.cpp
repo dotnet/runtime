@@ -23504,6 +23504,10 @@ GenTree* Compiler::gtNewSimdFmaNode(
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
+#if defined(TARGET_ARM64)
+    intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(simdSize, intrinsic);
+#endif
+
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
 }
@@ -28983,6 +28987,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
                 break;
             case NI_AdvSimd_Arm64_Divide:
                 sveId = NI_Sve_Divide;
+                break;
+            case NI_AdvSimd_FusedMultiplyAdd:
+            case NI_AdvSimd_Arm64_FusedMultiplyAdd:
+                sveId = NI_Sve_FusedMultiplyAdd;
                 break;
             case NI_AdvSimd_Max:
             case NI_AdvSimd_Arm64_Max:
