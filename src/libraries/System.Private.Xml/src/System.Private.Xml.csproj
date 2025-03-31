@@ -431,8 +431,8 @@
     <Compile Include="System\Xml\Schema\XmlTypeCode.cs" />
     <Compile Include="System\Xml\Schema\XmlValueConverter.cs" />
     <Compile Include="System\Xml\Schema\XsdBuilder.cs" />
-    <Compile Include="System\Xml\Schema\XsdDateTime.cs" />
-    <Compile Include="System\Xml\Schema\XsdDuration.cs" />
+    <Compile Include="System\Xml\Schema\DateAndTime\XsdDateTime.cs" />
+    <Compile Include="System\Xml\Schema\DateAndTime\XsdDuration.cs" />
     <Compile Include="System\Xml\Schema\XsdValidator.cs" />
     <Compile Include="System\Xml\Schema\Inference\Infer.cs" />
     <Compile Include="System\Xml\Schema\Inference\XmlSchemaInferenceException.cs" />

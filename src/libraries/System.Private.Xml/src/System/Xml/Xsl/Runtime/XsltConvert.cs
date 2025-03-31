@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Xml.Schema;
+using System.Xml.Schema.DateAndTime;
 using System.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime

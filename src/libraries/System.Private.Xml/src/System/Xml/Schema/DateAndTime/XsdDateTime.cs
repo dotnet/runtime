@@ -7,7 +7,7 @@ using System.Numerics;
 using System.Text;
 using System.Xml;
 
-namespace System.Xml.Schema
+namespace System.Xml.Schema.DateAndTime
 {
     /// <summary>
     /// This enum specifies what format should be used when converting string to XsdDateTime
@@ -30,8 +30,8 @@ namespace System.Xml.Schema
     }
 
     /// <summary>
-    /// This structure extends System.DateTime to support timeInTicks zone and Gregorian types components of an Xsd Duration.  It is used internally to support Xsd durations without loss
-    /// of fidelity.  XsdDuration structures are immutable once they've been created.
+    /// This structure extends <see cref="DateTime"/> to support timeInTicks zone and Gregorian types components of an Xsd Duration.
+    /// It is used internally to support Xsd durations without loss of fidelity. XsdDuration structures are immutable once they've been created.
     /// </summary>
     internal struct XsdDateTime
     {

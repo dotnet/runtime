@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Schema;
+using System.Xml.Schema.DateAndTime;
 
 namespace System.Xml
 {

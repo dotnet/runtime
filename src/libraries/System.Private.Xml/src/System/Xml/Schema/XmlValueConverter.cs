@@ -12,7 +12,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
-using System.Xml.Schema;
+using System.Xml.Schema.DateAndTime;
 using System.Xml.XPath;
 
 namespace System.Xml.Schema
