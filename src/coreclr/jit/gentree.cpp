@@ -2827,6 +2827,13 @@ AGAIN:
                 case GT_QMARK:
                     break;
 
+                case GT_RTCHECK:
+                    if (op1->AsRTCheck()->gtThrowKind != op2->AsRTCheck()->gtThrowKind)
+                    {
+                        return false;
+                    }
+                    break;
+
                 default:
                     assert(!"unexpected binary ExOp operator");
             }
@@ -3376,6 +3383,10 @@ AGAIN:
 
                 case GT_BOUNDS_CHECK:
                     hash = genTreeHashAdd(hash, tree->AsBoundsChk()->gtThrowKind);
+                    break;
+
+                case GT_RTCHECK:
+                    hash = genTreeHashAdd(hash, tree->AsRTCheck()->gtThrowKind);
                     break;
 
                 // For the ones below no extra argument matters for comparison.
@@ -7152,6 +7163,17 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         }
 #endif // FEATURE_HW_INTRINSICS
 
+        case GT_RTCHECK:
+            switch (this->AsRTCheck()->gtThrowKind)
+            {
+                case SCK_DIV_BY_ZERO:
+                    return ExceptionSetFlags::DivideByZeroException;
+                case SCK_OVERFLOW:
+                    return ExceptionSetFlags::OverflowException;
+                default:
+                    unreached();
+            }
+
         default:
             assert(!OperMayOverflow() && !OperIsIndirOrArrMetaData());
             return ExceptionSetFlags::None;
@@ -7551,6 +7573,38 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
     GenTreeQmark* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon);
     assert(!compQmarkRationalized && "QMARKs are illegal to create after QMARK-rationalization");
     return result;
+}
+
+GenTreeRTCheck* Compiler::gtNewRTCheckNode(GenTree* value, GenTree* check, SpecialCodeKind kind)
+{
+    GenTreeRTCheck* node = new (this, GT_RTCHECK) GenTreeRTCheck(value, check, kind);
+    return node;
+}
+
+GenTreeRTCheck* Compiler::gtNewDivideByZeroCheck(GenTree* divisor)
+{
+    assert(varTypeIsIntegral(divisor));
+    GenTree* check = gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(divisor), gtNewIconNode(0, genActualType(divisor)));
+    GenTreeRTCheck* node = new (this, GT_RTCHECK) GenTreeRTCheck(divisor, check, SCK_DIV_BY_ZERO);
+    return node;
+}
+
+GenTreeRTCheck* Compiler::gtNewDivideOverflowCheck(GenTree* dividend, GenTree* divisor)
+{
+    assert(varTypeIsIntegral(dividend) && varTypeIsIntegral(divisor));
+
+    // (dividend == MinValue && divisor == -1)
+    const ssize_t    minValue = genActualType(dividend) == TYP_LONG ? INT64_MIN : INT32_MIN;
+    GenTreeOp* const divisorIsMinusOne =
+        gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(divisor), gtNewIconNode(-1, genActualType(divisor)));
+    GenTreeOp* const dividendIsMinValue =
+        gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(dividend), gtNewIconNode(minValue, genActualType(dividend)));
+
+    GenTreeOp* const combinedTest = gtNewOperNode(GT_AND, TYP_INT, divisorIsMinusOne, dividendIsMinValue);
+    GenTree*         check        = gtNewOperNode(GT_EQ, TYP_INT, combinedTest, gtNewTrue());
+
+    GenTreeRTCheck* node = new (this, GT_RTCHECK) GenTreeRTCheck(dividend, check, SCK_OVERFLOW);
+    return node;
 }
 
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
@@ -9614,6 +9668,13 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                                      tree->AsBoundsChk()->gtThrowKind);
                 copy->AsBoundsChk()->gtInxType = tree->AsBoundsChk()->gtInxType;
                 break;
+
+            case GT_RTCHECK:
+            {
+                GenTreeRTCheck* node = tree->AsRTCheck();
+                copy                 = gtNewRTCheckNode(node->GetValue(), node->GetCheck(), node->gtThrowKind);
+                break;
+            }
 
             case GT_LEA:
             {

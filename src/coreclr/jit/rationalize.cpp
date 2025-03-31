@@ -824,6 +824,23 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
             break;
 
+        case GT_RTCHECK:
+        {
+            // If optimizations have reduced the check to constant false, replace the
+            // check node with its value.
+            GenTreeRTCheck* rtcheck = node->AsRTCheck();
+            GenTree*        check   = rtcheck->GetCheck();
+            GenTree*        value   = rtcheck->GetValue();
+            if (check->IsIntegralConst(0))
+            {
+                use.ReplaceWith(value);
+                BlockRange().Remove(rtcheck);
+                BlockRange().Remove(check);
+                node = value;
+            }
+        }
+        break;
+
         default:
             // Check that we don't have nodes not allowed in HIR here.
             assert((node->DebugOperKind() & DBK_NOTHIR) == 0);

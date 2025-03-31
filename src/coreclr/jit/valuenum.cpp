@@ -10360,7 +10360,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_STORE_LCL_FLD, GT_STOREIND, GT_STORE_BLK,
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
-                                                 GT_ARR_ADDR, GT_BOUNDS_CHECK,
+                                                 GT_ARR_ADDR, GT_BOUNDS_CHECK, GT_RTCHECK,
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
                                                  GT_MDARR_LENGTH,
@@ -12682,6 +12682,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         break;
                     }
 
+                    // Runtime check nodes wrap some other node that has produces a value if an exception
+                    // is not thrown. Pass through to this value on the normal path.
+                    case GT_RTCHECK:
+                        tree->gtVNPair = tree->AsRTCheck()->GetValue()->gtVNPair;
+                        break;
+
                     default:
                         assert(!"Unhandled node in fgValueNumberTree");
                         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
@@ -14621,6 +14627,57 @@ void Compiler::fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree)
 }
 
 //--------------------------------------------------------------------------------
+// fgValueNumberAddExceptionSetForRuntimeCheck
+//          - Adds the exception set for the current tree node
+//            which is performing some runtime check that may result
+//            in an exception being thrown.
+//
+// Arguments:
+//    tree  - The current GenTree node, of type GT_RTCHECK
+//
+// Return Value:
+//          - The tree's gtVNPair is updated to include the
+//            relevant exception set.
+//
+void Compiler::fgValueNumberAddExceptionSetForRuntimeCheck(GenTree* tree)
+{
+    GenTreeRTCheck* node = tree->AsRTCheck();
+    assert(node != nullptr);
+
+    // Get the value numbering pairs for the checking tree.
+    // We want to combine the exception set from this tree with the parent, and generate a new
+    // VN pair representing the runtime exception being thrown, which contains the normal value of the check
+    // and any side effects of the check in the exception value.
+    ValueNumPair checkVNPair = node->GetCheck()->gtVNPair;
+
+    ValueNumPair exceptionVNPair;
+    switch (node->gtThrowKind)
+    {
+        case SCK_DIV_BY_ZERO:
+            exceptionVNPair = vnStore->VNPExcSetSingleton(
+                vnStore->VNPairForFunc(TYP_REF, VNF_DivideByZeroExc, vnStore->VNPNormalPair(checkVNPair)));
+            break;
+        case SCK_OVERFLOW:
+            exceptionVNPair = vnStore->VNPExcSetSingleton(
+                vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc, vnStore->VNPNormalPair(checkVNPair)));
+            break;
+        default:
+            unreached();
+    }
+
+    ValueNumPair overallPair;
+    ValueNumPair overallExcPair;
+    vnStore->VNPUnpackExc(tree->gtVNPair, &overallPair, &overallExcPair);
+
+    ValueNumPair newExcSet = vnStore->VNPExcSetUnion(overallExcPair, vnStore->VNPExceptionSet(checkVNPair));
+
+    // Union the existing exception set with the new exception set as defined by gtThrowKind earlier.
+    newExcSet = vnStore->VNPExcSetUnion(newExcSet, exceptionVNPair);
+
+    tree->gtVNPair = vnStore->VNPWithExc(overallPair, newExcSet);
+}
+
+//--------------------------------------------------------------------------------
 // fgValueNumberAddExceptionSetForCkFinite
 //         - Adds the exception set for the current tree node
 //           which is a CkFinite operation
@@ -14697,6 +14754,10 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
 
             case GT_BOUNDS_CHECK:
                 fgValueNumberAddExceptionSetForBoundsCheck(tree);
+                break;
+
+            case GT_RTCHECK:
+                fgValueNumberAddExceptionSetForRuntimeCheck(tree);
                 break;
 
             case GT_LCLHEAP:

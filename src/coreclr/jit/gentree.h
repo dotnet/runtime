@@ -7632,6 +7632,44 @@ struct GenTreeBoundsChk : public GenTreeOp
     }
 };
 
+// GenTreeRTCheck - wraps an expression with a runtime check. The runtime check is a
+//    function of the value being wrapped. For example:
+//       value => GT_LCL_VAR
+//       check => GT_EQ(value, GT_CNS_INT(0))
+//       kind  => SCK_DIV_BY_ZERO
+//    would be the parameter set required to implement a divide-by-zero check on some
+//    local value.
+//    CodeGen for this node should produce a compare-and-branch to the throw helper in
+//    gtThrowKind when the check evaluates to true.
+//
+struct GenTreeRTCheck : public GenTreeOp
+{
+    SpecialCodeKind gtThrowKind; // Kind of throw block to branch to on failure
+
+    GenTreeRTCheck(GenTree* value, GenTree* check, SpecialCodeKind kind)
+        : GenTreeOp(GT_RTCHECK, value->TypeGet(), value, check)
+        , gtThrowKind(kind)
+    {
+        gtFlags |= GTF_EXCEPT;
+    }
+#if DEBUGGABLE_GENTREE
+    GenTreeRTCheck()
+        : GenTreeOp()
+    {
+    }
+#endif
+
+    GenTree* GetValue() const
+    {
+        return gtOp1;
+    }
+
+    GenTree* GetCheck() const
+    {
+        return gtOp2;
+    }
+};
+
 // GenTreeArrElem - bounds checked address (byref) of a general array element,
 //    for multidimensional arrays, or 1-d arrays with non-zero lower bounds.
 //

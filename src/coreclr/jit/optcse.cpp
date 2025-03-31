@@ -1913,6 +1913,9 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             return false; // Currently the only special nodes that we hit
                           // that we know that we don't want to CSE
 
+        case GT_RTCHECK:
+            break;
+
         default:
             return false;
     }

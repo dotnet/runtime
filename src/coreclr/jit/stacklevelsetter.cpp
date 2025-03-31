@@ -217,6 +217,13 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         }
         break;
 
+        case GT_RTCHECK:
+        {
+            GenTreeRTCheck* check = node->AsRTCheck();
+            SetThrowHelperBlock(check->gtThrowKind, block);
+        }
+        break;
+
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         case GT_HWINTRINSIC:
         {

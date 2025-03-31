@@ -2967,6 +2967,9 @@ public:
 
     GenTreeColon* gtNewColonNode(var_types type, GenTree* thenNode, GenTree* elseNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
+    GenTreeRTCheck* gtNewRTCheckNode(GenTree* value, GenTree* check, SpecialCodeKind kind);
+    GenTreeRTCheck* gtNewDivideByZeroCheck(GenTree* divisor);
+    GenTreeRTCheck* gtNewDivideOverflowCheck(GenTree* dividend, GenTree* divisor);
 
     GenTree* gtNewLargeOperNode(genTreeOps oper,
                                 var_types  type = TYP_I_IMPL,
@@ -5846,6 +5849,9 @@ public:
 
     // Adds the exception set for the current tree node which is performing a bounds check operation
     void fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree);
+
+    // Adds the exception set for the current tree node which is performing a bounds check operation
+    void fgValueNumberAddExceptionSetForRuntimeCheck(GenTree* tree);
 
     // Adds the exception set for the current tree node which is performing a ckfinite operation
     void fgValueNumberAddExceptionSetForCkFinite(GenTree* tree);

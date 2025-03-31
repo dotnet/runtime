@@ -93,6 +93,8 @@ private:
         // Wraparound if necessary, REG_V0 comes next after REG_V31.
         return (nextReg > REG_V31) ? REG_V0 : nextReg;
     }
+
+    void genRuntimeCheck(GenTree* node);
 #endif // defined(TARGET_ARM64)
 
     static GenTreeIndir    indirForm(var_types type, GenTree* base);

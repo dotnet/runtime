@@ -574,6 +574,18 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
+#if defined(TARGET_ARM64)
+        case GT_RTCHECK:
+        {
+            GenTree* check = node->AsRTCheck()->GetCheck();
+            if (check->OperIsCompare() || check->OperIs(GT_SETCC) || check->IsIntegralConst())
+            {
+                MakeSrcContained(node, check);
+            }
+        }
+        break;
+#endif
+
         case GT_ROL:
         case GT_ROR:
         {

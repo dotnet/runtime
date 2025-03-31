@@ -3302,7 +3302,8 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
                     return WALK_CONTINUE;
                 }
 
-                if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK) || node->IsPhiNode() || node->IsAnyLocal())
+                if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK, GT_RTCHECK) || node->IsPhiNode() ||
+                    node->IsAnyLocal())
                 {
                     return WALK_CONTINUE;
                 }

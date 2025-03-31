@@ -3664,6 +3664,77 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     }
 }
 
+//------------------------------------------------------------------------
+// genRuntimeCheck: generate code for GT_RTCHECK node.
+//
+void CodeGen::genRuntimeCheck(GenTree* oper)
+{
+    assert(oper->OperIs(GT_RTCHECK));
+    GenTreeRTCheck* node = oper->AsRTCheck();
+
+    GenTree* check = node->GetCheck();
+    GenTree* value = node->GetValue();
+    assert(!value->isContained());
+    assert(!check->IsIntegralConst(0)); // Runtime check that never passes should have been removed during
+                                        // rationalization.
+
+    genConsumeOperands(oper->AsOp());
+
+    if (check->isContained())
+    {
+        if (check->IsIntegralConst(1))
+        {
+            genJumpToThrowHlpBlk(node->gtThrowKind, [&](BasicBlock* target, bool isInline) {
+                if (!isInline)
+                {
+                    inst_JMP(EJ_jmp, target);
+                }
+            });
+        }
+        else if (check->OperIsCompare())
+        {
+            GenCondition cond = GenCondition::FromRelop(check);
+
+            genJumpToThrowHlpBlk(node->gtThrowKind, [&](BasicBlock* target, bool isInline) {
+                cond                         = isInline ? GenCondition::Reverse(cond)
+                                                        : cond; // Jump over the throw block if it is generated inline.
+                const GenConditionDesc& desc = GenConditionDesc::Get(cond);
+                genCodeForCompare(check->AsOp());
+                inst_JMP(desc.jumpKind1, target);
+            });
+        }
+        else if (check->OperIs(GT_SETCC))
+        {
+            GenCondition cond = check->AsCC()->gtCondition;
+
+            genJumpToThrowHlpBlk(node->gtThrowKind, [&](BasicBlock* target, bool isInline) {
+                cond                         = isInline ? GenCondition::Reverse(cond)
+                                                        : cond; // Jump over the throw block if it is generated inline.
+                const GenConditionDesc& desc = GenConditionDesc::Get(cond);
+                inst_JMP(desc.jumpKind1, target);
+            });
+        }
+        else
+        {
+            noway_assert(!"unsupported contained check");
+        }
+    }
+    else
+    {
+        // It is possible for the check to have been CSE'd and propagated as a LCL_VAR in this node.
+        // It is set up such that this node is easy to CSE as well so this shouldn't happen often.
+        noway_assert(check->GetReg() != REG_NA);
+
+        genJumpToThrowHlpBlk(node->gtThrowKind, [&](BasicBlock* target, bool isInline) {
+            genCompareImmAndJump(isInline ? GenCondition::Code::NE : GenCondition::Code::EQ, check->GetReg(), 1,
+                                 emitActualTypeSize(check), target);
+        });
+    }
+
+    inst_Mov(genActualType(oper), oper->GetReg(), value->GetReg(), true);
+    genProduceReg(oper);
+}
+
 // Generate code for CpObj nodes which copy structs that have interleaved
 // GC pointers.
 // For this case we'll generate a sequence of loads/stores in the case of struct
