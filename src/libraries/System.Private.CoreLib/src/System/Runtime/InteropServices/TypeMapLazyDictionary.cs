@@ -18,10 +18,23 @@ namespace System.Runtime.InteropServices
     [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
     internal static partial class TypeMapLazyDictionary
     {
+        // See assemblynative.cpp for native version.
         private ref struct CallbackContext
         {
+            private RuntimeAssembly? _currAssembly;
             private LazyExternalTypeDictionary? _externalTypeMap;
             private LazyProxyTypeDictionary? _proxyTypeMap;
+            private ExceptionDispatchInfo? _creationException;
+
+            public RuntimeAssembly CurrentAssembly
+            {
+                get
+                {
+                    // This field is set by native code.
+                    Debug.Assert(_currAssembly != null);
+                    return _currAssembly;
+                }
+            }
 
             public LazyExternalTypeDictionary ExternalTypeMap
             {
@@ -43,7 +56,11 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            public ExceptionDispatchInfo? CreationException { get; set; }
+            public ExceptionDispatchInfo? CreationException
+            {
+                get => _creationException;
+                set => _creationException = value;
+            }
         }
 
         // See assemblynative.hpp for native version.
@@ -51,10 +68,8 @@ namespace System.Runtime.InteropServices
         {
             public void* Utf8String1;
             public void* Utf8String2;
-            public void* Utf8String3;
             public int StringLen1;
             public int StringLen2;
-            public int StringLen3;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
@@ -64,14 +79,6 @@ namespace System.Runtime.InteropServices
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry,
             CallbackContext* context);
-
-        private static TypeName NewTypeNameWithAssembly(TypeName typeName, ReadOnlySpan<char> assemblyName)
-        {
-            AssemblyNameInfo asmNameInfo = AssemblyNameInfo.Parse(assemblyName);
-            TypeName parsedType = typeName.WithAssemblyName(asmNameInfo);
-            Debug.Assert(parsedType.AssemblyName != null);
-            return parsedType;
-        }
 
         public ref struct Utf16SharedBuffer
         {
@@ -126,8 +133,7 @@ namespace System.Runtime.InteropServices
                 {
                     Utf8TypeName = arg->Utf8String2,
                     Utf8TypeNameLen = arg->StringLen2,
-                    Utf8AssemblyNameFallback = arg->Utf8String3,
-                    Utf8AssemblyNameFallbackLen = arg->StringLen3
+                    FallbackAssembly = context->CurrentAssembly
                 };
                 context->ExternalTypeMap.Add(externalTypeName, targetTypeName);
             }
@@ -149,27 +155,22 @@ namespace System.Runtime.InteropServices
             Debug.Assert(arg->Utf8String2 != null);
 
             Utf16SharedBuffer sourceTypeBuffer = new();
-            Utf16SharedBuffer assemblyNameBuffer = new();
             try
             {
                 ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(arg->Utf8String1, arg->StringLen1), out sourceTypeBuffer);
-
                 TypeName parsedSource = TypeNameParser.Parse(sourceTypeBuffer.Buffer, throwOnError: true)!;
-                if (parsedSource.AssemblyName is null)
-                {
-                    // The assembly name is not included in the type name, so use the fallback assembly name.
-                    Debug.Assert(arg->Utf8String3 != null);
-                    ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(arg->Utf8String3, arg->StringLen3), out assemblyNameBuffer);
-                    parsedSource = NewTypeNameWithAssembly(parsedSource, assemblyNameBuffer.Buffer);
-                }
+
+                // The assembly name is not included in the type name, so use the fallback assembly name.
+                string assemblyName = parsedSource.AssemblyName?.FullName ?? context->CurrentAssembly.FullName!;
+                Debug.Assert(assemblyName != null);
+
                 TypeNameValue proxyTypeName = new()
                 {
                     Utf8TypeName = arg->Utf8String2,
                     Utf8TypeNameLen = arg->StringLen2,
-                    Utf8AssemblyNameFallback = arg->Utf8String3,
-                    Utf8AssemblyNameFallbackLen = arg->StringLen3
+                    FallbackAssembly = context->CurrentAssembly
                 };
-                context->ProxyTypeMap.Add(parsedSource, proxyTypeName);
+                context->ProxyTypeMap.Add(parsedSource, assemblyName, proxyTypeName);
             }
             catch (Exception ex)
             {
@@ -179,7 +180,6 @@ namespace System.Runtime.InteropServices
             finally
             {
                 sourceTypeBuffer.Dispose();
-                assemblyNameBuffer.Dispose();
             }
 
             return Interop.BOOL.TRUE; // Continue processing.
@@ -264,10 +264,9 @@ namespace System.Runtime.InteropServices
 
         private unsafe struct TypeNameValue
         {
-            public void* Utf8TypeName { get; init; }
-            public int Utf8TypeNameLen { get; init; }
-            public void* Utf8AssemblyNameFallback { get; init; }
-            public int Utf8AssemblyNameFallbackLen { get; init; }
+            public required void* Utf8TypeName { get; init; }
+            public required int Utf8TypeNameLen { get; init; }
+            public required RuntimeAssembly FallbackAssembly { get; init; }
         }
 
         [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
@@ -299,38 +298,30 @@ namespace System.Runtime.InteropServices
             {
                 if (_type is null)
                 {
-                    string assemblyName;
-                    string typeName;
                     if (!_typeNameRaw.HasValue)
                     {
-                        assemblyName = _assemblyName;
-                        typeName = _typeName;
+                        Assembly targetAssembly = Assembly.Load(_assemblyName);
+                        _type = targetAssembly.GetType(_typeName, throwOnError: true)!;
                     }
                     else
                     {
                         Utf16SharedBuffer typeNameBuffer = new();
-                        Utf16SharedBuffer assemblyNameBuffer = new();
                         try
                         {
-                            ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(_typeNameRaw.Value.Utf8TypeName, _typeNameRaw.Value.Utf8TypeNameLen), out typeNameBuffer);
-                            TypeName parsedType = TypeNameParser.Parse(typeNameBuffer.Buffer, throwOnError: true)!;
-                            if (parsedType.AssemblyName is null)
-                            {
-                                ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(_typeNameRaw.Value.Utf8AssemblyNameFallback, _typeNameRaw.Value.Utf8AssemblyNameFallbackLen), out assemblyNameBuffer);
-                                parsedType = NewTypeNameWithAssembly(parsedType, assemblyNameBuffer.Buffer);
-                            }
-                            assemblyName = parsedType.AssemblyName!.FullName;
-                            typeName = parsedType.FullName;
+                            ConvertUtf8ToUtf16(
+                                new ReadOnlySpan<byte>(_typeNameRaw.Value.Utf8TypeName, _typeNameRaw.Value.Utf8TypeNameLen),
+                                out typeNameBuffer);
+                            _type = TypeNameResolver.GetTypeHelper(
+                                typeNameBuffer.Buffer,
+                                _typeNameRaw.Value.FallbackAssembly,
+                                throwOnError: true,
+                                requireAssemblyQualifiedName: false)!;
                         }
                         finally
                         {
                             typeNameBuffer.Dispose();
-                            assemblyNameBuffer.Dispose();
                         }
                     }
-
-                    Assembly targetAssembly = Assembly.Load(assemblyName);
-                    _type = targetAssembly.GetType(typeName, throwOnError: true)!;
                 }
                 return _type;
             }
@@ -425,13 +416,13 @@ namespace System.Runtime.InteropServices
                 return false;
             }
 
-            public void Add(TypeName parsedSource, TypeNameValue proxyTypeName)
+            public void Add(TypeName typeName, string assemblyName, TypeNameValue proxyTypeName)
             {
-                int hash = ComputeHashCode(parsedSource);
+                int hash = ComputeHashCode(typeName);
 
                 SourceProxyPair newEntryMaybe = new()
                 {
-                    Source = new DelayedType(parsedSource.AssemblyName!.FullName, parsedSource.FullName),
+                    Source = new DelayedType(assemblyName, typeName.FullName),
                     Proxy = new DelayedType(proxyTypeName)
                 };
 

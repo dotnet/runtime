@@ -1609,26 +1609,17 @@ namespace
     // Used for TypeMapAttribute`1 and TypeMapAssociationAttribute`1 attributes.
     class MappingsProcessor final
     {
-        SString _currAssemblyName;
-        LPCUTF8 _currAssemblyNameUTF8;
-        int32_t _currAssemblyNameLen;
-        BOOL (*_callback)(void* context, ProcessAttributesCallbackArg* arg);
-        void* _context;
+        BOOL (*_callback)(CallbackContext* context, ProcessAttributesCallbackArg* arg);
+        CallbackContext* _context;
 
     public:
         MappingsProcessor(
-            Assembly* currAssembly,
-            BOOL (*callback)(void* context, ProcessAttributesCallbackArg* arg),
-            void* context)
-            : _currAssemblyName{}
-            , _callback{ callback }
+            BOOL (*callback)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+            CallbackContext* context)
+            : _callback{ callback }
             , _context{ context }
         {
             _ASSERTE(_callback != NULL);
-            _ASSERTE(currAssembly != NULL);
-            currAssembly->GetDisplayName(_currAssemblyName);
-            _currAssemblyNameUTF8 = _currAssemblyName.GetUTF8();
-            _currAssemblyNameLen = (int32_t)strlen(_currAssemblyNameUTF8);
         }
 
         BOOL Process(void const* blob, ULONG blobLen)
@@ -1652,10 +1643,8 @@ namespace
             ProcessAttributesCallbackArg arg;
             arg.Utf8String1 = str1;
             arg.Utf8String2 = str2;
-            arg.Utf8String3 = _currAssemblyNameUTF8;
             arg.StringLen1 = strLen1;
             arg.StringLen2 = strLen2;
-            arg.StringLen3 = _currAssemblyNameLen;
 
             return _callback(_context, &arg);
         }
@@ -1665,14 +1654,15 @@ namespace
 extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     QCall::AssemblyHandle pAssembly,
     QCall::TypeHandle pGroupType,
-    BOOL (*newExternalTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
-    BOOL (*newProxyTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
-    void* context)
+    BOOL (*newExternalTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+    BOOL (*newProxyTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+    CallbackContext* context)
 {
     QCALL_CONTRACT;
     _ASSERTE(pAssembly != NULL);
     _ASSERTE(!pGroupType.AsTypeHandle().IsNull());
     _ASSERTE(newExternalTypeEntry != NULL || newProxyTypeEntry != NULL);
+    _ASSERTE(context != NULL);
 
     BEGIN_QCALL;
 
@@ -1685,6 +1675,12 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     {
         Assembly* currAssembly = assemblies.GetNext();
 
+        // Set the current assembly in the context.
+        {
+            GCX_COOP();
+            context->_currAssembly = currAssembly->GetExposedObject();
+        }
+
         ProcessTypeMapAttribute(
             TypeMapAssemblyTargetAttributeName,
             assemblies,
@@ -1693,7 +1689,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
 
         if (newExternalTypeEntry != NULL)
         {
-            MappingsProcessor onExternalType{ currAssembly, newExternalTypeEntry, context };
+            MappingsProcessor onExternalType{ newExternalTypeEntry, context };
             ProcessTypeMapAttribute(
                 TypeMapAttributeName,
                 onExternalType,
@@ -1703,7 +1699,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
 
         if (newProxyTypeEntry != NULL)
         {
-            MappingsProcessor onProxyType{ currAssembly, newProxyTypeEntry, context };
+            MappingsProcessor onProxyType{ newProxyTypeEntry, context };
             ProcessTypeMapAttribute(
                 TypeMapAssociationAttributeName,
                 onProxyType,
