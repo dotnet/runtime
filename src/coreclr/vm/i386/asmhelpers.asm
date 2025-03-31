@@ -20,10 +20,10 @@ include asmconstants.inc
         option  casemap:none
         .code
 
-g_pThrowDivideByZeroExceptionLong    TEXTEQU <_g_pThrowDivideByZeroExceptionLong>
-g_pThrowOverflowExceptionLong        TEXTEQU <_g_pThrowOverflowExceptionLong>
-EXTERN g_pThrowDivideByZeroExceptionLong:DWORD
-EXTERN g_pThrowOverflowExceptionLong:DWORD
+g_pThrowDivideByZeroException    TEXTEQU <_g_pThrowDivideByZeroException>
+g_pThrowOverflowException        TEXTEQU <_g_pThrowOverflowException>
+EXTERN g_pThrowDivideByZeroException:DWORD
+EXTERN g_pThrowOverflowException:DWORD
 
 EXTERN __imp__RtlUnwind@16:DWORD
 ifdef _DEBUG
@@ -1586,12 +1586,18 @@ JIT_LMod_Call__aullrem:
 FASTCALL_ENDFUNC
 
 JIT_ThrowDivideByZero_Long proc public
-    mov eax, g_pThrowDivideByZeroExceptionLong
+    pop eax ; Pop return address into eax
+    add esp, 10h
+    push eax ; Fix return address
+    mov eax, g_pThrowDivideByZeroException
     jmp eax
 JIT_ThrowDivideByZero_Long endp
 
 JIT_ThrowOverflow_Long proc public
-    mov eax, g_pThrowOverflowExceptionLong
+    pop eax ; Pop return address into eax
+    add esp, 10h
+    push eax ; Fix return address
+    mov eax, g_pThrowOverflowException
     jmp eax
 JIT_ThrowOverflow_Long endp
 

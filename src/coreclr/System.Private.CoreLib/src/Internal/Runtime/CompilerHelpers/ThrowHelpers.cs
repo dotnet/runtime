@@ -80,21 +80,5 @@ namespace Internal.Runtime.CompilerHelpers
         {
             ThrowClassAccessExceptionInternal(caller, callee);
         }
-
-        // DivideByZero exception for being tail-called with 64bit int parameters (which have an effect on ABI on 32bit platforms)
-        [DoesNotReturn]
-        [DebuggerHidden]
-        internal static long ThrowDivideByZeroExceptionLong(long divisor, long dividend)
-        {
-            throw new DivideByZeroException();
-        }
-
-        // OverflowException for being tail-called with 64bit int parameters (which have an effect on ABI on 32bit platforms)
-        [DoesNotReturn]
-        [DebuggerHidden]
-        internal static long ThrowOverflowExceptionLong(long divisor, long dividend)
-        {
-            throw new OverflowException();
-        }
     }
 }
