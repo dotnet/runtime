@@ -158,5 +158,12 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 MLKem.ImportSubjectPublicKeyInfo((byte[])null));
         }
+
+        [Fact]
+        public static void ImportPkcs8PrivateKey_Seed()
+        {
+            using MLKem kem = MLKem.ImportPkcs8PrivateKey(MLKemTestData.IetfMlKem512PrivateKeySeed);
+            AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+        }
     }
 }
