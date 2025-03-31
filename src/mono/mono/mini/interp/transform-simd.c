@@ -1093,18 +1093,10 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				cmethod_name = "Not";
 				break;
 			case SN_WidenLower:
-			    if (is_unsigned) {
-					cmethod_name = "ZeroExtendWideningLower";
-				} else {
-					cmethod_name = "SignExtendWideningLower";
-				}
+				cmethod_name = is_unsigned ? "ZeroExtendWideningLower" : "SignExtendWideningLower";
 				break;
 			case SN_WidenUpper:
-			    if (is_unsigned) {
-					cmethod_name = "ZeroExtendWideningUpper";
-				} else {
-					cmethod_name = "SignExtendWideningUpper";
-				}
+				cmethod_name = is_unsigned ? "ZeroExtendWideningUpper" : "SignExtendWideningUpper";
 				break;
 			case SN_Add:
 			case SN_AndNot:
