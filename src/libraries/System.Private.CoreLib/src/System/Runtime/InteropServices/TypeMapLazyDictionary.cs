@@ -324,11 +324,8 @@ namespace System.Runtime.InteropServices
                         }
                     }
 
-                    lock (this)
-                    {
-                        Assembly targetAssembly = Assembly.Load(assemblyName);
-                        _type = targetAssembly.GetType(typeName, throwOnError: true)!;
-                    }
+                    Assembly targetAssembly = Assembly.Load(assemblyName);
+                    _type = targetAssembly.GetType(typeName, throwOnError: true)!;
                 }
                 return _type;
             }
