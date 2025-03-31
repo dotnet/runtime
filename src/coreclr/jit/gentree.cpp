@@ -22766,6 +22766,16 @@ GenTree* Compiler::gtNewSimdCndSelNode(
     }
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
 #elif defined(TARGET_ARM64)
+    if (simdSize > 16)
+    {
+        intrinsic = NI_Sve_ConditionalSelect;
+        op1 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
+    }
+    else
+    {
+        intrinsic = NI_AdvSimd_BitwiseSelect;
+    }
+
     intrinsic = (simdSize > 16) ? NI_Sve_ConditionalSelect : NI_AdvSimd_BitwiseSelect;
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
 #else
