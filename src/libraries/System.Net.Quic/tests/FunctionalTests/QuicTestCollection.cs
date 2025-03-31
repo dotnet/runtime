@@ -28,7 +28,7 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
         string msQuicLibraryVersion = GetMsQuicLibraryVersion();
         string tlsBackend = IsUsingSchannelBackend() ? "Schannel" : "OpenSSL";
         // If any of the reflection bellow breaks due to changes in "System.Net.Quic.MsQuicApi", also check and fix HttpStress project as it uses the same hack.
-        Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{msQuicLibraryVersion}' {(IsSupported ? "({tlsBackend})" : "")}.");
+        Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{msQuicLibraryVersion}' {(IsSupported ? $"({tlsBackend})" : "")}.");
 
         if (IsSupported)
         {
