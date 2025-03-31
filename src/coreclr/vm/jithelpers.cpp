@@ -1538,10 +1538,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 #endif
     exceptionFrame.InitAndLink(pThread);
 
-    SoftwareExceptionFrame exceptionFrame;
-    RtlCaptureContext(exceptionFrame.GetContext());
-    exceptionFrame.InitAndLink(pThread);
-
     FC_CAN_TRIGGER_GC();
 
     if (oref == 0)
