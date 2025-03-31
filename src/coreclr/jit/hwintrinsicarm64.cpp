@@ -2287,6 +2287,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_Round:
         case NI_Vector64_Round:
         case NI_Vector128_Round:
         {

@@ -25601,6 +25601,7 @@ GenTree* Compiler::gtNewSimdRoundNode(var_types type, GenTree* op1, CorInfoType 
     {
         intrinsic = NI_AdvSimd_RoundToNearest;
     }
+    intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(simdSize, intrinsic);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -29021,6 +29022,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
                 break;
             case NI_AdvSimd_Or:
                 sveId = NI_Sve_Or;
+                break;
+            case NI_AdvSimd_RoundToNearest:
+            case NI_AdvSimd_Arm64_RoundToNearest:
+                sveId = NI_Sve_RoundToNearest;
                 break;
             case NI_AdvSimd_Subtract:
             case NI_AdvSimd_Arm64_Subtract:
