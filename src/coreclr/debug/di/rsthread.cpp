@@ -3751,7 +3751,7 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
     // DT_CONTEXT_EXTENDED_REGISTERS to avoid getting incomplete information and corrupt the thread context
     DT_CONTEXT context;
 #ifdef TARGET_X86    
-    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;;
+    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
 #else
     context.ContextFlags = DT_CONTEXT_FULL;
 #endif 
