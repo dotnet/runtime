@@ -1844,7 +1844,24 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 //
 void CodeGen::genCodeForBswap(GenTree* tree)
 {
-    NYI_RISCV64("genCodeForBswap-----unimplemented on RISCV64 yet----");
+    assert(tree->OperIs(GT_BSWAP, GT_BSWAP16));
+    var_types type = tree->gtGetOp1()->TypeGet();
+    emitAttr  size = emitTypeSize(type);
+    regNumber dest = tree->GetRegNum();
+    regNumber src  = genConsumeReg(tree->gtGetOp1());
+
+    assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+    emitter& emit = *GetEmitter();
+    emit.emitIns_R_R(INS_rev8, size, dest, src);
+    if (size < EA_PTRSIZE)
+    {
+        int shiftAmount = tree->OperIs(GT_BSWAP16) ? 48 : 32;
+        // TODO: we need to right-shift the byte-reversed register anyway. Remove the cast wrapping GT_BSWAP16
+        // and pass the exact destination type here, so that this codegen could leave the register properly extended.
+        emit.emitIns_R_R_I(INS_srai, size, dest, dest, shiftAmount);
+    }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------

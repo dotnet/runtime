@@ -648,7 +648,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins || INS_sext_w == ins)
+    if (INS_mov == ins || INS_sext_w == ins || ins == INS_rev8)
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -3610,6 +3610,13 @@ void emitter::emitDispInsName(
                             break;
                         case 0b011000:
                             printLength = printf("rori");
+                            break;
+                        case 0b011010:
+                            if (imm12 != 0b111000) // shift amount is treated as additional funct opcode
+                                return emitDispIllegalInstruction(code);
+
+                            printLength  = printf("rev8");
+                            hasImmediate = false;
                             break;
                         default:
                             return emitDispIllegalInstruction(code);
