@@ -4945,20 +4945,37 @@ void LinearScan::allocateRegistersMinimal()
         // TODO: Can we combine this with the freeing of registers below? It might
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
-        regMaskTP tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
-        while (tempRegsToMakeInactive.IsNonEmpty())
+       // regMaskTP tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
+        /*while (tempRegsToMakeInactive.IsNonEmpty())
         {
             regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(tempRegsToMakeInactive);
             RegRecord* regRecord = getRegisterRecord(nextReg);
             clearSpillCost(regRecord->regNum, regRecord->registerType);
             makeRegisterInactive(regRecord);
+        }*/
+       SingleTypeRegSet tempRegsToMakeInactiveLow = regsToMakeInactive.getLow()  | delayRegsToMakeInactive.getLow();
+        while (tempRegsToMakeInactiveLow != RBM_NONE)
+        {
+            regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(tempRegsToMakeInactiveLow);
+            RegRecord* regRecord = getRegisterRecord(nextReg);
+            clearSpillCost(regRecord->regNum, regRecord->registerType);
+            makeRegisterInactive(regRecord);
         }
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        SingleTypeRegSet tempRegsToMakeInactiveHigh = regsToMakeInactive.getHigh() | delayRegsToMakeInactive.getHigh();
+        while (tempRegsToMakeInactiveHigh != RBM_NONE)
+        {
+            regNumber  nextReg   = (regNumber) (genFirstRegNumFromMaskAndToggle(tempRegsToMakeInactiveHigh) + REG_HIGH_BASE);
+            RegRecord* regRecord = getRegisterRecord(nextReg);
+            clearSpillCost(regRecord->regNum, regRecord->registerType);
+            makeRegisterInactive(regRecord);
+        }
+#endif // HAS_MORE_THAN_64_REGISTERS
         if (currentRefPosition.nodeLocation > prevLocation)
         {
             makeRegsAvailable(regsToMakeInactive);
             // TODO: Clean this up. We need to make the delayRegs inactive as well, but don't want
             // to mark them as free yet.
-            regsToMakeInactive |= delayRegsToMakeInactive;
             regsToMakeInactive      = delayRegsToMakeInactive;
             delayRegsToMakeInactive = RBM_NONE;
         }
@@ -5643,7 +5660,6 @@ void LinearScan::allocateRegisters()
             makeRegsAvailable(regsToMakeInactive);
             // TODO: Clean this up. We need to make the delayRegs inactive as well, but don't want
             // to mark them as free yet.
-            regsToMakeInactive |= delayRegsToMakeInactive;
             regsToMakeInactive      = delayRegsToMakeInactive;
             delayRegsToMakeInactive = RBM_NONE;
         }
