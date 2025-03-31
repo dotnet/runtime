@@ -128,8 +128,7 @@ BOOL ShouldOurUEFDisplayUI(PEXCEPTION_POINTERS pExceptionInfo)
 BOOL NotifyAppDomainsOfUnhandledException(
     PEXCEPTION_POINTERS pExceptionPointers,
     OBJECTREF   *pThrowableIn,
-    BOOL        useLastThrownObject,
-    BOOL        isTerminating);
+    BOOL        useLastThrownObject);
 
 VOID SetManagedUnhandledExceptionBit(
     BOOL        useLastThrownObject);
@@ -4462,19 +4461,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
 
         if (pParam->pThread != NULL)
         {
-
-            // In CoreCLR, we can be asked to not let an exception go unhandled on managed threads.
-            // If the exception reaches the top of the thread's stack, we simply deliver AppDomain's UnhandledException event and
-            // return back to the filter, instead of letting the process terminate because of unhandled exception.
-
-            // This code must only be exercised when running as a normal filter; returning
-            // EXCEPTION_EXECUTE_HANDLER is not valid if this code is being invoked from
-            // the UEF.
-            // Fortunately, we should never get into this case, since the thread flag about
-            // ignoring unhandled exceptions cannot be set on the default domain.
-
-            BOOL fIsProcessTerminating = !(AppDomain::GetCurrentDomain()->IgnoreUnhandledExceptions());
-
 #ifndef TARGET_UNIX
             // Setup the watson bucketing details for UE processing.
             // do this before notifying appdomains of the UE so if an AD attempts to
@@ -4483,14 +4469,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
 #endif // !TARGET_UNIX
 
             // Send notifications to the AppDomains.
-            NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject, fIsProcessTerminating /*isTerminating*/);
-
-            // If the process is not terminating, then return back to the filter and ask it to execute
-            if (!fIsProcessTerminating)
-            {
-                pParam->retval = EXCEPTION_EXECUTE_HANDLER;
-                goto lDone;
-            }
+            NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject);
         }
         else
         {
@@ -4560,7 +4539,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
 
         // Call our default catch handler to do the managed unhandled exception work.
         DefaultCatchHandler(pParam->pExceptionInfo, NULL, useLastThrownObject,
-            TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/, TRUE /* sendWindowsEventLog */);
+            FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/, TRUE /* sendWindowsEventLog */);
 
 lDone: ;
     }
@@ -4777,8 +4756,6 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 #pragma code_seg(pop, uef)
 #endif // !TARGET_UNIX
 
-void PrintStackTraceToStdout();
-
 static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
@@ -4809,17 +4786,17 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
             wcsncpy_s(buf, buf_size, SZ_UNHANDLED_EXCEPTION, SZ_UNHANDLED_EXCEPTION_CHARLEN);
         }
 
-        PrintToStdErrW(buf);
-        PrintToStdErrA(" ");
+        SString message(buf);
+        SString exceptionMessage = GetExceptionMessageWrapper(pThread, throwable);
 
-        SString message = GetExceptionMessageWrapper(pThread, throwable);
-
-        if (!message.IsEmpty())
+        message.Append(W(" "));
+        if (!exceptionMessage.IsEmpty())
         {
-            PrintToStdErrW(message);
+            message.Append(exceptionMessage);
         }
+        message.Append(W("\n"));
 
-        PrintToStdErrA("\n");
+        PrintToStdErrW(message.GetUnicode());
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
         // Send the log to Windows Event Log
@@ -4831,9 +4808,9 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
 
                 if (IsException(throwable->GetMethodTable()))
                 {
-                    if (!message.IsEmpty())
+                    if (!exceptionMessage.IsEmpty())
                     {
-                        reporter.AddDescription(message);
+                        reporter.AddDescription(exceptionMessage);
                     }
                     reporter.Report();
                 }
@@ -4862,7 +4839,6 @@ void STDMETHODCALLTYPE
 DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                     OBJECTREF *pThrowableIn,
                     BOOL useLastThrownObject,
-                    BOOL isTerminating,
                     BOOL isThreadBaseFilter,
                     BOOL sendAppDomainEvents,
                     BOOL sendWindowsEventLog)
@@ -4976,7 +4952,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
     // Send up the unhandled exception appdomain event.
     if (sendAppDomainEvents)
     {
-        SentEvent = NotifyAppDomainsOfUnhandledException(pExceptionPointers, &throwable, useLastThrownObject, isTerminating);
+        SentEvent = NotifyAppDomainsOfUnhandledException(pExceptionPointers, &throwable, useLastThrownObject);
     }
 
     const int buf_size = 128;
@@ -5027,10 +5003,13 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
             EX_CATCH
             {
                 LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
-                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf, buf_size);
-                PrintToStdErrA("\n   ");
+
+                _ASSERTE(buf_size > 6);
+                wcscpy_s(buf, buf_size, W("\n   "));
+                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
+                wcscat_s(buf, buf_size, W("\n"));
+
                 PrintToStdErrW(buf);
-                PrintToStdErrA("\n");
             }
             EX_END_CATCH(SwallowAllExceptions);
         }
@@ -5073,8 +5052,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 BOOL NotifyAppDomainsOfUnhandledException(
     PEXCEPTION_POINTERS pExceptionPointers,
     OBJECTREF   *pThrowableIn,
-    BOOL        useLastThrownObject,
-    BOOL        isTerminating)
+    BOOL        useLastThrownObject)
 {
     CONTRACTL
     {
@@ -5171,7 +5149,7 @@ BOOL NotifyAppDomainsOfUnhandledException(
 
         // This guy will never throw, but it will need a spot to store
         // any nested exceptions it might find.
-        SentEvent = AppDomain::OnUnhandledException(&throwable, isTerminating);
+        SentEvent = AppDomain::OnUnhandledException(&throwable);
 
         UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
@@ -5896,9 +5874,10 @@ bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
         {
             // GCStress processing can disturb last error, so preserve it.
             BOOL res;
-            BEGIN_PRESERVE_LAST_ERROR;
-            res = OnGcCoverageInterrupt(pContext);
-            END_PRESERVE_LAST_ERROR;
+            {
+                PreserveLastErrorHolder preserveLastError;
+                res = OnGcCoverageInterrupt(pContext);
+            }
             if (res)
             {
                 return true;
@@ -6025,6 +6004,12 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
         return FALSE;
     }
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
+        return TRUE;
+#endif
+
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
@@ -6039,6 +6024,9 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
     else {
         return FALSE;
     }
+#else // FEATURE_VIRTUAL_STUB_DISPATCH
+    return FALSE;
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
 
 // Check if the passed in instruction pointer is in one of the
@@ -6793,15 +6781,15 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                 // the subsequent logic here sees a managed fault.
                 //
                 // On 64-bit, some additional work is required..
-#ifdef FEATURE_EH_FUNCLETS
                 pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
+#ifdef FEATURE_EH_FUNCLETS
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
 #endif // defined(FEATURE_EH_FUNCLETS)
             }
             else if (AdjustContextForVirtualStub(pExceptionRecord, pContext))
             {
-#ifdef FEATURE_EH_FUNCLETS
                 pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
+#ifdef FEATURE_EH_FUNCLETS
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
 #endif
             }
@@ -7132,9 +7120,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING
     //
 
-#ifdef FEATURE_EH_FUNCLETS
     pExceptionInfo->ContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
-#endif // FEATURE_EH_FUNCLETS
 
     // WARNING
     //

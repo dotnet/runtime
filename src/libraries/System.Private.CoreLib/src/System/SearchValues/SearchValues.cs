@@ -3,7 +3,9 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
@@ -291,6 +293,22 @@ namespace System.Buffers
         internal readonly struct FalseConst : IRuntimeConst
         {
             public static bool Value => false;
+        }
+
+        /// <summary>
+        /// Same as <see cref="Vector128.ShuffleNative(Vector128{byte}, Vector128{byte})"/>, except that we guarantee that <see cref="Ssse3.Shuffle(Vector128{byte}, Vector128{byte})"/> is used when available.
+        /// Some logic in <see cref="SearchValues"/> relies on this exact behavior (implicit AND 0xF, and zeroing when the high bit is set).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        internal static Vector128<byte> ShuffleNativeModified(Vector128<byte> vector, Vector128<byte> indices)
+        {
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.Shuffle(vector, indices);
+            }
+
+            return Vector128.Shuffle(vector, indices);
         }
     }
 }

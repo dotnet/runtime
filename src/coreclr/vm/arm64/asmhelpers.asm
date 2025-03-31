@@ -8,7 +8,9 @@
     IMPORT ExternalMethodFixupWorker
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT VSD_ResolveWorker
+#endif
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
     IMPORT CallDescrWorkerUnwindFrameChainHandler
@@ -38,7 +40,9 @@
     IMPORT  g_lowest_address
     IMPORT  g_highest_address
     IMPORT  g_card_table
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT  g_dispatch_cache_chain_success_counter
+#endif
     IMPORT  g_pGetGCStaticBase
     IMPORT  g_pGetNonGCStaticBase
 
@@ -837,6 +841,7 @@ FaultingExceptionFrame_FrameOffset        SETA  0
 
         GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 ; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
 ;
@@ -928,6 +933,7 @@ Fail
         EPILOG_BRANCH_REG  x9
 
         NESTED_END
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_READYTORUN
 
@@ -1228,6 +1234,16 @@ JIT_PollGCRarePath
 
     NESTED_END
 #endif // FEATURE_INTERPRETER
+
+;x0 -This pointer
+;x1 -ReturnBuffer
+    LEAF_ENTRY ThisPtrRetBufPrecodeWorker
+        ldr  x12, [METHODDESC_REGISTER, #ThisPtrRetBufPrecodeData__Target]
+        mov  x11, x0     ; Move first arg pointer to temp register
+        mov  x0,  x1     ; Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
+        mov  x1, x11     ; Move temp register to first arg register for static method with return buffer
+        EPILOG_BRANCH_REG x12
+    LEAF_END
 
 ; Must be at very end of file
     END
