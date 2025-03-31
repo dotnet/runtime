@@ -89,6 +89,10 @@ void Compiler::fgCreateNewInitBB()
             block->setBBProfileWeight(entryWeight);
         }
     }
+    else
+    {
+        block->inheritWeight(fgFirstBB);
+    }
 
     // The new scratch bb will fall through to the old first bb
     FlowEdge* const edge = fgAddRefPred(fgFirstBB, block);
