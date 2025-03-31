@@ -289,8 +289,6 @@ void CodeGen::genCodeForBBlist()
 
         /* Start a new code output block */
 
-        genUpdateCurrentFunclet(block);
-
         genLogLabel(block);
 
         // Tell everyone which basic block we're working on
@@ -372,9 +370,9 @@ void CodeGen::genCodeForBBlist()
 
         bool firstMapping = true;
 
-        if (block->HasFlag(BBF_FUNCLET_BEG))
+        if (compiler->bbIsFuncletBeg(block))
         {
-            assert(compiler->UsesFunclets());
+            genUpdateCurrentFunclet(block);
             genReserveFuncletProlog(block);
         }
 
@@ -711,10 +709,9 @@ void CodeGen::genCodeForBBlist()
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if (block->IsLast() || block->Next()->HasFlag(BBF_FUNCLET_BEG) ||
-                    !BasicBlock::sameEHRegion(block, block->Next()) ||
+                if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()) ||
                     (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
-                    block->IsLastHotBlock(compiler))
+                    compiler->bbIsFuncletBeg(block->Next()) || block->IsLastHotBlock(compiler))
                 {
                     instGen(INS_BREAKPOINT); // This should never get executed
                 }
