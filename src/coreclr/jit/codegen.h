@@ -425,10 +425,6 @@ protected:
     void genOSRSaveRemainingCalleeSavedRegisters();
 #endif // TARGET_AMD64
 
-#if defined(TARGET_RISCV64)
-    void genStackProbe(ssize_t frameSize, regNumber rOffset, regNumber rLimit, regNumber rPageSize);
-#endif
-
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
     void genPoisonFrame(regMaskTP bbRegLiveIn);
@@ -1059,6 +1055,8 @@ protected:
 
     template <typename HWIntrinsicSwitchCaseBody>
     void genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsic,
+                                         instruction               ins,
+                                         emitAttr                  attr,
                                          regNumber                 nonConstImmReg,
                                          regNumber                 baseReg,
                                          regNumber                 offsReg,
@@ -1195,12 +1193,10 @@ protected:
     void      genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg);
     void      genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
     void genConsumePutStructArgStk(GenTreePutArgStk* putArgStkNode,
                                    regNumber         dstReg,
                                    regNumber         srcReg,
                                    regNumber         sizeReg);
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 #if FEATURE_ARG_SPLIT
     void genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode);
 #endif // FEATURE_ARG_SPLIT
@@ -1288,7 +1284,6 @@ protected:
     void genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArgVarNum);
 #endif // !TARGET_X86
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
 #ifdef TARGET_X86
     bool genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk);
     void genPushReg(var_types type, regNumber srcReg);
@@ -1310,7 +1305,6 @@ protected:
 #else
     void genStructPutArgPartialRepMovs(GenTreePutArgStk* putArgStkNode);
 #endif
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
     void     genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
     void     genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
@@ -1359,7 +1353,7 @@ protected:
     // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);
 #ifdef FEATURE_SIMD
-    void genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc);
+    void genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc);
 #endif
     void genStructReturn(GenTree* treeNode);
 
@@ -1404,14 +1398,12 @@ protected:
         return compiler->lvaGetDesc(tree->AsLclVarCommon())->lvIsRegCandidate();
     }
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
 #ifdef TARGET_X86
     bool m_pushStkArg;
 #else  // !TARGET_X86
     unsigned m_stkArgVarNum;
     unsigned m_stkArgOffset;
 #endif // !TARGET_X86
-#endif // !FEATURE_PUT_STRUCT_ARG_STK
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
     void genStackPointerCheck(bool      doStackPointerCheck,
