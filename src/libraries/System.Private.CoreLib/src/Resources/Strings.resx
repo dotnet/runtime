@@ -672,9 +672,6 @@
   <data name="Arg_NotGenericMethodDefinition" xml:space="preserve">
     <value>{0} is not a GenericMethodDefinition. MakeGenericMethod may only be called on a method for which MethodBase.IsGenericMethodDefinition is true.</value>
   </data>
-  <data name="Arg_NotSimpleTypeName" xml:space="preserve">
-    <value>'{0}' is not a simple TypeName.</value>
-  </data>
   <data name="Arg_NotGenericParameter" xml:space="preserve">
     <value>Method may only be called on a Type for which Type.IsGenericParameter is true.</value>
   </data>
