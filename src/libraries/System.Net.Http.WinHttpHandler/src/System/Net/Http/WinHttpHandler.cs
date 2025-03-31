@@ -106,7 +106,16 @@ namespace System.Net.Http
             if (CertificateCachingAppContextSwitchEnabled)
             {
                 WeakReference<WinHttpHandler> thisRef = new(this);
-                _certificateCleanupTimer = new Timer(
+                bool restoreFlow = false;
+                try
+                {
+                    if (!ExecutionContext.IsFlowSuppressed())
+                    {
+                        ExecutionContext.SuppressFlow();
+                        restoreFlow = true;
+                    }
+
+                    _certificateCleanupTimer = new Timer(
                     static s =>
                     {
                         if (((WeakReference<WinHttpHandler>)s!).TryGetTarget(out WinHttpHandler? thisRef))
@@ -117,6 +126,14 @@ namespace System.Net.Http
                     thisRef,
                     Timeout.Infinite,
                     Timeout.Infinite);
+                }
+                finally
+                {
+                    if (restoreFlow)
+                    {
+                        ExecutionContext.RestoreFlow();
+                    }
+                }
             }
         }
 
