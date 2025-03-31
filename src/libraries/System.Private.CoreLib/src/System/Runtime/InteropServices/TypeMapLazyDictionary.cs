@@ -61,8 +61,8 @@ namespace System.Runtime.InteropServices
         private static unsafe partial void ProcessAttributes(
             QCallAssembly assembly,
             QCallTypeHandle groupType,
-            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, void> newExternalTypeEntry,
-            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, void> newProxyTypeEntry,
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry,
             CallbackContext* context);
 
         private static TypeName NewTypeNameWithAssembly(TypeName typeName, ReadOnlySpan<char> assemblyName)
@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void NewExternalTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
+        private static unsafe Interop.BOOL NewExternalTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
         {
             Debug.Assert(context != null);
             Debug.Assert(arg != null);
@@ -135,11 +135,14 @@ namespace System.Runtime.InteropServices
             catch (Exception ex)
             {
                 context->CreationException = ExceptionDispatchInfo.Capture(ex);
+                return Interop.BOOL.FALSE; // Stop processing.
             }
+
+            return Interop.BOOL.TRUE; // Continue processing.
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void NewProxyTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
+        private static unsafe Interop.BOOL NewProxyTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
         {
             Debug.Assert(context != null);
             Debug.Assert(arg != null);
@@ -172,18 +175,21 @@ namespace System.Runtime.InteropServices
             catch (Exception ex)
             {
                 context->CreationException = ExceptionDispatchInfo.Capture(ex);
+                return Interop.BOOL.FALSE; // Stop processing.
             }
             finally
             {
                 sourceTypeBuffer.Dispose();
                 assemblyNameBuffer.Dispose();
             }
+
+            return Interop.BOOL.TRUE; // Continue processing.
         }
 
         private static unsafe CallbackContext CreateMaps(
             RuntimeType groupType,
-            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, void> newExternalTypeEntry,
-            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, void> newProxyTypeEntry)
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry)
         {
             RuntimeAssembly? startingAssembly = (RuntimeAssembly?)Assembly.GetEntryAssembly();
             if (startingAssembly is null)

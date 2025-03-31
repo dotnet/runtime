@@ -1531,7 +1531,11 @@ namespace
             IfFailThrow(pImport->GetCustomAttributeAsBlob(tkAttribute, &blob, &blobLen));
 
             // Pass the blob data off to the processor.
-            processor.Process(blob, blobLen);
+            if (!processor.Process(blob, blobLen))
+            {
+                // The processor has indicated processing should stop.
+                break;
+            }
         }
     }
 
@@ -1558,7 +1562,7 @@ namespace
             _toProcess.Add(first);
         }
 
-        void Process(void const* blob, ULONG blobLen)
+        BOOL Process(void const* blob, ULONG blobLen)
         {
             CustomAttributeParser cap(blob, blobLen);
             IfFailThrow(cap.ValidateProlog());
@@ -1581,6 +1585,8 @@ namespace
             {
                 _toProcess.Add(pAssembly);
             }
+
+            return TRUE;
         }
 
         bool IsEmpty() const
@@ -1606,13 +1612,13 @@ namespace
         SString _currAssemblyName;
         LPCUTF8 _currAssemblyNameUTF8;
         int32_t _currAssemblyNameLen;
-        void (*_callback)(void* context, ProcessAttributesCallbackArg* arg);
+        BOOL (*_callback)(void* context, ProcessAttributesCallbackArg* arg);
         void* _context;
 
     public:
         MappingsProcessor(
             Assembly* currAssembly,
-            void (*callback)(void* context, ProcessAttributesCallbackArg* arg),
+            BOOL (*callback)(void* context, ProcessAttributesCallbackArg* arg),
             void* context)
             : _currAssemblyName{}
             , _callback{ callback }
@@ -1625,7 +1631,7 @@ namespace
             _currAssemblyNameLen = (int32_t)strlen(_currAssemblyNameUTF8);
         }
 
-        void Process(void const* blob, ULONG blobLen)
+        BOOL Process(void const* blob, ULONG blobLen)
         {
             CustomAttributeParser cap(blob, blobLen);
             IfFailThrow(cap.ValidateProlog());
@@ -1651,7 +1657,7 @@ namespace
             arg.StringLen2 = strLen2;
             arg.StringLen3 = _currAssemblyNameLen;
 
-            _callback(_context, &arg);
+            return _callback(_context, &arg);
         }
     };
 }
@@ -1659,8 +1665,8 @@ namespace
 extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     QCall::AssemblyHandle pAssembly,
     QCall::TypeHandle pGroupType,
-    void (*newExternalTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
-    void (*newProxyTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
+    BOOL (*newExternalTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
+    BOOL (*newProxyTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
     void* context)
 {
     QCALL_CONTRACT;

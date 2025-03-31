@@ -158,8 +158,8 @@ struct ProcessAttributesCallbackArg final
 extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     QCall::AssemblyHandle pAssembly,
     QCall::TypeHandle pTypeGroup,
-    void (*newExternalTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
-    void (*newProxyTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
+    BOOL (*newExternalTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
+    BOOL (*newProxyTypeEntry)(void* context, ProcessAttributesCallbackArg* arg),
     void* context);
 
 #endif
