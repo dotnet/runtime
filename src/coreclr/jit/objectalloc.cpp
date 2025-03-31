@@ -1909,6 +1909,29 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_GT:
             case GT_LE:
             case GT_GE:
+            {
+                // We may see sibling null refs. Retype them as appropriate.
+                //
+                GenTree* const lhs = parent->AsOp()->gtGetOp1();
+                GenTree* const rhs = parent->AsOp()->gtGetOp2();
+
+                if (lhs == tree)
+                {
+                    if (rhs->IsIntegralConst(0))
+                    {
+                        rhs->ChangeType(newType);
+                    }
+                }
+                else if (rhs == tree)
+                {
+                    if (lhs->IsIntegralConst(0))
+                    {
+                        lhs->ChangeType(newType);
+                    }
+                }
+                break;
+            }
+
             case GT_NULLCHECK:
             case GT_ARR_LENGTH:
                 break;
