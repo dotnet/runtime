@@ -1204,7 +1204,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     genProduceReg(treeNode);
 }
 
-// Generate code for ADD, SUB, MUL, AND, AND_NOT, OR and XOR
+// Generate code for ADD, SUB, MUL, AND, AND_NOT, OR, OR_NOT, XOR, and XOR_NOT
 // This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
@@ -1212,7 +1212,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     regNumber        targetReg = treeNode->GetRegNum();
     emitter*         emit      = GetEmitter();
 
-    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
+    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_OR_NOT, GT_XOR, GT_XOR_NOT));
 
     GenTree*    op1 = treeNode->gtGetOp1();
     GenTree*    op2 = treeNode->gtGetOp2();
@@ -1856,8 +1856,9 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     if (size < EA_PTRSIZE)
     {
         int shiftAmount = tree->OperIs(GT_BSWAP16) ? 48 : 32;
-        // TODO: we need to right-shift the byte-reversed register anyway. Remove the cast wrapping GT_BSWAP16
-        // and pass the exact destination type here, so that this codegen could leave the register properly extended.
+        // TODO: we need to right-shift the byte-reversed register anyway. Remove the cast (in Lowering::LowerCast?)
+        // wrapping GT_BSWAP16 and pass the exact destination type here, so that this codegen could leave the register
+        // properly extended.
         emit.emitIns_R_R_I(INS_srai, size, dest, dest, shiftAmount);
     }
 
@@ -2671,7 +2672,9 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             case GT_AND_NOT:
-                NYI_RISCV64("GT_AND_NOT-----unimplemented/unused on RISCV64 yet----");
+                assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                assert(!isImmed(treeNode));
+                ins = INS_andn;
                 break;
 
             case GT_OR:
@@ -2684,6 +2687,12 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 {
                     ins = INS_or;
                 }
+                break;
+
+            case GT_OR_NOT:
+                assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                assert(!isImmed(treeNode));
+                ins = INS_orn;
                 break;
 
             case GT_LSH:
@@ -2781,6 +2790,12 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 {
                     ins = INS_xor;
                 }
+                break;
+
+            case GT_XOR_NOT:
+                assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                assert(!isImmed(treeNode));
+                ins = INS_xnor;
                 break;
 
             default:
@@ -4344,6 +4359,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_XOR:
         case GT_AND:
         case GT_AND_NOT:
+        case GT_OR_NOT:
+        case GT_XOR_NOT:
             assert(varTypeIsIntegralOrI(treeNode));
 
             FALLTHROUGH;

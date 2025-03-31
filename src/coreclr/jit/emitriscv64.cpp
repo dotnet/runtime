@@ -825,7 +825,7 @@ void emitter::emitIns_R_R_R(
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
-        (INS_rol <= ins && ins <= INS_rorw))
+        (INS_rol <= ins && ins <= INS_orn))
     {
 #ifdef DEBUG
         switch (ins)
@@ -919,6 +919,9 @@ void emitter::emitIns_R_R_R(
             case INS_rolw:
             case INS_ror:
             case INS_rorw:
+            case INS_xnor:
+            case INS_andn:
+            case INS_orn:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
@@ -3762,8 +3765,17 @@ void emitter::emitDispInsName(
                         case 0x0: // SUB
                             printf("sub            %s, %s, %s\n", rd, rs1, rs2);
                             return;
+                        case 0x4: // XORN
+                            printf("xorn           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
                         case 0x5: // SRA
                             printf("sra            %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x6: // ORN
+                            printf("orn            %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x7: // ANDN
+                            printf("andn           %s, %s, %s\n", rd, rs1, rs2);
                             return;
                         default:
                             return emitDispIllegalInstruction(code);
@@ -5064,7 +5076,9 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             case GT_AND:
             case GT_AND_NOT:
             case GT_OR:
+            case GT_OR_NOT:
             case GT_XOR:
+            case GT_XOR_NOT:
             {
                 emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
 

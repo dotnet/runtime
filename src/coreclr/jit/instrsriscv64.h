@@ -263,10 +263,15 @@ INST(amomaxu_d,     "amomaxu.d",      0,   0xe000302f) // funct5:11100
 
 // Zbb (RV32 + RV64)
 INST(rev8,          "rev8",           0,   0x6b805013)
+INST(rori,          "rori",           0,   0x60005013)
+INST(roriw,         "roriw",          0,   0x6000501b)
 INST(rol,           "rol",            0,   0x60001033)
 INST(rolw,          "rolw",           0,   0x6000103b)
 INST(ror,           "ror",            0,   0x60005033)
 INST(rorw,          "rorw",           0,   0x6000503b)
+INST(xnor,          "xnor",           0,   0x40004033)
+INST(orn,           "orn",            0,   0x40006033)
+INST(andn,          "andn",           0,   0x40007033)
 INST(rori,          "rori",           0,   0x60005013)
 INST(roriw,         "roriw",          0,   0x6000501b)
 
