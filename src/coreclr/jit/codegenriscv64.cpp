@@ -6151,7 +6151,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                         false,   // hasAsyncRet
                         di,
-\                       targetAddrReg,
+                        targetAddrReg,
                         call->IsFastTailCall());
             // clang-format on
         }
