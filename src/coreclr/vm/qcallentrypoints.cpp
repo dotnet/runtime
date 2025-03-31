@@ -72,6 +72,8 @@
 
 #include "exceptionhandlingqcalls.h"
 
+#include "versionresilienthashcode.h"
+
 static const Entry s_QCall[] =
 {
     DllImportEntry(ArgIterator_Init)
@@ -531,6 +533,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GenericHandleWorker)
     DllImportEntry(ThrowInvalidCastException)
     DllImportEntry(IsInstanceOf_NoCacheLookup)
+    DllImportEntry(VersionResilientHashCode_TypeHashCode)
 };
 
 const void* QCallResolveDllImport(const char* name)
