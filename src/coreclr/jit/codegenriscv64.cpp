@@ -779,6 +779,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        0,          // argSize
                                        EA_UNKNOWN // retSize
                                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN), // secondRetSize
+                                       false, // hasAsyncRet
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
@@ -2823,11 +2824,13 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 
     // TODO-RISCV64: can optimize further !!!
     GetEmitter()->emitIns_Call(callType, compiler->eeFindHelper(CORINFO_HELP_STOP_FOR_GC),
-                               INDEBUG_LDISASM_COMMA(nullptr) addr, 0, EA_UNKNOWN, EA_UNKNOWN, gcInfo.gcVarPtrSetCur,
-                               gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(), /* IL offset */
-                               callTarget,                                                    /* ireg */
-                               REG_NA, 0, 0,                                                  /* xreg, xmul, disp */
-                               false                                                          /* isJump */
+                               INDEBUG_LDISASM_COMMA(nullptr) addr, 0, EA_UNKNOWN, EA_UNKNOWN,
+                               false, // hasAsyncRet
+                               gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
+                               DebugInfo(),  /* IL offset */
+                               callTarget,   /* ireg */
+                               REG_NA, 0, 0, /* xreg, xmul, disp */
+                               false         /* isJump */
     );
 
     regMaskTP killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
@@ -3844,11 +3847,13 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     }
 
     GetEmitter()->emitIns_Call(callType, compiler->eeFindHelper(helper), INDEBUG_LDISASM_COMMA(nullptr) addr, argSize,
-                               retSize, EA_UNKNOWN, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur, DebugInfo(), /* IL offset */
-                               callTarget,                           /* ireg */
-                               REG_NA, 0, 0,                         /* xreg, xmul, disp */
-                               false                                 /* isJump */
+                               retSize, EA_UNKNOWN,
+                               false, // hasAsyncRet
+                               gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
+                               DebugInfo(),  /* IL offset */
+                               callTarget,   /* ireg */
+                               REG_NA, 0, 0, /* xreg, xmul, disp */
+                               false         /* isJump */
     );
 
     regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
@@ -6095,6 +6100,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     nullptr, // addr
                     retSize
                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    false,   // hasAsyncRet
                     di,
                     target->GetRegNum(),
                     call->IsFastTailCall());
@@ -6143,8 +6149,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                         nullptr, // addr
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        false,   // hasAsyncRet
                         di,
-                        targetAddrReg,
+\                       targetAddrReg,
                         call->IsFastTailCall());
             // clang-format on
         }
@@ -6186,6 +6193,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                         addr,
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        false,    // hasAsyncRet
                         di,
                         REG_NA,
                         call->IsFastTailCall());
@@ -6772,11 +6780,13 @@ void CodeGen::genJumpToThrowHlpBlk_la(
         BasicBlock* skipLabel = genCreateTempLabel();
 
         emit->emitIns_Call(callType, compiler->eeFindHelper(compiler->acdHelper(codeKind)),
-                           INDEBUG_LDISASM_COMMA(nullptr) addr, 0, EA_UNKNOWN, EA_UNKNOWN, gcInfo.gcVarPtrSetCur,
-                           gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(), /* IL offset */
-                           callTarget,                                                    /* ireg */
-                           REG_NA, 0, 0,                                                  /* xreg, xmul, disp */
-                           false                                                          /* isJump */
+                           INDEBUG_LDISASM_COMMA(nullptr) addr, 0, EA_UNKNOWN, EA_UNKNOWN,
+                           false, // hasAsyncRet
+                           gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
+                           DebugInfo(),  /* IL offset */
+                           callTarget,   /* ireg */
+                           REG_NA, 0, 0, /* xreg, xmul, disp */
+                           false         /* isJump */
         );
 
         regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
