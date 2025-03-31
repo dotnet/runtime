@@ -1762,6 +1762,16 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
                 GenTree* const addr = parent->AsIndir()->Addr();
 
+                // If we're directly loading through a local address, treat as an assigment.
+                //
+                if (addr->OperIs(GT_LCL_ADDR))
+                {
+                    JITDUMP("... local [indir] load\n");
+                    ++parentIndex;
+                    ++numIndirs;
+                    keepChecking = true;
+                    break;
+                }
                 // For loads from structs we may be tracking the underlying fields.
                 //
                 // We don't handle TYP_REF locals (yet), and allowing that requires separating out the object from
@@ -1775,15 +1785,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 //
                 // We only track through the first indir.
                 //
-                if (addr->OperIs(GT_LCL_ADDR))
-                {
-                    JITDUMP("... local [indir] load\n");
-                    ++parentIndex;
-                    ++numIndirs;
-                    keepChecking = true;
-                    break;
-                }
-                else if (m_trackFields && (numIndirs == 0))
+                else if (m_trackFields && (numIndirs == 0) && (lclDsc->TypeGet() != TYP_REF))
                 {
                     JITDUMP("... local [struct] load\n");
                     ++parentIndex;

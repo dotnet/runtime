@@ -775,19 +775,19 @@ namespace ObjectStackAllocation
         {
             long before = GC.GetAllocatedBytesForCurrentThread();
             Case1();
-            EnsureZeroAllocated(before);
+            EnsureZeroAllocated(before, 1);
             Case2();
-            EnsureZeroAllocated(before);
+            EnsureZeroAllocated(before, 2);
             Case3(null);
-            EnsureZeroAllocated(before);
+            EnsureZeroAllocated(before, 3);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void EnsureZeroAllocated(long before)
+        private static void EnsureZeroAllocated(long before, int caseNumber)
         {
             long after = GC.GetAllocatedBytesForCurrentThread();
             if (after - before != 0)
-                throw new InvalidOperationException($"Unexpected allocation: {after - before} bytes");
+                throw new InvalidOperationException($"Unexpected allocation in Case {caseNumber}: {after - before} bytes");
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
