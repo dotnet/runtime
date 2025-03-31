@@ -38,6 +38,10 @@ using DupType_MapString = Lib.AliasedName;
 [assembly: TypeMapAssociation<TypicalUseCase>(typeof(S1), typeof(S1))]
 [assembly: TypeMapAssociation<TypicalUseCase>(typeof(Guid), typeof(C1))]
 [assembly: TypeMapAssociation<TypicalUseCase>(typeof(string), typeof(S1))]
+[assembly: TypeMapAssociation<TypicalUseCase>(typeof(List<int>), typeof(C1))]
+[assembly: TypeMapAssociation<TypicalUseCase>(typeof(List<>), typeof(S1))]
+[assembly: TypeMapAssociation<TypicalUseCase>(typeof(C1.I1), typeof(C1))]
+[assembly: TypeMapAssociation<TypicalUseCase>(typeof(C1.I2<int>), typeof(S1))]
 [assembly: TypeMapAssociation<TypicalUseCase>(typeof(C2<int>), typeof(C1))]
 [assembly: TypeMapAssociation<TypicalUseCase>(typeof(C2<>), typeof(S1))]
 [assembly: TypeMapAssociation<TypicalUseCase>(typeof(int[]), typeof(C1))]
@@ -147,7 +151,11 @@ public class TypeMap
         Assert.Equal(typeof(S1), map[typeof(S1)]);
         Assert.Equal(typeof(C1), map[typeof(Guid)]);
         Assert.Equal(typeof(S1), map[typeof(string)]);
-        //Assert.Equal(typeof(C1), map[typeof(C2<int>)]);
+        Assert.Equal(typeof(C1), map[typeof(List<int>)]);
+        Assert.Equal(typeof(S1), map[typeof(List<>)]);
+        Assert.Equal(typeof(C1), map[typeof(C1.I1)]);
+        Assert.Equal(typeof(S1), map[typeof(C1.I2<int>)]);
+        Assert.Equal(typeof(C1), map[typeof(C2<int>)]);
         Assert.Equal(typeof(S1), map[typeof(C2<>)]);
         Assert.Equal(typeof(C1), map[typeof(int[])]);
         Assert.Equal(typeof(S1), map[typeof(int*)]);
@@ -156,11 +164,16 @@ public class TypeMap
         Assert.True(map.TryGetValue(typeof(S1), out Type? _));
         Assert.True(map.TryGetValue(typeof(Guid), out Type? _));
         Assert.True(map.TryGetValue(typeof(string), out Type? _));
-        //Assert.True(map.TryGetValue(typeof(C2<int>), out Type? _));
+        Assert.True(map.TryGetValue(typeof(List<int>), out Type? _));
+        Assert.True(map.TryGetValue(typeof(List<>), out Type? _));
+        Assert.True(map.TryGetValue(typeof(C1.I1), out Type? _));
+        Assert.True(map.TryGetValue(typeof(C1.I2<int>), out Type? _));
+        Assert.True(map.TryGetValue(typeof(C2<int>), out Type? _));
         Assert.True(map.TryGetValue(typeof(C2<>), out Type? _));
         Assert.True(map.TryGetValue(typeof(int[]), out Type? _));
         Assert.True(map.TryGetValue(typeof(int*), out Type? _));
 
+        // Validate strict type mapping, no implicit conversions.
         Assert.False(map.TryGetValue(typeof(object), out Type? _));
         Assert.False(map.TryGetValue(typeof(void*), out Type? _));
         Assert.False(map.TryGetValue(typeof(IntPtr), out Type? _));

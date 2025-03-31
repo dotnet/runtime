@@ -160,7 +160,7 @@ namespace System.Runtime.InteropServices
                 ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(arg->Utf8String1, arg->StringLen1), out sourceTypeBuffer);
                 TypeName parsedSource = TypeNameParser.Parse(sourceTypeBuffer.Buffer, throwOnError: true)!;
 
-                // The assembly name is not included in the type name, so use the fallback assembly name.
+                // If the assembly name is not included in the type name, use the fallback assembly name.
                 string assemblyName = parsedSource.AssemblyName?.FullName ?? context->CurrentAssembly.FullName!;
                 Debug.Assert(assemblyName != null);
 
@@ -362,10 +362,11 @@ namespace System.Runtime.InteropServices
         [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
         private sealed class LazyProxyTypeDictionary : LazyTypeLoadDictionary<Type>
         {
-            // We don't include the assembly name for the hash code since it is not
-            // guaranteed to be the same for the same type due to type forwarding.
-            private static int ComputeHashCode(Type key) => key.FullName!.GetHashCode();
-            private static int ComputeHashCode(TypeName key) => key.FullName.GetHashCode();
+            private static int ComputeHashCode(RuntimeType key)
+                => Internal.VersionResilientHashCode.TypeHashCode(key);
+
+            private static int ComputeHashCode(TypeName key)
+                => Internal.VersionResilientHashCode.TypeHashCode(key);
 
             private struct SourceProxyPair
             {
@@ -389,7 +390,12 @@ namespace System.Runtime.InteropServices
 
             protected override bool TryGetOrLoadType(Type key, [NotNullWhen(true)] out Type? type)
             {
-                int hash = ComputeHashCode(key);
+                if (key is not RuntimeType rtType)
+                {
+                    throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(key));
+                }
+
+                int hash = ComputeHashCode(rtType);
 
                 if (_lazyData.TryGetValue(hash, out DelayedTypeCollection? value))
                 {
