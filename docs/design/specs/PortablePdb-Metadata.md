@@ -613,7 +613,7 @@ The blob has the following structure:
 
 | terminal         | encoding                    | description                            |
 |:-----------------|:----------------------------|:---------------------------------------|
-| document-ordinal | compressed unsigned integer | 1-based index into the Document table. |
+| document-ordinal | compressed unsigned integer | row id of the Document table. |
 
 > The purpose of this data is to allow a tool navigate to the source of a type definition where there would
 > otherwise not be any data available. For example an empty class definition, or an enum, where there are
