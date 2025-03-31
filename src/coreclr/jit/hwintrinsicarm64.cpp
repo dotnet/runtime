@@ -2189,6 +2189,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_op_UnaryNegation:
         case NI_Vector64_op_UnaryNegation:
         case NI_Vector128_op_UnaryNegation:
         {
@@ -2198,6 +2199,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_op_OnesComplement:
         case NI_Vector64_op_OnesComplement:
         case NI_Vector128_op_OnesComplement:
         {
@@ -2220,6 +2222,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_op_UnaryPlus:
         case NI_Vector64_op_UnaryPlus:
         case NI_Vector128_op_UnaryPlus:
         {

@@ -28926,6 +28926,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 //
 NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, NamedIntrinsic id)
 {
+    //TODO-VL: Look for all places where NI_AdvSimd_* is used and add logic for NI_Sve_* at all those places
     NamedIntrinsic sveId = id;
     if (simdSize > 16)
     {
@@ -28994,6 +28995,9 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
             case NI_AdvSimd_Multiply:
             case NI_AdvSimd_Arm64_Multiply:
                 sveId = NI_Sve_Multiply;
+                break;
+            case NI_AdvSimd_Negate:
+                sveId = NI_Sve_Negate;
                 break;
             case NI_AdvSimd_Not:
                 sveId = NI_Sve_Not;

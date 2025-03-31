@@ -1466,7 +1466,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector64_AsUInt32:
                             case NI_Vector64_AsUInt64:
                             case NI_Vector64_op_UnaryPlus:
-#endif // TARGET_XARCH
+                            case NI_Vector_op_UnaryPlus:
+#endif // TARGET_ARM64
                             case NI_Vector128_As:
                             case NI_Vector128_AsByte:
                             case NI_Vector128_AsDouble:
