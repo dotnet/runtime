@@ -1804,6 +1804,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_IsNaN:
         case NI_Vector64_IsNaN:
         case NI_Vector128_IsNaN:
         {
@@ -1887,6 +1888,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_IsZero:
         case NI_Vector64_IsZero:
         case NI_Vector128_IsZero:
         {
