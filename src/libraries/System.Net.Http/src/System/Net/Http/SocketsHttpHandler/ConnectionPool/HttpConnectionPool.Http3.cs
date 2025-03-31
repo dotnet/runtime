@@ -87,18 +87,18 @@ namespace System.Net.Http
                         ThrowGetVersionException(request, 3, reasonException);
                     }
 
-                    WaitForHttp3ConnectionActivity waitForConnectionTelemetry = new WaitForHttp3ConnectionActivity(Settings._metrics!, authority);
+                    WaitForHttp3ConnectionActivity waitForConnectionActivity = new WaitForHttp3ConnectionActivity(Settings._metrics!, authority);
 
                     if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out http3ConnectionWaiter))
                     {
-                        waitForConnectionTelemetry.Start();
+                        waitForConnectionActivity.Start();
                         try
                         {
                             connection = await http3ConnectionWaiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
-                            waitForConnectionTelemetry.Stop(request, this, ex);
+                            waitForConnectionActivity.Stop(request, this, ex);
                             throw;
                         }
                     }
@@ -110,7 +110,7 @@ namespace System.Net.Http
                         return null;
                     }
 
-                    HttpResponseMessage response = await connection.SendAsync(request, waitForConnectionTelemetry, cancellationToken).ConfigureAwait(false);
+                    HttpResponseMessage response = await connection.SendAsync(request, waitForConnectionActivity, cancellationToken).ConfigureAwait(false);
 
                     // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
                     // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
