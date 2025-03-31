@@ -240,9 +240,10 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     PEImage *pImage = (PEImage *) u2;
 
     if (pLocator->m_bIsInBundle != pImage->IsInBundle())
-    {
         return FALSE;
-    }
+
+    if (pLocator->m_bIsExternalData != pImage->IsExternalData())
+        return FALSE;
 
     BOOL ret = FALSE;
     HRESULT hr;
@@ -547,7 +548,7 @@ PEImage::PEImage(const WCHAR* path):
     m_pathHash(0),
     m_refCount(1),
     m_bInHashMap(FALSE),
-    m_bundleFileLocation(),
+    m_probeExtensionResult(),
     m_hFile(INVALID_HANDLE_VALUE),
     m_dwPEKind(0),
     m_dwMachine(0),
@@ -627,7 +628,7 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
 
 #ifdef TARGET_WINDOWS
         // on Windows we prefer to just load the file using OS loader
-        if (!IsInBundle() && bIsLoadedLayoutSuitable)
+        if (!IsInBundle() && IsFile() && bIsLoadedLayoutSuitable)
         {
             bIsLoadedLayoutPreferred = TRUE;
         }

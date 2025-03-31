@@ -481,13 +481,9 @@ private:
 #if defined(_PREFAST_)
   #define FORLAZYMACHSTATE_BEGINLOOP(x) x
   #define FORLAZYMACHSTATE_ENDLOOP(x)
-  #define FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_BEGIN
-  #define FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_END
 #else
   #define FORLAZYMACHSTATE_BEGINLOOP(x) x do
   #define FORLAZYMACHSTATE_ENDLOOP(x) while(x)
-  #define FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_BEGIN  DEBUG_OK_TO_RETURN_BEGIN(LAZYMACHSTATE)
-  #define FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_END    DEBUG_OK_TO_RETURN_END(LAZYMACHSTATE)
 #endif
 
 // BEGIN: before gcpoll
@@ -497,10 +493,6 @@ private:
 // END: after gcpoll
 //__fcallGcCanTrigger.Leave(__FUNCTION__, __FILE__, __LINE__);
 
-// We have to put DEBUG_OK_TO_RETURN_BEGIN around the FORLAZYMACHSTATE
-// to allow the HELPER_FRAME to be installed inside an SO_INTOLERANT region
-// which does not allow a return.  The return is used by FORLAZYMACHSTATE
-// to capture the state, but is not an actual return, so it is ok.
 #define HELPER_METHOD_FRAME_BEGIN_EX_BODY(ret, helperFrame, gcpoll, allowGC)  \
         FORLAZYMACHSTATE_BEGINLOOP(int alwaysZero = 0;)         \
         {                                                       \
@@ -508,9 +500,7 @@ private:
             PERMIT_HELPER_METHOD_FRAME_BEGIN();                 \
             CHECK_HELPER_METHOD_FRAME_PERMITTED();              \
             helperFrame;                                        \
-            FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_BEGIN;          \
             FORLAZYMACHSTATE(CAPTURE_STATE(__helperframe.MachineState(), ret);) \
-            FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_END;            \
             INDEBUG(__helperframe.SetAddrOfHaveCheckedRestoreState(&__haveCheckedRestoreState)); \
             DEBUG_ASSURE_NO_RETURN_BEGIN(HELPER_METHOD_FRAME);  \
             INCONTRACT(FCallGCCanTrigger::Enter());
