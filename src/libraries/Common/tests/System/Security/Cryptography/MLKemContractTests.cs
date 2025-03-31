@@ -289,6 +289,36 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FilledWith<byte>(0xFE, sharedSecret);
         }
 
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void Encapsulate_Allocated_DestinationSecret(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm)
+            {
+                OnEncapsulateCore = (Span<byte> ciphertext, Span<byte> sharedSecret) =>
+                {
+                    ciphertext.Fill(0xCA);
+                    sharedSecret.Fill(0xFE);
+                }
+            };
+
+            byte[] sharedSecret = new byte[algorithm.SharedSecretSizeInBytes];
+            byte[] ciphertext = kem.Encapsulate(sharedSecret);
+
+            Assert.Equal(algorithm.CiphertextSizeInBytes, ciphertext.Length);
+            AssertExtensions.FilledWith<byte>(0xCA, ciphertext);
+            AssertExtensions.FilledWith<byte>(0xFE, sharedSecret);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void Encapsulate_Allocated_DestinationSecret_WrongSecretBufferSize(MLKemAlgorithm algorithm)
+        {
+            using MLKemContract kem = new(algorithm);
+            byte[] sharedSecret = new byte[algorithm.SharedSecretSizeInBytes + 1];
+            AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Encapsulate(sharedSecret));
+        }
+
         [Fact]
         public static void Encapsulate_Allocated_Disposed()
         {
