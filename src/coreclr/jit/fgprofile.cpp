@@ -4864,7 +4864,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
     //
     const unsigned numSuccs = block->NumSucc(this);
 
-    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
+    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
         weight_t const blockWeight        = block->bbWeight;
         weight_t       outgoingLikelihood = 0;
