@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Http.Metrics;
 using System.Threading;
 
 namespace System.Net.Http
