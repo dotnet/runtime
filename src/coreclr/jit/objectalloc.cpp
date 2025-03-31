@@ -1752,6 +1752,14 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_IND:
             {
+                // Does this load a type we're tracking?
+                //
+                if (!IsTrackedType(parent->TypeGet()))
+                {
+                    canLclVarEscapeViaParentStack = false;
+                    break;
+                }
+
                 GenTree* const addr = parent->AsIndir()->Addr();
 
                 // For loads from structs we may be tracking the underlying fields.
@@ -1784,7 +1792,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     break;
                 }
 
-                // Address doesn't refer to anything we track
+                // Address doesn't refer to any location we track
                 //
                 canLclVarEscapeViaParentStack = false;
                 break;
