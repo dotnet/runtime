@@ -2450,6 +2450,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_StoreUnsafe:
         case NI_Vector64_StoreUnsafe:
         case NI_Vector128_StoreUnsafe:
         {
@@ -2491,6 +2492,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_StoreAligned:
         case NI_Vector64_StoreAligned:
         case NI_Vector128_StoreAligned:
         {
@@ -2521,6 +2523,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_StoreAlignedNonTemporal:
         case NI_Vector64_StoreAlignedNonTemporal:
         case NI_Vector128_StoreAlignedNonTemporal:
         {
