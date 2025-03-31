@@ -1482,9 +1482,6 @@ char *monoeg_g_getenv(const char *variable);
 void mono_profhelper_parse_profiler_args (const char *desc, MonoCallSpec *callspec, double *desired_sample_interval_ms);
 static MonoCallSpec callspec;
 
-// if the method full name contains the filter string, we instrument it
-// if there is no filter do not instrument anything
-// if the filter is "true" instrument everything
 static MonoProfilerCallInstrumentationFlags
 method_filter (MonoProfiler *prof, MonoMethod *method)
 {
