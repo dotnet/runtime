@@ -56,6 +56,11 @@ namespace System.Xml.Schema.DateAndTime.Parsers
 
         public bool Parse(string text, XsdDateTimeFlags kinds)
         {
+            const XsdDateTimeFlags dateVariants = XsdDateTimeFlags.DateTime
+                | XsdDateTimeFlags.Date
+                | XsdDateTimeFlags.XdrDateTime
+                | XsdDateTimeFlags.XdrDateTimeNoTz;
+
             _text = text;
             _length = text.Length;
 
@@ -65,157 +70,133 @@ namespace System.Xml.Schema.DateAndTime.Parsers
             {
                 start++;
             }
+
             // Choose format starting from the most common and trying not to reparse the same thing too many times
-            if (Test(kinds, XsdDateTimeFlags.DateTime | XsdDateTimeFlags.Date | XsdDateTimeFlags.XdrDateTime | XsdDateTimeFlags.XdrDateTimeNoTz))
+            if (Test(kinds, dateVariants) && ParseDate(start))
             {
-                if (ParseDate(start))
+                if (Test(kinds, XsdDateTimeFlags.DateTime) &&
+                    ParseChar(start + s_lzyyyy_MM_dd, 'T') &&
+                    ParseTimeAndZoneAndWhitespace(start + s_lzyyyy_MM_ddT))
                 {
-                    if (Test(kinds, XsdDateTimeFlags.DateTime))
-                    {
-                        if (ParseChar(start + s_lzyyyy_MM_dd, 'T') && ParseTimeAndZoneAndWhitespace(start + s_lzyyyy_MM_ddT))
-                        {
-                            typeCode = DateTimeTypeCode.DateTime;
-                            return true;
-                        }
-                    }
-                    if (Test(kinds, XsdDateTimeFlags.Date))
-                    {
-                        if (ParseZoneAndWhitespace(start + s_lzyyyy_MM_dd))
-                        {
-                            typeCode = DateTimeTypeCode.Date;
-                            return true;
-                        }
-                    }
+                    typeCode = DateTimeTypeCode.DateTime;
+                    return true;
+                }
 
-                    if (Test(kinds, XsdDateTimeFlags.XdrDateTime))
+                if (Test(kinds, XsdDateTimeFlags.Date)
+                    && ParseZoneAndWhitespace(start + s_lzyyyy_MM_dd))
+                {
+                    typeCode = DateTimeTypeCode.Date;
+                    return true;
+                }
+
+                if (Test(kinds, XsdDateTimeFlags.XdrDateTime) &&
+                    (ParseZoneAndWhitespace(start + s_lzyyyy_MM_dd) ||
+                        (ParseChar(start + s_lzyyyy_MM_dd, 'T') && ParseTimeAndZoneAndWhitespace(start + s_lzyyyy_MM_ddT))))
+                {
+                    typeCode = DateTimeTypeCode.XdrDateTime;
+                    return true;
+                }
+
+                if (Test(kinds, XsdDateTimeFlags.XdrDateTimeNoTz))
+                {
+                    if (ParseChar(start + s_lzyyyy_MM_dd, 'T'))
                     {
-                        if (ParseZoneAndWhitespace(start + s_lzyyyy_MM_dd) || (ParseChar(start + s_lzyyyy_MM_dd, 'T') && ParseTimeAndZoneAndWhitespace(start + s_lzyyyy_MM_ddT)))
+                        if (ParseTimeAndWhitespace(start + s_lzyyyy_MM_ddT))
                         {
                             typeCode = DateTimeTypeCode.XdrDateTime;
                             return true;
                         }
                     }
-                    if (Test(kinds, XsdDateTimeFlags.XdrDateTimeNoTz))
+                    else
                     {
-                        if (ParseChar(start + s_lzyyyy_MM_dd, 'T'))
-                        {
-                            if (ParseTimeAndWhitespace(start + s_lzyyyy_MM_ddT))
-                            {
-                                typeCode = DateTimeTypeCode.XdrDateTime;
-                                return true;
-                            }
-                        }
-                        else
-                        {
-                            typeCode = DateTimeTypeCode.XdrDateTime;
-                            return true;
-                        }
+                        typeCode = DateTimeTypeCode.XdrDateTime;
+                        return true;
                     }
                 }
             }
 
-            if (Test(kinds, XsdDateTimeFlags.Time))
+            if (Test(kinds, XsdDateTimeFlags.Time) && ParseTimeAndZoneAndWhitespace(start))
             {
-                if (ParseTimeAndZoneAndWhitespace(start))
-                { //Equivalent to NoCurrentDateDefault on DateTimeStyles while parsing xs:time
-                    year = leapYear;
+                year = leapYear;
+                month = firstMonth;
+                day = firstDay;
+                typeCode = DateTimeTypeCode.Time;
+                return true;
+            }
+
+            if (Test(kinds, XsdDateTimeFlags.XdrTimeNoTz) && ParseTimeAndWhitespace(start))
+            {
+                year = leapYear;
+                month = firstMonth;
+                day = firstDay;
+                typeCode = DateTimeTypeCode.Time;
+                return true;
+            }
+
+            if (Test(kinds, XsdDateTimeFlags.GYearMonth | XsdDateTimeFlags.GYear) && Parse4Dig(start, ref year) && 1 <= year)
+            {
+                if (Test(kinds, XsdDateTimeFlags.GYearMonth) &&
+                    ParseChar(start + s_lzyyyy, '-') &&
+                    Parse2Dig(start + s_lzyyyy_, ref month) && 1 <= month && month <= 12 &&
+                    ParseZoneAndWhitespace(start + s_lzyyyy_MM))
+                {
+                    day = firstDay;
+                    typeCode = DateTimeTypeCode.GYearMonth;
+                    return true;
+                }
+
+                if (Test(kinds, XsdDateTimeFlags.GYear) && ParseZoneAndWhitespace(start + s_lzyyyy))
+                {
                     month = firstMonth;
                     day = firstDay;
-                    typeCode = DateTimeTypeCode.Time;
+                    typeCode = DateTimeTypeCode.GYear;
                     return true;
                 }
             }
 
-            if (Test(kinds, XsdDateTimeFlags.XdrTimeNoTz))
+            if (Test(kinds, XsdDateTimeFlags.GMonthDay | XsdDateTimeFlags.GMonth) &&
+                ParseChar(start, '-') &&
+                ParseChar(start + s_Lz_, '-') &&
+                Parse2Dig(start + s_Lz__, ref month) && 1 <= month && month <= 12)
             {
-                if (ParseTimeAndWhitespace(start))
-                { //Equivalent to NoCurrentDateDefault on DateTimeStyles while parsing xs:time
+                if (Test(kinds, XsdDateTimeFlags.GMonthDay) &&
+                    ParseChar(start + s_lz__mm, '-') &&
+                    Parse2Dig(start + s_lz__mm_, ref day) && 1 <= day && day <= DateTime.DaysInMonth(leapYear, month) &&
+                    ParseZoneAndWhitespace(start + s_lz__mm_dd))
+                {
                     year = leapYear;
-                    month = firstMonth;
+                    typeCode = DateTimeTypeCode.GMonthDay;
+                    return true;
+                }
+
+                if (Test(kinds, XsdDateTimeFlags.GMonth) &&
+                    (ParseZoneAndWhitespace(start + s_lz__mm) ||
+                        (ParseChar(start + s_lz__mm, '-') &&
+                            ParseChar(start + s_lz__mm_, '-') &&
+                            ParseZoneAndWhitespace(start + s_lz__mm__))))
+                {
+                    year = leapYear;
                     day = firstDay;
-                    typeCode = DateTimeTypeCode.Time;
+                    typeCode = DateTimeTypeCode.GMonth;
                     return true;
                 }
             }
 
-            if (Test(kinds, XsdDateTimeFlags.GYearMonth | XsdDateTimeFlags.GYear))
+            if (Test(kinds, XsdDateTimeFlags.GDay) &&
+                ParseChar(start, '-') &&
+                ParseChar(start + s_Lz_, '-') &&
+                ParseChar(start + s_Lz__, '-') &&
+                Parse2Dig(start + s_Lz___, ref day) &&
+                1 <= day &&
+                day <= DateTime.DaysInMonth(leapYear, firstMonth) &&
+                ParseZoneAndWhitespace(start + s_lz___dd))
             {
-                if (Parse4Dig(start, ref year) && 1 <= year)
-                {
-                    if (Test(kinds, XsdDateTimeFlags.GYearMonth))
-                    {
-                        if (
-                            ParseChar(start + s_lzyyyy, '-') &&
-                            Parse2Dig(start + s_lzyyyy_, ref month) && 1 <= month && month <= 12 &&
-                            ParseZoneAndWhitespace(start + s_lzyyyy_MM)
-                        )
-                        {
-                            day = firstDay;
-                            typeCode = DateTimeTypeCode.GYearMonth;
-                            return true;
-                        }
-                    }
-                    if (Test(kinds, XsdDateTimeFlags.GYear))
-                    {
-                        if (ParseZoneAndWhitespace(start + s_lzyyyy))
-                        {
-                            month = firstMonth;
-                            day = firstDay;
-                            typeCode = DateTimeTypeCode.GYear;
-                            return true;
-                        }
-                    }
-                }
+                year = leapYear;
+                month = firstMonth;
+                typeCode = DateTimeTypeCode.GDay;
+                return true;
             }
-            if (Test(kinds, XsdDateTimeFlags.GMonthDay | XsdDateTimeFlags.GMonth))
-            {
-                if (
-                    ParseChar(start, '-') &&
-                    ParseChar(start + s_Lz_, '-') &&
-                    Parse2Dig(start + s_Lz__, ref month) && 1 <= month && month <= 12
-                )
-                {
-                    if (Test(kinds, XsdDateTimeFlags.GMonthDay) && ParseChar(start + s_lz__mm, '-'))
-                    {
-                        if (
-                            Parse2Dig(start + s_lz__mm_, ref day) && 1 <= day && day <= DateTime.DaysInMonth(leapYear, month) &&
-                            ParseZoneAndWhitespace(start + s_lz__mm_dd)
-                        )
-                        {
-                            year = leapYear;
-                            typeCode = DateTimeTypeCode.GMonthDay;
-                            return true;
-                        }
-                    }
-                    if (Test(kinds, XsdDateTimeFlags.GMonth))
-                    {
-                        if (ParseZoneAndWhitespace(start + s_lz__mm) || (ParseChar(start + s_lz__mm, '-') && ParseChar(start + s_lz__mm_, '-') && ParseZoneAndWhitespace(start + s_lz__mm__)))
-                        {
-                            year = leapYear;
-                            day = firstDay;
-                            typeCode = DateTimeTypeCode.GMonth;
-                            return true;
-                        }
-                    }
-                }
-            }
-            if (Test(kinds, XsdDateTimeFlags.GDay))
-            {
-                if (
-                    ParseChar(start, '-') &&
-                    ParseChar(start + s_Lz_, '-') &&
-                    ParseChar(start + s_Lz__, '-') &&
-                    Parse2Dig(start + s_Lz___, ref day) && 1 <= day && day <= DateTime.DaysInMonth(leapYear, firstMonth) &&
-                    ParseZoneAndWhitespace(start + s_lz___dd)
 
-                )
-                {
-                    year = leapYear;
-                    month = firstMonth;
-                    typeCode = DateTimeTypeCode.GDay;
-                    return true;
-                }
-            }
             return false;
         }
 
@@ -352,7 +333,7 @@ namespace System.Xml.Schema.DateAndTime.Parsers
             if (ParseTime(ref start))
             {
                 while (start < _length)
-                {//&& char.IsWhiteSpace(text[start])) {
+                {
                     start++;
                 }
                 return start == _length;
@@ -362,12 +343,9 @@ namespace System.Xml.Schema.DateAndTime.Parsers
 
         private bool ParseTimeAndZoneAndWhitespace(int start)
         {
-            if (ParseTime(ref start))
+            if (ParseTime(ref start) && ParseZoneAndWhitespace(start))
             {
-                if (ParseZoneAndWhitespace(start))
-                {
-                    return true;
-                }
+                return true;
             }
             return false;
         }
@@ -382,24 +360,22 @@ namespace System.Xml.Schema.DateAndTime.Parsers
                     kind = XsdDateTimeKind.Zulu;
                     start++;
                 }
-                else if (start + 5 < _length)
+                else if ((start + 5 < _length) &&
+                    Parse2Dig(start + s_Lz_, ref zoneHour) &&
+                    zoneHour <= 99 &&
+                    ParseChar(start + s_lz_zz, ':') &&
+                    Parse2Dig(start + s_lz_zz_, ref zoneMinute) &&
+                    zoneMinute <= 99)
                 {
-                    if (
-                        Parse2Dig(start + s_Lz_, ref zoneHour) && zoneHour <= 99 &&
-                        ParseChar(start + s_lz_zz, ':') &&
-                        Parse2Dig(start + s_lz_zz_, ref zoneMinute) && zoneMinute <= 99
-                    )
+                    if (ch == '-')
                     {
-                        if (ch == '-')
-                        {
-                            kind = XsdDateTimeKind.LocalWestOfZulu;
-                            start += s_lz_zz_zz;
-                        }
-                        else if (ch == '+')
-                        {
-                            kind = XsdDateTimeKind.LocalEastOfZulu;
-                            start += s_lz_zz_zz;
-                        }
+                        kind = XsdDateTimeKind.LocalWestOfZulu;
+                        start += s_lz_zz_zz;
+                    }
+                    else if (ch == '+')
+                    {
+                        kind = XsdDateTimeKind.LocalEastOfZulu;
+                        start += s_lz_zz_zz;
                     }
                 }
             }
