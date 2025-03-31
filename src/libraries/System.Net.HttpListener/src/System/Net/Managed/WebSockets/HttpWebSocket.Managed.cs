@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.WebSockets
@@ -56,7 +57,12 @@ namespace System.Net.WebSockets
             // Send websocket handshake headers
             await responseStream.WriteWebSocketHandshakeHeadersAsync().ConfigureAwait(false);
 
-            WebSocket webSocket = WebSocket.CreateFromStream(context.Connection.ConnectedStream, isServer: true, subProtocol, keepAliveInterval);
+            WebSocket rawWebSocket = WebSocket.CreateFromStream(context.Connection.ConnectedStream, isServer: true, subProtocol, keepAliveInterval);
+
+            // Wrap the raw websocket so its Dispose() automatically closes the connection.
+            // This is important as common and recommended usage is to just Dispose the HttpListenerWebSocketContext.WebSocket
+            // and without it connection would not be cleaned up causing memory leaks and possible other issues.
+            HttpListenerWrappedWebSocket webSocket = new(rawWebSocket, context);
 
             HttpListenerWebSocketContext webSocketContext = new HttpListenerWebSocketContext(
                                                                 request.Url!,
@@ -76,5 +82,67 @@ namespace System.Net.WebSockets
         }
 
         private const bool WebSocketsSupported = true;
+
+        /// <summary>
+        /// Wraps the real WebSocket so that when Dispose() is called,
+        /// we also call context.Response.Close(), triggering UnregisterContext.
+        /// </summary>
+        private sealed class HttpListenerWrappedWebSocket : WebSocket
+        {
+            private readonly WebSocket _inner;
+            private readonly HttpListenerContext _context;
+            private bool _disposed;
+
+            internal HttpListenerWrappedWebSocket(WebSocket inner, HttpListenerContext context)
+            {
+                _inner = inner;
+                _context = context;
+            }
+
+            public override WebSocketCloseStatus? CloseStatus => _inner.CloseStatus;
+            public override string? CloseStatusDescription => _inner.CloseStatusDescription;
+            public override WebSocketState State => _inner.State;
+            public override string? SubProtocol => _inner.SubProtocol;
+
+            public override void Abort() => _inner.Abort();
+
+            public override Task CloseAsync(
+                WebSocketCloseStatus closeStatus,
+                string? statusDescription,
+                CancellationToken cancellationToken) =>
+                _inner.CloseAsync(closeStatus, statusDescription, cancellationToken);
+
+            public override Task CloseOutputAsync(
+                WebSocketCloseStatus closeStatus,
+                string? statusDescription,
+                CancellationToken cancellationToken) =>
+                _inner.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
+
+            public override void Dispose()
+            {
+                if (_disposed)
+                    return;
+                _disposed = true;
+
+                // Dispose the underlying raw WebSocket
+                _inner.Dispose();
+
+                // Close the response stream, which will close and clean connection
+                // unregistering the context and freeing it from memory.
+                _context.Response.Close();
+            }
+
+            public override Task<WebSocketReceiveResult> ReceiveAsync(
+                ArraySegment<byte> buffer,
+                CancellationToken cancellationToken) =>
+                _inner.ReceiveAsync(buffer, cancellationToken);
+
+            public override Task SendAsync(
+                ArraySegment<byte> buffer,
+                WebSocketMessageType messageType,
+                bool endOfMessage,
+                CancellationToken cancellationToken) =>
+                _inner.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
+        }
     }
 }
