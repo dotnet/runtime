@@ -101,11 +101,10 @@ namespace System.Runtime.InteropServices
 
         private static void ConvertUtf8ToUtf16(ReadOnlySpan<byte> utf8TypeName, out Utf16SharedBuffer utf16Buffer)
         {
-            const int DefaultCharArrayLen = 1024;
-            const int MaxUtf8BytesPerChar = 3;
-            int needed = utf8TypeName.Length > (DefaultCharArrayLen * MaxUtf8BytesPerChar)
-                ? Encoding.UTF8.GetCharCount(utf8TypeName)
-                : DefaultCharArrayLen;
+            // Use quick conservative estimate for small strings
+            int needed = (utf8TypeName.Length < 1024)
+                ? Encoding.UTF8.GetMaxCharCount(utf8TypeName.Length)
+                : Encoding.UTF8.GetCharCount(utf8TypeName);
 
             char[] buffer = ArrayPool<char>.Shared.Rent(needed);
             int converted = Encoding.UTF8.GetChars(utf8TypeName, buffer);
