@@ -403,6 +403,7 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
     Get the number of bytes used for stack parameters.
     This is currently only used on x86.
 */
+virtual
 ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
 
 /*
@@ -413,6 +414,7 @@ ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
     (if UpdateAllRegs), callee-UNsaved registers are trashed)
     Returns success of operation.
 */
+virtual
 bool UnwindStackFrame(
                 PREGDISPLAY     pRD,
                 EECodeInfo     *pCodeInfo,
@@ -485,6 +487,7 @@ OBJECTREF GetInstance(
     Returns the extra argument passed to shared generic code if it is still alive.
     Returns NULL in all other cases.
 */
+virtual
 PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
                          EECodeInfo *    pCodeInfo);
 
@@ -531,7 +534,8 @@ bool IsInPrologOrEpilog(
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
 */
-virtual bool IsInSynchronizedRegion(
+virtual
+bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 unsigned    flags);
@@ -549,7 +553,7 @@ size_t GetFunctionSize(GCInfoToken gcInfoToken);
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind));
+virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind));
 
 #ifndef USE_GC_INFO_DECODER
 /*
