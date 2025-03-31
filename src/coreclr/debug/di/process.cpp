@@ -12616,7 +12616,11 @@ Reaction CordbProcess::TriageExcep1stChanceAndInit(CordbUnmanagedThread * pUnman
 
         DT_CONTEXT context;
 
-        context.ContextFlags = DT_CONTEXT_FULL;
+#ifdef TARGET_X86
+        tempContext.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
+#else
+        tempContext.ContextFlags = DT_CONTEXT_FULL;
+#endif
 
         BOOL fSuccess = DbiGetThreadContext(pUnmanagedThread->m_handle, &context);
 
