@@ -2431,7 +2431,7 @@ public:
 
     static void DumpExecutionManagerUsage()
     {
-        minipal_log_print_error("JumpStub usage count:\nNormal: %u, LCG: %u\n", m_normal_JumpStubLookup, m_LCG_JumpStubLookup);
+        minipal_log_print_info("JumpStub usage count:\nNormal: %u, LCG: %u\n", m_normal_JumpStubLookup, m_LCG_JumpStubLookup);
     }
 
     struct JumpStubCache

@@ -898,7 +898,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
                 // when managed type is well known
                 if (!(strlen(expectedType) == len && SString::_strnicmp(expectedType, pUnmanagedArg, (COUNT_T)len) == 0))
                 {
-                    minipal_log_print_info("CheckExtended: The managed and unmanaged fcall signatures do not match, Method: %s:%s. Argument: %d Expecting: %s Actual: %s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, argIndex, expectedType, pUnManagedType);
+                    minipal_log_print_error("CheckExtended: The managed and unmanaged fcall signatures do not match, Method: %s:%s. Argument: %d Expecting: %s Actual: %s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, argIndex, expectedType, pUnManagedType);
                 }
             }
             else
@@ -928,7 +928,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
                 }
                 if (bSigError)
                 {
-                    minipal_log_print_info("CheckExtended: The managed and unmanaged fcall signatures do not match, Method: %s:%s. Argument: %d Expecting: (CorElementType)%d actual: %s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, argIndex, argType, pUnManagedType);
+                    minipal_log_print_error("CheckExtended: The managed and unmanaged fcall signatures do not match, Method: %s:%s. Argument: %d Expecting: (CorElementType)%d actual: %s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, argIndex, argType, pUnManagedType);
                 }
             }
             pUnmanagedArg = (pUnmanagedArgEnd != NULL) ? (pUnmanagedArgEnd+1) : NULL;

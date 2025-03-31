@@ -13518,7 +13518,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             result = FALSE;
 
             DefineFullyQualifiedNameForClass();
-            minipal_log_print_info("Type %s: expected size 0x%08x, actual size 0x%08x\n",
+            minipal_log_print_error("Type %s: expected size 0x%08x, actual size 0x%08x\n",
                 GetFullyQualifiedNameForClass(pMT), dwExpectedSize, dwActualSize);
         }
         else
@@ -13541,7 +13541,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 result = FALSE;
 
                 DefineFullyQualifiedNameForClass();
-                minipal_log_print_info("Type %s: expected HFA type %08x, actual %08x\n",
+                minipal_log_print_error("Type %s: expected HFA type %08x, actual %08x\n",
                     GetFullyQualifiedNameForClass(pMT), dwExpectedHFAType, dwActualHFAType);
             }
             else
@@ -13559,7 +13559,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 result = FALSE;
 
                 DefineFullyQualifiedNameForClass();
-                minipal_log_print_info("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n",
+                minipal_log_print_error("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n",
                     GetFullyQualifiedNameForClass(pMT));
             }
             else
@@ -13588,7 +13588,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 result = FALSE;
 
                 DefineFullyQualifiedNameForClass();
-                minipal_log_print_info("Type %s: expected alignment 0x%08x, actual 0x%08x\n",
+                minipal_log_print_error("Type %s: expected alignment 0x%08x, actual 0x%08x\n",
                     GetFullyQualifiedNameForClass(pMT), dwExpectedAlignment, dwActualAlignment);
             }
             else
@@ -13610,7 +13610,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                     result = FALSE;
 
                     DefineFullyQualifiedNameForClass();
-                    minipal_log_print_info("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n",
+                    minipal_log_print_error("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n",
                         GetFullyQualifiedNameForClass(pMT));
                 }
                 else
@@ -13635,7 +13635,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                     result = FALSE;
 
                     DefineFullyQualifiedNameForClass();
-                    minipal_log_print_info("Type %s: GC refmap content doesn't match\n",
+                    minipal_log_print_error("Type %s: GC refmap content doesn't match\n",
                         GetFullyQualifiedNameForClass(pMT));
                 }
                 else
