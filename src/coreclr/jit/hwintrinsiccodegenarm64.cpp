@@ -591,6 +591,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_Sve_ConvertToInt64:
                         case NI_Sve_ConvertToUInt64:
                         case NI_Sve_ConvertToDouble:
+                        case NI_Sve_ConvertToDoubleUpper:
                         {
                             embOpt = emitTypeSize(intrinEmbMask.baseType) == EA_4BYTE ? INS_OPTS_S_TO_D
                                                                                       : INS_OPTS_SCALABLE_D;

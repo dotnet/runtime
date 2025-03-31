@@ -26899,7 +26899,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, CorInfo
     }
     else
     {
-        assert(simdSize == 8);
+        assert((simdSize == 8) || (simdSize == compVectorTLength));
         tmp1 = op1;
     }
 
@@ -26917,8 +26917,10 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, CorInfo
         intrinsic = NI_AdvSimd_ZeroExtendWideningLower;
     }
 
+    intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(simdSize, intrinsic);
+
     assert(intrinsic != NI_Illegal);
-    tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, intrinsic, simdBaseJitType, 8);
+    tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, 8);
 
     if (simdSize == 8)
     {
@@ -27113,7 +27115,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, CorInfo
         return gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_UnpackHigh, simdBaseJitType, simdSize);
     }
 #elif defined(TARGET_ARM64)
-    if (simdSize == 16)
+    if ((simdSize == 16) || (simdSize == compVectorTLength))
     {
         if (varTypeIsFloating(simdBaseType))
         {
@@ -27129,6 +27131,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, CorInfo
             intrinsic = NI_AdvSimd_ZeroExtendWideningUpper;
         }
 
+        intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(simdSize, intrinsic);
         assert(intrinsic != NI_Illegal);
         return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
     }
@@ -27156,6 +27159,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, CorInfo
         tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, simdBaseJitType, simdSize);
         return gtNewSimdGetUpperNode(TYP_SIMD8, tmp1, simdBaseJitType, 16);
     }
+
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -28977,6 +28981,9 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
             case NI_AdvSimd_Arm64_ConvertToDouble:
                 sveId = NI_Sve_ConvertToDouble;
                 break;
+            case NI_AdvSimd_Arm64_ConvertToDoubleUpper:
+                sveId = NI_Sve_ConvertToDoubleUpper;
+                break;
             case NI_AdvSimd_ConvertToSingle:
                 sveId = NI_Sve_ConvertToSingle;
                 break;
@@ -29027,9 +29034,21 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
             case NI_AdvSimd_Arm64_RoundToNearest:
                 sveId = NI_Sve_RoundToNearest;
                 break;
+            case NI_AdvSimd_SignExtendWideningLower:
+                sveId = NI_Sve_SignExtendWideningLower;
+                break;
+            case NI_AdvSimd_SignExtendWideningUpper:
+                sveId = NI_Sve_SignExtendWideningUpper;
+                break;
             case NI_AdvSimd_Subtract:
             case NI_AdvSimd_Arm64_Subtract:
                 sveId = NI_Sve_Subtract;
+                break;
+            case NI_AdvSimd_ZeroExtendWideningLower:
+                sveId = NI_Sve_ZeroExtendWideningUpper;
+                break;
+            case NI_AdvSimd_ZeroExtendWideningUpper:
+                sveId = NI_Sve_ZeroExtendWideningUpper;
                 break;
             case NI_Vector128_op_Equality:
                 sveId = NI_Vector_op_Equality;

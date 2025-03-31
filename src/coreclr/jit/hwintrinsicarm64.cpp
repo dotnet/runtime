@@ -2690,6 +2690,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_WidenLower:
         case NI_Vector64_WidenLower:
         case NI_Vector128_WidenLower:
         {
@@ -2701,6 +2702,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_WidenUpper:
         case NI_Vector64_WidenUpper:
         case NI_Vector128_WidenUpper:
         {
