@@ -71,7 +71,7 @@ namespace System
             {
                 // This object is using ComWrappers, so use ComWrappers to create the weak reference.
                 context = target;
-                return ObjectToComWeakRef(ObjectHandleOnStack.Create(ref target));
+                return ComWrappersObjectToComWeakRef(ObjectHandleOnStack.Create(ref target));
             }
 
             // This object is not produced using built-in COM or ComWrappers
