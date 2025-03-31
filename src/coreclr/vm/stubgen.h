@@ -943,7 +943,6 @@ public:
     void EmitSUB        ();
     void EmitTHROW      ();
     void EmitUNALIGNED  (BYTE alignment);
-    void EmitUNBOX      (int token);
     void EmitUNBOX_ANY  (int token);
 
     // Overloads to simplify common usage patterns

@@ -174,7 +174,7 @@ void ILCodeStream::Emit(ILInstrEnum instr, INT16 iStackDelta, UINT_PTR uArg)
     pInstrBuffer[idxCurInstr].iStackDelta = iStackDelta;
     pInstrBuffer[idxCurInstr].uArg = uArg;
 
-    if(m_buildingEHClauses.GetCount() > 0)
+    if (m_buildingEHClauses.GetCount() > 0)
     {
         ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
 
@@ -1830,12 +1830,6 @@ void ILCodeStream::EmitUNALIGNED(BYTE alignment)
 {
     WRAPPER_NO_CONTRACT;
     Emit(CEE_UNALIGNED, 0, alignment);
-}
-
-void ILCodeStream::EmitUNBOX(int token)
-{
-    WRAPPER_NO_CONTRACT;
-    Emit(CEE_UNBOX, 0, token);
 }
 
 void ILCodeStream::EmitUNBOX_ANY(int token)
