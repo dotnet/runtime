@@ -57,7 +57,7 @@ test_create_delete_session (void)
 	ep_raise_error_if_nok (test_session != NULL);
 
 ep_on_exit:
-	ep_session_free (test_session);
+	ep_session_dec_ref (test_session);
 	ep_provider_config_fini (current_provider_config);
 	return result;
 
@@ -141,7 +141,7 @@ test_add_session_providers (void)
 	EP_LOCK_EXIT (section5)
 
 ep_on_exit:
-	ep_session_free (test_session);
+	ep_session_dec_ref (test_session);
 	ep_provider_config_fini (current_provider_config);
 	return result;
 
@@ -230,7 +230,7 @@ test_session_special_get_set (void)
 	}
 
 ep_on_exit:
-	ep_session_free (test_session);
+	ep_session_dec_ref (test_session);
 	ep_provider_config_fini (current_provider_config);
 	return result;
 

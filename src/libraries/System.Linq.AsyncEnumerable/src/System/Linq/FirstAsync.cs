@@ -29,20 +29,14 @@ namespace System.Linq
                 IAsyncEnumerable<TSource> source,
                 CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    if (!await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        ThrowHelper.ThrowNoElementsException();
-                    }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                    return e.Current;
-                }
-                finally
+                if (!await e.MoveNextAsync())
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    ThrowHelper.ThrowNoElementsException();
                 }
+
+                return e.Current;
             }
         }
 
@@ -66,7 +60,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false), predicate);
+            return Impl(source.WithCancellation(cancellationToken), predicate);
 
             static async ValueTask<TSource> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -112,9 +106,9 @@ namespace System.Linq
                 Func<TSource, CancellationToken, ValueTask<bool>> predicate,
                 CancellationToken cancellationToken)
             {
-                await foreach (TSource item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource item in source.WithCancellation(cancellationToken))
                 {
-                    if (await predicate(item, cancellationToken).ConfigureAwait(false))
+                    if (await predicate(item, cancellationToken))
                     {
                         return item;
                     }
@@ -157,15 +151,9 @@ namespace System.Linq
                 TSource defaultValue,
                 CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    return await e.MoveNextAsync().ConfigureAwait(false) ? e.Current : defaultValue;
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
-                }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                return await e.MoveNextAsync() ? e.Current : defaultValue;
             }
         }
 
@@ -221,7 +209,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false), predicate, defaultValue);
+            return Impl(source.WithCancellation(cancellationToken), predicate, defaultValue);
 
             static async ValueTask<TSource> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -266,9 +254,9 @@ namespace System.Linq
                 TSource defaultValue,
                 CancellationToken cancellationToken)
             {
-                await foreach (TSource item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource item in source.WithCancellation(cancellationToken))
                 {
-                    if (await predicate(item, cancellationToken).ConfigureAwait(false))
+                    if (await predicate(item, cancellationToken))
                     {
                         return item;
                     }

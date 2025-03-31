@@ -789,7 +789,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 //
 bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    assert(!opts.IsReadyToRun());
+    assert(!IsAot());
 
     BasicBlock* block = *pBlock;
 
@@ -801,7 +801,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     {
         return false;
     }
-    assert(!opts.IsReadyToRun());
 
     if (TargetOS::IsUnix)
     {

@@ -3284,6 +3284,7 @@ class Generics
 
         class GenClass<T> { }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static object RecurseOverStruct<T>(int count) where T : new()
         {
             if (count > 0)
@@ -3292,6 +3293,7 @@ class Generics
             return new T();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static object RecurseOverClass<T>(int count) where T : new()
         {
             if (count > 0)
@@ -3299,6 +3301,9 @@ class Generics
 
             return new T();
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int RecurseOverArray<T>(int iter) => iter > 0 ? RecurseOverArray<T[]>(iter - 1) : 0;
 
         public static void Run()
         {
@@ -3324,6 +3329,8 @@ class Generics
 
             if (!caughtException)
                 throw new Exception();
+
+            RecurseOverArray<object>(2);
         }
     }
 

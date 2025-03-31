@@ -30,27 +30,23 @@ const SString &BundleFileLocation::Path() const
     return Bundle::AppBundle->Path();
 }
 
-Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe, ExternalAssemblyProbeFn* externalAssemblyProbe)
+Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe)
     : m_probe(probe)
-    , m_externalAssemblyProbe(externalAssemblyProbe)
     , m_basePathLength(0)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(m_probe != nullptr || m_externalAssemblyProbe != nullptr);
+    _ASSERTE(m_probe != nullptr);
 
-    // On Android this is not a real path, but rather the application's package name
     m_path.SetUTF8(bundlePath);
-#if !defined(TARGET_ANDROID)
+
     // The bundle-base path is the directory containing the single-file bundle.
     // When the Probe() function searches within the bundle, it masks out the basePath from the assembly-path (if found).
-
     LPCSTR pos = strrchr(bundlePath, DIRECTORY_SEPARATOR_CHAR_A);
     _ASSERTE(pos != nullptr);
     size_t baseLen = pos - bundlePath + 1; // Include DIRECTORY_SEPARATOR_CHAR_A in m_basePath
     m_basePath.SetUTF8(bundlePath, (COUNT_T)baseLen);
     m_basePathLength = (COUNT_T)baseLen;
-#endif // !TARGET_ANDROID
 }
 
 BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative) const
@@ -83,45 +79,25 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
         }
     }
 
-    if (m_probe != nullptr)
+    BundleFileLocation loc;
+    INT64 fileSize = 0;
+    INT64 compressedSize = 0;
+    if (m_probe(utf8Path, &loc.Offset, &fileSize, &compressedSize))
     {
-        BundleFileLocation loc;
-        INT64 fileSize = 0;
-        INT64 compressedSize = 0;
-        if (m_probe(utf8Path, &loc.Offset, &fileSize, &compressedSize))
+        // Found assembly in bundle
+        if (compressedSize)
         {
-            // Found assembly in bundle
-            if (compressedSize)
-            {
-                loc.Size = compressedSize;
-                loc.UncompresedSize = fileSize;
-            }
-            else
-            {
-                loc.Size = fileSize;
-                loc.UncompresedSize = 0;
-            }
-
-            return loc;
+            loc.Size = compressedSize;
+            loc.UncompressedSize = fileSize;
         }
-    }
-
-    if (m_externalAssemblyProbe != nullptr)
-    {
-        BundleFileLocation loc;
-        if (m_externalAssemblyProbe(utf8Path, &loc.DataStart, &loc.Size))
+        else
         {
-            // Found via external assembly probe
-            return loc;
+            loc.Size = fileSize;
+            loc.UncompressedSize = 0;
         }
+
+        return loc;
     }
 
     return BundleFileLocation::Invalid();
-}
-
-BundleFileLocation Bundle::ProbeAppBundle(const SString& path, bool pathIsBundleRelative)
-{
-    STANDARD_VM_CONTRACT;
-
-    return AppIsBundle() ? AppBundle->Probe(path, pathIsBundleRelative) : BundleFileLocation::Invalid();
 }

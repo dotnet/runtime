@@ -1543,7 +1543,7 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             op1 = new (this, GT_FTN_ADDR) GenTreeFptrVal(TYP_I_IMPL, pCallInfo->hMethod);
 
 #ifdef FEATURE_READYTORUN
-            if (opts.IsReadyToRun())
+            if (IsAot())
             {
                 op1->AsFptrVal()->gtEntryPoint = pCallInfo->codePointerLookup.constLookup;
             }
@@ -1662,7 +1662,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     if (pRuntimeLookup->indirections == CORINFO_USEHELPER)
     {
 #ifdef FEATURE_READYTORUN
-        if (opts.IsReadyToRun())
+        if (IsAot())
         {
             return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
                                              &pLookup->lookupKind, ctxTree);
@@ -2784,7 +2784,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     }
 
 #ifdef FEATURE_READYTORUN
-    else if (opts.IsReadyToRun())
+    else if (IsAot())
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
         {
@@ -4076,7 +4076,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
         case CORINFO_FIELD_STATIC_TLS_MANAGED:
 
 #ifdef FEATURE_READYTORUN
-            if (!opts.IsReadyToRun())
+            if (!IsAot())
 #endif // FEATURE_READYTORUN
             {
                 if ((pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
@@ -4096,7 +4096,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
         case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
         {
 #ifdef FEATURE_READYTORUN
-            if (opts.IsReadyToRun())
+            if (IsAot())
             {
                 GenTreeFlags callFlags = GTF_EMPTY;
 
@@ -4179,7 +4179,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
         {
 #ifdef FEATURE_READYTORUN
-            assert(opts.IsReadyToRun());
+            assert(IsAot());
             assert(!compIsForInlining());
             CORINFO_LOOKUP_KIND kind;
             info.compCompHnd->getLocationOfThisType(info.compMethodHnd, &kind);
@@ -8661,7 +8661,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val;
                 assertImp(op1->gtType == TYP_REF);
 
-                if (opts.IsReadyToRun())
+                if (IsAot())
                 {
                     if (callInfo.kind != CORINFO_VIRTUALCALL_LDVIRTFTN)
                     {
@@ -9701,7 +9701,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                if (!opts.IsReadyToRun())
+                if (!IsAot())
                 {
                     // Need to restore array classes before creating array objects on the heap
                     op1 = impTokenToHandle(&resolvedToken, nullptr, true /*mustRestoreHandle*/);
@@ -9758,7 +9758,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             if (((fi.fieldFlags & flagsToCheck) == flagsToCheck) && !eeIsSharedInst(info.compClassHnd))
                             {
 #ifdef FEATURE_READYTORUN
-                                if (opts.IsReadyToRun())
+                                if (IsAot())
                                 {
                                     // Need to restore array classes before creating array objects on the heap
                                     op1 = impTokenToHandle(&resolvedToken, nullptr, true /*mustRestoreHandle*/);
@@ -9772,7 +9772,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
 #ifdef FEATURE_READYTORUN
-                if (opts.IsReadyToRun() && !isFrozenAllocator)
+                if (IsAot() && !isFrozenAllocator)
                 {
                     helper                = CORINFO_HELP_READYTORUN_NEWARR_1;
                     op1                   = impReadyToRunHelperToTree(&resolvedToken, helper, TYP_REF, nullptr, op2);
@@ -9984,7 +9984,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                if (!opts.IsReadyToRun())
+                if (!IsAot())
                 {
                     op2 = impTokenToHandle(&resolvedToken, nullptr, false);
                     if (op2 == nullptr)
@@ -10009,7 +10009,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
 
 #ifdef FEATURE_READYTORUN
-                    if (opts.IsReadyToRun())
+                    if (IsAot())
                     {
                         GenTreeCall* opLookup =
                             impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_ISINSTANCEOF, TYP_REF,
@@ -10465,7 +10465,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                if (!opts.IsReadyToRun())
+                if (!IsAot())
                 {
                     op2 = impTokenToHandle(&resolvedToken, nullptr, false);
                     if (op2 == nullptr)
@@ -10496,7 +10496,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
 
 #ifdef FEATURE_READYTORUN
-                    if (opts.IsReadyToRun())
+                    if (IsAot())
                     {
                         GenTreeCall* opLookup =
                             impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST, TYP_REF, nullptr,
@@ -12727,7 +12727,7 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult)
 {
     assert((pInlineInfo != nullptr && compIsForInlining()) || // Perform the actual inlining.
-           (pInlineInfo == nullptr && !compIsForInlining())   // Calculate the static inlining hint for ngen.
+           (pInlineInfo == nullptr && !compIsForInlining())   // Calculate the static inlining hint for AOT.
     );
 
     // If we're really inlining, we should just have one result in play.
@@ -13651,6 +13651,20 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
     GenTree* argNode = argInfo.arg->GetNode();
     assert(!argNode->OperIs(GT_RET_EXPR));
 
+    // For TYP_REF args, if the argNode doesn't have any class information
+    // we will lose some type info if we directly substitute it.
+    // We can at least rely on the declared type of the arg here.
+    //
+    bool argLosesTypeInfo = false;
+    if (argNode->TypeIs(TYP_REF))
+    {
+        bool                 isExact;
+        bool                 isNeverNull;
+        CORINFO_CLASS_HANDLE argClass = gtGetClassHandle(argNode, &isExact, &isNeverNull);
+
+        argLosesTypeInfo = (argClass == NO_CLASS_HANDLE);
+    }
+
     if (argInfo.argIsInvariant && !argCanBeModified)
     {
         // Directly substitute constants or addresses of locals
@@ -13676,7 +13690,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             op1->gtType = genActualType(lclTyp);
         }
     }
-    else if (argInfo.argIsLclVar && !argCanBeModified && !argInfo.argHasCallerLocalRef)
+    else if (argInfo.argIsLclVar && !argCanBeModified && !argInfo.argHasCallerLocalRef && !argLosesTypeInfo)
     {
         // Directly substitute unaliased caller locals for args that cannot be modified
         //
@@ -13764,8 +13778,10 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
                 assert(lvaTable[tmpNum].lvSingleDef == 0);
                 lvaTable[tmpNum].lvSingleDef = 1;
                 JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
+
                 if (lclTyp == TYP_REF)
                 {
+                    // Use argNode type (when it exists) or lclInfo type
                     lvaSetClass(tmpNum, argNode, lclInfo.lclTypeHandle);
                 }
             }
@@ -13773,7 +13789,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             {
                 if (lclTyp == TYP_REF)
                 {
-                    // Arg might be modified, use the declared type of the argument.
+                    // Arg might be modified. Use the declared type of the argument.
                     lvaSetClass(tmpNum, lclInfo.lclTypeHandle);
                 }
             }

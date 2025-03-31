@@ -18,7 +18,7 @@
 #include "peimagelayout.h"
 #include "sstring.h"
 #include "holder.h"
-#include <bundle.h>
+#include <assemblyprobeextension.h>
 
 class SimpleRWLock;
 // --------------------------------------------------------------------------------
@@ -119,9 +119,9 @@ public:
     static PTR_PEImage OpenImage(
         LPCWSTR pPath,
         MDInternalImportFlags flags = MDInternalImport_Default,
-        BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
+        ProbeExtensionResult probeExtensionResult = ProbeExtensionResult::Invalid());
 
-    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle);
+    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle, BOOL isExternalData);
     void AddToHashMap();
 #endif
 
@@ -138,10 +138,11 @@ public:
 
     BOOL IsFile();
     BOOL IsInBundle() const;
+    BOOL IsExternalData() const;
     void* GetExternalData(INT64* size);
     INT64 GetOffset() const;
     INT64 GetSize() const;
-    INT64 GetUncompressedSize() const;
+    BOOL IsCompressed(INT64* uncompressedSize = NULL) const;
 
     HANDLE GetFileHandle();
     HRESULT TryOpenFile(bool takeLock = false);
@@ -207,24 +208,26 @@ private:
     // Private routines
     // ------------------------------------------------------------
 
-    void Init(BundleFileLocation bundleFileLocation);
+    void Init(ProbeExtensionResult probeExtensionResult);
 
     struct PEImageLocator
     {
-
         LPCWSTR m_pPath;
         BOOL m_bIsInBundle;
+        BOOL m_bIsExternalData;
 
-        PEImageLocator(LPCWSTR pPath, BOOL bIsInBundle)
-            : m_pPath(pPath),
-              m_bIsInBundle(bIsInBundle)
+        PEImageLocator(LPCWSTR pPath, BOOL bIsInBundle, BOOL bIsExternalData)
+            : m_pPath(pPath)
+            , m_bIsInBundle(bIsInBundle)
+            , m_bIsExternalData(bIsExternalData)
         {
         }
 
         PEImageLocator(PEImage * pImage)
             : m_pPath(pImage->m_path.GetUnicode())
+            , m_bIsInBundle(pImage->IsInBundle())
+            , m_bIsExternalData(pImage->IsExternalData())
         {
-            m_bIsInBundle = pImage->IsInBundle();
         }
     };
 
@@ -288,9 +291,9 @@ private:
     // means this is a unique (deduped) instance.
     BOOL      m_bInHashMap;
 
-    // If this image is located within a single-file bundle, the location within the bundle.
-    // If m_bundleFileLocation is valid, it takes precedence over m_path for loading.
-    BundleFileLocation m_bundleFileLocation;
+    // Valid if this image is from a probe extension (single-file bundle, external data).
+    // If m_probeExtensionResult is valid, it takes precedence over m_path for loading.
+    ProbeExtensionResult m_probeExtensionResult;
 
     // valid handle if we tried to open the file/path and succeeded.
     HANDLE m_hFile;

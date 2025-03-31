@@ -4076,14 +4076,13 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
                     var_types unsignedType = varTypeToUnsigned(simdBaseType);
 
-                    if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
+                    if (op1->OperIs(GT_CAST) && !op1->gtOverflow() &&
+                        (genTypeSize(op1->CastToType()) == genTypeSize(simdBaseType)))
                     {
-                        assert(op1->TypeIs(TYP_INT) && (genTypeSize(op1->CastToType()) == genTypeSize(simdBaseType)));
                         op1->AsCast()->gtCastType = unsignedType;
                     }
-                    else if (op1->OperIs(GT_IND, GT_LCL_FLD))
+                    else if (op1->OperIs(GT_IND, GT_LCL_FLD) && (genTypeSize(op1) == genTypeSize(simdBaseType)))
                     {
-                        assert(genTypeSize(op1) == genTypeSize(simdBaseType));
                         op1->gtType = unsignedType;
                     }
                     else if (!op1->OperIs(GT_CAST) || (op1->AsCast()->CastToType() != unsignedType))
@@ -9663,17 +9662,19 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (varTypeIsIntegral(simdBaseType) && op1->OperIsHWIntrinsic())
                         {
-                            GenTreeHWIntrinsic* childNode = op1->AsHWIntrinsic();
+                            GenTreeHWIntrinsic* childNode      = op1->AsHWIntrinsic();
+                            NamedIntrinsic      childIntrinsic = childNode->GetHWIntrinsicId();
 
-                            if (HWIntrinsicInfo::IsVectorCreateScalarUnsafe(childNode->GetHWIntrinsicId()))
+                            if (HWIntrinsicInfo::IsVectorCreateScalar(childIntrinsic) ||
+                                HWIntrinsicInfo::IsVectorCreateScalarUnsafe(childIntrinsic))
                             {
-                                // We have a very special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
+                                // We have a very special case of BroadcastScalarToVector(CreateScalar/Unsafe(op1))
                                 //
                                 // This is one of the only instructions where it supports taking integer types from
                                 // a SIMD register or directly as a scalar from memory. Most other instructions, in
                                 // comparison, take such values from general-purpose registers instead.
                                 //
-                                // Because of this, we're going to remove the CreateScalarUnsafe and try to contain
+                                // Because of this, we're going to remove the CreateScalar/Unsafe and try to contain
                                 // op1 directly, we'll then special case the codegen to materialize the value into a
                                 // SIMD register in the case it is marked optional and doesn't get spilled.
 

@@ -83,8 +83,6 @@ FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCom
         pCompareRef->GetData(),
         pThisMT->GetNumInstanceFieldBytes()) == 0;
 
-    FC_GC_POLL_RET();
-
     FC_RETURN_BOOL(ret);
 }
 FCIMPLEND
@@ -199,3 +197,125 @@ extern "C" INT64 QCALLTYPE Monitor_GetLockContentionCount()
     END_QCALL;
     return result;
 }
+
+//========================================================================
+//
+//      MONITOR HELPERS
+//
+//========================================================================
+
+/*********************************************************************/
+extern "C" void QCALLTYPE Monitor_Enter_Slowpath(QCall::ObjectHandleOnStack objHandle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    objHandle.Get()->EnterObjMonitor();
+    END_QCALL;
+}
+
+/*********************************************************************/
+#include <optsmallperfcritical.h>
+
+FCIMPL1(FC_BOOL_RET, ObjectNative::Monitor_TryEnter_FastPath, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    if (obj->TryEnterObjMonitorSpinHelper())
+    {
+        FC_RETURN_BOOL(TRUE);
+    }
+    else
+    {
+        FC_RETURN_BOOL(FALSE);
+    }
+}
+FCIMPLEND
+
+FCIMPL2(AwareLock::EnterHelperResult, ObjectNative::Monitor_TryEnter_FastPath_WithTimeout, Object* obj, INT32 timeOut)
+{
+    FCALL_CONTRACT;
+
+    Thread* pCurThread = GetThread();
+
+    if (pCurThread->CatchAtSafePoint())
+    {
+        return AwareLock::EnterHelperResult::UseSlowPath;
+    }
+
+    AwareLock::EnterHelperResult result = obj->EnterObjMonitorHelper(pCurThread);
+    if (result == AwareLock::EnterHelperResult::Contention)
+    {
+        if (timeOut == 0)
+        {
+            return AwareLock::EnterHelperResult::Contention;
+        }
+
+        result = obj->EnterObjMonitorHelperSpin(pCurThread);
+    }
+
+    return result;
+}
+FCIMPLEND
+
+#include <optdefault.h>
+
+/*********************************************************************/
+extern "C" INT32 QCALLTYPE Monitor_TryEnter_Slowpath(QCall::ObjectHandleOnStack objHandle, INT32 timeOut)
+{
+    QCALL_CONTRACT;
+
+    BOOL result = FALSE;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    if (timeOut < -1)
+        COMPlusThrow(kArgumentOutOfRangeException);
+
+    result = objHandle.Get()->TryEnterObjMonitor(timeOut);
+
+    END_QCALL;
+
+    return result;
+}
+
+/*********************************************************************/
+extern "C" void QCALLTYPE Monitor_Exit_Slowpath(QCall::ObjectHandleOnStack objHandle, AwareLock::LeaveHelperAction exitBehavior)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    if (exitBehavior != AwareLock::LeaveHelperAction::Signal)
+    {
+        if (!objHandle.Get()->LeaveObjMonitor())
+            COMPlusThrow(kSynchronizationLockException);
+    }
+    else
+    {
+        // Signal the event
+        SyncBlock *psb = objHandle.Get()->PassiveGetSyncBlock();
+        if (psb != NULL)
+            psb->QuickGetMonitor()->Signal();
+    }
+    END_QCALL;
+}
+
+#include <optsmallperfcritical.h>
+FCIMPL1(AwareLock::LeaveHelperAction, ObjectNative::Monitor_Exit_FastPath, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    // Handle the simple case without erecting helper frame
+    return obj->LeaveObjMonitorHelper(GetThread());
+}
+FCIMPLEND
+#include <optdefault.h>
+

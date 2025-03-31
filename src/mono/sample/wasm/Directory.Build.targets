@@ -2,6 +2,7 @@
   <Import Project="../Directory.Build.targets" />
   <PropertyGroup>
     <WasmPerfTracing Condition="'$(WasmPerfTracing)' == '' and '$(WasmProfilers)' == '' and '$(WasmBuildNative)' != 'false'">true</WasmPerfTracing>
+    <WasmPerfInstrumentation Condition="'$(WasmPerfInstrumentation)' == '' and '$(WasmPerfTracing)' == 'true' and '$(WasmProfilers)' == '' and '$(WasmBuildNative)' != 'false'">true</WasmPerfInstrumentation>
   </PropertyGroup>
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
 
@@ -11,8 +12,10 @@
 
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(WasmAppDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
 
+    <!-- so that performance.now() is more precise -->
+    <_ServeHeaders>$(_ServeHeaders) -h "Timing-Allow-Origin:*"</_ServeHeaders>
     <!-- so that SharedArrayBuffer is enabled -->
-    <_ServeHeaders    Condition="'$(WasmEnableThreads)' == 'true'">$(_ServeHeaders) -h Cross-Origin-Embedder-Policy:require-corp -h Cross-Origin-Opener-Policy:same-origin</_ServeHeaders>
+    <_ServeHeaders Condition="'$(WasmEnableThreads)' == 'true'">$(_ServeHeaders) -h Cross-Origin-Embedder-Policy:require-corp -h Cross-Origin-Opener-Policy:same-origin</_ServeHeaders>
 
     <!-- For streaming instantiation of WASM module and browser cache -->
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .wasm=application/wasm</_ServeMimeTypes>

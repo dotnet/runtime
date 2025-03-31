@@ -125,8 +125,11 @@ class ObjectAllocator final : public Phase
     // Data members
     bool         m_IsObjectStackAllocationEnabled;
     bool         m_AnalysisDone;
+    bool         m_isR2R;
     unsigned     m_bvCount;
     BitVecTraits m_bitVecTraits;
+    unsigned     m_unknownSourceLocalNum;
+    unsigned     m_unknownSourceIndex;
     BitVec       m_EscapingPointers;
     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
@@ -195,6 +198,7 @@ private:
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
+    ObjectAllocationType AllocationKind(GenTree* tree);
 
     // Conditionally escaping allocation support
     //

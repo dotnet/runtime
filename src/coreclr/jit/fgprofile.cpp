@@ -2504,10 +2504,10 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // We enable edge profiling by default, except when:
     //
     // * disabled by option
-    // * we are prejitting
+    // * we are AOT compiling
     //
     const bool edgesEnabled    = (JitConfig.JitEdgeProfiling() > 0);
-    const bool prejit          = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool prejit          = IsAot();
     const bool useEdgeProfiles = edgesEnabled && !prejit;
     const bool minimalProfiling =
         prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
@@ -2666,14 +2666,14 @@ PhaseStatus Compiler::fgInstrumentMethod()
     // Optionally, when jitting, if there were no class probes, no value probes and only one count probe,
     // suppress instrumentation.
     //
-    // We leave instrumentation in place when prejitting as the sample hits in the method
-    // may be used to determine if the method should be prejitted or not.
+    // We leave instrumentation in place for AOT as the sample hits in the method
+    // may be used to determine if the method should be AOT or not.
     //
     // For jitting, no information is conveyed by the count in a single=block method.
     //
     bool minimalProbeMode = false;
 
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    if (IsAot())
     {
         minimalProbeMode = (JitConfig.JitMinimalPrejitProfiling() > 0);
     }

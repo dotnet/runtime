@@ -656,6 +656,9 @@ const SegmentList& ClassLayout::GetNonPadding(Compiler* comp)
 //    Layouts are called compatible if they are equal or if
 //    they have the same size and the same GC slots.
 //
+//    This is an equivalence relation:
+//      AreCompatible(a, b) == AreCompatible(b, a)
+//
 // static
 bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2)
 {
@@ -726,6 +729,26 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
         }
     }
     return true;
+}
+
+//------------------------------------------------------------------------
+// CanAssignFrom: true if assignment to this layout from the indicated layout is sensible
+//
+// Arguments:
+//    layout - the source of a possible assigment
+//
+// Return value:
+//    true if assignable, false otherwise.
+//
+// Notes:
+//    This may not be an equivalence relation:
+//    a->CanAssignFrom(b) and b->CanAssignFrom(a) may differ.
+//
+bool ClassLayout::CanAssignFrom(const ClassLayout* layout)
+{
+    // Currently this is the same as compatability
+    //
+    return AreCompatible(this, layout);
 }
 
 //------------------------------------------------------------------------

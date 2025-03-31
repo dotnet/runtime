@@ -9,12 +9,12 @@
 #include "baseunwinder.h"
 
 #ifdef FEATURE_CDAC_UNWINDER
-EXTERN_C __declspec(dllexport) BOOL amd64Unwind(void* pContext,
-                                                ReadFromTarget readFromTarget,
-                                                GetAllocatedBuffer getAllocatedBuffer,
-                                                GetStackWalkInfo getStackWalkInfo,
-                                                UnwinderFail unwinderFail,
-                                                void* callbackContext);
+EXTERN_C BOOL amd64Unwind(void* pContext,
+                          ReadFromTarget readFromTarget,
+                          GetAllocatedBuffer getAllocatedBuffer,
+                          GetStackWalkInfo getStackWalkInfo,
+                          UnwinderFail unwinderFail,
+                          void* callbackContext);
 #endif // FEATURE_CDAC_UNWINDER
 
 //---------------------------------------------------------------------------------------

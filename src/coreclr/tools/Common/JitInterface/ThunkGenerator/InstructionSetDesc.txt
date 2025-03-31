@@ -242,6 +242,16 @@ implication        ,ARM64 ,Vector128  ,AdvSimd
 implication        ,ARM64 ,VectorT128 ,AdvSimd
 implication        ,ARM64 ,Sve        ,AdvSimd
 
+; Definition of Riscv64 instruction sets
+definearch         ,RiscV64 ,64Bit     ,RiscV64, RiscV64
+
+instructionset     ,RiscV64 ,RiscV64Base         ,        ,56 ,RiscV64Base         ,base
+instructionset     ,RiscV64 ,Zba                 ,        ,57 ,Zba                 ,zba
+instructionset     ,RiscV64 ,Zbb                 ,        ,58 ,Zbb                 ,zbb
+
+implication        ,RiscV64 ,Zbb                 ,RiscV64Base
+implication        ,RiscV64 ,Zba                 ,RiscV64Base
+
 ;                    ,name and aliases           ,archs    ,lower baselines included by implication
 ;
 instructionsetgroup  ,x86-x64                    ,X64 X86  ,sse2

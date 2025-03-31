@@ -4,6 +4,7 @@
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Security.Authentication;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -112,33 +113,34 @@ namespace System.Net.Security.Tests
 
             await Parallel.ForEachAsync(System.Linq.Enumerable.Range(0, 10000), cts.Token, async (i, token) =>
             {
-                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
-                using (client)
-                using (server)
-                using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
-                using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+                // use real Tcp streams to avoid specific behavior of ConnectedStreams when concurrently disposed
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedTcpStreams();
+
+                using SslStream client = new SslStream(clientStream);
+                using SslStream server = new SslStream(serverStream);
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
                 {
-                    SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
-                    {
-                        TargetHost = Guid.NewGuid().ToString("N"),
-                        RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
-                    };
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+                };
 
-                    SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
-                    {
-                        ServerCertificate = serverCertificate,
-                    };
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = serverCertificate,
+                };
 
-                    var clientTask = Task.Run(() => client.AuthenticateAsClientAsync(clientOptions, cts.Token));
-                    var serverTask = Task.Run(() => server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+                var clientTask = Task.Run(() => client.AuthenticateAsClientAsync(clientOptions, cts.Token));
+                var serverTask = Task.Run(() => server.AuthenticateAsServerAsync(serverOptions, cts.Token));
 
-                    // Dispose the instances while the handshake is in progress.
-                    client.Dispose();
-                    server.Dispose();
+                // Dispose the instances while the handshake is in progress.
+                client.Dispose();
+                server.Dispose();
 
-                    await ValidateExceptionAsync(clientTask);
-                    await ValidateExceptionAsync(serverTask);
-                }
+                await ValidateExceptionAsync(clientTask);
+                await ValidateExceptionAsync(serverTask);
             });
 
             static async Task ValidateExceptionAsync(Task task)
@@ -147,9 +149,12 @@ namespace System.Net.Security.Tests
                 {
                     await task;
                 }
-                // either we disposed the stream, or the other side does and we get unexpected EOF
-                catch (Exception ex) when (ex is ObjectDisposedException or IOException)
+                catch (Exception ex) when (ex
+                    is ObjectDisposedException // disposed locally
+                    or IOException // disposed remotely (received unexpected EOF)
+                    or AuthenticationException) // disposed wrapped in AuthenticationException or error from platform library
                 {
+                    // expected
                     return;
                 }
             }

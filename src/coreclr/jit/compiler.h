@@ -1696,7 +1696,7 @@ struct FuncInfoDsc
     UnwindInfo  uwi;     // Unwind information for this function/funclet's hot  section
     UnwindInfo* uwiCold; // Unwind information for this function/funclet's cold section
                          //   Note: we only have a pointer here instead of the actual object,
-                         //   to save memory in the JIT case (compared to the NGEN case),
+                         //   to save memory in the JIT case (compared to the AOT case),
                          //   where we don't have any cold section.
                          //   Note 2: we currently don't support hot/cold splitting in functions
                          //   with EH, so uwiCold will be NULL for all funclets.
@@ -2732,6 +2732,9 @@ public:
 
     // Returns true if "block" is the start of a handler or filter region.
     bool bbIsHandlerBeg(const BasicBlock* block);
+
+    // Returns true if "block" is the start of a funclet.
+    bool bbIsFuncletBeg(const BasicBlock* block);
 
     bool ehHasCallableHandlers();
 
@@ -5384,6 +5387,8 @@ public:
 
     FoldResult fgFoldConditional(BasicBlock* block);
 
+    bool fgFoldCondToReturnBlock(BasicBlock* block);
+
     struct MorphUnreachableInfo
     {
         MorphUnreachableInfo(Compiler* comp);
@@ -6224,6 +6229,8 @@ public:
     bool fgFuncletsAreCold();
 
     PhaseStatus fgDetermineFirstColdBlock();
+
+    bool fgDedupReturnComparison(BasicBlock* block);
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc = nullptr);
 
@@ -7380,7 +7387,6 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP               0x00000080 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT                     0x00000100 // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS                      0x00000200 // Method needs GC polls
-#define OMF_HAS_FROZEN_OBJECTS                 0x00000400 // Method has frozen objects (REF constant int)
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 #define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
@@ -7411,16 +7417,6 @@ public:
     }
 
     void addFatPointerCandidate(GenTreeCall* call);
-
-    bool doesMethodHaveFrozenObjects() const
-    {
-        return (optMethodFlags & OMF_HAS_FROZEN_OBJECTS) != 0;
-    }
-
-    void setMethodHasFrozenObjects()
-    {
-        optMethodFlags |= OMF_HAS_FROZEN_OBJECTS;
-    }
 
     bool doesMethodHaveStaticInit()
     {
@@ -7746,11 +7742,6 @@ public:
     struct AssertionDsc
     {
         optAssertionKind assertionKind;
-        struct SsaVar
-        {
-            unsigned lclNum; // assigned to or property of this local var number
-            unsigned ssaNum;
-        };
         struct ArrBnd
         {
             ValueNum vnIdx;
@@ -7762,8 +7753,8 @@ public:
             ValueNum   vn;
             union
             {
-                SsaVar lcl;
-                ArrBnd bnd;
+                unsigned lclNum;
+                ArrBnd   bnd;
             };
         } op1;
         struct AssertionDscOp2
@@ -7780,7 +7771,7 @@ public:
             };
             union
             {
-                SsaVar        lcl;
+                unsigned      lclNum;
                 IntVal        u1;
                 double        dconVal;
                 IntegralRange u2;
@@ -7906,8 +7897,7 @@ public:
             }
             else
             {
-                return ((vnBased && (op1.vn == that->op1.vn)) ||
-                        (!vnBased && (op1.lcl.lclNum == that->op1.lcl.lclNum)));
+                return ((vnBased && (op1.vn == that->op1.vn)) || (!vnBased && (op1.lclNum == that->op1.lclNum)));
             }
         }
 
@@ -7931,8 +7921,7 @@ public:
                     return true;
 
                 case O2K_LCLVAR_COPY:
-                    return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
-                           (!vnBased || (op2.lcl.ssaNum == that->op2.lcl.ssaNum));
+                    return op2.lclNum == that->op2.lclNum;
 
                 case O2K_SUBRANGE:
                     return op2.u2.Equals(that->op2.u2);
@@ -8126,7 +8115,7 @@ public:
     // Implied assertion functions.
     void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
     void optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions);
-    void optImpliedByCopyAssertion(AssertionDsc* copyAssertion, AssertionDsc* depAssertion, ASSERT_TP& result);
+    bool optCreateJumpTableImpliedAssertions(BasicBlock* switchBb);
     void optImpliedByConstAssertion(AssertionDsc* curAssertion, ASSERT_TP& result);
 
 #ifdef DEBUG
@@ -8447,7 +8436,7 @@ public:
         // We explicitly block these APIs from being expanded in R2R
         // since we know they are non-deterministic across hardware
 
-        if (opts.IsReadyToRun() && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        if (IsReadyToRun())
         {
             if (mustExpand)
             {
@@ -9669,7 +9658,7 @@ private:
     // on which the function is executed (except for CoreLib, where there are special rules)
     bool compExactlyDependsOn(CORINFO_InstructionSet isa) const
     {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         if ((opts.compSupportsISAReported.HasInstructionSet(isa)) == false)
         {
             if (notifyInstructionSetUsage(isa, (opts.compSupportsISA.HasInstructionSet(isa))))
@@ -10168,18 +10157,6 @@ public:
             return !!(compFlags & optFlag);
         }
 
-#ifdef FEATURE_READYTORUN
-        bool IsReadyToRun() const
-        {
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN);
-        }
-#else
-        bool IsReadyToRun() const
-        {
-            return false;
-        }
-#endif
-
         // Check if the compilation is control-flow guard enabled.
         bool IsCFGEnabled() const
         {
@@ -10311,7 +10288,7 @@ public:
 
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-        bool compReloc; // Generate relocs for pointers in code, true for all ngen/prejit codegen
+        bool compReloc; // Generate relocs for pointers in code, true for all AOT codegen
 
 #ifdef DEBUG
 #if defined(TARGET_XARCH)
@@ -10360,7 +10337,7 @@ public:
         bool disasmWithGC;             // Display GC info interleaved with disassembly.
         bool disAddr;                  // Display process address next to each instruction in disassembly code
         bool disAsm2;                  // Display native code after it is generated using external disassembler
-        bool dspOrder;                 // Display names of each of the methods that we ngen/jit
+        bool dspOrder;                 // Display names of each of the methods that we compile
         bool dspUnwind;                // Display the unwind info output
         bool compLongAddress;          // Force using large pseudo instructions for long address
                                        // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
@@ -10467,6 +10444,21 @@ public:
         bool compInlineMethodsWithEH;
 
     } opts;
+
+    bool IsAot() const
+    {
+        return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_AOT);
+    }
+
+    bool IsNativeAot()
+    {
+        return IsAot() && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    }
+
+    bool IsReadyToRun()
+    {
+        return IsAot() && !IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    }
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;
     static AssemblyNamesList2* s_pAltJitExcludeAssembliesList;
@@ -10670,7 +10662,7 @@ public:
     {
 #if 0
         // Switching between size & speed has measurable throughput impact
-        // (3.5% on NGen CoreLib when measured). It used to be enabled for
+        // (3.5% on AOT CoreLib when measured). It used to be enabled for
         // DEBUG, but should generate identical code between CHK & RET builds,
         // so that's not acceptable.
         // TODO-Throughput: Figure out what to do about size vs. speed & throughput.
@@ -11878,6 +11870,7 @@ public:
             case GT_IL_OFFSET:
             case GT_NOP:
             case GT_SWIFT_ERROR:
+            case GT_GCPOLL:
                 break;
 
             // Lclvar unary operators

@@ -342,8 +342,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         bool       __fExceptionCaught = false;                                             \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
-            SCAN_EHMARKER_TRY();                                                            \
-            DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH)
+            SCAN_EHMARKER_TRY();
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER                                                 \
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX                                            \
@@ -358,11 +357,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         bool       __fExceptionCaught = false;                                             \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
-            SCAN_EHMARKER_TRY();                                                            \
-            DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH);
+            SCAN_EHMARKER_TRY();
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                      \
-            DEBUG_ASSURE_NO_RETURN_END(IUACH)                                               \
             SCAN_EHMARKER_END_TRY();                                                        \
         }                                                                                   \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
@@ -500,12 +497,12 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
   {                                                 \
     MAKE_CURRENT_THREAD_AVAILABLE();                \
     BEGIN_GCX_ASSERT_PREEMP;                        \
-    CoopTransitionHolder __CoopTransition(CURRENT_THREAD); \
-    DEBUG_ASSURE_NO_RETURN_BEGIN(COOP_TRANSITION)
+    {                                               \
+        CoopTransitionHolder __CoopTransition(CURRENT_THREAD);
 
 #define COOPERATIVE_TRANSITION_END()                \
-    DEBUG_ASSURE_NO_RETURN_END(COOP_TRANSITION)     \
-    __CoopTransition.SuppressRelease();             \
+        __CoopTransition.SuppressRelease();         \
+    }                                               \
     END_GCX_ASSERT_PREEMP;                          \
   }
 

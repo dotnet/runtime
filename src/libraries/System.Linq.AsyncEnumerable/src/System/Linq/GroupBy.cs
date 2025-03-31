@@ -42,7 +42,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -79,7 +79,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -126,7 +126,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -173,7 +173,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -219,7 +219,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                if (await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false) is AsyncLookup<TKey, TSource> lookup)
+                if (await ToLookupAsync(source, keySelector, comparer, cancellationToken) is AsyncLookup<TKey, TSource> lookup)
                 {
                     foreach (TResult item in lookup.ApplyResultSelector(resultSelector))
                     {
@@ -268,9 +268,9 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                if (await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false) is AsyncLookup<TKey, TSource> lookup)
+                if (await ToLookupAsync(source, keySelector, comparer, cancellationToken) is AsyncLookup<TKey, TSource> lookup)
                 {
-                    await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken).ConfigureAwait(false))
+                    await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken))
                     {
                         yield return item;
                     }
@@ -322,7 +322,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                if (await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false) is AsyncLookup<TKey, TElement> lookup)
+                if (await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken) is AsyncLookup<TKey, TElement> lookup)
                 {
                     foreach (TResult item in lookup.ApplyResultSelector(resultSelector))
                     {
@@ -376,9 +376,9 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                if (await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false) is AsyncLookup<TKey, TElement> lookup)
+                if (await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken) is AsyncLookup<TKey, TElement> lookup)
                 {
-                    await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken).ConfigureAwait(false))
+                    await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken))
                     {
                         yield return item;
                     }

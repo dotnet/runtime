@@ -75,6 +75,7 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Threading_Thread_get_CurrentThread,
     NI_System_Threading_Thread_get_ManagedThreadId,
+    NI_System_Threading_Thread_FastPollGC,
     NI_System_Threading_Volatile_Read,
     NI_System_Threading_Volatile_Write,
     NI_System_Threading_Volatile_ReadBarrier,

@@ -2000,7 +2000,7 @@ private:
             return IndirTransform::LclFld;
         }
 
-        if ((offset == 0) && ClassLayout::AreCompatible(indir->AsBlk()->GetLayout(), varDsc->GetLayout()))
+        if ((offset == 0) && indir->AsBlk()->GetLayout()->CanAssignFrom(varDsc->GetLayout()))
         {
             return IndirTransform::LclVar;
         }

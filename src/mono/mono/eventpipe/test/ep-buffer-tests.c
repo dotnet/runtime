@@ -55,7 +55,7 @@ load_buffer_with_events_fini (
 {
 	ep_event_free (ep_event);
 	ep_delete_provider (provider);
-	ep_session_free (session);
+	ep_session_dec_ref (session);
 }
 
 static

@@ -401,7 +401,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // TODO-RISCV64: Implement varargs (NYI_RISCV64)
 
     assert(block != NULL);
-    assert(block->HasFlag(BBF_FUNCLET_BEG));
+    assert(compiler->bbIsFuncletBeg(block));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
@@ -4669,7 +4669,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
     else
     {
-        //// Ngen case - GS cookie constant needs to be accessed through an indirection.
+        // AOT case - GS cookie constant needs to be accessed through an indirection.
         // instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         // GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, regGSConst, regGSConst, 0);
         if (compiler->opts.compReloc)
@@ -5236,7 +5236,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
     assert(indexType == TYP_INT || indexType == TYP_LONG);
 #endif // DEBUG
 
-    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, indexReg, bndsChk->gtIndRngFailBB, lengthReg);
+    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, indexReg, nullptr, lengthReg);
 }
 
 //---------------------------------------------------------------------
@@ -5512,7 +5512,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // IndRngFail:
         // ...
         // RngChkExit:
-        genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, index->GetRegNum(), node->gtIndRngFailBB, tempReg);
+        genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, index->GetRegNum(), nullptr, tempReg);
     }
 
     emitAttr attr = emitActualTypeSize(node);
@@ -6914,7 +6914,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     // - Generate fully interruptible code for loops that contains calls
     // - Generate fully interruptible code for leaf methods
     //
-    // Given the limited benefit from this optimization (<10k for SPCL NGen image), the extra complexity
+    // Given the limited benefit from this optimization (<10k for SPCL AOT image), the extra complexity
     // is not worth it.
     //
 
