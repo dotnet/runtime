@@ -4286,7 +4286,6 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
 
     if (ppMethodDesc)
     {
-
         *ppMethodDesc = pCHdr->GetMethodDesc();
     }
     return TRUE;
