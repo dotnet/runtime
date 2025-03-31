@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Globalization;
 using Microsoft.DotNet.XUnitExtensions;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -168,21 +169,69 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Pkcs8PrivateKeySeedTestData))]
-        public static void ImportPkcs8PrivateKey_Seed_Array(MLKemAlgorithm algorithm, byte[] pkcs8)
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void ImportPkcs8PrivateKey_WrongAlgorithm(bool useSpanImport)
         {
-            using MLKem kem = MLKem.ImportPkcs8PrivateKey(pkcs8);
-            Assert.Equal(algorithm, kem.Algorithm);
-            AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+            byte[] ecP256Key = Convert.FromBase64String(@"
+                MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgZg/vYKeaTgco6dGx
+                6KCMw5/L7/Xu7j7idYWNSCBcod6hRANCAASc/jV6ZojlesoM+qNnSYZdc7Fkd4+E
+                2raDwlFPZGucEHDUmdCwaDx/hglDZaLimpD/67F5k5jUe+I3CkijLST7");
+
+            if (useSpanImport)
+            {
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(ecP256Key)));
+            }
+            else
+            {
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(ecP256Key));
+            }
         }
 
         [Theory]
-        [MemberData(nameof(Pkcs8PrivateKeySeedTestData))]
-        public static void ImportPkcs8PrivateKey_Seed_Span(MLKemAlgorithm algorithm, byte[] pkcs8)
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void ImportPkcs8PrivateKey_BogusAsnChoice(bool useSpanImport)
         {
-            using MLKem kem = MLKem.ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(pkcs8));
-            Assert.Equal(algorithm, kem.Algorithm);
-            AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+            // SEQUENCE {
+            //   INTEGER 0
+            //   SEQUENCE {
+            //     OBJECT IDENTIFIER 2.16.840.1.101.3.4.4.1 #id-alg-ml-kem-512
+            //   }
+            //   PRINTABLE STRING "Potato"
+            // }
+            byte[] pkcs8 = "3018020100300B06096086480165030404011306506F7461746F".HexToByteArray();
+
+            if (useSpanImport)
+            {
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(pkcs8)));
+            }
+            else
+            {
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(pkcs8));
+            }
+        }
+
+        [Fact]
+        public static void ImportPkcs8PrivateKey_Seed_Array()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
+            {
+                using MLKem kem = MLKem.ImportPkcs8PrivateKey(pkcs8);
+                Assert.Equal(algorithm, kem.Algorithm);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+            }
+        }
+
+        [Fact]
+        public static void ImportPkcs8PrivateKey_Seed_Span()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
+            {
+                using MLKem kem = MLKem.ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(pkcs8));
+                Assert.Equal(algorithm, kem.Algorithm);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+            }
         }
 
         [Theory]
@@ -197,68 +246,220 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Pkcs8PrivateKeySeedTestData))]
-        public static void ImportPkcs8PrivateKey_Seed_Array_TrailingData(MLKemAlgorithm algorithm, byte[] pkcs8)
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void ImportPkcs8PrivateKey_Seed_Array_TrailingData(bool useSpanImport)
         {
-            _ = algorithm;
-            Array.Resize(ref pkcs8, pkcs8.Length + 1);
-            Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(pkcs8));
-        }
-
-        [Theory]
-        [MemberData(nameof(Pkcs8PrivateKeySeedTestData))]
-        public static void ImportPkcs8PrivateKey_Seed_Span_TrailingData(MLKemAlgorithm algorithm, byte[] pkcs8)
-        {
-            _ = algorithm;
-            Array.Resize(ref pkcs8, pkcs8.Length + 1);
-            Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(pkcs8)));
-        }
-
-        [Theory]
-        [MemberData(nameof(Pkcs8PrivateKeyExpandedKeyTestData))]
-        public static void ImportPkcs8PrivateKey_ExpandedKey_Array(
-            MLKemAlgorithm algorithm,
-            byte[] pkcs8,
-            byte[] expectedDecapsulationKey)
-        {
-            using MLKem kem = MLKem.ImportPkcs8PrivateKey(pkcs8);
-            Assert.Equal(algorithm, kem.Algorithm);
-            byte[] decapsulationKey = kem.ExportDecapsulationKey();
-            AssertExtensions.SequenceEqual(expectedDecapsulationKey, decapsulationKey);
-        }
-
-        public static IEnumerable<object[]> Pkcs8PrivateKeySeedTestData
-        {
-            get
+            foreach ((_, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
             {
-                yield return [MLKemAlgorithm.MLKem512, MLKemTestData.IetfMlKem512PrivateKeySeed];
-                yield return [MLKemAlgorithm.MLKem768, MLKemTestData.IetfMlKem768PrivateKeySeed];
-                yield return [MLKemAlgorithm.MLKem1024, MLKemTestData.IetfMlKem1024PrivateKeySeed];
+                byte[] oversized = new byte[pkcs8.Length + 1];
+                pkcs8.AsSpan().CopyTo(oversized);
+
+                if (useSpanImport)
+                {
+                    Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized.AsSpan()));
+                }
+                else
+                {
+                    Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized));
+                }
             }
         }
 
-        public static IEnumerable<object[]> Pkcs8PrivateKeyExpandedKeyTestData
+        [Fact]
+        public static void ImportPkcs8PrivateKey_ExpandedKey_Array()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyExpandedKeyTestData)
+            {
+                using MLKem kem = MLKem.ImportPkcs8PrivateKey(pkcs8);
+                Assert.Equal(algorithm, kem.Algorithm);
+                byte[] decapsulationKey = kem.ExportDecapsulationKey();
+                AssertExtensions.SequenceEqual(decapKey, decapsulationKey);
+            }
+        }
+
+        [Fact]
+        public static void ImportPkcs8PrivateKey_ExpandedKey_Span()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyExpandedKeyTestData)
+            {
+                using MLKem kem = MLKem.ImportPkcs8PrivateKey(pkcs8.AsSpan());
+                Assert.Equal(algorithm, kem.Algorithm);
+                byte[] decapsulationKey = kem.ExportDecapsulationKey();
+                AssertExtensions.SequenceEqual(decapKey, decapsulationKey);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void ImportPkcs8PrivateKey_ExpandedKey_WrongAlgorithm(bool useSpanImport)
+        {
+            byte[] pkcs8 = Pkcs8Encode(
+                MLKemTestData.MlKem768Oid,
+                expandedKey: MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey);
+
+            if (useSpanImport)
+            {
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(pkcs8)));
+            }
+            else
+            {
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(pkcs8));
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void ImportPkcs8PrivateKey_ExpandedKey_TrailingData(bool useSpanImport)
+        {
+            foreach ((_, byte[] pkcs8, _) in Pkcs8PrivateKeyExpandedKeyTestData)
+            {
+                byte[] oversized = new byte[pkcs8.Length + 1];
+                pkcs8.AsSpan().CopyTo(oversized);
+
+                if (useSpanImport)
+                {
+                    Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized.AsSpan()));
+                }
+                else
+                {
+                    Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized));
+                }
+            }
+        }
+
+        [Fact]
+        public static void ImportPkcs8PrivateKey_Both_Array()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyBothTestData)
+            {
+                using MLKem kem = MLKem.ImportPkcs8PrivateKey(pkcs8);
+                byte[] seed = kem.ExportPrivateSeed();
+                byte[] decapsulationKey = kem.ExportDecapsulationKey();
+                Assert.Equal(algorithm, kem.Algorithm);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, seed);
+                AssertExtensions.SequenceEqual(decapKey, decapsulationKey);
+            }
+        }
+
+        [Fact]
+        public static void ImportPkcs8PrivateKey_Both_Span()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyBothTestData)
+            {
+                using MLKem kem = MLKem.ImportPkcs8PrivateKey(pkcs8.AsSpan());
+                byte[] seed = kem.ExportPrivateSeed();
+                byte[] decapsulationKey = kem.ExportDecapsulationKey();
+                Assert.Equal(algorithm, kem.Algorithm);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, seed);
+                AssertExtensions.SequenceEqual(decapKey, decapsulationKey);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ImportPkcs8PrivateKey_Both_Array_MismatchedKeys(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem1 = MLKem.GenerateKey(algorithm);
+            using MLKem kem2 = MLKem.GenerateKey(algorithm);
+            byte[] seed = kem1.ExportPrivateSeed();
+            byte[] decapKey = kem2.ExportDecapsulationKey();
+            byte[] encoded = Pkcs8Encode(algorithm.GetOid(), seed: seed, expandedKey: decapKey);
+            Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(encoded));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ImportPkcs8PrivateKey_Both_Span_MismatchedKeys(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem1 = MLKem.GenerateKey(algorithm);
+            using MLKem kem2 = MLKem.GenerateKey(algorithm);
+            byte[] seed = kem1.ExportPrivateSeed();
+            byte[] decapKey = kem2.ExportDecapsulationKey();
+            byte[] encoded = Pkcs8Encode(algorithm.GetOid(), seed: seed, expandedKey: decapKey);
+            Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(encoded.AsSpan()));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void ImportPkcs8PrivateKey_Both_TrailingData(bool useSpanImport)
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyBothTestData)
+            {
+                byte[] oversized = new byte[pkcs8.Length + 1];
+                pkcs8.AsSpan().CopyTo(oversized);
+
+                if (useSpanImport)
+                {
+                    Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized.AsSpan()));
+                }
+                else
+                {
+                    Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized));
+                }
+            }
+        }
+
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Seed)> Pkcs8PrivateKeySeedTestData
+        {
+            get
+            {
+                yield return (MLKemAlgorithm.MLKem512, MLKemTestData.IetfMlKem512PrivateKeySeed);
+                yield return (MLKemAlgorithm.MLKem768, MLKemTestData.IetfMlKem768PrivateKeySeed);
+                yield return (MLKemAlgorithm.MLKem1024, MLKemTestData.IetfMlKem1024PrivateKeySeed);
+            }
+        }
+
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8ExpandedKey, byte[] DecapsulationKey)> Pkcs8PrivateKeyExpandedKeyTestData
         {
             get
             {
                 yield return
-                [
+                (
                     MLKemAlgorithm.MLKem512,
                     MLKemTestData.IetfMlKem512PrivateKeyExpandedKey,
-                    MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
-                ];
+                    MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey
+                );
                 yield return
-                [
+                (
                     MLKemAlgorithm.MLKem768,
                     MLKemTestData.IetfMlKem768PrivateKeyExpandedKey,
                     MLKemTestData.IetfMlKem768PrivateKeyDecapsulationKey
-                ];
+                );
                 yield return
-                [
+                (
                     MLKemAlgorithm.MLKem1024,
                     MLKemTestData.IetfMlKem1024PrivateKeyExpandedKey,
                     MLKemTestData.IetfMlKem1024PrivateKeyDecapsulationKey
-                ];
+                );
+            }
+        }
+
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Both, byte[] DecapsulationKey)> Pkcs8PrivateKeyBothTestData
+        {
+            get
+            {
+                yield return
+                (
+                    MLKemAlgorithm.MLKem512,
+                    MLKemTestData.IetfMlKem512PrivateKeyBoth,
+                    MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey
+                );
+                yield return
+                (
+                    MLKemAlgorithm.MLKem768,
+                    MLKemTestData.IetfMlKem768PrivateKeyBoth,
+                    MLKemTestData.IetfMlKem768PrivateKeyDecapsulationKey
+                );
+                yield return
+                (
+                    MLKemAlgorithm.MLKem1024,
+                    MLKemTestData.IetfMlKem1024PrivateKeyBoth,
+                    MLKemTestData.IetfMlKem1024PrivateKeyDecapsulationKey
+                );
             }
         }
 

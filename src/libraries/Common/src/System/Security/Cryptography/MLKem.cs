@@ -865,16 +865,11 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
         {
+            ThrowIfTrailingData(source);
             ThrowIfNotSupported();
 
             KeyFormatHelper.ReadPkcs8(s_knownOids, source, MLKemKeyReader, out int read, out MLKem kem);
-
-            if (read != source.Length)
-            {
-                kem.Dispose();
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
-
+            Debug.Assert(read == source.Length);
             return kem;
         }
 
@@ -1027,6 +1022,16 @@ namespace System.Security.Cryptography
             catch (ArgumentException ae)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
+            }
+        }
+
+        private static void ThrowIfTrailingData(ReadOnlySpan<byte> data)
+        {
+            AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out int bytesRead);
+
+            if (bytesRead != data.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
         }
 
