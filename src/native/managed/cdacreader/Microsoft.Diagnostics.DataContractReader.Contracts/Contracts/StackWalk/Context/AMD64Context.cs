@@ -25,6 +25,8 @@ internal struct AMD64Context : IPlatformContext
         CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS,
         CONTEXT_XSTATE = CONTEXT_AMD | 0x40,
         CONTEXT_KERNEL_CET = CONTEXT_AMD | 0x80,
+
+        CONTEXT_AREA_MASK = 0xFFFF,
     }
 
     public readonly uint Size => 0x4d0;
