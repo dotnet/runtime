@@ -2836,6 +2836,7 @@ AsyncMethodSignatureKind ClassifyAsyncMethodSignatureCore(SigPointer sig, Module
                         IfFailThrow(sig.GetElemType(&elemType));
                         if (elemType == ELEMENT_TYPE_CLASS)
                         {
+                            ThrowHR(COR_E_BADIMAGEFORMAT);
                             return AsyncMethodSignatureKind::Async2Method;
                         }
                         else
@@ -2847,6 +2848,7 @@ AsyncMethodSignatureKind ClassifyAsyncMethodSignatureCore(SigPointer sig, Module
                             }
                             else
                             {
+                                ThrowHR(COR_E_BADIMAGEFORMAT);
                                 return AsyncMethodSignatureKind::Async2Method;
                             }
                         }
@@ -2859,6 +2861,7 @@ AsyncMethodSignatureKind ClassifyAsyncMethodSignatureCore(SigPointer sig, Module
                 *pIsValueTask = name[0] == 'V';
                 if (elemType == ELEMENT_TYPE_VOID)
                 {
+                    ThrowHR(COR_E_BADIMAGEFORMAT);
                     return AsyncMethodSignatureKind::Async2MethodNonGeneric;
                 }
                 else
@@ -2872,36 +2875,39 @@ AsyncMethodSignatureKind ClassifyAsyncMethodSignatureCore(SigPointer sig, Module
             *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig) - 1;
     }
 
-    if (elemType == ELEMENT_TYPE_GENERICINST)
+    if (false)
     {
-        IfFailThrow(sig.GetElemType(&elemType));
-        if (elemType == ELEMENT_TYPE_INTERNAL)
-            return AsyncMethodSignatureKind::NormalMethod;
-
-        *pIsValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
-        IfFailThrow(sig.GetToken(&tk));
-        IfFailThrow(sig.GetData(&data));
-        if (data == 1)
+        if (elemType == ELEMENT_TYPE_GENERICINST)
         {
-            // This might be System.Threading.Tasks.Task`1
-            GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
-            if ((strcmp(name, *pIsValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+            IfFailThrow(sig.GetElemType(&elemType));
+            if (elemType == ELEMENT_TYPE_INTERNAL)
+                return AsyncMethodSignatureKind::NormalMethod;
+
+            *pIsValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
+            IfFailThrow(sig.GetToken(&tk));
+            IfFailThrow(sig.GetData(&data));
+            if (data == 1)
             {
-                if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
-                    return AsyncMethodSignatureKind::TaskReturningMethod;
+                // This might be System.Threading.Tasks.Task`1
+                GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
+                if ((strcmp(name, *pIsValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+                {
+                    if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+                        return AsyncMethodSignatureKind::TaskReturningMethod;
+                }
             }
         }
-    }
-    else if ((elemType == ELEMENT_TYPE_CLASS) || (elemType == ELEMENT_TYPE_VALUETYPE))
-    {
-        IfFailThrow(sig.GetToken(&tk));
-        *pIsValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
-        // This might be System.Threading.Tasks.Task or ValueTask
-        GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
-        if ((strcmp(name, *pIsValueTask ? "ValueTask" : "Task") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+        else if ((elemType == ELEMENT_TYPE_CLASS) || (elemType == ELEMENT_TYPE_VALUETYPE))
         {
-            if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
-                return AsyncMethodSignatureKind::TaskNonGenericReturningMethod;
+            IfFailThrow(sig.GetToken(&tk));
+            *pIsValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
+            // This might be System.Threading.Tasks.Task or ValueTask
+            GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
+            if ((strcmp(name, *pIsValueTask ? "ValueTask" : "Task") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+            {
+                if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+                    return AsyncMethodSignatureKind::TaskNonGenericReturningMethod;
+            }
         }
     }
 
@@ -3719,6 +3725,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     type,
                     implType);
 
+                ThrowHR(COR_E_BADIMAGEFORMAT);
                 _ASSERTE(pNewMethod->IsAsync2Variant());
 
                 pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
