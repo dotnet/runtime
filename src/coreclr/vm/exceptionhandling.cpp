@@ -5662,11 +5662,18 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     ULONG_PTR hr = GetHRFromThrowable(throwable);
 
     EXCEPTION_RECORD newExceptionRecord;
-    newExceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
-    newExceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
-    newExceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF))&DispatchManagedException;
-    newExceptionRecord.NumberParameters = MarkAsThrownByUs(newExceptionRecord.ExceptionInformation, hr);
-    newExceptionRecord.ExceptionRecord = NULL;
+    if (pExceptionRecord != NULL)
+    {
+        newExceptionRecord = *pExceptionRecord;
+    }
+    else
+    {
+        newExceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
+        newExceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
+        newExceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF))&DispatchManagedException;
+        newExceptionRecord.NumberParameters = MarkAsThrownByUs(newExceptionRecord.ExceptionInformation, hr);
+        newExceptionRecord.ExceptionRecord = NULL;
+    }
 
     ExInfo exInfo(pThread, &newExceptionRecord, pExceptionContext, ExKind::Throw);
 
@@ -5909,7 +5916,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     }
 
     pDispatcherContext->ControlPc = (UINT_PTR) GetIP(pDispatcherContext->ContextRecord);
-    
+
 #if defined(TARGET_ARM64)
     // Since this routine is used to fixup contexts for async exceptions,
     // clear the CONTEXT_UNWOUND_TO_CALL flag since, semantically, frames
@@ -6232,7 +6239,7 @@ UnhandledExceptionHandlerUnix(
     // Unhandled exception happened, so dump the managed stack trace and terminate the process
 
     DefaultCatchHandler(NULL /*pExceptionInfo*/, NULL /*Throwable*/, TRUE /*useLastThrownObject*/,
-        TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
+        FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
 
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     return _URC_FATAL_PHASE1_ERROR;
@@ -7716,6 +7723,32 @@ VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int
     WRAPPER_NO_CONTRACT;
     longjmp(*pJmpBuf, retVal);
 }
+
+// This is a personality routine that the RtlRestoreContext calls when it is called with
+// pExceptionRecord->ExceptionCode == STATUS_UNWIND_CONSOLIDATE.
+// Before calling this function, it creates a machine frame that hides all the frames
+// upto the frame described by the pContextRecord. This allows us to raise the exception
+// from the target context without removing the frames from the stack. Those frames
+// can contain e.g. a C++ exception object that needs to be preserved during the exception
+// propagation.
+EXTERN_C EXCEPTION_DISPOSITION
+PropagateForeignExceptionThroughNativeFrames(IN     PEXCEPTION_RECORD   pExceptionRecord,
+                    IN     PVOID               pEstablisherFrame,
+                    IN OUT PCONTEXT            pContextRecord,
+                    IN OUT PDISPATCHER_CONTEXT pDispatcherContext
+                    )
+{
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_THROWS;
+
+    _ASSERTE(pExceptionRecord->NumberParameters == 2);
+    EXCEPTION_RECORD *pExceptionToPropagateRecord = (EXCEPTION_RECORD*)pExceptionRecord->ExceptionInformation[1];
+    GCX_PREEMP_NO_DTOR();
+    RaiseException(pExceptionToPropagateRecord->ExceptionCode, pExceptionToPropagateRecord->ExceptionFlags, pExceptionToPropagateRecord->NumberParameters, pExceptionToPropagateRecord->ExceptionInformation);
+    UNREACHABLE();
+}
+
 #endif // HOST_WINDOWS
 
 extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
@@ -7784,6 +7817,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #ifdef HOST_WINDOWS
     jmp_buf* pLongJmpBuf = pExInfo->m_pLongJmpBuf;
     int longJmpReturnValue = pExInfo->m_longJmpReturnValue;
+    EXCEPTION_RECORD lastExceptionRecord = *pExInfo->m_ptrs.ExceptionRecord;
 #endif // HOST_WINDOWS
 
 #ifdef HOST_UNIX
@@ -7885,6 +7919,23 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         }
 #endif // HOST_UNIX
         // Throw exception from the caller context
+
+#ifdef HOST_WINDOWS
+        if ((pLongJmpBuf == NULL) && !IsComPlusException(&lastExceptionRecord) && MapWin32FaultToCOMPlusException(&lastExceptionRecord) == kSEHException)
+        {
+            // Propagate an external exception to the caller context. This is done in a special way, since the native stack
+            // frames below the caller context may contain e.g. C++ exception object that the external exception references.
+            // So we rely on a special mode of the RtlRestoreContext with EXCEPTION_RECORD passed in with STATUS_UNWIND_CONSOLIDATE
+            // exception code to create a machine frame that hides all the frames upto the caller context before rasing the exception.
+            EXCEPTION_RECORD exceptionRecord;
+            exceptionRecord.ExceptionCode = STATUS_UNWIND_CONSOLIDATE;
+            exceptionRecord.NumberParameters = 2;
+            exceptionRecord.ExceptionInformation[0] = (ULONG_PTR)PropagateForeignExceptionThroughNativeFrames;
+            exceptionRecord.ExceptionInformation[1] = (ULONG_PTR)&lastExceptionRecord;
+            RtlRestoreContext(pvRegDisplay->pCurrentContext, &exceptionRecord);
+        }
+#endif // HOST_WINDOWS
+
 #if defined(HOST_AMD64)
         ULONG64* returnAddress = (ULONG64*)targetSp;
         *returnAddress = pvRegDisplay->pCurrentContext->Rip;
@@ -8040,7 +8091,7 @@ extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvReg
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay)
+extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay)
 {
     QCALL_CONTRACT;
 
@@ -8106,7 +8157,7 @@ struct ExtendedEHClauseEnumerator : EH_CLAUSE_ENUMERATOR
     unsigned EHCount;
 };
 
-extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
+extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
 {
     QCALL_CONTRACT;
 
@@ -8128,10 +8179,10 @@ extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *p
     return pExtendedEHEnum->EHCount != 0;
 }
 
-extern "C" BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause)
+extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause)
 {
     QCALL_CONTRACT;
-    BOOL result = FALSE;
+    CLR_BOOL result = FALSE;
 
     BEGIN_QCALL;
     Thread* pThread = GET_THREAD();
@@ -8211,10 +8262,10 @@ extern uint32_t g_exceptionCount;
 
 MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
-static BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterator, ExInfo *pExInfo)
+static CLR_BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterator, ExInfo *pExInfo)
 {
     // check if the exception is intercepted.
-    BOOL isIntercepted = FALSE;
+    CLR_BOOL isIntercepted = FALSE;
     if (pExInfo->m_ExceptionFlags.DebuggerInterceptInfo())
     {
         MethodDesc *pMD = pStackFrameIterator->m_crawl.GetFunction();
@@ -8379,11 +8430,11 @@ static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExIn
     pExInfo->m_pMDToReportFunctionLeave = pMD;
 }
 
-extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault, bool* pfIsExceptionIntercepted)
+extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
 
-    bool result = false;
+    CLR_BOOL result = FALSE;
     Thread* pThread = GET_THREAD();
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
@@ -8531,7 +8582,7 @@ static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrame
 
 bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
-extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* pfIsExceptionIntercepted)
+extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR_BOOL* fUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
 
@@ -8556,7 +8607,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
     // Check for reverse pinvoke (but eliminate the case when the caller is managed) or CallDescrWorkerInternal.
     if (!ExecutionManager::IsManagedCode(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
     {
-        bool invalidRevPInvoke;
+        CLR_BOOL invalidRevPInvoke;
 #ifdef USE_GC_INFO_DECODER
         GcInfoDecoder gcInfoDecoder(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
         invalidRevPInvoke = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
@@ -8565,6 +8616,8 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
         DecodeGCHdrInfo(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), 0, &gcHdrInfo);
         invalidRevPInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
+        bool isFilterFunclet = false;
+        bool isPropagatingToExternalNativeCode = false;
 
         if (invalidRevPInvoke)
         {
@@ -8580,17 +8633,25 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                 pTopExInfo->m_propagateExceptionCallback = callback;
                 pTopExInfo->m_propagateExceptionContext = callbackCxt;
             }
+            else
+            {
+                isPropagatingToExternalNativeCode = true;
+            }
 #endif // HOST_UNIX
         }
         else
         {
             if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
             {
-                invalidRevPInvoke = true;
+                invalidRevPInvoke = TRUE;
             }
             else if (pThis->m_crawl.IsFilterFunclet())
             {
-                invalidRevPInvoke = true;
+                invalidRevPInvoke = TRUE;
+            }
+            else
+            {
+                isPropagatingToExternalNativeCode = true;
             }
         }
 
@@ -8612,7 +8673,12 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
             // If not, the exception is unhandled.
             if ((pFrame == FRAME_TOP) ||
-                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions()))
+                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions())
+#ifdef HOST_UNIX
+                // Don't allow propagating exceptions from managed to non-runtime native code
+                || isPropagatingToExternalNativeCode
+#endif
+               )
             {
                 if (pTopExInfo->m_passNumber == 1)
                 {
@@ -8638,7 +8704,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
     {
         if (fUnwoundReversePInvoke)
         {
-            *fUnwoundReversePInvoke = false;
+            *fUnwoundReversePInvoke = FALSE;
         }
     }
 
@@ -8747,10 +8813,10 @@ Exit:;
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pTopExInfo);
 
-        return true;
+        return TRUE;
     }
 
-    return false;
+    return FALSE;
 }
 
 namespace AsmOffsetsAsserts

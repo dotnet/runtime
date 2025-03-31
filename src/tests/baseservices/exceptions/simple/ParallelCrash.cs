@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using TestLibrary;
 
 // Runtime stability in the presence of concurrent fatal errors
 
@@ -20,6 +21,9 @@ public class ParallelCrash
 
     public static int Main(string[] args)
     {
+        // Ensure that the OS doesn't generate core dump for this intentionally crashing process
+        Utilities.DisableOSCoreDump();
+
         s_crashMainThread = true;
         s_crashWorkerThreads = true;
         if (args.Length > 0)

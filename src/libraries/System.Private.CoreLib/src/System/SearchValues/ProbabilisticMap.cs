@@ -257,7 +257,7 @@ namespace System.Buffers
         {
             Vector128<byte> shifted = values >>> VectorizedIndexShift;
 
-            Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), shifted);
+            Vector128<byte> bitPositions = Vector128.ShuffleNative(Vector128.Create(0x8040201008040201).AsByte(), shifted);
 
             Vector128<byte> index = values & Vector128.Create((byte)VectorizedIndexMask);
             Vector128<byte> bitMask;
@@ -268,8 +268,8 @@ namespace System.Buffers
             }
             else
             {
-                Vector128<byte> bitMaskLower = Vector128.ShuffleUnsafe(charMapLower, index);
-                Vector128<byte> bitMaskUpper = Vector128.ShuffleUnsafe(charMapUpper, index - Vector128.Create((byte)16));
+                Vector128<byte> bitMaskLower = Vector128.ShuffleNative(charMapLower, index);
+                Vector128<byte> bitMaskUpper = Vector128.ShuffleNative(charMapUpper, index - Vector128.Create((byte)16));
                 Vector128<byte> mask = Vector128.GreaterThan(index, Vector128.Create((byte)15));
                 bitMask = Vector128.ConditionalSelect(mask, bitMaskUpper, bitMaskLower);
             }

@@ -1110,6 +1110,31 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask, var_typ
     return regNum;
 }
 
+//------------------------------------------------------------------------------
+// genFirstRegNumFromMaskAndToggle : Maps first bit set in the register mask to a
+//          register number and also toggle the bit in the `mask`.
+// Arguments:
+//    mask               - the register mask
+//    type               - type of the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask and updates the `mask` to toggle
+//    the bit.
+//
+
+inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
+{
+    assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+
+    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+
+    mask ^= genSingleTypeRegMask(regNum);
+
+    return regNum;
+}
+
 /*****************************************************************************
  *
  *  Return the size in bytes of the given type.
@@ -2482,21 +2507,17 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 #endif
 }
 
-/*****************************************************************************
- Is this a synchronized instance method? If so, we will need to report "this"
- in the GC information, so that the EE can release the object lock
- in case of an exception
-
- We also need to report "this" and keep it alive for all shared generic
- code that gets the actual generic context from the "this" pointer and
- has exception handlers.
-
- For example, if List<T>::m() is shared between T = object and T = string,
- then inside m() an exception handler "catch E<T>" needs to be able to fetch
- the 'this' pointer to find out what 'T' is in order to tell if we
- should catch the exception or not.
- */
-
+//------------------------------------------------------------------------
+// lvaKeepAliveAndReportThis: check if there implicit references to this during method execution
+//
+// Returns:
+//    true if this must remain alive throughout the method, even if unreferenced
+//
+// Notes:
+//  In a synchronized instance method we need to report "this"
+//  in the GC information, so that the EE can release the object lock
+//  in case of an exception
+//
 inline bool Compiler::lvaKeepAliveAndReportThis()
 {
     if (info.compIsStatic || (lvaTable[0].TypeGet() != TYP_REF))
@@ -2507,17 +2528,11 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     const bool genericsContextIsThis = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0;
 
 #ifdef JIT32_GCENCODER
-
     if (info.compFlags & CORINFO_FLG_SYNCH)
         return true;
 
     if (genericsContextIsThis)
     {
-        // TODO: Check if any of the exception clauses are
-        // typed using a generic type. Else, we do not need to report this.
-        if (info.compXcptnsCount > 0)
-            return true;
-
         if (opts.compDbgCode)
             return true;
 
@@ -4393,6 +4408,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_IL_OFFSET:
         case GT_NOP:
         case GT_SWIFT_ERROR:
+        case GT_GCPOLL:
             return;
 
         // Unary operators with an optional operand
