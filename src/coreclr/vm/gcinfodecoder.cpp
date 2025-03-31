@@ -22,7 +22,7 @@
 inline size_t GET_CALLER_SP(PREGDISPLAY pREGDISPLAY)
 {
     _ASSERTE(false);
-    return NULL;
+    return 0;
 }
 #endif // !GET_CALLER_SP
 
