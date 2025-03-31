@@ -8,6 +8,10 @@ namespace System.Security.Cryptography.Tests
 {
     public static class MLKemTestData
     {
+        internal const string MlKem512Oid = "2.16.840.1.101.3.4.4.1";
+        internal const string MlKem768Oid = "2.16.840.1.101.3.4.4.2";
+        internal const string MlKem1024Oid = "2.16.840.1.101.3.4.4.3";
+
         internal static ReadOnlySpan<byte> IncrementalSeed =>
             [
                 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
@@ -23,7 +27,7 @@ namespace System.Security.Cryptography.Tests
                 [MLKemAlgorithm.MLKem1024],
             ];
 
-        internal static readonly byte[] IetfMlKem512Spki = Convert.FromBase64String(@"
+        internal static byte[] IetfMlKem512Spki => field ??= Convert.FromBase64String(@"
             MIIDMjALBglghkgBZQMEBAEDggMhADmVgV5ZfRBDVc8pqlMzyTJRhp1bzb5IcST2
             Ari2pmwWxHYWSK12XPXYAGtRXpBafwrAdrDGLvoygVPnylcBaZ8TBfHmvG+QsOSb
             aTUSts6ZKouAFt38GmYsfj+WGcvYad13GvMIlszVkYrGy3dGbF53mZbWf/mqvJdQ
@@ -43,11 +47,11 @@ namespace System.Security.Cryptography.Tests
             nMXEHf6DChsWLgsyQzQ2LwhKFEZ3IzRLrdAA+NjFN8SPmY8FMHzr0e3guBw7xZoG
             WhttY7Js");
 
-        internal static readonly byte[] IetfMlKem512PrivateKeySeed = Convert.FromBase64String(@"
+        internal static byte[] IetfMlKem512PrivateKeySeed  => field ??= Convert.FromBase64String(@"
             MFQCAQAwCwYJYIZIAWUDBAQBBEKAQAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZ
             GhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=");
 
-        internal static readonly byte[] IetfMlKem512PrivateKeyExpandedKey = Convert.FromBase64String(@"
+        internal static byte[] IetfMlKem512PrivateKeyExpandedKey => field ??= Convert.FromBase64String(@"
             MIIGeAIBADALBglghkgBZQMEBAEEggZkBIIGYHBVT9Q2NE8nhbGzsbrBhLZnkAMz
             bCbxWn3oeMSCXGvgPzxKSA91t0hqrTHToAUYYj/SB6tSjdYnIUlYNa4AYsNnt0px
             uvEKrQ6KKQIHa+MTSL6xXMwJV83rtK/yJnVrvGAbZWireErLrrNHAvD4aiYgIRiy
@@ -84,7 +88,7 @@ namespace System.Security.Cryptography.Tests
             uBw7xZoGWhttY7JsgvEB/2SAY7N24rtsW3RV9lWlDC/q2t4VDvoODm82WuogISIj
             JCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+Pw==");
 
-        internal static readonly byte[] IetfMlKem512PrivateKeyBoth = Convert.FromBase64String(@"
+        internal static byte[] IetfMlKem512PrivateKeyBoth => field ??= Convert.FromBase64String(@"
             MIIGvgIBADALBglghkgBZQMEBAEEggaqMIIGpgRAAAECAwQFBgcICQoLDA0ODxAR
             EhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+PwSC
             BmBwVU/UNjRPJ4Wxs7G6wYS2Z5ADM2wm8Vp96HjEglxr4D88SkgPdbdIaq0x06AF
@@ -123,7 +127,7 @@ namespace System.Security.Cryptography.Tests
             VfZVpQwv6treFQ76Dg5vNlrqICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9
             Pj8=");
 
-        internal static readonly byte[] IetfMlKem768Spki = Convert.FromBase64String(@"
+        internal static byte[] IetfMlKem768Spki => field ??= Convert.FromBase64String(@"
             MIIEsjALBglghkgBZQMEBAIDggShACmKoQ1CPI3aBp0CvFnmzfA6CWuLPaTKubgM
             pKFJB2cszvHsT68jSgvFt+nUc/KzEzs7JqHRdctnp4BZGWmcAvdlMbmcX4kYBwS7
             TKRTXFuJcmecZgoHxeUUuHAJyGLrj1FXaV77P8QKne9rgcHMAqJJrk8JStDZvTSF
@@ -151,7 +155,11 @@ namespace System.Security.Cryptography.Tests
             vje3X07btr6CFtbGM/srIoDiURPYaV5DSBw+6zl+sZJQUim2eiAeqJPD4ssy2ovD
             QvpN6gV4");
 
-        internal static readonly byte[] IetfMlKem1024Spki = Convert.FromBase64String(@"
+        internal static byte[] IetfMlKem768PrivateKeySeed => field ??= Convert.FromBase64String(@"
+            MFQCAQAwCwYJYIZIAWUDBAQCBEKAQAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZ
+            GhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=");
+
+        internal static byte[] IetfMlKem1024Spki => field ??= Convert.FromBase64String(@"
             MIIGMjALBglghkgBZQMEBAMDggYhAEuUwpRQERGRgjs1FMmsHqPZglzLhjk6LfsE
             ZU+iGS03v60cSXxlAu7lyoCnO/zguvWlSohYWkATl6PSMvQmp6+wgrwhpEMXCQ6q
             x1ksLqiKZTxEkeoZOTEzX1LpiaPEzFbZxVNzLVfEcPtBq3WbZdLQREU4L82cTjRK
@@ -187,11 +195,15 @@ namespace System.Security.Cryptography.Tests
             v16sTsHMXer1mcihPkgjVAbRf/3cg0S2xmmEqGiqkvoCInoIaVDrDIcB7VjcYod2
             uYOILhF1");
 
-        internal static readonly byte[] MLKem512PrivateSeed = (
+        internal static byte[] IetfMlKem1024PrivateKeySeed => field ??= Convert.FromBase64String(@"
+            MFQCAQAwCwYJYIZIAWUDBAQDBEKAQAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZ
+            GhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=");
+
+        internal static byte[] MLKem512PrivateSeed => field ??= (
             "00F8418B8BE63D8433058E3AFEBEFA43F434B2393896C2E75750FAFA5E9AE9A4" +
             "226FD2493AF33A6A92282E3FF0E5BA8AB9F09529C53671CBA1D98981DA8FE800").HexToByteArray();
 
-        internal static readonly byte[] MLKem512EncapsulationKey = (
+        internal static byte[] MLKem512EncapsulationKey => field ??= (
             "002645126709F87B5C6DF9116BA175020895C5C3031AFBBFCDF95AF2839095396A21F23BB1232091EB8F983BCBC95400D4A3" +
             "35C555187FC2311B79402A261AEB276F1DE4CA62458D5AA772F0C25C3A4824DC095AB63584CF863CD4DCA9736CAAFADC1CA2" +
             "249475946B4BF4B208334EC419C916157E84C9056DE713CD055D69009D295C1C1A6A07E008297BD1B167D4641ED946E0432C" +
@@ -209,7 +221,7 @@ namespace System.Security.Cryptography.Tests
             "364CCE2097DB286E01FB8D2C871472C68117EA6497196F5F56A3CE778D48B687DAF440BB483748B7C2F0889F02DAB06EC64F" +
             "33E59E49931A20084C7E78563A766B5223909DC385C5BC4BD8AFF51B5CC52F60FD181D8AC43537254ABC2F29E8FCB8698CD4").HexToByteArray();
 
-        internal static readonly byte[] MLKem512DecapsulationKey = (
+        internal static byte[] MLKem512DecapsulationKey => field ??= (
             "00E5CDA3A6960283140B49775D0111591493BD0A8C002C1701B53442FAB2A6C7C60B7AB64F1B90104460986803C8C464FA4A" +
             "A334513887F28A7A4810073301ED40BACD4B1123D73679F63735D17F2EF39B40B92A0A65A170A7A14721C8D23350FE1B90C9" +
             "13C7955A5E3DDB701417C6C505667377A611AA26F5AC981C4953A058BC51E1519B47780702A65407722B9C32BC4819181B67" +

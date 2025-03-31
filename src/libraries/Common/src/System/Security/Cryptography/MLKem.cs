@@ -29,6 +29,8 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
     public abstract class MLKem : IDisposable
     {
+        private static readonly string[] s_knownOids = [Oids.MlKem512, Oids.MlKem768, Oids.MlKem1024];
+
         private bool _disposed;
 
         /// <summary>
@@ -850,6 +852,10 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
+        ///     <paramref name="source" /> contains trailing data after the ASN.1 structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
         ///     The algorithm-specific import failed.
         ///   </para>
         /// </exception>
@@ -861,76 +867,15 @@ namespace System.Security.Cryptography
         {
             ThrowIfNotSupported();
 
-            unsafe
+            KeyFormatHelper.ReadPkcs8(s_knownOids, source, MLKemKeyReader, out int read, out MLKem kem);
+
+            if (read != source.Length)
             {
-                fixed (byte* pointer = source)
-                {
-                    #pragma warning disable CS0162
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        AsnValueReader reader = new(source, AsnEncodingRules.BER);
-                        PrivateKeyInfoAsn.Decode(ref reader, manager.Memory, out PrivateKeyInfoAsn pki);
-                        MLKemAlgorithm algorithm = GetAlgorithmIdentifier(ref pki.PrivateKeyAlgorithm);
-                        ReadOnlyMemory<byte> privateKeyContents = pki.PrivateKey;
-                        throw new CryptographicException(Convert.ToHexString(privateKeyContents.Span));
-                        MLKemPrivateKeyAsn.Decode(ref reader, privateKeyContents, out MLKemPrivateKeyAsn kemKey);
-
-                        try
-                        {
-                            if (kemKey.Seed is ReadOnlyMemory<byte> seed)
-                            {
-                                return ImportPrivateSeed(algorithm, seed.Span);
-                            }
-                            else if (kemKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
-                            {
-                                return ImportDecapsulationKey(algorithm, expandedKey.Span);
-                            }
-                            else if (kemKey.Both is MLKemPrivateKeyBothAsn both)
-                            {
-                                MLKem key = ImportPrivateSeed(algorithm, both.Seed.Span);
-                                int decapsulationKeySize = key.Algorithm.DecapsulationKeySizeInBytes;
-                                byte[]? rent = null;
-
-                                try
-                                {
-                                    rent = CryptoPool.Rent(decapsulationKeySize);
-                                    Span<byte> buffer = rent.AsSpan(0, decapsulationKeySize);
-                                    key.ExportDecapsulationKey(buffer);
-
-                                    if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
-                                    {
-                                        return key;
-                                    }
-                                    else
-                                    {
-                                        throw new CryptographicException(SR.Cryptography_KemPkcs8KeyMismatch);
-                                    }
-                                }
-                                catch
-                                {
-                                    key.Dispose();
-                                    throw;
-                                }
-                                finally
-                                {
-                                    if (rent is not null)
-                                    {
-                                        CryptoPool.Return(rent, decapsulationKeySize);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                            }
-                        }
-                        catch (ArgumentException ae)
-                        {
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
-                        }
-                    }
-                }
+                kem.Dispose();
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
+
+            return kem;
         }
 
         /// <inheritdoc cref="ImportPkcs8PrivateKey(ReadOnlySpan{byte})" />
@@ -1024,6 +969,69 @@ namespace System.Security.Cryptography
             }
 
             return algorithm;
+        }
+
+        private static void MLKemKeyReader(
+            ReadOnlyMemory<byte> privateKeyContents,
+            in AlgorithmIdentifierAsn algorithmIdentifier,
+            out MLKem kem)
+        {
+            MLKemAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
+            MLKemPrivateKeyAsn kemKey = MLKemPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER);
+
+            try
+            {
+                if (kemKey.Seed is ReadOnlyMemory<byte> seed)
+                {
+                    kem = ImportPrivateSeed(algorithm, seed.Span);
+                }
+                else if (kemKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
+                {
+                    kem = ImportDecapsulationKey(algorithm, expandedKey.Span);
+                }
+                else if (kemKey.Both is MLKemPrivateKeyBothAsn both)
+                {
+                    MLKem key = ImportPrivateSeed(algorithm, both.Seed.Span);
+                    int decapsulationKeySize = key.Algorithm.DecapsulationKeySizeInBytes;
+                    byte[]? rent = null;
+
+                    try
+                    {
+                        rent = CryptoPool.Rent(decapsulationKeySize);
+                        Span<byte> buffer = rent.AsSpan(0, decapsulationKeySize);
+                        key.ExportDecapsulationKey(buffer);
+
+                        if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
+                        {
+                            kem = key;
+                        }
+                        else
+                        {
+                            throw new CryptographicException(SR.Cryptography_KemPkcs8KeyMismatch);
+                        }
+                    }
+                    catch
+                    {
+                        key.Dispose();
+                        throw;
+                    }
+                    finally
+                    {
+                        if (rent is not null)
+                        {
+                            CryptoPool.Return(rent, decapsulationKeySize);
+                        }
+                    }
+                }
+                else
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+            }
+            catch (ArgumentException ae)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
+            }
         }
 
         private static void ThrowIfNull(

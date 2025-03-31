@@ -44,9 +44,7 @@ namespace System.Security.Cryptography.Asn1
                 if (wroteValue)
                     throw new CryptographicException();
 
-                writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                writer.WriteOctetString(Seed.Value.Span);
-                writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                writer.WriteOctetString(Seed.Value.Span, new Asn1Tag(TagClass.ContextSpecific, 0));
                 wroteValue = true;
             }
 
@@ -106,25 +104,22 @@ namespace System.Security.Cryptography.Asn1
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            AsnValueReader explicitReader;
             ReadOnlySpan<byte> rebindSpan = rebind.Span;
             int offset;
             ReadOnlySpan<byte> tmpSpan;
 
             if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
-                explicitReader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
 
-                if (explicitReader.TryReadPrimitiveOctetString(out tmpSpan))
+                if (reader.TryReadPrimitiveOctetString(out tmpSpan, new Asn1Tag(TagClass.ContextSpecific, 0)))
                 {
                     decoded.Seed = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
                 }
                 else
                 {
-                    decoded.Seed = explicitReader.ReadOctetString();
+                    decoded.Seed = reader.ReadOctetString(new Asn1Tag(TagClass.ContextSpecific, 0));
                 }
 
-                explicitReader.ThrowIfNotEmpty();
             }
             else if (tag.HasSameClassAndValue(Asn1Tag.PrimitiveOctetString))
             {
