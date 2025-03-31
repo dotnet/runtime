@@ -1510,7 +1510,12 @@ HCIMPLEND
 
 /*************************************************************/
 
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
+EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
+#else
 HCIMPL1(void, IL_Throw,  Object* obj)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -1527,7 +1532,11 @@ HCIMPL1(void, IL_Throw,  Object* obj)
         Thread *pThread = GetThread();
 
         SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+        exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
         RtlCaptureContext(exceptionFrame.GetContext());
+#endif
         exceptionFrame.InitAndLink(pThread);
 
         FC_CAN_TRIGGER_GC();
@@ -1605,7 +1614,12 @@ HCIMPLEND
 
 /*************************************************************/
 
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+EXTERN_C FCDECL0(void, IL_Rethrow);
+EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
+#else
 HCIMPL0(void, IL_Rethrow)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -1617,7 +1631,11 @@ HCIMPL0(void, IL_Rethrow)
         Thread *pThread = GetThread();
 
         SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+        exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
         RtlCaptureContext(exceptionFrame.GetContext());
+#endif
         exceptionFrame.InitAndLink(pThread);
 
         ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
@@ -1839,7 +1857,7 @@ extern "C" VOID JIT_PInvokeEndRarePath();
 
 void JIT_PInvokeEndRarePath()
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread *thread = GetThread();
 
@@ -1864,8 +1882,6 @@ void JIT_PInvokeEndRarePath()
     }
 
     thread->m_pFrame->Pop(thread);
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 /*************************************************************/
@@ -1903,7 +1919,7 @@ void JIT_RareDisableHelper()
     // in the first phase.
     //      </TODO>
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread *thread = GetThread();
     // We execute RareDisablePreemptiveGC manually before checking any abort conditions
@@ -1925,8 +1941,6 @@ void JIT_RareDisableHelper()
         END_QCALL;
         thread->DisablePreemptiveGC();
     }
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
@@ -2354,7 +2368,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
 extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransitionBlock)
 {
-    // BEGIN_PRESERVE_LAST_ERROR;
+    // Manually preserve the last error as we may not return normally from this method.
     DWORD dwLastError = ::GetLastError();
 
     // This method may not return normally
@@ -2519,7 +2533,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
 #endif
 
         // Restore last error (since call below does not return)
-        // END_PRESERVE_LAST_ERROR;
         ::SetLastError(dwLastError);
 
         // Transition!
@@ -2527,8 +2540,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
     }
 
  DONE:
-
-    // END_PRESERVE_LAST_ERROR;
     ::SetLastError(dwLastError);
 }
 

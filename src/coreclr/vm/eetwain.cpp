@@ -2267,8 +2267,6 @@ ULONG32 EECodeManager::GetStackParameterSize(EECodeInfo * pCodeInfo)
     hdrInfo * pHdrInfo = &(pStateBuf->hdrInfoBody);
     pStateBuf->hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, dwOffset, pHdrInfo);
 
-    // We need to subtract 4 here because ESPIncrOnReturn() includes the stack slot containing the return
-    // address.
     return (ULONG32)::GetStackParameterSize(pHdrInfo);
 
 #else

@@ -736,10 +736,16 @@ create_scc (ScanData *data)
 	gboolean found = FALSE;
 	gboolean found_bridge = FALSE;
 	ColorData *color_data = NULL;
+	gboolean can_reduce_color = TRUE;
 
 	for (i = dyn_array_ptr_size (&loop_stack) - 1; i >= 0; --i) {
 		ScanData *other = (ScanData *)dyn_array_ptr_get (&loop_stack, i);
 		found_bridge |= other->is_bridge;
+		if (dyn_array_ptr_size (&other->xrefs) > 0) {
+			// This scc will have more xrefs than the ones from the color_merge_array,
+			// we will need to create a new color to store this information.
+			can_reduce_color = FALSE;
+		}
 		if (found_bridge || other == data)
 			break;
 	}
@@ -747,8 +753,10 @@ create_scc (ScanData *data)
 	if (found_bridge) {
 		color_data = new_color (TRUE);
 		++num_colors_with_bridges;
-	} else {
+	} else if (can_reduce_color) {
 		color_data = reduce_color ();
+	} else {
+		color_data = new_color (FALSE);
 	}
 #if DUMP_GRAPH
 	printf ("|SCC %p rooted in %s (%p) has bridge %d\n", color_data, safe_name_bridge (data->obj), data->obj, found_bridge);
@@ -785,8 +793,11 @@ create_scc (ScanData *data)
 
 		// Maybe we should make sure we are not adding duplicates here. It is not really a problem
 		// since we will get rid of duplicates before submitting the SCCs to the client in gather_xrefs
-		if (color_data)
+		if (color_data) {
 			add_other_colors (color_data, &other->xrefs);
+		} else {
+			g_assert (dyn_array_ptr_size (&other->xrefs) == 0);
+		}
 		dyn_array_ptr_uninit (&other->xrefs);
 
 		if (other == data) {
