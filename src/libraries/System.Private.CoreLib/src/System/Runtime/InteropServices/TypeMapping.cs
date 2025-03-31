@@ -25,6 +25,8 @@ namespace System.Runtime.InteropServices
         {
 #if NATIVEAOT
             throw new NotImplementedException();
+#elif MONO
+            throw new NotSupportedException();
 #else
             return TypeMapLazyDictionary.CreateExternalTypeMap((RuntimeType)typeof(TTypeMapGroup));
 #endif
@@ -43,6 +45,8 @@ namespace System.Runtime.InteropServices
         {
 #if NATIVEAOT
             throw new NotImplementedException();
+#elif MONO
+            throw new NotSupportedException();
 #else
             return TypeMapLazyDictionary.CreateProxyTypeMap((RuntimeType)typeof(TTypeMapGroup));
 #endif
