@@ -9117,13 +9117,13 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_Vector256_CreateScalarUnsafe:
         case NI_Vector512_CreateScalarUnsafe:
         {
-            GenTree* op1 = hwintrinsic->Op(1);
-
             if (!supportsSIMDScalarLoad)
             {
-                // If we are wrapping a constant vector, we can still satisfy a full vector load.
-                return (supportsSIMDLoad && op1->IsCnsVec());
+                // Nothing to do if the intrinsic doesn't support scalar loads
+                return false;
             }
+
+            GenTree* op1 = hwintrinsic->Op(1);
 
             if (IsInvariantInRange(op1, parentNode, hwintrinsic))
             {
@@ -9458,38 +9458,6 @@ void Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
 }
 
 //------------------------------------------------------------------------
-// TryFoldHWIntrinsicToCnsVec: Tries fold a HWIntrinsic node to a CnsVec
-//
-//  Arguments:
-//    node  - The node to fold to a constant if possible
-//
-GenTree* Lowering::TryFoldHWIntrinsicToCnsVec(GenTree* node)
-{
-    if (node->OperIsHWIntrinsic())
-    {
-        GenTreeHWIntrinsic* intrinsic = node->AsHWIntrinsic();
-
-        if (HWIntrinsicInfo::IsVectorCreateScalarUnsafe(intrinsic->GetHWIntrinsicId()) && intrinsic->Op(1)->IsCnsVec())
-        {
-            node = intrinsic->Op(1);
-
-            LIR::Use use;
-            if (BlockRange().TryGetUse(intrinsic, &use))
-            {
-                use.ReplaceWith(node);
-            }
-            else
-            {
-                node->SetUnusedValue();
-            }
-            BlockRange().Remove(intrinsic);
-        }
-    }
-
-    return node;
-}
-
-//------------------------------------------------------------------------
 // TryMakeSrcContainedOrRegOptional: Tries to make "childNode" a contained or regOptional node
 //
 //  Arguments:
@@ -9502,8 +9470,6 @@ void Lowering::TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, 
 
     if (IsContainableHWIntrinsicOp(parentNode, childNode, &supportsRegOptional))
     {
-        childNode = TryFoldHWIntrinsicToCnsVec(childNode);
-
         if (childNode->IsCnsVec() && parentNode->OperIsEmbBroadcastCompatible() && comp->canUseEvexEncoding())
         {
             TryFoldCnsVecForEmbeddedBroadcast(parentNode, childNode->AsVecCon());
@@ -9949,8 +9915,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (containedOperand != nullptr)
                     {
-                        containedOperand = TryFoldHWIntrinsicToCnsVec(containedOperand);
-
                         if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible() &&
                             comp->canUseEvexEncoding())
                         {
@@ -10293,8 +10257,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (containedOperand != nullptr)
                         {
-                            containedOperand = TryFoldHWIntrinsicToCnsVec(containedOperand);
-
                             if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible() &&
                                 comp->canUseEvexEncoding())
                             {
@@ -10379,8 +10341,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (containedOperand != nullptr)
                         {
-                            containedOperand = TryFoldHWIntrinsicToCnsVec(containedOperand);
-
                             if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible())
                             {
                                 TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
@@ -11084,8 +11044,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             if (containedOperand != nullptr)
                             {
-                                containedOperand = TryFoldHWIntrinsicToCnsVec(containedOperand);
-
                                 if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible())
                                 {
                                     TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());

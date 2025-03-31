@@ -11086,17 +11086,6 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
     {
         BlockRange().Remove(op1);
     }
-    else
-    {
-        GenTree* resultOp1 = result->AsHWIntrinsic()->Op(1);
-
-        if (resultOp1->IsCnsVec())
-        {
-            BlockRange().Remove(op1);
-            BlockRange().InsertBefore(result, resultOp1);
-        }
-    }
-
     return result;
 }
 #endif // FEATURE_HW_INTRINSICS
