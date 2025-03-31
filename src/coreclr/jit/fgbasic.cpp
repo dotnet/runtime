@@ -368,14 +368,13 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex)
                   (succCount - succIndex - 1) * sizeof(FlowEdge*));
     }
 
-    // If the block has other successors, distribute the removed edge's likelihood among the remaining successor edges.
-    if (succCount > 1)
+    // Recompute the likelihoods of the block's other successor edges.
+    const weight_t removedLikelihood = succEdge->getLikelihood();
+    for (unsigned i = 0; (removedLikelihood != 1.0) && (i < (succCount - 1)); i++)
     {
-        const weight_t likelihoodIncrease = succEdge->getLikelihood() / (succCount - 1);
-        for (unsigned i = 0; i < (succCount - 1); i++)
-        {
-            succTab[i]->addLikelihood(likelihoodIncrease);
-        }
+        const weight_t currLikelihood = succTab[i]->getLikelihood();
+        const weight_t newLikelihood  = currLikelihood / (1.0 - removedLikelihood);
+        succTab[i]->setLikelihood(min(1.0, newLikelihood));
     }
 
 #ifdef DEBUG
@@ -437,14 +436,13 @@ void Compiler::fgRemoveEhfSuccessor(FlowEdge* succEdge)
         }
     }
 
-    // If the block has other successors, distribute the removed edge's likelihood among the remaining successor edges.
-    if (succCount > 1)
+    // Recompute the likelihoods of the block's other successor edges.
+    const weight_t removedLikelihood = succEdge->getLikelihood();
+    for (unsigned i = 0; (removedLikelihood != 1.0) && (i < (succCount - 1)); i++)
     {
-        const weight_t likelihoodIncrease = succEdge->getLikelihood() / (succCount - 1);
-        for (unsigned i = 0; i < (succCount - 1); i++)
-        {
-            succTab[i]->addLikelihood(likelihoodIncrease);
-        }
+        const weight_t currLikelihood = succTab[i]->getLikelihood();
+        const weight_t newLikelihood  = currLikelihood / (1.0 - removedLikelihood);
+        succTab[i]->setLikelihood(min(1.0, newLikelihood));
     }
 
     assert(found);
