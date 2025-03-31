@@ -56,29 +56,33 @@ FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
 FCIMPLEND
 
 #ifndef HOST_64BIT
-EXTERN_C int64_t QCALLTYPE DivInt64Internal(int64_t i, int64_t j)
+FCIMPL2(int64_t, DivInt64Internal, int64_t i, int64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
+FCIMPLEND
 
-EXTERN_C uint64_t QCALLTYPE DivUInt64Internal(uint64_t i, uint64_t j)
+FCIMPL2(uint64_t, DivUInt64Internal, uint64_t i, uint64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
+FCIMPLEND
 
-EXTERN_C int64_t QCALLTYPE ModInt64Internal(int64_t i, int64_t j)
+FCIMPL2(int64_t, ModInt64Internal, int64_t i, int64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
+FCIMPLEND
 
-EXTERN_C uint64_t QCALLTYPE ModUInt64Internal(uint64_t i, uint64_t j)
+FCIMPL2(uint64_t, ModUInt64Internal, uint64_t i, uint64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
+FCIMPLEND
 
 FCIMPL1_L(double, RhpLng2Dbl, int64_t val)
 {
