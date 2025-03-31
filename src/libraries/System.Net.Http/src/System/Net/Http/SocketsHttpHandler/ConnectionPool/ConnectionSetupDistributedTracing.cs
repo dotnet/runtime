@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Http.Metrics;
 using System.Threading;
 
 namespace System.Net.Http
@@ -11,6 +12,8 @@ namespace System.Net.Http
     internal static class ConnectionSetupDistributedTracing
     {
         private static readonly ActivitySource s_connectionsActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionsNamespace);
+
+        public static bool HasListeners() => s_connectionsActivitySource.HasListeners();
 
         public static Activity? StartConnectionSetupActivity(bool isSecure, HttpAuthority authority)
         {

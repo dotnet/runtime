@@ -872,6 +872,40 @@ namespace System.Net.Http.Functional.Tests
             VerifyRequestDuration(m, uri, acceptedErrorTypes: ["connection_error"]);
         }
 
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public Task TimeInQueue_RecordedForNewConnectionsOnly()
+        {
+            const int RequestCount = 3;
+
+            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
+
+                for (int i = 0; i < RequestCount; i++)
+                {
+                    using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                    using HttpResponseMessage response = await SendAsync(client, request);
+                }
+
+                // Only the first request is supposed to record time_in_queue.
+                // For follow up requests, the connection should be immediately available.
+                Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
+
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async conn =>
+                {
+                    for (int i = 0; i < RequestCount; i++)
+                    {
+                        await conn.ReadRequestDataAsync();
+                        await conn.SendResponseAsync(isFinal: true);
+                        conn.CompleteRequestProcessing();
+                    }
+                });
+            });
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
