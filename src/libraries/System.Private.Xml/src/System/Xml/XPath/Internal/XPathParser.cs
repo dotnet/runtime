@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml;
 using System.Xml.XPath;
+using System.Xml.Xsl.Runtime;
 
 namespace MS.Internal.Xml.XPath
 {
@@ -815,8 +816,8 @@ namespace MS.Internal.Xml.XPath
             table.Add("last", new ParamInfo(Function.FunctionType.FuncLast, 0, 0, s_temparray1));
             table.Add("position", new ParamInfo(Function.FunctionType.FuncPosition, 0, 0, s_temparray1));
             table.Add("name", new ParamInfo(Function.FunctionType.FuncName, 0, 1, s_temparray2));
-            table.Add("namespace-uri", new ParamInfo(Function.FunctionType.FuncNameSpaceUri, 0, 1, s_temparray2));
-            table.Add("local-name", new ParamInfo(Function.FunctionType.FuncLocalName, 0, 1, s_temparray2));
+            table.Add(XsltFunctionNames.NamespaceUri, new ParamInfo(Function.FunctionType.FuncNameSpaceUri, 0, 1, s_temparray2));
+            table.Add(XsltFunctionNames.LocalName, new ParamInfo(Function.FunctionType.FuncLocalName, 0, 1, s_temparray2));
             table.Add("count", new ParamInfo(Function.FunctionType.FuncCount, 1, 1, s_temparray2));
             table.Add("id", new ParamInfo(Function.FunctionType.FuncID, 1, 1, s_temparray3));
             table.Add("string", new ParamInfo(Function.FunctionType.FuncString, 0, 1, s_temparray3));
@@ -834,7 +835,7 @@ namespace MS.Internal.Xml.XPath
             table.Add("true", new ParamInfo(Function.FunctionType.FuncTrue, 0, 0, s_temparray8));
             table.Add("false", new ParamInfo(Function.FunctionType.FuncFalse, 0, 0, s_temparray8));
             table.Add("lang", new ParamInfo(Function.FunctionType.FuncLang, 1, 1, s_temparray4));
-            table.Add("number", new ParamInfo(Function.FunctionType.FuncNumber, 0, 1, s_temparray3));
+            table.Add(XsltFunctionNames.Number, new ParamInfo(Function.FunctionType.FuncNumber, 0, 1, s_temparray3));
             table.Add("sum", new ParamInfo(Function.FunctionType.FuncSum, 1, 1, s_temparray2));
             table.Add("floor", new ParamInfo(Function.FunctionType.FuncFloor, 1, 1, s_temparray9));
             table.Add("ceiling", new ParamInfo(Function.FunctionType.FuncCeiling, 1, 1, s_temparray9));

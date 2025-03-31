@@ -264,7 +264,7 @@ namespace System.Xml.Xsl.Runtime
             if (value.Count != 1)
             {
                 XsltLibrary.CheckXsltValue(value);
-                return "node-set";
+                return XsltFunctionNames.NodeSet;
             }
 
             XPathItem item = value[0];
@@ -275,7 +275,7 @@ namespace System.Xml.Xsl.Runtime
             else if (item.IsNode)
             {
                 Debug.Assert(item is XPathNavigator);
-                return "node-set";
+                return XsltFunctionNames.NodeSet;
             }
 
             object o = item.TypedValue;

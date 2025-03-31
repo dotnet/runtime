@@ -1111,22 +1111,22 @@ namespace System.Xml.Xsl.Xslt
                     {
                         switch (name)
                         {
-                            case "node-set": funcFlags = XslFlags.Nodeset; break;
-                            case "string-compare": funcFlags = XslFlags.Number; break;
-                            case "utc": funcFlags = XslFlags.String; break;
-                            case "format-date": funcFlags = XslFlags.String; break;
-                            case "format-time": funcFlags = XslFlags.String; break;
-                            case "local-name": funcFlags = XslFlags.String; break;
-                            case "namespace-uri": funcFlags = XslFlags.String | XslFlags.Current; break;
-                            case "number": funcFlags = XslFlags.Number; break;
+                            case XsltFunctionNames.NodeSet: funcFlags = XslFlags.Nodeset; break;
+                            case XsltFunctionNames.StringCompare: funcFlags = XslFlags.Number; break;
+                            case XsltFunctionNames.Utc: funcFlags = XslFlags.String; break;
+                            case XsltFunctionNames.FormatDate: funcFlags = XslFlags.String; break;
+                            case XsltFunctionNames.FormatTime: funcFlags = XslFlags.String; break;
+                            case XsltFunctionNames.LocalName: funcFlags = XslFlags.String; break;
+                            case XsltFunctionNames.NamespaceUri: funcFlags = XslFlags.String | XslFlags.Current; break;
+                            case XsltFunctionNames.Number: funcFlags = XslFlags.Number; break;
                         }
                     }
                     else if (ns == XmlReservedNs.NsExsltCommon)
                     {
                         switch (name)
                         {
-                            case "node-set": funcFlags = XslFlags.Nodeset; break;
-                            case "object-type": funcFlags = XslFlags.String; break;
+                            case XsltFunctionNames.NodeSet: funcFlags = XslFlags.Nodeset; break;
+                            case XsltFunctionNames.ObjectType: funcFlags = XslFlags.String; break;
                         }
                     }
 

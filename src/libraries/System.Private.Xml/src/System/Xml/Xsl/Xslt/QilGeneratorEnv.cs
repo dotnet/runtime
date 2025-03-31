@@ -146,12 +146,12 @@ namespace System.Xml.Xsl.Xslt
                 Debug.Assert(ns != null);
                 if (ns == XmlReservedNs.NsMsxsl)
                 {
-                    if (name == "node-set")
+                    if (name == XsltFunctionNames.NodeSet)
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/1, name, args.Count);
                         return CompileMsNodeSet(args[0]);
                     }
-                    else if (name == "string-compare")
+                    else if (name == XsltFunctionNames.StringCompare)
                     {
                         FunctionInfo.CheckArity(/*minArg:*/2, /*maxArg:*/4, name, args.Count);
                         return _f.InvokeMsStringCompare(
@@ -161,32 +161,32 @@ namespace System.Xml.Xsl.Xslt
                             /*options:*/3 < args.Count ? _f.ConvertToString(args[3]) : _f.String(string.Empty)
                         );
                     }
-                    else if (name == "utc")
+                    else if (name == XsltFunctionNames.Utc)
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/1, name, args.Count);
                         return _f.InvokeMsUtc(/*datetime:*/_f.ConvertToString(args[0]));
                     }
-                    else if (name == "format-date" || name == "format-time")
+                    else if (name == XsltFunctionNames.FormatDate || name == XsltFunctionNames.FormatTime)
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/3, name, args.Count);
                         return _f.InvokeMsFormatDateTime(
                             /*datetime:*/_f.ConvertToString(args[0]),
                             /*format:  */1 < args.Count ? _f.ConvertToString(args[1]) : _f.String(string.Empty),
                             /*lang:    */2 < args.Count ? _f.ConvertToString(args[2]) : _f.String(string.Empty),
-                            /*isDate:  */_f.Boolean(name == "format-date")
+                            /*isDate:  */_f.Boolean(name == XsltFunctionNames.FormatDate)
                         );
                     }
-                    else if (name == "local-name")
+                    else if (name == XsltFunctionNames.LocalName)
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/1, name, args.Count);
                         return _f.InvokeMsLocalName(_f.ConvertToString(args[0]));
                     }
-                    else if (name == "namespace-uri")
+                    else if (name == XsltFunctionNames.NamespaceUri)
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/1, name, args.Count);
                         return _f.InvokeMsNamespaceUri(_f.ConvertToString(args[0]), env.GetCurrent()!);
                     }
-                    else if (name == "number")
+                    else if (name == XsltFunctionNames.Number)
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/1, name, args.Count);
                         return _f.InvokeMsNumber(args[0]);
@@ -195,12 +195,12 @@ namespace System.Xml.Xsl.Xslt
 
                 if (ns == XmlReservedNs.NsExsltCommon)
                 {
-                    if (name == "node-set")
+                    if (name == XsltFunctionNames.NodeSet)
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/1, name, args.Count);
                         return CompileMsNodeSet(args[0]);
                     }
-                    else if (name == "object-type")
+                    else if (name == XsltFunctionNames.ObjectType)
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/1, name, args.Count);
                         return EXslObjectType(args[0]);
@@ -326,19 +326,19 @@ namespace System.Xml.Xsl.Xslt
             if (nsUri == XmlReservedNs.NsMsxsl)
             {
                 return (
-                    localName == "node-set" ||
-                    localName == "format-date" ||
-                    localName == "format-time" ||
-                    localName == "local-name" ||
-                    localName == "namespace-uri" ||
-                    localName == "number" ||
-                    localName == "string-compare" ||
-                    localName == "utc"
+                    localName is XsltFunctionNames.NodeSet or
+                    XsltFunctionNames.FormatDate or
+                    XsltFunctionNames.FormatTime or
+                    XsltFunctionNames.LocalName or
+                    XsltFunctionNames.NamespaceUri or
+                    XsltFunctionNames.Number or
+                    XsltFunctionNames.StringCompare or
+                    XsltFunctionNames.Utc
                 );
             }
             if (nsUri == XmlReservedNs.NsExsltCommon)
             {
-                return localName == "node-set" || localName == "object-type";
+                return localName == XsltFunctionNames.NodeSet || localName == XsltFunctionNames.ObjectType;
             }
             return false;
         }
@@ -746,7 +746,7 @@ namespace System.Xml.Xsl.Xslt
                     default:
                         if (n.XmlType.IsNode && n.XmlType.IsNotRtf)
                         {
-                            return _f.String("node-set");
+                            return _f.String(XsltFunctionNames.NodeSet);
                         }
                         break;
                 }
