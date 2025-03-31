@@ -469,7 +469,6 @@ namespace Internal.JitInterface
     public enum CorInfoClassId
     {
         CLASSID_SYSTEM_OBJECT,
-        CLASSID_SYSTEM_BYTE,
         CLASSID_TYPED_BYREF,
         CLASSID_TYPE_HANDLE,
         CLASSID_FIELD_HANDLE,

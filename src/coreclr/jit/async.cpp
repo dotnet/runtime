@@ -210,8 +210,6 @@ PhaseStatus Async2Transformation::Run()
     m_comp->lvaGetDesc(m_newContinuationVar)->lvType      = TYP_REF;
 
     m_comp->info.compCompHnd->getAsync2Info(&m_async2Info);
-    m_objectClsHnd = m_comp->info.compCompHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);
-    m_byteClsHnd   = m_comp->info.compCompHnd->getBuiltinClass(CLASSID_SYSTEM_BYTE);
 
 #ifdef JIT32_GCENCODER
     // Due to a hard cap on epilogs we need a shared return here.

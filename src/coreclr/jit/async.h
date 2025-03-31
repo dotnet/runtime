@@ -23,8 +23,6 @@ class Async2Transformation
     Compiler*                     m_comp;
     jitstd::vector<LiveLocalInfo> m_liveLocals;
     CORINFO_ASYNC2_INFO           m_async2Info;
-    CORINFO_CLASS_HANDLE          m_objectClsHnd;
-    CORINFO_CLASS_HANDLE          m_byteClsHnd;
     jitstd::vector<BasicBlock*>   m_resumptionBBs;
     CORINFO_METHOD_HANDLE         m_resumeStub = NO_METHOD_HANDLE;
     CORINFO_CONST_LOOKUP          m_resumeStubLookup;

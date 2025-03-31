@@ -2786,9 +2786,6 @@ namespace Internal.JitInterface
                 case CorInfoClassId.CLASSID_SYSTEM_OBJECT:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object));
 
-                case CorInfoClassId.CLASSID_SYSTEM_BYTE:
-                    return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Byte));
-
                 case CorInfoClassId.CLASSID_TYPED_BYREF:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.TypedReference));
 

@@ -3973,9 +3973,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
     case CLASSID_SYSTEM_OBJECT:
         result = CORINFO_CLASS_HANDLE(g_pObjectClass);
         break;
-    case CLASSID_SYSTEM_BYTE:
-        result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__BYTE));
-        break;
     case CLASSID_TYPED_BYREF:
         result = CORINFO_CLASS_HANDLE(g_TypedReferenceMT);
         break;
