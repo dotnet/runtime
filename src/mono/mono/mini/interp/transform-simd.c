@@ -1089,7 +1089,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_BitwiseOr:
 				cmethod_name = "Or";
 				break;
-			case SN_OnesComplment:
+			case SN_OnesComplement:
 				cmethod_name = "Not";
 				break;
 			case SN_WidenLower:
