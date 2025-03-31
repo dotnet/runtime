@@ -1573,6 +1573,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_Floor:
         case NI_Vector64_Floor:
         case NI_Vector128_Floor:
         {
