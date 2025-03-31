@@ -442,10 +442,12 @@ void LightUnwindStackFrame(
     Is the function currently at a "GC safe point" ?
     Can call EnumGcRefs() successfully
 */
+virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
                 DWORD           dwRelOffset);
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+virtual
 bool HasTailCalls(EECodeInfo *pCodeInfo);
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
 
@@ -456,6 +458,7 @@ bool HasTailCalls(EECodeInfo *pCodeInfo);
     object have to be individually enumerated).
     Returns success of operation.
 */
+virtual
 bool EnumGcRefs(PREGDISPLAY     pContext,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags,
@@ -473,6 +476,7 @@ bool EnumGcRefsConservative(PREGDISPLAY     pRD,
                             LPVOID          hCallBack);
 #endif // FEATURE_CONSERVATIVE_GC
 
+virtual
 OBJECTREF GetInstance(
                 PREGDISPLAY     pContext,
                 EECodeInfo *    pCodeInfo);
@@ -485,8 +489,8 @@ PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
                          EECodeInfo *    pCodeInfo);
 
 // Returns the type of the context parameter (this, methodtable, methoddesc, or none)
-GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
-                                            EECodeInfo *    pCodeInfo);
+virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
+                                                    EECodeInfo *    pCodeInfo);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 /*
@@ -507,6 +511,7 @@ PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
     Returns the offset of the GuardStack cookie if it exists.
     Returns NULL if there is no cookie.
 */
+virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        EECodeInfo    * pCodeInfo,
                        unsigned        flags,
@@ -517,6 +522,7 @@ void * GetGSCookieAddr(PREGDISPLAY     pContext,
 /*
   Returns true if the given IP is in the given method's prolog or an epilog.
 */
+virtual
 bool IsInPrologOrEpilog(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
@@ -525,7 +531,7 @@ bool IsInPrologOrEpilog(
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
 */
-bool IsInSynchronizedRegion(
+virtual bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 unsigned    flags);
@@ -534,6 +540,7 @@ bool IsInSynchronizedRegion(
 /*
   Returns the size of a given function.
 */
+virtual
 size_t GetFunctionSize(GCInfoToken gcInfoToken);
 
 /*

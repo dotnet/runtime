@@ -21,8 +21,8 @@
 #ifndef GET_CALLER_SP
 inline size_t GET_CALLER_SP(PREGDISPLAY pREGDISPLAY)
 {
-    _ASSERTE(pREGDISPLAY->IsCallerContextValid);
-    return (size_t)GetSP(pREGDISPLAY->pCallerContext);
+    _ASSERTE(false);
+    return NULL;
 }
 #endif // !GET_CALLER_SP
 
@@ -2144,9 +2144,6 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
     }
     else if( GC_CALLER_SP_REL == spBase )
     {
-#ifndef FEATURE_NATIVEAOT
-        _ASSERTE(pRD->IsCallerContextValid);
-#endif
         pObjRef = (OBJECTREF*) (GET_CALLER_SP(pRD) + spOffset);
     }
     else
