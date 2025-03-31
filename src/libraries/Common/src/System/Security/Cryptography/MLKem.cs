@@ -993,12 +993,11 @@ namespace System.Security.Cryptography
                 {
                     MLKem key = ImportPrivateSeed(algorithm, both.Seed.Span);
                     int decapsulationKeySize = key.Algorithm.DecapsulationKeySizeInBytes;
-                    byte[]? rent = null;
+                    byte[] rent = CryptoPool.Rent(decapsulationKeySize);
+                    Span<byte> buffer = rent.AsSpan(0, decapsulationKeySize);
 
                     try
                     {
-                        rent = CryptoPool.Rent(decapsulationKeySize);
-                        Span<byte> buffer = rent.AsSpan(0, decapsulationKeySize);
                         key.ExportDecapsulationKey(buffer);
 
                         if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
@@ -1017,10 +1016,7 @@ namespace System.Security.Cryptography
                     }
                     finally
                     {
-                        if (rent is not null)
-                        {
-                            CryptoPool.Return(rent, decapsulationKeySize);
-                        }
+                        CryptoPool.Return(rent, decapsulationKeySize);
                     }
                 }
                 else

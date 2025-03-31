@@ -214,6 +214,19 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(pkcs8)));
         }
 
+        [Theory]
+        [MemberData(nameof(Pkcs8PrivateKeyExpandedKeyTestData))]
+        public static void ImportPkcs8PrivateKey_ExpandedKey_Array(
+            MLKemAlgorithm algorithm,
+            byte[] pkcs8,
+            byte[] expectedDecapsulationKey)
+        {
+            using MLKem kem = MLKem.ImportPkcs8PrivateKey(pkcs8);
+            Assert.Equal(algorithm, kem.Algorithm);
+            byte[] decapsulationKey = kem.ExportDecapsulationKey();
+            AssertExtensions.SequenceEqual(expectedDecapsulationKey, decapsulationKey);
+        }
+
         public static IEnumerable<object[]> Pkcs8PrivateKeySeedTestData
         {
             get
@@ -221,6 +234,31 @@ namespace System.Security.Cryptography.Tests
                 yield return [MLKemAlgorithm.MLKem512, MLKemTestData.IetfMlKem512PrivateKeySeed];
                 yield return [MLKemAlgorithm.MLKem768, MLKemTestData.IetfMlKem768PrivateKeySeed];
                 yield return [MLKemAlgorithm.MLKem1024, MLKemTestData.IetfMlKem1024PrivateKeySeed];
+            }
+        }
+
+        public static IEnumerable<object[]> Pkcs8PrivateKeyExpandedKeyTestData
+        {
+            get
+            {
+                yield return
+                [
+                    MLKemAlgorithm.MLKem512,
+                    MLKemTestData.IetfMlKem512PrivateKeyExpandedKey,
+                    MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
+                ];
+                yield return
+                [
+                    MLKemAlgorithm.MLKem768,
+                    MLKemTestData.IetfMlKem768PrivateKeyExpandedKey,
+                    MLKemTestData.IetfMlKem768PrivateKeyDecapsulationKey
+                ];
+                yield return
+                [
+                    MLKemAlgorithm.MLKem1024,
+                    MLKemTestData.IetfMlKem1024PrivateKeyExpandedKey,
+                    MLKemTestData.IetfMlKem1024PrivateKeyDecapsulationKey
+                ];
             }
         }
 
