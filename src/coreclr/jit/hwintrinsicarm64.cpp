@@ -955,6 +955,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_Ceiling:
         case NI_Vector64_Ceiling:
         case NI_Vector128_Ceiling:
         {

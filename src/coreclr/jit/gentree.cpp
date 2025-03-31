@@ -21560,6 +21560,7 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType s
     {
         intrinsic = NI_AdvSimd_Ceiling;
     }
+    intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(simdSize, intrinsic);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -28947,6 +28948,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
                 break;
             case NI_AdvSimd_And:
                 sveId = NI_Sve_And;
+                break;
+            case NI_AdvSimd_Ceiling:
+            case NI_AdvSimd_Arm64_Ceiling:
+                sveId = NI_Sve_RoundToPositiveInfinity;
                 break;
             case NI_AdvSimd_CompareEqual:
             case NI_AdvSimd_Arm64_CompareEqual:
