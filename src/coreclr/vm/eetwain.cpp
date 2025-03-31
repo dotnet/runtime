@@ -954,7 +954,7 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * p
     _ASSERTE( pRD->IsCallerContextValid );
 }
 
-size_t ICodeManager::GetCallerSp( PREGDISPLAY  pRD )
+size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
 {
     CONTRACTL {
         NOTHROW;
@@ -966,7 +966,7 @@ size_t ICodeManager::GetCallerSp( PREGDISPLAY  pRD )
     // See ExceptionTracker::InitializeCrawlFrame() for more information.
     if (!pRD->IsCallerSPValid)
     {
-        EnsureCallerContextIsValid(pRD, NULL);
+        ExecutionManager::GetDefaultCodeManager()->EnsureCallerContextIsValid(pRD, NULL);
     }
 
     return GetSP(pRD->pCallerContext);
@@ -1749,7 +1749,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(PREGDISPLAY     pContext,
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return EECodeManager::GetExactGenericsToken(pCodeInfo->GetCodeManager()->GetCallerSp(pContext), pCodeInfo);
+    return EECodeManager::GetExactGenericsToken(GetCallerSp(pContext), pCodeInfo);
 }
 
 //static

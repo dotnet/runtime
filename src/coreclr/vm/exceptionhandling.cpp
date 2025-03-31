@@ -1876,7 +1876,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
     ExceptionTracker::InitializeCrawlFrame(&cfThisFrame, pThread, sf, &regdisp, pDispatcherContext, ControlPc, &uMethodStartPC, this);
 
 #ifndef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
-    uCallerSP = cfThisFrame.GetCodeManager()->GetCallerSp(cfThisFrame.pRD);
+    uCallerSP = EECodeManager::GetCallerSp(cfThisFrame.pRD);
 #else // !ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
     uCallerSP = sf.SP;
 #endif // ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
@@ -3091,7 +3091,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                         m_dwIndexClauseForCatch = i + 1;
                                         m_sfEstablisherOfActualHandlerFrame = sfEstablisherFrame;
 #ifndef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
-                                        m_sfCallerOfActualHandlerFrame = pcfThisFrame->GetCodeManager()->GetCallerSp(pcfThisFrame->pRD);
+                                        m_sfCallerOfActualHandlerFrame = EECodeManager::GetCallerSp(pcfThisFrame->pRD);
 #else // !ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
                                         // On ARM & ARM64, the EstablisherFrame is the value of SP at the time a function was called and before it's prolog
                                         // executed. Effectively, it is the SP of the caller.
@@ -3377,7 +3377,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                             m_sfEstablisherOfActualHandlerFrame = sfEstablisherFrame;
 
 #ifndef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
-                            m_sfCallerOfActualHandlerFrame = pcfThisFrame->GetCodeManager()->GetCallerSp(pcfThisFrame->pRD);
+                            m_sfCallerOfActualHandlerFrame = EECodeManager::GetCallerSp(pcfThisFrame->pRD);
 #else // !ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
                             m_sfCallerOfActualHandlerFrame = sfEstablisherFrame.SP;
 #endif // ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
@@ -7811,7 +7811,10 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 
     if (pHandlerIP != NULL)
     {
-        _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == exInfo->m_frameIter.m_crawl.GetCodeManager()->GetCallerSp(pvRegDisplay));
+#ifdef _DEBUG
+        exInfo->m_frameIter.m_crawl.GetCodeManager()->EnsureCallerContextIsValid(pvRegDisplay);
+        _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == GetSP(pvRegDisplay->pCallerContext));
+#endif
         OBJECTREF throwable = exceptionObj.Get();
         throwable = PossiblyUnwrapThrowable(throwable, exInfo->m_frameIter.m_crawl.GetAssembly());
 
