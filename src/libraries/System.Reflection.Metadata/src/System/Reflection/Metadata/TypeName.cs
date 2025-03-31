@@ -69,6 +69,25 @@ namespace System.Reflection.Metadata
 #endif
         }
 
+#if SYSTEM_REFLECTION_METADATA
+        private TypeName(string? fullName,
+            AssemblyNameInfo? assemblyName,
+            TypeName? elementOrGenericType,
+            TypeName? declaringType,
+            ImmutableArray<TypeName> genericTypeArguments,
+            int rankOrModifier = default,
+            int nestedNameLength = -1)
+        {
+            _fullName = fullName;
+            AssemblyName = assemblyName;
+            _elementOrGenericType = elementOrGenericType;
+            _declaringType = declaringType;
+            _genericArguments = genericTypeArguments;
+            _rankOrModifier = rankOrModifier;
+            _nestedNameLength = nestedNameLength;
+        }
+#endif
+
         /// <summary>
         /// The assembly-qualified name of the type; e.g., "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".
         /// </summary>
