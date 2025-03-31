@@ -1981,6 +1981,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_AdvSimd_LoadVector64:
         case NI_AdvSimd_LoadVector128:
+        case NI_Vector_LoadUnsafe:
         case NI_Vector64_LoadUnsafe:
         case NI_Vector128_LoadUnsafe:
         {
@@ -2012,6 +2013,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_LoadAligned:
         case NI_Vector64_LoadAligned:
         case NI_Vector128_LoadAligned:
         {
@@ -2037,6 +2039,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_LoadAlignedNonTemporal:
         case NI_Vector64_LoadAlignedNonTemporal:
         case NI_Vector128_LoadAlignedNonTemporal:
         {
