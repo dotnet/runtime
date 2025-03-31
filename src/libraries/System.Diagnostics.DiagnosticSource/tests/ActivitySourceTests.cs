@@ -24,12 +24,29 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(String.Empty, as1.Version);
                 Assert.False(as1.HasListeners());
                 Assert.Null(as1.Tags);
+                Assert.Null(as1.TelemetrySchemaUrl);
+                ActivitySourceOptions options = new ActivitySourceOptions("Source1");
+                using ActivitySource as1_1 = new ActivitySource(options);
+                Assert.Equal("Source1", as1_1.Name);
+                Assert.Equal(String.Empty, as1_1.Version);
+                Assert.False(as1_1.HasListeners());
+                Assert.Null(as1_1.Tags);
+                Assert.Null(as1_1.TelemetrySchemaUrl);
 
                 using ActivitySource as2 =  new ActivitySource("Source2", "1.1.1.2");
                 Assert.Equal("Source2", as2.Name);
                 Assert.Equal("1.1.1.2", as2.Version);
                 Assert.False(as2.HasListeners());
                 Assert.Null(as2.Tags);
+                Assert.Null(as2.TelemetrySchemaUrl);
+                options = new ActivitySourceOptions("Source2");
+                options.Version = "1.1.1.2";
+                using ActivitySource as2_2 =  new ActivitySource(options);
+                Assert.Equal("Source2", as2_2.Name);
+                Assert.Equal("1.1.1.2", as2_2.Version);
+                Assert.False(as2_2.HasListeners());
+                Assert.Null(as2_2.Tags);
+                Assert.Null(as2_2.TelemetrySchemaUrl);
 
                 using ActivitySource as3 =  new ActivitySource("Source3", "1.1.1.3", new TagList { { "key3", "value3" }, { "key2", "value2" }, { "key1", "value1" } });
                 Assert.Equal("Source3", as3.Name);
@@ -37,6 +54,33 @@ namespace System.Diagnostics.Tests
                 Assert.False(as3.HasListeners());
                 // Ensure the tags are sorted by key.
                 Assert.Equal(new TagList  { { "key1", "value1" }, { "key2", "value2" }, { "key3", "value3" } }, as3.Tags);
+                Assert.Null(as3.TelemetrySchemaUrl);
+                options = new ActivitySourceOptions("Source3");
+                options.Version = "1.1.1.3";
+                options.Tags = new TagList { { "key3", "value3" }, { "key2", "value2" }, { "key1", "value1" } };
+                using ActivitySource as3_3 =  new ActivitySource(options);
+                Assert.Equal("Source3", as3_3.Name);
+                Assert.Equal("1.1.1.3", as3_3.Version);
+                Assert.False(as3_3.HasListeners());
+                Assert.Equal(new TagList  { { "key1", "value1" }, { "key2", "value2" }, { "key3", "value3" } }, as3_3.Tags);
+                Assert.Null(as3_3.TelemetrySchemaUrl);
+
+                using ActivitySource as4 =  new ActivitySource("Source4", "1.1.1.4", new TagList { { "key4", "value4" }, { "key3", "value3" }, { "key2", "value2" }, { "key1", "value1" } });
+                Assert.Equal("Source4", as4.Name);
+                Assert.Equal("1.1.1.4", as4.Version);
+                Assert.False(as4.HasListeners());
+                Assert.Equal(new TagList  { { "key1", "value1" }, { "key2", "value2" }, { "key3", "value3" }, { "key4", "value4" } }, as4.Tags);
+                Assert.Null(as4.TelemetrySchemaUrl);
+                options = new ActivitySourceOptions("Source4");
+                options.Version = "1.1.1.4";
+                options.Tags = new TagList { { "key4", "value4" }, { "key3", "value3" }, { "key2", "value2" }, { "key1", "value1" } };
+                options.TelemetrySchemaUrl = "https://example.com/schema";
+                using ActivitySource as4_4 =  new ActivitySource(options);
+                Assert.Equal("Source4", as4_4.Name);
+                Assert.Equal("1.1.1.4", as4_4.Version);
+                Assert.False(as4_4.HasListeners());
+                Assert.Equal(new TagList  { { "key1", "value1" }, { "key2", "value2" }, { "key3", "value3" }, { "key4", "value4" } }, as4_4.Tags);
+                Assert.Equal("https://example.com/schema", as4_4.TelemetrySchemaUrl);
             }).Dispose();
         }
 

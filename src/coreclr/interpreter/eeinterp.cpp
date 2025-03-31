@@ -40,6 +40,9 @@ extern "C" INTERP_API ICorJitCompiler* getJit()
     return &g_CILInterp;
 }
 
+
+static CORINFO_MODULE_HANDLE g_interpModule = NULL;
+
 //****************************************************************************
 CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                                    CORINFO_METHOD_INFO* methodInfo,
@@ -48,20 +51,34 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                                    uint32_t*            nativeSizeOfCode)
 {
 
-    const char *methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
+    bool doInterpret;
 
-    // TODO: replace this by something like the JIT does to support multiple methods being specified and we don't
-    // keep fetching it on each call to compileMethod
-    const char *methodToInterpret = g_interpHost->getStringConfigValue("AltJit");
-    bool doInterpret = (methodName != NULL && strcmp(methodName, methodToInterpret) == 0);
-    g_interpHost->freeStringConfigValue(methodToInterpret);
+    if (g_interpModule != NULL)
+    {
+        if (methodInfo->scope == g_interpModule)
+            doInterpret = true;
+        else
+            doInterpret = false;
+    }
+    else
+    {
+        const char *methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
+
+        // TODO: replace this by something like the JIT does to support multiple methods being specified and we don't
+        // keep fetching it on each call to compileMethod
+        const char *methodToInterpret = g_interpHost->getStringConfigValue("Interpreter");
+        doInterpret = (methodName != NULL && strcmp(methodName, methodToInterpret) == 0);
+        g_interpHost->freeStringConfigValue(methodToInterpret);
+        if (doInterpret)
+            g_interpModule = methodInfo->scope;
+    }
 
     if (!doInterpret)
     {
         return CORJIT_SKIPPED;
     }
 
-    InterpCompiler compiler(compHnd, methodInfo);
+    InterpCompiler compiler(compHnd, methodInfo, false /* verbose */);
     InterpMethod *pMethod = compiler.CompileMethod();
 
     int32_t IRCodeSize;
@@ -71,10 +88,9 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     compHnd->setMethodAttribs(methodInfo->ftn, CORINFO_FLG_INTERPRETER);
 
     uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
+    uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-    // TODO: get rid of the need to allocate fake unwind info.
-    compHnd->reserveUnwindInfo(false /* isFunclet */, false /* isColdCode */ , 8 /* unwindSize */);
-    AllocMemArgs args;
+    AllocMemArgs args {};
     args.hotCodeSize = sizeOfCode;
     args.coldCodeSize = 0;
     args.roDataSize = 0;
@@ -85,9 +101,6 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     // We store first the InterpMethod pointer as the code header, followed by the actual code
     *(InterpMethod**)args.hotCodeBlockRW = pMethod;
     memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
-
-    // TODO: get rid of the need to allocate fake unwind info
-    compHnd->allocUnwindInfo((uint8_t*)args.hotCodeBlock, (uint8_t*)args.coldCodeBlock, 0, 1, 0, nullptr, CORJIT_FUNC_ROOT);
 
     *entryAddress = (uint8_t*)args.hotCodeBlock;
     *nativeSizeOfCode = sizeOfCode;

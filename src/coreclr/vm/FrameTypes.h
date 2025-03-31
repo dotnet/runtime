@@ -47,8 +47,5 @@ FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
 FRAME_TYPE_NAME(DebuggerExitFrame)
 FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
 FRAME_TYPE_NAME(ExceptionFilterFrame)
-#if defined(_DEBUG)
-FRAME_TYPE_NAME(AssumeByrefFromJITStackFrame)
-#endif // _DEBUG
 
 #undef FRAME_TYPE_NAME

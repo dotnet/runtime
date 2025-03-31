@@ -29,6 +29,8 @@ if(CLR_CMAKE_HOST_OS STREQUAL linux)
             set(CLR_CMAKE_HOST_UNIX_X86 1)
         elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL aarch64)
             set(CLR_CMAKE_HOST_UNIX_ARM64 1)
+        elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL riscv64)
+            set(CLR_CMAKE_HOST_UNIX_RISCV64 1)
         else()
             clr_unknown_arch()
         endif()
@@ -520,7 +522,7 @@ if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET
     set(CLR_CMAKE_USE_SYSTEM_ZLIB 1)
 endif()
 
-if (NOT CLR_CMAKE_TARGET_ANDROID)
+if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
     # opt into building tools like ildasm/ilasm
     set(CLR_CMAKE_BUILD_TOOLS 1)
 endif()

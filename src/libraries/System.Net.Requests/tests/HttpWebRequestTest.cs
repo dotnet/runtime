@@ -1427,6 +1427,26 @@ namespace System.Net.Tests
             Assert.Equal("bytes=1-5", request.Headers["Range"]);
         }
 
+        [Theory, MemberData(nameof(EchoServers))]
+        public void Range_AddTwice_Success(Uri remoteServer)
+        {
+            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
+            request.AddRange(1, 5);
+            request.AddRange(11, 15);
+            Assert.Equal("bytes=1-5,11-15", request.Headers["Range"]);
+        }
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public void Range_AddMultiple_Success(Uri remoteServer)
+        {
+            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
+            request.AddRange(int.MaxValue);
+            request.AddRange(100, 200);
+            request.AddRange(long.MaxValue);
+            request.AddRange(1000L, 2000L);
+            Assert.Equal("bytes=2147483647-,100-200,9223372036854775807-,1000-2000", request.Headers["Range"]);
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

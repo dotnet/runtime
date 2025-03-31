@@ -175,9 +175,6 @@ End
 Crst DbgTransport
 End
 
-Crst DelegateToFPtrHash
-End
-
 Crst GenericDictionaryExpansion
     AcquiredBefore PinnedHeapHandleTable IbcProfile LoaderHeap SystemDomainDelayedUnloadList UniqueStack
 End
@@ -531,4 +528,7 @@ End
 
 Crst PerfMap
     AcquiredAfter CodeVersioning AssemblyList
+End
+
+Crst InterfaceDispatchGlobalLists
 End

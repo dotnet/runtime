@@ -3425,19 +3425,53 @@ void Compiler::fgFindBasicBlocks()
 
     unsigned XTnum;
 
-    /* Are there any exception handlers? */
-
+    // Are there any exception handlers?
+    //
     if (info.compXcptnsCount > 0)
     {
-        noway_assert(!compIsForInlining());
+        assert(!compIsForInlining() || opts.compInlineMethodsWithEH);
 
-        /* Check and mark all the exception handlers */
+        if (compIsForInlining())
+        {
+            // Verify we can expand the EH table as needed to incorporate the callee's EH clauses.
+            // Failing here should be extremely rare.
+            //
+            EHblkDsc* const dsc = fgTryAddEHTableEntries(0, info.compXcptnsCount, /* deferAdding */ true);
+            if (dsc == nullptr)
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_EH_TABLE_FULL);
+            }
+        }
 
+        // Check and mark all the exception handlers
+        //
         for (XTnum = 0; XTnum < info.compXcptnsCount; XTnum++)
         {
             CORINFO_EH_CLAUSE clause;
             info.compCompHnd->getEHinfo(info.compMethodHnd, XTnum, &clause);
             noway_assert(clause.HandlerLength != (unsigned)-1);
+
+            // If we're inlining, and the inlinee has a catch clause, we are currently
+            // unable to convey the type of the catch properly, as it is represented
+            // by a token. So, abandon inlining.
+            //
+            // TODO: if inlining methods with catches is rare, consider
+            // transforming class catches into runtime filters like we do in
+            // fgCreateFiltersForGenericExceptions
+            //
+            if (compIsForInlining())
+            {
+                const bool isFinallyFaultOrFilter =
+                    (clause.Flags & (CORINFO_EH_CLAUSE_FINALLY | CORINFO_EH_CLAUSE_FAULT | CORINFO_EH_CLAUSE_FILTER)) !=
+                    0;
+
+                if (!isFinallyFaultOrFilter)
+                {
+                    JITDUMP("Inlinee EH clause %u is a catch; we can't inline these (yet)\n", XTnum);
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_EH);
+                    return;
+                }
+            }
 
             if (clause.TryLength <= 0)
             {
@@ -3513,13 +3547,6 @@ void Compiler::fgFindBasicBlocks()
             return;
         }
 
-        noway_assert(info.compXcptnsCount == 0);
-        compHndBBtab = impInlineInfo->InlinerCompiler->compHndBBtab;
-        compHndBBtabAllocCount =
-            impInlineInfo->InlinerCompiler->compHndBBtabAllocCount; // we probably only use the table, not add to it.
-        compHndBBtabCount    = impInlineInfo->InlinerCompiler->compHndBBtabCount;
-        info.compXcptnsCount = impInlineInfo->InlinerCompiler->info.compXcptnsCount;
-
         // Use a spill temp for the return value if there are multiple return blocks,
         // or if the inlinee has GC ref locals.
         if ((info.compRetNativeType != TYP_VOID) && ((fgReturnCount > 1) || impInlineInfo->HasGcRefLocals()))
@@ -3584,8 +3611,6 @@ void Compiler::fgFindBasicBlocks()
                 lvaInlineeReturnSpillTempFreshlyCreated = true;
             }
         }
-
-        return;
     }
 
     /* Mark all blocks within 'try' blocks as such */
@@ -3653,6 +3678,7 @@ void Compiler::fgFindBasicBlocks()
             BADCODE3("end of hnd block beyond end of method for try", " at offset %04X", tryBegOff);
         }
 
+        HBtab->ebdID              = impInlineRoot()->compEHID++;
         HBtab->ebdTryBegOffset    = tryBegOff;
         HBtab->ebdTryEndOffset    = tryEndOff;
         HBtab->ebdFilterBegOffset = filterBegOff;
@@ -4616,8 +4642,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->CopyFlags(curr);
 
     // Remove flags that the new block can't have.
-    newBlock->RemoveFlags(BBF_LOOP_HEAD | BBF_FUNCLET_BEG | BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT |
-                          BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
+    newBlock->RemoveFlags(BBF_LOOP_HEAD | BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET |
+                          BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -5547,16 +5573,6 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 #endif
 
 #endif // DEBUG
-
-    if (UsesFunclets())
-    {
-        bStart->SetFlags(BBF_FUNCLET_BEG); // Mark the start block of the funclet
-
-        if (bMiddle != nullptr)
-        {
-            bMiddle->SetFlags(BBF_FUNCLET_BEG); // Also mark the start block of a filter handler as a funclet
-        }
-    }
 
     BasicBlock* bNext;
     bNext = bLast->Next();

@@ -817,10 +817,11 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (displayBlockFlags)
             {
                 // Don't display the `[` `]` unless we're going to display something.
-                const bool isTryEntryBlock = bbIsTryBeg(block);
+                const bool isTryEntryBlock     = bbIsTryBeg(block);
+                const bool isFuncletEntryBlock = fgFuncletsCreated && bbIsFuncletBeg(block);
 
-                if (isTryEntryBlock ||
-                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
+                if (isTryEntryBlock || isFuncletEntryBlock ||
+                    block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -828,7 +829,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     {
                         fprintf(fgxFile, "T");
                     }
-                    if (block->HasFlag(BBF_FUNCLET_BEG))
+                    if (isFuncletEntryBlock)
                     {
                         fprintf(fgxFile, "F");
                     }
@@ -2104,15 +2105,6 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
         printf("   ");
     }
 
-    if (flags & BBF_FUNCLET_BEG)
-    {
-        printf("F ");
-    }
-    else
-    {
-        printf("  ");
-    }
-
     int cnt = 0;
 
     switch (block->bbCatchTyp)
@@ -2935,8 +2927,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         //
         if (fgFirstFuncletBB != nullptr)
         {
-            assert(fgFirstFuncletBB->hasHndIndex() == true);
-            assert(fgFirstFuncletBB->HasFlag(BBF_FUNCLET_BEG));
+            assert(bbIsFuncletBeg(fgFirstFuncletBB));
         }
     }
 
@@ -3278,9 +3269,20 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
                 assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
             }
 
-            if (node->OperIs(GT_NOP))
+            switch (node->OperGet())
             {
-                assert(node->TypeIs(TYP_VOID) && "GT_NOP should be TYP_VOID.");
+                case GT_NOP:
+                case GT_JTRUE:
+                case GT_BOUNDS_CHECK:
+                    if (!node->TypeIs(TYP_VOID))
+                    {
+                        m_compiler->gtDispTree(node);
+                        assert(!"The tree is expected to be of TYP_VOID type");
+                    }
+                    break;
+
+                default:
+                    break;
             }
 
             if (varTypeIsSmall(node))
@@ -3430,6 +3432,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+
+                    case NI_Vector128_op_Division:
+                    case NI_Vector256_op_Division:
+                    {
                         break;
                     }
 #endif // TARGET_XARCH

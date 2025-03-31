@@ -289,8 +289,6 @@ void CodeGen::genCodeForBBlist()
 
         /* Start a new code output block */
 
-        genUpdateCurrentFunclet(block);
-
         genLogLabel(block);
 
         // Tell everyone which basic block we're working on
@@ -372,9 +370,9 @@ void CodeGen::genCodeForBBlist()
 
         bool firstMapping = true;
 
-        if (block->HasFlag(BBF_FUNCLET_BEG))
+        if (compiler->bbIsFuncletBeg(block))
         {
-            assert(compiler->UsesFunclets());
+            genUpdateCurrentFunclet(block);
             genReserveFuncletProlog(block);
         }
 
@@ -711,10 +709,9 @@ void CodeGen::genCodeForBBlist()
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if (block->IsLast() || block->Next()->HasFlag(BBF_FUNCLET_BEG) ||
-                    !BasicBlock::sameEHRegion(block, block->Next()) ||
+                if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()) ||
                     (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
-                    block->IsLastHotBlock(compiler))
+                    compiler->bbIsFuncletBeg(block->Next()) || block->IsLastHotBlock(compiler))
                 {
                     instGen(INS_BREAKPOINT); // This should never get executed
                 }
@@ -2484,8 +2481,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         }
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
-        // the upper 32bits be sign-extended to 64 bits.
+        // TODO-LOONGARCH64:
+        // TODO-RISCV64:
+        // LoongArch64 and RiscV64 ABIs require 32-bit values to be sign-extended to 64-bits.
+        // We apply the sign-extension unconditionally here to avoid corner case bugs, even
+        // though it may not be strictly necessary in all cases.
         m_extendKind = SIGN_EXTEND_INT;
 #else
         m_extendKind = COPY;

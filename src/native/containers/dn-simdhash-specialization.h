@@ -182,7 +182,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 	#define bucket_suffixes (bucket->suffixes)
 #elif !defined(DN_SIMDHASH_USE_SCALAR_FALLBACK)
 	// Perform an eager load of the vector if SIMD is in use, even though we do
-	//  byte loads to extract lanes on non-wasm platforms. It's faster on x64 for
+	//  byte loads to extract lanes on some platforms. It's faster on x64 for
 	//  a reason I can't identify, and it significantly improves wasm codegen
 	dn_simdhash_suffixes bucket_suffixes = bucket->suffixes;
 #else
@@ -190,7 +190,9 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 	//  no good reason.
 	#define bucket_suffixes (bucket->suffixes)
 #endif
+
 	uint8_t count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_COUNT_SLOT),
+	// Loading this late at the point of the if with DN_UNLIKELY doesn't seem to improve codegen or perf
 		overflow_count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_CASCADED_SLOT);
 	// We could early-out here when count==0, but it doesn't appear to meaningfully improve
 	//  search performance to do so, and might actually worsen it
@@ -200,18 +202,20 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 	uint32_t index = find_first_matching_suffix_simd(search_vector, bucket_suffixes);
 #endif
 #undef bucket_suffixes
-	for (; index < count; index++) {
-		// FIXME: Could be profitable to manually hoist the data load outside of the loop,
-		//  if not out of SCAN_BUCKET_INTERNAL entirely. Clang appears to do LICM on it.
-		// It's better to index bucket->keys each iteration inside the loop than to precompute
-		//  a pointer outside and bump the pointer, because in many cases the bucket will be
-		//  empty, and in many other cases it will have one match. Putting the index inside the
-		//  loop means that for empty/no-match buckets we don't do the index calculation at all.
-		if (DN_SIMDHASH_KEY_EQUALS(DN_SIMDHASH_GET_DATA(hash), needle, bucket->keys[index]))
-			return index;
+
+	if (DN_LIKELY(index < count)) {
+		DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
+		do {
+			// FIXME: Could be profitable to manually hoist the data load outside of the loop,
+			//  if not out of SCAN_BUCKET_INTERNAL entirely. Clang appears to do LICM on it.
+			if (DN_SIMDHASH_KEY_EQUALS(DN_SIMDHASH_GET_DATA(hash), needle, *key))
+				return index;
+			key++;
+			index++;
+		} while (index < count);
 	}
 
-	if (overflow_count)
+	if (DN_UNLIKELY(overflow_count))
 		return DN_SIMDHASH_SCAN_BUCKET_OVERFLOWED;
 	else
 		return DN_SIMDHASH_SCAN_BUCKET_NO_OVERFLOW;
