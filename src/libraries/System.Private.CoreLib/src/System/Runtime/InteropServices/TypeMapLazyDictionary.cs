@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, void> newProxyTypeEntry,
             CallbackContext* context);
 
-        private static TypeName CreateNewTypeName(TypeName typeName, ReadOnlySpan<char> assemblyName)
+        private static TypeName NewTypeNameWithAssembly(TypeName typeName, ReadOnlySpan<char> assemblyName)
         {
             AssemblyNameInfo asmNameInfo = AssemblyNameInfo.Parse(assemblyName);
             TypeName parsedType = typeName.WithAssemblyName(asmNameInfo);
@@ -73,17 +73,43 @@ namespace System.Runtime.InteropServices
             return parsedType;
         }
 
-        private static ReadOnlySpan<char> ConvertUtf8ToUtf16(ReadOnlySpan<byte> utf8TypeName)
+        public ref struct Utf16SharedBuffer
         {
-            int defaultUtf8StrLen = 1024;
+            private char[]? _backingArray;
+            public Utf16SharedBuffer()
+            {
+                _backingArray = null;
+                Buffer = default;
+            }
+
+            public Utf16SharedBuffer(char[] backingBuffer, int validLength)
+            {
+                _backingArray = backingBuffer;
+                Buffer = new ReadOnlySpan<char>(backingBuffer, 0, validLength);
+            }
+
+            public ReadOnlySpan<char> Buffer { get; init; }
+
+            public void Dispose()
+            {
+                if (_backingArray != null)
+                {
+                    ArrayPool<char>.Shared.Return(_backingArray);
+                }
+            }
+        }
+
+        private static void ConvertUtf8ToUtf16(ReadOnlySpan<byte> utf8TypeName, out Utf16SharedBuffer utf16Buffer)
+        {
+            const int DefaultCharArrayLen = 1024;
             const int MaxUtf8BytesPerChar = 3;
-            int needed = utf8TypeName.Length > (defaultUtf8StrLen * MaxUtf8BytesPerChar)
+            int needed = utf8TypeName.Length > (DefaultCharArrayLen * MaxUtf8BytesPerChar)
                 ? Encoding.UTF8.GetCharCount(utf8TypeName)
-                : defaultUtf8StrLen;
+                : DefaultCharArrayLen;
 
             char[] buffer = ArrayPool<char>.Shared.Rent(needed);
             int converted = Encoding.UTF8.GetChars(utf8TypeName, buffer);
-            return new ReadOnlySpan<char>(buffer, 0, converted);
+            utf16Buffer = new Utf16SharedBuffer(buffer, converted);
         }
 
         [UnmanagedCallersOnly]
@@ -120,17 +146,19 @@ namespace System.Runtime.InteropServices
             Debug.Assert(arg->Utf8String1 != null);
             Debug.Assert(arg->Utf8String2 != null);
 
+            Utf16SharedBuffer sourceTypeBuffer = new();
+            Utf16SharedBuffer assemblyNameBuffer = new();
             try
             {
-                ReadOnlySpan<char> sourceType = ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(arg->Utf8String1, arg->StringLen1));
+                ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(arg->Utf8String1, arg->StringLen1), out sourceTypeBuffer);
 
-                TypeName parsedSource = TypeNameParser.Parse(sourceType, throwOnError: true)!;
+                TypeName parsedSource = TypeNameParser.Parse(sourceTypeBuffer.Buffer, throwOnError: true)!;
                 if (parsedSource.AssemblyName is null)
                 {
                     // The assembly name is not included in the type name, so use the fallback assembly name.
                     Debug.Assert(arg->Utf8String3 != null);
-                    ReadOnlySpan<char> fallbackAssemblyName = ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(arg->Utf8String3, arg->StringLen3));
-                    parsedSource = CreateNewTypeName(parsedSource, fallbackAssemblyName);
+                    ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(arg->Utf8String3, arg->StringLen3), out assemblyNameBuffer);
+                    parsedSource = NewTypeNameWithAssembly(parsedSource, assemblyNameBuffer.Buffer);
                 }
                 TypeNameValue proxyTypeName = new()
                 {
@@ -144,6 +172,11 @@ namespace System.Runtime.InteropServices
             catch (Exception ex)
             {
                 context->CreationException = ExceptionDispatchInfo.Capture(ex);
+            }
+            finally
+            {
+                sourceTypeBuffer.Dispose();
+                assemblyNameBuffer.Dispose();
             }
         }
 
@@ -270,15 +303,25 @@ namespace System.Runtime.InteropServices
                     }
                     else
                     {
-                        ReadOnlySpan<char> typeNameSpan = ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(_typeNameRaw.Value.Utf8TypeName, _typeNameRaw.Value.Utf8TypeNameLen));
-                        TypeName parsedType = TypeNameParser.Parse(typeNameSpan, throwOnError: true)!;
-                        if (parsedType.AssemblyName is null)
+                        Utf16SharedBuffer typeNameBuffer = new();
+                        Utf16SharedBuffer assemblyNameBuffer = new();
+                        try
                         {
-                            ReadOnlySpan<char> fallbackAssembly = ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(_typeNameRaw.Value.Utf8AssemblyNameFallback, _typeNameRaw.Value.Utf8AssemblyNameFallbackLen));
-                            parsedType = CreateNewTypeName(parsedType, fallbackAssembly);
+                            ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(_typeNameRaw.Value.Utf8TypeName, _typeNameRaw.Value.Utf8TypeNameLen), out typeNameBuffer);
+                            TypeName parsedType = TypeNameParser.Parse(typeNameBuffer.Buffer, throwOnError: true)!;
+                            if (parsedType.AssemblyName is null)
+                            {
+                                ConvertUtf8ToUtf16(new ReadOnlySpan<byte>(_typeNameRaw.Value.Utf8AssemblyNameFallback, _typeNameRaw.Value.Utf8AssemblyNameFallbackLen), out assemblyNameBuffer);
+                                parsedType = NewTypeNameWithAssembly(parsedType, assemblyNameBuffer.Buffer);
+                            }
+                            assemblyName = parsedType.AssemblyName!.FullName;
+                            typeName = parsedType.FullName;
                         }
-                        assemblyName = parsedType.AssemblyName!.FullName;
-                        typeName = parsedType.FullName;
+                        finally
+                        {
+                            typeNameBuffer.Dispose();
+                            assemblyNameBuffer.Dispose();
+                        }
                     }
 
                     lock (this)
