@@ -61,40 +61,27 @@ class IntBoolOpDsc
 {
 private:
     IntBoolOpDsc(Compiler* comp)
+        : m_comp(comp)
+        , ctsArray(comp->getAllocator(CMK_ArrayStack))
+        , lclVarArr(comp->getAllocator(CMK_ArrayStack))
+        , start(nullptr)
+        , end(nullptr)
     {
-        ctsArray          = nullptr;
-        ctsArrayLength    = 0;
-        ctsArrayCapacity  = 0;
-        lclVarArr         = nullptr;
-        lclVarArrLength   = 0;
-        lclVarArrCapacity = 0;
-        start             = nullptr;
-        end               = nullptr;
-        m_comp            = comp;
     }
 
 private:
-    GenTree** lclVarArr;
-    int32_t   lclVarArrLength;
-    int32_t   lclVarArrCapacity;
-    ssize_t*  ctsArray;
-    int32_t   ctsArrayLength;
-    int32_t   ctsArrayCapacity;
-    GenTree*  start;
-    GenTree*  end;
-    Compiler* m_comp;
+    Compiler*            m_comp;
+    ArrayStack<ssize_t>  ctsArray;
+    ArrayStack<GenTree*> lclVarArr;
+    GenTree*             start;
+    GenTree*             end;
 
 public:
     static IntBoolOpDsc GetNextIntBoolOp(GenTree* b3, Compiler* comp);
     bool                TryOptimize();
     bool                EndIsNull();
     GenTree*            GetLclVarArrayFirst();
-    void                Free();
-
-private:
-    void Reinit();
-    void AppendToLclVarArray(GenTree* b3);
-    void AppendToCtsArray(ssize_t b3);
+    void                Reinit();
 };
 
 //-----------------------------------------------------------------------------
@@ -1479,41 +1466,14 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 }
 
 //-----------------------------------------------------------------------------
-// Reinit:   Procedure that reinitialize IntBoolOpDsc reference
+// Reinit:   Procedure that reinitializes IntBoolOpDsc reference
 //
 void IntBoolOpDsc::Reinit()
 {
-    start           = nullptr;
-    end             = nullptr;
-    ctsArrayLength  = 0;
-    lclVarArrLength = 0;
-}
-
-//-----------------------------------------------------------------------------
-// Free:   Procedure that frees IntBoolOpDsc reference
-//
-void IntBoolOpDsc::Free()
-{
     start = nullptr;
     end   = nullptr;
-
-    if (ctsArray != nullptr)
-    {
-        free(ctsArray);
-        ctsArray = nullptr;
-    }
-
-    ctsArrayLength   = 0;
-    ctsArrayCapacity = 0;
-
-    if (lclVarArr != nullptr)
-    {
-        free(lclVarArr);
-        lclVarArr = nullptr;
-    }
-
-    lclVarArrLength   = 0;
-    lclVarArrCapacity = 0;
+    ctsArray.Reset();
+    lclVarArr.Reset();
 }
 
 //-----------------------------------------------------------------------------
@@ -1564,7 +1524,7 @@ IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
     {
         if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT) || !b4->TypeIs(TYP_INT))
         {
-            if (intBoolOpDsc.ctsArrayLength >= 2 && intBoolOpDsc.lclVarArrLength >= 2)
+            if (intBoolOpDsc.ctsArray.Height() >= 2 && intBoolOpDsc.lclVarArr.Height() >= 2)
             {
                 intBoolOpDsc.end = b4;
                 return intBoolOpDsc;
@@ -1588,7 +1548,7 @@ IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
 
         if (orOpCount <= 0)
         {
-            if (intBoolOpDsc.ctsArrayLength >= 2 && intBoolOpDsc.lclVarArrLength >= 2)
+            if (intBoolOpDsc.ctsArray.Height() >= 2 && intBoolOpDsc.lclVarArr.Height() >= 2)
             {
                 intBoolOpDsc.end = b4;
                 return intBoolOpDsc;
@@ -1617,14 +1577,14 @@ IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
             {
                 case GT_LCL_VAR:
                 {
-                    intBoolOpDsc.AppendToLclVarArray(b4);
+                    intBoolOpDsc.lclVarArr.Push(b4);
                     orOpCount--;
                     break;
                 }
                 case GT_CNS_INT:
                 {
                     ssize_t constant = b4->AsIntConCommon()->IconValue();
-                    intBoolOpDsc.AppendToCtsArray(constant);
+                    intBoolOpDsc.ctsArray.Push(constant);
                     orOpCount--;
                     break;
                 }
@@ -1645,7 +1605,7 @@ IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
 }
 
 //-----------------------------------------------------------------------------
-// TryOptimize:   Function that fold constant INT OR operations
+// TryOptimize:   Function that folds constant INT OR operations
 //
 // Return:
 //      True if it could optimize the operation and false elsewhere
@@ -1654,39 +1614,46 @@ IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
 //      We recreate nodes so as to eliminate excessive constants
 bool IntBoolOpDsc::TryOptimize()
 {
+    int ctsArrayLength  = ctsArray.Height();
+    int lclVarArrLength = lclVarArr.Height();
+
     if (ctsArrayLength < 2 || lclVarArrLength < 2)
     {
         return false;
     }
 
-    GenTreeOp* intVarTree = m_comp->gtNewOperNode(GT_OR, TYP_INT, lclVarArr[0], lclVarArr[1]);
-    intVarTree->gtPrev    = lclVarArr[1];
-    lclVarArr[1]->gtNext  = intVarTree;
-    lclVarArr[1]->gtPrev  = lclVarArr[0];
-    lclVarArr[0]->gtNext  = lclVarArr[1];
-    lclVarArr[0]->gtPrev  = end;
+    GenTree*   firstLclVar  = lclVarArr.Bottom(0);
+    GenTree*   secondLclVar = lclVarArr.Bottom(1);
+    GenTreeOp* intVarTree   = m_comp->gtNewOperNode(GT_OR, TYP_INT, firstLclVar, secondLclVar);
+    intVarTree->gtPrev      = secondLclVar;
+    secondLclVar->gtNext    = intVarTree;
+    secondLclVar->gtPrev    = firstLclVar;
+    firstLclVar->gtNext     = secondLclVar;
+    firstLclVar->gtPrev     = end;
 
     if (end != nullptr)
     {
-        end->gtNext = lclVarArr[0];
+        end->gtNext = firstLclVar;
     }
 
     GenTree* tempIntVatTree = intVarTree;
 
     for (int i = 2; i < lclVarArrLength; i++)
     {
-        GenTreeOp* newIntVarTree = m_comp->gtNewOperNode(GT_OR, TYP_INT, tempIntVatTree, lclVarArr[i]);
-        newIntVarTree->gtPrev    = lclVarArr[i];
-        lclVarArr[i]->gtNext     = newIntVarTree;
-        lclVarArr[i]->gtPrev     = tempIntVatTree;
-        tempIntVatTree->gtNext   = lclVarArr[i];
+        GenTree*   ithLclVar     = lclVarArr.Bottom(i);
+        GenTreeOp* newIntVarTree = m_comp->gtNewOperNode(GT_OR, TYP_INT, tempIntVatTree, ithLclVar);
+        newIntVarTree->gtPrev    = ithLclVar;
+        ithLclVar->gtNext        = newIntVarTree;
+        ithLclVar->gtPrev        = tempIntVatTree;
+        tempIntVatTree->gtNext   = ithLclVar;
         tempIntVatTree           = newIntVarTree;
     }
 
     size_t optimizedCst = 0;
     for (int i = 0; i < ctsArrayLength; i++)
     {
-        optimizedCst = optimizedCst | ctsArray[i];
+        size_t ithCts = ctsArray.Bottom(i);
+        optimizedCst  = optimizedCst | ithCts;
     }
 
     GenTreeIntCon* optimizedCstTree = m_comp->gtNewIconNode(optimizedCst, TYP_INT);
@@ -1771,64 +1738,12 @@ bool IntBoolOpDsc::EndIsNull()
 //      first lcl var of operation if it exists and nullptr elsewhere
 GenTree* IntBoolOpDsc::GetLclVarArrayFirst()
 {
-    if (lclVarArrLength > 0 && lclVarArr != nullptr)
+    if (lclVarArr.Height() > 0)
     {
-        return lclVarArr[0];
+        return lclVarArr.Bottom(0);
     }
 
     return nullptr;
-}
-
-//-----------------------------------------------------------------------------
-// AppendToLclVarArray:   Procedure that append the lcl var tree to lcl var arrays
-//
-// Arguments:
-//      tree        lcl var tree
-//
-void IntBoolOpDsc::AppendToLclVarArray(GenTree* tree)
-{
-    if (lclVarArrLength == lclVarArrCapacity)
-    {
-        if (lclVarArrCapacity == 0)
-        {
-            lclVarArrCapacity = 4;
-            lclVarArr         = reinterpret_cast<GenTree**>(malloc(sizeof(GenTree*) * lclVarArrCapacity));
-        }
-        else
-        {
-            lclVarArrCapacity = lclVarArrCapacity * 2;
-            lclVarArr         = reinterpret_cast<GenTree**>(realloc(lclVarArr, sizeof(GenTree*) * lclVarArrCapacity));
-        }
-    }
-
-    lclVarArrLength++;
-    lclVarArr[lclVarArrLength - 1] = tree;
-}
-
-//-----------------------------------------------------------------------------
-// AppendToCtsArray:   Procedure that appends the constant to constant arrays
-//
-// Arguments:
-//      cts        constant value
-//
-void IntBoolOpDsc::AppendToCtsArray(ssize_t cts)
-{
-    if (ctsArrayLength == ctsArrayCapacity)
-    {
-        if (ctsArrayCapacity == 0)
-        {
-            ctsArrayCapacity = 4;
-            ctsArray         = reinterpret_cast<ssize_t*>(malloc(sizeof(ssize_t) * ctsArrayCapacity));
-        }
-        else
-        {
-            ctsArrayCapacity = ctsArrayCapacity * 2;
-            ctsArray         = reinterpret_cast<ssize_t*>(realloc(ctsArray, sizeof(ssize_t) * ctsArrayCapacity));
-        }
-    }
-
-    ctsArrayLength++;
-    ctsArray[ctsArrayLength - 1] = cts;
 }
 
 //-----------------------------------------------------------------------------
@@ -1860,7 +1775,7 @@ bool Compiler::TryOptimizeIntBoolOp(BasicBlock* b1)
                 folded = true;
             }
 
-            intBoolOpDsc.Free();
+            intBoolOpDsc.Reinit();
         }
     }
 
