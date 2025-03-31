@@ -851,7 +851,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // TARGET_XARCH
 
     firstColdLoc = MaxLocation;
-    lastPhysRecord = &physRegs[(regNumber)(availableRegCount - 1)];
 
 #ifdef DEBUG
     maxNodeLocation              = 0;
@@ -4897,45 +4896,13 @@ void LinearScan::allocateRegistersMinimal()
     clearAllNextIntervalRef();
     clearAllSpillCost();
 
-    /*for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
         updateNextFixedRefDispatch(physRegRecord, physRegRecord->firstRefPosition, killHead);
-        assert(physRegRecord->assignedInterval == nullptr);
-    }*/
-   int first = REG_FIRST;
-   int last  = AVAILABLE_REG_COUNT - 1;
-    RegRecord* physRegRecord = &physRegs[first];
-    RegRecord* lastRegRecord = &physRegs[last];
-    do
-    {
-        assert(physRegRecord != nullptr);
-        physRegRecord->recentRefPosition = nullptr;
-        updateNextFixedRefDispatch(physRegRecord, physRegRecord->firstRefPosition, killHead);
-        assert(physRegRecord->assignedInterval == nullptr);
-        physRegRecord = physRegRecord->nextRegRecord;
-    } while (physRegRecord != lastRegRecord);
-    
-
- /*   for (regNumber reg = REG_FIRST; reg < get_REG_INT_LAST(); reg = REG_NEXT(reg))
-    {
-        RegRecord* physRegRecord         = getRegisterRecord(reg);
-        physRegRecord->recentRefPosition = nullptr;
-        updateNextFixedRef<true>(physRegRecord, physRegRecord->firstRefPosition, killHead);
         assert(physRegRecord->assignedInterval == nullptr);
     }
-
-    if (AVAILABLE_REG_COUNT > get_REG_INT_LAST())
-    {
-        for (regNumber reg = REG_FP_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-        {
-            RegRecord* physRegRecord         = getRegisterRecord(reg);
-            physRegRecord->recentRefPosition = nullptr;
-            updateNextFixedRefDispatch(physRegRecord, physRegRecord->firstRefPosition, killHead);
-            assert(physRegRecord->assignedInterval == nullptr);
-        }
-    }*/
 
 #ifdef DEBUG
     if (VERBOSE)

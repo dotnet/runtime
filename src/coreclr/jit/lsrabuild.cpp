@@ -1931,31 +1931,11 @@ const unsigned         lsraRegOrderMskSize = ArrLen(lsraRegOrderMsk);
 //
 void LinearScan::buildPhysRegRecords()
 {
-    regNumber reg = REG_FIRST;
-    RegRecord* prev = &physRegs[reg];
-    prev->init(reg);
-    reg = REG_NEXT(reg);
-
-    for (; reg <= get_REG_INT_LAST(); reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* curr = &physRegs[reg];
-        regMaskTP regMask = curr->init(reg);
-        prev->nextRegRecord = curr;
-        prev = curr;
+        curr->init(reg);
     }
-    for (; reg < REG_FP_FIRST; reg = REG_NEXT(reg))
-    {
-        RegRecord* curr = &physRegs[reg];
-        regMaskTP regMask = curr->init(reg);
-    }
-    for (; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-    {
-        RegRecord* curr = &physRegs[reg];
-        regMaskTP regMask = curr->init(reg);
-        prev->nextRegRecord = curr;
-        prev = curr;
-    }
-    prev->nextRegRecord = nullptr;
     for (unsigned int i = 0; i < lsraRegOrderSize; i++)
     {
         regNumber  reg  = lsraRegOrder[i];
