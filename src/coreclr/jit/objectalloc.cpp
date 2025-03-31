@@ -441,6 +441,22 @@ void ObjectAllocator::PrepareAnalysis()
         }
     }
 
+#ifdef DEBUG
+    if (m_trackFields)
+    {
+        static ConfigMethodRange JitObjectStackAllocationTrackFieldsRange;
+        JitObjectStackAllocationTrackFieldsRange.EnsureInit(JitConfig.JitObjectStackAllocationTrackFieldsRange());
+        const unsigned hash    = comp->info.compMethodHash();
+        const bool     inRange = JitObjectStackAllocationTrackFieldsRange.Contains(hash);
+
+        if (!inRange)
+        {
+            JITDUMP("Disabling field wise escape analysis per range config\n");
+            m_trackFields = false;
+        }
+    }
+#endif
+
     // When we clone to prevent conditional escape, we'll also create a new local
     // var that we will track. So we need to leave room for these vars. There can
     // be as many of these as there are pseudo locals.
@@ -1684,21 +1700,42 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_BLK:
             {
                 GenTree* const addr = parent->AsIndir()->Addr();
-                if (tree != addr)
+                if (tree == addr)
                 {
-                    JITDUMP("... store value\n");
+                    JITDUMP("... store address\n");
+                    canLclVarEscapeViaParentStack = false;
+                    break;
+                }
 
-                    // Is this a store to a field of a local struct...?
-                    //
-                    if (parent->OperIs(GT_STOREIND) && addr->OperIs(GT_FIELD_ADDR, GT_LCL_ADDR))
+                JITDUMP("... store value\n");
+
+                // Is this a store to a field of a local struct...?
+                //
+                if (parent->OperIs(GT_STOREIND))
+                {
+                    if (addr->OperIs(GT_LCL_ADDR))
                     {
-                        // Do we know which local?
+                        unsigned const   dstLclNum = addr->AsLclVarCommon()->GetLclNum();
+                        LclVarDsc* const dstDsc    = comp->lvaGetDesc(dstLclNum);
+
+                        if (IsTrackedLocal(dstLclNum))
+                        {
+                            JITDUMP("... local [indir] store\n");
+                            // Add an edge to the connection graph.
+                            AddConnGraphEdge(dstLclNum, lclNum);
+                            canLclVarEscapeViaParentStack = false;
+                        }
+                    }
+                    else if (addr->OperIs(GT_FIELD_ADDR))
+                    {
+                        // Simple check for which local.
                         //
-                        GenTree* const base = addr->OperIs(GT_FIELD_ADDR) ? addr->AsOp()->gtGetOp1() : addr;
+                        GenTree* const base = addr->AsOp()->gtGetOp1();
 
                         if (base->OperIs(GT_LCL_ADDR))
                         {
-                            unsigned const dstLclNum = base->AsLclVarCommon()->GetLclNum();
+                            unsigned const   dstLclNum = base->AsLclVarCommon()->GetLclNum();
+                            LclVarDsc* const dstDsc    = comp->lvaGetDesc(dstLclNum);
 
                             if (IsTrackedLocal(dstLclNum))
                             {
@@ -1707,28 +1744,8 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                                 AddConnGraphEdge(dstLclNum, lclNum);
                                 canLclVarEscapeViaParentStack = false;
                             }
-                            else
-                            {
-                                // Store to untracked local. Assume escape.
-                            }
-                        }
-                        else
-                        {
-                            // Store destination unknown. Assume escape.
-                            //
-                            // TODO: handle more general trees here.
-                            // Since we visit the address subtree first, perhaps we can annotate somehow.
                         }
                     }
-                    else
-                    {
-                        // Likely heap store. Assume escape.
-                    }
-                }
-                else
-                {
-                    canLclVarEscapeViaParentStack = false;
-                    JITDUMP("... store address\n");
                 }
                 break;
             }
@@ -1750,8 +1767,15 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 //
                 // We only track through the first indir.
                 //
-                if (m_trackFields && (numIndirs == 0) && varTypeIsGC(parent->TypeGet()) &&
-                    (lclDsc->TypeGet() != TYP_REF))
+                if (addr->OperIs(GT_LCL_ADDR))
+                {
+                    JITDUMP("... local [indir] load\n");
+                    ++parentIndex;
+                    ++numIndirs;
+                    keepChecking = true;
+                    break;
+                }
+                else if (m_trackFields && (numIndirs == 0))
                 {
                     JITDUMP("... local [struct] load\n");
                     ++parentIndex;
