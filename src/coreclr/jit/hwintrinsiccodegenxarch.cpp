@@ -1898,10 +1898,14 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                         op1 = loPart;
                     }
 
-                    ins      = INS_movq;
                     baseAttr = EA_8BYTE;
                 }
 #endif // TARGET_X86
+
+                if (op1->isUsedFromMemory() && (baseAttr == EA_8BYTE))
+                {
+                    ins = INS_movq;
+                }
 
                 genHWIntrinsic_R_RM(node, ins, baseAttr, targetReg, op1, instOptions);
             }

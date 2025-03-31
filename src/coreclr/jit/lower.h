@@ -132,6 +132,7 @@ private:
 #ifdef TARGET_XARCH
     void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode);
     void TryCompressConstVecData(GenTreeStoreInd* node);
+    GenTree* TryFoldHWIntrinsicToCnsVec(GenTree* childNode);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 

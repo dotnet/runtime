@@ -8004,12 +8004,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 
-            case NI_Vector128_AsVector2:
-            {
-                simd8_t result = GetConstantSimd16(arg0VN).v64[0];
-                return VNForSimd8Con(result);
-            }
-
             case NI_Vector128_ToVector256:
             case NI_Vector128_ToVector256Unsafe:
             {
@@ -8063,6 +8057,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForSimd16Con(result);
             }
 #endif // TARGET_XARCH
+
+            case NI_Vector128_AsVector2:
+            {
+                simd8_t result = GetConstantSimd16(arg0VN).v64[0];
+                return VNForSimd8Con(result);
+            }
 
             case NI_Vector128_AsVector3:
             {

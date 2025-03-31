@@ -22969,7 +22969,19 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types   type,
             }
         }
 
-        return vecCon;
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+        if (vecCon->IsZero() || vecCon->IsAllBitsSet())
+#endif // TARGET_XARCH || TARGET_ARM64
+        {
+            return vecCon;
+        }
+#if defined(TARGET_XARCH)
+        else
+        {
+            op1 = vecCon;
+        }
+#endif // TARGET_XARCH
     }
 
 #if defined(TARGET_XARCH)
