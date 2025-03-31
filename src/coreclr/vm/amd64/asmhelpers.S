@@ -352,3 +352,13 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
 NESTED_END InterpreterStub, _TEXT
 #endif // FEATURE_INTERPRETER
+
+//rdi -This pointer
+//rsi -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    mov  METHODDESC_REGISTER, [METHODDESC_REGISTER + ThisPtrRetBufPrecodeData__Target]
+    mov r11, rsi
+    mov rsi, rdi
+    mov rdi, r11
+    jmp METHODDESC_REGISTER
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT

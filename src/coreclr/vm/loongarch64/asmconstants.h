@@ -37,6 +37,9 @@ ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::Inline
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
+#define ThisPtrRetBufPrecodeData__Target      0x00
+ASMCONSTANTS_C_ASSERT(ThisPtrRetBufPrecodeData__Target == offsetof(ThisPtrRetBufPrecodeData, Target));
+
 #define               Thread__m_fPreemptiveGCDisabled   0x04
 #define               Thread__m_pFrame                  0x08
 
