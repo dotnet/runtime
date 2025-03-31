@@ -2448,9 +2448,9 @@ size_t      gc_heap::hc_change_cancelled_count_bgc = 0;
 #endif //BACKGROUND_GC
 #endif //DYNAMIC_HEAP_COUNT
 
-#if defined(HOST_64BIT)
 #define MAX_ALLOWED_MEM_LOAD 85
 
+#if defined(HOST_64BIT)
 // consider putting this in dynamic data -
 // we may want different values for workstation
 // and server GC.
@@ -25365,7 +25365,14 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
 
 // check that the fields of a decommissioned heap have their expected values,
 // i.e. were not inadvertently modified
+#ifdef HOST_64BIT
 #define DECOMMISSIONED_VALUE 0xdec0dec0dec0dec0
+static const ptrdiff_t UNINITIALIZED_VALUE  = 0xbaadbaadbaadbaad;
+#else // HOST_32BIT
+#define DECOMMISSIONED_VALUE 0xdec0dec0
+static const ptrdiff_t UNINITIALIZED_VALUE  = 0xbaadbaad;
+#endif // HOST_64BIT
+
 static const size_t DECOMMISSIONED_SIZE_T = DECOMMISSIONED_VALUE;
 static const ptrdiff_t DECOMMISSIONED_PTRDIFF_T = (ptrdiff_t)DECOMMISSIONED_VALUE;
 static const ptrdiff_t DECOMMISSIONED_UINT64_T = (uint64_t)DECOMMISSIONED_VALUE;
@@ -25376,8 +25383,6 @@ static mark* const DECOMMISSIONED_MARK_P = (mark*)DECOMMISSIONED_VALUE;
 static const BOOL DECOMMISSIONED_BOOL = 0xdec0dec0;
 static const BOOL DECOMMISSIONED_INT = (int)0xdec0dec0;
 static const float DECOMMISSIONED_FLOAT = (float)DECOMMISSIONED_VALUE;
-
-static const ptrdiff_t UNINITIALIZED_VALUE  = 0xbaadbaadbaadbaad;
 
 void gc_heap::check_decommissioned_heap()
 {
