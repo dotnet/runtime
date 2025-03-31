@@ -297,7 +297,7 @@ set(llvm_runtime_sources)
 endif()
 
 if(TARGET_BROWSER AND MONO_CROSS_COMPILE)
-set(profiler_sources ../profiler/browser.c)
+set(profiler_sources ../profiler/browser.c ../profiler/helper.c)
 else()
 set(profiler_sources "")
 endif()

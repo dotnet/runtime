@@ -33,6 +33,7 @@ struct _MonoProfiler {
 static MonoProfiler browser_profiler;
 static double desired_sample_interval_ms;
 static MonoCallSpec callspec;
+static bool for_diagnostic_server = false;
 
 #ifdef HOST_BROWSER
 
@@ -201,6 +202,15 @@ method_filter (MonoProfiler *prof, MonoMethod *method)
 		!mono_callspec_eval (method, &callspec))
 		return MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
 
+	if (for_diagnostic_server) {
+		// Diagnostic Server only requires subset of events
+		// see ep-rt-mono-runtime-provider.c
+		return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
+				MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
+				MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
+	}
+
+	// this is for the dev tools profiler
 	return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
 			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
 			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
@@ -212,109 +222,32 @@ method_filter (MonoProfiler *prof, MonoMethod *method)
 MONO_API void
 mono_profiler_init_browser (const char *desc);
 
-static gboolean
-match_option (const char *arg, const char *opt_name, const char **rval)
+MONO_API void
+mono_profiler_init_ds_sample (const char *desc);
+
+void mono_profhelper_parse_profiler_args (const char *desc, MonoCallSpec *callspec, double *desired_sample_interval_ms);
+
+/**
+ * mono_profiler_init_ds_sample:
+ * the entry point
+ */
+void
+mono_profiler_init_ds_sample (const char *desc)
 {
-	if (rval) {
-		const char *end = strchr (arg, '=');
+	memset (&callspec, 0, sizeof (MonoCallSpec));
+	for_diagnostic_server = TRUE;
 
-		*rval = NULL;
-		if (!end)
-			return !strcmp (arg, opt_name);
-
-		if (strncmp (arg, opt_name, strlen (opt_name)) || (end - arg) > (ptrdiff_t)strlen (opt_name) + 1)
-			return FALSE;
-		*rval = end + 1;
-		return TRUE;
-	} else {
-		//FIXME how should we handle passing a value to an arg that doesn't expect it?
-		return !strcmp (arg, opt_name);
+	// ds_sample:
+	if (desc && desc [9] == ':') {
+		mono_profhelper_parse_profiler_args (desc + 10, &callspec, &desired_sample_interval_ms);
 	}
+
+	MonoProfilerHandle handle = mono_profiler_create (&browser_profiler);
+
+	mono_profiler_set_call_instrumentation_filter_callback (handle, method_filter);
+
+	g_assert(mono_jit_aot_compiling ());
 }
-
-static void
-parse_arg (const char *arg)
-{
-	const char *val;
-
-	if (match_option (arg, "callspec", &val)) {
-		if (!val)
-			val = "";
-		if (val[0] == '\"')
-			++val;
-		char *spec = g_strdup (val);
-		size_t speclen = strlen (val);
-		if (speclen > 0 && spec[speclen - 1] == '\"')
-			spec[speclen - 1] = '\0';
-		char *errstr;
-		if (!mono_callspec_parse (spec, &callspec, &errstr)) {
-			mono_profiler_printf_err ("Could not parse callspec '%s': %s", spec, errstr);
-			g_free (errstr);
-			mono_callspec_cleanup (&callspec);
-		}
-		g_free (spec);
-	}
-	else if (match_option (arg, "interval", &val)) {
-		char *end;
-		desired_sample_interval_ms = strtod (val, &end);
-	}
-}
-
-static void
-parse_args (const char *desc)
-{
-	const char *p;
-	gboolean in_quotes = FALSE;
-	char quote_char = '\0';
-	char *buffer = g_malloc (strlen (desc) + 1);
-	int buffer_pos = 0;
-
-	for (p = desc; *p; p++){
-		switch (*p){
-		case ',':
-			if (!in_quotes) {
-				if (buffer_pos != 0){
-					buffer [buffer_pos] = 0;
-					parse_arg (buffer);
-					buffer_pos = 0;
-				}
-			} else {
-				buffer [buffer_pos++] = *p;
-			}
-			break;
-
-		case '\\':
-			if (p [1]) {
-				buffer [buffer_pos++] = p[1];
-				p++;
-			}
-			break;
-		case '\'':
-		case '"':
-			if (in_quotes) {
-				if (quote_char == *p)
-					in_quotes = FALSE;
-				else
-					buffer [buffer_pos++] = *p;
-			} else {
-				in_quotes = TRUE;
-				quote_char = *p;
-			}
-			break;
-		default:
-			buffer [buffer_pos++] = *p;
-			break;
-		}
-	}
-
-	if (buffer_pos != 0) {
-		buffer [buffer_pos] = 0;
-		parse_arg (buffer);
-	}
-
-	g_free (buffer);
-}
-
 
 /**
  * mono_profiler_init_browser:
@@ -328,7 +261,7 @@ mono_profiler_init_browser (const char *desc)
 
 	// browser:
 	if (desc && desc [7] == ':') {
-		parse_args (desc + 8);
+		mono_profhelper_parse_profiler_args (desc + 8, &callspec, &desired_sample_interval_ms);
 	}
 
 	MonoProfilerHandle handle = mono_profiler_create (&browser_profiler);

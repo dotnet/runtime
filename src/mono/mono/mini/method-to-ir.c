@@ -3542,6 +3542,10 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 			return TRUE;
 	}
 
+	if (cfg->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT) {
+		return TRUE;
+	}
+
 	/*
 	 * Methods which do stack walks are marked with [System.Security.DynamicSecurityMethod] in the bcl.
 	 * This check won't work for StackCrawlMark.LookForMyCallersCaller, but thats not currently by the

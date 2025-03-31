@@ -31,6 +31,12 @@
 
 #include "helper.h"
 
+#include <mono/metadata/profiler.h>
+#include <mono/metadata/callspec.h>
+#include <mono/utils/mono-logger-internals.h>
+
+void mono_profhelper_parse_profiler_args (const char *desc, MonoCallSpec *callspec, double *desired_sample_interval_ms);
+
 void
 mono_profhelper_close_socket_fd (SOCKET fd)
 {
@@ -105,4 +111,107 @@ mono_profhelper_add_to_fd_set (fd_set *set, SOCKET fd, int *max_fd)
 	if (*max_fd < GUINT64_TO_INT(fd))
 		*max_fd = (int)fd;
 #endif
+}
+
+static gboolean
+match_option (const char *arg, const char *opt_name, const char **rval)
+{
+	if (rval) {
+		const char *end = strchr (arg, '=');
+
+		*rval = NULL;
+		if (!end)
+			return !strcmp (arg, opt_name);
+
+		if (strncmp (arg, opt_name, strlen (opt_name)) || (end - arg) > (ptrdiff_t)strlen (opt_name) + 1)
+			return FALSE;
+		*rval = end + 1;
+		return TRUE;
+	} else {
+		//FIXME how should we handle passing a value to an arg that doesn't expect it?
+		return !strcmp (arg, opt_name);
+	}
+}
+
+static void
+parse_arg (const char *arg, MonoCallSpec *callspec, double *desired_sample_interval_ms)
+{
+	const char *val;
+
+	if (match_option (arg, "callspec", &val)) {
+		if (!val)
+			val = "";
+		if (val[0] == '\"')
+			++val;
+		char *spec = g_strdup (val);
+		size_t speclen = strlen (val);
+		if (speclen > 0 && spec[speclen - 1] == '\"')
+			spec[speclen - 1] = '\0';
+		char *errstr;
+		if (!mono_callspec_parse (spec, callspec, &errstr)) {
+			mono_profiler_printf_err ("Could not parse callspec '%s': %s", spec, errstr);
+			g_free (errstr);
+			mono_callspec_cleanup (callspec);
+		}
+		g_free (spec);
+	}
+	else if (match_option (arg, "interval", &val)) {
+		char *end;
+		*desired_sample_interval_ms = strtod (val, &end);
+	}
+}
+
+void
+mono_profhelper_parse_profiler_args (const char *desc, MonoCallSpec *callspec, double *desired_sample_interval_ms)
+{
+	const char *p;
+	gboolean in_quotes = FALSE;
+	char quote_char = '\0';
+	char *buffer = g_malloc (strlen (desc) + 1);
+	int buffer_pos = 0;
+
+	for (p = desc; *p; p++){
+		switch (*p){
+		case ',':
+			if (!in_quotes) {
+				if (buffer_pos != 0){
+					buffer [buffer_pos] = 0;
+					parse_arg (buffer, callspec, desired_sample_interval_ms);
+					buffer_pos = 0;
+				}
+			} else {
+				buffer [buffer_pos++] = *p;
+			}
+			break;
+
+		case '\\':
+			if (p [1]) {
+				buffer [buffer_pos++] = p[1];
+				p++;
+			}
+			break;
+		case '\'':
+		case '"':
+			if (in_quotes) {
+				if (quote_char == *p)
+					in_quotes = FALSE;
+				else
+					buffer [buffer_pos++] = *p;
+			} else {
+				in_quotes = TRUE;
+				quote_char = *p;
+			}
+			break;
+		default:
+			buffer [buffer_pos++] = *p;
+			break;
+		}
+	}
+
+	if (buffer_pos != 0) {
+		buffer [buffer_pos] = 0;
+		parse_arg (buffer, callspec, desired_sample_interval_ms);
+	}
+
+	g_free (buffer);
 }

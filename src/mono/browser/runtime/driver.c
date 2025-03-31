@@ -518,8 +518,8 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 }
 
 // JS is responsible for freeing this
-EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_full_name (MonoMethod *method) {
-	const char *res;
+EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_full_name (MonoMethod *method) {
+	char *res;
 	MONO_ENTER_GC_UNSAFE;
 	res = mono_method_get_full_name (method);
 	MONO_EXIT_GC_UNSAFE;
