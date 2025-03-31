@@ -864,7 +864,7 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
 
 void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFrameChain, LPVOID MemoryStackFp);
 
-static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCallerSp)
+static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCallerSp, bool popGCFrames = true)
 {
     Frame* pFrame = pThread->GetFrame();
     while (pFrame < targetSp)
@@ -907,11 +907,14 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
         }
     }
 
-    GCFrame* pGCFrame = pThread->GetGCFrame();
-    while (pGCFrame && pGCFrame < targetSp)
+    if (popGCFrames)
     {
-        pGCFrame->Pop();
-        pGCFrame = pThread->GetGCFrame();
+        GCFrame* pGCFrame = pThread->GetGCFrame();
+        while (pGCFrame && pGCFrame < targetSp)
+        {
+            pGCFrame->Pop();
+            pGCFrame = pThread->GetGCFrame();
+        }
     }
 }
 
@@ -934,11 +937,43 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
     // Skip native frames of asm helpers that have the ProcessCLRException set as their personality routine.
     // There is nothing to do for those with the new exception handling.
+    if (!ExecutionManager::IsManagedCode((PCODE)pDispatcherContext->ControlPc))
+    {
+        return ExceptionContinueSearch;
+    }
+
+    if (pThread->HasThreadStateNC(Thread::TSNC_UnhandledException2ndPass) && !(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
+    {
+        // We are in the 1st pass of exception handling, but the thread mark says that it has already executed 2nd pass
+        // of unhandled exception handling. That means that some external native code on top of the stack has caught the
+        // exception that runtime considered to be unhandled, and a new native exception was thrown on the current thread.
+        // We need to reset the flags below so that we no longer block exception handling for the managed frames.
+        pThread->ResetThreadStateNC(Thread::TSNC_UnhandledException2ndPass);
+        pThread->ResetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+    }
+
     // Also skip all frames when processing unhandled exceptions. That allows them to reach the host app
     // level and let 3rd party the chance to handle them.
-    if (!ExecutionManager::IsManagedCode((PCODE)pDispatcherContext->ControlPc) ||
-        pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+    if (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
     {
+        if (pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING)
+        {
+            if (!pThread->HasThreadStateNC(Thread::TSNC_UnhandledException2ndPass))
+            {
+                pThread->SetThreadStateNC(Thread::TSNC_UnhandledException2ndPass);
+                GCX_COOP();
+                // The 3rd argument passes to PopExplicitFrame is normally the parent SP to correctly handle InlinedCallFrame embbeded
+                // in parent managed frame. But at this point there are no further managed frames are on the stack, so we can pass NULL.
+                // Also don't pop the GC frames, their destructor will pop them as the exception propagates.
+                // NOTE: this needs to be popped in the 2nd pass to ensure that crash dumps and Watson get the dump with these still 
+                // present.
+                ExInfo *pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+                void *sp = (void*)GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
+                PopExplicitFrames(pThread, sp, NULL /* targetCallerSp */, false /* popGCFrames */);
+                ExInfo::PopExInfos(pThread, sp);
+            }
+        }
+
         return ExceptionContinueSearch;
     }
 
@@ -6309,39 +6344,6 @@ UMEntryPrestubUnwindFrameChainHandler(
     return disposition;
 }
 
-EXTERN_C EXCEPTION_DISPOSITION
-UMThunkStubUnwindFrameChainHandler(
-              IN     PEXCEPTION_RECORD   pExceptionRecord,
-              IN     PVOID               pEstablisherFrame,
-              IN OUT PCONTEXT            pContextRecord,
-              IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-            )
-{
-
-#ifdef _DEBUG
-    // If the exception is escaping the last CLR personality routine on the stack,
-    // then state a flag on the thread to indicate so.
-    //
-    // We check for thread object since this function is the personality routine of the UMThunk
-    // and we can landup here even when thread creation (within the thunk) fails.
-    if (GetThreadNULLOk() != NULL)
-    {
-        SetReversePInvokeEscapingUnhandledExceptionStatus(IS_UNWINDING(pExceptionRecord->ExceptionFlags),
-            pEstablisherFrame
-            );
-    }
-#endif // _DEBUG
-
-    EXCEPTION_DISPOSITION disposition = UMThunkUnwindFrameChainHandler(
-                pExceptionRecord,
-                pEstablisherFrame,
-                pContextRecord,
-                pDispatcherContext
-                );
-
-    return disposition;
-}
-
 
 // This is the personality routine setup for the assembly helper (CallDescrWorker) that calls into
 // managed code.
@@ -7802,6 +7804,8 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
                                    CastHandlerFn(pfnHandler),
                                    GetFirstNonVolatileRegisterAddress(pvRegDisplay->pCurrentContext),
                                    pFuncletCallerSP);
+
+        FixContext(pvRegDisplay->pCurrentContext);
 #else
         dwResumePC = pfnHandler(establisherFrame, OBJECTREFToObject(throwable));
 #endif
@@ -8141,7 +8145,11 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
         // it will retrieve the framepointer for accessing the locals in the parent
         // method.
         dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
+#ifdef USE_CURRENT_CONTEXT_IN_FILTER
+                                       GetFrameRestoreBase(pvRegDisplay->pCurrentContext),
+#else
                                        GetFrameRestoreBase(pvRegDisplay->pCallerContext),
+#endif
                                        CastHandlerFn(pfnHandler),
                                        pFuncletCallerSP);
 #else
@@ -8470,6 +8478,8 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
     Thread* pThread = GET_THREAD();
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
+    pThread->ResetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+
     BEGIN_QCALL;
 
     Frame* pFrame = pThread->GetFrame();
@@ -8590,7 +8600,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
 #ifdef HOST_WINDOWS
         CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
         GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
-        RaiseException(pExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE_EXCEPTION, pExInfo->m_ptrs.ExceptionRecord->NumberParameters, pExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
+        RaiseException(pExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE, pExInfo->m_ptrs.ExceptionRecord->NumberParameters, pExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
         CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
 #endif
@@ -8733,7 +8743,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
                 {
 #ifdef HOST_WINDOWS
                     GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
-                    RaiseException(pTopExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE_EXCEPTION, pTopExInfo->m_ptrs.ExceptionRecord->NumberParameters, pTopExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
+                    RaiseException(pTopExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE, pTopExInfo->m_ptrs.ExceptionRecord->NumberParameters, pTopExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
                     CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);
 #endif
