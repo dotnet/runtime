@@ -9127,7 +9127,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
             if (IsInvariantInRange(op1, parentNode, hwintrinsic))
             {
-                if (op1->isContained())
+                if (op1->isContained() && !op1->OperIsLong())
                 {
                     // We have CreateScalarUnsafe where the underlying scalar is contained
                     // As such, we can contain the CreateScalarUnsafe and consume the value
@@ -9207,10 +9207,12 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 if (broadcastOperand->OperIsHWIntrinsic())
                 {
                     GenTreeHWIntrinsic* hwintrinsicOperand = broadcastOperand->AsHWIntrinsic();
+                    NamedIntrinsic      operandIntrinsicId = hwintrinsicOperand->GetHWIntrinsicId();
 
-                    if (HWIntrinsicInfo::IsVectorCreateScalarUnsafe(hwintrinsicOperand->GetHWIntrinsicId()))
+                    if (HWIntrinsicInfo::IsVectorCreateScalar(operandIntrinsicId) ||
+                        HWIntrinsicInfo::IsVectorCreateScalarUnsafe(operandIntrinsicId))
                     {
-                        // CreateScalarUnsafe can contain non-memory operands such as enregistered
+                        // CreateScalar/Unsafe can contain non-memory operands such as enregistered
                         // locals, so we want to check if its operand is containable instead. This
                         // will result in such enregistered locals returning `false`.
                         broadcastOperand = hwintrinsicOperand->Op(1);
