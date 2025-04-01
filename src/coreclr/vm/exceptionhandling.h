@@ -305,57 +305,6 @@ public:
         STS_NewException,
     };
 
-    static void InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pThread, StackFrame sf, REGDISPLAY* pRD,
-                                     PT_DISPATCHER_CONTEXT pDispatcherContext, DWORD_PTR ControlPCForEHSearch,
-                                     UINT_PTR* puMethodStartPC,
-                                     ExceptionTracker *pCurrentTracker);
-
-    void InitializeCurrentContextForCrawlFrame(CrawlFrame* pcfThisFrame, PT_DISPATCHER_CONTEXT pDispatcherContext, StackFrame sfEstablisherFrame);
-
-    static void InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisFrame, Frame* pFrame, MethodDesc *pMD);
-
-#ifndef DACCESS_COMPILE
-    static void ResetThreadAbortStatus(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCurrentStackFrame);
-#endif // !DACCESS_COMPILE
-
-    CLRUnwindStatus ProcessOSExceptionNotification(
-        PEXCEPTION_RECORD pExceptionRecord,
-        PT_CONTEXT pContextRecord,
-        PT_DISPATCHER_CONTEXT pDispatcherContext,
-        DWORD dwExceptionFlags,
-        StackFrame sf,
-        Thread* pThread,
-        StackTraceState STState,
-        PVOID pICFSetAsLimitFrame
-        );
-
-    CLRUnwindStatus ProcessExplicitFrame(
-        CrawlFrame* pcfThisFrame,
-        StackFrame sf,
-        BOOL fIsFirstPass,
-        StackTraceState& STState
-        );
-
-    CLRUnwindStatus ProcessManagedCallFrame(
-        CrawlFrame* pcfThisFrame,
-        StackFrame sf,
-        StackFrame sfEstablisherFrame,
-        EXCEPTION_RECORD* pExceptionRecord,
-        StackTraceState STState,
-        UINT_PTR uMethodStartPC,
-        DWORD dwExceptionFlags,
-        DWORD dwTACatchHandlerClauseIndex,
-        StackFrame sfEstablisherOfActualHandlerFrame
-        );
-
-    bool UpdateScannedStackRange(StackFrame sf, bool fIsFirstPass);
-
-    void FirstPassIsComplete();
-    void SecondPassIsComplete(MethodDesc* pMD, StackFrame sfResumeStackFrame);
-
-    CLRUnwindStatus HandleFunclets(bool* pfProcessThisFrame, bool fIsFirstPass,
-        MethodDesc * pMD, bool fFunclet, StackFrame sf);
-
     static OBJECTREF CreateThrowable(
         PEXCEPTION_RECORD pExceptionRecord,
         BOOL bAsynchronousThreadStop
@@ -373,12 +322,6 @@ public:
     static bool IsInStackRegionUnwoundByCurrentException(CrawlFrame * pCF);
 
     static bool HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF);
-    void SetCurrentEstablisherFrame(StackFrame sfEstablisher)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_sfCurrentEstablisherFrame = sfEstablisher;
-    }
 
     StackFrame GetCurrentEstablisherFrame()
     {
@@ -467,15 +410,6 @@ public:
     static void
         PopTrackerIfEscaping(void* pvStackPointer);
 
-    static ExceptionTracker*
-        GetOrCreateTracker(UINT_PTR ControlPc,
-                           StackFrame sf,
-                           EXCEPTION_RECORD* pExceptionRecord,
-                           T_CONTEXT* pContextRecord,
-                           BOOL bAsynchronousThreadStop,
-                           bool fIsFirstPass,
-                           StackTraceState* pSTState);
-
     static void
         ResumeExecution(T_CONTEXT* pContextRecord);
 
@@ -528,8 +462,6 @@ private:
     }
 
     INDEBUG(inline  BOOL        ThrowableIsValid());
-
-    bool HandleNestedExceptionEscape(StackFrame sf, bool fIsFirstPass);
 
 #if defined(DEBUGGING_SUPPORTED)
     void
