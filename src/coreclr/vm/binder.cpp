@@ -1141,7 +1141,7 @@ void CoreLibBinder::CheckExtended()
             {
                 pszClassName = pszNameSpace = "Invalid TypeDef record";
             }
-            minipal_log_print_errpr("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
+            minipal_log_print_error("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
         }
         EX_END_CATCH(SwallowAllExceptions)
 
