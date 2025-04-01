@@ -2032,7 +2032,10 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
 //------------------------------------------------------------------------
 // RewriteUses: Find uses of the newobj temp for stack-allocated
 //              objects and replace with address of the stack local.
-
+//
+// Notes:
+//   Also retypes GC typed locals that now may or must refer to stack objects
+//
 void ObjectAllocator::RewriteUses()
 {
     class RewriteUsesVisitor final : public GenTreeVisitor<RewriteUsesVisitor>
@@ -2063,68 +2066,39 @@ void ObjectAllocator::RewriteUses()
             }
 
             const unsigned int lclNum    = tree->AsLclVarCommon()->GetLclNum();
-            unsigned int       newLclNum = BAD_VAR_NUM;
             LclVarDsc*         lclVarDsc = m_compiler->lvaGetDesc(lclNum);
 
-            if (m_allocator->MayLclVarPointToStack(lclNum))
+            // Revise IR for local that were retyped or are mapped to stack locals
+            //
+            if (!lclVarDsc->lvTracked)
             {
-                var_types newType = TYP_UNDEF;
-                if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
-                {
-                    assert(tree->OperIs(GT_LCL_VAR)); // Must be a use.
-                    newType = TYP_I_IMPL;
-                    tree    = m_compiler->gtNewLclVarAddrNode(newLclNum);
-                    *use    = tree;
-                }
-                else
-                {
-                    newType = m_allocator->DoesLclVarPointToStack(lclNum) ? TYP_I_IMPL : TYP_BYREF;
-                    if (!tree->TypeIs(TYP_STRUCT))
-                    {
-                        tree->ChangeType(newType);
-                    }
-                }
-
-                // For local structs, retype the GC fields.
-                //
-                if (lclVarDsc->lvType == TYP_STRUCT)
-                {
-                    ClassLayout* const layout    = lclVarDsc->GetLayout();
-                    ClassLayout*       newLayout = nullptr;
-
-                    if ((newType == TYP_I_IMPL) && !layout->IsBlockLayout())
-                    {
-                        // New layout with no gc refs + padding
-                        newLayout = m_compiler->typGetNonGCLayout(layout);
-                        JITDUMP("Changing layout of struct V%02u to block\n", lclNum);
-                        lclVarDsc->ChangeLayout(newLayout);
-                    }
-                    else if (!layout->IsCustomLayout()) // hacky... want to know if there are any TYP_GC
-                    {
-                        // New layout with all gc refs as byrefs + padding
-                        // (todo, perhaps: see if old layout was already all byrefs)
-                        newLayout = m_compiler->typGetByrefLayout(layout);
-                        JITDUMP("Changing layout of struct V%02u to byref\n", lclNum);
-                        lclVarDsc->ChangeLayout(newLayout);
-                    }
-                }
-                // For locals, retype the local
-                //
-                else if (lclVarDsc->lvType != newType)
-                {
-                    JITDUMP("Changing the type of V%02u from %s to %s\n", lclNum, varTypeName(lclVarDsc->lvType),
-                            varTypeName(newType));
-                    lclVarDsc->lvType = newType;
-                }
-
-                m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType);
-
-                if (newLclNum != BAD_VAR_NUM)
-                {
-                    JITDUMP("Update V%02u to V%02u from use [%06u]\n", lclNum, newLclNum, m_compiler->dspTreeID(tree));
-                    DISPTREE(tree);
-                }
+                return Compiler::fgWalkResult::WALK_CONTINUE;
             }
+
+            unsigned int newLclNum = BAD_VAR_NUM;
+            var_types    newType   = lclVarDsc->TypeGet();
+
+            if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
+            {
+                assert(tree->OperIs(GT_LCL_VAR)); // Must be a use.
+                newType = TYP_I_IMPL;
+                tree    = m_compiler->gtNewLclVarAddrNode(newLclNum);
+                *use    = tree;
+
+                JITDUMP("Update V%02u to V%02u in use [%06u]\n", lclNum, newLclNum, m_compiler->dspTreeID(tree));
+                DISPTREE(tree);
+            }
+            else if (newType == TYP_STRUCT)
+            {
+                ClassLayout* const layout = lclVarDsc->GetLayout();
+                newType                   = layout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
+            }
+            else
+            {
+                tree->ChangeType(newType);
+            }
+
+            m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType);
 
             return Compiler::fgWalkResult::WALK_CONTINUE;
         }
@@ -2229,6 +2203,96 @@ void ObjectAllocator::RewriteUses()
         }
     };
 
+    // Determine which locals should be retyped, and retype them.
+    // Use lvTracked to remember which locals were retyped or will be replaced.
+    //
+    for (unsigned lclNum = 0; lclNum < comp->lvaCount; lclNum++)
+    {
+        LclVarDsc* const lclVarDsc = comp->lvaGetDesc(lclNum);
+
+        if (!lclVarDsc->lvTracked)
+        {
+            JITDUMP("V%02u not tracked\n", lclNum);
+            continue;
+        }
+
+        if (!MayLclVarPointToStack(lclNum))
+        {
+            JITDUMP("V%02u not possibly stack pointing\n", lclNum);
+            lclVarDsc->lvTracked = 0;
+            continue;
+        }
+
+        var_types newType = TYP_UNDEF;
+        if (m_HeapLocalToStackLocalMap.Contains(lclNum))
+        {
+            // Appearances of lclNum will be replaced. We'll retype anyways.
+            //
+            newType = TYP_I_IMPL;
+        }
+        else
+        {
+            newType = DoesLclVarPointToStack(lclNum) ? TYP_I_IMPL : TYP_BYREF;
+        }
+
+        // For local structs, retype the GC fields.
+        //
+        if (lclVarDsc->lvType == TYP_STRUCT)
+        {
+            assert(m_trackFields);
+
+            ClassLayout* const layout    = lclVarDsc->GetLayout();
+            ClassLayout*       newLayout = nullptr;
+
+            if (!layout->HasGCPtr())
+            {
+                assert(newType == TYP_I_IMPL);
+                JITDUMP("V%02u not GC\n", lclNum);
+                lclVarDsc->lvTracked = 0;
+                continue;
+            }
+
+            if (newType == TYP_I_IMPL)
+            {
+                // New layout with no gc refs + padding
+                newLayout = comp->typGetNonGCLayout(layout);
+                JITDUMP("Changing layout of struct V%02u to block\n", lclNum);
+                lclVarDsc->ChangeLayout(newLayout);
+            }
+            else
+            {
+                // New layout with all gc refs as byrefs + padding
+                // (todo, perhaps: see if old layout was already all byrefs)
+                newLayout = comp->typGetByrefLayout(layout);
+                JITDUMP("Changing layout of struct V%02u to byref\n", lclNum);
+                lclVarDsc->ChangeLayout(newLayout);
+            }
+        }
+        else
+        {
+            // For non-struct locals, retype the local
+            //
+            if (!varTypeIsGC(lclVarDsc->TypeGet()))
+            {
+                JITDUMP("V%02u not GC\n", lclNum);
+                lclVarDsc->lvTracked = 0;
+                continue;
+            }
+
+            if (lclVarDsc->lvType != newType)
+            {
+                // Params should only retype from ref->byref as they have unknown initial value
+                //
+                assert(!(lclVarDsc->lvIsParam && (newType == TYP_I_IMPL)));
+                JITDUMP("Changing the type of V%02u from %s to %s\n", lclNum, varTypeName(lclVarDsc->lvType),
+                        varTypeName(newType));
+                lclVarDsc->lvType = newType;
+            }
+        }
+    }
+
+    // Update locals and types in the IR to match.
+    //
     for (BasicBlock* const block : comp->Blocks())
     {
         for (Statement* const stmt : block->Statements())
@@ -2260,7 +2324,7 @@ void ObjectAllocator::RewriteUses()
 //   that we must be able to clone the code and remove the potential for escape
 //
 //   So, we  verify for each case that we can clone; if not, mark we the pseudolocal
-//   as escaping. If any pseudlocal now escapes, we return true so that the main
+//   as escaping. If any pseudo local now escapes, we return true so that the main
 //   analysis can update its closure.
 //
 //   We may choose not to clone a candiate for several reasons:
