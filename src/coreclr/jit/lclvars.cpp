@@ -685,6 +685,13 @@ void Compiler::lvaInitGenericsCtxt(unsigned* curVarNum)
     (*curVarNum)++;
 }
 
+//-----------------------------------------------------------------------------
+// lvaInitAsyncContinuation:
+//  Initialize the async continuation parameter.
+//
+// Type parameters:
+//   curVarNum - [in, out] The current local variable number for parameters
+//
 void Compiler::lvaInitAsyncContinuation(unsigned* curVarNum)
 {
     if (!compIsAsync2())

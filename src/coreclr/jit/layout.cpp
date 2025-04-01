@@ -536,6 +536,12 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, const ClassLayoutBuilder& b
     return newLayout;
 }
 
+//------------------------------------------------------------------------
+// HasGCByRef: //   Check if this classlayout has a TYP_BYREF GC pointer in it.
+//
+// Return value:
+//   True if so.
+//
 bool ClassLayout::HasGCByRef() const
 {
     if (!HasGCPtr())

@@ -1001,101 +1001,7 @@ void Compiler::optValnumCSE_InitDataFlow()
 
     if (compIsAsync2())
     {
-        bool anyAsyncKills = false;
-        cseAsyncKillsMask  = BitVecOps::MakeFull(cseLivenessTraits);
-        for (unsigned inx = 1; inx <= optCSECandidateCount; inx++)
-        {
-            CSEdsc* dsc = optCSEtab[inx - 1];
-            assert(dsc->csdIndex == inx);
-            bool isByRef = false;
-            if (dsc->csdTree->TypeIs(TYP_BYREF))
-            {
-                isByRef = true;
-            }
-            else if (dsc->csdTree->TypeIs(TYP_STRUCT))
-            {
-                ClassLayout* layout = dsc->csdTree->GetLayout(this);
-                isByRef             = layout->HasGCByRef();
-            }
-
-            if (isByRef)
-            {
-                // We generate a bit pattern like: 1111111100111100 where there
-                // are 0s only for the byref CSEs.
-                BitVecOps::RemoveElemD(cseLivenessTraits, cseAsyncKillsMask, getCSEAvailBit(inx));
-                BitVecOps::RemoveElemD(cseLivenessTraits, cseAsyncKillsMask, getCSEAvailCrossCallBit(inx));
-                anyAsyncKills = true;
-            }
-        }
-
-        if (anyAsyncKills)
-        {
-            for (BasicBlock* block : Blocks())
-            {
-                Statement* asyncCallStmt = nullptr;
-                GenTree*   asyncCall     = nullptr;
-                // Find last async call in block
-                Statement* stmt = block->lastStmt();
-                if (stmt == nullptr)
-                {
-                    continue;
-                }
-
-                while (asyncCall == nullptr)
-                {
-                    if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
-                    {
-                        for (GenTree* tree = stmt->GetRootNode(); tree != nullptr; tree = tree->gtPrev)
-                        {
-                            if (tree->IsCall() && tree->AsCall()->IsAsync2())
-                            {
-                                asyncCallStmt = stmt;
-                                asyncCall     = tree;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (stmt == block->firstStmt())
-                        break;
-
-                    stmt = stmt->GetPrevStmt();
-                }
-
-                if (asyncCall == nullptr)
-                {
-                    continue;
-                }
-
-                // This block has a suspension point. Make all BYREF CSEs unavailable.
-                BitVecOps::IntersectionD(cseLivenessTraits, block->bbCseGen, cseAsyncKillsMask);
-                BitVecOps::IntersectionD(cseLivenessTraits, block->bbCseOut, cseAsyncKillsMask);
-
-                // Now make all byref CSEs after the suspension point available.
-                Statement* curStmt = asyncCallStmt;
-                GenTree*   curTree = asyncCall;
-                while (true)
-                {
-                    do
-                    {
-                        if (IS_CSE_INDEX(curTree->gtCSEnum))
-                        {
-                            unsigned CSEnum = GET_CSE_INDEX(curTree->gtCSEnum);
-                            BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, getCSEAvailBit(CSEnum));
-                            BitVecOps::AddElemD(cseLivenessTraits, block->bbCseOut, getCSEAvailBit(CSEnum));
-                        }
-
-                        curTree = curTree->gtNext;
-                    } while (curTree != nullptr);
-
-                    curStmt = curStmt->GetNextStmt();
-                    if (curStmt == nullptr)
-                        break;
-
-                    curTree = curStmt->GetTreeList();
-                }
-            }
-        }
+        optValnumCSE_SetUpAsync2ByrefKills();
     }
 
     for (BasicBlock* const block : Blocks())
@@ -1179,6 +1085,112 @@ void Compiler::optValnumCSE_InitDataFlow()
     fgDebugCheckLinks();
 
 #endif // DEBUG
+}
+
+//---------------------------------------------------------------------------
+// optValnumCSE_SetUpAsync2ByrefKills:
+//   Compute kills because of async2 calls requiring byrefs not to be live
+//   across them.
+//
+void Compiler::optValnumCSE_SetUpAsync2ByrefKills()
+{
+    bool anyAsyncKills = false;
+    cseAsyncKillsMask  = BitVecOps::MakeFull(cseLivenessTraits);
+    for (unsigned inx = 1; inx <= optCSECandidateCount; inx++)
+    {
+        CSEdsc* dsc = optCSEtab[inx - 1];
+        assert(dsc->csdIndex == inx);
+        bool isByRef = false;
+        if (dsc->csdTree->TypeIs(TYP_BYREF))
+        {
+            isByRef = true;
+        }
+        else if (dsc->csdTree->TypeIs(TYP_STRUCT))
+        {
+            ClassLayout* layout = dsc->csdTree->GetLayout(this);
+            isByRef             = layout->HasGCByRef();
+        }
+
+        if (isByRef)
+        {
+            // We generate a bit pattern like: 1111111100111100 where there
+            // are 0s only for the byref CSEs.
+            BitVecOps::RemoveElemD(cseLivenessTraits, cseAsyncKillsMask, getCSEAvailBit(inx));
+            BitVecOps::RemoveElemD(cseLivenessTraits, cseAsyncKillsMask, getCSEAvailCrossCallBit(inx));
+            anyAsyncKills = true;
+        }
+    }
+
+    if (!anyAsyncKills)
+    {
+        return;
+    }
+
+    for (BasicBlock* block : Blocks())
+    {
+        Statement* asyncCallStmt = nullptr;
+        GenTree*   asyncCall     = nullptr;
+        // Find last async call in block
+        Statement* stmt = block->lastStmt();
+        if (stmt == nullptr)
+        {
+            continue;
+        }
+
+        while (asyncCall == nullptr)
+        {
+            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
+            {
+                for (GenTree* tree = stmt->GetRootNode(); tree != nullptr; tree = tree->gtPrev)
+                {
+                    if (tree->IsCall() && tree->AsCall()->IsAsync2())
+                    {
+                        asyncCallStmt = stmt;
+                        asyncCall     = tree;
+                        break;
+                    }
+                }
+            }
+
+            if (stmt == block->firstStmt())
+                break;
+
+            stmt = stmt->GetPrevStmt();
+        }
+
+        if (asyncCall == nullptr)
+        {
+            continue;
+        }
+
+        // This block has a suspension point. Make all BYREF CSEs unavailable.
+        BitVecOps::IntersectionD(cseLivenessTraits, block->bbCseGen, cseAsyncKillsMask);
+        BitVecOps::IntersectionD(cseLivenessTraits, block->bbCseOut, cseAsyncKillsMask);
+
+        // Now make all byref CSEs after the suspension point available.
+        Statement* curStmt = asyncCallStmt;
+        GenTree*   curTree = asyncCall;
+        while (true)
+        {
+            do
+            {
+                if (IS_CSE_INDEX(curTree->gtCSEnum))
+                {
+                    unsigned CSEnum = GET_CSE_INDEX(curTree->gtCSEnum);
+                    BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, getCSEAvailBit(CSEnum));
+                    BitVecOps::AddElemD(cseLivenessTraits, block->bbCseOut, getCSEAvailBit(CSEnum));
+                }
+
+                curTree = curTree->gtNext;
+            } while (curTree != nullptr);
+
+            curStmt = curStmt->GetNextStmt();
+            if (curStmt == nullptr)
+                break;
+
+            curTree = curStmt->GetTreeList();
+        }
+    }
 }
 
 /*****************************************************************************
