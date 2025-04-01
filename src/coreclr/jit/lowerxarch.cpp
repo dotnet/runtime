@@ -348,8 +348,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 //    A flags immediate that, if those flags were set, would cause the specified condition to be true.
 //    (NOTE: This just has to make the condition be true, i.e., if the condition calls for (SF ^ OF), then
 //    returning one will suffice
-//
-//    TODO-XArch-APX: Revisit this
 insCflags Lowering::TruthifyingFlags(GenCondition condition)
 {
     switch (condition.GetCode())

@@ -4528,7 +4528,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
 
         *cond = condition->AsCC()->gtCondition;
 
-#ifdef TARGET_XARCH
         if (!allowMultipleFlagsChecks)
         {
             const GenConditionDesc& desc = GenConditionDesc::Get(*cond);
@@ -4538,7 +4537,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                 return false;
             }
         }
-#endif
 
         LIR::Range range = BlockRange().Remove(flagsDef, condition->gtPrev);
         BlockRange().InsertBefore(parent, std::move(range));
