@@ -4461,7 +4461,9 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
         {
             *cond = GenCondition(GenCondition::P);
         }
+#endif
 
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
         if (!allowMultipleFlagsChecks && cond->IsFloat())
         {
             const GenConditionDesc& desc = GenConditionDesc::Get(*cond);
@@ -4528,6 +4530,8 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
 
         *cond = condition->AsCC()->gtCondition;
 
+
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
         if (!allowMultipleFlagsChecks)
         {
             const GenConditionDesc& desc = GenConditionDesc::Get(*cond);
@@ -4537,6 +4541,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                 return false;
             }
         }
+#endif
 
         LIR::Range range = BlockRange().Remove(flagsDef, condition->gtPrev);
         BlockRange().InsertBefore(parent, std::move(range));
