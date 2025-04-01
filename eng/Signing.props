@@ -42,14 +42,7 @@
     -->
     <FileSignInfo Include="mscordaccore.dll" CertificateName="None" />
     <FileSignInfo Include="mscordbi.dll" CertificateName="None" />
-Mono
-crossgen2
-ilasm
-ilc
-ildasm
-llc
-mono-aot-cross
-opt
+
     <!-- On MacOS, we need to sign a number of our executables with the Mac developer cert with hardening enabled.
          Avoid doing this on Linux, which has the same executable names -->
     <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;corerun;createdump;singlefilehost;crossgen2;ilasm;ilc;ildasm;llc;mono-aot-cross;opt;Mono" CertificateName="MacDeveloperHarden" />
