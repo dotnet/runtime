@@ -1,15 +1,36 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+struct LiveLocalInfo
+{
+    unsigned LclNum;
+    unsigned Alignment;
+    unsigned DataOffset;
+    unsigned DataSize;
+    unsigned GCDataIndex;
+    unsigned GCDataCount;
+
+    explicit LiveLocalInfo(unsigned lclNum)
+        : LclNum(lclNum)
+    {
+    }
+};
+
 struct ContinuationLayout
 {
-    unsigned     DataSize             = 0;
-    unsigned     GCRefsCount          = 0;
-    ClassLayout* ReturnStructLayout   = nullptr;
-    unsigned     ReturnSize           = 0;
-    bool         ReturnInGCData       = false;
-    unsigned     ReturnValDataOffset  = UINT_MAX;
-    unsigned     ExceptionGCDataIndex = UINT_MAX;
+    unsigned                             DataSize             = 0;
+    unsigned                             GCRefsCount          = 0;
+    ClassLayout*                         ReturnStructLayout   = nullptr;
+    unsigned                             ReturnSize           = 0;
+    bool                                 ReturnInGCData       = false;
+    unsigned                             ReturnValDataOffset  = UINT_MAX;
+    unsigned                             ExceptionGCDataIndex = UINT_MAX;
+    const jitstd::vector<LiveLocalInfo>& Locals;
+
+    ContinuationLayout(jitstd::vector<LiveLocalInfo>& locals)
+        : Locals(locals)
+    {
+    }
 };
 
 struct CallDefinitionInfo
@@ -23,21 +44,6 @@ struct CallDefinitionInfo
 class Async2Transformation
 {
     friend class AsyncLiveness;
-
-    struct LiveLocalInfo
-    {
-        unsigned LclNum;
-        unsigned Alignment;
-        unsigned DataOffset;
-        unsigned DataSize;
-        unsigned GCDataIndex;
-        unsigned GCDataCount;
-
-        explicit LiveLocalInfo(unsigned lclNum)
-            : LclNum(lclNum)
-        {
-        }
-    };
 
     Compiler*                     m_comp;
     jitstd::vector<LiveLocalInfo> m_liveLocalsScratch;
@@ -55,10 +61,6 @@ class Async2Transformation
     BasicBlock*                   m_lastResumptionBB        = nullptr;
     BasicBlock*                   m_sharedReturnBB          = nullptr;
 
-    void LiftLIREdges(BasicBlock*                     block,
-                      GenTree*                        beyond,
-                      const jitstd::vector<GenTree*>& defs,
-                      jitstd::vector<LiveLocalInfo>&  liveLocals);
     bool IsLive(unsigned lclNum);
     void Transform(BasicBlock*               block,
                    GenTreeCall*              call,
@@ -66,47 +68,50 @@ class Async2Transformation
                    class AsyncLiveness&      life,
                    BasicBlock**              remainder);
 
-    void               CreateLiveSetForSuspension(BasicBlock*                     block,
-                                                  GenTreeCall*                    call,
-                                                  const jitstd::vector<GenTree*>& defs,
-                                                  AsyncLiveness&                  life,
-                                                  jitstd::vector<LiveLocalInfo>&  liveLocals);
+    void CreateLiveSetForSuspension(BasicBlock*                     block,
+                                    GenTreeCall*                    call,
+                                    const jitstd::vector<GenTree*>& defs,
+                                    AsyncLiveness&                  life,
+                                    jitstd::vector<LiveLocalInfo>&  liveLocals);
+
+    void LiftLIREdges(BasicBlock*                     block,
+                      const jitstd::vector<GenTree*>& defs,
+                      jitstd::vector<LiveLocalInfo>&  liveLocals);
+
     ContinuationLayout LayOutContinuation(BasicBlock*                    block,
                                           GenTreeCall*                   call,
                                           jitstd::vector<LiveLocalInfo>& liveLocals);
 
     CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness& life);
 
-    BasicBlock*  CreateSuspension(BasicBlock*                    block,
-                                  unsigned                       stateNum,
-                                  const ContinuationLayout&      layout,
-                                  AsyncLiveness&                 life,
-                                  jitstd::vector<LiveLocalInfo>& liveLocals);
+    BasicBlock*  CreateSuspension(BasicBlock*               block,
+                                  unsigned                  stateNum,
+                                  AsyncLiveness&            life,
+                                  const ContinuationLayout& layout);
     GenTreeCall* CreateAllocContinuationCall(AsyncLiveness& life,
                                              GenTree*       prevContinuation,
                                              unsigned       gcRefsCount,
                                              unsigned int   dataSize);
-    void         FillInGCPointersOnSuspension(jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
-    void         FillInDataOnSuspension(jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
+    void         FillInGCPointersOnSuspension(const jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
+    void         FillInDataOnSuspension(const jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                 const CallDefinitionInfo& callDefInfo,
                                                 AsyncLiveness&            life,
                                                 BasicBlock*               suspendBB,
                                                 BasicBlock**              remainder);
 
-    BasicBlock* CreateResumption(BasicBlock*                    block,
-                                 BasicBlock*                    remainder,
-                                 GenTreeCall*                   call,
-                                 const CallDefinitionInfo&      callDefInfo,
-                                 unsigned                       stateNum,
-                                 const ContinuationLayout&      layout,
-                                 jitstd::vector<LiveLocalInfo>& liveLocals);
-    void        RestoreFromDataOnResumption(unsigned                       resumeByteArrLclNum,
-                                            jitstd::vector<LiveLocalInfo>& liveLocals,
-                                            BasicBlock*                    resumeBB);
-    void        RestoreFromGCPointersOnResumption(unsigned                       resumeObjectArrLclNum,
-                                                  jitstd::vector<LiveLocalInfo>& liveLocals,
-                                                  BasicBlock*                    resumeBB);
+    BasicBlock* CreateResumption(BasicBlock*               block,
+                                 BasicBlock*               remainder,
+                                 GenTreeCall*              call,
+                                 const CallDefinitionInfo& callDefInfo,
+                                 unsigned                  stateNum,
+                                 const ContinuationLayout& layout);
+    void        RestoreFromDataOnResumption(unsigned                             resumeByteArrLclNum,
+                                            const jitstd::vector<LiveLocalInfo>& liveLocals,
+                                            BasicBlock*                          resumeBB);
+    void        RestoreFromGCPointersOnResumption(unsigned                             resumeObjectArrLclNum,
+                                                  const jitstd::vector<LiveLocalInfo>& liveLocals,
+                                                  BasicBlock*                          resumeBB);
     BasicBlock* RethrowExceptionOnResumption(BasicBlock*               block,
                                              BasicBlock*               remainder,
                                              unsigned                  resumeObjectArrLclNum,
