@@ -271,6 +271,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
+    DllImportEntry(String_StrCns)
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
@@ -401,6 +402,9 @@ static const Entry s_QCall[] =
     DllImportEntry(Monitor_Pulse)
     DllImportEntry(Monitor_PulseAll)
     DllImportEntry(Monitor_GetLockContentionCount)
+    DllImportEntry(Monitor_Enter_Slowpath)
+    DllImportEntry(Monitor_TryEnter_Slowpath)
+    DllImportEntry(Monitor_Exit_Slowpath)
     DllImportEntry(MetadataImport_Enum)
     DllImportEntry(ReflectionInvocation_RunClassConstructor)
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)

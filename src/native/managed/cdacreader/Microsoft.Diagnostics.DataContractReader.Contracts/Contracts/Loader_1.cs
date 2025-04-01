@@ -56,12 +56,6 @@ internal readonly struct Loader_1 : ILoader
         return module.LoaderAllocator;
     }
 
-    TargetPointer ILoader.GetThunkHeap(ModuleHandle handle)
-    {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        return module.ThunkHeap;
-    }
-
     TargetPointer ILoader.GetILBase(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);

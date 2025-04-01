@@ -715,7 +715,9 @@ public class Runtime_34587
             if (Avx2IsSupported)
             {
                 succeeded &= VectorIsHardwareAccelerated;
-                succeeded &= VectorByteCount == 32;
+                // MaxVectorTBitWidth env variable can be used to change Vector<T> size.
+                // We can only assume it is at least 16 bytes.
+                succeeded &= VectorByteCount >= 16;
             }
             else if (Sse2IsSupported)
             {

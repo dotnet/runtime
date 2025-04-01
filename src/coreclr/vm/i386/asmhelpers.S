@@ -663,7 +663,7 @@ DYNAMICHELPER (DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Objec
 //    siteAddrForRegisterIndirect (used only if this is a RegisterIndirect dispatch call)
 //    return address of caller to stub
 //
-// Please see vm/i386/virtualcallstubcpu.hpp for details
+// Please see asmhelpers.asm for details
 //
 NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     //
@@ -793,8 +793,7 @@ LOCAL_LABEL(main_loop):
     mov     ecx, eax
 
     CHECK_STACK_ALIGNMENT
-    // call C_FUNC(VirtualCallStubManager::PromoteChainEntry)
-    call    C_FUNC(_ZN22VirtualCallStubManager17PromoteChainEntryEP16ResolveCacheElem)
+    call    C_FUNC(VSD_PromoteChainEntry)
 
     add     esp, STACK_ALIGN_PADDING
     #undef  STACK_ALIGN_PADDING
@@ -1081,3 +1080,14 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+//edi -This pointer
+//esi -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    mov  eax, [eax + ThisPtrRetBufPrecodeData__Target]
+    // Use XOR swap technique to set avoid the need to spill to the stack
+    xor edi, esi
+    xor esi, edi
+    xor edi, esi
+    jmp eax
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
