@@ -5,12 +5,22 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    public class SlhDsaPlatformTests : SlhDsaTestsBase
+    public class SlhDsaPlatformTests
     {
         [Fact]
-        public static void IsSupportedOnPlatform()
+        public static void IsSupported_AgreesWithPlatform()
         {
-            Assert.Equal(SupportedOnPlatform, SlhDsa.IsSupported);
+            Assert.Equal(PlatformSupportsMLKem(), SlhDsa.IsSupported);
+        }
+
+        private static bool PlatformSupportsMLKem()
+        {
+            if (PlatformDetection.IsOpenSsl3_5)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

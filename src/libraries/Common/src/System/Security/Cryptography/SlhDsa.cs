@@ -342,7 +342,6 @@ namespace System.Security.Cryptography
             throw new NotImplementedException("The PKCS#8 format is still under debate");
         }
 
-#if !NETSTANDARD2_0_OR_GREATER && !NETFRAMEWORK // Remove once PbeParameters is outboxed
         /// <summary>
         ///  Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
         /// </summary>
@@ -620,7 +619,6 @@ namespace System.Security.Cryptography
                 writer.Reset();
             }
         }
-#endif
 
         /// <summary>
         ///  Exports the public-key portion of the current key in the FIPS 205 public key format.

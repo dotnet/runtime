@@ -2864,6 +2864,24 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.SlhDsaAlgorithm SlhDsaShake256f { get { throw null; } }
         public static System.Security.Cryptography.SlhDsaAlgorithm SlhDsaShake256s { get { throw null; } }
     }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+    public sealed partial class SlhDsaOpenSsl : System.Security.Cryptography.SlhDsa
+    {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public SlhDsaOpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) : base (default(System.Security.Cryptography.SlhDsaAlgorithm)) { }
+        protected override void Dispose(bool disposing) { }
+        public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateKeyHandle() { throw null; }
+        protected override void ExportSlhDsaPrivateSeedCore(System.Span<byte> destination) { }
+        protected override void ExportSlhDsaPublicKeyCore(System.Span<byte> destination) { }
+        protected override void ExportSlhDsaSecretKeyCore(System.Span<byte> destination) { }
+        protected override void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
+        protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature) { throw null; }
+    }
     public sealed partial class SP800108HmacCounterKdf : System.IDisposable
     {
         public SP800108HmacCounterKdf(byte[] key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
