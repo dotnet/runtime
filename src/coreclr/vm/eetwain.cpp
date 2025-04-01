@@ -72,11 +72,11 @@ void EECodeManager::FixContext( ContextType     ctxType,
 
 #ifdef  _DEBUG
     if (trFixContext) {
-        printf("FixContext [%s][%s] for %s.%s: ",
+        minipal_log_print_info("FixContext [%s][%s] for %s.%s: ",
                stateBuf->hdrInfoBody.ebpFrame?"ebp":"   ",
                stateBuf->hdrInfoBody.interruptible?"int":"   ",
                "UnknownClass","UnknownMethod");
-        fflush(stdout);
+        minipal_log_flush_info();
     }
 #endif
 
@@ -2174,11 +2174,11 @@ TADDR EECodeManager::GetAmbientSP(PREGDISPLAY     pContext,
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     if (trFixContext)
     {
-        printf("GetAmbientSP [%s][%s] for %s.%s: ",
+        minipal_log_print_info("GetAmbientSP [%s][%s] for %s.%s: ",
                stateBuf->hdrInfoBody.ebpFrame?"ebp":"   ",
                stateBuf->hdrInfoBody.interruptible?"int":"   ",
                "UnknownClass","UnknownMethod");
-        fflush(stdout);
+        minipal_log_flush_info();
     }
 #endif // _DEBUG && !DACCESS_COMPILE
 

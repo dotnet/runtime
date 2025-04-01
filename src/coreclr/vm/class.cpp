@@ -2498,7 +2498,7 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
             {
                 FieldDesc *pFD = &GetClass()->GetFieldDescList()[i];
 #ifdef DEBUG_LAYOUT
-                printf("offset %s%3d %s\n", pFD->IsByValue() ? "byvalue " : "", pFD->GetOffset(), pFD->GetName());
+                minipal_log_print_info("offset %s%3d %s\n", pFD->IsByValue() ? "byvalue " : "", pFD->GetOffset(), pFD->GetName());
 #endif
                 if(debug) {
                     ssBuff.Printf("offset %3d %s\n", pFD->GetOffset(), pFD->GetName());
