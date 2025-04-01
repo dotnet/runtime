@@ -1916,12 +1916,9 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         }
         EX_CATCH
         {
-            if (g_isNewExceptionHandlingEnabled)
-            {
-                OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-                _ASSERTE(ohThrowable);
-                StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
-            }
+            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            _ASSERTE(ohThrowable);
+            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             EX_RETHROW;
         }
         EX_END_CATCH(SwallowAllExceptions)
@@ -1949,12 +1946,16 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
     InterpThreadContext *threadContext = InterpGetThreadContext();
     int8_t *sp = threadContext->pStackPointer;
 
-    InterpMethodContextFrame interpFrame = {0};
-    interpFrame.startIp = (int32_t*)byteCodeAddr;
-    interpFrame.pStack = sp;
-    interpFrame.pRetVal = sp;
+    InterpMethodContextFrame interpMethodContextFrame = {0};
+    interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
+    interpMethodContextFrame.pStack = sp;
+    interpMethodContextFrame.pRetVal = sp;
 
-    InterpExecMethod(&interpFrame, threadContext);
+    InterpreterFrame interpreterFrame(pTransitionBlock, &interpMethodContextFrame);
+
+    InterpExecMethod(&interpreterFrame, &interpMethodContextFrame, threadContext);
+
+    interpreterFrame.Pop();
 }
 #endif // FEATURE_INTERPRETER
 

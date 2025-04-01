@@ -19,7 +19,11 @@
 
 
 #ifndef GET_CALLER_SP
-#define GET_CALLER_SP(pREGDISPLAY) EECodeManager::GetCallerSp(pREGDISPLAY)
+inline size_t GET_CALLER_SP(PREGDISPLAY pREGDISPLAY)
+{
+    _ASSERTE(false);
+    return 0;
+}
 #endif // !GET_CALLER_SP
 
 #ifndef VALIDATE_OBJECTREF
