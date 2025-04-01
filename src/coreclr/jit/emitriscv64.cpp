@@ -825,7 +825,7 @@ void emitter::emitIns_R_R_R(
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
-        (INS_rol <= ins && ins <= INS_orn))
+        (INS_rol <= ins && ins <= INS_andn))
     {
 #ifdef DEBUG
         switch (ins)
