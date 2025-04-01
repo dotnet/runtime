@@ -16,8 +16,8 @@ namespace Internal.TypeSystem.Ecma
     {
         private readonly PEReader _peReader;
         protected readonly MetadataReader _metadataReader;
-        private bool _isWrapNonExceptionThrowsKnown;
-        private bool _isWrapNonExceptionThrows;
+        private volatile bool _isWrapNonExceptionThrowsKnown;
+        private volatile bool _isWrapNonExceptionThrows;
 
         internal interface IEntityHandleObject
         {
