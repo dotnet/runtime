@@ -576,6 +576,7 @@ namespace System.Reflection.Metadata
         ImmutableArray<TypeName> GetGenericArguments() => _genericArguments;
 #endif
 
+#if SYSTEM_REFLECTION_METADATA
         /// <summary>
         /// Creates a new <see cref="TypeName" /> object that represents current simple name with provided assembly name.
         /// </summary>
@@ -608,11 +609,10 @@ namespace System.Reflection.Metadata
                 assemblyName: assemblyName,
                 elementOrGenericType: null,
                 declaringType: declaringType,
-                genericTypeArguments: null,
+                genericTypeArguments: ImmutableArray<TypeName>.Empty,
                 nestedNameLength: _nestedNameLength);
         }
 
-#if SYSTEM_REFLECTION_METADATA
         /// <summary>
         /// Creates a <see cref="TypeName" /> object representing a one-dimensional array
         /// of the current type, with a lower bound of zero.
