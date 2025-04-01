@@ -441,11 +441,8 @@ namespace System.Reflection.Metadata
         [DoesNotReturn]
         internal static void ThrowInvalidOperation_NotSimpleName(string fullName)
         {
-#if SYSTEM_REFLECTION_METADATA
+            // This message is defined in both System.Private.CoreLib and System.Reflection.Metadata
             throw new InvalidOperationException(SR.Format(SR.Arg_NotSimpleTypeName, fullName));
-#else
-            throw new InvalidOperationException();
-#endif
         }
     }
 }
