@@ -29,6 +29,8 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
     public abstract class MLKem : IDisposable
     {
+        private static readonly string[] s_knownOids = [Oids.MlKem512, Oids.MlKem768, Oids.MlKem1024];
+
         private bool _disposed;
 
         /// <summary>
@@ -814,20 +816,7 @@ namespace System.Security.Cryptography
                     {
                         AsnValueReader reader = new(source, AsnEncodingRules.DER);
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-                        MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(spki.Algorithm.Algorithm) ??
-                            throw new CryptographicException(
-                                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier,
-                                spki.Algorithm.Algorithm));
-
-                        // draft-ietf-lamps-kyber-certificates-07:
-                        // The parameters field of the AlgorithmIdentifier for the ML-KEM public key MUST be absent.
-                        if (spki.Algorithm.Parameters.HasValue)
-                        {
-                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                            spki.Algorithm.Encode(writer);
-                            throw Helpers.CreateAlgorithmUnknownException(writer);
-                        }
-
+                        MLKemAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
                         return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, spki.SubjectPublicKey.Span);
                     }
                 }
@@ -842,6 +831,56 @@ namespace System.Security.Cryptography
         {
             ThrowIfNull(source);
             return ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(source));
+        }
+
+        /// <summary>
+        ///  Imports an ML-KEM private key from a PKCS#8 PrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="source">
+        ///  The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 PrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The PrivateKeyInfo value does not represent an ML-KEM key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="source" /> contains trailing data after the ASN.1 structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports ML-KEM.
+        /// </exception>
+        public static MLKem ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
+        {
+            ThrowIfTrailingData(source);
+            ThrowIfNotSupported();
+
+            KeyFormatHelper.ReadPkcs8(s_knownOids, source, MLKemKeyReader, out int read, out MLKem kem);
+            Debug.Assert(read == source.Length);
+            return kem;
+        }
+
+        /// <inheritdoc cref="ImportPkcs8PrivateKey(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />
+        /// </exception>
+        public static MLKem ImportPkcs8PrivateKey(byte[] source)
+        {
+            ThrowIfNull(source);
+            return ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -908,6 +947,91 @@ namespace System.Security.Cryptography
             if (!IsSupported)
             {
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
+            }
+        }
+
+        private static MLKemAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
+        {
+            MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(identifier.Algorithm) ??
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, identifier.Algorithm));
+
+            if (identifier.Parameters.HasValue)
+            {
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                identifier.Encode(writer);
+                throw Helpers.CreateAlgorithmUnknownException(writer);
+            }
+
+            return algorithm;
+        }
+
+        private static void MLKemKeyReader(
+            ReadOnlyMemory<byte> privateKeyContents,
+            in AlgorithmIdentifierAsn algorithmIdentifier,
+            out MLKem kem)
+        {
+            MLKemAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
+            MLKemPrivateKeyAsn kemKey = MLKemPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER);
+
+            try
+            {
+                if (kemKey.Seed is ReadOnlyMemory<byte> seed)
+                {
+                    kem = ImportPrivateSeed(algorithm, seed.Span);
+                }
+                else if (kemKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
+                {
+                    kem = ImportDecapsulationKey(algorithm, expandedKey.Span);
+                }
+                else if (kemKey.Both is MLKemPrivateKeyBothAsn both)
+                {
+                    MLKem key = ImportPrivateSeed(algorithm, both.Seed.Span);
+                    int decapsulationKeySize = key.Algorithm.DecapsulationKeySizeInBytes;
+                    byte[] rent = CryptoPool.Rent(decapsulationKeySize);
+                    Span<byte> buffer = rent.AsSpan(0, decapsulationKeySize);
+
+                    try
+                    {
+                        key.ExportDecapsulationKey(buffer);
+
+                        if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
+                        {
+                            kem = key;
+                        }
+                        else
+                        {
+                            throw new CryptographicException(SR.Cryptography_KemPkcs8KeyMismatch);
+                        }
+                    }
+                    catch
+                    {
+                        key.Dispose();
+                        throw;
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(rent, decapsulationKeySize);
+                    }
+                }
+                else
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+            }
+            catch (ArgumentException ae)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
+            }
+        }
+
+        private static void ThrowIfTrailingData(ReadOnlySpan<byte> data)
+        {
+            AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out int bytesRead);
+
+            if (bytesRead != data.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
         }
 

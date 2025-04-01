@@ -24,6 +24,8 @@
              Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemAlgorithmTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemContractTests.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemTestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemImplementationTests.cs"
@@ -36,6 +38,8 @@
              Link="CommonTest\System\Security\Cryptography\MLKemKeyTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemNotSupportedTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemNotSupportedTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PbeParametersTests.cs"
+             Link="CommonTest\System\Security\Cryptography\PbeParametersTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs"
