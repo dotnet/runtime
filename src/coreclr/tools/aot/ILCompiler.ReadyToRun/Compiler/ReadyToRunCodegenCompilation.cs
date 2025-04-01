@@ -110,7 +110,8 @@ namespace ILCompiler
             EcmaModule rootModule = (root.OwningType as MetadataType)?.Module as EcmaModule;
             EcmaModule calleeModule = (callee.OwningType as MetadataType)?.Module as EcmaModule;
 
-            if ((rootModule != null) && (calleeModule != null))
+            // If this inline crosses module boundaries, ensure the modules agree on exception wrapping behavior.
+            if ((rootModule != calleeModule) && (rootModule != null) && (calleeModule != null))
             {
                 if (rootModule.IsWrapNonExceptionThrows != calleeModule.IsWrapNonExceptionThrows)
                 {
