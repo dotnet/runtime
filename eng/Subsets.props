@@ -153,6 +153,7 @@
     <_subset>$(_subset.Replace('+tools+', '+$(DefaultToolsSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+host+', '+$(DefaultHostSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+packs+', '+$(DefaultPacksSubsets)+'))</_subset>
+    <_subset Condition="'$(TargetOS)' == 'browser'">$(_subset.Replace('+clr.runtime+', '+mono.emsdk+clr.runtime+'))</_subset>
 
     <!-- Surround _subset in dashes to simplify checks below -->
     <_subset>+$(_subset.Trim('+'))+</_subset>
