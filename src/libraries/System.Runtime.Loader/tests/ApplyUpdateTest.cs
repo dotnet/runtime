@@ -202,7 +202,7 @@ namespace System.Reflection.Metadata
 
                 Type preUpdateTy = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete");
                 Assert.NotNull(preUpdateTy);
-
+                
                 // before the update the type has a MyDeleteAttribute on it
                 Attribute[] cattrs = Attribute.GetCustomAttributes(preUpdateTy, attrType);
                 Assert.NotNull(cattrs);
@@ -951,7 +951,7 @@ namespace System.Reflection.Metadata
                 Assert.Equal("abcd", x.ExistingMethod("abcd"));
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
-                
+            
                 InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => x.ExistingMethod("spqr"));
 
                 Assert.Equal("spqr", exn.Message);
