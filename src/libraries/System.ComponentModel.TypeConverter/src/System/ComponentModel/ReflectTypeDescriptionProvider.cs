@@ -307,7 +307,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves custom attributes.
         /// </summary>
-        internal AttributeCollection GetAttributes([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal AttributeCollection GetAttributes([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetAttributes();
@@ -340,7 +340,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the class name for our type.
         /// </summary>
-        internal string? GetClassName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal string? GetClassName([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetClassName();
@@ -368,7 +368,7 @@ namespace System.ComponentModel
         /// it will be used to retrieve attributes. Otherwise, _type
         /// will be used.
         /// </summary>
-        internal TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
+        internal TypeConverter GetConverter([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetConverter(instance, verifyIsRegisteredType: false);
@@ -385,7 +385,7 @@ namespace System.ComponentModel
         /// presence of a DefaultEventAttribute on the class.
         /// </summary>
         [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
-        internal EventDescriptor? GetDefaultEvent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
+        internal EventDescriptor? GetDefaultEvent([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetDefaultEvent(instance);
@@ -395,7 +395,7 @@ namespace System.ComponentModel
         /// Return the default property.
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
-        internal PropertyDescriptor? GetDefaultProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
+        internal PropertyDescriptor? GetDefaultProperty([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetDefaultProperty(instance);
@@ -405,7 +405,7 @@ namespace System.ComponentModel
         /// Retrieves the editor for the given base type.
         /// </summary>
         [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed + " The Type of instance cannot be statically discovered.")]
-        internal object? GetEditor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance, Type editorBaseType)
+        internal object? GetEditor([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, object? instance, Type editorBaseType)
         {
             ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetEditor(instance, editorBaseType);
@@ -461,7 +461,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the events for this type.
         /// </summary>
-        internal EventDescriptorCollection GetEvents([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal EventDescriptorCollection GetEvents([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetEvents();
@@ -877,7 +877,7 @@ namespace System.ComponentModel
         /// Retrieves the properties for this type.
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
-        internal PropertyDescriptorCollection GetProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal PropertyDescriptorCollection GetProperties([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetProperties();
@@ -918,7 +918,7 @@ namespace System.ComponentModel
         /// null if there is no type data for the type yet and
         /// createIfNeeded is false.
         /// </summary>
-        private ReflectedTypeData? GetTypeData([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, bool createIfNeeded)
+        private ReflectedTypeData? GetTypeData([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, bool createIfNeeded)
         {
             if (_typeData.TryGetValue(type, out ReflectedTypeData? td))
             {
@@ -1031,7 +1031,7 @@ namespace System.ComponentModel
         /// interested in providing type information for the object it should
         /// return null.
         /// </summary>
-        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type objectType, object? instance)
         {
             Debug.Fail("This should never be invoked. TypeDescriptionNode should wrap for us.");
             return null;
@@ -1327,7 +1327,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         private static PropertyDescriptor[] ReflectGetProperties(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type) =>
                 ReflectGetPropertiesImpl(type);
 
         private static PropertyDescriptor[] ReflectGetPropertiesFromRegisteredType(Type type)
