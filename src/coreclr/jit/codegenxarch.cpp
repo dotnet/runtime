@@ -190,17 +190,19 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // then RSP at this point is the same value as that stored in the PSPSym. So just copy RSP
         // instead of loading the PSPSym in this case, or if PSPSym is not used (NativeAOT ABI).
 
+        // x86 funclet ABI doesn't store the stack pointer in ECX. It's recovered from the context
+        // instead after executing the funclet.
+#ifndef TARGET_X86
         if ((compiler->lvaPSPSym == BAD_VAR_NUM) ||
             (!compiler->compLocallocUsed && (compiler->funCurrentFunc()->funKind == FUNC_ROOT)))
         {
-#ifndef UNIX_X86_ABI
             inst_Mov(TYP_I_IMPL, REG_ARG_0, REG_SPBASE, /* canSkip */ false);
-#endif // !UNIX_X86_ABI
         }
         else
         {
             GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
         }
+#endif // !TARGET_X86
 
         if (block->HasFlag(BBF_RETLESS_CALL))
         {
