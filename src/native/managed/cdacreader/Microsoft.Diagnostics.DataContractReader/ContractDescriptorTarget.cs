@@ -524,6 +524,21 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return T.CreateChecked(global.Value);
     }
 
+    public override bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value)
+        => TryReadGlobalPointer(name, out value, out _);
+
+    public bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value, out string? type)
+    {
+        value = null;
+        type = null;
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
+            return false;
+
+        type = global.Type;
+        value = new TargetPointer(global.Value);
+        return true;
+    }
+
     public override TargetPointer ReadGlobalPointer(string name)
         => ReadGlobalPointer(name, out _);
 

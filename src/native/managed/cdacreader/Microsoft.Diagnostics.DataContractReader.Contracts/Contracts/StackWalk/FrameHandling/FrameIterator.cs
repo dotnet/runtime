@@ -144,9 +144,9 @@ internal sealed class FrameIterator
     {
         foreach (FrameType frameType in Enum.GetValues<FrameType>())
         {
-            if (target.TryReadGlobal(frameType.ToString() + "Identifier", out ulong? id))
+            if (target.TryReadGlobalPointer(frameType.ToString() + "Identifier", out TargetPointer? id))
             {
-                if (frameIdentifier == new TargetPointer(id.Value))
+                if (frameIdentifier == id)
                 {
                     return frameType;
                 }

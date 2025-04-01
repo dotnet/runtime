@@ -70,6 +70,14 @@ public abstract class Target
     public abstract TargetPointer ReadGlobalPointer(string global);
 
     /// <summary>
+    /// Reads a well-known global pointer value from the target process
+    /// </summary>
+    /// <param name="global">The name of the global</param>
+    /// <param name="value">The value of the global, if found.</param>
+    /// <returns>True if the global is found, false otherwise.</returns>
+    public abstract bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value);
+
+    /// <summary>
     /// Read a pointer from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
