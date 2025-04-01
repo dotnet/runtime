@@ -71,7 +71,7 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
 //
 bool ObjectAllocator::IsTrackedType(var_types type)
 {
-    const bool isTrackableScalar = (type == TYP_REF) || (genActualType(type) == TYP_I_IMPL) || (type == TYP_BYREF);
+    const bool isTrackableScalar = (type == TYP_REF) || (type == TYP_BYREF);
     return isTrackableScalar;
 }
 
@@ -1579,12 +1579,19 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
         switch (parent->OperGet())
         {
-            // Update the connection graph if we are storing to a local.
-            // For all other stores we mark the local as escaping.
             case GT_STORE_LCL_VAR:
             {
-                // Add an edge to the connection graph.
                 const unsigned int dstLclNum = parent->AsLclVar()->GetLclNum();
+
+                // If we're not tracking stores to this local, the value
+                // does not escape.
+                if (!IsTrackedLocal(dstLclNum))
+                {
+                    canLclVarEscapeViaParentStack = false;
+                    break;
+                }
+
+                // Add an edge to the connection graph.
                 const unsigned int srcLclNum = lclNum;
 
                 AddConnGraphEdge(dstLclNum, srcLclNum);
@@ -1626,9 +1633,21 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_COLON:
             case GT_QMARK:
             case GT_ADD:
-            case GT_SUB:
             case GT_FIELD_ADDR:
                 // Check whether the local escapes via its grandparent.
+                ++parentIndex;
+                keepChecking = true;
+                break;
+
+            case GT_SUB:
+                // Sub of two GC refs is no longer a GC ref.
+                if (!parent->TypeIs(TYP_BYREF, TYP_REF))
+                {
+                    canLclVarEscapeViaParentStack = false;
+                    break;
+                }
+
+                // Check whether the local escapes higher up
                 ++parentIndex;
                 keepChecking = true;
                 break;
