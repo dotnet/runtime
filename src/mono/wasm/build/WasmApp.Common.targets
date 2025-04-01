@@ -656,8 +656,6 @@
            Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
     <Error Condition="$(_WasmLLVMPathForAOT) == ''"
            Text="Could not find %24(_WasmLLVMPathForAOT)" />
-    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerfInstrumentation)' != ''" 
-           Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerfInstrumentation)=$(WasmPerfInstrumentation)"/>
 
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
