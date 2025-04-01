@@ -10682,8 +10682,8 @@ bool CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
 
 /*********************************************************************/
 
-void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
-                               void **            ppIndirection)  /* OUT */
+void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
+                                   void **            ppIndirection)  /* OUT */
 {
     CONTRACTL {
         THROWS;
@@ -10808,7 +10808,7 @@ exit: ;
     return result;
 }
 
-PCODE CEEJitInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
+PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
 {
     CONTRACTL {
         THROWS;
@@ -11912,9 +11912,9 @@ void CEEInfo::JitProcessShutdownWork()
 }
 
 /*********************************************************************/
-InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd,
-                                                  mdToken metaTok,
-                                                  void **ppValue)
+InfoAccessType CEECodeGenInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd,
+                                                      mdToken metaTok,
+                                                      void **ppValue)
 {
     CONTRACTL {
         THROWS;
@@ -11955,7 +11955,7 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
 }
 
 /*********************************************************************/
-InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
+InfoAccessType CEECodeGenInfo::emptyStringLiteral(void ** ppValue)
 {
     CONTRACTL {
         THROWS;
@@ -12185,8 +12185,8 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
 }
 
 /*********************************************************************/
-CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
-                                                            bool* pIsSpeculative)
+CORINFO_CLASS_HANDLE CEECodeGenInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
+                                                                bool* pIsSpeculative)
 {
     CONTRACTL {
         THROWS;
@@ -12275,8 +12275,8 @@ static void *GetClassSync(MethodTable *pMT)
 }
 
 /*********************************************************************/
-void* CEEJitInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
-                                void **ppIndirection)
+void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
+                                    void **ppIndirection)
 {
     CONTRACTL {
         THROWS;
@@ -13939,7 +13939,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             CorInfoHelpFunc corInfoHelpFunc = MapReadyToRunHelper((ReadyToRunHelper)helperNum);
             if (corInfoHelpFunc != CORINFO_HELP_UNDEF)
             {
-                result = (size_t)CEEJitInfo::getHelperFtnStatic(corInfoHelpFunc);
+                result = (size_t)CEECodeGenInfo::getHelperFtnStatic(corInfoHelpFunc);
             }
             else
             {
