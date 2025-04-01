@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
+    <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -70,12 +71,16 @@
              Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderTests.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderTests.cs" />
+
     <Compile Include="X509Certificates\TestFiles.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs"
              Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Microsoft.Bcl.Cryptography\src\System\Security\Cryptography\PemEncoding.cs"
+             Link="System\Security\Cryptography\PemEncoding.cs" />
+    <Compile Include="PemEncodingFindTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

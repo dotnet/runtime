@@ -331,6 +331,7 @@
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
+    <Compile Include="System\Security\Cryptography\PemEncoding.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true'">
@@ -358,6 +359,8 @@
             Link="Common\System\Security\Cryptography\MLKemAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.NotSupported.cs"
             Link="Common\System\Security\Cryptography\MLKemImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PemKeyHelpers.Factory.cs"
+             Link="Common\System\Security\Cryptography\PemKeyHelpers.Factory.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
             Link="Common\System\Security\Cryptography\PemLabels.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsa.cs"
@@ -372,6 +375,7 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="Microsoft.Bcl.Memory" Version="$(MicrosoftBclMemoryVersion)" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
 

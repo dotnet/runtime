@@ -979,6 +979,36 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///  Imports an ML-KEM key from an RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The text of the PEM key to import.
+        /// </param>
+        /// <returns>
+        ///   The imported ML-KEM key.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains multiple PEM-encoded ML-KEM keys.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains no PEM-encoded ML-KEM keys.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        public static MLKem ImportFromPem(ReadOnlySpan<char> source)
+        {
+            return PemKeyHelpers.ImportFactoryPem<MLKem>(source, label =>
+                label switch
+                {
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    _ => null,
+                });
+        }
+
+        /// <summary>
         ///  Releases all resources used by the <see cref="MLKem"/> class.
         /// </summary>
         public void Dispose()
