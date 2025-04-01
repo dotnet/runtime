@@ -444,7 +444,6 @@ namespace System.Reflection.Metadata
 #if SYSTEM_REFLECTION_METADATA
             throw new InvalidOperationException(SR.Format(SR.Arg_NotSimpleTypeName, fullName));
 #else
-            Debug.Fail("Expected to be unreachable");
             throw new InvalidOperationException();
 #endif
         }
