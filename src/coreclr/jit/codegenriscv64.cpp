@@ -6388,28 +6388,37 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
                 if (desc.ExtendSrcSize() == 1)
                 {
-                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 8);
-                    emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, dstReg, dstReg, 64 - 8);
+                    emit->emitIns_R_R_I(INS_andi, EA_PTRSIZE, dstReg, srcReg, 0xff);
+                    break;
                 }
-                else
-                {
-
-                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 16);
-                    emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, dstReg, dstReg, 64 - 16);
-                }
-                break;
+                FALLTHROUGH;
             case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
-                if (desc.ExtendSrcSize() == 1)
+            {
+                bool isSignExtend = (desc.ExtendKind() == GenIntCastDesc::SIGN_EXTEND_SMALL_INT);
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
                 {
-                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 8);
-                    emit->emitIns_R_R_I(INS_srai, EA_PTRSIZE, dstReg, dstReg, 64 - 8);
+                    instruction extend = INS_none;
+                    bool        isHalf = (desc.ExtendSrcSize() == 2);
+                    if (isSignExtend)
+                    {
+                        extend = isHalf ? INS_sext_h : INS_sext_b;
+                    }
+                    else
+                    {
+                        assert(isHalf);
+                        extend = INS_zext_h;
+                    }
+                    emit->emitIns_R_R(extend, EA_PTRSIZE, dstReg, srcReg);
                 }
                 else
                 {
-                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 16);
-                    emit->emitIns_R_R_I(INS_srai, EA_PTRSIZE, dstReg, dstReg, 64 - 16);
+                    instruction shiftRight  = isSignExtend ? INS_srai : INS_srli;
+                    unsigned    shiftAmount = 64 - desc.ExtendSrcSize() * 8;
+                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, shiftAmount);
+                    emit->emitIns_R_R_I(shiftRight, EA_PTRSIZE, dstReg, dstReg, shiftAmount);
                 }
                 break;
+            }
 
             case GenIntCastDesc::ZERO_EXTEND_INT:
 

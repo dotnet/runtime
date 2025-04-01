@@ -648,7 +648,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins || INS_sext_w == ins || ins == INS_rev8)
+    if (INS_mov == ins || INS_sext_w == ins || ((INS_sext_b <= ins) && (ins <= INS_rev8)))
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -3580,10 +3580,27 @@ void emitter::emitDispInsName(
                     static constexpr unsigned kSlliFunct6 = 0b000000;
 
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
-                    // SLLI's instruction code's upper 6 bits have to be equal to zero
-                    if (funct6 != kSlliFunct6)
+                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV6
+                    switch (funct6)
                     {
-                        return emitDispIllegalInstruction(code);
+                        case 0b011000:
+                            static const char* names[] = {"clz", "ctz", "cpop", nullptr, "sext.b", "sext.h"};
+                            // shift amount is treated as additional funct opcode
+                            if (shamt >= ARRAY_SIZE(names) || shamt == 3)
+                                return emitDispIllegalInstruction(code);
+
+                            assert(names[shamt] != nullptr);
+                            printLength  = printf("%s", names[shamt]);
+                            hasImmediate = false;
+                            break;
+
+                        case 0b000000:
+                            printLength = printf("slli");
+                            imm12       = shamt;
+                            break;
+
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
                     printLength = printf("slli");
                     imm12 &= 0x3f; // 6 BITS for SHAMT in RISCV64
@@ -3841,9 +3858,10 @@ void emitter::emitDispInsName(
         {
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 12) & 0x7;
+            unsigned int rs2Num  = (code >> 20) & 0x1f;
             const char*  rd      = RegNames[(code >> 7) & 0x1f];
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-            const char*  rs2     = RegNames[(code >> 20) & 0x1f];
+            const char*  rs2     = RegNames[rs2Num];
 
             switch (opcode2)
             {
@@ -3911,6 +3929,15 @@ void emitter::emitDispInsName(
                             return emitDispIllegalInstruction(code);
                     }
                     return;
+                case 0b0000100:
+                    // Currently only zext.h for this opcode2.
+                    // Note: zext.h is encoded as a pseudo for 'packw rd, rs1, zero' which is not in Zbb.
+                    if (opcode3 != 0b100 || rs2Num != REG_ZERO)
+                        return emitDispIllegalInstruction(code);
+
+                    printf("zext.h         %s, %s\n", rd, rs1);
+                    return;
+
                 default:
                     return emitDispIllegalInstruction(code);
             }
