@@ -2659,11 +2659,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     int start = (int)intrin.op1->AsIntCon()->gtIconVal;
                     int step = (int)intrin.op2->AsIntCon()->gtIconVal;
-                    GetEmitter()->emitIns_R_I_I(INS_sve_index, EA_SCALABLE, targetReg, start, step, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    GetEmitter()->emitIns_R_I_I(ins, EA_SCALABLE, targetReg, start, step, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
                 }
                 else
                 {
-                    GetEmitter()->emitIns_R_R_R(INS_sve_index, emitTypeSize(intrin.baseType), targetReg, op1Reg, op2Reg, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, op2Reg, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                }
+                break;
+            }
+            case NI_Sve_DuplicateScalarToVector:
+            {
+                if (op1Reg == REG_NA)
+                {
+                    GetEmitter()->emitIns_R_I(ins, emitTypeSize(intrin.baseType), targetReg, intrin.op1->AsIntCon()->IconValue(), emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                }
+                else
+                {
+                    if (varTypeIsIntegral(intrin.op1))
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    }
                 }
                 break;
             }

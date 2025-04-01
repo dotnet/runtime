@@ -553,6 +553,11 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = 7;
                 break;
 
+            case NI_Sve_DuplicateScalarToVector:
+                immLowerBound = -128;
+                immUpperBound = 127;
+                break;
+
             default:
                 unreached();
         }
@@ -1105,6 +1110,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector_Create:
+        {
+            assert(sig->numArgs == 1);
+
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Sve_DuplicateScalarToVector, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_Create:
         case NI_Vector128_Create:
         {

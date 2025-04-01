@@ -4403,6 +4403,17 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     MakeSrcContained(node, intrin.op5);
                 }
                 break;
+            case NI_Sve_DuplicateScalarToVector:
+                assert(hasImmediateOperand);
+                if (intrin.op1->IsCnsIntOrI())
+                {
+                    ssize_t iconValue = intrin.op1->AsIntCon()->IconValue();
+                    if (emitter::isValidSimm<8>(iconValue) || emitter::isValidSimm_MultipleOf<8, 256>(iconValue))
+                    {
+                        MakeSrcContained(node, intrin.op1);
+                    }
+                }
+                break;
 
             default:
                 unreached();

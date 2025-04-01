@@ -1726,6 +1726,9 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                 case NI_Sve_MultiplyAddRotateComplex:
                     needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
                     break;
+                case NI_Sve_DuplicateScalarToVector:
+                    needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
+                    break;
 
                 default:
                     unreached();
