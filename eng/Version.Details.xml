@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="10.0.0-preview.4.25175.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="10.0.0-preview.4.25180.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>9a9ca5771e16c2d98a6ae7f01c89760d2a6a99b2</Sha>
+      <Sha>da33a55a01993552f338f309491b8e232c2b50ac</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
