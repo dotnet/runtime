@@ -60,7 +60,7 @@ namespace System.Net.Security.Tests
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(TestConfiguration.PassingTestTimeout);
 
-            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams(leaveInnerStreamOpen: true);
+            (SslStream client, SslStream server) = TestHelper.GetConnectedStreams();
             using (client)
             using (server)
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
@@ -150,7 +150,8 @@ namespace System.Net.Security.Tests
                     await task;
                 }
                 catch (Exception ex) when (ex
-                    is ObjectDisposedException // disposed locally
+                    is ObjectDisposedException // disposed locall
+                    or InvalidOperationException // Writing to a disposed ConnectedStream (test only, does not happen with NetworkStream)
                     or IOException // disposed remotely (received unexpected EOF)
                     or AuthenticationException) // disposed wrapped in AuthenticationException or error from platform library
                 {
