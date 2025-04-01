@@ -73,7 +73,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 #ifdef FEATURE_INTERPRETER
     m_pLastUsedInterpreterCodeHeap = NULL;
     m_pLastUsedInterpreterDynamicCodeHeap = NULL;
-#endif // FEATURE_INTERPRETER    
+#endif // FEATURE_INTERPRETER
     m_pJumpStubCache = NULL;
     m_IsCollectible = collectible;
 
