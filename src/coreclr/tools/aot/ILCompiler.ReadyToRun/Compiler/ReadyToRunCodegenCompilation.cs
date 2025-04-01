@@ -112,15 +112,15 @@ namespace ILCompiler
 
             if ((rootModule != null) && (calleeModule != null))
             {
-                //if (rootModule.IsRuntimeWrapExceptions != calleeModule.IsRuntimeWrapExceptions)
-                //{
-                //    var calleeIL = GetMethodIL(callee);
-                //    if (calleeIL.GetExceptionRegions().Length != 0)
-                //    {
-                //        // Fail inlining if root method and callee have different exception wrapping behavior
-                //        return false;
-                //    }
-                //}
+                if (rootModule.IsWrapNonExceptionThrows != calleeModule.IsWrapNonExceptionThrows)
+                {
+                    var calleeIL = GetMethodIL(callee);
+                    if (calleeIL.GetExceptionRegions().Length != 0)
+                    {
+                        // Fail inlining if root method and callee have different exception wrapping behavior
+                        return false;
+                    }
+                }
             }
 
             _nodeFactory.DetectGenericCycles(caller, callee);
