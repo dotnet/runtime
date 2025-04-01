@@ -410,9 +410,6 @@ public:
     static void
         PopTrackerIfEscaping(void* pvStackPointer);
 
-    static void
-        ResumeExecution(T_CONTEXT* pContextRecord);
-
     bool IsStackOverflowException();
 
 #if defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
@@ -428,24 +425,6 @@ public:
 private:
     static bool
         IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC);
-
-    inline BOOL CanAllocateMemory()
-    {
-        CONTRACTL
-        {
-            MODE_COOPERATIVE;
-            NOTHROW;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-
-        OBJECTREF oThrowable = GetThrowable();
-
-        return !(oThrowable == CLRException::GetPreallocatedOutOfMemoryException()) &&
-               !(oThrowable == CLRException::GetPreallocatedStackOverflowException());
-    }
-
-    INDEBUG(inline  BOOL        ThrowableIsValid());
 
 #if defined(DEBUGGING_SUPPORTED)
     void
@@ -583,10 +562,6 @@ public:
 private: ;
 
     void ReleaseResources();
-
-    void SetEnclosingClauseInfo(bool     fEnclosingClauseIsFunclet,
-                                DWORD    dwEnclosingClauseOffset,
-                                UINT_PTR uEnclosingClauseCallerSP);
 
     struct EnclosingClauseInfo
     {
