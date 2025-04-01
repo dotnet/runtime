@@ -943,14 +943,14 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
         {
             if (!((pUnmanagedArg != NULL) && strcmp(pUnmanagedArg, "...") == 0))
             {
-                minipal_log_print_info("CheckExtended: Expecting varargs in unmanaged fcall signature, Method: %s:%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName);
+                minipal_log_print_error("CheckExtended: Expecting varargs in unmanaged fcall signature, Method: %s:%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName);
             }
         }
         else
         {
             if (!(pUnmanagedArg == NULL))
             {
-                minipal_log_print_info("CheckExtended: Unexpected end of unmanaged fcall signature, Method: %s:%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName);
+                minipal_log_print_error("CheckExtended: Unexpected end of unmanaged fcall signature, Method: %s:%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName);
             }
         }
     }
@@ -1042,7 +1042,7 @@ void CoreLibBinder::CheckExtended()
 
         if (fError)
         {
-            minipal_log_print_info("CheckExtended: VM expects type to exist:  %s.%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID));
+            minipal_log_print_error("CheckExtended: VM expects type to exist:  %s.%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID));
         }
     }
 
@@ -1065,7 +1065,7 @@ void CoreLibBinder::CheckExtended()
 
         if (fError)
         {
-            minipal_log_print_info("CheckExtended: VM expects method to exist:  %s.%s::%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID), CoreLibBinder::GetMethodName(mID));
+            minipal_log_print_error("CheckExtended: VM expects method to exist:  %s.%s::%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID), CoreLibBinder::GetMethodName(mID));
         }
     }
 
@@ -1088,7 +1088,7 @@ void CoreLibBinder::CheckExtended()
 
         if (fError)
         {
-            minipal_log_print_info("CheckExtended: VM expects field to exist:  %s.%s::%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID), CoreLibBinder::GetFieldName(fID));
+            minipal_log_print_error("CheckExtended: VM expects field to exist:  %s.%s::%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID), CoreLibBinder::GetFieldName(fID));
         }
     }
 
@@ -1141,7 +1141,7 @@ void CoreLibBinder::CheckExtended()
             {
                 pszClassName = pszNameSpace = "Invalid TypeDef record";
             }
-            minipal_log_print_info("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
+            minipal_log_print_errpr("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
         }
         EX_END_CATCH(SwallowAllExceptions)
 
@@ -1181,7 +1181,7 @@ void CoreLibBinder::CheckExtended()
                 {
                     pszName = "Invalid method name";
                 }
-                minipal_log_print_info("CheckExtended: Unable to find qcall implementation: %s.%s::%s (EntryPoint name: %s)\n", pszNameSpace, pszClassName, pszName, pNMD->GetEntrypointName());
+                minipal_log_print_error("CheckExtended: Unable to find qcall implementation: %s.%s::%s (EntryPoint name: %s)\n", pszNameSpace, pszClassName, pszName, pNMD->GetEntrypointName());
             }
             continue;
         }
@@ -1203,7 +1203,7 @@ void CoreLibBinder::CheckExtended()
             {
                 pszName = "Invalid method name";
             }
-            minipal_log_print_info("CheckExtended: Unable to find internalcall implementation: %s.%s::%s\n", pszNameSpace, pszClassName, pszName);
+            minipal_log_print_error("CheckExtended: Unable to find internalcall implementation: %s.%s::%s\n", pszNameSpace, pszClassName, pszName);
         }
 
         if (id != 0)

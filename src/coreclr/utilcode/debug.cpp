@@ -268,7 +268,7 @@ bool _DbgBreakCheck(
         OutputDebugStringUtf8("\n");
         OutputDebugStringUtf8(szExpr);
         OutputDebugStringUtf8("\n");
-        minipal_log_print_info("%s\n%s\n%s\n", szLowMemoryAssertMessage, szFile, szExpr);
+        minipal_log_print_error("%s\n%s\n%s\n", szLowMemoryAssertMessage, szFile, szExpr);
     }
 
     LogAssert(szFile, iLine, szExpr);
@@ -489,7 +489,7 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
     OutputDebugStringUtf8(buffer.GetUTF8());
 
     // Write out the error to the console
-    minipal_log_print_info(buffer.GetUTF8());
+    minipal_log_print_error(buffer.GetUTF8());
 
     // Log to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).
