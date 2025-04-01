@@ -184,6 +184,7 @@
 #define _LIBUNWIND_HIGHEST_DWARF_REGISTER                                      \
   _LIBUNWIND_HIGHEST_DWARF_REGISTER_LOONGARCH
 #elif defined(__wasm__)
+#define _LIBUNWIND_TARGET_WASM 1
 // Unused
 #define _LIBUNWIND_CONTEXT_SIZE 0
 #define _LIBUNWIND_CURSOR_SIZE 0
