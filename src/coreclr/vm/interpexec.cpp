@@ -706,6 +706,13 @@ MAIN_LOOP:
                     MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_DESC_TAG);
                     PCODE code = pMD->GetNativeCode();
                     if (!code) {
+                        // This is an optimization to ensure that the stack walk will not have to search
+                        // for the topmost frame in the current InterpExecMethod. It is not required
+                        // for correctness, as the stack walk will find the topmost frame anyway. But it
+                        // would need to seek through the frames to find it.
+                        // An alternative approach would be to update the topmost frame during stack walk
+                        // to make the probability that the next stack walk will need to search only a
+                        // small subset of frames high.
                         pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                         GCX_PREEMP();
                         pMD->PrepareInitialCode(CallerGCMode::Coop);
