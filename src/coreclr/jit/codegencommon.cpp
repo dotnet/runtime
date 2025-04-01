@@ -1694,49 +1694,26 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 
 /*****************************************************************************
  *
- *  Update the current funclet as needed by calling genUpdateCurrentFunclet().
- *  For non-BBF_FUNCLET_BEG blocks, it asserts that the current funclet
- *  is up-to-date.
+ *  Update the current funclet by calling genUpdateCurrentFunclet().
+ *  'block' must be the beginning of a funclet region.
  *
  */
 
 void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
 {
-    if (!compiler->UsesFunclets())
-    {
-        return;
-    }
+    assert(compiler->bbIsFuncletBeg(block));
+    compiler->funSetCurrentFunc(compiler->funGetFuncIdx(block));
 
-    if (block->HasFlag(BBF_FUNCLET_BEG))
+    // Check the current funclet index for correctness
+    if (compiler->funCurrentFunc()->funKind == FUNC_FILTER)
     {
-        compiler->funSetCurrentFunc(compiler->funGetFuncIdx(block));
-        if (compiler->funCurrentFunc()->funKind == FUNC_FILTER)
-        {
-            assert(compiler->ehGetDsc(compiler->funCurrentFunc()->funEHIndex)->ebdFilter == block);
-        }
-        else
-        {
-            // We shouldn't see FUNC_ROOT
-            assert(compiler->funCurrentFunc()->funKind == FUNC_HANDLER);
-            assert(compiler->ehGetDsc(compiler->funCurrentFunc()->funEHIndex)->ebdHndBeg == block);
-        }
+        assert(compiler->ehGetDsc(compiler->funCurrentFunc()->funEHIndex)->ebdFilter == block);
     }
     else
     {
-        assert(compiler->funCurrentFuncIdx() <= compiler->compFuncInfoCount);
-        if (compiler->funCurrentFunc()->funKind == FUNC_FILTER)
-        {
-            assert(compiler->ehGetDsc(compiler->funCurrentFunc()->funEHIndex)->InFilterRegionBBRange(block));
-        }
-        else if (compiler->funCurrentFunc()->funKind == FUNC_ROOT)
-        {
-            assert(!block->hasHndIndex());
-        }
-        else
-        {
-            assert(compiler->funCurrentFunc()->funKind == FUNC_HANDLER);
-            assert(compiler->ehGetDsc(compiler->funCurrentFunc()->funEHIndex)->InHndRegionBBRange(block));
-        }
+        // We shouldn't see FUNC_ROOT
+        assert(compiler->funCurrentFunc()->funKind == FUNC_HANDLER);
+        assert(compiler->ehGetDsc(compiler->funCurrentFunc()->funEHIndex)->ebdHndBeg == block);
     }
 }
 
