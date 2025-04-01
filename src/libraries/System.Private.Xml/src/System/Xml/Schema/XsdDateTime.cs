@@ -4,7 +4,8 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Text;
-using System.Xml.Schema.DateAndTime.Parsers;
+using System.Xml.Schema.DateAndTime.Converters;
+using System.Xml.Schema.DateAndTime.Helpers;
 using System.Xml.Schema.DateAndTime.Specifications;
 
 namespace System.Xml.Schema
@@ -78,38 +79,38 @@ namespace System.Xml.Schema
         /// </summary>
         public XsdDateTime(string text, XsdDateTimeFlags kinds) : this()
         {
-            XsdDateTimeParser parser = default;
-            if (!parser.Parse(text, kinds))
+            if (!DateAndTimeConverter.TryParse(text, kinds, out DateAndTimeInfo parsedValue))
             {
                 throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, text, kinds));
             }
-            InitiateXsdDateTime(parser);
+
+            InitiateXsdDateTime(parsedValue);
         }
 
-        private XsdDateTime(XsdDateTimeParser parser) : this()
+        private XsdDateTime(DateAndTimeInfo parsedValue) : this()
         {
-            InitiateXsdDateTime(parser);
+            InitiateXsdDateTime(parsedValue);
         }
 
-        private void InitiateXsdDateTime(XsdDateTimeParser parser)
+        private void InitiateXsdDateTime(DateAndTimeInfo parsedValue)
         {
-            _dt = new DateTime(parser.year, parser.month, parser.day, parser.hour, parser.minute, parser.second);
-            if (parser.fraction != 0)
+            _dt = new DateTime(parsedValue.Year, parsedValue.Month, parsedValue.Day, parsedValue.Hour, parsedValue.Minute, parsedValue.Second);
+            if (parsedValue.Fraction != 0)
             {
-                _dt = _dt.AddTicks(parser.fraction);
+                _dt = _dt.AddTicks(parsedValue.Fraction);
             }
-            _extra = (uint)(((int)parser.typeCode << TypeShift) | ((int)parser.kind << KindShift) | (parser.zoneHour << ZoneHourShift) | parser.zoneMinute);
+            _extra = (uint)(((int)parsedValue.TypeCode << TypeShift) | ((int)parsedValue.Kind << KindShift) | (parsedValue.ZoneHour << ZoneHourShift) | parsedValue.ZoneMinute);
         }
 
         internal static bool TryParse(string text, XsdDateTimeFlags kinds, out XsdDateTime result)
         {
-            XsdDateTimeParser parser = default;
-            if (!parser.Parse(text, kinds))
+            if (!DateAndTimeConverter.TryParse(text, kinds, out DateAndTimeInfo parsedValue))
             {
                 result = default;
                 return false;
             }
-            result = new XsdDateTime(parser);
+
+            result = new XsdDateTime(parsedValue);
             return true;
         }
 
@@ -494,14 +495,14 @@ namespace System.Xml.Schema
         // Serialize year, month and day
         private void PrintDate(ref ValueStringBuilder vsb)
         {
-            Span<char> text = vsb.AppendSpan(XsdDateTimeParser.s_lzyyyy_MM_dd);
+            Span<char> text = vsb.AppendSpan(DateAndTimeConverter.s_lzyyyy_MM_dd);
             int year, month, day;
             GetYearMonthDay(out year, out month, out day);
             WriteXDigits(text, 0, year, 4);
-            text[XsdDateTimeParser.s_lzyyyy] = '-';
-            Write2Digits(text, XsdDateTimeParser.s_lzyyyy_, month);
-            text[XsdDateTimeParser.s_lzyyyy_MM] = '-';
-            Write2Digits(text, XsdDateTimeParser.s_lzyyyy_MM_, day);
+            text[DateAndTimeConverter.s_lzyyyy] = '-';
+            Write2Digits(text, DateAndTimeConverter.s_lzyyyy_, month);
+            text[DateAndTimeConverter.s_lzyyyy_MM] = '-';
+            Write2Digits(text, DateAndTimeConverter.s_lzyyyy_MM_, day);
         }
 
         // When printing the date, we need the year, month and the day. When
@@ -560,16 +561,16 @@ namespace System.Xml.Schema
         // Serialize hour, minute, second and fraction
         private void PrintTime(ref ValueStringBuilder vsb)
         {
-            Span<char> text = vsb.AppendSpan(XsdDateTimeParser.s_lzHH_mm_ss);
+            Span<char> text = vsb.AppendSpan(DateAndTimeConverter.s_lzHH_mm_ss);
             Write2Digits(text, 0, Hour);
-            text[XsdDateTimeParser.s_lzHH] = ':';
-            Write2Digits(text, XsdDateTimeParser.s_lzHH_, Minute);
-            text[XsdDateTimeParser.s_lzHH_mm] = ':';
-            Write2Digits(text, XsdDateTimeParser.s_lzHH_mm_, Second);
+            text[DateAndTimeConverter.s_lzHH] = ':';
+            Write2Digits(text, DateAndTimeConverter.s_lzHH_, Minute);
+            text[DateAndTimeConverter.s_lzHH_mm] = ':';
+            Write2Digits(text, DateAndTimeConverter.s_lzHH_mm_, Second);
             int fraction = Fraction;
             if (fraction != 0)
             {
-                int fractionDigits = XsdDateTimeParser.MaxFractionDigits;
+                int fractionDigits = DateAndTimeConverter.MaxFractionDigits;
                 while (fraction % 10 == 0)
                 {
                     fractionDigits--;
@@ -592,18 +593,18 @@ namespace System.Xml.Schema
                     vsb.Append('Z');
                     break;
                 case XsdDateTimeKind.LocalWestOfZulu:
-                    text = vsb.AppendSpan(XsdDateTimeParser.s_lz_zz_zz);
+                    text = vsb.AppendSpan(DateAndTimeConverter.s_lz_zz_zz);
                     text[0] = '-';
-                    Write2Digits(text, XsdDateTimeParser.s_Lz_, ZoneHour);
-                    text[XsdDateTimeParser.s_lz_zz] = ':';
-                    Write2Digits(text, XsdDateTimeParser.s_lz_zz_, ZoneMinute);
+                    Write2Digits(text, DateAndTimeConverter.s_Lz_, ZoneHour);
+                    text[DateAndTimeConverter.s_lz_zz] = ':';
+                    Write2Digits(text, DateAndTimeConverter.s_lz_zz_, ZoneMinute);
                     break;
                 case XsdDateTimeKind.LocalEastOfZulu:
-                    text = vsb.AppendSpan(XsdDateTimeParser.s_lz_zz_zz);
+                    text = vsb.AppendSpan(DateAndTimeConverter.s_lz_zz_zz);
                     text[0] = '+';
-                    Write2Digits(text, XsdDateTimeParser.s_Lz_, ZoneHour);
-                    text[XsdDateTimeParser.s_lz_zz] = ':';
-                    Write2Digits(text, XsdDateTimeParser.s_lz_zz_, ZoneMinute);
+                    Write2Digits(text, DateAndTimeConverter.s_Lz_, ZoneHour);
+                    text[DateAndTimeConverter.s_lz_zz] = ':';
+                    Write2Digits(text, DateAndTimeConverter.s_lz_zz_, ZoneMinute);
                     break;
                 default:
                     // do nothing
