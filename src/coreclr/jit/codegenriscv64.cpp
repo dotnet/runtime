@@ -839,7 +839,6 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     regNumber rAddr;
-    regNumber rTarget = REG_NA; // Invalid
     regMaskTP regMask;
 
     regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
@@ -863,101 +862,77 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     else
     {
         // Load immediate into the InitReg register
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, (ssize_t)untrLclLo);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, static_cast<ssize_t>(untrLclLo));
         GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), initReg);
         *pInitRegZeroed = false;
     }
 
-    bool     useLoop   = false;
-    unsigned uCntBytes = untrLclHi - untrLclLo;
-    assert((uCntBytes % sizeof(int)) == 0); // The smallest stack slot is always 4 bytes.
+    unsigned uLclBytes = untrLclHi - untrLclLo;
+    assert(uLclBytes % 4 == 0); // The smallest stack slot is always 4 bytes.
     unsigned int padding = untrLclLo & 0x7;
 
     if (padding)
     {
         assert(padding == 4);
         GetEmitter()->emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, rAddr, 0);
-        uCntBytes -= 4;
+        uLclBytes -= 4;
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, padding);
     }
 
-    // When uCntBytes is 11 * REGSIZE_BYTES or less, we will emit a sequence of sd instructions inline.
-    // When it is 12 * REGSIZE_BYTES or greater, we will emit a loop containing a sd instruction.
-    // In both of these cases the sd instruction will write two zeros to memory
-    // and we will use a single str instruction at the end whenever we have an odd count.
-    if (uCntBytes >= 12 * REGSIZE_BYTES)
-        useLoop = true;
+    unsigned uRegSlots = uLclBytes / REGSIZE_BYTES;
 
-    if (useLoop)
+    if (uRegSlots >= 12)
     {
-        // We pick the next lowest register number for rCnt
+        // ensure loop will have even number of slots
+        // if there is odd number of slots, the last one will be handled later
+        ssize_t uLoopBytes = (uRegSlots & ~1) * REGSIZE_BYTES;
+
+        regNumber rEndAddr;
         noway_assert(availMask != RBM_NONE);
-        regMask = genFindLowestBit(availMask);
-        rTarget = genRegNumFromMask(regMask);
+        regMask  = genFindLowestBit(availMask);
+        rEndAddr = genRegNumFromMask(regMask);
         availMask &= ~regMask;
 
-        noway_assert(uCntBytes >= 2 * REGSIZE_BYTES);
-        assert((genRegMask(rTarget) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rTarget is not a live incoming
-                                                                                   // argument reg
+        // rEndAddr is not a live incoming argument reg
+        assert((genRegMask(rEndAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
 
-        if (uCntBytes % (4 * REGSIZE_BYTES) == 0)
-        {
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rTarget, (ssize_t)uCntBytes);
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rEndAddr, rAddr, uLoopBytes);
 
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 16 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 24 + padding);
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0);
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, REGSIZE_BYTES);
 
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES + 3 * padding);
-            GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rTarget, -5 << 2);
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES);
+        GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rEndAddr, -3 << 2);
 
-            uCntBytes %= REGSIZE_BYTES * 4;
-        }
-        else
-        {
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rTarget, (ssize_t)uCntBytes);
-
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
-
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES + padding);
-            GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rTarget, -3 << 2);
-
-            uCntBytes %= REGSIZE_BYTES * 2;
-        }
+        uLclBytes %= REGSIZE_BYTES * 2;
     }
     else
     {
-        while (uCntBytes >= REGSIZE_BYTES * 2)
+        while (uLclBytes >= REGSIZE_BYTES * 2)
         {
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES + padding);
-            uCntBytes -= REGSIZE_BYTES * 2;
-            padding = 0;
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, REGSIZE_BYTES);
+
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES);
+
+            uLclBytes -= REGSIZE_BYTES * 2;
         }
     }
 
-    if (uCntBytes >= REGSIZE_BYTES) // check and zero the last register-sized stack slot (odd number)
+    if (uLclBytes >= REGSIZE_BYTES)
     {
-        if ((uCntBytes - REGSIZE_BYTES) == 0)
-        {
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding);
-        }
-        else
-        {
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, REGSIZE_BYTES);
-        }
-        uCntBytes -= REGSIZE_BYTES;
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0);
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, REGSIZE_BYTES);
+        uLclBytes -= REGSIZE_BYTES;
     }
-    if (uCntBytes > 0)
+
+    if (uLclBytes > 0)
     {
-        assert(uCntBytes == sizeof(int));
-        GetEmitter()->emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, rAddr, padding);
-        uCntBytes -= sizeof(int);
+        assert(uLclBytes == 4);
+        GetEmitter()->emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, rAddr, 0);
+        uLclBytes -= 4;
     }
-    noway_assert(uCntBytes == 0);
+    noway_assert(uLclBytes == 0);
 }
 
 void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
