@@ -154,7 +154,7 @@ namespace System.Net.Security.Tests
                     return;
                 }
                 catch (Exception ex) when (ex
-                    is ObjectDisposedException // disposed locall
+                    is ObjectDisposedException // disposed locally
                     or IOException // disposed remotely (received unexpected EOF)
                     or AuthenticationException) // disposed wrapped in AuthenticationException or error from platform library
                 {
