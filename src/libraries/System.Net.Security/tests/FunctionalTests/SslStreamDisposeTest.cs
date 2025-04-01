@@ -148,9 +148,13 @@ namespace System.Net.Security.Tests
                 {
                     await task;
                 }
+                catch (InvalidOperationException ex) when (ex.StackTrace?.Contains("System.IO.StreamBuffer.WriteAsync"))
+                {
+                    // Writing to a disposed ConnectedStream (test only, does not happen with NetworkStream)
+                    return;
+                }
                 catch (Exception ex) when (ex
                     is ObjectDisposedException // disposed locall
-                    or InvalidOperationException // Writing to a disposed ConnectedStream (test only, does not happen with NetworkStream)
                     or IOException // disposed remotely (received unexpected EOF)
                     or AuthenticationException) // disposed wrapped in AuthenticationException or error from platform library
                 {
