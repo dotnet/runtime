@@ -12,17 +12,6 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
     public sealed class PackedSimdTests
     {
         [Fact]
-        public unsafe void IsSupportedTest()
-        {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Browser))
-            {
-                Assert.True(PackedSimd.IsSupported);
-                return;
-            }
-            Assert.True(PackedSimd.IsSupported);
-        }
-
-        [Fact]
         public unsafe void BasicArithmeticTest()
         {
             var v1 = Vector128.Create(1, 2, 3, 4);
@@ -56,7 +45,7 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         public unsafe void ShiftOperationsTest()
         {
             var v = Vector128.Create(16, -16, 32, -32);
-            
+
             var leftShift = PackedSimd.ShiftLeft(v, 2);
             var rightShiftArith = PackedSimd.ShiftRightArithmetic(v, 2);
             var rightShiftLogical = PackedSimd.ShiftRightLogical(v, 2);
@@ -115,7 +104,7 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         public unsafe void ExtractInsertScalarTest()
         {
             var v = Vector128.Create(1, 2, 3, 4);
-            
+
             int extracted = PackedSimd.ExtractScalar(v, 2);
             Assert.Equal(3, extracted);
 
@@ -146,7 +135,7 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         [Fact]
         public unsafe void WideningOperationsTest()
         {
-            var v = Vector128.Create((short)1000, (short)2000, (short)3000, (short)4000, 
+            var v = Vector128.Create((short)1000, (short)2000, (short)3000, (short)4000,
                                    (short)5000, (short)6000, (short)7000, (short)8000);
 
             var lowerWidened = PackedSimd.SignExtendWideningLower(v);
@@ -175,7 +164,7 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         {
             int value = 42;
             float fValue = 3.14f;
-            
+
             fixed (int* intPtr = &value)
             fixed (float* floatPtr = &fValue)
             {
@@ -194,7 +183,7 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
             fixed (byte* ptr = bytes)
             {
                 var widened = PackedSimd.LoadWideningVector128(ptr);
-                Assert.Equal(Vector128.Create((ushort)1, (ushort)2, (ushort)3, (ushort)4, 
+                Assert.Equal(Vector128.Create((ushort)1, (ushort)2, (ushort)3, (ushort)4,
                                            (ushort)5, (ushort)6, (ushort)7, (ushort)8), widened);
             }
         }
@@ -204,7 +193,7 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         {
             var v = Vector128.Create(1, 2, 3, 4);
             int value = 0;
-            
+
             fixed (int* ptr = &value)
             {
                 PackedSimd.StoreSelectedScalar(ptr, v, 2);
@@ -217,7 +206,7 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         {
             var v = Vector128.Create(1, 2, 3, 4);
             int newValue = 42;
-            
+
             fixed (int* ptr = &newValue)
             {
                 var result = PackedSimd.LoadScalarAndInsert(ptr, v, 2);
@@ -242,7 +231,7 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         [Fact]
         public unsafe void AddPairwiseWideningTest()
         {
-            var bytes = Vector128.Create((byte)1, (byte)2, (byte)3, (byte)4, 
+            var bytes = Vector128.Create((byte)1, (byte)2, (byte)3, (byte)4,
                                        (byte)5, (byte)6, (byte)7, (byte)8,
                                        (byte)9, (byte)10, (byte)11, (byte)12,
                                        (byte)13, (byte)14, (byte)15, (byte)16);
@@ -528,7 +517,7 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
             var mulResult = PackedSimd.Multiply(v1, v2);
 
             Assert.Equal(Vector128.Create((nuint)6, (nuint)8, (nuint)10, (nuint)12), addResult);
-            Assert.Equal(Vector128.Create(unchecked((nuint)-4), unchecked((nuint)-4), unchecked((nuint)-4), unchecked((nuint)-4)), subResult);
+            Assert.Equal(Vector128.Create(unchecked((nuint) - 4), unchecked((nuint) - 4), unchecked((nuint) - 4), unchecked((nuint) - 4)), subResult);
             Assert.Equal(Vector128.Create((nuint)5, (nuint)12, (nuint)21, (nuint)32), mulResult);
         }
 
@@ -571,14 +560,14 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         [Fact]
         public void NativeIntegerShiftTest()
         {
-            var v = Vector128.Create((nint)16, (nint)-16, (nint)32, (nint)-32);
-            
+            var v = Vector128.Create((nint)16, (nint) - 16, (nint)32, (nint) - 32);
+
             var leftShift = PackedSimd.ShiftLeft(v, 2);
             var rightShiftArith = PackedSimd.ShiftRightArithmetic(v, 2);
             var rightShiftLogical = PackedSimd.ShiftRightLogical(v, 2);
 
-            Assert.Equal(Vector128.Create((nint)64, (nint)-64, (nint)128, (nint)-128), leftShift);
-            Assert.Equal(Vector128.Create((nint)4, (nint)-4, (nint)8, (nint)-8), rightShiftArith);
+            Assert.Equal(Vector128.Create((nint)64, (nint) - 64, (nint)128, (nint) - 128), leftShift);
+            Assert.Equal(Vector128.Create((nint)4, (nint) - 4, (nint)8, (nint) - 8), rightShiftArith);
             Assert.Equal(Vector128.Create((nint)4, (nint)1073741820, (nint)8, (nint)1073741816), rightShiftLogical);
         }
 
@@ -586,11 +575,11 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         public void NativeUnsignedIntegerShiftTest()
         {
             var v = Vector128.Create((nuint)16, (nuint)unchecked(-16), (nuint)32, (nuint)unchecked(-32));
-            
+
             var leftShift = PackedSimd.ShiftLeft(v, 2);
             var rightShiftLogical = PackedSimd.ShiftRightLogical(v, 2);
 
-            Assert.Equal(Vector128.Create((nuint)64, unchecked((nuint)-64), (nuint)128, unchecked((nuint)-128)), leftShift);
+            Assert.Equal(Vector128.Create((nuint)64, unchecked((nuint) - 64), (nuint)128, unchecked((nuint) - 128)), leftShift);
             Assert.Equal(Vector128.Create((nuint)4, (nuint)1073741820, (nuint)8, (nuint)1073741816), rightShiftLogical);
         }
     }

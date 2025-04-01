@@ -162,10 +162,28 @@ static guint16 sri_packedsimd_methods [] = {
 	SN_get_IsSupported,
 };
 
+MonoTypeEnum resolve_native_size (MonoTypeEnum type)
+{
+	if (type == MONO_TYPE_I)
+#if TARGET_SIZEOF_VOID_P == 4
+		return MONO_TYPE_I4;
+#else
+		return MONO_TYPE_I8;
+#endif
+	else if (type == MONO_TYPE_U)
+#if TARGET_SIZEOF_VOID_P == 4
+		return MONO_TYPE_U4;
+#else
+		return MONO_TYPE_U8;
+#endif
+	return type;
+
+}
 // Returns if opcode was added
 static gboolean
 emit_common_simd_operations (TransformData *td, int id, int atype, int vector_size, int arg_size, int scalar_arg, gint16 *simd_opcode, gint16 *simd_intrins)
 {
+	atype = resolve_native_size (atype);
 	switch (id) {
 		case SN_get_AllBitsSet: {
 			interp_add_ins (td, MINT_SIMD_V128_LDC);
@@ -191,21 +209,13 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 				for (int i = 0; i < vector_size / arg_size; i++)
 					data [i] = 1;
 				return TRUE;
-			} else if (atype == MONO_TYPE_I4 ||
-#if SIZEOF_VOID_P == 4
-					atype == MONO_TYPE_I || atype == MONO_TYPE_U ||
-#endif
-					atype == MONO_TYPE_U4) {
+			} else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) {
 				interp_add_ins (td, MINT_SIMD_V128_LDC);
 				gint32 *data = (gint32*)&td->last_ins->data [0];
 				for (int i = 0; i < vector_size / arg_size; i++)
 					data [i] = 1;
 				return TRUE;
-			} else if (atype == MONO_TYPE_I8 ||
-#if SIZEOF_VOID_P == 8
-				atype == MONO_TYPE_I || atype == MONO_TYPE_U ||
-#endif
-				atype == MONO_TYPE_U8) {
+			} else if (atype == MONO_TYPE_I8 || atype == MONO_TYPE_U8) {
 				interp_add_ins (td, MINT_SIMD_V128_LDC);
 				gint64 *data = (gint64*)&td->last_ins->data [0];
 				for (int i = 0; i < vector_size / arg_size; i++)
@@ -234,9 +244,6 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_ADD;
 			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_ADD;
 			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_ADD;
-#if SIZEOF_VOID_P == 4
-			else if (atype == MONO_TYPE_I || atype == MONO_TYPE_U) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_ADD;
-#endif
 			else if (atype == MONO_TYPE_R4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_ADD;
 			break;
 		case SN_op_BitwiseAnd:
@@ -292,9 +299,6 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_MULTIPLY;
 			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_MULTIPLY;
 			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_MULTIPLY;
-#if SIZEOF_VOID_P == 4
-			else if (atype == MONO_TYPE_I || atype == MONO_TYPE_U) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_MULTIPLY;
-#endif
 			else if (atype == MONO_TYPE_R4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_MULTIPLY;
 			break;
 		case SN_op_OnesComplement:
@@ -308,10 +312,6 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			if (atype == MONO_TYPE_I1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_RIGHT_SHIFT;
 			else if (atype == MONO_TYPE_I2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_RIGHT_SHIFT;
 			else if (atype == MONO_TYPE_I4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_RIGHT_SHIFT;
-#if SIZEOF_VOID_P == 4
-			else if (atype == MONO_TYPE_I) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_RIGHT_SHIFT;
-			else if (atype == MONO_TYPE_U) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
-#endif
 			else if (atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_URIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_URIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
@@ -321,9 +321,6 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_SUB;
 			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_SUB;
 			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_SUB;
-#if SIZEOF_VOID_P == 4
-			else if (atype == MONO_TYPE_I || atype == MONO_TYPE_U) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_SUB;
-#endif
 			else if (atype == MONO_TYPE_R4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_SUB;
 			break;
 		case SN_op_UnaryNegation:
@@ -331,9 +328,6 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_NEGATION;
 			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_NEGATION;
 			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_NEGATION;
-#if SIZEOF_VOID_P == 4
-			else if (atype == MONO_TYPE_I || atype == MONO_TYPE_U) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_NEGATION;
-#endif
 			break;
 		case SN_op_UnsignedRightShift:
 			if (scalar_arg != 1)
@@ -587,21 +581,21 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_CREATE_SCALAR;
 			break;
 		case SN_Equals:
+			atype = resolve_native_size (atype);
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_EQUALS;
 			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_EQUALS;
 			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_EQUALS;
 			else if (atype == MONO_TYPE_I8 || atype == MONO_TYPE_U8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_EQUALS;
-			else if (atype == MONO_TYPE_I || atype == MONO_TYPE_U) simd_intrins = arg_size == 4 ? INTERP_SIMD_INTRINSIC_V128_I4_EQUALS : INTERP_SIMD_INTRINSIC_V128_I8_EQUALS;
 			else if (atype == MONO_TYPE_R4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_EQUALS;
 			break;
 		case SN_EqualsAny:
+			atype = resolve_native_size (atype);
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_EQUALS_ANY;
 			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_EQUALS_ANY;
 			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_EQUALS_ANY;
 			else if (atype == MONO_TYPE_I8 || atype == MONO_TYPE_U8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_EQUALS_ANY;
-			else if (atype == MONO_TYPE_I || atype == MONO_TYPE_U) simd_intrins = arg_size == 4 ? INTERP_SIMD_INTRINSIC_V128_I4_EQUALS_ANY : INTERP_SIMD_INTRINSIC_V128_I8_EQUALS_ANY;
 			break;
 		case SN_ExtractMostSignificantBits:
 			simd_opcode = MINT_SIMD_INTRINS_P_P;
@@ -647,13 +641,14 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			break;
 		case SN_ShiftRightArithmetic:
 			g_assert (scalar_arg == 1);
+			atype = resolve_native_size (atype);
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_I1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_RIGHT_SHIFT;
 			else if (atype == MONO_TYPE_I2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_RIGHT_SHIFT;
-			else if (atype == MONO_TYPE_I4 || (atype == MONO_TYPE_I && arg_size == 4)) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_RIGHT_SHIFT;
+			else if (atype == MONO_TYPE_I4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_RIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_URIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_URIGHT_SHIFT;
-			else if (atype == MONO_TYPE_U4 || (atype == MONO_TYPE_U && arg_size == 4)) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
+			else if (atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
 			break;
 		case SN_Shuffle:
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
@@ -871,19 +866,7 @@ opcode_added:
 static gboolean
 packedsimd_type_matches (MonoTypeEnum type, int expected_type)
 {
-	// handle the native type conversions in the lookup
-	if (type == MONO_TYPE_I)
-#if SIZEOF_VOID_P == 4
-		type = MONO_TYPE_I4;
-#else
-		type = MONO_TYPE_I8;
-#endif
-	else if (type == MONO_TYPE_U)
-#if SIZEOF_VOID_P == 4
-		type = MONO_TYPE_U4;
-#else
-		type = MONO_TYPE_U8;
-#endif
+	type = resolve_native_size (type);
 
 	if (expected_type == PSIMD_ARGTYPE_ANY)
 		return TRUE;
