@@ -381,10 +381,10 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
 ```xml
 <PropertyGroup>
   <!-- enables diagnostic server -->
-  <!-- this is new switch -->
   <WasmPerfTracing>true</WasmPerfTracing>
 
   <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
+  Only when WasmPerfInstrumentation is true
   See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
   -->
   <WasmPerfInstrumentation>N:Sample</WasmPerfInstrumentation>
