@@ -1084,6 +1084,7 @@ private:
     void             makeRegisterInactive(RegRecord* physRegRecord);
     void             freeRegister(RegRecord* physRegRecord);
     void             freeRegisters(regMaskTP regsToFree);
+    void             freeRegisters(SingleTypeRegSet regsToFree, var_types varType, int regBase);
     FORCEINLINE void freeRegistersSingleType(SingleTypeRegSet regsToFree, int regBase);
 
     // Get the type that this tree defines.
@@ -1788,6 +1789,11 @@ private:
     {
         m_AvailableRegs |= regMask;
     }
+    void makeRegsAvailable(SingleTypeRegSet regMask, var_types regType)
+    {
+        m_AvailableRegs.AddRegsetForType(regMask, regType);
+    }
+
     void makeRegAvailable(regNumber reg, var_types regType)
     {
         m_AvailableRegs.AddRegNum(reg, regType);
@@ -1801,11 +1807,25 @@ private:
     void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
 
+    struct regsFreeStruct
+    {
+        SingleTypeRegSet regsToFree{RBM_NONE};
+        SingleTypeRegSet delayRegsToFree{RBM_NONE};
+        SingleTypeRegSet regsToMakeInactive{RBM_NONE};
+        SingleTypeRegSet delayRegsToMakeInactive{RBM_NONE};
+        SingleTypeRegSet copyRegsToFree{RBM_NONE};
+    };
+
     FORCEINLINE void updateRegsFreeBusyState(RefPosition&               refPosition,
                                              var_types                  registerType,
                                              SingleTypeRegSet           regsBusy,
                                              regMaskTP*                 regsToFree,
                                              regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
+                                                 DEBUG_ARG(regNumber assignedReg));
+    FORCEINLINE void updateRegsFreeBusyState(RefPosition&                    refPosition,
+                                             var_types                       registerType,
+                                             SingleTypeRegSet                regsBusy,
+                                             regsFreeStruct* currentRegsFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
 
     regMaskTP m_RegistersWithConstants;
@@ -1874,6 +1894,7 @@ private:
     regMaskTP regsBusyUntilKill;
     regMaskTP regsInUseThisLocation;
     regMaskTP regsInUseNextLocation;
+
 #ifdef TARGET_ARM64
     SingleTypeRegSet consecutiveRegsInUseThisLocation;
 #endif
