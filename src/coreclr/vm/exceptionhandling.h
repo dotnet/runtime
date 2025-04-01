@@ -413,8 +413,6 @@ public:
     static void
         ResumeExecution(T_CONTEXT* pContextRecord);
 
-    void ResetLimitFrame();
-
     bool IsStackOverflowException();
 
 #if defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
@@ -428,18 +426,6 @@ public:
 #endif // TARGET_UNIX && !CROSS_COMPILE
 
 private:
-    DWORD_PTR
-        CallHandler(UINT_PTR                dwHandlerStartPC,
-                    StackFrame              sf,
-                    EE_ILEXCEPTION_CLAUSE*  pEHClause,
-                    MethodDesc*             pMD,
-                    EHFuncletType           funcletType,
-                    PT_CONTEXT              pContextRecord);
-
-    inline static BOOL
-        ClauseCoversPC(EE_ILEXCEPTION_CLAUSE* pEHClause,
-                       DWORD dwOffset);
-
     static bool
         IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC);
 
@@ -500,11 +486,6 @@ private:
 
 public:
 
-    static UINT_PTR FinishSecondPass(Thread* pThread, UINT_PTR uResumePC, StackFrame sf,
-                                     T_CONTEXT* pContextRecord, ExceptionTracker *pTracker, bool* pfAborting = NULL);
-    UINT_PTR CallCatchHandler(T_CONTEXT* pContextRecord, bool* pfAborting = NULL);
-
-    static bool FindNonvolatileRegisterPointers(Thread* pThread, UINT_PTR uOriginalSP, REGDISPLAY* pRegDisplay, TADDR uResumeFrameFP);
     static void UpdateNonvolatileRegisters(T_CONTEXT* pContextRecord, REGDISPLAY *pRegDisplay, bool fAborting);
 
     PTR_Frame GetLimitFrame()
