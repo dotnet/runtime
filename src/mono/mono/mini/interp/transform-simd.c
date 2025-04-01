@@ -162,7 +162,8 @@ static guint16 sri_packedsimd_methods [] = {
 	SN_get_IsSupported,
 };
 
-MonoTypeEnum resolve_native_size (MonoTypeEnum type)
+static MonoTypeEnum 
+resolve_native_size (MonoTypeEnum type)
 {
 	if (type == MONO_TYPE_I)
 #if TARGET_SIZEOF_VOID_P == 4
