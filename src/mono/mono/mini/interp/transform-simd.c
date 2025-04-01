@@ -58,6 +58,7 @@ lookup_intrins (guint16 *intrinsics, int size, const char *cmethod_name)
 // i.e. all 'get_' and 'op_' need to come after regular title-case names
 static guint16 sri_vector128_methods [] = {
 	SN_Abs,
+	SN_Add,
 	SN_AndNot,
 	SN_As,
 	SN_AsByte,
@@ -98,10 +99,13 @@ static guint16 sri_vector128_methods [] = {
 	SN_Negate,
 	SN_Max,
 	SN_Min,
+	SN_Multiply,
+	SN_OnesComplement,
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
 	SN_Shuffle,
+	SN_Subtract,
 	SN_Truncate,
 	SN_WidenLower,
 	SN_WidenUpper,
