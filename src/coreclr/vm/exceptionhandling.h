@@ -415,8 +415,6 @@ public:
 
     void ResetLimitFrame();
 
-    static void DebugLogTrackerRanges(_In_z_ const char *pszTag);
-
     bool IsStackOverflowException();
 
 #if defined(TARGET_UNIX) && !defined(CROSS_COMPILE)

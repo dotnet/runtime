@@ -1081,34 +1081,6 @@ void CheckForRudeAbort(Thread* pThread, bool fIsFirstPass)
     }
 }
 
-// static
-void ExceptionTracker::DebugLogTrackerRanges(_In_z_ const char *pszTag)
-{
-#ifdef _DEBUG
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    Thread*               pThread     = GetThreadNULLOk();
-    ExceptionTrackerBase* pTracker    = pThread ? pThread->GetExceptionState()->m_pCurrentTracker : NULL;
-
-    int i = 0;
-
-    while (pTracker)
-    {
-        EH_LOG((LL_INFO100, "%s:|%02d| %p: (%p %p) %s\n", pszTag, i, pTracker, pTracker->m_ScannedStackRange.GetLowerBound().SP, pTracker->m_ScannedStackRange.GetUpperBound().SP,
-            pTracker->IsInFirstPass() ? "1st pass" : "2nd pass"
-            ));
-        pTracker = pTracker->m_pPrevNestedInfo;
-        i++;
-    }
-#endif // _DEBUG
-}
-
 
 #if defined(DEBUGGING_SUPPORTED)
 BOOL NotifyDebuggerOfStub(Thread* pThread, Frame* pCurrentFrame)
