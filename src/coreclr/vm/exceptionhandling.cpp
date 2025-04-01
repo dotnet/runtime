@@ -516,16 +516,6 @@ LPCSTR DebugGetExceptionDispositionName(EXCEPTION_DISPOSITION disp)
 }
 #endif // _DEBUG
 
-bool ExceptionTracker::IsStackOverflowException()
-{
-    if (m_pThread->GetThrowableAsHandle() == g_pPreallocatedStackOverflowException)
-    {
-        return true;
-    }
-
-    return false;
-}
-
 void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFrameChain, LPVOID MemoryStackFp);
 
 static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCallerSp, bool popGCFrames = true)
@@ -861,96 +851,6 @@ OBJECTREF ExceptionTracker::CreateThrowable(
 }
 
 #if defined(DEBUGGING_SUPPORTED)
-
-bool ExceptionTracker::IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC)
-{
-    EECodeInfo codeInfo((PCODE)dwHandlerStartPC);
-    _ASSERTE(codeInfo.IsValid());
-
-    return pEHClause->FilterOffset == codeInfo.GetRelOffset();
-}
-
-void ExceptionTracker::MakeCallbacksRelatedToHandler(
-    bool fBeforeCallingHandler,
-    Thread*                pThread,
-    MethodDesc*            pMD,
-    EE_ILEXCEPTION_CLAUSE* pEHClause,
-    DWORD_PTR              dwHandlerStartPC,
-    StackFrame             sf
-    )
-{
-    // Here we need to make an extra check for filter handlers because we could be calling the catch handler
-    // associated with a filter handler and yet the EH clause we have saved is for the filter handler.
-    BOOL fIsFilterHandler         = IsFilterHandler(pEHClause) && ExceptionTracker::IsFilterStartOffset(pEHClause, dwHandlerStartPC);
-    BOOL fIsFaultOrFinallyHandler = IsFaultOrFinally(pEHClause);
-
-    if (fBeforeCallingHandler)
-    {
-        StackFrame sfToStore = sf;
-        if ((this->m_pPrevNestedInfo != NULL) &&
-            (((ExceptionTracker*)this->m_pPrevNestedInfo)->m_EnclosingClauseInfo == this->m_EnclosingClauseInfo))
-        {
-            // If this is a nested exception which has the same enclosing clause as the previous exception,
-            // we should just propagate the clause info from the previous exception.
-            sfToStore = this->m_pPrevNestedInfo->m_EHClauseInfo.GetStackFrameForEHClause();
-        }
-        m_EHClauseInfo.SetInfo(COR_PRF_CLAUSE_NONE, (UINT_PTR)dwHandlerStartPC, sfToStore);
-
-        if (pMD->IsILStub())
-        {
-            return;
-        }
-
-        if (fIsFilterHandler)
-        {
-            m_EHClauseInfo.SetEHClauseType(COR_PRF_CLAUSE_FILTER);
-            EEToDebuggerExceptionInterfaceWrapper::ExceptionFilter(pMD, (TADDR) dwHandlerStartPC, pEHClause->FilterOffset, (BYTE*)sf.SP);
-
-            EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFilterEnter(pMD);
-        }
-        else
-        {
-            EEToDebuggerExceptionInterfaceWrapper::ExceptionHandle(pMD, (TADDR) dwHandlerStartPC, pEHClause->HandlerStartPC, (BYTE*)sf.SP);
-
-            if (fIsFaultOrFinallyHandler)
-            {
-                m_EHClauseInfo.SetEHClauseType(COR_PRF_CLAUSE_FINALLY);
-                EEToProfilerExceptionInterfaceWrapper::ExceptionUnwindFinallyEnter(pMD);
-            }
-            else
-            {
-                m_EHClauseInfo.SetEHClauseType(COR_PRF_CLAUSE_CATCH);
-                EEToProfilerExceptionInterfaceWrapper::ExceptionCatcherEnter(pThread, pMD);
-
-                DACNotify::DoExceptionCatcherEnterNotification(pMD, pEHClause->HandlerStartPC);
-            }
-        }
-    }
-    else
-    {
-        if (pMD->IsILStub())
-        {
-            return;
-        }
-
-        if (fIsFilterHandler)
-        {
-            EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFilterLeave();
-        }
-        else
-        {
-            if (fIsFaultOrFinallyHandler)
-            {
-                EEToProfilerExceptionInterfaceWrapper::ExceptionUnwindFinallyLeave();
-            }
-            else
-            {
-                EEToProfilerExceptionInterfaceWrapper::ExceptionCatcherLeave();
-            }
-        }
-        m_EHClauseInfo.ResetInfo();
-    }
-}
 
 #ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 //---------------------------------------------------------------------------------------

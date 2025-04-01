@@ -323,13 +323,6 @@ public:
 
     static bool HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF);
 
-    StackFrame GetCurrentEstablisherFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_sfCurrentEstablisherFrame;
-    }
-
     void SetLastUnwoundEstablisherFrame(StackFrame sfEstablisher)
     {
         LIMITED_METHOD_CONTRACT;
@@ -407,11 +400,6 @@ public:
     static void
         PopTrackers(void* pvStackPointer);
 
-    static void
-        PopTrackerIfEscaping(void* pvStackPointer);
-
-    bool IsStackOverflowException();
-
 #if defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
     void TakeExceptionPointersOwnership(PAL_SEHException* ex)
     {
@@ -423,27 +411,6 @@ public:
 #endif // TARGET_UNIX && !CROSS_COMPILE
 
 private:
-    static bool
-        IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC);
-
-#if defined(DEBUGGING_SUPPORTED)
-    void
-        MakeCallbacksRelatedToHandler(bool fBeforeCallingHandler,
-                                      Thread* pThread,
-                                      MethodDesc* pMD,
-                                      EE_ILEXCEPTION_CLAUSE* pEHClause,
-                                      DWORD_PTR dwHandlerStartPC,
-                                      StackFrame sf);
-#else  // !DEBUGGING_SUPPORTED
-    void
-        MakeCallbacksRelatedToHandler(bool fBeforeCallingHandler,
-                                      Thread* pThread,
-                                      MethodDesc* pMD,
-                                      EE_ILEXCEPTION_CLAUSE* pEHClause,
-                                      DWORD_PTR dwHandlerStartPC,
-                                      StackFrame sf) {return;}
-#endif // !DEBUGGING_SUPPORTED
-
     // private helpers
     static StackFrame GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(CrawlFrame *pCF);
 
