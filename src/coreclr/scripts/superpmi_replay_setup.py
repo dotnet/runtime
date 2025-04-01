@@ -22,8 +22,9 @@ from jitutil import copy_directory, copy_files, set_pipeline_variable
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", help="Architecture")
-parser.add_argument("-source_directory", help="path to the directory containing binaries")
-parser.add_argument("-product_directory", help="path to the directory containing binaries")
+parser.add_argument("-type", required=True, help="Type of diff (standard, apx)")
+parser.add_argument("-source_directory", required=True, help="Path to the root directory of the dotnet/runtime source tree")
+parser.add_argument("-product_directory", required=True, help="path to the directory containing binaries")
 
 
 def setup_args(args):
@@ -53,6 +54,11 @@ def setup_args(args):
                         "product_directory",
                         lambda product_directory: os.path.isdir(product_directory),
                         "product_directory doesn't exist")
+
+    coreclr_args.verify(args,
+                        "type",
+                        lambda type: type in ["standard", "apx"],
+                        "Invalid type \"{}\"".format)
 
     return coreclr_args
 

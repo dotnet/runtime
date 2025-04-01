@@ -901,7 +901,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     // handle other cases recursively.
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
-                    if (hwintrinsicChild->OperIs(GT_CNS_INT, GT_CNS_LNG))
+                    if (hwintrinsicChild->IsIntegralConst())
                     {
                         // a special case is when the operand of CreateScalarUnsafe is an integer type,
                         // CreateScalarUnsafe node will be folded, so we directly match a pattern of
@@ -920,6 +920,9 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     break;
                 }
 
+                case NI_Vector128_CreateScalar:
+                case NI_Vector256_CreateScalar:
+                case NI_Vector512_CreateScalar:
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
                 case NI_Vector512_CreateScalarUnsafe:
@@ -927,7 +930,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     // The hwintrinsic should be contained and its
                     // op1 should be either contained or spilled. This
                     // allows us to transparently "look through" the
-                    // CreateScalarUnsafe and treat it directly like
+                    // CreateScalar/Unsafe and treat it directly like
                     // a load from memory.
 
                     assert(hwintrinsic->isContained());
@@ -1614,9 +1617,9 @@ bool CodeGen::arm_Valid_Imm_For_Add_SP(target_ssize_t imm)
 bool CodeGenInterface::validImmForBL(ssize_t addr)
 {
     return
-        // If we are running the altjit for NGEN, then assume we can use the "BL" instruction.
-        // This matches the usual behavior for NGEN, since we normally do generate "BL".
-        (!compiler->info.compMatchedVM && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)) ||
+        // If we are running the altjit for AOT, then assume we can use the "BL" instruction.
+        // This matches the usual behavior for AOT, since we normally do generate "BL".
+        (!compiler->info.compMatchedVM && compiler->IsAot()) ||
         (compiler->eeGetRelocTypeHint((void*)addr) == IMAGE_REL_BASED_THUMB_BRANCH24);
 }
 
@@ -1628,7 +1631,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
     // On arm64, we always assume a call target is in range and generate a 28-bit relative
     // 'bl' instruction. If this isn't sufficient range, the VM will generate a jump stub when
     // we call recordRelocation(). See the IMAGE_REL_ARM64_BRANCH26 case in jitinterface.cpp
-    // (for JIT) or zapinfo.cpp (for NGEN). If we cannot allocate a jump stub, it is fatal.
+    // (for JIT) or zapinfo.cpp (for AOT). If we cannot allocate a jump stub, it is fatal.
     return true;
 }
 #endif // TARGET_ARM64
