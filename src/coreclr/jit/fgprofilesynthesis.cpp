@@ -216,7 +216,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         // Leave a note so we can bypass the post-phase check, and
         // instead assert at the end of fgImport, if we make it that far.
         //
-        if (!isConsistent)
+        if (!isConsistent && !m_comp->fgImportDone)
         {
             m_comp->fgPgoDeferredInconsistency = true;
             JITDUMP("Will defer asserting until after importation\n");
@@ -1437,10 +1437,12 @@ void ProfileSynthesis::GaussSeidelSolver()
             }
         }
 
-        // If there were no improper headers, we will have converged in one pass.
+        // If there were no improper headers, we will have converged in one pass
         // (profile may still be inconsistent, if there were capped cyclic probabilities).
+        // After the importer runs, we require that synthesis achieves profile consistency
+        // unless the resultant profile is approximate, so don't skip the below checks.
         //
-        if (m_improperLoopHeaders == 0)
+        if ((m_improperLoopHeaders == 0) && !m_comp->fgImportDone)
         {
             converged = true;
             break;
