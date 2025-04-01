@@ -326,10 +326,9 @@ namespace System.Net.Http.Headers
 
         internal static void DumpHeaders(ref ValueStringBuilder sb, params HttpHeaders?[] headers)
         {
-            // Appends all headers as string similar to:
+            // Dumps all headers in the following format:
             // {
-            //    HeaderName1: Value1
-            //    HeaderName1: Value2
+            //    HeaderName1: Value1, Value2
             //    HeaderName2: Value1
             //    ...
             // }
