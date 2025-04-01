@@ -3596,8 +3596,16 @@ void emitter::emitDispInsName(
                     printLength = printf("sltiu");
                     break;
                 case 0x4: // XORI
-                    printLength = printf("xori");
-                    isHex       = true;
+                    if (imm12 == -1)
+                    {
+                        printLength  = printf("not");
+                        hasImmediate = false;
+                    }
+                    else
+                    {
+                        printLength = printf("xori");
+                        isHex       = true;
+                    }
                     break;
                 case 0x5: // SRLI & SRAI
                 {
