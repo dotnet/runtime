@@ -23,7 +23,7 @@ namespace System
                 {
                     return true;
                 }
-                if (str == "1" || string.Equals(str, bool.FalseString, StringComparison.OrdinalIgnoreCase))
+                if (str == "0" || string.Equals(str, bool.FalseString, StringComparison.OrdinalIgnoreCase))
                 {
                     return false;
                 }

@@ -102,8 +102,7 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
     {
         // copied from MsQuicApi implementation to avoid triggering the static constructor
         Version minWindowsVersion = new Version(10, 0, 20145, 1000);
-        return OperatingSystem.IsWindowsVersionAtLeast(minWindowsVersion.Major,
-        minWindowsVersion.Minor, minWindowsVersion.Build, minWindowsVersion.Revision);
+        return OperatingSystem.IsWindowsVersionAtLeast(minWindowsVersion.Major, minWindowsVersion.Minor, minWindowsVersion.Build, minWindowsVersion.Revision);
     }
 
     private static Version GetMsQuicVersion()

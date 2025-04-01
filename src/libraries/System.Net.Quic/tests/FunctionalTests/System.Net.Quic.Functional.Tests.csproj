@@ -54,7 +54,7 @@
 
   </ItemGroup>
   <Target Name="CopyCustomContent" AfterTargets="Build" BeforeTargets="PrepareForRun" Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-      <Copy SourceFiles="$(PkgMicrosoft_Native_Quic_MsQuic_OpenSSL)\build\native\bin\x64\msquic.dll" DestinationFolder="$(OutDir)" />
+    <Copy SourceFiles="$(PkgMicrosoft_Native_Quic_MsQuic_OpenSSL)\build\native\bin\x64\msquic.dll" DestinationFolder="$(OutDir)" />
   </Target>
   <Target Name="CopyCustomContentOnPublish" AfterTargets="Publish" BeforeTargets="PrepareForRun" Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Copy SourceFiles="$(PkgMicrosoft_Native_Quic_MsQuic_OpenSSL)\build\native\bin\x64\msquic.dll" DestinationFolder="$(PublishDir)" />
