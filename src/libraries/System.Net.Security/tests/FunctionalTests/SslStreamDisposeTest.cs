@@ -113,8 +113,7 @@ namespace System.Net.Security.Tests
 
             await Parallel.ForEachAsync(System.Linq.Enumerable.Range(0, 10000), cts.Token, async (i, token) =>
             {
-                // use real Tcp streams to avoid specific behavior of ConnectedStreams when concurrently disposed
-                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedTcpStreams();
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
 
                 using SslStream client = new SslStream(clientStream);
                 using SslStream server = new SslStream(serverStream);
