@@ -1234,7 +1234,7 @@ namespace Internal.JitInterface
             // Add an early CanInline check to see if referring to the IL of the target methods is
             // permitted from within this MethodBeingCompiled, the full CanInline check will be performed
             // later.
-            if (!_compilation.CanInline(MethodBeingCompiled, MethodBeingCompiled, method))
+            if (!_compilation.CanInline(MethodBeingCompiled, method))
                 return false;
 
             MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
@@ -1275,7 +1275,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (_compilation.CanInline(MethodBeingCompiled, callerMethod, calleeMethod))
+            if (_compilation.CanInline(callerMethod, calleeMethod))
             {
                 // No restrictions on inlining
                 return CorInfoInline.INLINE_PASS;

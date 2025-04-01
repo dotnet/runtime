@@ -404,7 +404,7 @@ namespace ILCompiler
             return ComputeInstantiationVersionsWithCode(method.Instantiation, method, VersionsWithType);
         }
 
-        public sealed override bool CanInline(MethodDesc root, MethodDesc callerMethod, MethodDesc calleeMethod)
+        public sealed override bool CanInline(MethodDesc callerMethod, MethodDesc calleeMethod)
         {
             // Allow inlining if the caller is within the current version bubble
             // (because otherwise we may not be able to encode its tokens)

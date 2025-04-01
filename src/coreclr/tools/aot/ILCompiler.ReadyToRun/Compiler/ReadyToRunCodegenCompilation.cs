@@ -74,7 +74,7 @@ namespace ILCompiler
 
         protected abstract void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj);
 
-        public bool CanInline(MethodDesc root, MethodDesc caller, MethodDesc callee)
+        public bool CanInline(MethodDesc caller, MethodDesc callee)
         {
             if (JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_DEBUG_CODE))
             {
@@ -109,7 +109,7 @@ namespace ILCompiler
 
             _nodeFactory.DetectGenericCycles(caller, callee);
 
-            return NodeFactory.CompilationModuleGroup.CanInline(root, caller, callee);
+            return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
         }
 
         public virtual MethodIL GetMethodIL(MethodDesc method)

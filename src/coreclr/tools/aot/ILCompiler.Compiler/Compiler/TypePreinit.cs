@@ -458,7 +458,7 @@ namespace ILCompiler
                             }
 
                             TypeDesc owningType = method.OwningType;
-                            if (!_compilationGroup.CanInline(methodIL.OwningMethod, methodIL.OwningMethod, method))
+                            if (!_compilationGroup.CanInline(methodIL.OwningMethod, method))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Cannot inline");
                             }
@@ -513,7 +513,7 @@ namespace ILCompiler
                             MethodSignature ctorSig = ctor.Signature;
 
                             TypeDesc owningType = ctor.OwningType;
-                            if (!_compilationGroup.CanInline(methodIL.OwningMethod, methodIL.OwningMethod, ctor)
+                            if (!_compilationGroup.CanInline(methodIL.OwningMethod, ctor)
                                 || !_compilationGroup.ContainsType(owningType))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Cannot inline");
