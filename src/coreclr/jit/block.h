@@ -1412,16 +1412,6 @@ public:
         m_firstNode = tree;
     }
 
-    GenTree* GetLastLIRNode() const
-    {
-        return m_lastNode;
-    }
-
-    void SetLastLIRNode(GenTree* tree)
-    {
-        m_lastNode = tree;
-    }
-
     EntryState* bbEntryState; // verifier tracked state of all entries in stack.
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none

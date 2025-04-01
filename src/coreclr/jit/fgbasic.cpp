@@ -4862,9 +4862,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
     if (curr->IsLIR())
     {
         newBlock->SetFirstLIRNode(curr->GetFirstLIRNode());
-        newBlock->SetLastLIRNode(curr->GetLastLIRNode());
         curr->SetFirstLIRNode(nullptr);
-        curr->SetLastLIRNode(nullptr);
     }
     else
     {
