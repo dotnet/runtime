@@ -6321,7 +6321,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     }
 #endif // DEBUG
 
-    bool                  hasAsyncRet = call->IsAsync2();
+    bool                  hasAsyncRet = call->IsAsync();
     CORINFO_METHOD_HANDLE methHnd;
     GenTree*              target = getCallTarget(call, &methHnd);
     if (target != nullptr)
@@ -10540,7 +10540,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             // Add 'compiler->compLclFrameSize' to ESP. Use "pop ECX" for that, except in cases
             // where ECX may contain some state.
 
-            if ((frameSize == TARGET_POINTER_SIZE) && !compiler->compJmpOpUsed && !compiler->compIsAsync2())
+            if ((frameSize == TARGET_POINTER_SIZE) && !compiler->compJmpOpUsed && !compiler->compIsAsync())
             {
                 inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);
                 regSet.verifyRegUsed(REG_ECX);
@@ -10628,7 +10628,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             }
 #ifdef TARGET_X86
             else if ((compiler->compLclFrameSize == REGSIZE_BYTES) && !compiler->compJmpOpUsed &&
-                     !compiler->compIsAsync2())
+                     !compiler->compIsAsync())
             {
                 // "pop ecx" will make ESP point to the callee-saved registers
                 inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);

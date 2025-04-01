@@ -1072,7 +1072,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
         return;
     }
 
-    if (call->gtIsAsyncCall && info.compUsesAsyncContinuation)
+    if (call->IsAsync() && info.compUsesAsyncContinuation)
     {
         // Currently not supported. Could provide a nice perf benefit for
         // async1 -> async2 thunks if we supported it.

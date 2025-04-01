@@ -524,13 +524,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // Temporary hack since these functions have to be recognized as async2
         // calls in JIT generated state machines only.
-        if (compIsAsync2() &&
+        if (compIsAsync() &&
             ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync) ||
              (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync) ||
              (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_Await)))
         {
             assert((call != nullptr) && call->OperIs(GT_CALL));
-            call->AsCall()->gtIsAsyncCall = true;
+            call->AsCall()->SetIsAsync();
             JITDUMP("Marking [%06u] as a special-case async call\n", dspTreeID(call));
         }
     }
@@ -724,7 +724,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        call->AsCall()->gtIsAsyncCall = true;
+        call->AsCall()->SetIsAsync();
     }
 
     // Now create the argument list.
@@ -900,7 +900,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     impPopCallArgs(sig, call->AsCall());
 
     // Extra args
-    if ((instParam != nullptr) || call->AsCall()->IsAsync2() || (varArgsCookie != nullptr))
+    if ((instParam != nullptr) || call->AsCall()->IsAsync() || (varArgsCookie != nullptr))
     {
         if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
         {
@@ -910,7 +910,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                            .WellKnown(WellKnownArg::VarArgsCookie));
             }
 
-            if (call->AsCall()->IsAsync2())
+            if (call->AsCall()->IsAsync())
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
@@ -930,7 +930,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                 NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
             }
 
-            if (call->AsCall()->IsAsync2())
+            if (call->AsCall()->IsAsync())
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));

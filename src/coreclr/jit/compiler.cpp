@@ -3161,7 +3161,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             printf("OPTIONS: Jit invoked for AOT\n");
         }
 
-        if (compIsAsync2())
+        if (compIsAsync())
         {
             printf("OPTIONS: compilation is an async2 state machine\n");
         }
@@ -5008,9 +5008,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // TARGET_ARM
 
-    if (compIsAsync2())
+    if (compIsAsync())
     {
-        DoPhase(this, PHASE_ASYNC2, &Compiler::TransformAsync2);
+        DoPhase(this, PHASE_ASYNC, &Compiler::TransformAsync);
     }
 
     // Assign registers to variables, etc.

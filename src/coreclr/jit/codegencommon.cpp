@@ -1938,7 +1938,7 @@ void CodeGen::genGenerateMachineCode()
             printf("; OSR variant for entry point 0x%x\n", compiler->info.compILEntry);
         }
 
-        if (compiler->compIsAsync2())
+        if (compiler->compIsAsync())
         {
             printf("; async2\n");
         }
@@ -7243,7 +7243,7 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
-    if (treeNode->OperIs(GT_RETURN) && compiler->compIsAsync2())
+    if (treeNode->OperIs(GT_RETURN) && compiler->compIsAsync())
     {
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
     }
@@ -7368,7 +7368,7 @@ void CodeGen::genMarkReturnGCInfo()
         }
     }
 
-    if (compiler->compIsAsync2())
+    if (compiler->compIsAsync())
     {
         gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
     }

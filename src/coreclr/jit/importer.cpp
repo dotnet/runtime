@@ -847,7 +847,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // Make sure we don't pass something other than a local address to the return buffer arg.
             // It is allowed to pass current's method return buffer as it is a local too.
             if ((fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(srcCall->gtRetClsHnd)) ||
-                (compIsAsync2() && !destAddr->OperIs(GT_LCL_ADDR)))
+                (compIsAsync() && !destAddr->OperIs(GT_LCL_ADDR)))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
@@ -974,7 +974,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // Make sure we don't pass something other than a local address to the return buffer arg.
             // It is allowed to pass current's method return buffer as it is a local too.
             if ((fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(call->gtRetClsHnd)) ||
-                (compIsAsync2() && !destAddr->OperIs(GT_LCL_ADDR)))
+                (compIsAsync() && !destAddr->OperIs(GT_LCL_ADDR)))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, call->gtRetClsHnd, false);
@@ -9099,7 +9099,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     //       that control the flow of sync context.
                     //       We do not have that yet.
                     int configVal = -1; // -1 not congigured, 0/1 configured to false/true
-                    if (compIsAsync2() && JitConfig.JitOptimizeAwait())
+                    if (compIsAsync() && JitConfig.JitOptimizeAwait())
                     {
                         isAwait = impMatchAwaitPattern(codeAddr, codeEndp, &configVal);
                     }

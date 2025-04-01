@@ -41,7 +41,7 @@ struct CallDefinitionInfo
     GenTree* InsertAfter = nullptr;
 };
 
-class Async2Transformation
+class AsyncTransformation
 {
     friend class AsyncLiveness;
 
@@ -141,10 +141,10 @@ class Async2Transformation
     void CreateResumptionSwitch();
 
 public:
-    Async2Transformation(Compiler* comp)
+    AsyncTransformation(Compiler* comp)
         : m_comp(comp)
-        , m_liveLocalsScratch(comp->getAllocator(CMK_Async2))
-        , m_resumptionBBs(comp->getAllocator(CMK_Async2))
+        , m_liveLocalsScratch(comp->getAllocator(CMK_Async))
+        , m_resumptionBBs(comp->getAllocator(CMK_Async))
     {
     }
 

@@ -5533,7 +5533,7 @@ public:
     PhaseStatus placeLoopAlignInstructions();
 #endif
 
-    PhaseStatus TransformAsync2();
+    PhaseStatus TransformAsync();
 
     // This field keep the R2R helper call that would be inserted to trigger the constructor
     // of the static class. It is set as nongc or gc static base if they are imported, so
@@ -7285,6 +7285,7 @@ protected:
     unsigned optValnumCSE_Index(GenTree* tree, Statement* stmt);
     bool optValnumCSE_Locate(CSE_HeuristicCommon* heuristic);
     void optValnumCSE_InitDataFlow();
+    void optValnumCSE_SetUpAsyncByrefKills();
     void optValnumCSE_DataFlow();
     void optValnumCSE_Availability();
     void optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic);
@@ -10881,7 +10882,7 @@ public:
 #endif // TARGET_AMD64
     }
 
-    bool compIsAsync2() const
+    bool compIsAsync() const
     {
         return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RUNTIMEASYNCFUNCTION);
     }
@@ -10915,7 +10916,7 @@ public:
 
     bool compObjectStackAllocation()
     {
-        if (compIsAsync2())
+        if (compIsAsync())
         {
             // Object stack allocation takes the address of locals around
             // suspension points. Disable entirely for now.

@@ -161,7 +161,7 @@ void Compiler::lvaInitTypeRef()
         info.compTypeCtxtArg = BAD_VAR_NUM;
     }
 
-    if (compIsAsync2())
+    if (compIsAsync())
     {
         info.compArgsCount++;
     }
@@ -694,7 +694,7 @@ void Compiler::lvaInitGenericsCtxt(unsigned* curVarNum)
 //
 void Compiler::lvaInitAsyncContinuation(unsigned* curVarNum)
 {
-    if (!compIsAsync2())
+    if (!compIsAsync())
     {
         return;
     }

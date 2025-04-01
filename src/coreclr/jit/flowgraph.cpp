@@ -2468,7 +2468,7 @@ PhaseStatus Compiler::fgAddInternal()
             // async2 functions we will be introducing another return during
             // the async2 transformation, so make sure there's a free epilog
             // for it.
-            if (compIsAsync2())
+            if (compIsAsync())
             {
                 limit--;
             }

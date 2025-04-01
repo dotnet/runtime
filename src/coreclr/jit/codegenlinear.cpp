@@ -503,7 +503,7 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
-        if (compiler->compIsAsync2())
+        if (compiler->compIsAsync())
         {
             nonVarPtrRegs &= ~RBM_ASYNC_CONTINUATION_RET;
         }

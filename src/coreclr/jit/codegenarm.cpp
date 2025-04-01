@@ -2092,7 +2092,7 @@ regMaskTP CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskC
 
     // We similarly skip it for async2 due to the extra async continuation
     // return that may be overridden by the pop.
-    if (compiler->compIsAsync2())
+    if (compiler->compIsAsync())
     {
         return RBM_NONE;
     }

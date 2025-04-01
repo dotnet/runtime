@@ -5413,11 +5413,11 @@ void Lowering::LowerAsyncContinuation(GenTree* asyncCont)
 
         if (node->IsCall())
         {
-            if (!node->AsCall()->IsAsync2())
+            if (!node->AsCall()->IsAsync())
             {
                 JITDUMP("Marking the call [%06u] before async continuation [%06u] as an async call\n",
                         Compiler::dspTreeID(node), Compiler::dspTreeID(asyncCont));
-                node->AsCall()->gtIsAsyncCall = true;
+                node->AsCall()->SetIsAsync();
             }
 
             break;
