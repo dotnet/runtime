@@ -45,6 +45,7 @@
     <Compile Include="System\Xml\Schema\DateAndTime\Converters\DateAndTimeConverter.cs" />
     <Compile Include="System\Xml\Schema\DateAndTime\Helpers\DateAndTimeInfo.cs" />
     <Compile Include="System\Xml\Schema\DateAndTime\Specifications\DateTimeTypeCode.cs" />
+    <Compile Include="System\Xml\Schema\DateAndTime\Specifications\XsdDateTimeFlags.cs" />
     <Compile Include="System\Xml\Schema\DateAndTime\Specifications\XsdDateTimeKind.cs" />
     <Compile Include="System\Xml\Xsl\Runtime\XsltFunctionNames.cs" />
     <Compile Include="System\Xml\Xsl\Runtime\XsltMethods.cs" />

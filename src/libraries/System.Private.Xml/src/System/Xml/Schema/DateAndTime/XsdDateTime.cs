@@ -11,26 +11,6 @@ using System.Xml.Schema.DateAndTime.Specifications;
 namespace System.Xml.Schema.DateAndTime
 {
     /// <summary>
-    /// This enum specifies what format should be used when converting string to XsdDateTime
-    /// </summary>
-    [Flags]
-    internal enum XsdDateTimeFlags
-    {
-        DateTime = 0x01,
-        Time = 0x02,
-        Date = 0x04,
-        GYearMonth = 0x08,
-        GYear = 0x10,
-        GMonthDay = 0x20,
-        GDay = 0x40,
-        GMonth = 0x80,
-        XdrDateTimeNoTz = 0x100,
-        XdrDateTime = 0x200,
-        XdrTimeNoTz = 0x400,  //XDRTime with tz is the same as xsd:time
-        AllXsd = 0xFF //All still does not include the XDR formats
-    }
-
-    /// <summary>
     /// This structure extends <see cref="DateTime"/> to support timeInTicks zone and Gregorian types components of an Xsd Duration.
     /// It is used internally to support Xsd durations without loss of fidelity. XsdDuration structures are immutable once they've been created.
     /// </summary>

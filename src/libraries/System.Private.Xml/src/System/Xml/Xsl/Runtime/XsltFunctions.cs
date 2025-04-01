@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Text;
 using System.Xml.Schema;
 using System.Xml.Schema.DateAndTime;
+using System.Xml.Schema.DateAndTime.Specifications;
 using System.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime
