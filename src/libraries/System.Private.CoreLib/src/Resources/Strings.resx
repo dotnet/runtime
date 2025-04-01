@@ -681,9 +681,6 @@
   <data name="Arg_NotImplementedException" xml:space="preserve">
     <value>The method or operation is not implemented.</value>
   </data>
-  <data name="Arg_NotSimpleTypeName" xml:space="preserve">
-    <value>'{0}' is not a simple TypeName.</value>
-  </data>
   <data name="Arg_NotSupportedException" xml:space="preserve">
     <value>Specified method is not supported.</value>
   </data>
