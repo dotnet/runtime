@@ -61,7 +61,7 @@ namespace System.Net.WebSockets
 
             // Wrap the raw websocket so its Dispose() automatically closes the connection.
             // This is important as common and recommended usage is to just Dispose the HttpListenerWebSocketContext.WebSocket
-            // and without it connection would not be cleaned up causing memory leaks and possible other issues.
+            // and without it connection would not be cleaned up causing memory leaks and other issues.
             HttpListenerWrappedWebSocket webSocket = new(rawWebSocket, context);
 
             HttpListenerWebSocketContext webSocketContext = new HttpListenerWebSocketContext(
@@ -127,8 +127,9 @@ namespace System.Net.WebSockets
                 // Dispose the underlying raw WebSocket
                 _inner.Dispose();
 
-                // Close the response stream, which will close and clean connection
-                // unregistering the context and freeing it from memory.
+                // Ensure we remove the context from the HttpListener's tracking dictionary
+                // by forcibly calling Response.Close(). This closes the underlying connection
+                // and also calls UnregisterContext(context), preventing stale HttpListenerContext objects causing memory leak.
                 _context.Response.Close();
             }
 
