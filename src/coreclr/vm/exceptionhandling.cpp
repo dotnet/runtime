@@ -1063,24 +1063,6 @@ bool FixNonvolatileRegisters(UINT_PTR  uOriginalSP,
     return true;
 }
 
-void CheckForRudeAbort(Thread* pThread, bool fIsFirstPass)
-{
-    if (fIsFirstPass && pThread->IsRudeAbort())
-    {
-        GCX_COOP();
-        OBJECTREF throwable = pThread->GetThrowable();
-        if (throwable == NULL || !IsExceptionOfType(kThreadAbortException, &throwable))
-        {
-            pThread->SafeSetThrowables(CLRException::GetBestThreadAbortException());
-        }
-
-        if (!pThread->IsRudeAbortInitiated())
-        {
-            pThread->PreWorkForThreadAbort();
-        }
-    }
-}
-
 
 #if defined(DEBUGGING_SUPPORTED)
 BOOL NotifyDebuggerOfStub(Thread* pThread, Frame* pCurrentFrame)
