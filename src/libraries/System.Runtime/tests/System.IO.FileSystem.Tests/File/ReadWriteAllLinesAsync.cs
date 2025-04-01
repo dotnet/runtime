@@ -98,8 +98,11 @@ namespace System.IO.Tests
 
             using (File.Create(path))
             {
-                await Assert.ThrowsAsync<IOException>(async () => await WriteAsync(path, lines));
-                await Assert.ThrowsAsync<IOException>(async () => await ReadAsync(path));
+                Task t = WriteAsync(path, lines);
+                await Assert.ThrowsAsync<IOException>(async () => await t);
+
+                t = ReadAsync(path);
+                await Assert.ThrowsAsync<IOException>(async () => await t);
             }
         }
 

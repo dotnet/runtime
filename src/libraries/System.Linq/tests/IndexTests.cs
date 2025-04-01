@@ -9,6 +9,12 @@ namespace System.Linq.Tests
     public class IndexTests : EnumerableTests
     {
         [Fact]
+        public void Empty()
+        {
+            Assert.Empty(Enumerable.Empty<int>().Index());
+        }
+
+        [Fact]
         public void Index_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IEnumerable<int> source = null;

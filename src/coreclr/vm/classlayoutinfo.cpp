@@ -44,12 +44,7 @@ namespace
             // if we haven't found a matching token, it must be a static field with layout -- ignore it
             if (pfwalk->m_MD != fd) continue;
 
-            if (!fExplicitOffsets)
-            {
-                // ulOffset is the sequence
-                pfwalk->m_sequence = ulOffset;
-            }
-            else
+            if (fExplicitOffsets)
             {
                 // ulOffset is the explicit offset
                 pfwalk->m_placement.m_offset = ulOffset;
@@ -136,7 +131,7 @@ namespace
     )
     {
         UINT32 cbCurOffset = parentSize;
-        BYTE LargestAlignmentRequirement = max(1, min(packingSize, parentAlignmentRequirement));
+        BYTE LargestAlignmentRequirement = max<BYTE>(1, min(packingSize, parentAlignmentRequirement));
 
         // Start with the size inherited from the parent (if any).
         uint32_t calcTotalSize = parentSize;
@@ -198,7 +193,7 @@ namespace
                 COMPlusThrowOM();
 
             // size must be large enough to accommodate layout. If not, we use the layout size instead.
-            calcTotalSize = max(classSize, calcTotalSize);
+            calcTotalSize = max((uint32_t)classSize, calcTotalSize);
         }
         else
         {
@@ -285,7 +280,7 @@ namespace
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
-            if (pNestedType.GetMethodTable()->ContainsPointers())
+            if (pNestedType.GetMethodTable()->ContainsGCPointers())
             {
                 // this field type has GC pointers in it, which need to be pointer-size aligned
                 placementInfo.m_alignment = TARGET_POINTER_SIZE;
@@ -310,7 +305,7 @@ namespace
         if (corElemType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!pNestedType.IsNull());
-            return pNestedType.GetMethodTable()->ContainsPointers() != FALSE;
+            return pNestedType.GetMethodTable()->ContainsGCPointers() != FALSE;
         }
         return TRUE;
     }
@@ -548,7 +543,7 @@ namespace
                                                                              pTypeContext,
                                                                              ClassLoader::LoadTypes,
                                                                              CLASS_LOAD_APPROXPARENTS,
-                                                                             TRUE, NULL, NULL, NULL, 
+                                                                             TRUE, NULL, NULL, NULL,
                                                                              &recursiveControl);
 
                     if (typeHandleMaybe.IsNull())
@@ -828,7 +823,7 @@ void EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(Method
     if (pClass->GetNativeLayoutInfo() == nullptr)
     {
         GCX_PREEMP();
-        ListLockHolder nativeTypeLoadLock(pMT->GetDomain()->GetNativeTypeLoadLock());
+        ListLockHolder nativeTypeLoadLock(AppDomain::GetCurrentDomain()->GetNativeTypeLoadLock());
         ListLockEntryHolder entry(ListLockEntry::Find(nativeTypeLoadLock, pMT->GetClass()));
         ListLockEntryLockHolder pEntryLock(entry, FALSE);
         nativeTypeLoadLock.Release();
@@ -1023,7 +1018,6 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     {
         // The intrinsic Vector<T> type has a special size. Copy the native size and alignment
         // from the managed size and alignment.
-        // Crossgen scenarios block Vector<T> from even being loaded, so only do this check when not in crossgen.
         if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
         {
             pNativeLayoutInfo->m_size = pEEClassLayoutInfo->GetManagedSize();

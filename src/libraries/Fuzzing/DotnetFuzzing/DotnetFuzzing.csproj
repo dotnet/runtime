@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseAppHost>true</UseAppHost>
+    <AppHostSourcePath>$(ArtifactsDir)\bin\win-x64.Debug\corehost\apphost.exe</AppHostSourcePath>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpFuzz" Version="2.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Assert.cs" />
+    <Compile Include="Fuzzers\AssemblyNameInfoFuzzer.cs" />
+    <Compile Include="Fuzzers\Base64Fuzzer.cs" />
+    <Compile Include="Fuzzers\Base64UrlFuzzer.cs" />
+    <Compile Include="Fuzzers\HttpHeadersFuzzer.cs" />
+    <Compile Include="Fuzzers\IPAddressFuzzer.cs" />
+    <Compile Include="Fuzzers\JsonDocumentFuzzer.cs" />
+    <Compile Include="Fuzzers\NrbfDecoderFuzzer.cs" />
+    <Compile Include="Fuzzers\SearchValuesByteCharFuzzer.cs" />
+    <Compile Include="Fuzzers\SearchValuesStringFuzzer.cs" />
+    <Compile Include="Fuzzers\TextEncodingFuzzer.cs" />
+    <Compile Include="Fuzzers\TypeNameFuzzer.cs" />
+    <Compile Include="Fuzzers\UTF8Fuzzer.cs" />
+    <Compile Include="Fuzzers\Utf8JsonWriterFuzzer.cs" />
+    <Compile Include="IFuzzer.cs" />
+    <Compile Include="PooledBoundedMemory.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="$(TestUtilities)\System\Buffers\BoundedMemory.*" Link="TestUtilities\%(Filename)%(Extension)" />
+    <Compile Include="$(TestUtilities)\System\Buffers\PoisonPagePlacement.cs" Link="TestUtilities\PoisonPagePlacement.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Dictionaries\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -20,9 +20,6 @@ namespace System
     [DebuggerDisplay("{ToString(),raw}")]
     public readonly struct Memory<T> : IEquatable<Memory<T>>
     {
-        // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
-        // as code uses Unsafe.As to cast between them.
-
         // The highest order bit of _index is used to discern whether _object is a pre-pinned array.
         // (_index < 0) => _object is a pre-pinned array, so Pin() will not allocate a new GCHandle
         //       (else) => Pin() needs to allocate a new GCHandle to pin the object.
@@ -187,7 +184,7 @@ namespace System
         /// Defines an implicit conversion of a <see cref="Memory{T}"/> to a <see cref="ReadOnlyMemory{T}"/>
         /// </summary>
         public static implicit operator ReadOnlyMemory<T>(Memory<T> memory) =>
-            Unsafe.As<Memory<T>, ReadOnlyMemory<T>>(ref memory);
+            new ReadOnlyMemory<T>(memory._object, memory._index, memory._length);
 
         /// <summary>
         /// Returns an empty <see cref="Memory{T}"/>
@@ -263,7 +260,7 @@ namespace System
         /// <summary>
         /// Returns a span from the memory.
         /// </summary>
-        public unsafe Span<T> Span
+        public Span<T> Span
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -327,7 +324,9 @@ namespace System
                     // least to be in-bounds when compared with the original Memory<T> instance, so using the span won't
                     // AV the process.
 
+                    // We use 'nuint' because it gives us a free early zero-extension to 64 bits when running on a 64-bit platform.
                     nuint desiredStartIndex = (uint)_index & (uint)ReadOnlyMemory<T>.RemoveFlagsBitMask;
+
                     int desiredLength = _length;
 
 #if TARGET_64BIT
@@ -343,7 +342,7 @@ namespace System
                     }
 #endif
 
-                    refToReturn = ref Unsafe.Add(ref refToReturn, (IntPtr)(void*)desiredStartIndex);
+                    refToReturn = ref Unsafe.Add(ref refToReturn, desiredStartIndex);
                     lengthOfUnderlyingSpan = desiredLength;
                 }
 
@@ -398,6 +397,7 @@ namespace System
             {
                 if (typeof(T) == typeof(char) && tmpObject is string s)
                 {
+                    // Unsafe.AsPointer is safe since the handle pins it
                     GCHandle handle = GCHandle.Alloc(tmpObject, GCHandleType.Pinned);
                     ref char stringData = ref Unsafe.Add(ref s.GetRawStringData(), _index);
                     return new MemoryHandle(Unsafe.AsPointer(ref stringData), handle);
@@ -410,11 +410,13 @@ namespace System
                     // Array is already pre-pinned
                     if (_index < 0)
                     {
+                        // Unsafe.AsPointer is safe since it's pinned
                         void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<T[]>(tmpObject))), _index & ReadOnlyMemory<T>.RemoveFlagsBitMask);
                         return new MemoryHandle(pointer);
                     }
                     else
                     {
+                        // Unsafe.AsPointer is safe since the handle pins it
                         GCHandle handle = GCHandle.Alloc(tmpObject, GCHandleType.Pinned);
                         void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<T[]>(tmpObject))), _index);
                         return new MemoryHandle(pointer, handle);

@@ -84,6 +84,9 @@ namespace ILCompiler.Metadata
                 record.Parameters.Capacity = paramHandles.Count;
                 foreach (var paramHandle in paramHandles)
                 {
+                    if (!_policy.GeneratesMetadata(ecmaEntity.Module, paramHandle))
+                        continue;
+
                     Ecma.Parameter param = reader.GetParameter(paramHandle);
                     Parameter paramRecord = new Parameter
                     {
@@ -240,6 +243,10 @@ namespace ILCompiler.Metadata
             if ((signature.Flags & Cts.MethodSignatureFlags.Static) == 0)
             {
                 callingConvention |= SignatureCallingConvention.HasThis;
+            }
+            if ((signature.Flags & Cts.MethodSignatureFlags.ExplicitThis) != 0)
+            {
+                callingConvention |= SignatureCallingConvention.ExplicitThis;
             }
             return callingConvention;
         }

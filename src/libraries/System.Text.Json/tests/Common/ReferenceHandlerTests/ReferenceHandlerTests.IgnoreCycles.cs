@@ -430,6 +430,48 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task IgnoreCycles_DerivedType_InArray()
+        {
+            var worker = new OfficeWorker
+            {
+                Office = new Office
+                {
+                    Dummy = new()
+                }
+            };
+
+            worker.Office.Staff = [worker, new RemoteWorker()];
+
+            await Test_Serialize_And_SerializeAsync(worker, """{"Office":{"Staff":[null,{"$type":"remote"}],"Dummy":{}}}""", s_optionsIgnoreCycles);
+
+            worker.Office.Staff = [worker];
+
+            await Test_Serialize_And_SerializeAsync(worker, """{"Office":{"Staff":[null],"Dummy":{}}}""", s_optionsIgnoreCycles);
+        }
+
+        [JsonDerivedType(typeof(OfficeWorker), "office")]
+        [JsonDerivedType(typeof(RemoteWorker), "remote")]
+        public abstract class EmployeeLocation
+        {
+        }
+
+        public class OfficeWorker : EmployeeLocation
+        {
+            public Office Office { get; set; }
+        }
+
+        public class RemoteWorker : EmployeeLocation
+        {
+        }
+
+        public class Office
+        {
+            public EmployeeLocation[] Staff { get; set; }
+
+            public EmptyClass Dummy { get; set; }
+        }
+
+        [Fact]
         public async Task CycleDetectionStatePersistsAcrossContinuations()
         {
             string expectedValueJson = @"{""LargePropertyName"":""A large-ish string to force continuations"",""Nested"":null}";
@@ -497,12 +539,12 @@ namespace System.Text.Json.Serialization.Tests
 
         public class NodeWithObjectProperty
         {
-            public object Next { get; set; }
+            public object? Next { get; set; }
         }
 
         public class NodeWithNodeProperty
         {
-            public NodeWithNodeProperty Next { get; set; }
+            public NodeWithNodeProperty? Next { get; set; }
         }
 
         public class ClassWithGenericProperty<T>
@@ -518,22 +560,22 @@ namespace System.Text.Json.Serialization.Tests
 
         public interface IValueNodeWithObjectProperty
         {
-            public object Next { get; set; }
+            public object? Next { get; set; }
         }
 
         public struct ValueNodeWithObjectProperty : IValueNodeWithObjectProperty
         {
-            public object Next { get; set; }
+            public object? Next { get; set; }
         }
 
         public interface IValueNodeWithIValueNodeProperty
         {
-            public IValueNodeWithIValueNodeProperty Next { get; set; }
+            public IValueNodeWithIValueNodeProperty? Next { get; set; }
         }
 
         public struct ValueNodeWithIValueNodeProperty : IValueNodeWithIValueNodeProperty
         {
-            public IValueNodeWithIValueNodeProperty Next { get; set; }
+            public IValueNodeWithIValueNodeProperty? Next { get; set; }
         }
 
         public class EmptyClass { }
@@ -559,8 +601,8 @@ namespace System.Text.Json.Serialization.Tests
         public class Person
         {
             public string Name { get; set; }
-            public object DayOfBirth { get; set; }
-            public Person Parent { get; set; }
+            public object? DayOfBirth { get; set; }
+            public Person? Parent { get; set; }
         }
 
         class PersonConverter : JsonConverter<Person>

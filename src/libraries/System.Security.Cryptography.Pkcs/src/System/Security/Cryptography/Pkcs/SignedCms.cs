@@ -95,13 +95,7 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     if (choice.Certificate.HasValue)
                     {
-                        coll.Add(new X509Certificate2(choice.Certificate.Value
-#if NETCOREAPP
-                            .Span
-#else
-                            .ToArray()
-#endif
-                            ));
+                        coll.Add(X509CertificateLoader.LoadCertificate(choice.Certificate.Value.Span));
                     }
                 }
 
@@ -172,7 +166,12 @@ namespace System.Security.Cryptography.Pkcs
             Decode(new ReadOnlySpan<byte>(encodedMessage));
         }
 
-        public void Decode(ReadOnlySpan<byte> encodedMessage)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void Decode(ReadOnlySpan<byte> encodedMessage)
         {
             // Hold a copy of the SignedData memory so we are protected against memory reuse by the caller.
             _heldData = CopyContent(encodedMessage);
@@ -676,7 +675,12 @@ namespace System.Security.Cryptography.Pkcs
             return ref _signedData;
         }
 
-        public void AddCertificate(X509Certificate2 certificate)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void AddCertificate(X509Certificate2 certificate)
         {
             int existingLength = _signedData.CertificateSet?.Length ?? 0;
 
@@ -710,7 +714,12 @@ namespace System.Security.Cryptography.Pkcs
             Reencode();
         }
 
-        public void RemoveCertificate(X509Certificate2 certificate)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void RemoveCertificate(X509Certificate2 certificate)
         {
             int existingLength = _signedData.CertificateSet?.Length ?? 0;
 

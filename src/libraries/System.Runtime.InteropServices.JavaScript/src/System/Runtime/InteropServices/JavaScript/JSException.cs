@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     return bs;
                 }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 if (!jsException.ProxyContext.IsCurrentThread())
                 {
                     // if we are on another thread, it would be too expensive and risky to obtain lazy stack trace.

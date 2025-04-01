@@ -95,10 +95,10 @@ we force that argument and any previous argument that is marked with any of the
     we haven't marked as needing a temp but still need to store in the outgoing args
     area is marked as needing a placeholder temp using `needPlace`.
 3. We force any arguments that use `localloc` to be evaluated into temps.
-4. We mark any address taken locals with the `GTF_GLOB_REF` flag. For two special
-cases we call `SetNeedsTemp()` and set up the temp in `fgMorphArgs`. `SetNeedsTemp`
-records the tmpNum used and sets `isTmp` so that we handle it like the other temps.
-The special cases are for `GT_MKREFANY` and for a `TYP_STRUCT` argument passed by
+4. We mark any address taken locals with the `GTF_GLOB_REF` flag. For a special
+case we call `SetNeedsTemp()` and set up the temp in `fgMorphArgs`.
+`SetNeedsTemp` records the tmpNum used and sets `isTmp` so that we handle it
+like the other temps.  The special case is for a `TYP_STRUCT` argument passed by
 value when we can't optimize away the extra copy.
 
 

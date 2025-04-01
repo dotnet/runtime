@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -233,7 +234,7 @@ namespace System.IO.Compression.Tests
                         using (Stream entrystream = entry.Open())
                         {
                             ReadAllBytes(entrystream, buffer, 0, buffer.Length);
-#if NETCOREAPP
+#if NET
                             uint zipcrc = entry.Crc32;
                             Assert.Equal(CRC.CalculateCRC(buffer), zipcrc);
 #endif
@@ -435,6 +436,31 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        public static byte[] CreateZipFile(int entryCount, byte[] entryContents)
+        {
+            using (MemoryStream ms = new())
+            {
+                using (ZipArchive createdArchive = new(ms, ZipArchiveMode.Create, true))
+                {
+                    for (int i = 0; i < entryCount; i++)
+                    {
+                        string fileName = $"dummydata/{i}.bin";
+                        ZipArchiveEntry newEntry = createdArchive.CreateEntry(fileName);
+
+                        newEntry.LastWriteTime = DateTimeOffset.Now.AddHours(-1.0);
+                        using (Stream entryWriteStream = newEntry.Open())
+                        {
+                            entryWriteStream.Write(entryContents);
+                            entryWriteStream.WriteByte((byte)(i % byte.MaxValue));
+                        }
+                    }
+                }
+                ms.Flush();
+
+                return ms.ToArray();
+            }
+        }
+
         protected const string Utf8SmileyEmoji = "\ud83d\ude04";
         protected const string Utf8LowerCaseOUmlautChar = "\u00F6";
         protected const string Utf8CopyrightChar = "\u00A9";
@@ -497,6 +523,18 @@ namespace System.IO.Compression.Tests
             foreach (object[] e in SharedComment_Data())
             {
                 yield return e;
+            }
+        }
+
+        // Returns pairs encoded with Latin1, but decoded with UTF8.
+        // Returns: originalComment, expectedComment, transcoded expectedComment
+        public static IEnumerable<object[]> MismatchingEncodingComment_Data()
+        {
+            foreach (object[] e in Latin1Comment_Data())
+            {
+                byte[] expectedBytes = Encoding.Latin1.GetBytes(e[1] as string);
+                
+                yield return new object[] { e[0], e[1], Encoding.UTF8.GetString(expectedBytes) };
             }
         }
     }

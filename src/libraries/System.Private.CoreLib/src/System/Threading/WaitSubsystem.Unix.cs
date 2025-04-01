@@ -340,11 +340,10 @@ namespace System.Threading
         }
 
         public static int Wait(
-            Span<IntPtr> waitHandles,
+            ReadOnlySpan<IntPtr> waitHandles,
             bool waitForAll,
             int timeoutMilliseconds)
         {
-            Debug.Assert(waitHandles != null);
             Debug.Assert(waitHandles.Length > 0);
             Debug.Assert(waitHandles.Length <= WaitHandle.MaxWaitHandles);
             Debug.Assert(timeoutMilliseconds >= -1);

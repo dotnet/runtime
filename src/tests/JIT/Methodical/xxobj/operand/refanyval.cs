@@ -48,6 +48,7 @@ namespace JitTest_refanyval_operand_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             if (refanyval_ldobj() != 0)

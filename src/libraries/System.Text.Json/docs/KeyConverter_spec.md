@@ -37,7 +37,7 @@ Implement an internal custom mechanism that is in charge of converting a defined
 
 * We need to define a criteria to choose what types we should support, I suggest to do as Utf8JsonReader/Writer and support the types supported by the Utf8Parser/Formatter.
 
-* Supported types (Types supported by [`Utf8Formatter/Parser`](https://docs.microsoft.com/en-us/dotnet/api/system.buffers.text.utf8formatter?view=netcore-3.1) + a few others that are popular):
+* Supported types (Types supported by [`Utf8Formatter/Parser`](https://learn.microsoft.com/dotnet/api/system.buffers.text.utf8formatter?view=netcore-3.1) + a few others that are popular):
   * Boolean
   * Byte
   * DateTime

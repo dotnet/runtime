@@ -18,12 +18,12 @@
 #include "MethodTable.h"
 #include "ObjectLayout.h"
 #include "event.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 
 #include "interoplibinterface.h"
 

@@ -19,8 +19,11 @@
 #include <mono/utils/mono-error.h>
 #include "mono/utils/mono-conc-hashtable.h"
 #include "mono/utils/refcount.h"
+// for dn_simdhash_string_ptr_t and dn_simdhash_u32_ptr_t
+#include "../native/containers/dn-simdhash-specializations.h"
 
 struct _MonoType {
+	/* don't access directly, use m_type_data_get_<name> and m_type_data_set_<name> */
 	union {
 		MonoClass *klass; /* for VALUETYPE and CLASS */
 		MonoType *type;   /* for PTR */
@@ -28,7 +31,7 @@ struct _MonoType {
 		MonoMethodSignature *method;
 		MonoGenericParam *generic_param; /* for VAR and MVAR */
 		MonoGenericClass *generic_class; /* for GENERICINST */
-	} data;
+	} data__;
 	unsigned int attrs    : 16; /* param attributes or field flags */
 	MonoTypeEnum type     : 8;
 	unsigned int has_cmods : 1;
@@ -217,6 +220,8 @@ typedef struct {
 	guint32  size;
 } MonoStreamHeader;
 
+#define MONO_TABLE_INFO_MAX_COLUMNS 9
+
 struct _MonoTableInfo {
 	const char *base;
 	guint       rows_     : 24;	/* don't access directly, use table_info_get_rows */
@@ -234,6 +239,12 @@ struct _MonoTableInfo {
 	 * we only need 4, but 8 is aligned no shift required.
 	 */
 	guint32   size_bitfield;
+
+	/*
+	 * optimize out the loop in mono_metadata_decode_row_col_raw.
+	 * 4 * 9 easily fits in a uint8
+	 */
+	guint8    column_offsets[MONO_TABLE_INFO_MAX_COLUMNS];
 };
 
 #define REFERENCE_MISSING ((gpointer) -1)
@@ -351,6 +362,7 @@ struct _MonoImage {
 	MonoMemPool         *mempool; /*protected by the image lock*/
 
 	char                *raw_metadata;
+	guint32              raw_metadata_len;
 
 	MonoStreamHeader     heap_strings;
 	MonoStreamHeader     heap_us;
@@ -408,11 +420,11 @@ struct _MonoImage {
 	/*
 	 * Indexed by method tokens and typedef tokens.
 	 */
-	GHashTable *method_cache; /*protected by the image lock*/
+	dn_simdhash_u32_ptr_t *method_cache; /*protected by the image lock*/
 	MonoInternalHashTable class_cache;
 
 	/* Indexed by memberref + methodspec tokens */
-	GHashTable *methodref_cache; /*protected by the image lock*/
+	dn_simdhash_u32_ptr_t *methodref_cache; /*protected by the image lock*/
 
 	/*
 	 * Indexed by fielddef and memberref tokens
@@ -430,7 +442,7 @@ struct _MonoImage {
 	/*
 	 * Indexes namespaces to hash tables that map class name to typedef token.
 	 */
-	GHashTable *name_cache;  /*protected by the image lock*/
+	dn_simdhash_string_ptr_t *name_cache;  /*protected by the image lock*/
 
 	/*
 	 * Indexed by MonoClass
@@ -656,10 +668,16 @@ struct _MonoMethodSignature {
 	unsigned int  pinvoke             : 1;
 	unsigned int  is_inflated         : 1;
 	unsigned int  has_type_parameters : 1;
-	unsigned int  suppress_gc_transition : 1;
 	unsigned int  marshalling_disabled : 1;
+	uint8_t       ext_callconv; // see MonoExtCallConv
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
+
+typedef enum {
+  MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION = 0x01,
+  MONO_EXT_CALLCONV_SWIFTCALL = 0x02,
+  /// see MonoMethodSignature:ext_callconv - only 8 bits
+} MonoExtCallConv;
 
 /*
  * AOT cache configuration loaded from config files.
@@ -882,6 +900,8 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
 MONO_COMPONENT_API
 const char *   mono_meta_table_name              (int table);
 void           mono_metadata_compute_table_bases (MonoImage *meta);
+MONO_COMPONENT_API
+void           mono_metadata_compute_column_offsets (MonoTableInfo *table);
 
 gboolean
 mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
@@ -992,6 +1012,8 @@ MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, Mono
 MonoMethodSignature  *mono_metadata_signature_dup_mem_manager (MonoMemoryManager *mem_manager, MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass);
 MonoMethodSignature  *mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig);
+MonoMethodSignature  *mono_metadata_signature_allocate_internal (MonoImage *image, MonoMemPool *mp, MonoMemoryManager *mem_manager, size_t sig_size);
+MonoMethodSignature  *mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMemoryManager *mem_manager, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params);
 
 MonoGenericInst *
 mono_get_shared_generic_inst (MonoGenericContainer *container);
@@ -1001,8 +1023,14 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open);
 
 MONO_API void            mono_type_get_desc (GString *res, MonoType *type, mono_bool include_namespace);
 
+enum {
+	MONO_TYPE_EQ_FLAGS_NONE = 0,
+	MONO_TYPE_EQ_FLAGS_SIG_ONLY = 1,
+	MONO_TYPE_EQ_FLAG_IGNORE_CMODS = 2,
+};
+
 gboolean
-mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only);
+mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, int flags);
 
 MonoMarshalSpec *
 mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image, const char *ptr);
@@ -1118,6 +1146,56 @@ mono_metadata_get_class_guid (MonoClass* klass, uint8_t* guid, MonoError *error)
 
 #define MONO_CLASS_IS_INTERFACE_INTERNAL(c) ((mono_class_get_flags (c) & TYPE_ATTRIBUTE_INTERFACE) || mono_type_is_generic_parameter (m_class_get_byval_arg (c)))
 
+/*
+ * We use this to pass context information to the row locator
+ */
+typedef struct {
+	// caller inputs
+	// note: we can't optimize around locator_t.idx yet because a few call sites mutate it
+	guint32 idx;			/* The index that we are trying to locate */
+	// no call sites mutate this so we can optimize around it
+	guint32 col_idx;		/* The index in the row where idx may be stored */
+	// no call sites mutate this so we can optimize around it
+	MonoTableInfo *t;		/* pointer to the table */
+
+	// optimization data
+	gint32 metadata_has_updates; // -1: uninitialized. 0/1: value
+	const char * t_base;
+	guint t_row_size;
+	guint32 t_rows;
+	guint32 column_size;
+	const char * first_column_data;
+
+	// result
+	guint32 result;
+} mono_locator_t;
+
+MONO_ALWAYS_INLINE static mono_locator_t
+mono_locator_init (MonoTableInfo *t, guint32 idx, guint32 col_idx)
+{
+	mono_locator_t result = { 0, };
+
+	result.idx = idx;
+	result.col_idx = col_idx;
+	result.t = t;
+
+	g_assert (t);
+	// FIXME: Callers shouldn't rely on this
+	if (!t->base)
+		return result;
+
+	// optimization data for decode_locator_row
+	result.metadata_has_updates = -1;
+	result.t_base = t->base;
+	result.t_row_size = t->row_size;
+	result.t_rows = table_info_get_rows (t);
+	g_assert (col_idx < mono_metadata_table_count (t->size_bitfield));
+	result.column_size = mono_metadata_table_size (t->size_bitfield, col_idx);
+	result.first_column_data = result.t_base + t->column_offsets [col_idx];
+
+	return result;
+}
+
 static inline gboolean
 m_image_is_raw_data_allocated (MonoImage *image)
 {
@@ -1205,7 +1283,7 @@ static inline MonoMethodSignature*
 mono_type_get_signature_internal (MonoType *type)
 {
 	g_assert (type->type == MONO_TYPE_FNPTR);
-	return type->data.method;
+	return type->data__.method;
 }
 
 /**
@@ -1220,6 +1298,115 @@ m_type_is_byref (const MonoType *type)
 	return type->byref__;
 }
 
+static MONO_NEVER_INLINE void
+m_type_invalid_access (const char *fn_name, MonoTypeEnum actual_type)
+{
+	g_error ("MonoType with type %d accessed by %s", actual_type, fn_name);
+}
+
+static inline gboolean
+m_type_data_is_klass_valid (const MonoType *type) {
+	switch (type->type) {
+		// list based on class.c mono_class_from_mono_type_internal cases
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_VOID:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_TYPEDBYREF:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_SZARRAY:
+			return TRUE;
+		default:
+			return FALSE;
+	}
+}
+
+/**
+ * when using _unchecked accessors for performance, it is your responsibility to check
+ * MonoType->type first and make sure you are accessing the correct member!
+ * m_type_data_xxx_klass is legal for \c MONO_TYPE_CLASS, \c MONO_TYPE_VALUETYPE, and \c MONO_TYPE_SZARRAY.
+ *  It may work for other types but you should really use \c mono_class_from_mono_type_internal instead.
+ * m_type_data_xxx_generic_param is legal for \c MONO_TYPE_VAR and \c MONO_TYPE_MVAR.
+ * m_type_data_xxx_array is legal for \c MONO_TYPE_ARRAY but *not* \c MONO_TYPE_SZARRAY.
+ * m_type_data_xxx_type is legal for \c MONO_TYPE_PTR.
+ * m_type_data_xxx_method is legal for \c MONO_TYPE_FNPTR.
+ * m_type_data_xxx_generic_class is legal for \c MONO_TYPE_GENERICINST.
+ */
+#define DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS(field_type, field_name, predicate) \
+	static inline field_type \
+	m_type_data_get_ ## field_name (const MonoType *type) \
+	{ \
+		if (G_LIKELY(predicate)) \
+			return type->data__.field_name; \
+		m_type_invalid_access (__func__, type->type); \
+		return NULL; \
+	} \
+	\
+	static inline void \
+	m_type_data_set_ ## field_name (MonoType *type, field_type value) \
+	{ \
+		if (!G_LIKELY(predicate)) \
+			m_type_invalid_access (__func__, type->type); \
+		else \
+			type->data__.field_name = value; \
+	}
+
+#if (defined(ENABLE_CHECKED_BUILD) || defined(_DEBUG) || defined(DEBUG))
+
+#define DEFINE_TYPE_DATA_MEMBER(field_type, field_name, predicate) \
+	DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS(field_type, field_name, predicate) \
+	static inline field_type \
+	m_type_data_get_ ## field_name ## _unchecked (const MonoType *type) \
+	{ \
+		return m_type_data_get_ ## field_name (type); \
+	} \
+	static inline void \
+	m_type_data_set_ ## field_name ## _unchecked (MonoType *type, field_type value) \
+	{ \
+		m_type_data_set_ ## field_name (type, value); \
+	}
+
+#else // ENABLE_CHECKED_BUILD || _DEBUG || DEBUG
+
+#define DEFINE_TYPE_DATA_MEMBER(field_type, field_name, predicate) \
+	DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS(field_type, field_name, predicate) \
+	static inline field_type \
+	m_type_data_get_ ## field_name ## _unchecked (const MonoType *type) \
+	{ \
+		return type->data__.field_name; \
+	} \
+	static inline void \
+	m_type_data_set_ ## field_name ## _unchecked (MonoType *type, field_type value) \
+	{ \
+		type->data__.field_name = value; \
+	}
+
+#endif // ENABLE_CHECKED_BUILD || _DEBUG || DEBUG
+
+DEFINE_TYPE_DATA_MEMBER(MonoClass *, klass, (m_type_data_is_klass_valid (type)));
+DEFINE_TYPE_DATA_MEMBER(MonoGenericParam *, generic_param, ((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR)));
+DEFINE_TYPE_DATA_MEMBER(MonoArrayType *, array, (type->type == MONO_TYPE_ARRAY));
+DEFINE_TYPE_DATA_MEMBER(MonoType *, type, (type->type == MONO_TYPE_PTR));
+DEFINE_TYPE_DATA_MEMBER(MonoMethodSignature *, method, (type->type == MONO_TYPE_FNPTR));
+DEFINE_TYPE_DATA_MEMBER(MonoGenericClass *, generic_class, (type->type == MONO_TYPE_GENERICINST));
+
+#undef DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS
+#undef DEFINE_TYPE_DATA_MEMBER
+
 /**
  * mono_type_get_class_internal:
  * \param type the \c MonoType operated on
@@ -1232,7 +1419,7 @@ static inline MonoClass*
 mono_type_get_class_internal (MonoType *type)
 {
 	/* FIXME: review the runtime users before adding the assert here */
-	return type->data.klass;
+	return m_type_data_get_klass (type);
 }
 
 /**
@@ -1246,7 +1433,7 @@ mono_type_get_class_internal (MonoType *type)
 static inline MonoArrayType*
 mono_type_get_array_type_internal (MonoType *type)
 {
-	return type->data.array;
+	return m_type_data_get_array (type);
 }
 
 static inline int
@@ -1274,5 +1461,10 @@ mono_class_set_deferred_type_load_failure (MonoClass *klass, const char * fmt, .
 
 gboolean
 mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...);
+
+static inline gboolean
+mono_method_signature_has_ext_callconv (MonoMethodSignature *sig, MonoExtCallConv flags) {
+	return (sig->ext_callconv & flags) != 0;
+}
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */

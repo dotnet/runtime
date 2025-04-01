@@ -102,113 +102,241 @@ namespace DebuggerTests
         [JSExport]
         public static void Invoke_Void([JSMarshalAs<JSType.Any>()] object methodInfo)
         {
-            var method = (MethodInfo)methodInfo;
-            method.Invoke(null, null);
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                method.Invoke(null, null);
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static Task Invoke_Task([JSMarshalAs<JSType.Any>()] object methodInfo)
         {
-            var method = (MethodInfo)methodInfo;
-            return (Task)method.Invoke(null, null);
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                return (Task)method.Invoke(null, null);
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static string Invoke_String([JSMarshalAs<JSType.Any>()] object methodInfo)
         {
-            var method = (MethodInfo)methodInfo;
-            return (string)method.Invoke(null, null);
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                return (string)method.Invoke(null, null);
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static void Invoke_Boolean_Void([JSMarshalAs<JSType.Any>()] object methodInfo, bool p1)
         {
-            var method = (MethodInfo)methodInfo;
-            method.Invoke(null, new object[] { p1 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                method.Invoke(null, new object[] { p1 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static Task Invoke_Boolean_Task([JSMarshalAs<JSType.Any>()] object methodInfo, bool p1)
         {
-            var method = (MethodInfo)methodInfo;
-            return (Task)method.Invoke(null, new object[] { p1 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                return (Task)method.Invoke(null, new object[] { p1 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static void Invoke_Int32_Void([JSMarshalAs<JSType.Any>()] object methodInfo, int p1)
         {
-            var method = (MethodInfo)methodInfo;
-            method.Invoke(null, new object[] { p1 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                method.Invoke(null, new object[] { p1 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static void Invoke_Int32_Int32_Void([JSMarshalAs<JSType.Any>()] object methodInfo, int p1, int p2)
         {
-            var method = (MethodInfo)methodInfo;
-            method.Invoke(null, new object[] { p1, p2 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                method.Invoke(null, new object[] { p1, p2 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static void Invoke_Int32_Int32_Int32_Void([JSMarshalAs<JSType.Any>()] object methodInfo, int p1, int p2, int p3)
         {
-            var method = (MethodInfo)methodInfo;
-            method.Invoke(null, new object[] { p1, p2, p3 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                method.Invoke(null, new object[] { p1, p2, p3 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static int Invoke_Int32([JSMarshalAs<JSType.Any>()] object methodInfo)
         {
-            var method = (MethodInfo)methodInfo;
-            return (int)method.Invoke(null, null);
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                return (int)method.Invoke(null, null);
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static int Invoke_Int32_Int32([JSMarshalAs<JSType.Any>()] object methodInfo, int p1)
         {
-            var method = (MethodInfo)methodInfo;
-            return (int)method.Invoke(null, new object[] { p1 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                return (int)method.Invoke(null, new object[] { p1 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static int Invoke_Int32_Int32_Int32([JSMarshalAs<JSType.Any>()] object methodInfo, int p1, int p2)
         {
-            var method = (MethodInfo)methodInfo;
-            return (int)method.Invoke(null, new object[] { p1, p2 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                return (int)method.Invoke(null, new object[] { p1, p2 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static void Invoke_String_Void([JSMarshalAs<JSType.Any>()] object methodInfo, string p1)
         {
-            var method = (MethodInfo)methodInfo;
-            method.Invoke(null, new object[] { p1 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                method.Invoke(null, new object[] { p1 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static void Invoke_String_String_Void([JSMarshalAs<JSType.Any>()] object methodInfo, string p1, string p2)
         {
-            var method = (MethodInfo)methodInfo;
-            method.Invoke(null, new object[] { p1, p2 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                method.Invoke(null, new object[] { p1, p2 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static void Invoke_String_String_String_String_Void([JSMarshalAs<JSType.Any>()] object methodInfo, string p1, string p2, string p3, string p4)
         {
-            var method = (MethodInfo)methodInfo;
-            method.Invoke(null, new object[] { p1, p2, p3, p4 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                method.Invoke(null, new object[] { p1, p2, p3, p4 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static string Invoke_String_String_String([JSMarshalAs<JSType.Any>()] object methodInfo, string p1, string p2)
         {
-            var method = (MethodInfo)methodInfo;
-            return (string)method.Invoke(null, new object[] { p1, p2 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                return (string)method.Invoke(null, new object[] { p1, p2 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [JSExport]
         public static void Invoke_String_String_String_String_String_String_String_String_Void([JSMarshalAs<JSType.Any>()] object methodInfo, string p1, string p2, string p3, string p4, string p5, string p6, string p7, string p8)
         {
-            var method = (MethodInfo)methodInfo;
-            method.Invoke(null, new object[] { p1, p2, p3, p4, p5, p6, p7, p8 });
+            try
+            {
+                var method = (MethodInfo)methodInfo;
+                method.Invoke(null, new object[] { p1, p2, p3, p4, p5, p6, p7, p8 });
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null)  throw tie.InnerException;
+                throw;
+            }
         }
 
         [StructLayout(LayoutKind.Explicit)]

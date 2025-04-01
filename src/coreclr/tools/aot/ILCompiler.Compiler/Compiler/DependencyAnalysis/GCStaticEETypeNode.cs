@@ -20,11 +20,13 @@ namespace ILCompiler.DependencyAnalysis
     {
         private GCPointerMap _gcMap;
         private TargetDetails _target;
+        private bool _requiresAlign8;
 
-        public GCStaticEETypeNode(TargetDetails target, GCPointerMap gcMap)
+        public GCStaticEETypeNode(TargetDetails target, GCPointerMap gcMap, bool requiresAlign8)
         {
             _gcMap = gcMap;
             _target = target;
+            _requiresAlign8 = requiresAlign8;
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -41,7 +43,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__GCStaticEEType_").Append(_gcMap.ToString());
+            sb.Append("__GCStaticEEType_"u8).Append(_gcMap.ToString());
+            if (_requiresAlign8)
+            {
+                sb.Append("_align8"u8);
+            }
         }
 
         int ISymbolDefinitionNode.Offset
@@ -64,7 +70,6 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.AddSymbol(this);
 
             // +1 for SyncBlock (static size already includes MethodTable)
-            Debug.Assert(factory.Target.Abi == TargetAbi.NativeAot || factory.Target.Abi == TargetAbi.CppCodegen);
             int totalSize = (_gcMap.Size + 1) * _target.PointerSize;
 
             // We only need to check for containsPointers because ThreadStatics are always allocated
@@ -84,6 +89,13 @@ namespace ILCompiler.DependencyAnalysis
             if (containsPointers)
                 flags |= (uint)EETypeFlags.HasPointersFlag;
 
+            if (_requiresAlign8)
+            {
+                // Mark the method table as non-value type that requires 8-byte alignment
+                flags |= (uint)EETypeFlagsEx.RequiresAlign8Flag;
+                flags |= (uint)EETypeElementType.Class << (byte)EETypeFlags.ElementTypeShift;
+            }
+
             dataBuilder.EmitUInt(flags);
 
             totalSize = Math.Max(totalSize, _target.PointerSize * 3); // minimum GC MethodTable size is 3 pointers
@@ -99,7 +111,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _gcMap.CompareTo(((GCStaticEETypeNode)other)._gcMap);
+            GCStaticEETypeNode otherGCStaticEETypeNode = (GCStaticEETypeNode)other;
+            int mapCompare = _gcMap.CompareTo(otherGCStaticEETypeNode._gcMap);
+            if (mapCompare == 0)
+            {
+                return _requiresAlign8.CompareTo(otherGCStaticEETypeNode._requiresAlign8);
+            }
+
+            return mapCompare;
         }
     }
 }

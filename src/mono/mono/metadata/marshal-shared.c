@@ -507,7 +507,7 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 		int esize;
 
 		if (type->type == MONO_TYPE_SZARRAY) {
-			eklass = type->data.klass;
+			eklass = m_type_data_get_klass_unchecked (type);
 		} else {
 			g_assert_not_reached ();
 		}
@@ -705,14 +705,6 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 		break;
 	}
 
-#ifndef DISABLE_COM
-	case MONO_MARSHAL_CONV_OBJECT_INTERFACE:
-	case MONO_MARSHAL_CONV_OBJECT_IUNKNOWN:
-	case MONO_MARSHAL_CONV_OBJECT_IDISPATCH:
-		mono_cominterop_emit_ptr_to_object_conv (mb, type, conv, mspec);
-		break;
-#endif /* DISABLE_COM */
-
 	case MONO_MARSHAL_CONV_SAFEHANDLE: {
 		/*
 		 * Passing SafeHandles as ref does not allow the unmanaged code
@@ -881,8 +873,8 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 				MonoType *etype;
 				int len;
 
-				if (t == MONO_TYPE_VALUETYPE && m_class_is_enumtype (ftype->data.klass)) {
-					ftype = mono_class_enum_basetype_internal (ftype->data.klass);
+				if (t == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (ftype))) {
+					ftype = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (ftype));
 					goto handle_enum;
 				}
 
@@ -912,26 +904,8 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 				break;
 			}
 			case MONO_TYPE_OBJECT: {
-#ifndef DISABLE_COM
-				if (to_object) {
-					mono_mb_emit_ldloc (mb, 1);
-					mono_mb_emit_ldloc (mb, 0);
-					mono_mb_emit_managed_call (mb, mono_get_Marshal_GetObjectForNativeVariant (), NULL);
-					mono_mb_emit_byte (mb, CEE_STIND_REF);
-
-					mono_mb_emit_ldloc (mb, 0);
-					mono_mb_emit_managed_call (mb, mono_get_Variant_Clear (), NULL);
-				}
-				else {
-					mono_mb_emit_ldloc (mb, 0);
-					mono_mb_emit_byte(mb, CEE_LDIND_REF);
-					mono_mb_emit_ldloc (mb, 1);
-					mono_mb_emit_managed_call (mb, mono_get_Marshal_GetNativeVariantForObject (), NULL);
-				}
-#else
 				char *msg = g_strdup_printf ("COM support was disabled at compilation time.");
 				mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
-#endif
 				break;
 			}
 
@@ -1086,9 +1060,9 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 		int esize;
 
 		if (type->type == MONO_TYPE_SZARRAY) {
-			eklass = type->data.klass;
+			eklass = m_type_data_get_klass_unchecked (type);
 		} else if (type->type == MONO_TYPE_ARRAY) {
-			eklass = type->data.array->eklass;
+			eklass = m_type_data_get_array_unchecked (type)->eklass;
 			g_assert(m_class_is_blittable (eklass));
 		} else {
 			g_assert_not_reached ();
@@ -1225,14 +1199,6 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 		break;
 	}
 
-#ifndef DISABLE_COM
-	case MONO_MARSHAL_CONV_OBJECT_INTERFACE:
-	case MONO_MARSHAL_CONV_OBJECT_IDISPATCH:
-	case MONO_MARSHAL_CONV_OBJECT_IUNKNOWN:
-		mono_cominterop_emit_object_to_ptr_conv (mb, type, conv, mspec);
-		break;
-#endif /* DISABLE_COM */
-
 	case MONO_MARSHAL_CONV_SAFEHANDLE: {
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
@@ -1257,6 +1223,11 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_byte (mb, CEE_STIND_I);
+		break;
+	}
+	case MONO_MARSHAL_CONV_OBJECT_IUNKNOWN: {
+		char *msg = g_strdup_printf ("Marshaling not supported for COM type MONO_MARSHAL_CONV_OBJECT_IUNKNOWN.");
+		mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 		break;
 	}
 

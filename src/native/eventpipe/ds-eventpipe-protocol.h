@@ -20,6 +20,7 @@
 // Command = 0x0202
 // Command = 0x0203
 // Command = 0x0204
+// Command = 0x0205
 #if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)
 struct _EventPipeCollectTracingCommandPayload {
 #else
@@ -40,6 +41,7 @@ struct _EventPipeCollectTracingCommandPayload_Internal {
 	EventPipeSerializationFormat serialization_format;
 	bool rundown_requested;
 	bool stackwalk_requested;
+	uint64_t rundown_keyword;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)

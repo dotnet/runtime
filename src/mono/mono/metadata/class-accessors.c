@@ -30,6 +30,7 @@ typedef enum {
 	PROP_FIELD_DEF_VALUES_4BYTESWIZZLE = 12, /* MonoFieldDefaultValue* with default values swizzled at 4 byte boundaries*/
 	PROP_FIELD_DEF_VALUES_8BYTESWIZZLE = 13, /* MonoFieldDefaultValue* with default values swizzled at 8 byte boundaries*/
 	PROP_METADATA_UPDATE_INFO = 14, /* MonoClassMetadataUpdateInfo* */
+	PROP_INLINEARRAY_VALUE = 15, /* System.Runtime.CompilerServices.InlineArrayAttribute length value */
 }  InfrequentDataKind;
 
 /* Accessors based on class kind*/
@@ -438,16 +439,6 @@ mono_class_set_declsec_flags (MonoClass *klass, guint32 value)
 }
 
 void
-mono_class_set_is_com_object (MonoClass *klass)
-{
-#ifndef DISABLE_COM
-	mono_loader_lock ();
-	klass->is_com_object = 1;
-	mono_loader_unlock ();
-#endif
-}
-
-void
 mono_class_set_is_simd_type (MonoClass *klass, gboolean is_simd)
 {
 	klass->simd_type = is_simd;
@@ -694,6 +685,21 @@ mono_class_has_metadata_update_info (MonoClass *klass)
 	}
 }
 
+gint32
+mono_class_get_inlinearray_value (MonoClass *klass)
+{
+    Uint32Property *prop = (Uint32Property*)mono_property_bag_get (m_class_get_infrequent_data (klass), PROP_INLINEARRAY_VALUE);
+    return prop ? prop->value : 0;
+}
+
+void
+mono_class_set_inlinearray_value (MonoClass *klass, gint32 value)
+{
+    Uint32Property *prop = (Uint32Property*)mono_class_alloc (klass, sizeof (Uint32Property));
+    prop->head.tag = PROP_INLINEARRAY_VALUE;
+    prop->value = value;
+    mono_property_bag_add (m_class_get_infrequent_data (klass), prop);
+}
 
 #ifdef MONO_CLASS_DEF_PRIVATE
 #define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) rettype funcname (argtype *klass) { return optref klass-> fieldname ; }

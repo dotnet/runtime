@@ -195,10 +195,10 @@ dwarf_getfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t *val)
     return -UNW_EBADREG;
 
   if (DWARF_IS_REG_LOC (loc))
-    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_LOC (loc),
+    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_REG_LOC (loc),
                                        val, 0, c->as_arg);
 
-  addr = DWARF_GET_LOC (loc);
+  addr = DWARF_GET_MEM_LOC (loc);
   if ((ret = (*c->as->acc.access_mem) (c->as, addr + 0, (unw_word_t *) valp,
                                        0, c->as_arg)) < 0)
     return ret;
@@ -218,10 +218,10 @@ dwarf_putfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t val)
     return -UNW_EBADREG;
 
   if (DWARF_IS_REG_LOC (loc))
-    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_LOC (loc),
+    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_REG_LOC (loc),
                                        &val, 1, c->as_arg);
 
-  addr = DWARF_GET_LOC (loc);
+  addr = DWARF_GET_MEM_LOC (loc);
   if ((ret = (*c->as->acc.access_mem) (c->as, addr + 0, (unw_word_t *) valp,
                                        1, c->as_arg)) < 0)
     return ret;
@@ -243,20 +243,20 @@ dwarf_get (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t *val)
   assert (!DWARF_IS_FP_LOC (loc));
 
   if (DWARF_IS_REG_LOC (loc))
-    return (*c->as->acc.access_reg) (c->as, DWARF_GET_LOC (loc), val,
+    return (*c->as->acc.access_reg) (c->as, DWARF_GET_REG_LOC (loc), val,
                                      0, c->as_arg);
   else if (c->as->abi == UNW_MIPS_ABI_O32)
-    return read_s32 (c, DWARF_GET_LOC (loc), val);
+    return read_s32 (c, DWARF_GET_MEM_LOC (loc), val);
   else if (c->as->abi == UNW_MIPS_ABI_N32) {
     if (tdep_big_endian(c->as))
-      return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc) + 4, val,
+      return (*c->as->acc.access_mem) (c->as, DWARF_GET_MEM_LOC (loc) + 4, val,
                                        0, c->as_arg);
     else
-      return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), val,
+      return (*c->as->acc.access_mem) (c->as, DWARF_GET_MEM_LOC (loc), val,
                                        0, c->as_arg);
   }
   else
-    return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), val,
+    return (*c->as->acc.access_mem) (c->as, DWARF_GET_MEM_LOC (loc), val,
                                      0, c->as_arg);
 }
 
@@ -273,12 +273,12 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
   assert (!DWARF_IS_FP_LOC (loc));
 
   if (DWARF_IS_REG_LOC (loc))
-    return (*c->as->acc.access_reg) (c->as, DWARF_GET_LOC (loc), &val,
+    return (*c->as->acc.access_reg) (c->as, DWARF_GET_REG_LOC (loc), &val,
                                      1, c->as_arg);
   else if (c->as->abi == UNW_MIPS_ABI_O32)
-    return write_s32 (c, DWARF_GET_LOC (loc), &val);
+    return write_s32 (c, DWARF_GET_MEM_LOC (loc), &val);
   else
-    return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), &val,
+    return (*c->as->acc.access_mem) (c->as, DWARF_GET_MEM_LOC (loc), &val,
                                      1, c->as_arg);
 }
 

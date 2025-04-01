@@ -430,7 +430,7 @@ namespace System.Globalization.Tests
         [InlineData(0x4C00)]
         public void TestCreationWithTemporaryLCID(int lcid)
         {
-            // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/926e694f-1797-4418-a922-343d1c5e91a6
+            // https://learn.microsoft.com/openspecs/windows_protocols/ms-lcid/926e694f-1797-4418-a922-343d1c5e91a6
             // If a temporary LCID is assigned it will be dynamically assigned at runtime to be
             // 0x2000, 0x2400, 0x2800, 0x2C00, 0x3000, 0x3400, 0x3800, 0x3C00, 0x4000, 0x4400, 0x4800, or 0x4C00,
             // for the valid language-script-region tags.
@@ -446,7 +446,7 @@ namespace System.Globalization.Tests
         [InlineData("de-DE-u-co-phonebk-t-xx", "de-DE-t-xx", "de-DE-t-xx_phoneboo")]
         [InlineData("de-DE-u-co-phonebk-t-xx-u-yy", "de-DE-t-xx-u-yy", "de-DE-t-xx-u-yy_phoneboo")]
         [InlineData("de-DE", "de-DE", "de-DE")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         public void TestCreationWithMangledSortName(string cultureName, string expectedCultureName, string expectedSortName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
@@ -461,7 +461,7 @@ namespace System.Globalization.Tests
         [InlineData("qps-plocm", "qps-PLOCM")] // ICU normalize this name to "qps--plocm" which we normalize it back to "qps-plocm"
         [InlineData("zh_CN", "zh_cn")]
         [InlineData("km_KH", "km_kh")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser), nameof(PlatformDetection.IsNotWindowsServerCore))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform), nameof(PlatformDetection.IsNotWindowsServerCore))]
         public void TestCreationWithICUNormalizedNames(string cultureName, string expectedCultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);

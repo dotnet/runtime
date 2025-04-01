@@ -77,8 +77,10 @@
       System.IO.MemoryMappedFiles;
       System.IO.Pipes;
       System.IO.Pipes.AccessControl;
+      System.IO.Pipelines;
       System.IO.UnmanagedMemoryStream;
       System.Linq;
+      System.Linq.AsyncEnumerable;
       System.Linq.Expressions;
       System.Linq.Parallel;
       System.Linq.Queryable;
@@ -94,6 +96,7 @@
       System.Net.Quic;
       System.Net.Requests;
       System.Net.Security;
+      System.Net.ServerSentEvents;
       System.Net.ServicePoint;
       System.Net.Sockets;
       System.Net.WebClient;
@@ -220,7 +223,6 @@
       Microsoft.Extensions.Options.DataAnnotations;
       Microsoft.Extensions.Primitives;
       System.Diagnostics.EventLog;
-      System.IO.Pipelines;
       System.Security.Cryptography.Xml;
       System.Threading.RateLimiting;
     </AspNetCoreAppLibrary>
@@ -232,6 +234,7 @@
       System.Diagnostics.EventLog;
       System.Diagnostics.PerformanceCounter;
       System.DirectoryServices;
+      System.Formats.Nrbf;
       System.IO.Packaging;
       System.Resources.Extensions;
       System.Security.Cryptography.Pkcs;

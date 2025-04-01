@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Http.Logging
                     }
                     else
                     {
-#if NETCOREAPP
+#if NET
                         builder.AppendJoin(", ", (IEnumerable<object>)kvp.Value);
                         builder.AppendLine();
 #else

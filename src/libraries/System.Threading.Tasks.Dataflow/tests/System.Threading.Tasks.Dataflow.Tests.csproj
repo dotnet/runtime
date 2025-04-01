@@ -1,8 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Dataflow\ActionBlockTests.cs" />
     <Compile Include="Dataflow\BatchBlockTests.cs" />
@@ -26,12 +28,16 @@
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
              Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="Dataflow\DataflowBlockExtensionTests.IAsyncEnumerable.cs" />
     <Compile Include="Dataflow\DataflowTestHelper.IAsyncEnumerable.cs" />
     <Compile Include="Dataflow\TransformManyBlockTests.IAsyncEnumerable.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj" />
+    <ProjectReference Include="..\..\System.Linq.AsyncEnumerable\src\System.Linq.AsyncEnumerable.csproj" />
   </ItemGroup>
+
 </Project>

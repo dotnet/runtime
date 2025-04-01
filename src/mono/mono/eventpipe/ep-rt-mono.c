@@ -10,7 +10,6 @@
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/utils/mono-rand.h>
 #include <mono/metadata/profiler.h>
 #include <mono/mini/mini-runtime.h>
 #include <minipal/getexepath.h>
@@ -28,9 +27,6 @@ gboolean _ep_rt_mono_runtime_initialized;
 // EventPipe TLS key.
 MonoNativeTlsKey _ep_rt_mono_thread_holder_tls_id;
 static MonoNativeTlsKey _thread_data_tls_id;
-
-// Random byte provider.
-static gpointer _rand_provider;
 
 // EventPipe global config lock.
 ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock = {0};
@@ -61,17 +57,6 @@ EVENTPIPE_TRACE_CONTEXT MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_DOTNET_Co
 
 void
 ep_rt_mono_thread_exited (void);
-
-bool
-ep_rt_mono_rand_try_get_bytes (
-	uint8_t *buffer,
-	size_t buffer_size)
-{
-	EP_ASSERT (_rand_provider != NULL);
-
-	ERROR_DECL (error);
-	return mono_rand_try_get_bytes (&_rand_provider, (guchar *)buffer, (gssize)buffer_size, error);
-}
 
 char *
 ep_rt_mono_get_managed_cmd_line (void)
@@ -804,6 +789,7 @@ ep_rt_mono_component_init (void)
 	g_free (diag_env);
 
 	ep_rt_mono_runtime_provider_component_init ();
+	ep_rt_mono_sampling_provider_component_init ();
 	ep_rt_mono_profiler_provider_component_init ();
 }
 
@@ -816,8 +802,6 @@ ep_rt_mono_init (void)
 	mono_native_tls_alloc (&_thread_data_tls_id, NULL);
 
 	mono_100ns_ticks ();
-	mono_rand_open ();
-	_rand_provider = mono_rand_init (NULL, 0);
 
 	ep_rt_mono_runtime_provider_init ();
 	ep_rt_mono_profiler_provider_init ();
@@ -838,9 +822,9 @@ ep_rt_mono_init_finish (void)
 	// Managed init of diagnostics classes, like registration of RuntimeEventSource (if available).
 	ERROR_DECL (error);
 
-	MonoClass *runtime_event_source = mono_class_from_name_checked (mono_get_corlib (), "System.Diagnostics.Tracing", "RuntimeEventSource", error);
-	if (is_ok (error) && runtime_event_source) {
-		MonoMethod *init = mono_class_get_method_from_name_checked (runtime_event_source, "Initialize", -1, 0, error);
+	MonoClass *event_source = mono_class_from_name_checked (mono_get_corlib (), "System.Diagnostics.Tracing", "EventSource", error);
+	if (is_ok (error) && event_source) {
+		MonoMethod *init = mono_class_get_method_from_name_checked (event_source, "InitializeDefaultEventSources", -1, 0, error);
 		if (is_ok (error) && init) {
 			mono_runtime_try_invoke_handle (init, NULL_HANDLE, NULL, error);
 		}
@@ -853,38 +837,19 @@ void
 ep_rt_mono_fini (void)
 {
 	ep_rt_mono_runtime_provider_fini ();
+	ep_rt_mono_sampling_provider_component_fini ();
 	ep_rt_mono_profiler_provider_fini ();
-
-	if (_eventpipe_initialized)
-		mono_rand_close (_rand_provider);
-
-	_rand_provider = NULL;
-	_eventpipe_initialized = FALSE;
-
-	_ep_rt_mono_runtime_initialized = FALSE;
 
 	if (_ep_rt_mono_default_profiler_provider) {
 		mono_profiler_set_runtime_initialized_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		mono_profiler_set_thread_started_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		mono_profiler_set_thread_stopped_callback (_ep_rt_mono_default_profiler_provider, NULL);
 	}
-	_ep_rt_mono_default_profiler_provider = NULL;
-
-	if (_ep_rt_mono_thread_holder_tls_id)
-		mono_native_tls_free (_ep_rt_mono_thread_holder_tls_id);
-	_ep_rt_mono_thread_holder_tls_id = 0;
-
-	if (_thread_data_tls_id)
-		mono_native_tls_free (_thread_data_tls_id);
-	_thread_data_tls_id = 0;
-
-	_ep_rt_mono_os_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
-	_ep_rt_mono_os_cmd_line = NULL;
-
-	_ep_rt_mono_managed_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
-	_ep_rt_mono_managed_cmd_line = NULL;
-
-	ep_rt_spin_lock_free (&_ep_rt_mono_config_lock);
+	
+	// We were cleaning up resources (mutexes, tls data, etc) here but it races with
+	// other threads on shutdown. Skipping cleanup to prevent failures. If unloading
+	// and not leaking these threads becomes a priority we will have to reimplement
+	// cleanup here.
 }
 
 void

@@ -13,7 +13,7 @@ namespace System.Net.Security
     [UnsupportedOSPlatform("android")]
     public sealed partial class CipherSuitesPolicy
     {
-        internal CipherSuitesPolicyPal Pal { get; private set; }
+        internal CipherSuitesPolicyPal Pal { get; }
 
         [CLSCompliant(false)]
         public CipherSuitesPolicy(IEnumerable<TlsCipherSuite> allowedCipherSuites)

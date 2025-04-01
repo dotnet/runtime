@@ -54,11 +54,11 @@ static MonoComponentMarshalILgen component_func_table = {
 	&ilgen_init_internal,
 	&emit_marshal_ilgen,
 	&ilgen_install_callbacks_mono,
-}; 
+};
 
 
 MonoComponentMarshalILgen*
-mono_component_marshal_ilgen_init (void) 
+mono_component_marshal_ilgen_init (void)
 {
 	return &component_func_table;
 }
@@ -414,15 +414,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		switch (spec->native) {
 		case MONO_NATIVE_LPARRAY:
 			break;
-		case MONO_NATIVE_SAFEARRAY:
-#ifndef DISABLE_COM
-			if (spec->data.safearray_data.elem_type != MONO_VARIANT_VARIANT) {
-				char *msg = g_strdup ("Only SAFEARRAY(VARIANT) marshalling to managed code is implemented.");
-				cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, msg);
-				return conv_arg;
-			}
-			return mono_cominterop_emit_marshal_safearray (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-#endif
 		default: {
 			char *msg = g_strdup ("Unsupported array type marshalling to managed code.");
 			cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, msg);
@@ -851,7 +842,7 @@ emit_marshal_ptr_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_CONV_IN:
 		/* MS seems to allow this in some cases, ie. bxc #158 */
 		/*
-		if (MONO_TYPE_ISSTRUCT (t->data.type) && !mono_class_from_mono_type_internal (t->data.type)->blittable) {
+		if (MONO_TYPE_ISSTRUCT (m_type_data_get_type (t)) && !mono_class_from_mono_type_internal (m_type_data_get_type (t))->blittable) {
 			char *msg = g_strdup_printf ("Can not marshal 'parameter #%d': Pointers can not reference marshaled structures. Use byref instead.", argnum + 1);
 			cb_to_mono->methodBuilder.emit_exception_marshal_directive (m->mb, msg);
 		}
@@ -1053,7 +1044,7 @@ emit_marshal_char_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 static int
 emit_marshal_custom_ilgen_throw_exception (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg, MarshalAction action)
 {
-	/* Throw exception and emit compensation code, if neccesary */
+	/* Throw exception and emit compensation code, if necessary */
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
 	case MARSHAL_ACTION_MANAGED_CONV_IN:
@@ -1974,7 +1965,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				 * leak the handle. We should move the allocation of the SafeHandle to the
 				 * input marshalling code to prevent that.
 				 */
-				ctor = mono_class_get_method_from_name_checked (t->data.klass, ".ctor", 0, 0, local_error);
+				ctor = mono_class_get_method_from_name_checked (m_type_data_get_klass (t), ".ctor", 0, 0, local_error);
 				if (ctor == NULL || !is_ok (local_error)){
 					cb_to_mono->methodBuilder.emit_exception (mb, "MissingMethodException", "parameterless constructor required");
 					mono_error_cleanup (local_error);
@@ -2012,13 +2003,15 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoMethod *ctor = NULL;
 		int intptr_handle_slot;
 
-		if (mono_class_is_abstract (t->data.klass)) {
+		MonoClass *klass_of_t = m_type_data_get_klass (t);
+
+		if (mono_class_is_abstract (klass_of_t)) {
 			cb_to_mono->methodBuilder.emit_byte (mb, CEE_POP);
 			cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, g_strdup ("Returned SafeHandles should not be abstract"));
 			break;
 		}
 
-		ctor = mono_class_get_method_from_name_checked (t->data.klass, ".ctor", 0, 0, error);
+		ctor = mono_class_get_method_from_name_checked (klass_of_t, ".ctor", 0, 0, error);
 		if (ctor == NULL || !is_ok (error)){
 			mono_error_cleanup (error);
 			cb_to_mono->methodBuilder.emit_byte (mb, CEE_POP);
@@ -2255,6 +2248,12 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			encoding = cb_to_mono->get_string_encoding (m->piinfo, spec);
 			conv = cb_to_mono->get_ptr_to_stringbuilder_conv (m->piinfo, spec, &need_free);
+
+			if (conv == MONO_MARSHAL_CONV_INVALID) {
+				char *msg = g_strdup_printf ("stringbuilder marshalling conversion %d not implemented", encoding);
+				cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, msg);
+				break;
+			}
 
 			g_assert (encoding != -1);
 
@@ -2619,108 +2618,6 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 static int
-emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-			MonoMarshalSpec *spec,
-			int conv_arg, MonoType **conv_arg_type,
-			MarshalAction action)
-{
-#ifndef DISABLE_COM
-	MonoMethodBuilder *mb = m->mb;
-	MonoType *variant_type = m_class_get_byval_arg (mono_class_get_variant_class ());
-	MonoType *variant_type_byref = mono_class_get_byref_type (mono_class_get_variant_class ());
-	MonoType *object_type = cb_to_mono->get_object_type ();
-
-	switch (action) {
-	case MARSHAL_ACTION_CONV_IN: {
-		conv_arg = cb_to_mono->methodBuilder.add_local (mb, variant_type);
-
-		if (m_type_is_byref (t))
-			*conv_arg_type = variant_type_byref;
-		else
-			*conv_arg_type = variant_type;
-
-		if (m_type_is_byref (t) && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
-			break;
-
-		cb_to_mono->methodBuilder.emit_ldarg (mb, argnum);
-		if (m_type_is_byref (t))
-			cb_to_mono->methodBuilder.emit_byte(mb, CEE_LDIND_REF);
-		cb_to_mono->methodBuilder.emit_ldloc_addr (mb, conv_arg);
-		cb_to_mono->methodBuilder.emit_managed_call (mb, mono_get_Marshal_GetNativeVariantForObject (), NULL);
-		break;
-	}
-
-	case MARSHAL_ACTION_CONV_OUT: {
-		if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
-			cb_to_mono->methodBuilder.emit_ldarg (mb, argnum);
-			cb_to_mono->methodBuilder.emit_ldloc_addr (mb, conv_arg);
-			cb_to_mono->methodBuilder.emit_managed_call (mb, mono_get_Marshal_GetObjectForNativeVariant (), NULL);
-			cb_to_mono->methodBuilder.emit_byte (mb, CEE_STIND_REF);
-		}
-
-		cb_to_mono->methodBuilder.emit_ldloc_addr (mb, conv_arg);
-		cb_to_mono->methodBuilder.emit_managed_call (mb, mono_get_Variant_Clear (), NULL);
-		break;
-	}
-
-	case MARSHAL_ACTION_PUSH:
-		if (m_type_is_byref (t))
-			cb_to_mono->methodBuilder.emit_ldloc_addr (mb, conv_arg);
-		else
-			cb_to_mono->methodBuilder.emit_ldloc (mb, conv_arg);
-		break;
-
-	case MARSHAL_ACTION_CONV_RESULT: {
-		char *msg = g_strdup ("Marshalling of VARIANT not supported as a return type.");
-		cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, msg);
-		break;
-	}
-
-	case MARSHAL_ACTION_MANAGED_CONV_IN: {
-		conv_arg = cb_to_mono->methodBuilder.add_local (mb, object_type);
-
-		if (m_type_is_byref (t))
-			*conv_arg_type = variant_type_byref;
-		else
-			*conv_arg_type = variant_type;
-
-		if (m_type_is_byref (t) && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
-			break;
-
-		if (m_type_is_byref (t))
-			cb_to_mono->methodBuilder.emit_ldarg (mb, argnum);
-		else
-			cb_to_mono->methodBuilder.emit_ldarg_addr (mb, argnum);
-		cb_to_mono->methodBuilder.emit_managed_call (mb, mono_get_Marshal_GetObjectForNativeVariant (), NULL);
-		cb_to_mono->methodBuilder.emit_stloc (mb, conv_arg);
-		break;
-	}
-
-	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
-		if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
-			cb_to_mono->methodBuilder.emit_ldloc (mb, conv_arg);
-			cb_to_mono->methodBuilder.emit_ldarg (mb, argnum);
-			cb_to_mono->methodBuilder.emit_managed_call (mb, mono_get_Marshal_GetNativeVariantForObject (), NULL);
-		}
-		break;
-	}
-
-	case MARSHAL_ACTION_MANAGED_CONV_RESULT: {
-		char *msg = g_strdup ("Marshalling of VARIANT not supported as a return type.");
-		cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, msg);
-		break;
-	}
-
-	default:
-		g_assert_not_reached ();
-	}
-#endif /* DISABLE_COM */
-
-	return conv_arg;
-}
-
-
-static int
 emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoMarshalSpec *spec, int conv_arg,
 		MonoType **conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweight_cb)
@@ -2733,7 +2630,7 @@ emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (t->type) {
 	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass == cb_to_mono->class_try_get_handleref_class ())
+		if (m_type_data_get_klass_unchecked (t) == cb_to_mono->class_try_get_handleref_class ())
 			return emit_marshal_handleref_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 		return emit_marshal_vtype_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
@@ -2741,25 +2638,8 @@ emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		return emit_marshal_string_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
-#if !defined(DISABLE_COM)
-		if (spec && spec->native == MONO_NATIVE_STRUCT)
-			return emit_marshal_variant_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-#endif
-
-#if !defined(DISABLE_COM)
-		if ((spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
-			spec->native == MONO_NATIVE_IDISPATCH ||
-			spec->native == MONO_NATIVE_INTERFACE)) ||
-			(t->type == MONO_TYPE_CLASS && mono_cominterop_is_interface(t->data.klass)))
-			return mono_cominterop_emit_marshal_com_interface (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-		if (spec && (spec->native == MONO_NATIVE_SAFEARRAY) &&
-			(spec->data.safearray_data.elem_type == MONO_VARIANT_VARIANT) &&
-			((action == MARSHAL_ACTION_CONV_OUT) || (action == MARSHAL_ACTION_CONV_IN) || (action == MARSHAL_ACTION_PUSH)))
-			return mono_cominterop_emit_marshal_safearray (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-#endif
-
-		if (cb_to_mono->try_get_safehandle_class () != NULL && t->data.klass &&
-		    cb_to_mono->is_subclass_of_internal (t->data.klass,  cb_to_mono->try_get_safehandle_class (), FALSE))
+		if (cb_to_mono->try_get_safehandle_class () != NULL && m_type_data_get_klass_unchecked (t) &&
+		    cb_to_mono->is_subclass_of_internal (m_type_data_get_klass_unchecked (t),  cb_to_mono->try_get_safehandle_class (), FALSE))
 			return emit_marshal_safehandle_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 		return emit_marshal_object_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);

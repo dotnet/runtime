@@ -981,6 +981,31 @@ namespace System.Xml.Serialization
         {
             return new MemberMapping(this);
         }
+
+        internal bool Hides(MemberMapping mapping)
+        {
+            // Semantics. But all mappings would hide a null mapping, so indicating that this particular instance of mapping
+            // specifically hides a null mapping is not necessary and could be misleading. So just return false.
+            if (mapping == null)
+                return false;
+
+            var baseMember = mapping.MemberInfo;
+            var derivedMember = this.MemberInfo;
+
+            // Similarly, if either mapping (or both) lacks MemberInfo, then its not appropriate to say that one hides the other.
+            if (baseMember == null || derivedMember == null)
+                return false;
+
+            // If the member names are different, they don't hide each other
+            if (baseMember.Name != derivedMember.Name)
+                return false;
+
+            // Names are the same. So, regardless of field or property or accessibility or return type, if derivedDeclaringType is a
+            // subclass of baseDeclaringType, then the base member is hidden.
+            Type? baseDeclaringType = baseMember.DeclaringType;
+            Type? derivedDeclaringType = derivedMember.DeclaringType;
+            return baseDeclaringType != null && derivedDeclaringType != null && baseDeclaringType.IsAssignableFrom(derivedDeclaringType);
+        }
     }
 
     internal sealed class MembersMapping : TypeMapping

@@ -19,6 +19,8 @@
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.targets" TargetPath="Sdk" />
 
     <PackageFile Include="$(WasiProjectRoot)build\WasiSdk.Defaults.props" TargetPath="Sdk" />
+    
+    <PackageFile Include="$(WasiProjectRoot)build\wasiconsole.runtimeconfig.template.json" TargetPath="Sdk" />
   </ItemGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">
@@ -27,8 +29,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_ReplacementValue Include="TargetFrameworkForNETCoreTasks" Value="$(TargetFrameworkForNETCoreTasks)" />
-      <_ReplacementValue Include="TargetFrameworkForNETFrameworkTasks" Value="$(TargetFrameworkForNETFrameworkTasks)" />
+      <_ReplacementValue Include="NetCoreAppToolCurrent" Value="$(NetCoreAppToolCurrent)" />
+      <_ReplacementValue Include="NetFrameworkToolCurrent" Value="$(NetFrameworkToolCurrent)" />
     </ItemGroup>
 
     <GenerateFileFromTemplate

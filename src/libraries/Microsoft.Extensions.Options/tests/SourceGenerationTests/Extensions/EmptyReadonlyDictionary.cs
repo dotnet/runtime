@@ -38,7 +38,7 @@ internal sealed class EmptyReadOnlyDictionary<TKey, TValue> : IReadOnlyDictionar
 
     public bool TryGetValue(TKey key, out TValue value)
     {
-#pragma warning disable CS8601 // The recommended implementation: https://docs.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2.trygetvalue
+#pragma warning disable CS8601 // The recommended implementation: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2.trygetvalue
         value = default;
 #pragma warning restore
 

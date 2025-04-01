@@ -113,8 +113,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     s_dwNumInstancesOfLoaderHeaps++;
     m_pEventList                 = NULL;
     m_dwDebugFlags               = LoaderHeapSniffer::InitDebugFlags();
-    m_fPermitStubsWithUnwindInfo = FALSE;
-    m_fStubUnwindInfoUnregistered= FALSE;
 #endif
 
     m_kind = kind;
@@ -140,8 +138,6 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
         FORBID_FAULT;
     }
     CONTRACTL_END
-
-    _ASSERTE(!m_fPermitStubsWithUnwindInfo || m_fStubUnwindInfoUnregistered);
 
     if (m_pRangeList != NULL)
         m_pRangeList->RemoveRanges((void *) this);
@@ -280,7 +276,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     else
     {
         // Figure out how much to reserve
-        dwSizeToReserve = max(dwSizeToCommit, m_dwReserveBlockSize);
+        dwSizeToReserve = max<size_t>(dwSizeToCommit, m_dwReserveBlockSize);
 
         // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
         dwSizeToReserve = ALIGN_UP(dwSizeToReserve, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
@@ -1053,10 +1049,11 @@ void UnlockedLoaderHeap::DumpFreeList()
     LIMITED_METHOD_CONTRACT;
     if (m_pFirstFreeBlock == NULL)
     {
-        printf("FREEDUMP: FreeList is empty\n");
+        minipal_log_print_info("FREEDUMP: FreeList is empty\n");
     }
     else
     {
+        InlineSString<128> buf;
         LoaderHeapFreeBlock *pBlock = m_pFirstFreeBlock;
         while (pBlock != NULL)
         {
@@ -1078,10 +1075,13 @@ void UnlockedLoaderHeap::DumpFreeList()
                 }
             }
 
-            printf("Addr = %pxh, Size = %xh", pBlock, ((ULONG)dwsize));
-            if (ccbad) printf(" *** ERROR: NOT CC'd ***");
-            if (sizeunaligned) printf(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
-            printf("\n");
+            buf.Printf("Addr = %pxh, Size = %xh", pBlock, ((ULONG)dwsize));
+            if (ccbad) buf.AppendUTF8(" *** ERROR: NOT CC'd ***");
+            if (sizeunaligned) buf.AppendUTF8(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
+            buf.AppendUTF8("\n");
+
+            minipal_log_print_info(buf.GetUTF8());
+            buf.Clear();
 
             pBlock = pBlock->m_pNext;
         }

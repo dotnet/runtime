@@ -355,19 +355,22 @@ namespace System
                 // Invalidate before reading cached values.
                 CheckTerminalSettingsInvalidated();
 
-                Interop.Sys.WinSize winsize;
-                if (s_windowWidth == -1 &&
-                    s_terminalHandle != null &&
-                    Interop.Sys.GetWindowSize(s_terminalHandle, out winsize) == 0)
+                if (s_windowWidth == -1)
                 {
-                    s_windowWidth = winsize.Col;
-                    s_windowHeight = winsize.Row;
+                    Interop.Sys.WinSize winsize;
+                    if (s_terminalHandle != null &&
+                        Interop.Sys.GetWindowSize(s_terminalHandle, out winsize) == 0)
+                    {
+                        s_windowWidth = winsize.Col;
+                        s_windowHeight = winsize.Row;
+                    }
+                    else
+                    {
+                        s_windowWidth = TerminalFormatStringsInstance.Columns;
+                        s_windowHeight = TerminalFormatStringsInstance.Lines;
+                    }
                 }
-                else
-                {
-                    s_windowWidth = TerminalFormatStringsInstance.Columns;
-                    s_windowHeight = TerminalFormatStringsInstance.Lines;
-                }
+
                 width = s_windowWidth;
                 height = s_windowHeight;
             }
@@ -375,24 +378,11 @@ namespace System
 
         public static void SetWindowSize(int width, int height)
         {
-           lock (Console.Out)
-           {
-               Interop.Sys.WinSize winsize = default;
-               winsize.Row = (ushort)height;
-               winsize.Col = (ushort)width;
-               if (Interop.Sys.SetWindowSize(in winsize) == 0)
-               {
-                   s_windowWidth = winsize.Col;
-                   s_windowHeight = winsize.Row;
-               }
-               else
-               {
-                   Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                   throw errorInfo.Error == Interop.Error.ENOTSUP ?
-                       new PlatformNotSupportedException() :
-                       Interop.GetIOException(errorInfo);
-               }
-           }
+            // note: We can't implement SetWindowSize using TIOCSWINSZ.
+            // TIOCSWINSZ is meant to inform the kernel of the terminal size.
+            // The window that shows the terminal doesn't change to match that size.
+
+            throw new PlatformNotSupportedException();
         }
 
         public static bool CursorVisible
@@ -895,6 +885,9 @@ namespace System
                     {
                         throw new Win32Exception();
                     }
+                    // InitializeTerminalAndSignalHandling will reset the terminal on a normal exit.
+                    // This also resets it for termination due to an unhandled exception.
+                    AppDomain.CurrentDomain.UnhandledException += (_, _) => { Interop.Sys.UninitializeTerminal(); };
 
                     s_terminalHandle = !Console.IsOutputRedirected ? Interop.Sys.FileDescriptors.STDOUT_FILENO :
                                        !Console.IsInputRedirected  ? Interop.Sys.FileDescriptors.STDIN_FILENO :

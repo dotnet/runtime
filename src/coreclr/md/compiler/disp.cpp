@@ -581,6 +581,8 @@ HRESULT Disp::QueryInterface(REFIID riid, void **ppUnk)
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     else if (riid == IID_IMetaDataDispenserEx2)
         *ppUnk = (IMetaDataDispenserEx2 *) this;
+    else if (riid == IID_IILAsmPortablePdbWriter)
+        *ppUnk = (IILAsmPortablePdbWriter *) this;
 #endif
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     else if (riid == IID_IMetaDataDispenserCustom)
@@ -745,11 +747,11 @@ Disp::SetOption(
         }
         else
         {
-            INT32 len = WszWideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, NULL, 0, NULL, NULL);
+            INT32 len = WideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, NULL, 0, NULL, NULL);
             m_OptionValue.m_RuntimeVersion = new (nothrow) char[len];
             if (m_OptionValue.m_RuntimeVersion == NULL)
             IfFailGo(E_INVALIDARG);
-            WszWideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, m_OptionValue.m_RuntimeVersion, len, NULL, NULL);
+            WideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, m_OptionValue.m_RuntimeVersion, len, NULL, NULL);
         }
     }
     else if (optionid == MetaDataInitialSize)

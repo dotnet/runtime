@@ -21,6 +21,7 @@ namespace System.IO.Hashing.Tests
         }
 
         protected abstract NonCryptographicHashAlgorithm CreateInstance();
+        protected abstract NonCryptographicHashAlgorithm Clone(NonCryptographicHashAlgorithm instance);
 
         protected abstract byte[] StaticOneShot(byte[] source);
         protected abstract byte[] StaticOneShot(ReadOnlySpan<byte> source);
@@ -283,6 +284,31 @@ namespace System.IO.Hashing.Tests
             }
         }
 
+        [Fact]
+        public void Clone_ProducesSameSequence()
+        {
+            NonCryptographicHashAlgorithm hash = CreateInstance();
+
+            for (int outer = 0; outer < 4; outer++)
+            {
+                NonCryptographicHashAlgorithm clone = Clone(hash);
+                Assert.Equal(hash.HashLengthInBytes, clone.HashLengthInBytes);
+                Assert.Equal(hash.GetCurrentHash(), clone.GetCurrentHash());
+
+                Random r = new Random(42);
+                byte[] bytes = new byte[r.Next(1, 10)];
+
+                for (int inner = 0; inner < 4; inner++)
+                {
+                    r.NextBytes(bytes);
+                    hash.Append(bytes);
+                    clone.Append(bytes);
+
+                    Assert.Equal(hash.GetCurrentHash(), clone.GetCurrentHash());
+                }
+            }
+        }
+
         private void VerifyEmptyResult(ReadOnlySpan<byte> result)
         {
             if (!result.SequenceEqual(_emptyHash))
@@ -334,7 +360,7 @@ namespace System.IO.Hashing.Tests
 
             internal static string ToHexString(ReadOnlySpan<byte> input)
             {
-#if NETCOREAPP
+#if NET
                 return Convert.ToHexString(input);
 #else
                 var builder = new global::System.Text.StringBuilder(input.Length * 2);
@@ -350,7 +376,7 @@ namespace System.IO.Hashing.Tests
 
             internal static byte[] FromHexString(string hexString)
             {
-#if NETCOREAPP
+#if NET
                 return Convert.FromHexString(hexString);
 #else
                 byte[] bytes = new byte[hexString.Length / 2];
@@ -420,7 +446,7 @@ namespace System.IO.Hashing.Tests
 
             public IEnumerable<ReadOnlyMemory<byte>> EnumerateDataChunks()
             {
-#if NET5_0_OR_GREATER
+#if NET
                 byte[] chunk = GC.AllocateUninitializedArray<byte>(1024 * 1024);
 #else
                 byte[] chunk = new byte[1024 * 1024];

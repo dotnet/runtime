@@ -14,14 +14,15 @@ public:
     virtual PhaseStatus DoPhase() override;
 
 private:
+    void ProcessBlocks();
     void ProcessBlock(BasicBlock* block);
 
     void SetThrowHelperBlocks(GenTree* node, BasicBlock* block);
     void SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* block);
 
     unsigned PopArgumentsFromCall(GenTreeCall* call);
-    void AddStackLevel(unsigned value);
-    void SubStackLevel(unsigned value);
+    void     AddStackLevel(unsigned value);
+    void     SubStackLevel(unsigned value);
 
     void CheckArgCnt();
     void CheckAdditionalArgs();

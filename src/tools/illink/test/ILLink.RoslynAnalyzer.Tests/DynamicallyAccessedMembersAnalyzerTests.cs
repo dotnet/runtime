@@ -655,7 +655,7 @@ namespace System
 			throw new NotImplementedException ();
 		}
 
-		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 		public override object InvokeMember (string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
 		{
 			throw new NotImplementedException ();
@@ -1309,7 +1309,9 @@ namespace System
 
 			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: false,
 				// (12,34): error CS0103: The name 'type' does not exist in the current context
-				DiagnosticResult.CompilerError ("CS0103").WithSpan (12, 34, 12, 38).WithArguments ("type"));
+				DiagnosticResult.CompilerError ("CS0103").WithSpan (12, 34, 12, 38).WithArguments ("type"),
+				// (12,34): warning IL2063: Value returned from method 'C.GetTypeWithAll()' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+				VerifyCS.Diagnostic (DiagnosticId.MethodReturnValueCannotBeStaticallyDetermined).WithSpan(12, 34, 12, 38).WithArguments("C.GetTypeWithAll()"));
 		}
 
 		[Fact]
@@ -1333,7 +1335,9 @@ namespace System
 
 			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: false,
 				// (8,22): error CS0103: The name 'type' does not exist in the current context
-				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 22, 8, 26).WithArguments ("type"));
+				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 22, 8, 26).WithArguments ("type"),
+				// (8,3): warning IL2064: Value assigned to C.fieldRequiresAll can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+				VerifyCS.Diagnostic(DiagnosticId.FieldValueCannotBeStaticallyDetermined).WithSpan(8, 3, 8, 26).WithArguments("C.fieldRequiresAll"));
 		}
 
 		[Fact]

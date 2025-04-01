@@ -175,9 +175,9 @@ namespace System.Text.Json.Serialization.Tests
 
         public class RootClass
         {
-            public ChildClass Child { get; }
+            public ChildClass? Child { get; }
 
-            public RootClass(ChildClass child)
+            public RootClass(ChildClass? child)
             {
                 Child = child;
             }
@@ -186,9 +186,9 @@ namespace System.Text.Json.Serialization.Tests
         public class ChildClass
         {
             public int MyInt { get; set; }
-            public int[] MyIntArray { get; set; }
-            public Dictionary<string, ChildClass> MyDictionary { get; set; }
-            public ChildClass[] Children { get; set; }
+            public int[]? MyIntArray { get; set; }
+            public Dictionary<string, ChildClass>? MyDictionary { get; set; }
+            public ChildClass[]? Children { get; set; }
         }
 
         private const string PathForChildListFails_Json = @"{""Child"":{""MyIntArray"":[1, bad]}";

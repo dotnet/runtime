@@ -50,7 +50,7 @@ private:
     HANDLE fileHandle;
 
     // The size of the MC/MCH file
-    __int64 fileSize;
+    int64_t fileSize;
 
     // Current MC index in the input MC/MCH file
     int curMCIndex;
@@ -90,7 +90,7 @@ private:
 
     // Binary search to get this method number from the index
     // Returns -1 for not found, or -2 for not indexed
-    __int64 GetOffset(unsigned int methodNumber);
+    int64_t GetOffset(unsigned int methodNumber);
 
     // Just a helper...
     static HANDLE OpenFile(const char* inputFile, DWORD flags = FILE_ATTRIBUTE_NORMAL);
@@ -149,6 +149,9 @@ public:
 
     // Return should this method context be excluded from the replay or not.
     bool IsMethodExcluded(MethodContext* mc);
+
+    // Reset for reading a new sequence of method indices
+    void Reset(const int* newIndexes, int newIndexCount);
 };
 #pragma pack(pop)
 

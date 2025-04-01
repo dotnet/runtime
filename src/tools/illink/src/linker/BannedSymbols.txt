@@ -10,3 +10,5 @@ P:Mono.Cecil.Cil.MethodBody.Instructions;Use LinkContext.GetMethodIL or BannedAp
 P:Mono.Cecil.Cil.MethodBody.ExceptionHandlers;Use LinkContext.GetMethodIL or BannedApiExtensions.ExceptionHandlers(Mono.Linker.LinkContext) instead
 P:Mono.Cecil.Cil.MethodBody.Variables;Use LinkContext.GetMethodIL or BannedApiExtensions.Variables(Mono.Linker.LinkContext) instead
 M:Mono.Linker.Steps.ILProvider/MethodIL.Create;Use ILProvider GetMethodIL instead
+M:Mono.Linker.Steps.MarkScopeStack.PushScope;Use PushLocalScope instead to avoid boxing
+M:Mono.Linker.Steps.MarkScopeStack.PopToParent;Use PopToParentScope instead to avoid boxing

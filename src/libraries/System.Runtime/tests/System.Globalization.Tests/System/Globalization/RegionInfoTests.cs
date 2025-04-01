@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -12,6 +13,10 @@ namespace System.Globalization.Tests
 {
     public class RegionInfoPropertyTests
     {
+        // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
+        // Browser uses JS to get the NativeName that is missing in ICU
+        public static bool SupportFullGlobalizationData => !PlatformDetection.IsWasi || PlatformDetection.IsHybridGlobalizationOnApplePlatform;
+
         [Theory]
         [InlineData("US", "US", "US")]
         [InlineData("IT", "IT", "IT")]
@@ -100,7 +105,6 @@ namespace System.Globalization.Tests
         [Theory]
         [InlineData("en-US", "United States")]
         [OuterLoop("May fail on machines with multiple language packs installed")] // see https://github.com/dotnet/runtime/issues/30132
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45951", TestPlatforms.Browser)]
         public void DisplayName(string name, string expected)
         {
             using (new ThreadCultureChange(null, new CultureInfo(name)))
@@ -111,8 +115,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> NativeName_TestData()
         {
-            // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
+            if (SupportFullGlobalizationData)
             {
                 yield return new object[] { "GB", "United Kingdom" };
                 yield return new object[] { "SE", "Sverige" };
@@ -120,7 +123,6 @@ namespace System.Globalization.Tests
             }
             else
             {
-                // Browser's ICU doesn't contain RegionInfo.NativeName
                 yield return new object[] { "GB", "GB" };
                 yield return new object[] { "SE", "SE" };
                 yield return new object[] { "FR", "FR" };
@@ -136,8 +138,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> EnglishName_TestData()
         {
-            // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
+            if (SupportFullGlobalizationData)
             {
                 yield return new object[] { "en-US", new string[] { "United States" } };
                 yield return new object[] { "US", new string[] { "United States" } };
@@ -146,7 +147,6 @@ namespace System.Globalization.Tests
             }
             else
             {
-                // Browser's ICU doesn't contain RegionInfo.EnglishName
                 yield return new object[] { "en-US", new string[] { "US" } };
                 yield return new object[] { "US", new string[] { "US" } };
                 yield return new object[] { "zh-CN", new string[] { "CN" }};
@@ -266,6 +266,20 @@ namespace System.Globalization.Tests
             CultureInfo [] cultures = CultureInfo.GetCultures(CultureTypes.SpecificCultures);
 
             AssertExtensions.Throws<ArgumentException>("culture", () => new RegionInfo(4096));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows8x))]
+        public void BuiltInRegionListTest()
+        {
+            // Ensure we can create all region info objects from the built-in list
+            Dictionary<string, string> regionNames = (Dictionary<string, string>)Type.GetType("System.Globalization.CultureData, System.Private.CoreLib").GetProperty("RegionNames", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+
+            foreach (var kvp in regionNames)
+            {
+                RegionInfo ri1 = new RegionInfo(kvp.Key);
+                RegionInfo ri2 = new RegionInfo(kvp.Value == "" ? kvp.Key : kvp.Value); // invariant culture
+                Assert.Equal(ri1.Name, ri2.Name);
+            }
         }
     }
 }

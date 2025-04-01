@@ -21,21 +21,19 @@
     // Define the method prolog, allocating enough stack space for the PInvokeTransitionFrame and saving
     // incoming register values into it.
     PROLOG_VPUSH        "{d0-d3}"           // Save d0-d3 which can have the floating point return value
-    PROLOG_STACK_ALLOC  4                   // Padding for 8-byte alignment
     PROLOG_PUSH         "{r0,r1}"           // Save return registers
     PROLOG_STACK_ALLOC  4                   // Space for caller's SP
     PROLOG_PUSH         "{r4-r10}"          // Save non-volatile registers
     PROLOG_STACK_ALLOC  8                   // Space for flags and Thread*
-    PROLOG_PUSH         "{r11}"             // Save caller's frame pointer
-    PROLOG_PUSH         "{r11,lr}"          // Save frame-chain pointer and return address
+    PROLOG_PUSH         "{r11,lr}"          // Save caller's frame pointer and return address
 
     str         \threadReg, [sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
     mov         \trashReg, \BITMASK
     str         \trashReg, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
 
     // Compute SP value at entry to this method and save it in slot of the frame.
-    add         \trashReg, sp, #(16 * 4 + 4 * 8)
-    str         \trashReg, [sp, #(12 * 4)]
+    add         \trashReg, sp, #(14 * 4 + 4 * 8)
+    str         \trashReg, [sp, #(11 * 4)]
 
     // Link the frame into the Thread
     str         sp, [\threadReg, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
@@ -47,13 +45,11 @@
 // object refs or byrefs).
 //
 .macro POP_PROBE_FRAME
-    EPILOG_POP          "{r11,lr}"          // Restore frame-chain pointer and return address
-    EPILOG_POP          "{r11}"             // Restore caller's frame pointer
+    EPILOG_POP          "{r11,lr}"          // Restore caller's frame pointer and return address
     EPILOG_STACK_FREE   8                   // Discard flags and Thread*
     EPILOG_POP          "{r4-r10}"          // Restore non-volatile registers
     EPILOG_STACK_FREE   4                   // Discard caller's SP
     EPILOG_POP          "{r0,r1}"           // Restore return registers
-    EPILOG_STACK_FREE   4                   // Discard padding for 8-byte alignment
     EPILOG_VPOP         "{d0-d3}"           // Restore d0-d3 which can have the floating point return value
 .endm
 
@@ -79,13 +75,11 @@
 
     // Fix the stack by restoring the original return address
     ldr         lr, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-    ldr         r12, [r2, #OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 
     // Clear hijack state
     mov         r3, #0
     str         r3, [r2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
     str         r3, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-    str         r3, [r2, #OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 .endm
 
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
@@ -130,8 +124,8 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     bne         LOCAL_LABEL(WaitForGC)
     bx          lr
 LOCAL_LABEL(WaitForGC):
-    mov         r3, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0)
-    orr         r12, r3
+    mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0)
+    orr         r12, r12, #PTFF_THREAD_HIJACK
     b           RhpWaitForGC
 NESTED_END RhpGcProbeHijack
 

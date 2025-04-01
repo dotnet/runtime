@@ -32,7 +32,13 @@ CompileResult::CompileResult()
     allocGCInfoDets.retval = nullptr;
     allocGCInfoDets.size   = 0;
 
+    MethodFullName = nullptr;
+    TieringName = nullptr;
     memoryTracker = nullptr;
+
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) name = 0;
+#include "jitmetadatalist.h"
 }
 
 CompileResult::~CompileResult()
@@ -59,12 +65,18 @@ bool CompileResult::IsEmpty()
     return isEmpty;
 }
 
-// Allocate memory associated with this CompileResult. Keep track of it in a list so we can free it all later.
-void* CompileResult::allocateMemory(size_t sizeInBytes)
+MemoryTracker* CompileResult::getOrCreateMemoryTracker()
 {
     if (memoryTracker == nullptr)
         memoryTracker = new MemoryTracker();
-    return memoryTracker->allocate(sizeInBytes);
+
+    return memoryTracker;
+}
+
+// Allocate memory associated with this CompileResult. Keep track of it in a list so we can free it all later.
+void* CompileResult::allocateMemory(size_t sizeInBytes)
+{
+    return getOrCreateMemoryTracker()->allocate(sizeInBytes);
 }
 
 void CompileResult::recAssert(const char* assertText)
@@ -685,6 +697,18 @@ const char* relocationTypeToString(uint16_t fRelocType)
         // From corinfo.h
         case IMAGE_REL_BASED_REL32:
             return "rel32";
+        case IMAGE_REL_SECREL:
+            return "secrel";
+        case IMAGE_REL_TLSGD:
+            return "tlsgd";
+        case IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
+            return "tlsdesc_high21";
+        case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+            return "tlsdesc_lo12";
+        case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
+            return "tlsdesc_add_lo12";
+        case IMAGE_REL_AARCH64_TLSDESC_CALL:
+            return "tlsdesc_call";
         case IMAGE_REL_BASED_THUMB_BRANCH24:
             return "thumb_branch24";
         default:
@@ -845,6 +869,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 break;
 
                 case IMAGE_REL_ARM64_PAGEBASE_REL21: // ADRP 21 bit PC-relative page address
+                case IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21: // ADRP 21 bit for TLSDesc
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
@@ -869,6 +894,18 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 }
                 break;
 
+                case IMAGE_REL_ARM64_SECREL_HIGH12A: // TLSDESC ADD for High-12 Add
+                case IMAGE_REL_ARM64_SECREL_LOW12A:  // TLSDESC ADD for Low-12 Add
+                case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+                case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12: // TLSDESC ADD for corresponding ADRP
+                case IMAGE_REL_AARCH64_TLSDESC_CALL:
+                {
+                    // These are patched later by linker during actual execution
+                    // and do not need relocation.
+                    wasRelocHandled = true;
+                }
+                break;
+
                 default:
                     break;
             }
@@ -881,7 +918,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
         if (IsSpmiTarget64Bit())
         {
-            if (relocType == IMAGE_REL_BASED_DIR64)
+            if (!wasRelocHandled && (relocType == IMAGE_REL_BASED_DIR64))
             {
                 DWORDLONG fixupLocation = tmp.location;
 
@@ -896,13 +933,19 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
                 wasRelocHandled = true;
             }
+            else if (relocType == IMAGE_REL_TLSGD)
+            {
+                // These are patched later by linker during actual execution
+                // and do not need relocation.
+                wasRelocHandled = true;
+            }
         }
 
         if (wasRelocHandled)
             continue;
 
         // Now do all-platform relocations.
-        if (tmp.fRelocType == IMAGE_REL_BASED_REL32)
+        if ((tmp.fRelocType == IMAGE_REL_BASED_REL32) || (tmp.fRelocType == IMAGE_REL_SECREL))
         {
             DWORDLONG fixupLocation = tmp.location;
 
@@ -1224,7 +1267,7 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
     if (value.callSig.callConv == (DWORD)-1)
         return false;
 
-    *pCallSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap);
+    *pCallSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap, getOrCreateMemoryTracker());
 
     return true;
 }

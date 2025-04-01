@@ -32,6 +32,11 @@ namespace Internal.TypeSystem
         public abstract bool ComputeContainsGCPointers(DefType type);
 
         /// <summary>
+        /// Compute whether the fields of the specified type contains a byref.
+        /// </summary>
+        public abstract bool ComputeContainsByRefs(DefType type);
+
+        /// <summary>
         /// Compute whether the specified type is a value type that transitively has UnsafeValueTypeAttribute
         /// </summary>
         public abstract bool ComputeIsUnsafeValueType(DefType type);
@@ -73,6 +78,21 @@ namespace Internal.TypeSystem
         /// Compute static region sizes and static field offsets.
         /// </summary>
         StaticRegionSizesAndFields
+    }
+
+    public struct FieldAndOffset
+    {
+        public static readonly LayoutInt InvalidOffset = new LayoutInt(int.MaxValue);
+
+        public readonly FieldDesc Field;
+
+        public readonly LayoutInt Offset;
+
+        public FieldAndOffset(FieldDesc field, LayoutInt offset)
+        {
+            Field = field;
+            Offset = offset;
+        }
     }
 
     public struct ComputedInstanceFieldLayout

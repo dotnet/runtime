@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 using Internal.TypeSystem;
 using Internal.JitInterface;
@@ -59,42 +60,47 @@ namespace ILCompiler
             if (!potentialTypeDesc.IsIntrinsic || !(potentialTypeDesc is MetadataType potentialType))
                 return "";
 
-            if (architecture == TargetArchitecture.X64)
+            // 64-bit ISA variants are not included in the mapping dictionary, so we use the containing type instead
+            if (potentialType.Name is "X64" or "Arm64")
             {
-                if (potentialType.Name == "X64")
+                if (architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)
                     potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Name == "VL")
-                    potentialType = (MetadataType)potentialType.ContainingType;
+                else
+                    return "";
+            }
+
+            // We assume that managed names in InstructionSetDesc.txt use an underscore separator for nested classes
+            string suffix = "";
+            while (potentialType.ContainingType is MetadataType containingType)
+            {
+                suffix = $"_{potentialType.Name}{suffix}";
+                potentialType = containingType;
+            }
+
+            if (architecture is TargetArchitecture.X64 or TargetArchitecture.X86)
+            {
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
                     return "";
             }
-            else if (architecture == TargetArchitecture.X86)
-            {
-                if (potentialType.Name == "X64")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Name == "VL")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
-                    return "";
-            }
-            else if (architecture == TargetArchitecture.ARM64)
-            {
-                if (potentialType.Name == "Arm64")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
-                    return "";
-            }
-            else if (architecture == TargetArchitecture.ARM)
+            else if (architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM)
             {
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
+            }
+            else if (architecture is TargetArchitecture.LoongArch64)
+            {
+                return "";
+            }
+            else if (architecture is TargetArchitecture.RiscV64)
+            {
+                return "";
             }
             else
             {
-                throw new InternalCompilerErrorException("Unknown architecture");
+                throw new InternalCompilerErrorException($"Unknown architecture '{architecture}'");
             }
 
-            return potentialType.Name;
+            return potentialType.Name + suffix;
         }
 
         public SimdVectorLength GetVectorTSimdVector()
@@ -105,10 +111,13 @@ namespace ILCompiler
                 Debug.Assert(InstructionSet.X64_VectorT256 == InstructionSet.X86_VectorT256);
                 Debug.Assert(InstructionSet.X64_VectorT512 == InstructionSet.X86_VectorT512);
 
-                // TODO-XArch: Add support for 512-bit Vector<T>
-                Debug.Assert(!IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT512));
-
-                if (IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT256))
+                if (IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT512))
+                {
+                    Debug.Assert(!IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT128));
+                    Debug.Assert(!IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT256));
+                    return SimdVectorLength.Vector512Bit;
+                }
+                else if (IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT256))
                 {
                     Debug.Assert(!IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT128));
                     return SimdVectorLength.Vector256Bit;
@@ -161,7 +170,7 @@ namespace ILCompiler
         private static Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>> ComputeInstructionSetSupport()
         {
             var supportMatrix = new Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>>();
-            foreach (TargetArchitecture arch in Enum.GetValues(typeof(TargetArchitecture)))
+            foreach (TargetArchitecture arch in Enum.GetValues<TargetArchitecture>())
             {
                 supportMatrix[arch] = ComputeInstructSetSupportForArch(arch);
             }
@@ -172,7 +181,7 @@ namespace ILCompiler
         private static Dictionary<TargetArchitecture, InstructionSetFlags> ComputeNonSpecifiableInstructionSetSupport()
         {
             var matrix = new Dictionary<TargetArchitecture, InstructionSetFlags>();
-            foreach (TargetArchitecture arch in Enum.GetValues(typeof(TargetArchitecture)))
+            foreach (TargetArchitecture arch in Enum.GetValues<TargetArchitecture>())
             {
                 matrix[arch] = ComputeNonSpecifiableInstructionSetSupportForArch(arch);
             }
@@ -185,7 +194,7 @@ namespace ILCompiler
             var support = new Dictionary<string, InstructionSet>();
             foreach (var instructionSet in InstructionSetFlags.ArchitectureToValidInstructionSets(architecture))
             {
-                // Only instruction sets with associated R2R enum values are are specifiable
+                // Only instruction sets with associated R2R enum values are specifiable
                 if (instructionSet.Specifiable)
                     support.Add(instructionSet.Name, instructionSet.InstructionSet);
             }
@@ -198,7 +207,7 @@ namespace ILCompiler
             var support = new InstructionSetFlags();
             foreach (var instructionSet in InstructionSetFlags.ArchitectureToValidInstructionSets(architecture))
             {
-                // Only instruction sets with associated R2R enum values are are specifiable
+                // Only instruction sets with associated R2R enum values are specifiable
                 if (!instructionSet.Specifiable)
                     support.AddInstructionSet(instructionSet.InstructionSet);
             }
@@ -305,11 +314,66 @@ namespace ILCompiler
             {
                 unsupportedInstructionSets.AddInstructionSet(instructionSetConversion[unsupported]);
             }
+
             unsupportedInstructionSets.ExpandInstructionSetByReverseImplication(_architecture);
             unsupportedInstructionSets.Set64BitInstructionSetVariants(_architecture);
 
             if ((_architecture == TargetArchitecture.X86) || (_architecture == TargetArchitecture.ARM))
                 unsupportedInstructionSets.Set64BitInstructionSetVariantsUnconditionally(_architecture);
+
+            // While it's possible to enable individual AVX-512 ISA's, it is not
+            // optimal to do so, since they aren't totally functional this way,
+            // plus it is extremely rare to encounter hardware that doesn't support
+            // all of them. So, here we ensure that we are enabling all the ISA's
+            // if one is specified in the Crossgen2 or ILC command-lines.
+            //
+            // For more information, check this Github comment:
+            // https://github.com/dotnet/runtime/issues/106450#issuecomment-2299504035
+
+            if (_supportedInstructionSets.Any(iSet => iSet.Contains("avx512")))
+            {
+                // We can simply try adding all of the AVX-512 ISA's here,
+                // since SortedSet just ignores the value if it is already present.
+
+                _supportedInstructionSets.Add("avx512f");
+                _supportedInstructionSets.Add("avx512f_vl");
+                _supportedInstructionSets.Add("avx512bw");
+                _supportedInstructionSets.Add("avx512bw_vl");
+                _supportedInstructionSets.Add("avx512cd");
+                _supportedInstructionSets.Add("avx512cd_vl");
+                _supportedInstructionSets.Add("avx512dq");
+                _supportedInstructionSets.Add("avx512dq_vl");
+
+                // If AVX-512VBMI is specified, then we have to include its VL
+                // counterpart as well.
+
+                if (_supportedInstructionSets.Contains("avx512vbmi"))
+                    _supportedInstructionSets.Add("avx512vbmi_vl");
+
+                // These ISAs should automatically extend to 512-bit if
+                // AVX-512 is enabled.
+
+                if (_supportedInstructionSets.Contains("avx10v1"))
+                    _supportedInstructionSets.Add("avx10v1_v512");
+
+                if (_supportedInstructionSets.Contains("avx10v2"))
+                    _supportedInstructionSets.Add("avx10v2_v512");
+
+                if (_supportedInstructionSets.Contains("gfni"))
+                    _supportedInstructionSets.Add("gfni_v512");
+
+                if (_supportedInstructionSets.Contains("vpclmul"))
+                    _supportedInstructionSets.Add("vpclmul_v512");
+            }
+
+            if (_supportedInstructionSets.Any(iSet => iSet.Contains("avx")))
+            {
+                // These ISAs should automatically extend to 256-bit if
+                // AVX is enabled.
+
+                if (_supportedInstructionSets.Contains("gfni"))
+                    _supportedInstructionSets.Add("gfni_v256");
+            }
 
             foreach (string supported in _supportedInstructionSets)
             {
@@ -366,15 +430,15 @@ namespace ILCompiler
                     Debug.Assert((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 128));
                     supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT128);
 
-                    if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX2))
+                    if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX512F) && (maxVectorTBitWidth >= 512))
                     {
-                        if ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256))
-                        {
-                            supportedInstructionSets.RemoveInstructionSet(InstructionSet.X86_VectorT128);
-                            supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT256);
-                        }
-
-                        // TODO-XArch: Add support for 512-bit Vector<T>
+                        supportedInstructionSets.RemoveInstructionSet(InstructionSet.X86_VectorT128);
+                        supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT512);
+                    }
+                    else if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX2) && (maxVectorTBitWidth is 0 or >= 256))
+                    {
+                        supportedInstructionSets.RemoveInstructionSet(InstructionSet.X86_VectorT128);
+                        supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT256);
                     }
                     break;
                 }

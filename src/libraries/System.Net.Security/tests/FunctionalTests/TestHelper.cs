@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -143,81 +144,6 @@ namespace System.Net.Security.Tests
             catch { };
         }
 
-        internal static X509ExtensionCollection BuildTlsServerCertExtensions(string serverName)
-        {
-            return BuildTlsCertExtensions(serverName, true);
-        }
-
-        private static X509ExtensionCollection BuildTlsCertExtensions(string targetName, bool serverCertificate)
-        {
-            X509ExtensionCollection extensions = new X509ExtensionCollection();
-
-            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
-            builder.AddDnsName(targetName);
-            extensions.Add(builder.Build());
-            extensions.Add(s_eeConstraints);
-            extensions.Add(s_eeKeyUsage);
-            extensions.Add(serverCertificate ? s_tlsServerEku : s_tlsClientEku);
-
-            return extensions;
-        }
-
-        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(
-                    string targetName,
-                    [CallerMemberName] string? testName = null,
-                    bool longChain = false,
-                    bool serverCertificate = true,
-                    bool ephemeralKey = false)
-        {
-            const int keySize = 2048;
-            if (PlatformDetection.IsWindows && testName != null)
-            {
-                CleanupCertificates(testName);
-            }
-
-            X509Certificate2Collection chain = new X509Certificate2Collection();
-            X509ExtensionCollection extensions = BuildTlsCertExtensions(targetName, serverCertificate);
-
-            CertificateAuthority.BuildPrivatePki(
-                PkiOptions.IssuerRevocationViaCrl,
-                out RevocationResponder responder,
-                out CertificateAuthority root,
-                out CertificateAuthority[] intermediates,
-                out X509Certificate2 endEntity,
-                intermediateAuthorityCount: longChain ? 3 : 1,
-                subjectName: targetName,
-                testName: testName,
-                keySize: keySize,
-                extensions: extensions);
-
-            // Walk the intermediates backwards so we build the chain collection as
-            // Issuer3
-            // Issuer2
-            // Issuer1
-            // Root
-            for (int i = intermediates.Length - 1; i >= 0; i--)
-            {
-                CertificateAuthority authority = intermediates[i];
-
-                chain.Add(authority.CloneIssuerCert());
-                authority.Dispose();
-            }
-
-            chain.Add(root.CloneIssuerCert());
-
-            responder.Dispose();
-            root.Dispose();
-
-            if (!ephemeralKey && PlatformDetection.IsWindows)
-            {
-                X509Certificate2 ephemeral = endEntity;
-                endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx), (string?)null, X509KeyStorageFlags.Exportable);
-                ephemeral.Dispose();
-            }
-
-            return (endEntity, chain);
-        }
-
         internal static async Task PingPong(SslStream client, SslStream server, CancellationToken cancellationToken = default)
         {
             byte[] buffer = new byte[s_ping.Length];
@@ -264,6 +190,93 @@ namespace System.Net.Security.Tests
             }
 
             return name;
+        }
+
+        internal static async Task<Exception> WaitForSecureConnection(SslStream client, SslClientAuthenticationOptions clientOptions, SslStream server, SslServerAuthenticationOptions serverOptions)
+        {
+            Task serverTask = null;
+            Task clientTask = null;
+
+            // check if failed synchronously
+            try
+            {
+                serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                client.Close();
+                server.Close();
+
+                if (!(e is AuthenticationException || e is Win32Exception))
+                {
+                    throw;
+                }
+
+                if (serverTask != null)
+                {
+                    // i.e. for server we used DEFAULT options but for client we chose not supported cipher suite
+                    //      this will cause client to fail synchronously while server awaits connection
+                    try
+                    {
+                        // since we broke connection the server should finish
+                        await serverTask;
+                    }
+                    catch (AuthenticationException) { }
+                    catch (Win32Exception) { }
+                    catch (IOException) { }
+                }
+
+                return e;
+            }
+
+            // Since we got here it means client and server have at least 1 choice
+            // of cipher suite
+            // Now we expect both sides to fail or both to succeed
+
+            Exception failure = null;
+            Task task = null;
+
+            try
+            {
+                task = await Task.WhenAny(serverTask, clientTask).WaitAsync(TestConfiguration.PassingTestTimeout);
+                await task;
+            }
+            catch (Exception e) when (e is AuthenticationException || e is Win32Exception)
+            {
+                failure = e;
+                // avoid client waiting for server's response
+                if (task == serverTask)
+                {
+                    server.Close();
+                }
+                else
+                {
+                    client.Close();
+                }
+            }
+
+            try
+            {
+                // Now wait for the other task to finish.
+                task = (task == serverTask ? clientTask : serverTask);
+                await task.WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                // Fail if server has failed but client has succeeded
+                Assert.Null(failure);
+            }
+            catch (Exception e) when (e is AuthenticationException || e is Win32Exception || e is IOException)
+            {
+                // Fail if server has succeeded but client has failed
+                Assert.NotNull(failure);
+
+                if (e.GetType() != typeof(IOException))
+                {
+                    failure = new AggregateException(new Exception[] { failure, e });
+                }
+            }
+
+            return failure;
         }
     }
 }

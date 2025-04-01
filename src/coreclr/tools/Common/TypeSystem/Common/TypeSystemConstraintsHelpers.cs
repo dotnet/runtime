@@ -50,7 +50,7 @@ namespace Internal.TypeSystem
             }
 
             // Check for ByRefLike support
-            if (instantiationParam.IsByRefLike && (constraints & GenericConstraints.AcceptByRefLike) == 0)
+            if (instantiationParam.IsByRefLike && (constraints & GenericConstraints.AllowByRefLike) == 0)
                 return false;
 
             var instantiatedConstraints = default(ArrayBuilder<TypeDesc>);
@@ -162,7 +162,7 @@ namespace Internal.TypeSystem
 
         public static bool CheckValidInstantiationArguments(this Instantiation instantiation)
         {
-            foreach(var arg in instantiation)
+            foreach (var arg in instantiation)
             {
                 if (arg.IsPointer || arg.IsByRef || arg.IsGenericParameter || arg.IsVoid)
                     return false;

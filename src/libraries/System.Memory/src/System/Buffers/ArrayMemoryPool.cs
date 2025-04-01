@@ -11,12 +11,10 @@ namespace System.Buffers
 
         public sealed override unsafe IMemoryOwner<T> Rent(int minimumBufferSize = -1)
         {
-#pragma warning disable 8500 // sizeof of managed types
             if (minimumBufferSize == -1)
                 minimumBufferSize = 1 + (4095 / sizeof(T));
             else if (((uint)minimumBufferSize) > Array.MaxLength)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumBufferSize);
-#pragma warning restore 8500
 
             return new ArrayMemoryPoolBuffer(minimumBufferSize);
         }

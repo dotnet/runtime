@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
- * The JIT was removing a zero-init, but then emitting an untracked lifetime. 
- * Please run under GCSTRESS = 0x4
- */
+* The JIT was removing a zero-init, but then emitting an untracked lifetime.
+* Please run under GCSTRESS = 0x4
+*/
 
 using System;
 using System.Runtime.CompilerServices;
@@ -35,6 +35,7 @@ internal delegate bool WarehouseRowVersionQueryDelegate(WarehouseResultDatabase 
 public class Repro
 {
     [Fact]
+    [OuterLoop]
     public static void TestEntryPoint()
     {
         new Repro().ProcessResults(Query);

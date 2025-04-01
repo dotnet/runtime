@@ -37,6 +37,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = new List<T>();
         }
 
+        internal sealed override bool IsConvertibleCollection => true;
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             ReadOnlyMemory<T> memory = ((List<T>)state.Current.ReturnValue!).ToArray().AsMemory();
@@ -74,7 +75,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     state.Current.EndCollectionElement();
 
-                    if (ShouldFlush(writer, ref state))
+                    if (ShouldFlush(ref state, writer))
                     {
                         state.Current.EnumeratorIndex = ++index;
                         return false;

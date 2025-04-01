@@ -142,7 +142,7 @@ static HRESULT FormatRuntimeErrorVA(
     // find the text for it.
     else
     {
-        if (WszFormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
+        if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
                 0, hrRpt, 0,
                 rcMsg, cchMsg, 0/*<TODO>@todo: marker</TODO>*/))
         {

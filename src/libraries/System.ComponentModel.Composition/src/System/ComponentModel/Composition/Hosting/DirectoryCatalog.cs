@@ -22,7 +22,7 @@ namespace System.ComponentModel.Composition.Hosting
     public partial class DirectoryCatalog : ComposablePartCatalog, INotifyComposablePartCatalogChanged, ICompositionElement
     {
         private static bool IsWindows =>
-#if NETCOREAPP_5_0_OR_GREATER
+#if NET
             OperatingSystem.IsWindows();
 #else
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
@@ -637,7 +637,7 @@ namespace System.ComponentModel.Composition.Hosting
                         // Lastly complete any changes added to the atomicComposition during the change event
                         atomicComposition.Complete();
 
-                        // Break out of the while(true)
+                        // Break out of the while (true)
                         break;
                     } // WriteLock
                 } // AtomicComposition

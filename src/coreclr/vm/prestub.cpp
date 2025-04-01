@@ -21,9 +21,11 @@
 #include "array.h"
 #include "ecall.h"
 #include "virtualcallstub.h"
+#include "../debug/ee/debugger.h"
 
+#include "CachedInterfaceDispatchPal.h"
 #ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
+#include "interpexec.h"
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -41,8 +43,6 @@
 #endif // FEATURE_GDBJIT
 
 #ifndef DACCESS_COMPILE
-
-#include "customattribute.h"
 
 #if defined(FEATURE_JIT_PITCHING)
 EXTERN_C void CheckStacksAndPitch();
@@ -145,10 +145,8 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
                 }
             }
 
-#ifndef HAS_COMPACT_ENTRYPOINTS
             // Patch the fake entrypoint if necessary
             Precode::GetPrecodeFromEntryPoint(pExpected)->SetTargetInterlocked(pTarget);
-#endif // HAS_COMPACT_ENTRYPOINTS
         }
 
         if (HasNonVtableSlot())
@@ -344,7 +342,7 @@ bool MayUsePrecompiledILStub()
 PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
 
     bool shouldTier = false;
 #if defined(FEATURE_TIERED_COMPILATION)
@@ -398,7 +396,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
                     if (pTargetMD != NULL)
                     {
                         pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
-                        if (pCode != NULL)
+                        if (pCode != (PCODE)NULL)
                         {
                             LOG_USING_R2R_CODE(this);
                             pConfig->SetNativeCode(pCode, &pCode);
@@ -409,28 +407,38 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         }
 #endif // FEATURE_READYTORUN
 
-        if (pCode == NULL)
+        if (pCode == (PCODE)NULL)
         {
             pCode = GetPrecompiledCode(pConfig, shouldTier);
         }
 
 #ifdef FEATURE_PERFMAP
-        if (pCode != NULL)
+        if (pCode != (PCODE)NULL)
             PerfMap::LogPreCompiledMethod(this, pCode);
 #endif
     }
 
-    if (pConfig->IsForMulticoreJit() && pCode == NULL && pConfig->ReadyToRunRejectedPrecompiledCode())
+    if (pConfig->IsForMulticoreJit() && pCode == (PCODE)NULL && pConfig->ReadyToRunRejectedPrecompiledCode())
     {
         // Was unable to load code from r2r image in mcj thread, don't try to jit it, this method will be loaded later
-        return NULL;
+        return (PCODE)NULL;
     }
 
-    if (pCode == NULL)
+    if (pCode == (PCODE)NULL)
     {
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
+#ifdef FEATURE_INTERPRETER
+        if (pConfig->IsInterpreterCode())
+        {
+            AllocMemTracker amt;
+            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(pCode, GetLoaderAllocator(), &amt);
+            amt.SuppressRelease();
+            pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
+            SetNativeCodeInterlocked(pCode);
+        }
+#endif // FEATURE_INTERPRETER
     }
     else
     {
@@ -443,11 +451,11 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier)
 {
     STANDARD_VM_CONTRACT;
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
 
 #ifdef FEATURE_READYTORUN
     pCode = GetPrecompiledR2RCode(pConfig);
-    if (pCode != NULL)
+    if (pCode != (PCODE)NULL)
     {
         LOG_USING_R2R_CODE(this);
 
@@ -499,7 +507,7 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
 #ifdef FEATURE_READYTORUN
     ReadyToRunInfo* pAlreadyExaminedInfos[2] = {NULL, NULL};
     Module * pModule = GetModule();
@@ -510,7 +518,7 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
     }
 
     //  Generics may be located in several places
-    if (pCode == NULL && HasClassOrMethodInstantiation())
+    if (pCode == (PCODE)NULL && HasClassOrMethodInstantiation())
     {
         // Generics have an alternative location that is looked up which is based on the first generic
         // argument that the crossgen2 compiler will consider as requiring the cross module compilation logic to kick in.
@@ -521,13 +529,13 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
             pCode = pAlreadyExaminedInfos[1]->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
         }
 
-        if (pCode == NULL)
+        if (pCode == (PCODE)NULL)
         {
             // R2R also supports a concept of R2R code that has code for "Unrelated" generics embedded within it
             // A linked list of these are formed as those modules are loaded, and this restricted set of modules
             // is examined for all generic method lookups
             ReadyToRunInfo* pUnrelatedInfo = ReadyToRunInfo::GetUnrelatedR2RModules();
-            for (;pUnrelatedInfo != NULL && pCode == NULL; pUnrelatedInfo = pUnrelatedInfo->GetNextUnrelatedR2RModule())
+            for (;pUnrelatedInfo != NULL && pCode == (PCODE)NULL; pUnrelatedInfo = pUnrelatedInfo->GetNextUnrelatedR2RModule())
             {
                 if (pUnrelatedInfo == pAlreadyExaminedInfos[0]) continue;
                 if (pUnrelatedInfo == pAlreadyExaminedInfos[1]) continue;
@@ -604,10 +612,10 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
     CheckStacksAndPitch();
 #endif
 
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     {
         // Enter the global lock which protects the list of all functions being JITd
-        JitListLock::LockHolder pJitLock(GetDomain()->GetJitLock());
+        JitListLock::LockHolder pJitLock(AppDomain::GetCurrentDomain()->GetJitLock());
 
         // It is possible that another thread stepped in before we entered the global lock for the first time.
         if ((pCode = pConfig->IsJitCancellationRequested()))
@@ -680,7 +688,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
             {
                 bool wasTier0 = false;
                 pCode = GetMulticoreJitCode(pConfig, &wasTier0);
-                if (pCode != NULL)
+                if (pCode != (PCODE)NULL)
                 {
                 #ifdef FEATURE_TIERED_COMPILATION
                     // Finalize the optimization tier before SetNativeCode() is called
@@ -760,7 +768,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     ULONG sizeOfCode = 0;
 
 #ifdef PROFILING_SUPPORTED
@@ -822,38 +830,23 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     else
     {
         SString namespaceOrClassName, methodName, methodSignature;
-
-        // Methods that may be interpreted defer this notification until it is certain
-        // we are jitting and not interpreting in CompileMethodWithEtwWrapper.
-        // Some further refactoring could consolidate the notification to always
-        // occur at the point the interpreter does it, but it might even better
-        // to fix the issues that cause us to avoid generating jit notifications
-        // for interpreted methods in the first place. The interpreter does generate
-        // a small stub of native code but no native-IL mapping.
-#ifndef FEATURE_INTERPRETER
+#ifdef FEATURE_EVENT_TRACE
         ETW::MethodLog::MethodJitting(this,
             pilHeader,
             &namespaceOrClassName,
             &methodName,
             &methodSignature);
-#endif
+#endif //FEATURE_EVENT_TRACE
 
         pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
-
-        // Interpretted methods skip this notification
-#ifdef FEATURE_INTERPRETER
-        if (Interpreter::InterpretationStubToMethodInfo(pCode) == NULL)
-#endif
-        {
-            // Fire an ETW event to mark the end of JIT'ing
-            ETW::MethodLog::MethodJitted(this,
-                &namespaceOrClassName,
-                &methodName,
-                &methodSignature,
-                pCode,
-                pConfig);
-        }
-
+#ifdef FEATURE_EVENT_TRACE
+        ETW::MethodLog::MethodJitted(this,
+            &namespaceOrClassName,
+            &methodName,
+            &methodSignature,
+            pCode,
+            pConfig);
+#endif //FEATURE_EVENT_TRACE
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -898,28 +891,13 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_INTERPRETER
-    bool isJittedMethod = (Interpreter::InterpretationStubToMethodInfo(pCode) == NULL);
-#endif
-
-    // Interpretted methods skip this notification
-#ifdef FEATURE_INTERPRETER
-    if (isJittedMethod)
-#endif
-    {
 #ifdef FEATURE_PERFMAP
-        // Save the JIT'd method information so that perf can resolve JIT'd call frames.
-        PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
+    // Save the JIT'd method information so that perf can resolve JIT'd call frames.
+    PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
 #endif
-    }
 
-#ifdef FEATURE_INTERPRETER
-    if (isJittedMethod)
-#endif
-    {
-        // The notification will only occur if someone has registered for this method.
-        DACNotifyCompilationFinished(this, pCode);
-    }
+    // The notification will only occur if someone has registered for this method.
+    DACNotifyCompilationFinished(this, pCode);
 
     return pCode;
 }
@@ -928,9 +906,9 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     CORJIT_FLAGS jitFlags;
-    PCODE pOtherCode = NULL;
+    PCODE pOtherCode = (PCODE)NULL;
 
     EX_TRY
     {
@@ -961,7 +939,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     }
     EX_END_CATCH(RethrowTerminalExceptions)
 
-    if (pOtherCode != NULL)
+    if (pOtherCode != (PCODE)NULL)
     {
         // Somebody finished jitting recursively while we were jitting the method.
         // Just use their method & leak the one we finished. (Normally we hope
@@ -971,7 +949,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
         return pOtherCode;
     }
 
-    _ASSERTE(pCode != NULL);
+    _ASSERTE(pCode != (PCODE)NULL);
 
 #ifdef HAVE_GCCOVER
     // Instrument for coverage before trying to publish this version
@@ -1054,503 +1032,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     return pCode;
 }
 
-namespace
-{
-    enum class UnsafeAccessorKind
-    {
-        Constructor, // call instance constructor (`newobj` in IL)
-        Method, // call instance method (`callvirt` in IL)
-        StaticMethod, // call static method (`call` in IL)
-        Field, // address of instance field (`ldflda` in IL)
-        StaticField // address of static field (`ldsflda` in IL)
-    };
-
-    bool TryParseUnsafeAccessorAttribute(
-        MethodDesc* pMD,
-        CustomAttributeParser& ca,
-        UnsafeAccessorKind& kind,
-        SString& name)
-    {
-        STANDARD_VM_CONTRACT;
-        _ASSERTE(pMD != NULL);
-
-        // Get the kind of accessor
-        CaArg args[1];
-        args[0].InitEnum(SERIALIZATION_TYPE_I4, 0);
-        if (FAILED(::ParseKnownCaArgs(ca, args, ARRAY_SIZE(args))))
-            return false;
-
-        kind = (UnsafeAccessorKind)args[0].val.i4;
-
-        // Check the name of the target to access. This is the name we
-        // use to look up the intended token in metadata.
-        CaNamedArg namedArgs[1];
-        CaType namedArgTypes[1];
-        namedArgTypes[0].Init(SERIALIZATION_TYPE_STRING);
-        namedArgs[0].Init("Name", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[0], NULL);
-        if (FAILED(::ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs))))
-            return false;
-
-        // If the Name isn't defined, then use the name of the method.
-        if (namedArgs[0].val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
-        {
-            // The Constructor case has an implied value provided by
-            // the runtime. We are going to enforce this during consumption
-            // so we avoid the setting of the value. We validate the name
-            // as empty at the use site.
-            if (kind != UnsafeAccessorKind::Constructor)
-                name.SetUTF8(pMD->GetName());
-        }
-        else
-        {
-            const CaValue& val = namedArgs[0].val;
-            name.SetUTF8(val.str.pStr, val.str.cbStr);
-        }
-
-        return true;
-    }
-
-    struct GenerationContext final
-    {
-        GenerationContext(UnsafeAccessorKind kind, MethodDesc* pMD)
-            : Kind{ kind }
-            , Declaration{ pMD }
-            , DeclarationSig{ pMD }
-            , TargetType{}
-            , IsTargetStatic{ false }
-            , TargetMethod{}
-            , TargetField{}
-        { }
-
-        UnsafeAccessorKind Kind;
-        MethodDesc* Declaration;
-        MetaSig DeclarationSig;
-        TypeHandle TargetType;
-        bool IsTargetStatic;
-        MethodDesc* TargetMethod;
-        FieldDesc* TargetField;
-    };
-
-    TypeHandle ValidateTargetType(TypeHandle targetTypeMaybe)
-    {
-        TypeHandle targetType = targetTypeMaybe.IsByRef()
-            ? targetTypeMaybe.GetTypeParam()
-            : targetTypeMaybe;
-
-        // Due to how some types degrade, we block on parameterized
-        // types that are represented as TypeDesc. For example ref or pointer.
-        if (targetType.IsTypeDesc())
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-
-        return targetType;
-    }
-
-    bool DoesMethodMatchUnsafeAccessorDeclaration(
-        GenerationContext& cxt,
-        MethodDesc* method,
-        MetaSig::CompareState& state)
-    {
-        STANDARD_VM_CONTRACT;
-        _ASSERTE(method != NULL);
-
-        PCCOR_SIGNATURE pSig1;
-        DWORD cSig1;
-        cxt.Declaration->GetSig(&pSig1, &cSig1);
-        PCCOR_SIGNATURE pEndSig1 = pSig1 + cSig1;
-        ModuleBase* pModule1 = cxt.Declaration->GetModule();
-        const Substitution* pSubst1 = NULL;
-
-        PCCOR_SIGNATURE pSig2;
-        DWORD cSig2;
-        method->GetSig(&pSig2, &cSig2);
-        PCCOR_SIGNATURE pEndSig2 = pSig2 + cSig2;
-        ModuleBase* pModule2 = method->GetModule();
-        const Substitution* pSubst2 = NULL;
-
-        // Validate calling convention
-        if ((*pSig1 & IMAGE_CEE_CS_CALLCONV_MASK) != (*pSig2 & IMAGE_CEE_CS_CALLCONV_MASK))
-        {
-            return false;
-        }
-
-        BYTE callConv = *pSig1;
-        pSig1++;
-        pSig2++;
-
-        DWORD declArgCount;
-        DWORD methodArgCount;
-        IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declArgCount));
-        IfFailThrow(CorSigUncompressData_EndPtr(pSig2, pEndSig2, &methodArgCount));
-
-        // Validate argument count
-        if (cxt.Kind == UnsafeAccessorKind::Constructor)
-        {
-            // Declarations for constructor scenarios have
-            // matching argument counts with the target.
-            if (declArgCount != methodArgCount)
-                return false;
-        }
-        else
-        {
-            // Declarations of non-constructor scenarios have
-            // an additional argument to indicate target type
-            // and to pass an instance for non-static methods.
-            if (declArgCount != (methodArgCount + 1))
-                return false;
-        }
-
-        // Validate return and argument types
-        for (DWORD i = 0; i <= methodArgCount; ++i)
-        {
-            if (i == 0 && cxt.Kind == UnsafeAccessorKind::Constructor)
-            {
-                // Skip return value (index 0) validation on constructor
-                // accessor declarations.
-                SigPointer ptr1(pSig1, (DWORD)(pEndSig1 - pSig1));
-                IfFailThrow(ptr1.SkipExactlyOne());
-                pSig1 = ptr1.GetPtr();
-
-                CorElementType typ;
-                SigPointer ptr2(pSig2, (DWORD)(pEndSig2 - pSig2));
-                IfFailThrow(ptr2.GetElemType(&typ));
-                pSig2 = ptr2.GetPtr();
-
-                // Validate the return value for target constructor
-                // candidate is void.
-                if (typ != ELEMENT_TYPE_VOID)
-                    return false;
-
-                continue;
-            }
-            else if (i == 1 && cxt.Kind != UnsafeAccessorKind::Constructor)
-            {
-                // Skip over first argument (index 1) on non-constructor accessors.
-                // See argument count validation above.
-                SigPointer ptr1(pSig1, (DWORD)(pEndSig1 - pSig1));
-                IfFailThrow(ptr1.SkipExactlyOne());
-                pSig1 = ptr1.GetPtr();
-            }
-
-            // Compare the types
-            if (FALSE == MetaSig::CompareElementType(
-                pSig1,
-                pSig2,
-                pEndSig1,
-                pEndSig2,
-                pModule1,
-                pModule2,
-                pSubst1,
-                pSubst2,
-                &state))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    bool TrySetTargetMethod(
-        GenerationContext& cxt,
-        LPCUTF8 methodName,
-        bool ignoreCustomModifiers = true)
-    {
-        STANDARD_VM_CONTRACT;
-        _ASSERTE(methodName != NULL);
-        _ASSERTE(cxt.Kind == UnsafeAccessorKind::Constructor
-                || cxt.Kind == UnsafeAccessorKind::Method
-                || cxt.Kind == UnsafeAccessorKind::StaticMethod);
-
-        TypeHandle targetType = cxt.TargetType;
-        _ASSERTE(!targetType.IsTypeDesc());
-
-        MethodDesc* targetMaybe = NULL;
-
-        // Following a similar iteration pattern found in MemberLoader::FindMethod().
-        // However, we are only operating on the current type not walking the type hierarchy.
-        MethodTable::IntroducedMethodIterator iter(targetType.AsMethodTable());
-        for (; iter.IsValid(); iter.Next())
-        {
-            MethodDesc* curr = iter.GetMethodDesc();
-
-            // Check the target and current method match static/instance state.
-            if (cxt.IsTargetStatic != (!!curr->IsStatic()))
-                continue;
-
-            // Check for matching name
-            if (strcmp(methodName, curr->GetNameThrowing()) != 0)
-                continue;
-
-            // Check signature
-            TokenPairList list { nullptr };
-            MetaSig::CompareState state{ &list };
-            state.IgnoreCustomModifiers = ignoreCustomModifiers;
-            if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, state))
-                continue;
-
-            // Check if there is some ambiguity.
-            if (targetMaybe != NULL)
-            {
-                if (ignoreCustomModifiers)
-                {
-                    // We have detected ambiguity when ignoring custom modifiers.
-                    // Start over, but look for a match requiring custom modifiers
-                    // to match precisely.
-                    if (TrySetTargetMethod(cxt, methodName, false /* ignoreCustomModifiers */))
-                        return true;
-                }
-                COMPlusThrow(kAmbiguousMatchException, W("Arg_AmbiguousMatchException_UnsafeAccessor"));
-            }
-            targetMaybe = curr;
-        }
-
-        cxt.TargetMethod = targetMaybe;
-        return cxt.TargetMethod != NULL;
-    }
-
-    bool TrySetTargetField(
-        GenerationContext& cxt,
-        LPCUTF8 fieldName,
-        TypeHandle fieldType)
-    {
-        STANDARD_VM_CONTRACT;
-        _ASSERTE(fieldName != NULL);
-        _ASSERTE(cxt.Kind == UnsafeAccessorKind::Field
-                || cxt.Kind == UnsafeAccessorKind::StaticField);
-
-        TypeHandle targetType = cxt.TargetType;
-        _ASSERTE(!targetType.IsTypeDesc());
-
-        ApproxFieldDescIterator fdIterator(
-            targetType.AsMethodTable(),
-            (cxt.IsTargetStatic ? ApproxFieldDescIterator::STATIC_FIELDS : ApproxFieldDescIterator::INSTANCE_FIELDS));
-        PTR_FieldDesc pField;
-        while ((pField = fdIterator.Next()) != NULL)
-        {
-            // Validate the name and target type match.
-            if (strcmp(fieldName, pField->GetName()) == 0
-                && fieldType == pField->LookupFieldTypeHandle())
-            {
-                cxt.TargetField = pField;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void GenerateAccessor(
-        GenerationContext& cxt,
-        DynamicResolver** resolver,
-        COR_ILMETHOD_DECODER** methodILDecoder)
-    {
-        STANDARD_VM_CONTRACT;
-
-        NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
-
-        // Initialize the resolver target details.
-        ilResolver->SetStubMethodDesc(cxt.Declaration);
-        ilResolver->SetStubTargetMethodDesc(cxt.TargetMethod);
-
-        // [TODO] Handle generics
-        SigTypeContext emptyContext;
-        ILStubLinker sl(
-            cxt.Declaration->GetModule(),
-            cxt.Declaration->GetSignature(),
-            &emptyContext,
-            cxt.TargetMethod,
-            (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE);
-
-        ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
-
-        // Load stub arguments.
-        // When the target is static, the first argument is only
-        // used to look up the target member to access and ignored
-        // during dispatch.
-        UINT beginIndex = cxt.IsTargetStatic ? 1 : 0;
-        UINT stubArgCount = cxt.DeclarationSig.NumFixedArgs();
-        for (UINT i = beginIndex; i < stubArgCount; ++i)
-            pCode->EmitLDARG(i);
-
-        // Provide access to the target member
-        UINT targetArgCount = stubArgCount - beginIndex;
-        UINT targetRetCount = cxt.DeclarationSig.IsReturnTypeVoid() ? 0 : 1;
-        switch (cxt.Kind)
-        {
-        case UnsafeAccessorKind::Constructor:
-            _ASSERTE(cxt.TargetMethod != NULL);
-            pCode->EmitNEWOBJ(pCode->GetToken(cxt.TargetMethod), targetArgCount);
-            break;
-        case UnsafeAccessorKind::Method:
-            _ASSERTE(cxt.TargetMethod != NULL);
-            pCode->EmitCALLVIRT(pCode->GetToken(cxt.TargetMethod), targetArgCount, targetRetCount);
-            break;
-        case UnsafeAccessorKind::StaticMethod:
-            _ASSERTE(cxt.TargetMethod != NULL);
-            pCode->EmitCALL(pCode->GetToken(cxt.TargetMethod), targetArgCount, targetRetCount);
-            break;
-        case UnsafeAccessorKind::Field:
-            _ASSERTE(cxt.TargetField != NULL);
-            pCode->EmitLDFLDA(pCode->GetToken(cxt.TargetField));
-            break;
-        case UnsafeAccessorKind::StaticField:
-            _ASSERTE(cxt.TargetField != NULL);
-            pCode->EmitLDSFLDA(pCode->GetToken(cxt.TargetField));
-            break;
-        default:
-            _ASSERTE(!"Unknown UnsafeAccessorKind");
-        }
-
-        // Return from the generated stub
-        pCode->EmitRET();
-
-        // Generate all IL associated data for JIT
-        {
-            UINT maxStack;
-            size_t cbCode = sl.Link(&maxStack);
-            DWORD cbSig = sl.GetLocalSigSize();
-
-            COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-            BYTE* pbBuffer = (BYTE*)pILHeader->Code;
-            BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
-            _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-            sl.GenerateCode(pbBuffer, cbCode);
-            sl.GetLocalSig(pbLocalSig, cbSig);
-
-            // Store the token lookup map
-            ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
-            ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-
-            *resolver = (DynamicResolver*)ilResolver;
-            *methodILDecoder = pILHeader;
-        }
-
-        ilResolver.SuppressRelease();
-    }
-}
-
-bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(resolver != NULL);
-    _ASSERTE(methodILDecoder != NULL);
-    _ASSERTE(*resolver == NULL && *methodILDecoder == NULL);
-    _ASSERTE(IsIL());
-    _ASSERTE(GetRVA() == 0);
-
-    // The UnsafeAccessorAttribute is applied to methods with an
-    // RVA of 0 (for example, C#'s extern keyword).
-    const void* data;
-    ULONG dataLen;
-    HRESULT hr = GetCustomAttribute(WellKnownAttribute::UnsafeAccessorAttribute, &data, &dataLen);
-    if (hr != S_OK)
-        return false;
-
-    // UnsafeAccessor must be on a static method
-    if (!IsStatic())
-        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-
-    // Block generic support early
-    if (HasClassOrMethodInstantiation())
-        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-
-    UnsafeAccessorKind kind;
-    SString name;
-
-    CustomAttributeParser ca(data, dataLen);
-    if (!TryParseUnsafeAccessorAttribute(this, ca, kind, name))
-        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-
-    GenerationContext context{ kind, this };
-
-    // Parse the signature to determine the type to use:
-    //  * Constructor access - examine the return type
-    //  * Instance member access - examine type of first parameter
-    //  * Static member access - examine type of first parameter
-    TypeHandle retType;
-    TypeHandle firstArgType;
-    retType = context.DeclarationSig.GetRetTypeHandleThrowing();
-    UINT argCount = context.DeclarationSig.NumFixedArgs();
-    if (argCount > 0)
-    {
-        context.DeclarationSig.NextArg();
-        firstArgType = context.DeclarationSig.GetLastTypeHandleThrowing();
-    }
-
-    // Using the kind type, perform the following:
-    //  1) Validate the basic type information from the signature.
-    //  2) Resolve the name to the appropriate member.
-    switch (context.Kind)
-    {
-    case UnsafeAccessorKind::Constructor:
-        // A return type is required for a constructor, otherwise
-        // we don't know the type to construct.
-        // Types should not be parameterized (that is, byref).
-        // The name is defined by the runtime and should be empty.
-        if (context.DeclarationSig.IsReturnTypeVoid() || retType.IsByRef() || !name.IsEmpty())
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-        }
-
-        context.TargetType = ValidateTargetType(retType);
-        if (!TrySetTargetMethod(context, ".ctor"))
-            MemberLoader::ThrowMissingMethodException(context.TargetType.AsMethodTable(), ".ctor");
-        break;
-
-    case UnsafeAccessorKind::Method:
-    case UnsafeAccessorKind::StaticMethod:
-        // Method access requires a target type.
-        if (firstArgType.IsNull())
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-
-        // If the non-static method access is for a
-        // value type, the instance must be byref.
-        if (kind == UnsafeAccessorKind::Method
-            && firstArgType.IsValueType()
-            && !firstArgType.IsByRef())
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-        }
-
-        context.TargetType = ValidateTargetType(firstArgType);
-        context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;
-        if (!TrySetTargetMethod(context, name.GetUTF8()))
-            MemberLoader::ThrowMissingMethodException(context.TargetType.AsMethodTable(), name.GetUTF8());
-        break;
-
-    case UnsafeAccessorKind::Field:
-    case UnsafeAccessorKind::StaticField:
-        // Field access requires a single argument for target type and a return type.
-        if (argCount != 1 || firstArgType.IsNull() || context.DeclarationSig.IsReturnTypeVoid())
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-        }
-
-        // The return type must be byref.
-        // If the non-static field access is for a
-        // value type, the instance must be byref.
-        if (!retType.IsByRef()
-            || (kind == UnsafeAccessorKind::Field
-                && firstArgType.IsValueType()
-                && !firstArgType.IsByRef()))
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-        }
-
-        context.TargetType = ValidateTargetType(firstArgType);
-        context.IsTargetStatic = kind == UnsafeAccessorKind::StaticField;
-        if (!TrySetTargetField(context, name.GetUTF8(), retType.GetTypeParam()))
-            MemberLoader::ThrowMissingFieldException(context.TargetType.AsMethodTable(), name.GetUTF8());
-        break;
-
-    default:
-        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-    }
-
-    // Generate the IL for the accessor.
-    GenerateAccessor(context, resolver, methodILDecoder);
-    return true;
-}
-
 PrepareCodeConfig::PrepareCodeConfig() {}
 
 PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMulticoreJitNotification, BOOL mayUsePrecompiledCode) :
@@ -1575,6 +1056,9 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_jitSwitchedToMinOpt(false),
 #ifdef FEATURE_TIERED_COMPILATION
     m_jitSwitchedToOptimized(false),
+#endif
+#ifdef FEATURE_INTERPRETER
+    m_isInterpreterCode(false),
 #endif
     m_nextInSameThread(nullptr)
 {}
@@ -1631,7 +1115,7 @@ BOOL PrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_nativeCodeVersion.SetNativeCodeInterlocked(pCode, NULL))
+    if (m_nativeCodeVersion.SetNativeCodeInterlocked(pCode, (PCODE)NULL))
     {
         return TRUE;
     }
@@ -1643,7 +1127,7 @@ BOOL PrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
 COR_ILMETHOD* PrepareCodeConfig::GetILHeader()
 {
     STANDARD_VM_CONTRACT;
-    return m_pMethodDesc->GetILHeader(TRUE);
+    return m_pMethodDesc->GetILHeader();
 }
 
 CORJIT_FLAGS PrepareCodeConfig::GetJitCompilationFlags()
@@ -1823,11 +1307,11 @@ HRESULT VersionedPrepareCodeConfig::FinishConfiguration()
     // Any code build stages that do just in time configuration should
     // be configured now
 #ifdef FEATURE_REJIT
-    if (m_ilCodeVersion.GetRejitState() != ILCodeVersion::kStateActive)
+    if (m_ilCodeVersion.GetRejitState() != RejitFlags::kStateActive)
     {
         ReJitManager::ConfigureILCodeVersion(m_ilCodeVersion);
     }
-    _ASSERTE(m_ilCodeVersion.GetRejitState() == ILCodeVersion::kStateActive);
+    _ASSERTE(m_ilCodeVersion.GetRejitState() == RejitFlags::kStateActive);
 #endif
 
     return S_OK;
@@ -2262,20 +1746,19 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
 
-#if defined (HAS_COMPACT_ENTRYPOINTS) && defined (TARGET_ARM)
+extern "C" size_t CallDescrWorkerInternalReturnAddressOffset;
 
-extern "C" MethodDesc * STDCALL PreStubGetMethodDescForCompactEntryPoint (PCODE pCode)
+bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode)
 {
-    _ASSERTE (pCode >= PC_REG_RELATIVE_OFFSET);
+    LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_EH_FUNCLETS
+    size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
 
-    pCode = (PCODE) (pCode - PC_REG_RELATIVE_OFFSET + THUMB_CODE);
-
-    _ASSERTE (MethodDescChunk::IsCompactEntryPointAtAddress (pCode));
-
-    return MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, FALSE);
+    return pCode == CallDescrWorkerInternalReturnAddress;
+#else // FEATURE_EH_FUNCLETS
+    return false;
+#endif // FEATURE_EH_FUNCLETS
 }
-
-#endif // defined (HAS_COMPACT_ENTRYPOINTS) && defined (TARGET_ARM)
 
 //=============================================================================
 // This function generates the real code when from Preemptive mode.
@@ -2288,7 +1771,7 @@ static PCODE PreStubWorker_Preemptive(
 {
     _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
 
-    PCODE pbRetVal = NULL;
+    PCODE pbRetVal = (PCODE)NULL;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2340,9 +1823,9 @@ static PCODE PreStubWorker_Preemptive(
 //=============================================================================
 extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, MethodDesc* pMD)
 {
-    PCODE pbRetVal = NULL;
+    PCODE pbRetVal = (PCODE)NULL;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2367,65 +1850,78 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-        FrameWithCookie<PrestubMethodFrame> frame(pTransitionBlock, pMD);
+        PrestubMethodFrame frame(pTransitionBlock, pMD);
         PrestubMethodFrame* pPFrame = &frame;
 
         pPFrame->Push(CURRENT_THREAD);
 
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-        // Make sure the method table is restored, and method instantiation if present
-        pMD->CheckRestore();
-        CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
-
-        MethodTable* pDispatchingMT = NULL;
-        if (pMD->IsVtableMethod())
+        EX_TRY
         {
-            OBJECTREF curobj = pPFrame->GetThis();
+            bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
 
-            if (curobj != NULL) // Check for virtual function called non-virtually on a NULL object
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+
+            // Make sure the method table is restored, and method instantiation if present
+            pMD->CheckRestore();
+            CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
+
+            MethodTable* pDispatchingMT = NULL;
+            if (pMD->IsVtableMethod())
             {
-                pDispatchingMT = curobj->GetMethodTable();
+                OBJECTREF curobj = pPFrame->GetThis();
 
-                if (pDispatchingMT->IsICastable() || pDispatchingMT->IsIDynamicInterfaceCastable())
+                if (curobj != NULL) // Check for virtual function called non-virtually on a NULL object
                 {
-                    MethodTable* pMDMT = pMD->GetMethodTable();
-                    TypeHandle objectType(pDispatchingMT);
-                    TypeHandle methodType(pMDMT);
+                    pDispatchingMT = curobj->GetMethodTable();
 
-                    GCStress<cfg_any>::MaybeTrigger();
-                    INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
-                    if (!objectType.CanCastTo(methodType))
+                    if (pDispatchingMT->IsIDynamicInterfaceCastable())
                     {
-                        // Apparently ICastable magic was involved when we chose this method to be called
-                        // that's why we better stick to the MethodTable it belongs to, otherwise
-                        // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
+                        MethodTable* pMDMT = pMD->GetMethodTable();
+                        TypeHandle objectType(pDispatchingMT);
+                        TypeHandle methodType(pMDMT);
 
-                        pDispatchingMT = pMDMT;
+                        GCStress<cfg_any>::MaybeTrigger();
+                        INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
+                        if (!objectType.CanCastTo(methodType))
+                        {
+                            // Apparently IDynamicInterfaceCastable magic was involved when we chose this method to be called
+                            // that's why we better stick to the MethodTable it belongs to, otherwise
+                            // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
+
+                            pDispatchingMT = pMDMT;
+                        }
                     }
-                }
 
-                // For value types, the only virtual methods are interface implementations.
-                // Thus pDispatching == pMT because there
-                // is no inheritance in value types.  Note the BoxedEntryPointStubs are shared
-                // between all sharable generic instantiations, so the == test is on
-                // canonical method tables.
+                    // For value types, the only virtual methods are interface implementations.
+                    // Thus pDispatching == pMT because there
+                    // is no inheritance in value types.  Note the BoxedEntryPointStubs are shared
+                    // between all sharable generic instantiations, so the == test is on
+                    // canonical method tables.
 #ifdef _DEBUG
-                MethodTable* pMDMT = pMD->GetMethodTable(); // put this here to see what the MT is in debug mode
-                _ASSERTE(!pMD->GetMethodTable()->IsValueType() ||
-                (pMD->IsUnboxingStub() && (pDispatchingMT->GetCanonicalMethodTable() == pMDMT->GetCanonicalMethodTable())));
+                    MethodTable* pMDMT = pMD->GetMethodTable(); // put this here to see what the MT is in debug mode
+                    _ASSERTE(!pMD->GetMethodTable()->IsValueType() ||
+                    (pMD->IsUnboxingStub() && (pDispatchingMT->GetCanonicalMethodTable() == pMDMT->GetCanonicalMethodTable())));
 #endif // _DEBUG
+                }
             }
-        }
 
-        GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
+            GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
+            {
+                pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+            }
+
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        }
+        EX_CATCH
         {
-            pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            _ASSERTE(ohThrowable);
+            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
+            EX_RETHROW;
         }
-
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        EX_END_CATCH(SwallowAllExceptions)
 
         {
             HardwareExceptionHolder;
@@ -2439,10 +1935,29 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     POSTCONDITION(pbRetVal != NULL);
 
-    END_PRESERVE_LAST_ERROR;
-
     return pbRetVal;
 }
+
+#ifdef FEATURE_INTERPRETER
+extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
+{
+    // Argument registers are in the TransitionBlock
+    // The stack arguments are right after the pTransitionBlock
+    InterpThreadContext *threadContext = InterpGetThreadContext();
+    int8_t *sp = threadContext->pStackPointer;
+
+    InterpMethodContextFrame interpMethodContextFrame = {0};
+    interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
+    interpMethodContextFrame.pStack = sp;
+    interpMethodContextFrame.pRetVal = sp;
+
+    InterpreterFrame interpreterFrame(pTransitionBlock, &interpMethodContextFrame);
+
+    InterpExecMethod(&interpreterFrame, &interpMethodContextFrame, threadContext);
+
+    interpreterFrame.Pop();
+}
+#endif // FEATURE_INTERPRETER
 
 #ifdef _DEBUG
 //
@@ -2500,7 +2015,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     CONTRACT_END;
 
     Stub *pStub = NULL;
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
 
     Thread *pThread = GetThread();
 
@@ -2564,11 +2079,11 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     // they are not your every day method descriptors, for example
     // they don't have an IL or code.
     */
-    if (IsComPlusCall())
+    if (IsCLRToCOMCall())
     {
         pCode = GetStubForInteropMethod(this);
 
-        GetPrecode()->SetTargetInterlocked(pCode);
+        GetOrCreatePrecode()->SetTargetInterlocked(pCode);
 
         RETURN GetStableEntryPoint();
     }
@@ -2599,7 +2114,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             RETURN DoBackpatch(pMT, pDispatchingMT, doFullBackpatch);
         }
 
-        _ASSERTE(pCode != NULL);
+        _ASSERTE(pCode != (PCODE)NULL);
         _ASSERTE(!doFullBackpatch);
         RETURN pCode;
     }
@@ -2643,13 +2158,13 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // a stub, we'll use it directly instead and avoid emitting an IL stub.
             PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
             pCode = GetPrecompiledR2RCode(&config);
-            if (pCode != NULL)
+            if (pCode != (PCODE)NULL)
             {
                 LOG_USING_R2R_CODE(this);
             }
         }
 
-        if (pCode == NULL)
+        if (pCode == (PCODE)NULL)
         {
             pCode = GetStubForInteropMethod(this);
         }
@@ -2675,8 +2190,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     else if (IsEEImpl())
     {
         _ASSERTE(GetMethodTable()->IsDelegate());
-        pCode = COMDelegate::GetInvokeMethodStub((EEImplMethodDesc*)this);
-        GetOrCreatePrecode();
+        pStub = COMDelegate::GetInvokeMethodStub((EEImplMethodDesc*)this);
     }
     else
     {
@@ -2685,11 +2199,11 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     }
 
     /**************************   POSTJIT *************************/
-    _ASSERTE(pCode == NULL || GetNativeCode() == NULL || pCode == GetNativeCode());
+    _ASSERTE(pCode == (PCODE)NULL || GetNativeCode() == (PCODE)NULL || pCode == GetNativeCode());
 
     // At this point we must have either a pointer to managed code or to a stub. All of the above code
     // should have thrown an exception if it couldn't make a stub.
-    _ASSERTE((pStub != NULL) ^ (pCode != NULL));
+    _ASSERTE((pStub != NULL) ^ (pCode != (PCODE)NULL));
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     //
@@ -2704,7 +2218,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     MemoryBarrier();
 #endif
 
-    if (pCode != NULL)
+    if (pCode != (PCODE)NULL)
     {
         _ASSERTE(!MayHaveEntryPointSlotsToBackpatch()); // This path doesn't lock the MethodDescBackpatchTracker as it should only
                                                         // happen for jump-stampable or non-versionable methods
@@ -2805,7 +2319,7 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_RE
         && pMD->IsNativeCodeStableAfterInit())
     {
         PCODE pDirectTarget = pMD->IsFCall() ? ECall::GetFCallImpl(pMD) : pMD->GetNativeCode();
-        if (pDirectTarget != NULL)
+        if (pDirectTarget != (PCODE)NULL)
             pCode = pDirectTarget;
     }
 #endif //HAS_FIXUP_PRECODE
@@ -2849,9 +2363,9 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     // the value of the Last Error before it could be retrieved and saved.
     //
 
-    PCODE         pCode   = NULL;
+    PCODE         pCode   = (PCODE)NULL;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
@@ -2859,12 +2373,12 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-    FrameWithCookie<ExternalMethodFrame> frame(pTransitionBlock);
+    ExternalMethodFrame frame(pTransitionBlock);
     ExternalMethodFrame * pEMFrame = &frame;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     // Decode indirection cell from callsite if it is not present
-    if (pIndirection == NULL)
+    if (pIndirection == (PCODE)NULL)
     {
         // Assume that the callsite is call [xxxxxxxx]
         PCODE retAddr = pEMFrame->GetReturnAddress();
@@ -2882,8 +2396,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     pEMFrame->Push(CURRENT_THREAD);         // Push the new ExternalMethodFrame onto the frame stack
 
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
     bool fVirtual = false;
     MethodDesc * pMD = NULL;
@@ -2909,8 +2425,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         }
         _ASSERTE(pImportSection != NULL);
 
-        _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
-        COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
+        COUNT_T index;
+
+        index = (rva - pImportSection->Section.VirtualAddress) / pImportSection->EntrySize;
+        _ASSERTE((pImportSection->EntrySize == sizeof(TADDR)) || (pImportSection->EntrySize == 2*sizeof(TADDR)));
 
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
@@ -2993,6 +2511,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 if (pMD->IsVtableMethod())
                 {
                     slot = pMD->GetSlot();
+                    pMD->GetMethodTable()->GetRestoredSlot(slot); // Ensure that the target slot has an entrypoint
                     pMT = th.IsNull() ? pMD->GetMethodTable() : th.GetMethodTable();
 
                     fVirtual = true;
@@ -3028,15 +2547,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 goto VirtualEntry;
             }
 
-        case ENCODE_VIRTUAL_ENTRY_SLOT:
-            {
-                slot = CorSigUncompressData(pBlob);
-                pMT =  ZapSig::DecodeType(pModule, pInfoModule, pBlob).GetMethodTable();
-
-                fVirtual = true;
-                break;
-            }
-
         default:
             _ASSERTE(!"Unexpected CORCOMPILE_FIXUP_BLOB_KIND");
             ThrowHR(COR_E_BADIMAGEFORMAT);
@@ -3055,23 +2565,76 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 COMPlusThrow(kNullReferenceException);
             }
 
-            DispatchToken token;
-            if (pMT->IsInterface())
+#if defined(FEATURE_VIRTUAL_STUB_DISPATCH) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+            if (UseCachedInterfaceDispatch())
+#endif
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH)
             {
-                if (pMT->IsInterface())
-                    token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
-                else
-                    token = DispatchToken::CreateDispatchToken(slot);
+                if (ALIGN_UP(rva, sizeof(TADDR) * 2) == rva && pImportSection->EntrySize == sizeof(TADDR) * 2)
+                {
+                    // The entry is aligned and the size is correct, so we can use the cached interface dispatch mechanism
+                    // to speed up further uses of this interface dispatch slot
+                    DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(pMT, slot);
 
-                StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
-                pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
+                    uintptr_t addr = (uintptr_t)RhpInitialInterfaceDispatch;
+                    uintptr_t pCache = (uintptr_t)DispatchToken::ToCachedInterfaceDispatchToken(token);
+#ifdef TARGET_64BIT
+                    int64_t rgComparand[2] = { *(volatile int64_t*)pIndirection , *(((volatile int64_t*)pIndirection) + 1) };
+                    // We need to only update if the indirection cell is still pointing to the initial R2R stub
+                    // But we don't have the address of the initial R2R stub, as that is part of the R2R image
+                    // However, we can rely on the detail that the cache value will never be 0 once it is updated
+                    // So we read the indirection cell data, and if the cache portion is 0, we attempt to update the complete cell
+                    if (rgComparand[1] == 0 && PalInterlockedCompareExchange128((int64_t*)pIndirection, rgComparand[1], rgComparand[0], rgComparand) && rgComparand[1] == 0)
+                    {
+                        PalInterlockedCompareExchange128((int64_t*)pIndirection, pCache, addr, rgComparand);
+                    }
+#else
+                    // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
+                    uint64_t oldValue = *(volatile uint64_t*)pIndirection;
+                    if ((oldValue >> 32) == 0)
+                    {
+                        // The cache portion is 0, so we attempt to update the complete cell
+                        int64_t iNewValue = (int64_t)((uint64_t)(uintptr_t)addr | ((uint64_t)(uintptr_t)pCache << 32));
+                        PalInterlockedCompareExchange64((int64_t*)pIndirection, iNewValue, oldValue);
+                    }
+#endif
+                }
+
+                // We lost the race or the R2R image was generated without cached interface dispatch support, simply do the resolution in pure C++
+                DispatchToken token;
+                if (pMT->IsInterface())
+                {
+                    token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
+                    MethodTable* objectType = (*protectedObj)->GetMethodTable();
+                    VirtualCallStubManager::Resolver(objectType, token, protectedObj, &pCode, TRUE /* throwOnConflict */);
+                }
+                else
+                {
+                    pCode = (*protectedObj)->GetMethodTable()->GetRestoredSlot(slot); // Ensure that the target slot has an entrypoint
+                }
             }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+#if defined(FEATURE_VIRTUAL_STUB_DISPATCH) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
             else
+#endif
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
             {
-                pCode = pMgr->GetVTableCallStub(slot);
-                *(TADDR *)pIndirection = pCode;
+                DispatchToken token;
+                if (pMT->IsInterface())
+                {
+                    token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
+
+                    StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
+                    pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
+                }
+                else
+                {
+                    pCode = pMgr->GetVTableCallStub(slot);
+                    *(TADDR *)pIndirection = pCode;
+                }
             }
-            _ASSERTE(pCode != NULL);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+            _ASSERTE(pCode != (PCODE)NULL);
         }
         else
         {
@@ -3118,15 +2681,16 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
-
+    if (g_externalMethodFixupTraceActiveCount > 0)
+    {
+        g_pDebugger->ExternalMethodFixupNextStep(pCode);
+    }
     // Ready to return
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
 
     pEMFrame->Pop(CURRENT_THREAD);          // Pop the ExternalMethodFrame from the frame stack
-
-    END_PRESERVE_LAST_ERROR;
 
     return pCode;
 }
@@ -3138,7 +2702,7 @@ static PCODE getHelperForInitializedStatic(Module * pModule, CORCOMPILE_FIXUP_BL
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pHelper = NULL;
+    PCODE pHelper = (PCODE)NULL;
 
     switch (kind)
     {
@@ -3206,21 +2770,6 @@ static PCODE getHelperForSharedStatic(Module * pModule, CORCOMPILE_FIXUP_BLOB_KI
 
     CorInfoHelpFunc helpFunc = CEEInfo::getSharedStaticsHelper(pFD, pMT);
 
-    TADDR moduleID = pMT->GetModuleForStatics()->GetModuleID();
-
-    TADDR classID = 0;
-    if (helpFunc != CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR && helpFunc != CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR)
-    {
-        if (pMT->IsDynamicStatics())
-        {
-            classID = pMT->GetModuleDynamicEntryID();
-        }
-        else
-        {
-            classID = pMT->GetClassIndex();
-        }
-    }
-
     bool fUnbox = (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE);
 
     AllocMemTracker amTracker;
@@ -3230,8 +2779,39 @@ static PCODE getHelperForSharedStatic(Module * pModule, CORCOMPILE_FIXUP_BLOB_KI
             AllocMem(S_SIZE_T(sizeof(StaticFieldAddressArgs))));
 
     pArgs->staticBaseHelper = (FnStaticBaseHelper)CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
-    pArgs->arg0 = moduleID;
-    pArgs->arg1 = classID;
+
+    switch(helpFunc)
+    {
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
+        {
+            pMT->EnsureTlsIndexAllocated();
+            pArgs->arg0 = (TADDR)pMT->GetThreadStaticsInfo()->NonGCTlsIndex.GetIndexOffset();
+            break;
+        }
+
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            pArgs->arg0 = (TADDR)pMT->GetThreadStaticsInfo();
+            break;
+
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            pArgs->arg0 = (TADDR)pMT->GetDynamicStaticsInfo();
+            break;
+        default:
+            _ASSERTE(!"Unexpected shared statics helper CORINFO_HELP_FUNC");
+            pArgs->arg0 = 0;
+            break;
+    }
     pArgs->offset = pFD->GetOffset();
 
     PCODE pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), (TADDR)pArgs,
@@ -3246,65 +2826,51 @@ static PCODE getHelperForStaticBase(Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND
 {
     STANDARD_VM_CONTRACT;
 
-    int helpFunc = CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE;
+    bool GCStatic = (kind == ENCODE_STATIC_BASE_GC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
+    bool noCtor = pMT->IsClassInitedOrPreinited();
+    bool threadStatic = (kind == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
 
-    if (kind == ENCODE_STATIC_BASE_GC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER)
-    {
-        helpFunc = CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-    }
+    CorInfoHelpFunc helper;
 
-    if (pMT->IsDynamicStatics())
+    if (threadStatic)
     {
-        const int delta = CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-        helpFunc += delta;
-    }
-    else
-    if (!pMT->HasClassConstructor() && !pMT->HasBoxedRegularStatics())
-    {
-        const int delta = CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-        helpFunc += delta;
-    }
-
-    if (kind == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER)
-    {
-        const int delta = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
-        helpFunc += delta;
-    }
-
-    PCODE pHelper;
-    if (helpFunc == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR || helpFunc == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR)
-    {
-        pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), pMT->GetModule()->GetModuleID(), CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc));
-    }
-    else
-    {
-        TADDR moduleID = pMT->GetModuleForStatics()->GetModuleID();
-
-        TADDR classID;
-        if (pMT->IsDynamicStatics())
+        if (GCStatic)
         {
-            classID = pMT->GetModuleDynamicEntryID();
+            if (noCtor)
+                helper = CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_GCTHREADSTATIC_BASE;
         }
         else
         {
-            classID = pMT->GetClassIndex();
+            if (noCtor)
+                helper = CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE;
         }
-
-        pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), moduleID, classID, CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc));
+    }
+    else
+    {
+        if (GCStatic)
+        {
+            if (noCtor)
+                helper = CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_GCSTATIC_BASE;
+        }
+        else
+        {
+            if (noCtor)
+                helper = CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR;
+            else
+                helper = CORINFO_HELP_GET_NONGCSTATIC_BASE;
+        }
     }
 
+    PCODE pHelper;
+    pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), (TADDR)pMT, CEEJitInfo::getHelperFtnStatic(helper));
+
     return pHelper;
-}
-
-TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
-{
-    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
-#ifdef TARGET_X86
-    // x86 is special as always
-    pArgument += offsetof(ArgumentRegisters, ECX);
-#endif
-
-    return pArgument;
 }
 
 void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock,
@@ -3462,7 +3028,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
 
-    COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
+    COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / pImportSection->EntrySize;
 
     PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
@@ -3509,6 +3075,11 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     Statics:
         th.AsMethodTable()->EnsureInstanceActive();
         th.AsMethodTable()->CheckRunClassInitThrowing();
+        if (kind == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER ||
+            (kind == ENCODE_FIELD_ADDRESS && pFD->IsThreadStatic()))
+        {
+            th.AsMethodTable()->EnsureTlsIndexAllocated();
+        }
         fReliable = true;
         break;
 
@@ -3549,7 +3120,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         ThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
-    PCODE pHelper = NULL;
+    PCODE pHelper = (PCODE)NULL;
 
     if (fReliable)
     {
@@ -3614,7 +3185,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     else
                     {
                         // Delay the creation of the helper until the type is initialized
-                        if (pMT->IsClassInited())
+                        if (pMT->IsClassInitedOrPreinited())
                             pHelper = getHelperForInitializedStatic(pModule, (CORCOMPILE_FIXUP_BLOB_KIND)kind, pMT, pFD);
                     }
                 }
@@ -3640,8 +3211,11 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                         pArgs->classHnd = (CORINFO_CLASS_HANDLE)th.AsPtr();
                         pArgs->methodHnd = (CORINFO_METHOD_HANDLE)pMD;
 
+                        MethodDesc *pVirtualDispatchHelper = CoreLibBinder::GetMethod(METHOD__VIRTUALDISPATCHHELPERS__VIRTUALFUNCTIONPOINTER_DYNAMIC);
+                        PCODE pHelperCode = pVirtualDispatchHelper->GetMultiCallableAddrOfCode();
+
                         pHelper = DynamicHelpers::CreateHelperWithArg(pModule->GetLoaderAllocator(), (TADDR)pArgs,
-                            GetEEFuncEntryPoint(JIT_VirtualFunctionPointer_Dynamic));
+                            pHelperCode);
 
                         amTracker.SuppressRelease();
                     }
@@ -3652,14 +3226,14 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 UNREACHABLE();
             }
 
-            if (pHelper != NULL)
+            if (pHelper != (PCODE)NULL)
             {
                 *(TADDR *)pCell = pHelper;
             }
 
 #ifdef _DEBUG
             // Always execute the reliable fallback in debug builds
-            pHelper = NULL;
+            pHelper = (PCODE)NULL;
 #endif
         }
         EX_CATCH
@@ -3695,7 +3269,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
                     TADDR pArgument = GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
-                    if (pArgument != NULL)
+                    if (pArgument != (TADDR)NULL)
                     {
                         pDelegateType = (*(Object **)pArgument)->GetMethodTable();
                         _ASSERTE(pDelegateType->IsDelegate());
@@ -3722,7 +3296,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     }
                 }
 
-                TADDR target = NULL;
+                TADDR target = (TADDR)NULL;
 
                 if (pDelegateCtor != NULL)
                 {
@@ -3730,7 +3304,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 }
                 else
                 {
-                    target = ECall::GetFCallImpl(CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
+                    target = CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE)->GetMultiCallableAddrOfCode();
                     ctorData.pArg3 = NULL;
                 }
 
@@ -3757,7 +3331,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             UNREACHABLE();
         }
 
-        if (pHelper != NULL)
+        if (pHelper != (PCODE)NULL)
         {
             *(TADDR *)pCell = pHelper;
         }
@@ -3773,8 +3347,8 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
 extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock, TADDR * pCell, DWORD sectionIndex, Module * pModule, INT frameFlags)
 {
-    PCODE pHelper = NULL;
-    SIZE_T result = NULL;
+    PCODE pHelper = (PCODE)NULL;
+    SIZE_T result = 0;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -3786,7 +3360,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-    FrameWithCookie<DynamicHelperFrame> frame(pTransitionBlock, frameFlags);
+    DynamicHelperFrame frame(pTransitionBlock, frameFlags);
     DynamicHelperFrame * pFrame = &frame;
 
     pFrame->Push(CURRENT_THREAD);
@@ -3820,7 +3394,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
         pHelper = DynamicHelperFixup(pTransitionBlock, pCell, sectionIndex, pModule, &kind, &th, &pMD, &pFD);
     }
 
-    if (pHelper == NULL)
+    if (pHelper == (PCODE)NULL)
     {
         TADDR pArgument = GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
@@ -3837,7 +3411,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
                 else
                 {
                     _ASSERTE (!throwInvalidCast);
-                    result = NULL;
+                    result = 0;
                 }
             }
             break;
@@ -3848,11 +3422,9 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
             result = (SIZE_T)th.AsMethodTable()->GetGCStaticsBasePointer();
             break;
         case ENCODE_THREAD_STATIC_BASE_NONGC_HELPER:
-            ThreadStatics::GetTLM(th.AsMethodTable())->EnsureClassAllocated(th.AsMethodTable());
             result = (SIZE_T)th.AsMethodTable()->GetNonGCThreadStaticsBasePointer();
             break;
         case ENCODE_THREAD_STATIC_BASE_GC_HELPER:
-            ThreadStatics::GetTLM(th.AsMethodTable())->EnsureClassAllocated(th.AsMethodTable());
             result = (SIZE_T)th.AsMethodTable()->GetGCThreadStaticsBasePointer();
             break;
         case ENCODE_CCTOR_TRIGGER:
@@ -3895,7 +3467,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
 
     pFrame->Pop(CURRENT_THREAD);
 
-    if (pHelper == NULL)
+    if (pHelper == (PCODE)NULL)
         *(SIZE_T *)((TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters()) = result;
     return pHelper;
 }

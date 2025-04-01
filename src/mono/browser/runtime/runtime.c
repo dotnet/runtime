@@ -62,9 +62,8 @@
 #define EMSCRIPTEN_KEEPALIVE
 #endif
 
-int mono_wasm_enable_gc = 1;
-
 /* Missing from public headers */
+char *mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix);
 void mono_icall_table_init (void);
 void mono_wasm_enable_debugging (int);
 void mono_ee_interp_init (const char *opts);
@@ -76,6 +75,7 @@ int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 void mono_trace_init (void);
+MonoMethod *mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, MonoError *error);
 
 /* Not part of public headers */
 #define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
@@ -197,37 +197,55 @@ init_icall_table (void)
 static void*
 get_native_to_interp (MonoMethod *method, void *extra_arg)
 {
-	void *addr;
-
+	void *addr = NULL;
 	MONO_ENTER_GC_UNSAFE;
 	MonoClass *klass = mono_method_get_class (method);
 	MonoImage *image = mono_class_get_image (klass);
 	MonoAssembly *assembly = mono_image_get_assembly (image);
 	MonoAssemblyName *aname = mono_assembly_get_name (assembly);
 	const char *name = mono_assembly_name_get_name (aname);
+	const char *namespace = mono_class_get_namespace (klass);
 	const char *class_name = mono_class_get_name (klass);
 	const char *method_name = mono_method_get_name (method);
-	char key [128];
+	MonoMethodSignature *sig = mono_method_signature (method);
+	uint32_t param_count = mono_signature_get_param_count (sig);
+	uint32_t token = mono_method_get_token (method);
+
+	char buf [128];
+	char *key = buf;
 	int len;
+	if (name != NULL) {
+		// the key must match the one used in PInvokeTableGenerator
+		len = snprintf (key, sizeof(buf), "%s#%d:%s:%s:%s", method_name, param_count, name, namespace, class_name);
 
-	assert (strlen (name) < 100);
-	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
-	len = strlen (key);
-	for (int i = 0; i < len; ++i) {
-		if (key [i] == '.')
-			key [i] = '_';
+		if (len >= sizeof (buf)) {
+			// The key is too long, try again with a larger buffer
+			key = g_new (char, len + 1);
+			snprintf (key, len + 1, "%s#%d:%s:%s:%s", method_name, param_count, name, namespace, class_name);
+		}
+
+		addr = wasm_dl_get_native_to_interp (token, key, extra_arg);
+
+		if (key != buf)
+			free (key);
 	}
-
-	addr = wasm_dl_get_native_to_interp (key, extra_arg);
 	MONO_EXIT_GC_UNSAFE;
 	return addr;
 }
 
-static void *sysglobal_native_handle;
+static void *sysglobal_native_handle = (void *)0xDeadBeef;
 
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 {
+#if WASM_SUPPORTS_DLOPEN
+	if (!name)
+		return dlopen(NULL, flags);
+#else
+	if (!name)
+		return NULL;
+#endif
+
 	void* handle = wasm_dl_lookup_pinvoke_table (name);
 	if (handle)
 		return handle;
@@ -242,24 +260,33 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 	return NULL;
 }
 
+int
+import_compare_name (const void *k1, const void *k2)
+{
+	const PinvokeImport *e1 = (const PinvokeImport*)k1;
+	const PinvokeImport *e2 = (const PinvokeImport*)k2;
+
+	return strcmp (e1->name, e2->name);
+}
+
 static void*
 wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
-	if (handle == sysglobal_native_handle)
-		assert (0);
+	assert (handle != sysglobal_native_handle);
 
 #if WASM_SUPPORTS_DLOPEN
 	if (!wasm_dl_is_pinvoke_tables (handle)) {
 		return dlsym (handle, name);
 	}
 #endif
-
-	PinvokeImport *table = (PinvokeImport*)handle;
-	for (int i = 0; table [i].name; ++i) {
-		if (!strcmp (table [i].name, name))
-			return table [i].func;
-	}
-	return NULL;
+	PinvokeTable* index = (PinvokeTable*)handle;
+	PinvokeImport key = { name, NULL };
+    PinvokeImport* result = (PinvokeImport *)bsearch(&key, index->imports, index->count, sizeof(PinvokeImport), import_compare_name);
+    if (!result) {
+        // *err = g_strdup_printf ("Symbol not found: %s", name);
+        return NULL;
+    }
+    return result->func;
 }
 
 MonoDomain *
@@ -318,19 +345,22 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 	return domain;
 }
 
+// TODO https://github.com/dotnet/runtime/issues/98366
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
 mono_wasm_assembly_load (const char *name)
 {
+	MonoAssembly *res;
 	assert (name);
 	MonoImageOpenStatus status;
+	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyName* aname = mono_assembly_name_new (name);
-
-	MonoAssembly *res = mono_assembly_load (aname, NULL, &status);
+	res = mono_assembly_load (aname, NULL, &status);
 	mono_assembly_name_free (aname);
-
+	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
 
+// TODO https://github.com/dotnet/runtime/issues/98366
 EMSCRIPTEN_KEEPALIVE MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
@@ -342,21 +372,7 @@ mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, co
 	return result;
 }
 
-extern int mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_runtime_run_module_cctor (MonoAssembly *assembly)
-{
-	assert (assembly);
-	MonoError error;
-	MONO_ENTER_GC_UNSAFE;
-	MonoImage *image = mono_assembly_get_image (assembly);
-    if (!mono_runtime_run_module_cctor(image, &error)) {
-        //g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
-    }
-	MONO_EXIT_GC_UNSAFE;
-}
-
+// TODO https://github.com/dotnet/runtime/issues/98366
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
@@ -368,30 +384,50 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 	return result;
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **_out_exc, MonoObject **out_result)
+MonoMethod*
+mono_wasm_get_method_matching (MonoImage *image, uint32_t token, MonoClass *klass, const char* name, int param_count)
 {
-	PPVOLATILE(MonoObject) out_exc = _out_exc;
-	PVOLATILE(MonoObject) temp_exc = NULL;
-	if (out_exc)
-		*out_exc = NULL;
-	else
-		out_exc = &temp_exc;
-
+	MonoMethod *result = NULL;
 	MONO_ENTER_GC_UNSAFE;
-	if (out_result) {
-		*out_result = NULL;
-		PVOLATILE(MonoObject) invoke_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
-		store_volatile(out_result, invoke_result);
-	} else {
-		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
+	MonoMethod *method = mono_get_method (image, token, klass);
+	MonoMethodSignature *sig = mono_method_signature (method);
+	// Lookp by token but verify the name and param count in case assembly was trimmed
+	if (mono_signature_get_param_count (sig) == param_count) {
+		const char *method_name = mono_method_get_name (method);
+		if (!strcmp (method_name, name)) {
+			result = method;
+		}
 	}
+	// If the token lookup failed, try to find the method by name and param count
+	if (!result) {
+		result = mono_class_get_method_from_name (klass, name, param_count);
+	}
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
 
-	if (*out_exc && out_result) {
-		PVOLATILE(MonoObject) exc2 = NULL;
-		store_volatile(out_result, (MonoObject*)mono_object_to_string (*out_exc, (MonoObject **)&exc2));
-		if (exc2)
-			store_volatile(out_result, (MonoObject*)mono_string_new (mono_get_root_domain (), "Exception Double Fault"));
-	}
+/*
+ * mono_wasm_marshal_get_managed_wrapper:
+ * Creates a wrapper for a function pointer to a method marked with
+ * UnamangedCallersOnlyAttribute.
+ * This wrapper ensures that the interpreter initializes the pointers.
+ */
+void
+mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, uint32_t token, int param_count)
+{
+	MonoError error;
+	mono_error_init (&error);
+	MONO_ENTER_GC_UNSAFE;
+	MonoAssembly* assembly = mono_wasm_assembly_load (assemblyName);
+	assert (assembly);
+	MonoImage *image = mono_assembly_get_image (assembly);
+	assert (image);
+	MonoClass* klass = mono_class_from_name (image, namespaceName, typeName);
+	assert (klass);
+	MonoMethod *method = mono_wasm_get_method_matching (image, token, klass, methodName, param_count);
+	assert (method);
+	MonoMethod *managedWrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, &error);
+	assert (managedWrapper);
+	mono_compile_method (managedWrapper);
 	MONO_EXIT_GC_UNSAFE;
 }

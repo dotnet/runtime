@@ -27,6 +27,7 @@ public class Class1
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/65704", TestRuntimes.Mono)]
     public static int TestEntryPoint()
     {
         //Start recording

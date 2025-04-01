@@ -146,8 +146,8 @@ namespace Microsoft.NET.Build.Tasks
 
             // Normalize target OS for crossgen invocation
             string targetOS = (_targetPlatform == "win") ? "windows" :
-                // Map linux-{ musl,bionic,etc.} to linux
-                _targetPlatform.StartsWith("linux-", StringComparison.Ordinal) ? "linux" :
+                // Map linux-{ musl,bionic,etc.} and android to linux
+                (_targetPlatform.StartsWith("linux-", StringComparison.Ordinal) || (_targetPlatform == "android")) ? "linux" :
                 _targetPlatform;
 
             // In .NET 5 Crossgen2 supported only the following host->target compilation scenarios:
@@ -229,6 +229,12 @@ namespace Microsoft.NET.Build.Tasks
                     break;
                 case "x86":
                     architecture = Architecture.X86;
+                    break;
+                case "riscv64":
+                    architecture = Architecture.RiscV64;
+                    break;
+                case "loongarch64":
+                    architecture = Architecture.LoongArch64;
                     break;
                 default:
                     return false;
@@ -387,6 +393,8 @@ namespace Microsoft.NET.Build.Tasks
                 Architecture.X64 => "x64",
                 Architecture.Arm => "arm",
                 Architecture.Arm64 => "arm64",
+                Architecture.RiscV64 => "riscv64",
+                Architecture.LoongArch64 => "loongarch64",
                 _ => null
             };
         }

@@ -35,7 +35,7 @@ namespace System.Buffers
                 high.SetElementUnsafe(highNibble, (byte)(high.GetElementUnsafe(highNibble) | bit));
             }
 
-            return (DuplicateTo512(low), DuplicateTo512(high));
+            return (Vector512.Create(low), Vector512.Create(high));
         }
 
         // We can have up to 8 buckets, and their positions are encoded by 1 bit each.
@@ -69,14 +69,7 @@ namespace System.Buffers
                 }
             }
 
-            return (DuplicateTo512(low), DuplicateTo512(high));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<byte> DuplicateTo512(Vector128<byte> vector)
-        {
-            Vector256<byte> vector256 = Vector256.Create(vector, vector);
-            return Vector512.Create(vector256, vector256);
+            return (Vector512.Create(low), Vector512.Create(high));
         }
 
         public static string[][] Bucketize(ReadOnlySpan<string> values, int bucketCount, int n)

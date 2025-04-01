@@ -9,25 +9,30 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using WasmAppBuilder;
+using JoinedString;
 
 internal sealed class PInvokeTableGenerator
 {
     private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
 
-    private TaskLoggingHelper Log { get; set; }
+    private LogAdapter Log { get; set; }
     private readonly Func<string, string> _fixupSymbolName;
     private readonly HashSet<string> signatures = new();
     private readonly List<PInvoke> pinvokes = new();
     private readonly List<PInvokeCallback> callbacks = new();
     private readonly PInvokeCollector _pinvokeCollector;
+    private readonly bool _isLibraryMode;
 
-    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, TaskLoggingHelper log)
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode = false)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
         _pinvokeCollector = new(log);
+        _isLibraryMode = isLibraryMode;
     }
 
     public void ScanAssembly(Assembly asm)
@@ -38,12 +43,12 @@ internal sealed class PInvokeTableGenerator
 
     public IEnumerable<string> Generate(string[] pinvokeModules, string outputPath)
     {
-        var modules = new Dictionary<string, string>();
+        var modules = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var module in pinvokeModules)
             modules[module] = module;
 
         using TempFileName tmpFileName = new();
-        using (var w = File.CreateText(tmpFileName.Path))
+        using (var w = new JoinedStringStreamWriter(tmpFileName.Path, false))
         {
             EmitPInvokeTable(w, modules, pinvokes);
             EmitNativeToInterp(w, callbacks);
@@ -57,7 +62,7 @@ internal sealed class PInvokeTableGenerator
         return signatures;
     }
 
-    private void EmitPInvokeTable(StreamWriter w, Dictionary<string, string> modules, List<PInvoke> pinvokes)
+    private void EmitPInvokeTable(StreamWriter w, SortedDictionary<string, string> modules, List<PInvoke> pinvokes)
     {
 
         foreach (var pinvoke in pinvokes)
@@ -83,14 +88,20 @@ internal sealed class PInvokeTableGenerator
 
         w.WriteLine(
             $"""
-            // GENERATED FILE, DO NOT MODIFY");
-
+            // GENERATED FILE, DO NOT MODIFY (PInvokeTableGenerator.cs)
+            #include <mono/utils/details/mono-error-types.h>
+            #include <mono/metadata/assembly.h>
+            #include <mono/utils/mono-error.h>
+            #include <mono/metadata/object.h>
+            #include <mono/utils/details/mono-logger-types.h>
+            #include "runtime.h"
+            #include "pinvoke.h"
             """);
 
         var pinvokesGroupedByEntryPoint = pinvokes
                                             .Where(l => modules.ContainsKey(l.Module))
-                                            .OrderBy(l => l.EntryPoint)
-                                            .GroupBy(CEntryPoint);
+                                            .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
+                                            .GroupBy(CEntryPoint, StringComparer.Ordinal);
         var comparer = new PInvokeComparer();
         foreach (IGrouping<string, PInvoke> group in pinvokesGroupedByEntryPoint)
         {
@@ -101,7 +112,7 @@ internal sealed class PInvokeTableGenerator
                 string imports = string.Join(Environment.NewLine,
                                             candidates.Select(
                                                 p => $"    {p.Method} (in [{p.Method.DeclaringType?.Assembly.GetName().Name}] {p.Method.DeclaringType})"));
-                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Found a native function ({first.EntryPoint}) with varargs in {first.Module}." +
+                Log.Warning("WASM0001", $"Found a native function ({first.EntryPoint}) with varargs in {first.Module}." +
                                  " Calling such functions is not supported, and will fail at runtime." +
                                 $" Managed DllImports: {Environment.NewLine}{imports}");
 
@@ -123,20 +134,25 @@ internal sealed class PInvokeTableGenerator
             }
         }
 
+        var moduleImports = new Dictionary<string, List<string>>();
         foreach (var module in modules.Keys)
         {
-            var assemblies_pinvokes = pinvokes
-                .Where(l => l.Module == module && !l.Skip)
-                .OrderBy(l => l.EntryPoint)
-                .GroupBy(d => d.EntryPoint)
-                .Select(l => $"{{\"{EscapeLiteral(l.Key)}\", {CEntryPoint(l.First())}}}, "
-                    + "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)))
-                .Append("{NULL, NULL}");
+            static string ListRefs(IGrouping<string, PInvoke> l) =>
+                string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n));
 
+            var imports = pinvokes
+                .Where(l => l.Module == module && !l.Skip)
+                .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
+                .GroupBy(d => d.EntryPoint, StringComparer.Ordinal)
+                .Select(l => $"{{\"{EscapeLiteral(l.Key)}\", {CEntryPoint(l.First())}}}, // {ListRefs(l)}{w.NewLine}    ")
+                .ToList();
+
+            moduleImports[module] = imports;
             w.Write(
                 $$"""
+
                 static PinvokeImport {{_fixupSymbolName(module)}}_imports [] = {
-                    {{string.Join("\n    ", assemblies_pinvokes)}}
+                    {{string.Join("", imports)}}{NULL, NULL}
                 };
 
                 """);
@@ -145,12 +161,8 @@ internal sealed class PInvokeTableGenerator
         w.Write(
             $$"""
 
-            static void *pinvoke_tables[] = {
-                {{string.Join(", ", modules.Keys.Select(m => $"(void*){_fixupSymbolName(m)}_imports"))}}
-            };
-
-            static char *pinvoke_names[] =  {
-                {{string.Join(", ", modules.Keys.Select(m => $"\"{EscapeLiteral(m)}\""))}}
+            static PinvokeTable pinvoke_tables[] = {
+                {{modules.Keys.Join($",{w.NewLine}    ", m => $"{{\"{EscapeLiteral(m)}\", {_fixupSymbolName(m)}_imports, {moduleImports[m].Count}}}")}}
             };
 
             """);
@@ -177,7 +189,8 @@ internal sealed class PInvokeTableGenerator
         if (pinvoke.WasmLinkage)
         {
             // We mangle the name to avoid collisions with symbols in other modules
-            return _fixupSymbolName($"{pinvoke.Module}_{pinvoke.EntryPoint}");
+            string namespaceName = pinvoke.Method.DeclaringType?.Namespace ?? string.Empty;
+            return _fixupSymbolName($"{namespaceName}#{pinvoke.Module}#{pinvoke.EntryPoint}");
         }
         return _fixupSymbolName(pinvoke.EntryPoint);
     }
@@ -189,8 +202,40 @@ internal sealed class PInvokeTableGenerator
         nameof(Single) => "float",
         nameof(Int64) => "int64_t",
         nameof(UInt64) => "uint64_t",
-        _ => "int"
+        nameof(Int32) => "int32_t",
+        nameof(UInt32) => "uint32_t",
+        nameof(Int16) => "int32_t",
+        nameof(UInt16) => "uint32_t",
+        nameof(Char) => "int32_t",
+        nameof(Boolean) => "int32_t",
+        nameof(SByte) => "int32_t",
+        nameof(Byte) => "uint32_t",
+        nameof(IntPtr) => "void *",
+        nameof(UIntPtr) => "void *",
+        _ => PickCTypeNameForUnknownType(t)
     };
+
+    private static string PickCTypeNameForUnknownType(Type t)
+    {
+        // Pass objects by-reference (their address by-value)
+        if (!t.IsValueType)
+            return "void *";
+        // Pass pointers and function pointers by-value
+        else if (t.IsPointer || IsFunctionPointer(t))
+            return "void *";
+        else if (t.IsPrimitive)
+            throw new NotImplementedException("No native type mapping for type " + t);
+
+        // https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md#function-signatures
+        // Any struct or union that recursively (including through nested structs, unions, and arrays)
+        //  contains just a single scalar value and is not specified to have greater than natural alignment.
+        // FIXME: Handle the scenario where there are fields of struct types that contain no members
+        var fields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        if (fields.Length == 1)
+            return MapType(fields[0].FieldType);
+        else
+            return "void *";
+    }
 
     // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
     // https://github.com/dotnet/runtime/issues/43791
@@ -217,57 +262,63 @@ internal sealed class PInvokeTableGenerator
     private string? GenPInvokeDecl(PInvoke pinvoke)
     {
         var method = pinvoke.Method;
-        if (method.Name == "EnumCalendarInfo")
-        {
-            // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
-            // https://github.com/dotnet/runtime/issues/43791
-            return $"int {_fixupSymbolName(pinvoke.EntryPoint)} (int, int, int, int, int);";
-        }
 
         if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
             // Don't use method.ToString() or any of it's parameters, or return type
             // because at least one of those are unsupported, and will throw
-            Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
-                    $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}::{pinvoke.Method.Name}' because '{reason}'.");
+            Log.Warning("WASM0001", $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}::{pinvoke.Method.Name}' because '{reason}'.");
 
             pinvoke.Skip = true;
             return null;
         }
 
+        var realReturnType = method.ReturnType;
+        var realParameterTypes = method.GetParameters().Select(p => MapType(p.ParameterType)).ToList();
+
+        SignatureMapper.TypeToChar(realReturnType, Log, out bool resultIsByRef);
+        if (resultIsByRef) {
+            realReturnType = typeof(void);
+            realParameterTypes.Insert(0, "void *");
+        }
+
         return
             $$"""
             {{(pinvoke.WasmLinkage ? $"__attribute__((import_module(\"{EscapeLiteral(pinvoke.Module)}\"),import_name(\"{EscapeLiteral(pinvoke.EntryPoint)}\")))" : "")}}
-            {{(pinvoke.WasmLinkage ? "extern " : "")}}{{MapType(method.ReturnType)}} {{CEntryPoint(pinvoke)}} ({{
-                string.Join(", ", method.GetParameters().Select(p => MapType(p.ParameterType)))
-            }});
+            {{(pinvoke.WasmLinkage ? "extern " : "")}}{{MapType(realReturnType)}} {{CEntryPoint(pinvoke)}} ({{string.Join(", ", realParameterTypes)}});
             """;
     }
 
-    private string CEntryPoint(PInvokeCallback export)
+    private static string? EscapeLiteral(string? input)
     {
-        if (export.EntryPoint is not null) {
-            return _fixupSymbolName(export.EntryPoint);
+        if (input == null)
+            return null;
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < input.Length; i++)
+        {
+            char c = input[i];
+
+            sb.Append(c switch
+            {
+                '\\' => "\\\\",
+                '\"' => "\\\"",
+                '\n' => "\\n",
+                '\r' => "\\r",
+                '\t' => "\\t",
+                // take special care with surrogate pairs to avoid
+                // potential decoding issues in generated C literals
+                _ when char.IsHighSurrogate(c) && i + 1 < input.Length && char.IsLowSurrogate(input[i + 1])
+                    => $"\\U{char.ConvertToUtf32(c, input[++i]):X8}",
+                _ when char.IsControl(c) || c > 127
+                    => $"\\u{(int)c:X4}",
+                _ => c.ToString()
+            });
         }
 
-        var method = export.Method;
-        // EntryPoint wasn't specified generate a name for the entry point
-        return _fixupSymbolName($"wasm_native_to_interp_{method.DeclaringType!.Module!.Assembly!.GetName()!.Name!}_{method.DeclaringType.Name}_{method.Name}");
+        return sb.ToString();
     }
-
-    private string DelegateKey(PInvokeCallback export)
-    {
-        // FIXME: this is a hack, we need to encode this better
-        // and allow reflection in the interp case but either way
-        // it needs to match the key generated in get_native_to_interp
-        var method = export.Method;
-        string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
-        return $"\"{module_symbol}_{method.DeclaringType.Name}_{method.Name}\"".Replace('.', '_');
-    }
-
-#pragma warning disable SYSLIB1045 // framework doesn't support GeneratedRegexAttribute
-    private static string EscapeLiteral(string s) => Regex.Replace(s, @"(\\|\"")", @"\$1");
-#pragma warning restore SYSLIB1045
 
     private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
@@ -277,91 +328,74 @@ internal sealed class PInvokeTableGenerator
         // They also need to have a signature matching what the
         // native code expects, which is the native signature
         // of the delegate invoke in the [MonoPInvokeCallback]
-        // attribute.
+        // or [UnmanagedCallersOnly] attribute.
         // Only blittable parameter/return types are supposed.
-        int cb_index = 0;
+        w.Write(
+            $$"""
 
-        // Arguments to interp entry functions in the runtime
-        w.WriteLine($"InterpFtnDesc wasm_native_to_interp_ftndescs[{callbacks.Count}] = {{}};");
+            InterpFtnDesc wasm_native_to_interp_ftndescs[{{callbacks.Count}}] = {};
+
+            """);
 
         var callbackNames = new HashSet<string>();
+        var keys = new HashSet<string>();
+        int cb_index = 0;
+        callbacks = callbacks.OrderBy(c => c, new PInvokeCallbackComparer()).ToList();
         foreach (var cb in callbacks)
         {
-            var sb = new StringBuilder();
-            var method = cb.Method;
-            bool is_void = method.ReturnType.Name == "Void";
+            cb.EntrySymbol = _fixupSymbolName(cb.IsExport ? cb.EntryPoint! : $"wasm_native_to_interp_{cb.AssemblyName}_{cb.Namespace}_{cb.TypeName}_{cb.MethodName}");
+
+            if (callbackNames.Contains(cb.EntrySymbol))
+            {
+                Error($"Two callbacks with the same symbol '{cb.EntrySymbol}' are not supported.");
+            }
+            callbackNames.Add(cb.EntrySymbol);
+            if (keys.Contains(cb.Key))
+            {
+                Error($"Two callbacks with the same Name and number of arguments '{cb.Key}' are not supported.");
+            }
+            keys.Add(cb.Key);
 
             // The signature of the interp entry function
             // This is a gsharedvt_in signature
-            sb.Append($"typedef void (*WasmInterpEntrySig_{cb_index}) (");
+            var entryArgs = new List<string>();
+            if (!cb.IsVoid)
+            {
+                entryArgs.Add("(int*)&result");
+            }
+            entryArgs.AddRange(cb.Parameters.Select((_, i) => $"(int*)&arg{i}"));
+            entryArgs.Add($"(int*)wasm_native_to_interp_ftndescs [{cb_index}].arg");
 
-            if (!is_void)
-            {
-                sb.Append("int*, ");
-            }
-            foreach (var p in method.GetParameters())
-            {
-                sb.Append("int*, ");
-            }
-            // Extra arg
-            sb.Append("int*);\n");
+            w.Write(
+                $$"""
 
-            cb.EntryName = CEntryPoint(cb);
-            if (callbackNames.Contains(cb.EntryName))
-            {
-                Error($"Two callbacks with the same name '{cb.EntryName}' are not supported.");
-            }
-            callbackNames.Add(cb.EntryName);
-            if (cb.EntryPoint is not null)
-            {
-                sb.Append($"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint)}\")))\n");
-            }
-            sb.Append($"{MapType(method.ReturnType)} {cb.EntryName} (");
-            int pindex = 0;
-            foreach (var p in method.GetParameters())
-            {
-                if (pindex > 0)
-                    sb.Append(", ");
-                sb.Append($"{MapType(p.ParameterType)} arg{pindex}");
-                pindex++;
-            }
-            sb.Append(") { \n");
-            if (!is_void)
-                sb.Append($"  {MapType(method.ReturnType)} res;\n");
+                {{(cb.IsExport ?
+                $"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint!)}\"))){w.NewLine}" : "")}}{{
+                MapType(cb.ReturnType)}}
+                {{cb.EntrySymbol}} ({{cb.Parameters.Join(", ", (info, i) => $"{MapType(info.ParameterType)} arg{i}")}}) {
+                    typedef void (*InterpEntry_T{{cb_index}}) ({{entryArgs.Join(", ", _ => "int*")}});{{
+                    (!cb.IsVoid ? $"{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
 
-            //sb.Append($"  printf(\"{entry_name} called\\n\");\n");
-            sb.Append($"  ((WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) (");
-            if (!is_void)
-            {
-                sb.Append("(int*)&res, ");
-                pindex++;
-            }
-            int aindex = 0;
-            foreach (var p in method.GetParameters())
-            {
-                sb.Append($"(int*)&arg{aindex}, ");
-                aindex++;
-            }
+                    if (!(InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {{{
+                        (cb.IsExport && _isLibraryMode ? $"initialize_runtime();{w.NewLine}" : "")}}
+                        mono_wasm_marshal_get_managed_wrapper ("{{EscapeLiteral(cb.AssemblyName)}}", "{{EscapeLiteral(cb.Namespace)}}", "{{EscapeLiteral(cb.TypeName)}}", "{{EscapeLiteral(cb.MethodName)}}", {{cb.Token}}, {{cb.Parameters.Length}});
+                    }
 
-            sb.Append($"wasm_native_to_interp_ftndescs [{cb_index}].arg);\n");
+                    ((InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{entryArgs.Join(", ")}});{{
+                    (!cb.IsVoid ?  $"{w.NewLine}    return result;" : "")}}
+                }
 
-            if (!is_void)
-                sb.Append("  return res;\n");
-            sb.Append("}\n");
-            w.WriteLine(sb);
+                """);
             cb_index++;
         }
 
         w.Write(
             $$"""
 
-            static void *wasm_native_to_interp_funcs[] = {
-                {{string.Join(", ", callbacks.Select(cb => cb.EntryName))}}
-            };
-
-            // these strings need to match the keys generated in get_native_to_interp
-            static const char *wasm_native_to_interp_map[] = {
-                {{string.Join(", ", callbacks.Select(DelegateKey))}}
+            static UnmanagedExport wasm_native_to_interp_table[] = {
+            {{callbacks.Join($",{w.NewLine}", cb =>
+            $"    {{\"{EscapeLiteral(cb.Key)}\", {cb.Token}, {cb.EntrySymbol}}}"
+            )}}
             };
 
             """);
@@ -379,12 +413,99 @@ internal sealed class PInvokeTableGenerator
         return value;
     }
 
-    private static bool IsBlittable(Type type)
+    private static readonly Dictionary<Type, bool> _blittableCache = new();
+
+    public static bool IsFunctionPointer(Type type)
     {
-        if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
+        object? bIsFunctionPointer = type.GetType().GetProperty("IsFunctionPointer")?.GetValue(type);
+        return (bIsFunctionPointer is bool b) && b;
+    }
+
+    public static bool IsBlittable(Type type, LogAdapter log)
+    {
+        // We maintain a cache of results in order to only produce log messages the first time
+        //  we analyze a given type. Otherwise, each (successful) use of a user-defined type
+        //  in a callback or pinvoke would generate duplicate messages.
+        lock (_blittableCache)
+            if (_blittableCache.TryGetValue(type, out bool blittable))
+                return blittable;
+
+        bool result = IsBlittableUncached(type, log);
+        lock (_blittableCache)
+            _blittableCache[type] = result;
+        return result;
+
+        static bool IsBlittableUncached(Type type, LogAdapter log)
+        {
+            if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
+                return true;
+
+            if (IsFunctionPointer(type))
+                return true;
+
+            // HACK: SkiaSharp has pinvokes that rely on this
+            if (HasAttribute(type, "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"))
+                return true;
+
+            if (type.Name == "__NonBlittableTypeForAutomatedTests__")
+                return false;
+
+            if (!type.IsValueType)
+            {
+                log.InfoHigh("WASM0060", "Type {0} is not blittable: Not a ValueType", type);
+                return false;
+            }
+
+            var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if (!type.IsLayoutSequential && (fields.Length > 1))
+            {
+                log.InfoHigh("WASM0061", "Type {0} is not blittable: LayoutKind is not Sequential", type);
+                return false;
+            }
+
+            foreach (var ft in fields)
+            {
+                if (!IsBlittable(ft.FieldType, log))
+                {
+                    log.InfoHigh("WASM0062", "Type {0} is not blittable: Field {1} is not blittable", type, ft.Name);
+                    return false;
+                }
+                // HACK: Skip literals since they're complicated
+                // Ideally we would block initonly fields too since the callee could mutate them, but
+                //  we rely on being able to pass types like System.Guid which are readonly
+                if (ft.IsLiteral)
+                {
+                    log.InfoHigh("WASM0063", "Type {0} is not blittable: Field {1} is literal", type, ft.Name);
+                    return false;
+                }
+            }
+
             return true;
-        else
-            return false;
+        }
+    }
+
+    public static bool HasAttribute(MemberInfo element, params string[] attributeNames)
+    {
+        foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(element))
+        {
+            try
+            {
+                for (int i = 0; i < attributeNames.Length; ++i)
+                {
+                    if (cattr.AttributeType.FullName == attributeNames[i] ||
+                        cattr.AttributeType.Name == attributeNames[i])
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Assembly not found, ignore
+            }
+        }
+        return false;
     }
 
     private static void Error(string msg) => throw new LogAsErrorException(msg);

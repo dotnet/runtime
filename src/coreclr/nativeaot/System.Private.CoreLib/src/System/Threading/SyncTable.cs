@@ -140,7 +140,7 @@ namespace System.Threading
 
                     // Found a free entry to assign
                     Debug.Assert(!entry.Owner.IsAllocated);
-                    Debug.Assert(entry.Lock == null);
+                    Debug.Assert(entry.Lock is null);
                     Debug.Assert(entry.HashCode == 0);
 
                     // Set up the new entry.  We should not fail after this point.
@@ -274,7 +274,7 @@ namespace System.Threading
             Debug.Assert(s_lock.IsHeldByCurrentThread);
             Debug.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
 
-            s_entries[syncIndex].Lock.InitializeLocked(threadId, recursionLevel);
+            s_entries[syncIndex].Lock.ResetForMonitor(threadId, recursionLevel);
         }
 
         /// <summary>

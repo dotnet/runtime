@@ -45,7 +45,7 @@ namespace DebuggerTests
 #else
             => false;
 #endif
-        public static bool WasmMultiThreaded => EnvironmentVariables.WasmTestsUsingVariant == "multithreaded";
+        public static bool WasmMultiThreaded => EnvironmentVariables.WasmEnableThreads;
 
         public static bool WasmSingleThreaded => !WasmMultiThreaded;
 
@@ -184,17 +184,24 @@ namespace DebuggerTests
             try {
                 await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
             }
-            catch (TaskCanceledException exc) //if timed out for some reason let's try again
+            catch (Exception exc) //if failed some reason let's try again
             {
                 if (!retry)
-                    throw exc;
+                    throw new Exception($"Debugger inspector session opening failed and will not be retried: {exc}");
                 retry = false;
                 _testOutput.WriteLine($"Let's retry: {exc.ToString()}");
-                Id = Interlocked.Increment(ref s_idCounter);
-                insp = new Inspector(Id, _testOutput);
-                cli = insp.Client;
-                scripts = SubscribeToScripts(insp);
-                await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
+                try
+                {
+                    Id = Interlocked.Increment(ref s_idCounter);
+                    insp = new Inspector(Id, _testOutput);
+                    cli = insp.Client;
+                    scripts = SubscribeToScripts(insp);
+                    await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
+                }
+                catch (Exception secondEx)
+                {
+                    throw new Exception($"Debugger inspector session opening failed: {secondEx}");
+                }
             }
         }
 
@@ -228,6 +235,10 @@ namespace DebuggerTests
                 dbgUrl = arrStr[0] + "/" + arrStr[1] + "/" + arrStr[2] + "/" + arrStr[arrStr.Length - 1];
                 dicScriptsIdToUrl[script_id] = dbgUrl;
                 dicFileToUrl[dbgUrl] = args["url"]?.Value<string>();
+            }
+            else if (url.StartsWith("cdp://"))
+            {
+                //ignore them as it's done by the browser and vscode-js-debug
             }
             else if (!String.IsNullOrEmpty(url))
             {
@@ -281,8 +292,23 @@ namespace DebuggerTests
 
         internal virtual async Task<JObject> WaitFor(string what)
         {
-            return await insp.WaitFor(what);
+            try
+            {
+                var timeout = Task.Delay(10000);
+                var waitForTask = insp.WaitFor(what);
+                var completedTask = await Task.WhenAny(waitForTask, timeout);
+                if (completedTask == timeout)
+                {
+                    throw new TimeoutException($"Debugger inspector waiting for {what} timed out after 10 seconds");
+                }
+                return await waitForTask;
+            }
+            catch
+            {
+                throw new Exception($"Debugger inspector waiting for {what} failed");
+            }
         }
+
         public async Task WaitForConsoleMessage(string message)
         {
             object llock = new();

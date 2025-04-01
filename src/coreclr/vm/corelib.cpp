@@ -29,10 +29,8 @@
 #include "floatdouble.h"
 #include "floatsingle.h"
 #include "comdatetime.h"
-#include "compatibilityswitch.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
-#include "comthreadpool.h"
 #include "comwaithandle.h"
 
 #include "proftoeeinterfaceimpl.h"
@@ -48,8 +46,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"
-#include "oavariant.h"
-#include "mngstdinterfaces.h"
 #endif // FEATURE_COMINTEROP
 
 #include "interoplibinterface.h"

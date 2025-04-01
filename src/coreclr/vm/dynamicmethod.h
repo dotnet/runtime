@@ -37,6 +37,15 @@ public:
     void Delete();
 };
 
+struct ResolvedToken final
+{
+    class TypeHandle TypeHandle;
+    SigPointer TypeSignature;
+    SigPointer MethodSignature;
+    MethodDesc* Method;
+    FieldDesc* Field;
+};
+
 //---------------------------------------------------------------------------------------
 //
 class DynamicResolver
@@ -90,7 +99,7 @@ public:
     virtual OBJECTHANDLE ConstructStringLiteral(mdToken metaTok) = 0;
     virtual BOOL IsValidStringRef(mdToken metaTok) = 0;
     virtual STRINGREF GetStringLiteral(mdToken metaTok) = 0;
-    virtual void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD) = 0;
+    virtual void ResolveToken(mdToken token, ResolvedToken* resolvedToken) = 0;
     virtual SigPointer ResolveSignature(mdToken token) = 0;
     virtual SigPointer ResolveSignatureForVarArg(mdToken token) = 0;
     virtual void GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause) = 0;
@@ -122,7 +131,9 @@ class LCGMethodResolver : public DynamicResolver
     friend class DynamicMethodTable;
     // review this to see whether the EEJitManageris the only thing to worry about
     friend class ExecutionManager;
+    friend class EECodeGenManager;
     friend class EEJitManager;
+    friend class InterpreterJitManager;
     friend class HostCodeHeap;
     friend struct ExecutionManager::JumpStubCache;
 
@@ -141,7 +152,7 @@ public:
 
     OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
-    void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD);
+    void ResolveToken(mdToken token, ResolvedToken* resolvedToken);
     SigPointer ResolveSignature(mdToken token);
     SigPointer ResolveSignatureForVarArg(mdToken token);
     void GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause);
@@ -259,7 +270,9 @@ class HostCodeHeap : CodeHeap
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #else
+    friend class EECodeGenManager;
     friend class EEJitManager;
+    friend class InterpreterJitManager;
 #endif
 
     VPTR_VTABLE_CLASS(HostCodeHeap, CodeHeap)
@@ -267,7 +280,7 @@ class HostCodeHeap : CodeHeap
 private:
     // pointer back to jit manager info
     PTR_HeapList m_pHeapList;
-    PTR_EEJitManager m_pJitManager;
+    PTR_EECodeGenManager m_pJitManager;
     // basic allocation data
     PTR_BYTE m_pBaseAddr;
     PTR_BYTE m_pLastAvailableCommittedAddr;
@@ -275,6 +288,7 @@ private:
     size_t m_ApproximateLargestBlock;
     // Heap ref count
     DWORD m_AllocationCount;
+    bool m_isExecutable;
 
     // data to track free list and pointers into this heap
     // - on an used block this struct has got a pointer back to the CodeHeap, size and start of aligned allocation
@@ -293,10 +307,10 @@ private:
     LoaderAllocator*m_pAllocator;
 
 public:
-    static HeapList* CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager *pJitManager);
+    static HeapList* CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenManager *pJitManager);
 
 private:
-    HostCodeHeap(EEJitManager *pJitManager);
+    HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable);
     HeapList* InitializeHeapList(CodeHeapRequestInfo *pInfo);
     TrackAllocation* AllocFromFreeList(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs);
     void AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocation *pBlockToInsertRW);

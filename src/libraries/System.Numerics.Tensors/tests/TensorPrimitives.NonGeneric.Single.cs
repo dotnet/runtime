@@ -106,10 +106,7 @@ namespace System.Numerics.Tensors.Tests
 
         protected override void AssertEqualTolerance(float expected, float actual, float? tolerance = null)
         {
-            tolerance ??= 0.0001f;
-
-            double diff = Math.Abs((double)expected - (double)actual);
-            if (diff > tolerance && diff > Math.Max(Math.Abs(expected), Math.Abs(actual)) * tolerance)
+            if (!Helpers.IsEqualWithTolerance(expected, actual, tolerance))
             {
                 throw EqualException.ForMismatchedValues(expected, actual);
             }

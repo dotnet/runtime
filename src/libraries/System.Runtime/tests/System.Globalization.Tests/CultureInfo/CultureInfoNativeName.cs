@@ -8,12 +8,15 @@ namespace System.Globalization.Tests
 {
     public class CultureInfoNativeName
     {
+        // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
+        // Browser uses JS to get the NativeName that is missing in ICU
+        private static bool SupportFullIcuResources => !PlatformDetection.IsWasi || PlatformDetection.IsHybridGlobalizationOnApplePlatform;
+
         public static IEnumerable<object[]> NativeName_TestData()
         {
             yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.NativeName };
 
-            // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
+            if (SupportFullIcuResources)
             {
                 yield return new object[] { "en-US", "English (United States)" };
                 yield return new object[] { "en-CA", "English (Canada)" };
@@ -21,7 +24,6 @@ namespace System.Globalization.Tests
             }
             else
             {
-                // Mobile / Browser ICU doesn't contain CultureInfo.NativeName
                 yield return new object[] { "en-US", "en (US)" };
                 yield return new object[] { "en-CA", "en (CA)" };
             }

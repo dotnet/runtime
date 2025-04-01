@@ -257,7 +257,31 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [Fact, PlatformSpecific(TestPlatforms.OSX)]  // Checks OSX name in RuntimeInformation
         public void VerifyOSXName()
         {
-            Assert.Contains("darwin", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("macOS", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.Android)]  // Checks Android name in RuntimeInformation
+        public void VerifyAndroidName()
+        {
+            Assert.Contains("Android", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.iOS)]  // Checks iOS name in RuntimeInformation
+        public void VerifyIOSName()
+        {
+            Assert.Contains("iOS", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.MacCatalyst)]  // Checks Mac Catalyst name in RuntimeInformation
+        public void VerifyMacCatalystName()
+        {
+            Assert.Contains("Mac Catalyst", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.tvOS)]  // Checks tvOS name in RuntimeInformation
+        public void VerifyTvOSName()
+        {
+            Assert.Contains("tvOS", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

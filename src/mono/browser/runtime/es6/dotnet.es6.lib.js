@@ -8,14 +8,16 @@
 
 // because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
 const WASM_ENABLE_SIMD = process.env.WASM_ENABLE_SIMD === "1";
+const WASM_PERFTRACING = process.env.WASM_PERFTRACING === "1";
 const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
 const ENABLE_BROWSER_PROFILER = process.env.ENABLE_BROWSER_PROFILER === "1";
 const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
+const ENABLE_LOG_PROFILER = process.env.ENABLE_LOG_PROFILER === "1";
 const RUN_AOT_COMPILATION = process.env.RUN_AOT_COMPILATION === "1";
 var methodIndexByName = undefined;
 var gitHash = undefined;
 
-function setup(linkerSetup) {
+function setup(emscriptenBuildOptions) {
     // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
     #if USE_PTHREADS
     const modulePThread = PThread;
@@ -43,8 +45,7 @@ function setup(linkerSetup) {
         updateMemoryViews,
         getMemory: () => { return wasmMemory; },
         getWasmIndirectFunctionTable: () => { return wasmTable; },
-        ...linkerSetup
-    });
+    }, emscriptenBuildOptions);
 
     #if USE_PTHREADS
     if (ENVIRONMENT_IS_PTHREAD) {
@@ -83,11 +84,14 @@ function injectDependencies() {
     #endif
 
     DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
-        `linkerWasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
-        `linkerWasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
-        `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
-        `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
-        `linkerRunAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
+        `wasmEnableSIMD: ${WASM_ENABLE_SIMD},` +
+        `wasmEnableEH: ${WASM_ENABLE_EH},` +
+        `enableAotProfiler: ${ENABLE_AOT_PROFILER}, ` +
+        `enableBrowserProfiler: ${ENABLE_BROWSER_PROFILER}, ` +
+        `enableLogProfiler: ${ENABLE_LOG_PROFILER}, ` +
+        `enablePerfTracing: ${WASM_PERFTRACING}, ` +
+        `runAOTCompilation: ${RUN_AOT_COMPILATION}, ` +
+        `wasmEnableThreads: ${!!USE_PTHREADS}, ` +
         `gitHash: "${gitHash}", ` +
         `});`;
 
@@ -96,4 +100,4 @@ function injectDependencies() {
 }
 
 
-// var methodIndexByName wil be appended below by the MSBuild in browser.proj
+// var methodIndexByName wil be appended below by the MSBuild in browser.proj via exports-linker.ts

@@ -24,6 +24,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/class-init.h>
+#include <mono/metadata/class-inlines.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/attrdefs.h>
@@ -87,6 +88,9 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 				return FALSE;
 		}
 
+		if (m_class_is_byreflike (paramClass) && (param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_ALLOW_BYREFLIKE_CONSTRAINTS) == 0)
+			return FALSE;
+
 		if (!param_info->constraints && !(param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK))
 			continue;
 
@@ -96,7 +100,7 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) && m_class_is_valuetype (paramClass))
 			return FALSE;
 
-		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !m_class_is_valuetype (paramClass) && !mono_class_has_default_constructor (paramClass, TRUE))
+		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !m_class_is_valuetype (paramClass) && (!mono_class_has_default_constructor (paramClass, TRUE) || mono_class_is_abstract (paramClass)))
 			return FALSE;
 
 		if (!param_info->constraints)

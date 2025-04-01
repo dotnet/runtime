@@ -58,9 +58,17 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
     pContextPointers->R11 = NULL;
 }
 
-void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD);
+        _ASSERTE(pRD->pCurrentContext->Rip == GetReturnAddress());
+    }
+#endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
@@ -73,10 +81,10 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL
     {
@@ -85,7 +93,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
-        HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -97,10 +104,24 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         return;
     }
 
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD);
+        // The float updating unwinds the stack so the pRD->pCurrentContext->Rip contains correct unwound Rip
+        // This is used for exception handling and the Rip extracted from m_pCallerReturnAddress is slightly
+        // off, which causes problem with searching for the return address on shadow stack on x64, so
+        // we keep the value from the unwind.
+    }
+    else
+#endif // DACCESS_COMPILE
+    {
+        pRD->pCurrentContext->Rip = *(DWORD64 *)&m_pCallerReturnAddress;
+    }
+
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    pRD->pCurrentContext->Rip = *(DWORD64 *)&m_pCallerReturnAddress;
     pRD->pCurrentContext->Rsp = *(DWORD64 *)&m_pCallSiteSP;
     pRD->pCurrentContext->Rbp = *(DWORD64 *)&m_pCalleeSavedFP;
 
@@ -114,10 +135,10 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL
     {
@@ -128,6 +149,14 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
+
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD);
+        _ASSERTE(pRD->pCurrentContext->Rip == m_MachState.m_Rip);
+    }
+#endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
@@ -146,7 +175,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(false, pUnwoundState);
+        EnsureInit(pUnwoundState);
 
         pRD->pCurrentContext->Rip = pRD->ControlPC = pUnwoundState->m_Rip;
         pRD->pCurrentContext->Rsp = pRD->SP        = pUnwoundState->m_Rsp;
@@ -183,7 +212,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 #endif // TARGET_UNIX
 
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = m_MachState.m_Ptrs.p##regname;
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = (DWORD64 *)(TADDR *)m_MachState.m_Ptrs.p##regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
@@ -196,15 +225,23 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
 
-void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     memcpy(pRD->pCurrentContext, &m_ctx, sizeof(CONTEXT));
 
+    // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
+    // that cannot contain any extended state.
+    pRD->pCurrentContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+
     pRD->ControlPC = m_ctx.Rip;
 
     pRD->SP = m_ctx.Rsp;
+
+#ifdef TARGET_WINDOWS
+    pRD->SSP = m_SSP;
+#endif
 
     pRD->pCurrentContextPointers->Rax = &m_ctx.Rax;
     pRD->pCurrentContextPointers->Rcx = &m_ctx.Rcx;
@@ -227,13 +264,13 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 #ifdef FEATURE_HIJACK
-TADDR ResumableFrame::GetReturnAddressPtr()
+TADDR ResumableFrame::GetReturnAddressPtr_Impl()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Rip);
 }
 
-void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -273,7 +310,7 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
-void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL {
         NOTHROW;
@@ -312,16 +349,6 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->Rax = (PULONG64)&m_Args->Rax;
 
     SyncRegDisplayToCurrentContext(pRD);
-
-/*
-    // This only describes the top-most frame
-    pRD->pContext = NULL;
-
-
-    pRD->PCTAddr = dac_cast<TADDR>(m_Args) + offsetof(HijackArgs, Rip);
-    //pRD->pPC  = PTR_SLOT(pRD->PCTAddr);
-    pRD->SP   = (ULONG64)(pRD->PCTAddr + sizeof(TADDR));
-*/
 }
 #endif // FEATURE_HIJACK
 
@@ -396,7 +423,7 @@ BOOL GetAnyThunkTarget (CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
 {
     TADDR pThunk = GetIP(pctx);
 
-    *pTargetMethodDesc = NULL;
+    *pTargetMethodDesc = (TADDR)NULL;
 
     //
     // Check for something generated by emitJump.
@@ -516,77 +543,6 @@ void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     _ASSERTE(DbgIsExecutable(pBufferRX, 12));
 }
 
-void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // padding                  // CC CC CC CC
-    // mov r10, pUMEntryThunk   // 49 ba xx xx xx xx xx xx xx xx    // METHODDESC_REGISTER
-    // mov rax, pJmpDest        // 48 b8 xx xx xx xx xx xx xx xx    // need to ensure this imm64 is qword aligned
-    // TAILJMP_RAX              // 48 FF E0
-
-#ifdef _DEBUG
-    m_padding[0] = X86_INSTR_INT3;
-    m_padding[1] = X86_INSTR_INT3;
-    m_padding[2] = X86_INSTR_INT3;
-    m_padding[3] = X86_INSTR_INT3;
-#endif // _DEBUG
-    m_movR10[0]  = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT | REX_OPCODE_REG_EXT;
-    m_movR10[1]  = 0xBA;
-    m_uet        = pvSecretParam;
-    m_movRAX[0]  = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-    m_movRAX[1]  = 0xB8;
-    m_execstub   = pTargetCode;
-    m_jmpRAX[0]  = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-    m_jmpRAX[1]  = 0xFF;
-    m_jmpRAX[2]  = 0xE0;
-
-    _ASSERTE(DbgIsExecutable(&pEntryThunkCodeRX->m_movR10[0], &pEntryThunkCodeRX->m_jmpRAX[3]-&pEntryThunkCodeRX->m_movR10[0]));
-    FlushInstructionCache(GetCurrentProcess(),pEntryThunkCodeRX,sizeof(UMEntryThunkCode));
-}
-
-void UMEntryThunkCode::Poison()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
-    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
-
-    pThisRW->m_execstub    = (BYTE *)UMEntryThunk::ReportViolation;
-
-    pThisRW->m_movR10[0]  = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-#ifdef _WIN32
-    // mov rcx, pUMEntryThunk // 48 b9 xx xx xx xx xx xx xx xx
-    pThisRW->m_movR10[1]  = 0xB9;
-#else
-    // mov rdi, pUMEntryThunk // 48 bf xx xx xx xx xx xx xx xx
-    pThisRW->m_movR10[1]  = 0xBF;
-#endif
-
-    ClrFlushInstructionCache(&m_movR10[0], &m_jmpRAX[3]-&m_movR10[0], /* hasCodeExecutedBefore */ true);
-}
-
-UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    UMEntryThunkCode *pThunkCode = (UMEntryThunkCode*)((BYTE*)pCallback - UMEntryThunkCode::GetEntryPointOffset());
-
-    return (UMEntryThunk*)pThunkCode->m_uet;
-}
-
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
     LoaderAllocator *pLoaderAllocator /* = NULL */, bool throwOnOutOfMemoryWithinRange /*= true*/)
 {
@@ -630,7 +586,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
                                                         (BYTE *)hiAddr,
                                                         pLoaderAllocator,
                                                         /* throwOnOutOfMemoryWithinRange */ false);
-        if (jumpStubAddr == NULL)
+        if (jumpStubAddr == (PCODE)NULL)
         {
             if (!throwOnOutOfMemoryWithinRange)
                 return 0;
@@ -724,6 +680,7 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
 //
 // Allocation of dynamic helpers
 //
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
@@ -955,9 +912,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
-        GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
-        GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
+    PCODE helperAddress = GetDictionaryLookupHelper(pLookup->helper);
 
     GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
     ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));
@@ -1089,6 +1044,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         END_DYNAMIC_HELPER_EMIT();
     }
 }
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 
 #endif // FEATURE_READYTORUN
 

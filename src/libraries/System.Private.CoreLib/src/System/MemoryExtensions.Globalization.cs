@@ -294,6 +294,7 @@ namespace System
         /// <param name="span">The source span.</param>
         /// <param name="value">The sequence to compare to the end of the source span.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public static bool EndsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
             string.CheckStringComparison(comparisonType);
@@ -377,6 +378,7 @@ namespace System
         /// <remarks>
         /// Invalid sequences will be represented in the enumeration by <see cref="Rune.ReplacementChar"/>.
         /// </remarks>
+        [OverloadResolutionPriority(-1)]
         public static SpanRuneEnumerator EnumerateRunes(this Span<char> span)
         {
             return new SpanRuneEnumerator(span);
@@ -403,6 +405,7 @@ namespace System
         /// for <see cref="string.ReplaceLineEndings"/> for more information on how newline
         /// sequences are detected.
         /// </remarks>
+        [OverloadResolutionPriority(-1)]
         public static SpanLineEnumerator EnumerateLines(this Span<char> span)
         {
             return new SpanLineEnumerator(span);

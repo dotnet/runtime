@@ -91,8 +91,8 @@ namespace System.Globalization
         private static string FormatG(TimeSpan value, DateTimeFormatInfo dtfi, StandardFormat format)
         {
             string decimalSeparator = dtfi.DecimalSeparator;
-            int maxLength = 25 + decimalSeparator.Length; // large enough for any "g"/"G" TimeSpan
-            Span<char> destination = maxLength < 128 ?
+            int maxLength = checked(25 + decimalSeparator.Length); // large enough for any "g"/"G" TimeSpan
+            Span<char> destination = (uint)maxLength < 128 ?
                 stackalloc char[maxLength] :
                 new char[maxLength]; // the chances of needing this case are almost 0, as DecimalSeparator.Length will basically always == 1
             TryFormatStandard(value, format, decimalSeparator, destination, out int charsWritten);
@@ -268,12 +268,11 @@ namespace System.Globalization
                 // Write fraction and separator, if necessary
                 if (fractionDigits != 0)
                 {
-                    Debug.Assert(format == StandardFormat.C || decimalSeparator != null);
                     if (format == StandardFormat.C)
                     {
                         *p++ = TChar.CastFrom('.');
                     }
-                    else if (decimalSeparator!.Length == 1)
+                    else if (decimalSeparator.Length == 1)
                     {
                         *p++ = decimalSeparator[0];
                     }
@@ -312,7 +311,7 @@ namespace System.Globalization
             int seconds = (int)(time / TimeSpan.TicksPerSecond % 60);
             int fraction = (int)(time % TimeSpan.TicksPerSecond);
 
-            long tmp;
+            int tmp;
             int i = 0;
             int tokenLen;
 
@@ -357,8 +356,8 @@ namespace System.Globalization
                         }
 
                         tmp = fraction;
-                        tmp /= TimeSpanParse.Pow10(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
-                        DateTimeFormat.FormatFraction(ref result, (int)tmp, DateTimeFormat.fixedNumberFormats[tokenLen - 1]);
+                        tmp /= TimeSpanParse.Pow10UpToMaxFractionDigits(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
+                        DateTimeFormat.FormatFraction(ref result, tmp, DateTimeFormat.fixedNumberFormats[tokenLen - 1]);
                         break;
                     case 'F':
                         //
@@ -371,7 +370,7 @@ namespace System.Globalization
                         }
 
                         tmp = fraction;
-                        tmp /= TimeSpanParse.Pow10(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
+                        tmp /= TimeSpanParse.Pow10UpToMaxFractionDigits(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
                         int effectiveDigits = tokenLen;
                         while (effectiveDigits > 0)
                         {
@@ -387,7 +386,7 @@ namespace System.Globalization
                         }
                         if (effectiveDigits > 0)
                         {
-                            DateTimeFormat.FormatFraction(ref result, (int)tmp, DateTimeFormat.fixedNumberFormats[effectiveDigits - 1]);
+                            DateTimeFormat.FormatFraction(ref result, tmp, DateTimeFormat.fixedNumberFormats[effectiveDigits - 1]);
                         }
                         break;
                     case 'd':

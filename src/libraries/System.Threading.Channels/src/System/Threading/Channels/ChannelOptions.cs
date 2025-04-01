@@ -39,7 +39,7 @@ namespace System.Threading.Channels
         public bool AllowSynchronousContinuations { get; set; }
     }
 
-    /// <summary>Provides options that control the behavior of <see cref="BoundedChannel{T}"/> instances.</summary>
+    /// <summary>Provides options that control the behavior of instances created by <see cref="M:Channel.CreateBounded"/>.</summary>
     public sealed class BoundedChannelOptions : ChannelOptions
     {
         /// <summary>The maximum number of items the bounded channel may store.</summary>
@@ -94,7 +94,7 @@ namespace System.Threading.Channels
         }
     }
 
-    /// <summary>Provides options that control the behavior of <see cref="UnboundedChannel{T}"/> instances.</summary>
+    /// <summary>Provides options that control the behavior of instances created by <see cref="M:Channel.CreateUnbounded"/>.</summary>
     public sealed class UnboundedChannelOptions : ChannelOptions
     {
     }

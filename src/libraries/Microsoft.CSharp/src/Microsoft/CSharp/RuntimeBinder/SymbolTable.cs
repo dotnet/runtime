@@ -1439,7 +1439,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (parameters.Length > 0)
             {
                 // See if we have a param array.
-                if (parameters[parameters.Length - 1].GetCustomAttribute(typeof(ParamArrayAttribute), false) != null)
+                if (parameters[parameters.Length - 1].GetCustomAttribute<ParamArrayAttribute>(false) != null)
                 {
                     methProp.isParamArray = true;
                 }

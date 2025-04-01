@@ -10,7 +10,7 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// Tests for the constructors for NamedPipeClientStream
     /// </summary>
-    public class NamedPipeTest_CreateClient
+    public partial class NamedPipeTest_CreateClient
     {
         [Fact]
         public static void NullPipeName_Throws_ArgumentNullException()
@@ -63,21 +63,6 @@ namespace System.IO.Pipes.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName, direction));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName, direction, PipeOptions.None));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName, direction, PipeOptions.None, TokenImpersonationLevel.Impersonation));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Not supported pipe path throws PNSE on Unix
-        public static void NotSupportedPipePath_Throws_PlatformNotSupportedException()
-        {
-            string hostName;
-            Assert.True(InteropTest.TryGetHostName(out hostName));
-
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream("foobar" + hostName, "foobar"));
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "foobar" + Path.GetInvalidFileNameChars()[0]));
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "/tmp/foo\0bar"));
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "/tmp/foobar/"));
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "/"));
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "\0"));
         }
 
         [Theory]
@@ -155,7 +140,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        public void NamedPipeClientStream_InvalidHandleInerhitability()
+        public static void NamedPipeClientStream_InvalidHandleInerhitability()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => new NamedPipeClientStream("a", "b", PipeDirection.Out, 0, TokenImpersonationLevel.Delegation, HandleInheritability.None - 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => new NamedPipeClientStream("a", "b", PipeDirection.Out, 0, TokenImpersonationLevel.Delegation, HandleInheritability.Inheritable + 1));

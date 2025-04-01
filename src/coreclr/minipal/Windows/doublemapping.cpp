@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include <assert.h>
 #include "minipal.h"
+#include "minipal/cpufeatures.h"
 
 #define HIDWORD(_qw)    ((ULONG)((_qw) >> 32))
 #define LODWORD(_qw)    ((ULONG)(_qw))
@@ -60,6 +61,12 @@ inline void *GetBotMemoryAddress(void)
 
 bool VMToOSInterface::CreateDoubleMemoryMapper(void **pHandle, size_t *pMaxExecutableCodeSize)
 {
+    if (minipal_detect_rosetta())
+    {
+        // Rosetta doesn't support double mapping correctly. WINE on macOS ARM64 can be running under Rosetta.
+        return false;
+    }
+
     *pMaxExecutableCodeSize = (size_t)MaxDoubleMappedSize;
     *pHandle = CreateFileMapping(
                  INVALID_HANDLE_VALUE,    // use paging file

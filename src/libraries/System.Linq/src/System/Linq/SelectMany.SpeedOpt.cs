@@ -7,9 +7,9 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private sealed partial class SelectManySingleSelectorIterator<TSource, TResult> : IIListProvider<TResult>
+        private sealed partial class SelectManySingleSelectorIterator<TSource, TResult>
         {
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 if (onlyIfCheap)
                 {
@@ -29,7 +29,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
                 SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
                 SegmentedArrayBuilder<TResult> builder = new(scratch);
@@ -46,17 +46,34 @@ namespace System.Linq
                 return result;
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
-                var list = new List<TResult>();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
                 Func<TSource, IEnumerable<TResult>> selector = _selector;
-                foreach (TSource element in _source)
+                foreach (TSource item in _source)
                 {
-                    list.AddRange(selector(element));
+                    builder.AddRange(selector(item));
                 }
 
-                return list;
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
+            }
+
+            public override bool Contains(TResult value)
+            {
+                foreach (TSource element in _source)
+                {
+                    if (_selector(element).Contains(value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
     }

@@ -78,6 +78,7 @@ namespace System
             _endIndex = endIndex;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext()
         {
             int index = _index + 1;

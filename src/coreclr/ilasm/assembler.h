@@ -538,7 +538,7 @@ private:
                 *pBlob++ = pVal[1];
                 break;
             case SERIALIZATION_TYPE_I4:
-                *(__int32*)pBlob = *(__int32*)&pVal[1];
+                *(int32_t*)pBlob = *(int32_t*)&pVal[1];
                 pBlob += 4;
                 break;
             case SERIALIZATION_TYPE_STRING:
@@ -552,15 +552,15 @@ private:
                 // We can have enums with base type of I1, I2 and I4.
                 switch (pVal[1 + length + 1]) {
                 case 1:
-                    *(__int8*)pBlob = *(__int8*)&pVal[1 + length + 2];
+                    *(int8_t*)pBlob = *(int8_t*)&pVal[1 + length + 2];
                     pBlob += 1;
                     break;
                 case 2:
-                    *(__int16*)pBlob = *(__int16*)&pVal[1 + length + 2];
+                    *(int16_t*)pBlob = *(int16_t*)&pVal[1 + length + 2];
                     pBlob += 2;
                     break;
                 case 4:
-                    *(__int32*)pBlob = *(__int32*)&pVal[1 + length + 2];
+                    *(int32_t*)pBlob = *(int32_t*)&pVal[1 + length + 2];
                     pBlob += 4;
                     break;
                 default:
@@ -752,6 +752,7 @@ public:
     BOOL    m_fIsMscorlib;
     BOOL    m_fTolerateDupMethods;
     BOOL    m_fOptimize;
+    BOOL    m_fDeterministic;
     mdToken m_tkSysObject;
     mdToken m_tkSysString;
     mdToken m_tkSysValue;
@@ -760,6 +761,7 @@ public:
 
     IMetaDataDispenserEx2 *m_pDisp;
     IMetaDataEmit3      *m_pEmitter;
+    IMDInternalEmit     *m_pInternalEmitForDeterministicMvid;
     ICeeFileGen        *m_pCeeFileGen;
     IMetaDataImport2    *m_pImporter;			// Import interface.
     HCEEFILE m_pCeeFile;
@@ -845,7 +847,7 @@ public:
     BOOL EmitClass(Class *pClass);
     HRESULT CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename);
     HRESULT CreateTLSDirectory();
-    HRESULT CreateDebugDirectory();
+    HRESULT CreateDebugDirectory(BYTE(&pdbChecksum)[32]);
     HRESULT InitMetaData();
     Class *FindCreateClass(_In_ __nullterminated const char *pszFQN);
     BOOL EmitFieldRef(_In_z_ char *pszArg, int opcode);
@@ -901,7 +903,7 @@ public:
     void EmitInstrVar(Instr* instr, int var);
     void EmitInstrVarByName(Instr* instr, _In_ __nullterminated char* label);
     void EmitInstrI(Instr* instr, int val);
-    void EmitInstrI8(Instr* instr, __int64* val);
+    void EmitInstrI8(Instr* instr, int64_t* val);
     void EmitInstrR(Instr* instr, double* val);
     void EmitInstrBrOffset(Instr* instr, int offset);
     void EmitInstrBrTarget(Instr* instr, _In_ __nullterminated char* label);
@@ -1254,6 +1256,7 @@ public:
 
     void EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, mdToken tkOwner, GenericParamConstraintList* pGPCL);
 
+    char *m_pOverrideAssemblyName;
 };
 
 #endif  // Assember_h

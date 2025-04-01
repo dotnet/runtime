@@ -95,92 +95,6 @@ bool Compiler::shouldDoubleAlign(
 }
 #endif // DOUBLE_ALIGN
 
-// The code to set the regState for each arg is outlined for shared use
-// by linear scan. (It is not shared for System V AMD64 platform.)
-regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc)
-{
-    regNumber inArgReg  = argDsc->GetArgReg();
-    regMaskTP inArgMask = genRegMask(inArgReg);
-
-    if (regState->rsIsFloat)
-    {
-        noway_assert(inArgMask & RBM_FLTARG_REGS);
-    }
-    else //  regState is for the integer registers
-    {
-        // This might be the fixed return buffer register argument (on ARM64)
-        // We check and allow inArgReg to be theFixedRetBuffReg
-        if (hasFixedRetBuffReg() && (inArgReg == theFixedRetBuffReg()))
-        {
-            // We should have a TYP_BYREF or TYP_I_IMPL arg and not a TYP_STRUCT arg
-            noway_assert(argDsc->lvType == TYP_BYREF || argDsc->lvType == TYP_I_IMPL);
-            // We should have recorded the variable number for the return buffer arg
-            noway_assert(info.compRetBuffArg != BAD_VAR_NUM);
-        }
-        else // we have a regular arg
-        {
-            noway_assert(inArgMask & RBM_ARG_REGS);
-        }
-    }
-
-    regState->rsCalleeRegArgMaskLiveIn |= inArgMask;
-
-#ifdef TARGET_ARM
-    if (argDsc->lvType == TYP_DOUBLE)
-    {
-        if (info.compIsVarArgs || opts.compUseSoftFP)
-        {
-            assert((inArgReg == REG_R0) || (inArgReg == REG_R2));
-            assert(!regState->rsIsFloat);
-        }
-        else
-        {
-            assert(regState->rsIsFloat);
-            assert(emitter::isDoubleReg(inArgReg));
-        }
-        regState->rsCalleeRegArgMaskLiveIn |= genRegMask((regNumber)(inArgReg + 1));
-    }
-    else if (argDsc->lvType == TYP_LONG)
-    {
-        assert((inArgReg == REG_R0) || (inArgReg == REG_R2));
-        assert(!regState->rsIsFloat);
-        regState->rsCalleeRegArgMaskLiveIn |= genRegMask((regNumber)(inArgReg + 1));
-    }
-#endif // TARGET_ARM
-
-#if FEATURE_MULTIREG_ARGS
-    if (varTypeIsStruct(argDsc->lvType))
-    {
-        if (argDsc->lvIsHfaRegArg())
-        {
-            assert(regState->rsIsFloat);
-            unsigned cSlots = argDsc->lvHfaSlots();
-            for (unsigned i = 1; i < cSlots; i++)
-            {
-                assert(inArgReg + i <= LAST_FP_ARGREG);
-                regState->rsCalleeRegArgMaskLiveIn |= genRegMask(static_cast<regNumber>(inArgReg + i));
-            }
-        }
-        else
-        {
-            assert(!regState->rsIsFloat);
-            unsigned cSlots = argDsc->lvSize() / TARGET_POINTER_SIZE;
-            for (unsigned i = 1; i < cSlots; i++)
-            {
-                regNumber nextArgReg = (regNumber)(inArgReg + i);
-                if (nextArgReg > REG_ARG_LAST)
-                {
-                    break;
-                }
-                regState->rsCalleeRegArgMaskLiveIn |= genRegMask(nextArgReg);
-            }
-        }
-    }
-#endif // FEATURE_MULTIREG_ARGS
-
-    return inArgReg;
-}
-
 //------------------------------------------------------------------------
 // rpMustCreateEBPFrame:
 //   Returns true when we must create an EBP frame
@@ -262,6 +176,16 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
     }
 #endif // TARGET_LOONGARCH64
 
+#ifdef TARGET_RISCV64
+    // TODO-RISCV64-NYI: This is temporary: force a frame pointer-based frame until genFnProlog
+    // can handle non-frame pointer frames.
+    if (!result)
+    {
+        INDEBUG(reason = "Temporary RISCV64 force frame pointer");
+        result = true;
+    }
+#endif // TARGET_RISCV64
+
 #ifdef DEBUG
     if ((result == true) && (wbReason != nullptr))
     {
@@ -332,9 +256,9 @@ void Compiler::raMarkStkVars()
 
         noway_assert((varDsc->lvType != TYP_UNDEF) && (varDsc->lvType != TYP_VOID) && (varDsc->lvType != TYP_UNKNOWN));
 #if FEATURE_FIXED_OUT_ARGS
-        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || lvaLclSize(lclNum) != 0);
+        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || (lvaLclStackHomeSize(lclNum) != 0));
 #else  // FEATURE_FIXED_OUT_ARGS
-        noway_assert(lvaLclSize(lclNum) != 0);
+        noway_assert(lvaLclStackHomeSize(lclNum) != 0);
 #endif // FEATURE_FIXED_OUT_ARGS
 
         varDsc->lvOnFrame = true; // Our prediction is that the final home for this local variable will be in the
@@ -379,7 +303,7 @@ void Compiler::raMarkStkVars()
         // to the GC, as the frame offsets in these local variables would
         // not be correct.
 
-        if (varDsc->lvIsParam && raIsVarargsStackArg(lclNum))
+        if (varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum))
         {
             if (!varDsc->lvPromoted && !varDsc->lvIsStructField)
             {

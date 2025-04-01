@@ -19,6 +19,7 @@
                       Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Reference Include="System.IO.Pipes"
                Condition="'$(TargetPlatformIdentifier)' != 'windows'" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />

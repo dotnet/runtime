@@ -2,6 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
+    <Platform>$(TargetArchitecture)</Platform>
     <PackagePlatform>AnyCPU</PackagePlatform>
 
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
@@ -35,7 +36,7 @@
     <DisableRarCache>true</DisableRarCache>
 
     <!-- During a build from source, only current-RID assets are available from upstream repos. -->
-    <RestoreAllBuildRids Condition="'$(RestoreAllBuildRids)' == '' and '$(DotNetBuildFromSource)' == 'true'">false</RestoreAllBuildRids>
+    <RestoreAllBuildRids Condition="'$(RestoreAllBuildRids)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">false</RestoreAllBuildRids>
     <!--
       Normally, it is necessary to restore all RIDs so that assets are available to inspect. For
       example, the platform manifest includes data from all RIDs.

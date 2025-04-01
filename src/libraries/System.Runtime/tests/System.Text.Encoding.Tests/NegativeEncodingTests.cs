@@ -623,6 +623,9 @@ namespace System.Text.Tests
             // Chars does not have enough space
             AssertExtensions.Throws<ArgumentException>("chars", () => decoder.Convert(new byte[4], 0, 4, new char[0], 0, 0, flush, out charsUsed, out bytesUsed, out completed));
             VerifyOutParams();
+
+            AssertExtensions.Throws<ArgumentException>("chars", () => decoder.Convert(encoding.GetBytes("\uD800\uDC00".ToCharArray()).AsSpan(), new char[0].AsSpan(), flush, out charsUsed, out bytesUsed, out completed));
+            VerifyOutParams();
         }
 
         [Theory]

@@ -50,6 +50,8 @@ struct MachineInfo;
 
 #include "eventchannel.h"
 
+#include <shash.h>
+
 #undef ASSERT
 #define CRASH(x)  _ASSERTE(!(x))
 #define ASSERT(x) _ASSERTE(x)
@@ -1835,14 +1837,14 @@ public ICorDebugAssemblyEnum
         CordbBase * pOwnerObj,
         NeuterList * pOwnerList,
         CordbHashTable *table,
-        const _GUID &id);
+        const GUID &id);
 
 public:
     static void BuildOrThrow(
         CordbBase * pOwnerObj,
         NeuterList * pOwnerList,
         CordbHashTable *table,
-        const _GUID &id,
+        const GUID &id,
         RSInitHolder<CordbHashTableEnum> * pHolder);
 
     CordbHashTableEnum(CordbHashTableEnum *cloneSrc);
@@ -2879,6 +2881,14 @@ public:
     virtual void RequestSyncAtEvent()= 0;
 
     virtual bool IsThreadSuspendedOrHijacked(ICorDebugThread * pThread) = 0;
+
+#ifdef FEATURE_INTEROP_DEBUGGING
+    virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
+#endif
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    virtual void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent) = 0;
+#endif
 };
 
 
@@ -2916,6 +2926,42 @@ public:
     CordbProcess *  m_pThis;
     VMPTR_AppDomain m_vmAppDomainDeleted;
 };
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+class UnmanagedThreadTracker
+{
+    DWORD m_dwThreadId = (DWORD)-1;
+    HANDLE m_hThread = INVALID_HANDLE_VALUE;
+    CORDB_ADDRESS_TYPE *m_pPatchSkipAddress = NULL;
+    DWORD m_dwSuspendCount = 0;
+
+public:
+    UnmanagedThreadTracker(DWORD wThreadId, HANDLE hThread) : m_dwThreadId(wThreadId), m_hThread(hThread) {}
+
+    DWORD GetThreadId() const { return m_dwThreadId; }
+    HANDLE GetThreadHandle() const { return m_hThread; }
+    bool IsInPlaceStepping() const { return m_pPatchSkipAddress != NULL; }
+    void SetPatchSkipAddress(CORDB_ADDRESS_TYPE *pPatchSkipAddress) { m_pPatchSkipAddress = pPatchSkipAddress; }
+    CORDB_ADDRESS_TYPE *GetPatchSkipAddress() const { return m_pPatchSkipAddress; }
+    void ClearPatchSkipAddress() { m_pPatchSkipAddress = NULL; }
+    void Suspend();
+    void Resume();
+    void Close();
+};
+
+class EMPTY_BASES_DECL CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
+{
+    public:
+        typedef DWORD key_t;
+
+        static key_t GetKey(const element_t &e) { return e->GetThreadId(); }
+        static BOOL Equals(const key_t &e, const key_t &f) { return e == f; }
+        static count_t Hash(const key_t &e) { return (count_t)(e ^ (e >> 16) * 0x45D9F43); }
+};
+
+typedef SHash<CUnmanagedThreadSHashTraits> CUnmanagedThreadHashTableImpl;
+typedef SHash<CUnmanagedThreadSHashTraits>::Iterator CUnmanagedThreadHashTableIterator;
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 class CordbProcess :
     public CordbBase,
@@ -2963,11 +3009,10 @@ public:
     //-----------------------------------------------------------
     // IMetaDataLookup
     // -----------------------------------------------------------
-    IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly, bool &isILMetaDataForNGENImage);
+    IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly);
 
     // Helper functions for LookupMetaData implementation
     IMDInternalImport * LookupMetaDataFromDebugger(VMPTR_PEAssembly vmPEAssembly,
-                                                   bool &isILMetaDataForNGENImage,
                                                    CordbModule * pModule);
 
     IMDInternalImport * LookupMetaDataFromDebuggerForSingleFile(CordbModule * pModule,
@@ -3282,6 +3327,7 @@ public:
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     void HandleSetThreadContextNeeded(DWORD dwThreadId);
+    bool HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress);
 #endif
 
     //
@@ -3462,6 +3508,8 @@ public:
         _ASSERTE(ThreadHoldsProcessLock());
         return m_unmanagedThreads.GetBase(dwThreadId);
     }
+
+    virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread);
 #endif // FEATURE_INTEROP_DEBUGGING
 
     /*
@@ -3475,7 +3523,7 @@ public:
      * are passed in, while going through the table we'll undo patches
      * in buffer at the same time
      */
-    HRESULT RefreshPatchTable(CORDB_ADDRESS address = NULL, SIZE_T size = NULL, BYTE buffer[] = NULL);
+    HRESULT RefreshPatchTable(CORDB_ADDRESS address = 0, SIZE_T size = 0, BYTE buffer[] = NULL);
 
     // Find if a patch exists at a given address.
     HRESULT FindPatchByAddress(CORDB_ADDRESS address, bool *patchFound, bool *patchIsUnmanaged);
@@ -3975,9 +4023,9 @@ public:
 
     // CORDB_ADDRESS's are UINT_PTR's (64 bit under HOST_64BIT, 32 bit otherwise)
 #if defined(TARGET_64BIT)
-#define MAX_ADDRESS     (_UI64_MAX)
+#define MAX_ADDRESS     (UINT64_MAX)
 #else
-#define MAX_ADDRESS     (_UI32_MAX)
+#define MAX_ADDRESS     (UINT32_MAX)
 #endif
 #define MIN_ADDRESS     (0x0)
     CORDB_ADDRESS       m_minPatchAddr; //smallest patch in table
@@ -4119,6 +4167,14 @@ private:
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
 
     COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
+    DWORD m_dwOutOfProcessStepping;
+public:
+    void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+
 };
 
 // Some IMDArocess APIs are supported as interop-only.
@@ -4344,8 +4400,6 @@ public:
     // Get the module filename, or NULL if none.  Throws on error.
     const WCHAR * GetModulePath();
 
-    const WCHAR * GetNGenImagePath();
-
     const VMPTR_DomainAssembly GetRuntimeDomainAssembly ()
     {
         return m_vmDomainAssembly;
@@ -4403,10 +4457,6 @@ private:
 
     // Full path to module's image, if any.  Empty if none, NULL if not yet set.
     StringCopyHolder m_strModulePath;
-
-    // Full path to the ngen file. Empty if not ngenned, NULL if not yet set.
-    // This isn't exposed publicly, but we may use it internally for loading metadata.
-    StringCopyHolder m_strNGenImagePath;
 
     // "Global" class for this module. Global functions + vars exist in this class.
     RSSmartPtr<CordbClass> m_pClass;
@@ -5100,10 +5150,6 @@ private:
 
 public:
 
-    // set or clear the custom notifications flag to control whether we ignore custom debugger notifications
-    void SetCustomNotifications(BOOL fEnable) { m_fCustomNotificationsEnabled = fEnable; }
-    BOOL CustomNotificationsEnabled () { return m_fCustomNotificationsEnabled; }
-
     HRESULT GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData);
 
     // If you want to force the init to happen even if we think the class
@@ -5177,9 +5223,6 @@ private:
     // if we add static fields with EnC after this class is loaded (in the debuggee),
     // their value will be hung off the FieldDesc.  Hold information about such fields here.
     CordbHangingFieldTable   m_hangingFieldsStatic;
-
-    // this indicates whether we should send custom debugger notifications
-    BOOL                    m_fCustomNotificationsEnabled;
 
 };
 
@@ -5934,7 +5977,7 @@ public:
     ULONG32 GetColdSize();
 
     // Return true if the Code is split into hot + cold regions.
-    bool HasColdRegion() { return m_rgCodeRegions[kCold].pAddress != NULL; }
+    bool HasColdRegion() { return m_rgCodeRegions[kCold].pAddress != (CORDB_ADDRESS)NULL; }
 
     // Get the number of fixed arguments for this function (the "this"
     // but not varargs)
@@ -7325,7 +7368,8 @@ public:
                     GENERICS_TYPE_TOKEN   exactGenericArgsToken,
                     DWORD                 dwExactGenericArgsTokenIndex,
                     bool                  fVarArgFnx,
-                    CordbReJitILCode *    pReJitCode);
+                    CordbReJitILCode *    pReJitCode,
+                    bool                  fAdjustedIP);
     HRESULT Init();
     virtual ~CordbJITILFrame();
     virtual void Neuter();
@@ -7436,6 +7480,7 @@ public:
 
     CordbILCode* GetOriginalILCode();
     CordbReJitILCode* GetReJitILCode();
+    void AdjustIPAfterException();
 
 private:
     void    RefreshCachedVarArgSigParserIfNeeded();
@@ -7503,6 +7548,7 @@ public:
 
     // if this frame is instrumented with rejit, this will point to the instrumented IL code
     RSSmartPtr<CordbReJitILCode> m_pReJitCode;
+    BOOL m_adjustedIP;
 };
 
 /* ------------------------------------------------------------------------- *
@@ -8403,7 +8449,7 @@ public:
 
     // gets the remote address for the value or returns NULL if none exists
     virtual
-    CORDB_ADDRESS GetAddress() { return NULL; };
+    CORDB_ADDRESS GetAddress() { return (CORDB_ADDRESS)NULL; };
 
     // Gets a value and returns it in dest
     virtual
@@ -8922,7 +8968,7 @@ public:
         FAIL_IF_NEUTERED(this);
         VALIDATE_POINTER_TO_OBJECT_OR_NULL(pAddress, CORDB_ADDRESS *);
 
-        *pAddress = m_pValueHome ? m_pValueHome->GetAddress() : NULL;
+        *pAddress = m_pValueHome ? m_pValueHome->GetAddress() : (CORDB_ADDRESS)NULL;
         return (S_OK);
     }
 
@@ -9167,6 +9213,7 @@ class CordbObjectValue : public CordbValue,
                          public ICorDebugHeapValue3,
                          public ICorDebugHeapValue4,
                          public ICorDebugExceptionObjectValue,
+                         public ICorDebugExceptionObjectValue2,
                          public ICorDebugComObjectValue,
                          public ICorDebugDelegateObjectValue
 {
@@ -9288,6 +9335,11 @@ public:
     // ICorDebugExceptionObjectValue
     //-----------------------------------------------------------
     COM_METHOD EnumerateExceptionCallStack(ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum);
+
+    //-----------------------------------------------------------
+    // ICorDebugExceptionObjectValue2
+    //-----------------------------------------------------------
+    COM_METHOD ForceCatchHandlerFoundEvents(BOOL enableEvents);
 
     //-----------------------------------------------------------
     // ICorDebugComObjectValue

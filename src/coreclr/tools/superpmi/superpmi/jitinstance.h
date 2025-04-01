@@ -20,15 +20,13 @@ struct ReplayResults
 {
     ReplayResult Result = ReplayResult::Success;
     bool IsMinOpts = false;
-    uint32_t NumCodeBytes = 0;
     uint64_t NumExecutedInstructions = 0;
+    CompileResult* CompileResults = nullptr;
 };
 
 class JitInstance
 {
 private:
-    char*          PathToOriginalJit;
-    char*          PathToTempJit;
     HMODULE        hLib;
     PgetJit        pngetJit;
     PjitStartup    pnjitStartup;
@@ -62,8 +60,7 @@ public:
                                 LightWeightMap<DWORD, DWORD>* forceOptions,
                                 LightWeightMap<DWORD, DWORD>* options);
 
-    HRESULT StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBreakorAV, MethodContext* firstContext);
-    bool reLoad(MethodContext* firstContext);
+    HRESULT StartUp(char* PathToJit, bool breakOnDebugBreakorAV, MethodContext* firstContext);
 
     bool callJitStartup(ICorJitHost* newHost);
 
@@ -71,9 +68,11 @@ public:
 
     ReplayResults CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput);
 
-    const WCHAR* getForceOption(const WCHAR* key);
-    const WCHAR* getOption(const WCHAR* key);
-    const WCHAR* getOption(const WCHAR* key, LightWeightMap<DWORD, DWORD>* options);
+    const char* getForceOption(const char* key);
+    const char* getOption(const char* key);
+    const char* getOption(const char* key, LightWeightMap<DWORD, DWORD>* options);
+
+    uint32_t getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes);
 
     const MethodContext::Environment& getEnvironment();
 
@@ -81,6 +80,8 @@ public:
     void* allocateLongLivedArray(size_t size);
     void freeArray(void* array);
     void freeLongLivedArray(void* array);
+
+    void updateForceOptions(LightWeightMap<DWORD, DWORD>* newForceOptions);
 };
 
 #endif

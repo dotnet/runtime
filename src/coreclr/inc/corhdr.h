@@ -246,14 +246,6 @@ typedef struct IMAGE_COR20_HEADER
 
 } IMAGE_COR20_HEADER, *PIMAGE_COR20_HEADER;
 
-#else // !__IMAGE_COR20_HEADER_DEFINED__
-
-// <TODO>@TODO: This is required because we pull in the COM+ 2.0 PE header
-// definition from WinNT.h, and these constants have not yet propagated to there.</TODO>
-//
-#define COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN 0x08
-#define COMIMAGE_FLAGS_32BITPREFERRED              0x00020000
-
 #endif // __IMAGE_COR20_HEADER_DEFINED__
 
 
@@ -847,7 +839,7 @@ typedef enum CorGenericParamAttr
     gpReferenceTypeConstraint = 0x0004,      // type argument must be a reference type
     gpNotNullableValueTypeConstraint   =   0x0008,      // type argument must be a value type but not Nullable
     gpDefaultConstructorConstraint = 0x0010, // type argument must have a public default constructor
-    gpAcceptByRefLike = 0x0020, // type argument can be ByRefLike
+    gpAllowByRefLike = 0x0020, // type argument can be ByRefLike
 } CorGenericParamAttr;
 
 // structures and enums moved from COR.H
@@ -911,9 +903,10 @@ typedef enum CorElementType
 
     // This is for signatures generated internally (which will not be persisted in any way).
     ELEMENT_TYPE_INTERNAL       = 0x21,     // INTERNAL <typehandle>
+    ELEMENT_TYPE_CMOD_INTERNAL  = 0x22,     // CMOD_INTERNAL <required (1 byte: non-zero if required, 0 if optional)> <typehandle>
 
     // Note that this is the max of base type excluding modifiers
-    ELEMENT_TYPE_MAX            = 0x22,     // first invalid element type
+    ELEMENT_TYPE_MAX            = 0x23,     // first invalid element type
 
 
     ELEMENT_TYPE_MODIFIER       = 0x40,
@@ -1715,6 +1708,7 @@ typedef enum LoadHintEnum
 #define CMOD_CALLCONV_NAME_STDCALL              "CallConvStdcall"
 #define CMOD_CALLCONV_NAME_THISCALL             "CallConvThiscall"
 #define CMOD_CALLCONV_NAME_FASTCALL             "CallConvFastcall"
+#define CMOD_CALLCONV_NAME_SWIFT                "CallConvSwift"
 #define CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION "CallConvSuppressGCTransition"
 #define CMOD_CALLCONV_NAME_MEMBERFUNCTION       "CallConvMemberFunction"
 

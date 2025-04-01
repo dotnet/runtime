@@ -115,7 +115,7 @@ namespace System.Collections
             _version = 0;
         }
 
-        public unsafe BitArray(bool[] values)
+        public BitArray(bool[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
 
@@ -312,7 +312,7 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray And(BitArray value)
+        public BitArray And(BitArray value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -385,7 +385,7 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray Or(BitArray value)
+        public BitArray Or(BitArray value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -458,7 +458,7 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray Xor(BitArray value)
+        public BitArray Xor(BitArray value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -531,7 +531,7 @@ namespace System.Collections
         ** off/false. Off/false bit values are turned on/true. The current instance
         ** is updated and returned.
         =========================================================================*/
-        public unsafe BitArray Not()
+        public BitArray Not()
         {
             // This method uses unsafe code to manipulate data in the BitArray.  To avoid issues with
             // buggy code concurrently mutating this instance in a way that could cause memory corruption,
@@ -623,7 +623,7 @@ namespace System.Collections
                         // In that case, we are shifting a uint by 32, which could be considered undefined.
                         // The result of a shift operation is undefined ... if the right operand
                         // is greater than or equal to the width in bits of the promoted left operand,
-                        // https://docs.microsoft.com/en-us/cpp/c-language/bitwise-shift-operators?view=vs-2017
+                        // https://learn.microsoft.com/cpp/c-language/bitwise-shift-operators?view=vs-2017
                         // However, the compiler protects us from undefined behaviour by constraining the
                         // right operand to between 0 and width - 1 (inclusive), i.e. right_operand = (right_operand % width).
                         uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
@@ -756,21 +756,19 @@ namespace System.Collections
 
             if (array is int[] intArray)
             {
-                Div32Rem(m_length, out int extraBits);
-
-                if (extraBits == 0)
+                if (array.Length - index < GetInt32ArrayLengthFromBitLength(m_length))
                 {
-                    // we have perfect bit alignment, no need to sanitize, just copy
-                    Array.Copy(m_array, 0, intArray, index, m_array.Length);
+                    throw new ArgumentException(SR.Argument_InvalidOffLen);
                 }
-                else
-                {
-                    int last = (m_length - 1) >> BitShiftPerInt32;
-                    // do not copy the last int, as it is not completely used
-                    Array.Copy(m_array, 0, intArray, index, last);
 
+                int quotient = Div32Rem(m_length, out int extraBits);
+
+                Array.Copy(m_array, 0, intArray, index, quotient);
+
+                if (extraBits > 0)
+                {
                     // the last int needs to be masked
-                    intArray[index + last] = m_array[last] & unchecked((1 << extraBits) - 1);
+                    intArray[index + quotient] = m_array[quotient] & unchecked((1 << extraBits) - 1);
                 }
             }
             else if (array is byte[] byteArray)
@@ -887,7 +885,7 @@ namespace System.Collections
                         }
                     }
                 }
-                else if (Ssse3.IsSupported && ((uint)m_length >= Vector512<byte>.Count * 2u))
+                else if (Ssse3.IsSupported && ((uint)m_length >= Vector128<byte>.Count * 2u))
                 {
                     Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
                     Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;

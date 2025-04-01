@@ -44,55 +44,18 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Try to look up field access info for given canon in metadata blobs for all available modules.
         /// </summary>
-        /// <param name="metadataReader">Metadata reader for the declaring type</param>
-        /// <param name="runtimeTypeHandle">Declaring type for the method</param>
+        /// <param name="declaringTypeHandle">Declaring type for the method</param>
         /// <param name="fieldHandle">Field handle</param>
         /// <param name="fieldAccessMetadata">Output - metadata information for field accessor construction</param>
         /// <returns>true when found, false otherwise</returns>
-        public static bool TryGetFieldAccessMetadata(
-            MetadataReader metadataReader,
-            RuntimeTypeHandle runtimeTypeHandle,
+        public static unsafe bool TryGetFieldAccessMetadataFromFieldAccessMap(
+            RuntimeTypeHandle declaringTypeHandle,
             FieldHandle fieldHandle,
             out FieldAccessMetadata fieldAccessMetadata)
         {
-            fieldAccessMetadata = default(FieldAccessMetadata);
+            fieldAccessMetadata = default;
 
-            if (TryGetFieldAccessMetadataFromFieldAccessMap(
-                runtimeTypeHandle,
-                fieldHandle,
-                CanonicalFormKind.Specific,
-                ref fieldAccessMetadata))
-            {
-                return true;
-            }
-
-            if (TryGetFieldAccessMetadataFromFieldAccessMap(
-                runtimeTypeHandle,
-                fieldHandle,
-                CanonicalFormKind.Universal,
-                ref fieldAccessMetadata))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Try to look up field access info for given canon in metadata blobs for all available modules.
-        /// </summary>
-        /// <param name="declaringTypeHandle">Declaring type for the method</param>
-        /// <param name="fieldHandle">Field handle</param>
-        /// <param name="canonFormKind">Canonical form to use</param>
-        /// <param name="fieldAccessMetadata">Output - metadata information for field accessor construction</param>
-        /// <returns>true when found, false otherwise</returns>
-        private static unsafe bool TryGetFieldAccessMetadataFromFieldAccessMap(
-            RuntimeTypeHandle declaringTypeHandle,
-            FieldHandle fieldHandle,
-            CanonicalFormKind canonFormKind,
-            ref FieldAccessMetadata fieldAccessMetadata)
-        {
-            CanonicallyEquivalentEntryLocator canonWrapper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle, canonFormKind);
+            CanonicallyEquivalentEntryLocator canonWrapper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle);
 
             foreach (NativeFormatModuleInfo mappingTableModule in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
             {
@@ -119,29 +82,18 @@ namespace Internal.Runtime.TypeLoader
 
                     FieldTableFlags entryFlags = (FieldTableFlags)entryParser.GetUnsigned();
 
-                    if ((canonFormKind == CanonicalFormKind.Universal) != ((entryFlags & FieldTableFlags.IsUniversalCanonicalEntry) != 0))
-                        continue;
-
                     RuntimeTypeHandle entryDeclaringTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                     if (!entryDeclaringTypeHandle.Equals(declaringTypeHandle)
                         && !canonWrapper.IsCanonicallyEquivalent(entryDeclaringTypeHandle))
                         continue;
 
-                    if ((entryFlags & FieldTableFlags.HasMetadataHandle) != 0)
-                    {
-                        Handle entryFieldHandle = (((int)HandleType.Field << 24) | (int)entryParser.GetUnsigned()).AsHandle();
-                        if (!fieldHandle.Equals(entryFieldHandle))
-                            continue;
-                    }
-                    else
-                    {
-                        Debug.Fail("Multifile path");
-                    }
+                    Handle entryFieldHandle = (((int)HandleType.Field << 25) | (int)entryParser.GetUnsigned()).AsHandle();
+                    if (!fieldHandle.Equals(entryFieldHandle))
+                        continue;
 
                     int fieldOffset;
                     IntPtr fieldAddressCookie = IntPtr.Zero;
 
-                    Debug.Assert(canonFormKind != CanonicalFormKind.Universal);
                     if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) != 0)
                     {
                         fieldOffset = (int)entryParser.GetUnsigned();

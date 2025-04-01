@@ -63,15 +63,12 @@ bool emitInsIsLoadOrStore(instruction ins);
 void emitDispInsName(
     code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);
 void emitDispInsInstrNum(const instrDesc* id) const;
-bool emitDispBranch(unsigned         opcode2,
-                    const char*      register1Name,
-                    const char*      register2Name,
-                    const instrDesc* id,
-                    const insGroup*  ig) const;
+bool emitDispBranch(unsigned opcode2, unsigned rs1, unsigned rs2, const instrDesc* id, const insGroup* ig) const;
 void emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const;
 void emitDispBranchLabel(const instrDesc* id) const;
-bool emitDispBranchInstrType(unsigned opcode2) const;
+bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const;
 void emitDispIllegalInstruction(code_t instructionCode);
+void emitDispImmediate(ssize_t imm, bool newLine = true, unsigned regBase = REG_ZERO);
 
 emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/) const;
 
@@ -82,14 +79,13 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 unsigned emitOutput_Instr(BYTE* dst, code_t code) const;
 
 ssize_t emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig, instrDescJmp* jmp);
-void emitOutputInstrJumpDistanceHelper(const insGroup* ig,
-                                       instrDescJmp*   jmp,
-                                       UNATIVE_OFFSET& dstOffs,
-                                       const BYTE*&    dstAddr) const;
+void    emitOutputInstrJumpDistanceHelper(const insGroup* ig,
+                                          instrDescJmp*   jmp,
+                                          UNATIVE_OFFSET& dstOffs,
+                                          const BYTE*&    dstAddr) const;
 
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
-static bool IsMovInstruction(instruction ins);
 bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
 bool IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
@@ -124,27 +120,49 @@ unsigned emitOutput_BTypeInstr_InvertComparation(
 unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigned imm21) const;
 
 BYTE* emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_OptsI(BYTE* dst, const instrDesc* id);
-BYTE* emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1);
-BYTE* emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber reg1);
 BYTE* emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, regNumber reg1);
+BYTE* emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
 BYTE* emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
 BYTE* emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
 BYTE* emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
 BYTE* emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins);
-BYTE* emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate);
+BYTE* emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate);
-BYTE* emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate);
+BYTE* emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* ig, size_t* size);
 
-static unsigned TrimSignedToImm12(int imm12);
-static unsigned TrimSignedToImm13(int imm13);
-static unsigned TrimSignedToImm20(int imm20);
-static unsigned TrimSignedToImm21(int imm21);
+static unsigned TrimSignedToImm12(ssize_t imm12);
+static unsigned TrimSignedToImm13(ssize_t imm13);
+static unsigned TrimSignedToImm20(ssize_t imm20);
+static unsigned TrimSignedToImm21(ssize_t imm21);
+
+// Major opcode of a 32-bit instruction as per "The RISC-V Instruction Set Manual", Chapter "RV32/64G Instruction Set
+// Listings", Table "RISC-V base opcode map"
+enum class MajorOpcode
+{
+    // clang-format off
+    // inst[4:2]    000,    001,     010,      011,     100,    101,   110,          111 (>32Bit)
+    /* inst[6:5] */
+    /*        00 */ Load,   LoadFp,  Custom0,  MiscMem, OpImm,  Auipc, OpImm32,      Encoding48Bit1,
+    /*        01 */ Store,  StoreFp, Custom1,  Amo,     Op,     Lui,   Op32,         Encoding64Bit,
+    /*        11 */ MAdd,   MSub,    NmSub,    NmAdd,   OpFp,   OpV,   Custom2Rv128, Encoding48Bit2,
+    /*        11 */ Branch, Jalr,    Reserved, Jal,     System, OpVe,  Custom3Rv128, Encoding80Bit,
+    // clang-format on
+};
+
+//------------------------------------------------------------------------
+// GetMajorOpcode: extracts major opcode from an instruction
+//
+// Arguments:
+//    instr - instruction encoded in 32-bit format
+//
+// Return Value:
+//    Major opcode
+//
+static MajorOpcode GetMajorOpcode(code_t instr);
 
 /************************************************************************/
 /*           Public inline informational methods                        */
@@ -199,11 +217,31 @@ static bool isValidSimm21(ssize_t value)
     return -(((int)1) << 20) <= value && value < (((int)1) << 20);
 };
 
-// Returns true if 'value' is a legal signed immediate 32 bit encoding.
+// Returns true if 'value' is a legal signed immediate 32-bit encoding with the offset adjustment.
 static bool isValidSimm32(ssize_t value)
 {
-    return -(((ssize_t)1) << 31) <= value && value < (((ssize_t)1) << 31);
-};
+    return (-(((ssize_t)1) << 31) - 0x800) <= value && value < (((ssize_t)1) << 31) - 0x800;
+}
+
+//------------------------------------------------------------------------
+// isSingleInstructionFpImm: checks if the floating-point constant can be synthesized with one instruction
+//
+// Arguments:
+//    value   - the constant to be imm'ed
+//    size    - size of the target immediate
+//    outBits - [out] the bits of the immediate
+//
+// Return Value:
+//    Whether the floating-point immediate can be synthesized with one instruction
+//
+static bool isSingleInstructionFpImm(double value, emitAttr size, int64_t* outBits)
+{
+    assert(size == EA_4BYTE || size == EA_8BYTE);
+    *outBits = (size == EA_4BYTE)
+                   ? (int32_t)BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(value))
+                   : (int64_t)BitOperations::DoubleToUInt64Bits(value);
+    return isValidSimm12(*outBits) || (((*outBits & 0xfff) == 0) && isValidSimm20(*outBits >> 12));
+}
 
 // Returns the number of bits used by the given 'size'.
 inline static unsigned getBitWidth(emitAttr size)
@@ -293,9 +331,9 @@ void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
-void emitIns_R_AI(instruction ins,
-                  emitAttr    attr,
-                  regNumber   reg,
+void emitIns_R_AI(instruction  ins,
+                  emitAttr     attr,
+                  regNumber    reg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 enum EmitCallType
@@ -310,7 +348,7 @@ enum EmitCallType
 
     EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method
                    //  EC_FUNC_TOKEN_INDIR,    // Indirect call to a helper/static/nonvirtual/global method
-    // EC_FUNC_ADDR,  // Direct call to an absolute address
+                   // EC_FUNC_ADDR,  // Direct call to an absolute address
 
     //  EC_FUNC_VIRTUAL,        // Call to a virtual method (using the vtable)
     EC_INDIR_R, // Indirect call via register
@@ -324,18 +362,19 @@ enum EmitCallType
 void emitIns_Call(EmitCallType          callType,
                   CORINFO_METHOD_HANDLE methHnd,
                   INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*    addr,
-                  ssize_t  argSize,
+                  void*            addr,
+                  ssize_t          argSize,
                   emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                   VARSET_VALARG_TP ptrVars,
                   regMaskTP        gcrefRegs,
                   regMaskTP        byrefRegs,
                   const DebugInfo& di,
-                  regNumber        ireg   = REG_NA,
-                  regNumber        xreg   = REG_NA,
-                  unsigned         xmul   = 0,
-                  ssize_t          disp   = 0,
-                  bool             isJump = false);
+                  regNumber        ireg        = REG_NA,
+                  regNumber        xreg        = REG_NA,
+                  unsigned         xmul        = 0,
+                  ssize_t          disp        = 0,
+                  bool             isJump      = false,
+                  bool             noSafePoint = false);
 
 unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
 

@@ -8,7 +8,6 @@ namespace Wasm.Build.Tests;
 public sealed record DotNetFileName
 (
     string ExpectedFilename,
-    string? Version,
     string? Hash,
     string ActualPath
 );

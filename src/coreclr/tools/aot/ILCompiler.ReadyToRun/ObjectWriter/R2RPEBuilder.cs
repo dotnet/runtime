@@ -507,9 +507,12 @@ namespace ILCompiler.PEWriter
             if (_getRuntimeFunctionsTable != null)
             {
                 RuntimeFunctionsTableNode runtimeFunctionsTable = _getRuntimeFunctionsTable();
-                builder.ExceptionTable = new DirectoryEntry(
-                    relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(runtimeFunctionsTable),
-                    size: runtimeFunctionsTable.TableSizeExcludingSentinel);
+                if (runtimeFunctionsTable.TableSizeExcludingSentinel != 0)
+                {
+                    builder.ExceptionTable = new DirectoryEntry(
+                        relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(runtimeFunctionsTable),
+                        size: runtimeFunctionsTable.TableSizeExcludingSentinel);
+                }
             }
     
             return builder;
@@ -545,7 +548,7 @@ namespace ILCompiler.PEWriter
                     return rva + sectionRvaDelta.DeltaRVA;
                 }
             }
-            Debug.Assert(false, "RVA is not within any of the input sections - output PE may be inconsistent");
+            Debug.Fail("RVA is not within any of the input sections - output PE may be inconsistent");
             return rva;
         }
 

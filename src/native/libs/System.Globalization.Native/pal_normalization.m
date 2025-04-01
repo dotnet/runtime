@@ -45,7 +45,7 @@ int32_t GlobalizationNative_IsNormalizedNative(NormalizationForm normalizationFo
 {
     @autoreleasepool
     {
-        NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
+        NSString *sourceString = [NSString stringWithCharacters: lpStr length: (NSUInteger)cwStrLength];
         NSString *normalizedString = GetNormalizedStringForForm(normalizationForm, sourceString);
 
         return normalizedString == NULL ? -1 : [sourceString isEqualToString: normalizedString];
@@ -67,7 +67,7 @@ int32_t GlobalizationNative_NormalizeStringNative(NormalizationForm normalizatio
 {
     @autoreleasepool
     {
-        NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
+        NSString *sourceString = [NSString stringWithCharacters: lpSource length: (NSUInteger)cwSourceLength];
         NSString *normalizedString = GetNormalizedStringForForm(normalizationForm, sourceString);
 
         if (normalizedString == NULL || normalizedString.length == 0)
@@ -75,16 +75,23 @@ int32_t GlobalizationNative_NormalizeStringNative(NormalizationForm normalizatio
             return 0;
         }
 
-        int32_t index = 0, dstIdx = 0, isError = 0;
-        uint16_t dstCodepoint;
-        while (index < normalizedString.length)
+        // Calling with empty or null destination buffer to get the required buffer size.
+        if (lpDst == NULL || cwDstLength == 0)
         {
-            dstCodepoint = [normalizedString characterAtIndex: index];
+            return (int32_t)[normalizedString length];
+        }
+
+        ResultCode isError = Success;
+        int32_t index = 0, dstIdx = 0;
+        uint16_t dstCodepoint;
+        while ((NSUInteger)index < normalizedString.length && isError == Success)
+        {
+            dstCodepoint = [normalizedString characterAtIndex: (NSUInteger)index];
             Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
             index++;
         }
 
-        return !isError ? [normalizedString length] : 0;
+        return (isError == Success || isError == InsufficientBuffer) ? (int32_t)[normalizedString length] : 0;
     }
 }
 #endif

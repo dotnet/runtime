@@ -97,13 +97,8 @@
 #define ShutDown_IUnknown                       0x00000040
 #define ShutDown_Phase2                         0x00000080
 
-#ifndef DACCESS_COMPILE
-extern bool g_fProcessDetach;
-extern DWORD g_fEEShutDown;
-#endif
 // Total count of Crst lock  of the type (Shutdown) that are currently in use
 extern Volatile<LONG> g_ShutdownCrstUsageCount;
-extern Volatile<LONG> g_fForbidEnterEE;
 
 // The CRST.
 class CrstBase

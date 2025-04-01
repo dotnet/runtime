@@ -28,13 +28,13 @@ Abstract:
 #include "pal/map.hpp"
 #include "pal/thread.hpp"
 #include "pal/file.hpp"
-#include "pal/malloc.hpp"
 
 #include <stddef.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
 
 #include "rt/ntimage.h"
@@ -111,17 +111,7 @@ void
 FileMappingCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
-    );
-
-PAL_ERROR
-FileMappingInitializationRoutine(
-    CPalThread *pThread,
-    CObjectType *pObjectType,
-    void *pImmutableData,
-    void *pSharedData,
-    void *pProcessLocalData
+    bool fShutdown
     );
 
 void
@@ -138,18 +128,11 @@ CFileMappingImmutableDataCleanupRoutine(
 CObjectType CorUnix::otFileMapping(
                 otiFileMapping,
                 FileMappingCleanupRoutine,
-                FileMappingInitializationRoutine,
                 sizeof(CFileMappingImmutableData),
                 CFileMappingImmutableDataCopyRoutine,
                 CFileMappingImmutableDataCleanupRoutine,
                 sizeof(CFileMappingProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,
-                PAGE_READWRITE | PAGE_READONLY | PAGE_WRITECOPY,
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::UnwaitableObject,
                 CObjectType::SignalingNotApplicable,
                 CObjectType::ThreadReleaseNotApplicable,
@@ -187,8 +170,7 @@ void
 FileMappingCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     )
 {
     PAL_ERROR palError = NO_ERROR;
@@ -197,27 +179,24 @@ FileMappingCleanupRoutine(
     IDataLock *pLocalDataLock = NULL;
     bool fDataChanged = FALSE;
 
-    if (TRUE == fCleanupSharedState)
+    //
+    // If we created a temporary file to back this mapping we need
+    // to unlink it now
+    //
+
+    palError = pObjectToCleanup->GetImmutableData(
+        reinterpret_cast<void**>(&pImmutableData)
+        );
+
+    if (NO_ERROR != palError)
     {
-        //
-        // If we created a temporary file to back this mapping we need
-        // to unlink it now
-        //
+        ASSERT("Unable to obtain immutable data for object to be reclaimed");
+        return;
+    }
 
-        palError = pObjectToCleanup->GetImmutableData(
-            reinterpret_cast<void**>(&pImmutableData)
-            );
-
-        if (NO_ERROR != palError)
-        {
-            ASSERT("Unable to obtain immutable data for object to be reclaimed");
-            return;
-        }
-
-        if (pImmutableData->bPALCreatedTempFile)
-        {
-            unlink(pImmutableData->lpFileName);
-        }
+    if (pImmutableData->bPALCreatedTempFile)
+    {
+        unlink(pImmutableData->lpFileName);
     }
 
     if (FALSE == fShutdown)
@@ -258,52 +237,6 @@ FileMappingCleanupRoutine(
     // there's no way for a view to exist against this mapping, since each
     // view holds a reference against the mapping object.
     //
-}
-
-PAL_ERROR
-FileMappingInitializationRoutine(
-    CPalThread *pThread,
-    CObjectType *pObjectType,
-    void *pvImmutableData,
-    void *pvSharedData,
-    void *pvProcessLocalData
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-
-    CFileMappingImmutableData *pImmutableData =
-        reinterpret_cast<CFileMappingImmutableData *>(pvImmutableData);
-    CFileMappingProcessLocalData *pProcessLocalData =
-        reinterpret_cast<CFileMappingProcessLocalData *>(pvProcessLocalData);
-
-    pProcessLocalData->UnixFd = InternalOpen(
-        pImmutableData->lpFileName,
-        MAPProtectionToFileOpenFlags(pImmutableData->flProtect) | O_CLOEXEC
-        );
-
-    if (-1 == pProcessLocalData->UnixFd)
-    {
-        palError = ERROR_INTERNAL_ERROR;
-        goto ExitFileMappingInitializationRoutine;
-    }
-
-#if ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS
-    struct stat st;
-
-    if (0 == fstat(pProcessLocalData->UnixFd, &st))
-    {
-        pProcessLocalData->MappedFileDevNum = st.st_dev;
-        pProcessLocalData->MappedFileInodeNum = st.st_ino;
-    }
-    else
-    {
-        ERROR("Couldn't get inode info for fd=%d to be stored in mapping object\n", pProcessLocalData->UnixFd);
-    }
-#endif
-
-ExitFileMappingInitializationRoutine:
-
-    return palError;
 }
 
 /*++
@@ -1128,7 +1061,7 @@ CorUnix::InternalMapViewOfFile(
         // the global list.
         //
 
-        PMAPPED_VIEW_LIST pNewView = (PMAPPED_VIEW_LIST)InternalMalloc(sizeof(*pNewView));
+        PMAPPED_VIEW_LIST pNewView = (PMAPPED_VIEW_LIST)malloc(sizeof(*pNewView));
         if (NULL != pNewView)
         {
             pNewView->lpAddress = pvBaseAddress;
@@ -1586,22 +1519,30 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         }
 
         memset( buf, 0, BUFFER_SIZE );
-
-        for ( x = 0; x < NewSize - OrigSize - BUFFER_SIZE; x += BUFFER_SIZE )
+        if (NewSize - OrigSize - BUFFER_SIZE >= 0 && BUFFER_SIZE > 0)
         {
-            if ( write( UnixFD, (LPVOID)buf, BUFFER_SIZE ) == -1 )
+            for ( x = 0; x < NewSize - OrigSize - BUFFER_SIZE; x += BUFFER_SIZE )
             {
-                ERROR( "Unable to grow the file. Reason=%s\n", strerror( errno ) );
-                if((errno == ENOSPC) || (errno == EDQUOT))
+                if ( write( UnixFD, (LPVOID)buf, BUFFER_SIZE ) == -1 )
                 {
-                    palError = ERROR_DISK_FULL;
+                    ERROR( "Unable to grow the file. Reason=%s\n", strerror( errno ) );
+                    if((errno == ENOSPC) || (errno == EDQUOT))
+                    {
+                        palError = ERROR_DISK_FULL;
+                    }
+                    else
+                    {
+                        palError = ERROR_INTERNAL_ERROR;
+                    }
+                    goto done;
                 }
-                else
-                {
-                    palError = ERROR_INTERNAL_ERROR;
-                }
-                goto done;
             }
+        }
+        else
+        {
+            //This will be an infinite loop because it did not pass the check.
+            palError = ERROR_INTERNAL_ERROR;
+            goto done;
         }
         /* Catch any left overs. */
         if ( x != NewSize )
@@ -1832,7 +1773,7 @@ static PMAPPED_VIEW_LIST FindSharedMappingReplacement(
                 /* The new desired mapping is fully contained in the
                    one just found: we can reuse this one */
 
-                pNewView = (PMAPPED_VIEW_LIST)InternalMalloc(sizeof(MAPPED_VIEW_LIST));
+                pNewView = (PMAPPED_VIEW_LIST)malloc(sizeof(MAPPED_VIEW_LIST));
                 if (pNewView)
                 {
                     memcpy(pNewView, pView, sizeof(*pNewView));
@@ -1867,7 +1808,7 @@ static NativeMapHolder * NewNativeMapHolder(CPalThread *pThread, LPVOID address,
     }
 
     pThisMapHolder =
-        (NativeMapHolder *)InternalMalloc(sizeof(NativeMapHolder));
+        (NativeMapHolder *)malloc(sizeof(NativeMapHolder));
 
     if (pThisMapHolder)
     {
@@ -1933,7 +1874,7 @@ MAPRecordMapping(
 
     PAL_ERROR palError = NO_ERROR;
     PMAPPED_VIEW_LIST pNewView;
-    pNewView = (PMAPPED_VIEW_LIST)InternalMalloc(sizeof(*pNewView));
+    pNewView = (PMAPPED_VIEW_LIST)malloc(sizeof(*pNewView));
     if (NULL != pNewView)
     {
         pNewView->lpAddress = addr;
@@ -2101,7 +2042,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
 #endif
     SIZE_T reserveSize = 0;
     bool forceOveralign = false;
-    int readWriteFlags = MAP_FILE|MAP_PRIVATE|MAP_FIXED;
+    int readWriteFlags = MAP_PRIVATE|MAP_FIXED;
     int readOnlyFlags = readWriteFlags;
 
     ENTRY("MAPMapPEFile (hFile=%p offset=%zx)\n", hFile, offset);
@@ -2308,7 +2249,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         // If PAL_MAP_READONLY_PE_HUGE_PAGE_AS_SHARED is set to 1. map the readonly sections as shared
         // which works well with the behavior of the hugetlbfs
         if (mapAsShared != NULL && (strcmp(mapAsShared, "1") == 0))
-            readOnlyFlags = MAP_FILE|MAP_SHARED|MAP_FIXED;
+            readOnlyFlags = MAP_SHARED|MAP_FIXED;
     }
 
     //we have now reserved memory (potentially we got rebased).  Walk the PE sections and map each part
@@ -2612,6 +2553,8 @@ BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress)
     }
 
     BOOL retval = TRUE;
+
+#ifndef TARGET_ANDROID
     CPalThread * pThread = InternalGetCurrentThread();
     InternalEnterCriticalSection(pThread, &mapping_critsec);
     PLIST_ENTRY pLink, pLinkNext = NULL;
@@ -2642,6 +2585,7 @@ BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress)
     }
 
     InternalLeaveCriticalSection(pThread, &mapping_critsec);
+#endif // TARGET_ANDROID
 
     TRACE_(LOADER)("MAPMarkSectionAsNotNeeded returning %d\n", retval);
     return retval;

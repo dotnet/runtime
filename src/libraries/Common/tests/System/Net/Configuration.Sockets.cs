@@ -29,7 +29,7 @@ namespace System.Net.Test.Common
                 {
                     yield return new[] { IPAddress.Loopback };
                 }
-                if (Socket.OSSupportsIPv6)
+                if (Socket.OSSupportsIPv6 && IsIPv6LoopbackAvailable)
                 {
                     yield return new[] { IPAddress.IPv6Loopback };
                 }
@@ -46,6 +46,23 @@ namespace System.Net.Test.Common
                     .Select(a => a.Address)
                     .Where(a => a.IsIPv6LinkLocal)
                     .FirstOrDefault();
+
+            private static readonly Lazy<bool> _isIPv6LoopbackAvailable = new Lazy<bool>(GetIsIPv6LoopbackAvailable);
+            public static bool IsIPv6LoopbackAvailable => _isIPv6LoopbackAvailable.Value;
+
+            private static bool GetIsIPv6LoopbackAvailable()
+            {
+                try
+                {
+                    using Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                    s.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+                    return true;
+                }
+                catch (SocketException)
+                {
+                    return false;
+                }
+            }
         }
     }
 }

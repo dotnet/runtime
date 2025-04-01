@@ -21,7 +21,12 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// IUnknown is {00000000-0000-0000-C000-000000000046}
         /// </summary>
-        internal static Guid IID_IUnknown = new Guid(0, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
+        internal static readonly Guid IID_IUnknown = new Guid(0, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
+
+        /// <summary>
+        /// IDispatch is {00020400-0000-0000-C000-000000000046}
+        /// </summary>
+        internal static readonly Guid IID_IDispatch = new Guid(0x00020400, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 #endif //FEATURE_COMINTEROP
 
         internal static int SizeOfHelper(RuntimeType t, [MarshalAs(UnmanagedType.Bool)] bool throwIfNotMarshalable)
@@ -37,19 +42,15 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(t);
 
-            FieldInfo? f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            if (f is null)
-            {
+            FieldInfo f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) ??
                 throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.FullName), nameof(fieldName));
-            }
 
-            if (!(f is RtFieldInfo rtField))
+            if (f is not RtFieldInfo rtField)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
             }
 
-            nint offset = OffsetOf(rtField.GetFieldHandle());
+            nint offset = OffsetOf(rtField.GetFieldDesc());
             GC.KeepAlive(rtField);
             return offset;
         }
@@ -213,7 +214,7 @@ namespace System.Runtime.InteropServices
 
         private static void PrelinkCore(MethodInfo m)
         {
-            if (!(m is RuntimeMethodInfo rmi))
+            if (m is not RuntimeMethodInfo rmi)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(m));
             }
@@ -266,7 +267,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                Buffer.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
+                SpanHelpers.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
             }
         }
 
@@ -291,7 +292,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                Buffer.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
+                SpanHelpers.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
             }
         }
 
@@ -334,6 +335,7 @@ namespace System.Runtime.InteropServices
             => (obj == null) || !RuntimeHelpers.GetMethodTable(obj)->ContainsGCPointers;
 
 #if TARGET_WINDOWS
+        [FeatureSwitchDefinition("System.Runtime.InteropServices.BuiltInComInterop.IsSupported")]
         internal static bool IsBuiltInComSupported { get; } = IsBuiltInComSupportedInternal();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsBuiltInComSupported")]
@@ -602,7 +604,7 @@ namespace System.Runtime.InteropServices
                 // Match .NET Framework behaviour.
                 throw new NullReferenceException();
             }
-            if (!(o is __ComObject co))
+            if (o is not __ComObject co)
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             }
@@ -626,7 +628,7 @@ namespace System.Runtime.InteropServices
             }
 
             ArgumentNullException.ThrowIfNull(o);
-            if (!(o is __ComObject co))
+            if (o is not __ComObject co)
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             }
@@ -648,7 +650,7 @@ namespace System.Runtime.InteropServices
 
             ArgumentNullException.ThrowIfNull(obj);
             ArgumentNullException.ThrowIfNull(key);
-            if (!(obj is __ComObject co))
+            if (obj is not __ComObject co)
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(obj));
             }
@@ -673,7 +675,7 @@ namespace System.Runtime.InteropServices
 
             ArgumentNullException.ThrowIfNull(obj);
             ArgumentNullException.ThrowIfNull(key);
-            if (!(obj is __ComObject co))
+            if (obj is not __ComObject co)
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(obj));
             }
@@ -929,7 +931,7 @@ namespace System.Runtime.InteropServices
                 ThrowExceptionForHR(MkParseDisplayName(bindctx, monikerName, out _, out IntPtr pmoniker));
                 try
                 {
-                    ThrowExceptionForHR(BindMoniker(pmoniker, 0, ref IID_IUnknown, out IntPtr ptr));
+                    ThrowExceptionForHR(BindMoniker(pmoniker, 0, in IID_IUnknown, out IntPtr ptr));
                     try
                     {
                         return GetObjectForIUnknown(ptr);
@@ -956,7 +958,7 @@ namespace System.Runtime.InteropServices
         private static partial int MkParseDisplayName(IntPtr pbc, [MarshalAs(UnmanagedType.LPWStr)] string szUserName, out uint pchEaten, out IntPtr ppmk);
 
         [LibraryImport(Interop.Libraries.Ole32)]
-        private static partial int BindMoniker(IntPtr pmk, uint grfOpt, ref Guid iidResult, out IntPtr ppvResult);
+        private static partial int BindMoniker(IntPtr pmk, uint grfOpt, in Guid iidResult, out IntPtr ppvResult);
 
         [SupportedOSPlatform("windows")]
         public static void ChangeWrapperHandleStrength(object otp, bool fIsWeak)

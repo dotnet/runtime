@@ -124,7 +124,7 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         lea  rdi, [rsp + DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK]
         call r10
 
-        EXPORT_POINTER_TO_ADDRESS PointerToReturnFrom\FunctionName
+ALTERNATE_ENTRY ReturnFrom\FunctionName
 
         // restore fp argument registers
         movdqa          xmm0, [rsp + DISTANCE_FROM_CHILDSP_TO_FP_REGS + 0x00]

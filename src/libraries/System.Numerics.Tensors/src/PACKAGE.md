@@ -46,7 +46,7 @@ The main types provided by this library are:
 
 ## Additional Documentation
 
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/system.numerics.tensors)
+* [API documentation](https://learn.microsoft.com/dotnet/api/system.numerics.tensors)
 
 ## Feedback & Contributing
 

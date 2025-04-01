@@ -156,9 +156,6 @@ void CodeGen::genCodeForBBlist()
 
     genMarkLabelsForCodegen();
 
-    assert(!compiler->fgFirstBBScratch ||
-           compiler->fgFirstBB == compiler->fgFirstBBScratch); // compiler->fgFirstBBScratch has to be first.
-
     /* Initialize structures used in the block list iteration */
     genInitialize();
 
@@ -292,8 +289,6 @@ void CodeGen::genCodeForBBlist()
 
         /* Start a new code output block */
 
-        genUpdateCurrentFunclet(block);
-
         genLogLabel(block);
 
         // Tell everyone which basic block we're working on
@@ -347,7 +342,7 @@ void CodeGen::genCodeForBBlist()
             // Mark a label and update the current set of live GC refs
 
             block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                             gcInfo.gcRegByrefSetCur DEBUG_ARG(block));
+                                                             gcInfo.gcRegByrefSetCur, block->Prev());
         }
 
         if (block->IsFirstColdBlock(compiler))
@@ -366,36 +361,44 @@ void CodeGen::genCodeForBBlist()
         siBeginBlock(block);
 
         // BBF_INTERNAL blocks don't correspond to any single IL instruction.
-        if (compiler->opts.compDbgInfo && block->HasFlag(BBF_INTERNAL) &&
-            !compiler->fgBBisScratch(block)) // If the block is the distinguished first scratch block, then no need to
-                                             // emit a NO_MAPPING entry, immediately after the prolog.
+        // Add a NoMapping entry unless this is right after the prolog where it
+        // is unnecessary.
+        if (compiler->opts.compDbgInfo && block->HasFlag(BBF_INTERNAL) && !block->IsFirst())
         {
             genIPmappingAdd(IPmappingDscKind::NoMapping, DebugInfo(), true);
         }
 
         bool firstMapping = true;
 
-#if defined(FEATURE_EH_FUNCLETS)
-        if (block->HasFlag(BBF_FUNCLET_BEG))
+        if (compiler->bbIsFuncletBeg(block))
         {
+            genUpdateCurrentFunclet(block);
             genReserveFuncletProlog(block);
         }
-#endif // FEATURE_EH_FUNCLETS
 
         // Clear compCurStmt and compCurLifeTree.
         compiler->compCurStmt     = nullptr;
         compiler->compCurLifeTree = nullptr;
 
-        // Emit poisoning into scratch BB that comes right after prolog.
+#ifdef SWIFT_SUPPORT
+        // Reassemble Swift struct parameters on the local stack frame in the
+        // init BB right after the prolog. There can be arbitrary amounts of
+        // codegen related to doing this, so it cannot be done in the prolog.
+        if (block->IsFirst() && compiler->lvaHasAnySwiftStackParamToReassemble())
+        {
+            genHomeSwiftStructStackParameters();
+        }
+#endif
+
+        // Emit poisoning into the init BB that comes right after prolog.
         // We cannot emit this code in the prolog as it might make the prolog too large.
-        if (compiler->compShouldPoisonFrame() && compiler->fgBBisScratch(block))
+        if (compiler->compShouldPoisonFrame() && block->IsFirst())
         {
             genPoisonFrame(newLiveRegSet);
         }
 
         // Traverse the block in linear order, generating code for each node as we
         // as we encounter it.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         // Set the use-order numbers for each node.
@@ -478,22 +481,33 @@ void CodeGen::genCodeForBBlist()
 
         regSet.rsSpillChk();
 
-        /* Make sure we didn't bungle pointer register tracking */
+        // Make sure we didn't bungle pointer register tracking
 
         regMaskTP ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
         regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
 
-        // If return is a GC-type, clear it.  Note that if a common
-        // epilog is generated (genReturnBB) it has a void return
-        // even though we might return a ref.  We can't use the compRetType
-        // as the determiner because something we are tracking as a byref
-        // might be used as a return value of a int function (which is legal)
-        GenTree* blockLastNode = block->lastNode();
-        if ((blockLastNode != nullptr) && (blockLastNode->gtOper == GT_RETURN) &&
-            (varTypeIsGC(compiler->info.compRetType) ||
-             (blockLastNode->AsOp()->gtOp1 != nullptr && varTypeIsGC(blockLastNode->AsOp()->gtOp1->TypeGet()))))
+        // If this is a return block then we expect some live GC regs. Clear those.
+        if (compiler->compMethodReturnsRetBufAddr())
         {
             nonVarPtrRegs &= ~RBM_INTRET;
+        }
+        else
+        {
+            const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+            const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                regNumber reg = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
+                nonVarPtrRegs &= ~genRegMask(reg);
+            }
+        }
+
+        // For a tailcall arbitrary argument registers may be live into the
+        // prolog. Skip validating those.
+        if (block->HasFlag(BBF_HAS_JMP))
+        {
+            nonVarPtrRegs &= ~fullIntArgRegMask(CorInfoCallConvExtension::Managed);
         }
 
         if (nonVarPtrRegs)
@@ -622,7 +636,7 @@ void CodeGen::genCodeForBBlist()
                     case BBJ_THROW:
                     case BBJ_CALLFINALLY:
                     case BBJ_EHCATCHRET:
-                    // We're going to generate more code below anyway, so no need for the NOP.
+                        // We're going to generate more code below anyway, so no need for the NOP.
 
                     case BBJ_RETURN:
                     case BBJ_EHFINALLYRET:
@@ -633,7 +647,7 @@ void CodeGen::genCodeForBBlist()
 
                     case BBJ_COND:
                     case BBJ_SWITCH:
-                    // These can't have a call as the last instruction!
+                        // These can't have a call as the last instruction!
 
                     default:
                         noway_assert(!"Unexpected bbKind");
@@ -677,6 +691,7 @@ void CodeGen::genCodeForBBlist()
 
         /* Do we need to generate a jump or return? */
 
+        bool removedJmp = false;
         switch (block->GetKind())
         {
             case BBJ_RETURN:
@@ -694,24 +709,22 @@ void CodeGen::genCodeForBBlist()
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if (block->IsLast() || block->Next()->HasFlag(BBF_FUNCLET_BEG) ||
-                    !BasicBlock::sameEHRegion(block, block->Next()) ||
+                if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()) ||
                     (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
-                    block->IsLastHotBlock(compiler))
+                    compiler->bbIsFuncletBeg(block->Next()) || block->IsLastHotBlock(compiler))
                 {
                     instGen(INS_BREAKPOINT); // This should never get executed
                 }
                 // Do likewise for blocks that end in DOES_NOT_RETURN calls
                 // that were not caught by the above rules. This ensures that
-                // gc register liveness doesn't change across call instructions
-                // in fully-interruptible mode.
+                // gc register liveness doesn't change to some random state after call instructions
                 else
                 {
                     GenTree* call = block->lastNode();
 
                     if ((call != nullptr) && (call->gtOper == GT_CALL))
                     {
-                        if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0)
+                        if (call->AsCall()->IsNoReturn())
                         {
                             instGen(INS_BREAKPOINT); // This should never get executed
                         }
@@ -724,37 +737,40 @@ void CodeGen::genCodeForBBlist()
                 block = genCallFinally(block);
                 break;
 
-#if defined(FEATURE_EH_FUNCLETS)
-
             case BBJ_EHCATCHRET:
+                assert(compiler->UsesFunclets());
                 genEHCatchRet(block);
                 FALLTHROUGH;
 
             case BBJ_EHFINALLYRET:
             case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
-                genReserveFuncletEpilog(block);
+                if (compiler->UsesFunclets())
+                {
+                    genReserveFuncletEpilog(block);
+                }
+#if defined(FEATURE_EH_WINDOWS_X86)
+                else
+                {
+                    genEHFinallyOrFilterRet(block);
+                }
+#endif // FEATURE_EH_WINDOWS_X86
                 break;
-
-#else // !FEATURE_EH_FUNCLETS
-
-            case BBJ_EHCATCHRET:
-                noway_assert(!"Unexpected BBJ_EHCATCHRET"); // not used on x86
-                break;
-
-            case BBJ_EHFINALLYRET:
-            case BBJ_EHFAULTRET:
-            case BBJ_EHFILTERRET:
-                genEHFinallyOrFilterRet(block);
-                break;
-
-#endif // !FEATURE_EH_FUNCLETS
 
             case BBJ_SWITCH:
                 break;
 
             case BBJ_ALWAYS:
             {
+#ifdef DEBUG
+                GenTree* call = block->lastNode();
+                if ((call != nullptr) && (call->gtOper == GT_CALL))
+                {
+                    // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
+                    assert(!call->AsCall()->IsNoReturn());
+                }
+#endif // DEBUG
+
                 // If this block jumps to the next one, we might be able to skip emitting the jump
                 if (block->CanRemoveJumpToNext(compiler))
                 {
@@ -765,6 +781,7 @@ void CodeGen::genCodeForBBlist()
                     }
 #endif // TARGET_AMD64
 
+                    removedJmp = true;
                     break;
                 }
 #ifdef TARGET_XARCH
@@ -810,11 +827,9 @@ void CodeGen::genCodeForBBlist()
 
             assert(ShouldAlignLoops());
             assert(!block->isBBCallFinallyPairTail());
-#if FEATURE_EH_CALLFINALLY_THUNKS
             assert(!block->KindIs(BBJ_CALLFINALLY));
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS)));
+            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS) && !removedJmp));
         }
 
         if (!block->IsLast() && block->Next()->isLoopAlign())
@@ -838,7 +853,7 @@ void CodeGen::genCodeForBBlist()
 #endif // DEBUG
     }  //------------------ END-FOR each block of the method -------------------
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
     // If this is a synchronized method on x86, and we generated all the code without
     // generating the "exit monitor" call, then we must have deleted the single return block
     // with that call because it was dead code. We still need to report the monitor range
@@ -848,14 +863,15 @@ void CodeGen::genCodeForBBlist()
     // Do this before cleaning the GC refs below; we don't want to create an IG that clears
     // the `this` pointer for lvaKeepAliveAndReportThis.
 
-    if ((compiler->info.compFlags & CORINFO_FLG_SYNCH) && (compiler->syncEndEmitCookie == nullptr))
+    if (!compiler->UsesFunclets() && (compiler->info.compFlags & CORINFO_FLG_SYNCH) &&
+        (compiler->syncEndEmitCookie == nullptr))
     {
         JITDUMP("Synchronized method with missing exit monitor call; adding final label\n");
         compiler->syncEndEmitCookie =
             GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
         noway_assert(compiler->syncEndEmitCookie != nullptr);
     }
-#endif // !FEATURE_EH_FUNCLETS
+#endif
 
     // There could be variables alive at this point. For example see lvaKeepAliveAndReportThis.
     // This call is for cleaning the GC refs
@@ -924,9 +940,20 @@ void CodeGen::genSpillVar(GenTree* tree)
         // but we will kill the var in the reg (below).
         if (!varDsc->IsAlwaysAliveInMemory())
         {
-            instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
             assert(varDsc->GetRegNum() == tree->GetRegNum());
-            inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
+#if defined(FEATURE_SIMD)
+            if (lclType == TYP_SIMD12)
+            {
+                // Store SIMD12 to stack as 12 bytes
+                GetEmitter()->emitStoreSimd12ToLclOffset(varNum, tree->AsLclVarCommon()->GetLclOffs(),
+                                                         tree->GetRegNum(), nullptr);
+            }
+            else
+#endif
+            {
+                instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
+                inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
+            }
         }
 
         // We should only have both GTF_SPILL (i.e. the flag causing this method to be called) and
@@ -1008,45 +1035,6 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree)
     // This should not be called for multireg lclVars.
     assert((tree->OperIsScalarLocal() && !tree->IsMultiRegLclVar()) || (tree->gtOper == GT_COPY));
     varDsc->SetRegNum(tree->GetRegNum());
-}
-
-//------------------------------------------------------------------------
-// sameRegAsDst: Return the child that has the same reg as the dst (if any)
-//
-// Arguments:
-//    tree  - the node of interest
-//    other - an out parameter to return the other child
-//
-// Notes:
-//    If 'tree' has a child with the same assigned register as its target reg,
-//    that child will be returned, and 'other' will contain the non-matching child.
-//    Otherwise, both other and the return value will be nullptr.
-//
-GenTree* sameRegAsDst(GenTree* tree, GenTree*& other /*out*/)
-{
-    if (tree->GetRegNum() == REG_NA)
-    {
-        other = nullptr;
-        return nullptr;
-    }
-
-    GenTree* op1 = tree->AsOp()->gtOp1;
-    GenTree* op2 = tree->AsOp()->gtOp2;
-    if (op1->GetRegNum() == tree->GetRegNum())
-    {
-        other = op2;
-        return op1;
-    }
-    if (op2->GetRegNum() == tree->GetRegNum())
-    {
-        other = op1;
-        return op2;
-    }
-    else
-    {
-        other = nullptr;
-        return nullptr;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -1260,13 +1248,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             {
                 unspillType = lcl->TypeGet();
             }
-
-#if defined(TARGET_LOONGARCH64)
-            if (varTypeIsFloating(unspillType) && emitter::isGeneralRegister(tree->GetRegNum()))
-            {
-                unspillType = unspillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
-            }
-#endif
 
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
             bool isLastUse = lcl->IsLastUse(0);
@@ -1680,7 +1661,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             // Update the life of the lcl var.
             genUpdateLife(tree);
         }
-#ifdef TARGET_XARCH
 #ifdef FEATURE_HW_INTRINSICS
         else if (tree->OperIs(GT_HWINTRINSIC))
         {
@@ -1688,8 +1668,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeMultiOpOperands(hwintrinsic);
         }
 #endif // FEATURE_HW_INTRINSICS
-#endif // TARGET_XARCH
-        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ, GT_BSWAP, GT_BSWAP16))
+        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ, GT_ROR, GT_BSWAP, GT_BSWAP16))
         {
             genConsumeRegs(tree->gtGetOp1());
         }
@@ -1759,7 +1738,6 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
-#if FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
@@ -1807,7 +1785,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 
     // If the op1 is already in the dstReg - nothing to do.
     // Otherwise load the op1 (the address) into the dstReg to copy the struct on the stack by value.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
     assert(dstReg != REG_SPBASE);
@@ -1843,7 +1820,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
         inst_RV_IV(INS_mov, sizeReg, size, EA_PTRSIZE);
     }
 }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #if FEATURE_ARG_SPLIT
 //------------------------------------------------------------------------
@@ -1896,8 +1872,8 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         var_types type            = use.GetType();
         unsigned  thisFieldOffset = argOffset + use.GetOffset();
 
-// Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
-// argument area.
+        // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
+        // argument area.
 
 #if defined(FEATURE_SIMD)
         if (type == TYP_SIMD12)
@@ -1914,11 +1890,11 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // We can't write beyond the arg area unless this is a tail call, in which case we use
 // the first stack arg as the base of the incoming arg area.
 #ifdef DEBUG
-        unsigned areaSize = compiler->lvaLclSize(outArgVarNum);
+        unsigned areaSize = compiler->lvaLclStackHomeSize(outArgVarNum);
 #if FEATURE_FASTTAILCALL
         if (putArgStk->gtCall->IsFastTailCall())
         {
-            areaSize = compiler->info.compArgStackSize;
+            areaSize = compiler->lvaParameterStackSize;
         }
 #endif
 
@@ -1940,18 +1916,9 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
 {
     if (sizeReg != REG_NA)
     {
-        unsigned blockSize = blkNode->Size();
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK))
-        {
-            assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
-            // This can go via helper which takes the size as a native uint.
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blockSize);
-        }
-        else
-        {
-            GenTree* sizeNode = blkNode->AsStoreDynBlk()->gtDynamicSize;
-            inst_Mov(sizeNode->TypeGet(), sizeReg, sizeNode->GetRegNum(), /* canSkip */ true);
-        }
+        assert((internalRegisters.GetAll(blkNode) & genRegMask(sizeReg)) != 0);
+        // This can go via helper which takes the size as a native uint.
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blkNode->Size());
     }
 }
 
@@ -2057,12 +2024,6 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
     genConsumeReg(dstAddr);
     // The source may be a local or in a register; 'genConsumeBlockSrc' will check that.
     genConsumeBlockSrc(blkNode);
-    // 'genSetBlockSize' (called below) will ensure that a register has been reserved as needed
-    // in the case where the size is a constant (i.e. it is not GT_STORE_DYN_BLK).
-    if (blkNode->OperGet() == GT_STORE_DYN_BLK)
-    {
-        genConsumeReg(blkNode->AsStoreDynBlk()->gtDynamicSize);
-    }
 
     // Next, perform any necessary moves.
     genCopyRegIfNeeded(dstAddr, dstReg);
@@ -2297,6 +2258,7 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
 //     pass in 'addr' for a relative call or 'base' for a indirect register call
 //     methHnd - optional, only used for pretty printing
 //     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
+//     noSafePoint - force not making this call a safe point in partially interruptible code
 //
 // clang-format off
 void CodeGen::genEmitCall(int                   callType,
@@ -2308,7 +2270,8 @@ void CodeGen::genEmitCall(int                   callType,
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                           const DebugInfo& di,
                           regNumber             base,
-                          bool                  isJump)
+                          bool                  isJump,
+                          bool                  noSafePoint)
 {
 #if !defined(TARGET_X86)
     int argSize = 0;
@@ -2328,7 +2291,7 @@ void CodeGen::genEmitCall(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               di, base, REG_NA, 0, 0, isJump);
+                               di, base, REG_NA, 0, 0, isJump, noSafePoint);
 }
 // clang-format on
 
@@ -2518,8 +2481,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         }
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
-        // the upper 32bits be sign-extended to 64 bits.
+        // TODO-LOONGARCH64:
+        // TODO-RISCV64:
+        // LoongArch64 and RiscV64 ABIs require 32-bit values to be sign-extended to 64-bits.
+        // We apply the sign-extension unconditionally here to avoid corner case bugs, even
+        // though it may not be strictly necessary in all cases.
         m_extendKind = SIGN_EXTEND_INT;
 #else
         m_extendKind = COPY;
@@ -2564,7 +2530,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
                 break;
 
 #ifdef TARGET_64BIT
-            case ZERO_EXTEND_INT: // ubyte/ushort/int -> long.
+            case ZERO_EXTEND_INT: // ubyte/ushort/uint -> long.
                 assert(varTypeIsUnsigned(srcLoadType) || (srcLoadType == TYP_INT));
                 m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_ZERO_EXTEND_SMALL_INT : LOAD_ZERO_EXTEND_INT;
                 m_extendSrcSize = genTypeSize(srcLoadType);
@@ -2643,9 +2609,10 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     inst_JCC(jcc->gtCondition, compiler->compCurBB->GetTrueTarget());
 
     // If we cannot fall into the false target, emit a jump to it
-    if (!compiler->compCurBB->CanRemoveJumpToFalseTarget(compiler))
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
     {
-        inst_JMP(EJ_jmp, compiler->compCurBB->GetFalseTarget());
+        inst_JMP(EJ_jmp, falseTarget);
     }
 }
 
@@ -2715,7 +2682,7 @@ void CodeGen::genEmitterUnitTests()
         return;
     }
 
-    const WCHAR* unitTestSection = JitConfig.JitEmitUnitTestsSections();
+    const char* unitTestSection = JitConfig.JitEmitUnitTestsSections();
 
     if (unitTestSection == nullptr)
     {
@@ -2732,26 +2699,42 @@ void CodeGen::genEmitterUnitTests()
     // Add NOPs at the start and end for easier script parsing.
     instGen(INS_nop);
 
-    bool unitTestSectionAll = (u16_strstr(unitTestSection, W("all")) != nullptr);
+    bool unitTestSectionAll = (strstr(unitTestSection, "all") != nullptr);
 
 #if defined(TARGET_AMD64)
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sse2")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "sse2") != nullptr))
     {
         genAmd64EmitterUnitTestsSse2();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "apx") != nullptr))
+    {
+        genAmd64EmitterUnitTestsApx();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "avx10v2") != nullptr))
+    {
+        genAmd64EmitterUnitTestsAvx10v2();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "ccmp") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCCMP();
+    }
 
 #elif defined(TARGET_ARM64)
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("general")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "general") != nullptr))
     {
         genArm64EmitterUnitTestsGeneral();
     }
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("advsimd")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "advsimd") != nullptr))
     {
         genArm64EmitterUnitTestsAdvSimd();
     }
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sve")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "sve") != nullptr))
     {
         genArm64EmitterUnitTestsSve();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "pac") != nullptr))
+    {
+        genArm64EmitterUnitTestsPac();
     }
 #endif
 

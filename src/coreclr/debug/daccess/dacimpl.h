@@ -131,16 +131,13 @@ struct DAC_MD_IMPORT
     DAC_MD_IMPORT* next;       // list link field
     TADDR peFile;              // a TADDR for a PEAssembly* or a ReflectionModule*
     IMDInternalImport* impl;   // Associated metadata interface
-    bool isAlternate;          // for NGEN images set to true if the metadata corresponds to the IL image
 
     DAC_MD_IMPORT(TADDR peFile_,
         IMDInternalImport* impl_,
-        bool isAlt_ = false,
         DAC_MD_IMPORT* next_ = NULL)
         : next(next_)
         , peFile(peFile_)
         , impl(impl_)
-        , isAlternate(isAlt_)
     {
         SUPPORTS_DAC_HOST_ONLY;
     }
@@ -179,10 +176,10 @@ public:
     }
 
     FORCEINLINE
-    DAC_MD_IMPORT* Add(TADDR peFile, IMDInternalImport* impl, bool isAlt)
+    DAC_MD_IMPORT* Add(TADDR peFile, IMDInternalImport* impl)
     {
         SUPPORTS_DAC;
-        DAC_MD_IMPORT* importList = new (nothrow) DAC_MD_IMPORT(peFile, impl, isAlt, m_head);
+        DAC_MD_IMPORT* importList = new (nothrow) DAC_MD_IMPORT(peFile, impl, m_head);
         if (!importList)
         {
             return NULL;
@@ -528,14 +525,12 @@ struct ProcessModIter
                 kIncludeLoaded | kIncludeExecution));
         }
 
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        if (!m_assemIter.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        if (!m_assemIter.Next(pAssembly.This()))
         {
             return NULL;
         }
 
-        // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-        CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
         return pAssembly;
     }
 
@@ -794,6 +789,7 @@ class DacStreamManager;
 
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
+#include "cdac.h"
 
 //----------------------------------------------------------------------------
 //
@@ -816,7 +812,10 @@ class ClrDataAccess
       public ISOSDacInterface10,
       public ISOSDacInterface11,
       public ISOSDacInterface12,
-      public ISOSDacInterface13
+      public ISOSDacInterface13,
+      public ISOSDacInterface14,
+      public ISOSDacInterface15,
+      public ISOSDacInterface16
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1058,7 +1057,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *data);
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyList(CLRDATA_ADDRESS appDomain, int count, CLRDATA_ADDRESS values[], int *fetched);
-    virtual HRESULT STDMETHODCALLTYPE GetAssemblyData(CLRDATA_ADDRESS baseDomainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *data);
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyData(CLRDATA_ADDRESS domainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *data);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetThreadData(CLRDATA_ADDRESS thread, struct DacpThreadData *data);
     virtual HRESULT STDMETHODCALLTYPE GetThreadFromThinlockID(UINT thinLockId, CLRDATA_ADDRESS *pThread);
@@ -1086,8 +1085,8 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetModuleData(CLRDATA_ADDRESS moduleAddr, struct DacpModuleData *data);
     virtual HRESULT STDMETHODCALLTYPE TraverseModuleMap(ModuleMapType mmt, CLRDATA_ADDRESS moduleAddr, MODULEMAPTRAVERSE pCallback, LPVOID token);
     virtual HRESULT STDMETHODCALLTYPE GetMethodDescFromToken(CLRDATA_ADDRESS moduleAddr, mdToken token, CLRDATA_ADDRESS *methodDesc);
-    virtual HRESULT STDMETHODCALLTYPE GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base);
-    virtual HRESULT STDMETHODCALLTYPE GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base);
+    virtual HRESULT STDMETHODCALLTYPE GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyModuleList(CLRDATA_ADDRESS assembly, unsigned int count, CLRDATA_ADDRESS modules[], unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetGCHeapData(struct DacpGcHeapData *data);
     virtual HRESULT STDMETHODCALLTYPE GetGCHeapList(unsigned int count, CLRDATA_ADDRESS heaps[], unsigned int *pNeeded);
@@ -1207,7 +1206,7 @@ public:
         CLRDATA_ADDRESS *allocLimit);
 
     // ISOSDacInterface13
-    virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);        
+    virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);
     virtual HRESULT STDMETHODCALLTYPE GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, CLRDATA_ADDRESS *pLoaderAllocator);
     virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeapNames(int count, const char **ppNames, int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocator, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded);
@@ -1215,6 +1214,17 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetGCBookkeepingMemoryRegions(ISOSMemoryEnum **ppEnum);
     virtual HRESULT STDMETHODCALLTYPE GetGCFreeRegions(ISOSMemoryEnum **ppEnum);
     virtual HRESULT STDMETHODCALLTYPE LockedFlush();
+
+    // ISOSDacInterface14
+    virtual HRESULT STDMETHODCALLTYPE GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
+    virtual HRESULT STDMETHODCALLTYPE GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS thread, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
+    virtual HRESULT STDMETHODCALLTYPE GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
+
+    // ISOSDacInterface15
+    virtual HRESULT STDMETHODCALLTYPE GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator);
+
+    // ISOSDacInterface16
+    virtual HRESULT STDMETHODCALLTYPE GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode);
 
     //
     // ClrDataAccess.
@@ -1347,8 +1357,7 @@ public:
     JITNotification* GetHostJitNotificationTable();
     GcNotification*  GetHostGcNotificationTable();
 
-    void* GetMetaDataFromHost(PEAssembly* pPEAssembly,
-                              bool* isAlternate);
+    void* GetMetaDataFromHost(PEAssembly* pPEAssembly);
 
     virtual
     interface IMDInternalImport* GetMDImport(const PEAssembly* pPEAssembly,
@@ -1407,6 +1416,10 @@ public:
     DacInstanceManager m_instances;
     ULONG32 m_instanceAge;
     bool m_debugMode;
+
+    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdacreader
+    // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
+    CDAC m_cdac;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
@@ -1499,22 +1512,14 @@ protected:
 #endif
 
 public:
-    // APIs for picking up the info needed for a debugger to look up an ngen image or IL image
-    // from it's search path.
+    // API for picking up the info needed for a debugger to look up an image from its search path.
     static bool GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                               DWORD &dwImageTimestamp,
                                               DWORD &dwImageSize,
                                               DWORD &dwDataSize,
                                               DWORD &dwRvaHint,
-                                              bool  &isNGEN,
                                               _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                               DWORD cchFilePath);
-
-    static bool GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
-                                             DWORD &dwTimeStamp,
-                                             DWORD &dwSize,
-                                             _Out_writes_(cchPath) LPWSTR wszPath,
-                                             const DWORD cchPath);
 };
 
 extern ClrDataAccess* g_dacImpl;
@@ -1958,7 +1963,7 @@ public:
 
     virtual ~DacMemoryEnumerator() {}
     virtual HRESULT Init() = 0;
-    
+
     HRESULT STDMETHODCALLTYPE Skip(unsigned int count);
     HRESULT STDMETHODCALLTYPE Reset();
     HRESULT STDMETHODCALLTYPE GetCount(unsigned int *pCount);
@@ -1968,6 +1973,29 @@ public:
 
 protected:
     DacReferenceList<SOSMemoryRegion> mRegions;
+
+private:
+    unsigned int mIteratorIndex;
+};
+
+class DacMethodTableSlotEnumerator : public DefaultCOMImpl<ISOSMethodEnum, IID_ISOSMethodEnum>
+{
+public:
+    DacMethodTableSlotEnumerator() : mIteratorIndex(0)
+    {
+    }
+
+    virtual ~DacMethodTableSlotEnumerator() {}
+
+    HRESULT Init(PTR_MethodTable mTable);
+
+    HRESULT STDMETHODCALLTYPE Skip(unsigned int count);
+    HRESULT STDMETHODCALLTYPE Reset();
+    HRESULT STDMETHODCALLTYPE GetCount(unsigned int *pCount);
+    HRESULT STDMETHODCALLTYPE Next(unsigned int count, SOSMethodData methods[], unsigned int *pFetched);
+
+protected:
+    DacReferenceList<SOSMethodData> mMethods;
 
 private:
     unsigned int mIteratorIndex;
@@ -2043,7 +2071,7 @@ public:
 
 private:
     static StackWalkAction Callback(CrawlFrame *pCF, VOID *pData);
-    static void GCEnumCallback(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
+    static void GCEnumCallbackFunc(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
     static void GCReportCallback(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
 
     CLRDATA_ADDRESS ReadPointer(TADDR addr);
@@ -2117,7 +2145,7 @@ private:
     void WalkHandles();
     static inline bool IsAlwaysStrongReference(unsigned int type)
     {
-        return type == HNDTYPE_STRONG || type == HNDTYPE_PINNED || type == HNDTYPE_SIZEDREF;
+        return type == HNDTYPE_STRONG || type == HNDTYPE_PINNED;
     }
 
 private:
@@ -3847,7 +3875,7 @@ HRESULT GetServerHeaps(CLRDATA_ADDRESS pGCHeaps[], ICorDebugDataTarget* pTarget)
 
 #pragma warning( disable: 4035 )        /* Don't complain about lack of return value */
 
-__inline unsigned __int64 GetCycleCount ()
+__inline uint64_t GetCycleCount ()
 {
 __asm   _emit   0x0F
 __asm   _emit   0x31    /* rdtsc */
@@ -3871,7 +3899,7 @@ __asm   pop     EDX
 
 #define CCNT_OVERHEAD    0 // Don't know
 
-__inline unsigned __int64 GetCycleCount()
+__inline uint64_t GetCycleCount()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -3882,16 +3910,16 @@ __inline unsigned __int64 GetCycleCount()
 
 #endif  // #if defined(TARGET_X86)
 
-extern unsigned __int64 g_nTotalTime;
-extern unsigned __int64 g_nStackTotalTime;
-extern unsigned __int64 g_nReadVirtualTotalTime;
-extern unsigned __int64 g_nFindTotalTime;
-extern unsigned __int64 g_nFindHashTotalTime;
-extern unsigned __int64 g_nFindHits;
-extern unsigned __int64 g_nFindCalls;
-extern unsigned __int64 g_nFindFails;
-extern unsigned __int64 g_nStackWalk;
-extern unsigned __int64 g_nFindStackTotalTime;
+extern uint64_t g_nTotalTime;
+extern uint64_t g_nStackTotalTime;
+extern uint64_t g_nReadVirtualTotalTime;
+extern uint64_t g_nFindTotalTime;
+extern uint64_t g_nFindHashTotalTime;
+extern uint64_t g_nFindHits;
+extern uint64_t g_nFindCalls;
+extern uint64_t g_nFindFails;
+extern uint64_t g_nStackWalk;
+extern uint64_t g_nFindStackTotalTime;
 
 #endif // #if defined(DAC_MEASURE_PERF)
 

@@ -4,53 +4,42 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace System.Net.Http.Headers
 {
     internal abstract class HttpHeaderParser
     {
-        internal const string DefaultSeparator = ", ";
+        public const string DefaultSeparator = ", ";
+        public static readonly byte[] DefaultSeparatorBytes = ", "u8.ToArray();
 
-        private readonly bool _supportsMultipleValues;
-        private readonly string? _separator;
+        public bool SupportsMultipleValues { get; }
 
-        public bool SupportsMultipleValues
-        {
-            get { return _supportsMultipleValues; }
-        }
+        public string Separator { get; }
 
-        public string? Separator
-        {
-            get
-            {
-                Debug.Assert(_supportsMultipleValues);
-                return _separator;
-            }
-        }
+        public byte[] SeparatorBytes { get; }
 
         // If ValueType implements Equals() as required, there is no need to provide a comparer. A comparer is needed
         // e.g. if we want to compare strings using case-insensitive comparison.
-        public virtual IEqualityComparer? Comparer
-        {
-            get { return null; }
-        }
+        public virtual IEqualityComparer? Comparer => null;
 
         protected HttpHeaderParser(bool supportsMultipleValues)
         {
-            _supportsMultipleValues = supportsMultipleValues;
+            SupportsMultipleValues = supportsMultipleValues;
+            Separator = DefaultSeparator;
+            SeparatorBytes = DefaultSeparatorBytes;
+        }
+
+        protected HttpHeaderParser(bool supportsMultipleValues, string separator) : this(supportsMultipleValues)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(separator));
+            Debug.Assert(Ascii.IsValid(separator));
 
             if (supportsMultipleValues)
             {
-                _separator = DefaultSeparator;
+                Separator = separator;
+                SeparatorBytes = Encoding.ASCII.GetBytes(separator);
             }
-        }
-
-        protected HttpHeaderParser(bool supportsMultipleValues, string separator)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(separator));
-
-            _supportsMultipleValues = supportsMultipleValues;
-            _separator = separator;
         }
 
         // If a parser supports multiple values, a call to ParseValue/TryParseValue should return a value for 'index'

@@ -14,8 +14,16 @@ namespace System.Text.Json.Nodes
     /// declared as an <see cref="object"/> should be deserialized as a <see cref="JsonNode"/>.
     public abstract partial class JsonNode
     {
+        // Default options instance used when calling built-in JsonNode converters.
+        private protected static readonly JsonSerializerOptions s_defaultOptions = new();
+
         private JsonNode? _parent;
         private JsonNodeOptions? _options;
+
+        /// <summary>
+        /// The underlying JsonElement if the node is backed by a JsonElement.
+        /// </summary>
+        internal virtual JsonElement? UnderlyingElement => null;
 
         /// <summary>
         ///   Options to control the behavior.
@@ -197,19 +205,22 @@ namespace System.Text.Json.Nodes
         ///   <paramref name="index"/> is less than 0 or <paramref name="index"/> is greater than the number of properties.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   The current <see cref="JsonNode"/> is not a <see cref="JsonArray"/>.
+        ///   The current <see cref="JsonNode"/> is not a <see cref="JsonArray"/> or <see cref="JsonObject"/>.
         /// </exception>
         public JsonNode? this[int index]
         {
-            get
-            {
-                return AsArray().GetItem(index);
-            }
-            set
-            {
-                AsArray().SetItem(index, value);
-            }
+            get => GetItem(index);
+            set => SetItem(index, value);
         }
+
+        private protected virtual JsonNode? GetItem(int index)
+        {
+            ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonArray), nameof(JsonObject));
+            return null;
+        }
+
+        private protected virtual void SetItem(int index, JsonNode? node) =>
+            ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonArray), nameof(JsonObject));
 
         /// <summary>
         ///   Gets or sets the element with the specified property name.
@@ -247,7 +258,7 @@ namespace System.Text.Json.Nodes
         /// </summary>
         public JsonValueKind GetValueKind() => GetValueKindCore();
 
-        internal abstract JsonValueKind GetValueKindCore();
+        private protected abstract JsonValueKind GetValueKindCore();
 
         /// <summary>
         /// Returns property name of the current node from the parent object.
@@ -297,11 +308,15 @@ namespace System.Text.Json.Nodes
             {
                 return node2 is null;
             }
+            else if (node2 is null)
+            {
+                return false;
+            }
 
             return node1.DeepEqualsCore(node2);
         }
 
-        internal abstract bool DeepEqualsCore(JsonNode? node);
+        internal abstract bool DeepEqualsCore(JsonNode node);
 
         /// <summary>
         /// Replaces this node with a new value.
@@ -372,7 +387,7 @@ namespace System.Text.Json.Nodes
             }
 
             var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
-            return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
+            return JsonValue.CreateFromTypeInfo(value, jsonTypeInfo, options);
         }
     }
 }

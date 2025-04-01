@@ -1,31 +1,37 @@
-import MonoWasmThreads from "consts:monoWasmThreads";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import { ENVIRONMENT_IS_PTHREAD } from "./globals";
 import cwraps from "./cwraps";
 
-let locked = false;
+export let gc_locked = false;
 
-export function mono_wasm_gc_lock(): void {
-    if (locked) {
+// TODO https://github.com/dotnet/runtime/issues/100411
+// after Blazor stops using mono_wasm_gc_lock, mono_wasm_gc_unlock
+
+export function mono_wasm_gc_lock (): void {
+    if (gc_locked) {
         throw new Error("GC is already locked");
     }
-    if (MonoWasmThreads) {
+    if (WasmEnableThreads) {
         if (ENVIRONMENT_IS_PTHREAD) {
             throw new Error("GC lock only supported in main thread");
         }
         cwraps.mono_wasm_gc_lock();
     }
-    locked = true;
+    gc_locked = true;
 }
 
-export function mono_wasm_gc_unlock(): void {
-    if (!locked) {
+export function mono_wasm_gc_unlock (): void {
+    if (!gc_locked) {
         throw new Error("GC is not locked");
     }
-    if (MonoWasmThreads) {
+    if (WasmEnableThreads) {
         if (ENVIRONMENT_IS_PTHREAD) {
             throw new Error("GC lock only supported in main thread");
         }
         cwraps.mono_wasm_gc_unlock();
     }
-    locked = false;
+    gc_locked = false;
 }

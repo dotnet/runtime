@@ -96,6 +96,13 @@ namespace Microsoft.Interop.Analyzers
 
         protected abstract ImmutableDictionary<string, Option> ParseOptionsFromDiagnostic(Diagnostic diagnostic);
 
+        protected abstract ImmutableDictionary<string, Option> CombineOptions(ImmutableDictionary<string, Option> fixAllOptions, ImmutableDictionary<string, Option> diagnosticOptions);
+
+        private ImmutableDictionary<string, Option> GetOptionsForIndividualFix(ImmutableDictionary<string, Option> fixAllOptions, Diagnostic diagnostic)
+        {
+            return CombineOptions(fixAllOptions, ParseOptionsFromDiagnostic(diagnostic));
+        }
+
         private static async Task<Solution> ApplyActionAndEnableUnsafe(Solution solution, DocumentId documentId, Func<DocumentEditor, CancellationToken, Task> documentBasedFix, CancellationToken ct)
         {
             var editor = new SolutionEditor(solution);
@@ -194,7 +201,7 @@ namespace Microsoft.Interop.Analyzers
 
                             SyntaxNode node = root.FindNode(diagnostic.Location.SourceSpan);
 
-                            var documentBasedFix = codeFixProvider.CreateFixForSelectedOptions(node, options);
+                            var documentBasedFix = codeFixProvider.CreateFixForSelectedOptions(node, codeFixProvider.GetOptionsForIndividualFix(options, diagnostic));
 
                             await documentBasedFix(editor, ct).ConfigureAwait(false);
 

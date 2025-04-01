@@ -165,6 +165,7 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(arr);
 
+            // Unsafe.AsPointer is safe since array must be pinned
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
         }
@@ -173,10 +174,9 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(arr);
 
+            // Unsafe.AsPointer is safe since array must be pinned
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
-#pragma warning disable 8500 // sizeof of managed types
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)sizeof(T));
-#pragma warning restore 8500
         }
 
         public static IntPtr OffsetOf<T>(string fieldName) => OffsetOf(typeof(T), fieldName);
@@ -548,7 +548,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Creates a new instance of "structuretype" and marshals data from a
+        /// Creates a new instance of <paramref name="structureType"/> and marshals data from a
         /// native memory block to it.
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
@@ -816,7 +816,6 @@ namespace System.Runtime.InteropServices
                         };
                     }
                 case HResults.FUSION_E_INVALID_NAME:
-                case HResults.FUSION_E_PRIVATE_ASM_DISALLOWED:
                 case HResults.FUSION_E_REF_DEF_MISMATCH:
                 case HResults.ERROR_TOO_MANY_OPEN_FILES:
                 case HResults.ERROR_SHARING_VIOLATION:
@@ -1064,6 +1063,7 @@ namespace System.Runtime.InteropServices
         /// a PROGID in the metadata then it is returned otherwise a stable PROGID
         /// is generated based on the fully qualified name of the type.
         /// </summary>
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         public static string? GenerateProgIdForType(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -1083,7 +1083,7 @@ namespace System.Runtime.InteropServices
                 return progIdAttribute.Value ?? string.Empty;
             }
 
-            // If there is no prog ID attribute then use the full name of the type as the prog id.
+            // If there is no prog ID attribute then use the full name of the type as the prog ID.
             return type.FullName;
         }
 
@@ -1172,7 +1172,7 @@ namespace System.Runtime.InteropServices
             FreeBSTR(s);
         }
 
-        public static unsafe void ZeroFreeCoTaskMemAnsi(IntPtr s)
+        public static void ZeroFreeCoTaskMemAnsi(IntPtr s)
         {
             ZeroFreeCoTaskMemUTF8(s);
         }

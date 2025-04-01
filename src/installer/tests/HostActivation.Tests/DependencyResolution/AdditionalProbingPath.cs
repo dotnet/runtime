@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
-    public class AdditionalProbingPath : DependencyResolutionBase, IClassFixture<AdditionalProbingPath.SharedTestState>
+    public class AdditionalProbingPath : IClassFixture<AdditionalProbingPath.SharedTestState>
     {
         private readonly SharedTestState sharedState;
 
@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
         }
 
-        public class SharedTestState : DependencyResolutionBase.SharedTestStateBase
+        public class SharedTestState : SharedTestStateBase
         {
             public DotNetCli DotNetWithNetCoreApp { get; }
 
@@ -114,12 +114,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr(TestContext.MicrosoftNETCoreAppVersion)
                     .Build();
 
-                string nativeDependencyRelPath = $"{TestContext.TargetRID}/{Binaries.GetSharedLibraryFileNameForCurrentPlatform("native")}";
-                FrameworkReferenceApp = CreateFrameworkReferenceApp(MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion, b => b
+                string nativeDependencyRelPath = $"{TestContext.BuildRID}/{Binaries.GetSharedLibraryFileNameForCurrentPlatform("native")}";
+                FrameworkReferenceApp = CreateFrameworkReferenceApp(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion, b => b
                     .WithProject(DependencyName, DependencyVersion, p => p
                         .WithAssemblyGroup(null, g => g
                             .WithAsset($"{DependencyName}.dll", f => f.NotOnDisk()))
-                        .WithNativeLibraryGroup(TestContext.TargetRID, g => g
+                        .WithNativeLibraryGroup(TestContext.BuildRID, g => g
                             .WithAsset(nativeDependencyRelPath, f => f.NotOnDisk()))));
                 RuntimeConfig.FromFile(FrameworkReferenceApp.RuntimeConfigJson)
                     .WithTfm(TestContext.Tfm)

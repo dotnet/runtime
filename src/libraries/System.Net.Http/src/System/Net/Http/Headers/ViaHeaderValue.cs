@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -15,24 +14,25 @@ namespace System.Net.Http.Headers
         private readonly string _receivedBy;
         private readonly string? _comment;
 
-        public string? ProtocolName
-        {
-            get { return _protocolName; }
-        }
+        public string? ProtocolName => _protocolName;
 
-        public string ProtocolVersion
-        {
-            get { return _protocolVersion; }
-        }
+        public string ProtocolVersion => _protocolVersion;
 
-        public string ReceivedBy
-        {
-            get { return _receivedBy; }
-        }
+        public string ReceivedBy => _receivedBy;
 
-        public string? Comment
+        public string? Comment => _comment;
+
+        private ViaHeaderValue(string protocolVersion, string receivedBy, string? protocolName, string? comment, bool _)
         {
-            get { return _comment; }
+#if DEBUG
+            // This constructor should only be used with already validated values.
+            new ViaHeaderValue(protocolVersion, receivedBy, protocolName, comment);
+#endif
+
+            _protocolVersion = protocolVersion;
+            _receivedBy = receivedBy;
+            _protocolName = protocolName;
+            _comment = comment;
         }
 
         public ViaHeaderValue(string protocolVersion, string receivedBy)
@@ -99,40 +99,21 @@ namespace System.Net.Http.Headers
             return sb.ToString();
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            ViaHeaderValue? other = obj as ViaHeaderValue;
-
-            if (other == null)
-            {
-                return false;
-            }
-
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is ViaHeaderValue other &&
             // Note that for token and host case-insensitive comparison is used. Comments are compared using case-
             // sensitive comparison.
-            return string.Equals(_protocolVersion, other._protocolVersion, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(_receivedBy, other._receivedBy, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(_protocolName, other._protocolName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(_comment, other._comment, StringComparison.Ordinal);
-        }
+            string.Equals(_protocolVersion, other._protocolVersion, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(_receivedBy, other._receivedBy, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(_protocolName, other._protocolName, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(_comment, other._comment, StringComparison.Ordinal);
 
-        public override int GetHashCode()
-        {
-            int result = StringComparer.OrdinalIgnoreCase.GetHashCode(_protocolVersion) ^
-                StringComparer.OrdinalIgnoreCase.GetHashCode(_receivedBy);
-
-            if (!string.IsNullOrEmpty(_protocolName))
-            {
-                result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(_protocolName);
-            }
-
-            if (!string.IsNullOrEmpty(_comment))
-            {
-                result ^= _comment.GetHashCode();
-            }
-
-            return result;
-        }
+        public override int GetHashCode() =>
+            HashCode.Combine(
+                StringComparer.OrdinalIgnoreCase.GetHashCode(_protocolVersion),
+                StringComparer.OrdinalIgnoreCase.GetHashCode(_receivedBy),
+                _protocolName is null ? 0 : StringComparer.OrdinalIgnoreCase.GetHashCode(_protocolName),
+                _comment);
 
         public static ViaHeaderValue Parse(string input)
         {
@@ -191,8 +172,7 @@ namespace System.Net.Http.Headers
             if ((current < input.Length) && (input[current] == '('))
             {
                 // We have a <comment> in '[<protocolName>/]<protocolVersion> <receivedBy> [<comment>]'
-                int commentLength;
-                if (HttpRuleParser.GetCommentLength(input, current, out commentLength) != HttpParseResult.Parsed)
+                if (HttpRuleParser.GetCommentLength(input, current, out int commentLength) != HttpParseResult.Parsed)
                 {
                     return 0; // We found a '(' character but it wasn't a valid comment. Abort.
                 }
@@ -203,7 +183,7 @@ namespace System.Net.Http.Headers
                 current += HttpRuleParser.GetWhitespaceLength(input, current);
             }
 
-            parsedValue = new ViaHeaderValue(protocolVersion, receivedBy!, protocolName, comment);
+            parsedValue = new ViaHeaderValue(protocolVersion, receivedBy, protocolName, comment, false);
             return current - startIndex;
         }
 
@@ -275,7 +255,7 @@ namespace System.Net.Http.Headers
 
         private static void CheckReceivedBy(string receivedBy)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(receivedBy);
+            ArgumentException.ThrowIfNullOrEmpty(receivedBy);
 
             // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value
             // is a valid host.;

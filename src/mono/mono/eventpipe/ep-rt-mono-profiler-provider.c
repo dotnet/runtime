@@ -2929,7 +2929,7 @@ eventpipe_provider_callback (
 			mono_profiler_set_thread_name_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (_mono_profiler_provider_callspec.enabled) {
+		if (!_mono_profiler_provider_callspec.enabled) {
 			if (is_keword_enabled(live_keywords, METHOD_INSTRUMENTATION_KEYWORD)) {
 				mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, method_instrumentation_filter_callback);
 			} else {
@@ -3012,6 +3012,8 @@ ep_rt_mono_profiler_provider_component_init (void)
 	if (_mono_profiler_provider_enabled) {
 		_mono_profiler_provider = mono_profiler_create (NULL);
 		_mono_heap_dump_profiler_provider = mono_profiler_create (NULL);
+		if (_mono_profiler_provider && _mono_profiler_provider_callspec.enabled)
+			mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, method_instrumentation_filter_callback);
 	}
 }
 
@@ -3030,9 +3032,6 @@ void
 ep_rt_mono_profiler_provider_fini (void)
 {
 	if (_mono_profiler_provider_enabled) {
-		if (_mono_profiler_provider_callspec.enabled)
-			mono_callspec_cleanup (&_mono_profiler_provider_callspec);
-
 		if (_mono_profiler_provider) {
 			mono_profiler_set_gc_root_register_callback (_mono_profiler_provider, NULL);
 			mono_profiler_set_gc_root_unregister_callback (_mono_profiler_provider, NULL);
@@ -3100,7 +3099,6 @@ ep_rt_mono_profiler_provider_fini (void)
 
 			mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, NULL);
 		}
-		_mono_profiler_provider = NULL;
 
 		if (_mono_heap_dump_profiler_provider) {
 			mono_profiler_set_gc_root_register_callback (_mono_heap_dump_profiler_provider, NULL);
@@ -3110,21 +3108,16 @@ ep_rt_mono_profiler_provider_fini (void)
 			mono_profiler_set_gc_resize_callback (_mono_heap_dump_profiler_provider, NULL);
 			mono_profiler_set_gc_finalized_callback (_mono_heap_dump_profiler_provider, NULL);
 		}
-		_mono_heap_dump_profiler_provider = NULL;
 
 		_gc_heap_dump_requests = 0;
 		_gc_heap_dump_in_progress = 0;
 		_gc_heap_dump_trigger_count = 0;
 		_gc_state = 0;
-
-		_mono_profiler_provider_enabled = DEFAULT_MONO_PROFILER_PROVIDER_ENABLED;
-
-		gc_heap_dump_mem_block_free_all ();
-
-		gc_heap_dump_request_params_free ();
-		provider_params_free ();
-
-		ep_rt_spin_lock_free (&_gc_lock);
+		
+		// We were cleaning up resources (mutexes, tls data, etc) here but it races with
+		// other threads on shutdown. Skipping cleanup to prevent failures. If unloading
+		// and not leaking these threads becomes a priority we will have to reimplement
+		// cleanup here.
 	}
 }
 
@@ -3181,8 +3174,6 @@ ep_rt_mono_profiler_provider_parse_options (const char *options)
 			mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed parsing '%s': %s", options, errstr);
 			g_free (errstr);
 			mono_callspec_cleanup (&_mono_profiler_provider_callspec);
-		} else {
-			mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, method_instrumentation_filter_callback);
 		}
 		return true;
 	} else {

@@ -12,14 +12,9 @@ namespace System.Runtime.InteropServices
     {
         public NativeFunctionPointerWrapper(IntPtr nativeFunctionPointer)
         {
-            m_nativeFunctionPointer = nativeFunctionPointer;
+            NativeFunctionPointer = nativeFunctionPointer;
         }
 
-        private IntPtr m_nativeFunctionPointer;
-
-        public IntPtr NativeFunctionPointer
-        {
-            get { return m_nativeFunctionPointer; }
-        }
+        public IntPtr NativeFunctionPointer { get; }
     }
 }

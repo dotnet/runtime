@@ -1,21 +1,16 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import {
-    WasmOpcode, WasmSimdOpcode, JiterpSpecialOpcode
+    WasmOpcode, WasmSimdOpcode, WasmAtomicOpcode, JiterpSpecialOpcode
 } from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdIntrinsic2, SimdIntrinsic3, SimdIntrinsic4
 } from "./mintops";
 
 export const ldcTable: { [opcode: number]: [WasmOpcode, number] } = {
-    [MintOpcode.MINT_LDC_I4_M1]: [WasmOpcode.i32_const, -1],
     [MintOpcode.MINT_LDC_I4_0]:  [WasmOpcode.i32_const,  0],
     [MintOpcode.MINT_LDC_I4_1]:  [WasmOpcode.i32_const,  1],
-    [MintOpcode.MINT_LDC_I4_2]:  [WasmOpcode.i32_const,  2],
-    [MintOpcode.MINT_LDC_I4_3]:  [WasmOpcode.i32_const,  3],
-    [MintOpcode.MINT_LDC_I4_4]:  [WasmOpcode.i32_const,  4],
-    [MintOpcode.MINT_LDC_I4_5]:  [WasmOpcode.i32_const,  5],
-    [MintOpcode.MINT_LDC_I4_6]:  [WasmOpcode.i32_const,  6],
-    [MintOpcode.MINT_LDC_I4_7]:  [WasmOpcode.i32_const,  7],
-    [MintOpcode.MINT_LDC_I4_8]:  [WasmOpcode.i32_const,  8],
 };
 
 // operator, loadOperator, storeOperator
@@ -90,6 +85,16 @@ export const unopTable: { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_CLZ_I8]:        [WasmOpcode.i64_clz,    WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_CTZ_I8]:        [WasmOpcode.i64_ctz,    WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_POPCNT_I8]:     [WasmOpcode.i64_popcnt, WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_ADD_I4_IMM2]:   [WasmOpcode.i32_add, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_MUL_I4_IMM2]:   [WasmOpcode.i32_mul, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ADD_I8_IMM2]:   [WasmOpcode.i64_add, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_MUL_I8_IMM2]:   [WasmOpcode.i64_mul, WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_AND_I4_IMM]:    [WasmOpcode.i32_and, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_AND_I4_IMM2]:   [WasmOpcode.i32_and, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_OR_I4_IMM]:     [WasmOpcode.i32_or,  WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_OR_I4_IMM2]:    [WasmOpcode.i32_or,  WasmOpcode.i32_load, WasmOpcode.i32_store],
 };
 
 // HACK: Generating correct wasm for these is non-trivial so we hand them off to C.
@@ -318,6 +323,24 @@ export const mathIntrinsicTable: { [opcode: number]: [isUnary: boolean, isF32: b
     [MintOpcode.MINT_POWF]:     [false, true, "powf"],
     [MintOpcode.MINT_REM_R8]:   [false, false, "fmod"],
     [MintOpcode.MINT_REM_R4]:   [false, true, "fmodf"],
+};
+
+export const xchgTable: { [opcode: number]: [wasmOpcode: WasmAtomicOpcode, resultFixupOpcode: WasmOpcode, alignmentPower: number] } = {
+    [MintOpcode.MINT_MONO_EXCHANGE_U1]: [WasmAtomicOpcode.i32_atomic_rmw8_xchg_u, WasmOpcode.unreachable, 0],
+    [MintOpcode.MINT_MONO_EXCHANGE_I1]: [WasmAtomicOpcode.i32_atomic_rmw8_xchg_u, WasmOpcode.i32_extend_8_s, 0],
+    [MintOpcode.MINT_MONO_EXCHANGE_U2]: [WasmAtomicOpcode.i32_atomic_rmw16_xchg_u, WasmOpcode.unreachable, 1],
+    [MintOpcode.MINT_MONO_EXCHANGE_I2]: [WasmAtomicOpcode.i32_atomic_rmw16_xchg_u, WasmOpcode.i32_extend_16_s, 1],
+    [MintOpcode.MINT_MONO_EXCHANGE_I4]: [WasmAtomicOpcode.i32_atomic_rmw_xchg, WasmOpcode.unreachable, 2],
+    [MintOpcode.MINT_MONO_EXCHANGE_I8]: [WasmAtomicOpcode.i64_atomic_rmw_xchg, WasmOpcode.unreachable, 3],
+};
+
+export const cmpxchgTable: { [opcode: number]: [wasmOpcode: WasmAtomicOpcode, resultFixupOpcode: WasmOpcode, alignmentPower: number] } = {
+    [MintOpcode.MINT_MONO_CMPXCHG_U1]: [WasmAtomicOpcode.i32_atomic_rmw8_cmpxchg_u, WasmOpcode.unreachable, 0],
+    [MintOpcode.MINT_MONO_CMPXCHG_I1]: [WasmAtomicOpcode.i32_atomic_rmw8_cmpxchg_u, WasmOpcode.i32_extend_8_s, 0],
+    [MintOpcode.MINT_MONO_CMPXCHG_U2]: [WasmAtomicOpcode.i32_atomic_rmw16_cmpxchg_u, WasmOpcode.unreachable, 1],
+    [MintOpcode.MINT_MONO_CMPXCHG_I2]: [WasmAtomicOpcode.i32_atomic_rmw16_cmpxchg_u, WasmOpcode.i32_extend_16_s, 1],
+    [MintOpcode.MINT_MONO_CMPXCHG_I4]: [WasmAtomicOpcode.i32_atomic_rmw_cmpxchg, WasmOpcode.unreachable, 2],
+    [MintOpcode.MINT_MONO_CMPXCHG_I8]: [WasmAtomicOpcode.i64_atomic_rmw_cmpxchg, WasmOpcode.unreachable, 3],
 };
 
 export const simdCreateSizes = {

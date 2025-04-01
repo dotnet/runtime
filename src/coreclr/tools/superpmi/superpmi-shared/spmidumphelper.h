@@ -110,8 +110,8 @@ inline std::string SpmiDumpHelper::DumpPSig(
             pbuf += cch;
             sizeOfBuffer -= cch;
 
-            const unsigned int maxSigDisplayBytes = 25; // Don't display more than this.
-            const unsigned int sigDisplayBytes = min(maxSigDisplayBytes, cbSig);
+            const size_t maxSigDisplayBytes = 25; // Don't display more than this.
+            const size_t sigDisplayBytes = min(maxSigDisplayBytes, (size_t)cbSig);
 
             // TODO: display character representation of the types?
 

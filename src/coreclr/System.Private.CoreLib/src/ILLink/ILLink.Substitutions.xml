@@ -2,11 +2,6 @@
   <assembly fullname="System.Private.CoreLib">
     <type fullname="System.Runtime.CompilerServices.RuntimeFeature" feature="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported" featurevalue="true">
       <method signature="System.Boolean get_IsDynamicCodeCompiled()" body="stub" value="true" />
-      <method signature="System.Boolean get_IsDynamicCodeSupported()" body="stub" value="true" />
-    </type>
-    <type fullname="System.Runtime.CompilerServices.RuntimeFeature" feature="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported" featurevalue="false">
-      <method signature="System.Boolean get_IsDynamicCodeCompiled()" body="stub" value="false" />
-      <method signature="System.Boolean get_IsDynamicCodeSupported()" body="stub" value="false" />
     </type>
   </assembly>
 </linker>

@@ -217,39 +217,11 @@ RaiseException(
     throw;
 }
 
-size_t u16_strlen(const WCHAR* str)
-{
-    size_t nChar = 0;
-    while (*str++)
-        nChar++;
-    return nChar;
-}
-
 //
 // Used by _ASSERTE
 //
 
 #ifdef _DEBUG
-
-PAL_FILE *
-__cdecl
-PAL_get_stderr(int caller)
-{
-    return (PAL_FILE*)stderr;
-}
-
-int
-__cdecl
-PAL_fprintf(PAL_FILE* stream, const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    int result = vfprintf((FILE*)stream, format, args);
-    fflush((FILE*)stream);
-    va_end(args);
-    return result;
-}
-
 DWORD
 PALAPI
 GetCurrentProcessId()

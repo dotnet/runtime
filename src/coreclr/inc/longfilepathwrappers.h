@@ -25,11 +25,6 @@ CreateFileWrapper(
     _In_opt_ HANDLE hTemplateFile
     );
 
-DWORD
-GetFileAttributesWrapper(
-    _In_ LPCWSTR lpFileName
-    );
-
 BOOL
 GetFileAttributesExWrapper(
     _In_ LPCWSTR lpFileName,
@@ -57,10 +52,6 @@ SearchPathWrapper(
     _In_ BOOL getPath,
     SString& lpBuffer,
     _Out_opt_ LPWSTR * lpFilePart
-    );
-
-DWORD WINAPI GetTempPathWrapper(
-    SString& lpBuffer
     );
 
 DWORD

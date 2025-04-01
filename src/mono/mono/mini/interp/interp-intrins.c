@@ -16,7 +16,7 @@ rotate_left (guint32 value, int offset)
 }
 
 void
-interp_intrins_marvin_block (guint32 *pp0, guint32 *pp1)
+interp_intrins_marvin_block (guint32 *pp0, guint32 *pp1, guint32 *dest0, guint32 *dest1)
 {
 	// Marvin.Block
 	guint32 p0 = *pp0;
@@ -34,8 +34,8 @@ interp_intrins_marvin_block (guint32 *pp0, guint32 *pp1)
 	p0 += p1;
 	p1 = rotate_left (p1, 19);
 
-	*pp0 = p0;
-	*pp1 = p1;
+	*dest0 = p0;
+	*dest1 = p1;
 }
 
 guint32

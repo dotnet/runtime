@@ -9,7 +9,7 @@
 #error This file uses manual memory management and must not use ARC, but ARC is enabled.
 #endif
 
-const char* SystemNative_iOSSupportVersion()
+const char* SystemNative_iOSSupportVersion(void)
 {
     NSDictionary *plist = [[NSDictionary alloc] initWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];
     NSString *iOSSupportVersion = (NSString *)[plist objectForKey:@"iOSSupportVersion"];

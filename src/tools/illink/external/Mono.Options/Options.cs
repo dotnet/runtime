@@ -440,7 +440,7 @@ namespace Mono.Options
 			this.names       = (this is OptionSet.Category)
 				// append GetHashCode() so that "duplicate" categories have distinct
 				// names, e.g. adding multiple "" categories should be valid.
-				? new[]{prototype + this.GetHashCode ()}
+				? [prototype + this.GetHashCode ()]
 				: prototype.Split ('|');
 
 			if (this is OptionSet.Category || this is CommandOption)
@@ -749,7 +749,7 @@ namespace Mono.Options
 			get {return this.option;}
 		}
 
-#if !PCL && !NETCOREAPP
+#if !PCL && !NET
 #pragma warning disable 618 // SecurityPermissionAttribute is obsolete
 		[SecurityPermission (SecurityAction.LinkDemand, SerializationFormatter = true)]
 #pragma warning restore 618

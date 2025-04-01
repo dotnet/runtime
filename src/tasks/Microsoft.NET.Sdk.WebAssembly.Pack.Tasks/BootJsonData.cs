@@ -24,6 +24,9 @@ public class BootJsonData
 
     public string mainAssemblyName { get; set; }
 
+    [DataMember(EmitDefaultValue = false)]
+    public string applicationEnvironment { get; set; }
+
     /// <summary>
     /// Gets the set of resources needed to boot the application. This includes the transitive
     /// closure of .NET assemblies (including the entrypoint assembly), the dotnet.wasm file,
@@ -100,7 +103,7 @@ public class BootJsonData
     /// <summary>
     /// Gets or sets environment variables.
     /// </summary>
-    public object environmentVariables { get; set; }
+    public System.Collections.Generic.Dictionary<string, string> environmentVariables { get; set; }
 
     /// <summary>
     /// Gets or sets diagnostic tracing.
@@ -108,9 +111,14 @@ public class BootJsonData
     public object diagnosticTracing { get; set; }
 
     /// <summary>
-    /// Gets or sets pthread pool size.
+    /// Gets or sets pthread pool initial size.
     /// </summary>
-    public int? pthreadPoolSize { get; set; }
+    public int? pthreadPoolInitialSize { get; set; }
+
+    /// <summary>
+    /// Gets or sets pthread pool unused size.
+    /// </summary>
+    public int? pthreadPoolUnusedSize { get; set; }
 }
 
 public class ResourcesData
@@ -119,6 +127,9 @@ public class ResourcesData
     /// Gets a hash of all resources
     /// </summary>
     public string hash { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, string> fingerprinting { get; set; }
 
     /// <summary>
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
@@ -131,6 +142,9 @@ public class ResourcesData
 
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleDiagnostics { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleNative { get; set; }
@@ -148,9 +162,20 @@ public class ResourcesData
     public ResourceHashesByNameDictionary icu { get; set; }
 
     /// <summary>
+    /// "assembly" (.dll) resources needed to start MonoVM
+    /// </summary>
+    public ResourceHashesByNameDictionary coreAssembly { get; set; } = new ResourceHashesByNameDictionary();
+
+    /// <summary>
     /// "assembly" (.dll) resources
     /// </summary>
     public ResourceHashesByNameDictionary assembly { get; set; } = new ResourceHashesByNameDictionary();
+
+    /// <summary>
+    /// "debug" (.pdb) resources needed to start MonoVM
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary corePdb { get; set; }
 
     /// <summary>
     /// "debug" (.pdb) resources
@@ -197,6 +222,9 @@ public class ResourcesData
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, ResourceHashesByNameDictionary> coreVfs { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, ResourceHashesByNameDictionary> vfs { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
@@ -227,11 +255,6 @@ public enum GlobalizationMode : int
     /// Load custom icu file provided by the developer.
     /// </summary>
     Custom = 3,
-
-    /// <summary>
-    /// Use the reduced icudt_hybrid.dat file
-    /// </summary>
-    Hybrid = 4,
 }
 
 [DataContract]

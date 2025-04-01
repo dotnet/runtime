@@ -8,7 +8,7 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Chained implementation of <see cref="IConfigurationProvider"/>
+    /// Provides a chained implementation of <see cref="IConfigurationProvider"/>.
     /// </summary>
     public class ChainedConfigurationProvider : IConfigurationProvider, IDisposable
     {
@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration
         private readonly bool _shouldDisposeConfig;
 
         /// <summary>
-        /// Initialize a new instance from the source configuration.
+        /// Initializes a new instance from the source configuration.
         /// </summary>
         /// <param name="source">The source configuration.</param>
         public ChainedConfigurationProvider(ChainedConfigurationSource source)
@@ -36,8 +36,8 @@ namespace Microsoft.Extensions.Configuration
         /// Tries to get a configuration value for the specified key.
         /// </summary>
         /// <param name="key">The key.</param>
-        /// <param name="value">The value.</param>
-        /// <returns><c>True</c> if a value for the specified key was found, otherwise <c>false</c>.</returns>
+        /// <param name="value">When this method returns, contains the value.</param>
+        /// <returns><see langword="true"/> if a value for the specified key was found, otherwise <see langword="false"/>.</returns>
         public bool TryGet(string key, out string? value)
         {
             value = _config[key];
@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Configuration
         public void Set(string key, string? value) => _config[key] = value;
 
         /// <summary>
-        /// Returns a change token if this provider supports change tracking, null otherwise.
+        /// Returns a change token if this provider supports change tracking; otherwise returns <see langword="null" />.
         /// </summary>
         /// <returns>The change token.</returns>
         public IChangeToken GetReloadToken() => _config.GetReloadToken();
@@ -63,9 +63,9 @@ namespace Microsoft.Extensions.Configuration
         public void Load() { }
 
         /// <summary>
-        /// Returns the immediate descendant configuration keys for a given parent path based on this
-        /// <see cref="IConfigurationProvider"/>s data and the set of keys returned by all the preceding
-        /// <see cref="IConfigurationProvider"/>s.
+        /// Returns the immediate descendant configuration keys for a given parent path based on the data of this
+        /// <see cref="IConfigurationProvider"/> and the set of keys returned by all the preceding
+        /// <see cref="IConfigurationProvider"/> objects.
         /// </summary>
         /// <param name="earlierKeys">The child keys returned by the preceding providers for the same parent path.</param>
         /// <param name="parentPath">The parent path.</param>

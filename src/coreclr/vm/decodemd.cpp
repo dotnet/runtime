@@ -72,7 +72,7 @@ const BYTE decoded_10[2] = {10, END_DECODED };
 #define DECODING_BITS(partial, got, header) (DOING_BITS+((partial)<<8)+((got)<<16)+((header)<<24))
 #define DECODING_ERROR ((unsigned) -1)
 #define MASK(len) (~(~0u <<(len)))
-#define MASK64(len) ((~((~((unsigned __int64)0))<<(len))))
+#define MASK64(len) ((~((~((uint64_t)0))<<(len))))
 
 const Decoder::Decode emptyDecode = {decoded_end, DECODING_HEADER(0)};
 
@@ -415,8 +415,8 @@ void Encoder::Encode(unsigned value)
     }
     if (value < BASE_6)
     {
-        unsigned __int64 value64 = (unsigned __int64) value;
-        Add64((((unsigned __int64)0x1f)<<(1+BIT_LENGTH_5))+(value64-BASE_5), 6+BIT_LENGTH_5);
+        uint64_t value64 = (uint64_t) value;
+        Add64((((uint64_t)0x1f)<<(1+BIT_LENGTH_5))+(value64-BASE_5), 6+BIT_LENGTH_5);
         return;
     }
     _ASSERTE(!"Too big");
@@ -461,7 +461,7 @@ void Encoder::Add(unsigned value, unsigned length)
 }
 
 // --------------------------------------------------------
-void Encoder::Add64(unsigned __int64 value, unsigned length)
+void Encoder::Add64(uint64_t value, unsigned length)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;

@@ -34,6 +34,7 @@ namespace JitTest_isinst_ldloc_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             if (!Test_LDLOC(new TestClass(), true))

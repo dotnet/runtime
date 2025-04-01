@@ -35,8 +35,6 @@ CHECK PEDecoder::CheckFormat() const
 
             if (IsILOnly())
                 CHECK(CheckILOnly());
-
-            CHECK(CheckWillCreateGuardPage());
         }
     }
 
@@ -573,7 +571,7 @@ CHECK PEDecoder::CheckOffset(COUNT_T fileOffset, IsNullOK ok) const
     }
     CONTRACT_CHECK_END;
 
-    if (fileOffset == NULL)
+    if (fileOffset == 0)
         CHECK_MSG(ok == NULL_OK, "Null pointer illegal");
     else
     {
@@ -842,7 +840,7 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
     CONTRACT_END;
 
     if ((rva == 0)&&(ok == NULL_NOT_OK))
-        RETURN NULL;
+        RETURN (TADDR)NULL;
 
     RVA offset;
     if (IsMapped())
@@ -869,7 +867,7 @@ RVA PEDecoder::GetDataRva(const TADDR data) const
     }
     CONTRACT_END;
 
-    if (data == NULL)
+    if (data == (TADDR)NULL)
         RETURN 0;
 
     COUNT_T offset = (COUNT_T) (data - m_base);
@@ -917,7 +915,7 @@ TADDR PEDecoder::GetOffsetData(COUNT_T fileOffset, IsNullOK ok /*= NULL_NOT_OK*/
     CONTRACT_END;
 
     if ((fileOffset == 0)&&(ok == NULL_NOT_OK))
-        RETURN NULL;
+        RETURN (TADDR)NULL;
 
     RETURN GetRvaData(OffsetToRva(fileOffset));
 }
@@ -1020,7 +1018,7 @@ CHECK PEDecoder::CheckCorHeader() const
 
     //CHECK(((ULONGLONG)pCor & 0x3)==0);
 
-    // If the file is COM+ 1.0, which by definition has nothing the runtime can
+    // If the file is CLR 1.0, which by definition has nothing the runtime can
     // use, or if the file requires a newer version of this engine than us,
     // it cannot be run by this engine.
     if (!possiblyCompositeR2R)
@@ -1085,7 +1083,7 @@ CHECK PEDecoder::CheckCorHeader() const
     COUNT_T ctMD = (COUNT_T)VAL32(pDirMD->Size);
     TADDR   pcMD = (TADDR)GetDirectoryData(pDirMD);
 
-    if(pcMD != NULL)
+    if(pcMD != (TADDR)NULL)
     {
         // Storage signature checks
         CHECK(ctMD >= sizeof(STORAGESIGNATURE));
@@ -1538,7 +1536,7 @@ CHECK PEDecoder::CheckILOnlyImportByNameTable(RVA rva) const
 
     IMAGE_IMPORT_BY_NAME *import = (IMAGE_IMPORT_BY_NAME*) GetRvaData(importRVA);
 
-    CHECK(SString::_stricmp((char *) import->Name, DLL_NAME) == 0 || _stricmp((char *) import->Name, EXE_NAME) == 0);
+    CHECK(SString::_stricmp((char *) import->Name, DLL_NAME) == 0 || SString::_stricmp((char *) import->Name, EXE_NAME) == 0);
 
     CHECK_OK;
 }
@@ -1589,23 +1587,13 @@ CHECK PEDecoder::CheckILOnlyBaseRelocations() const
 
         UINT16 *pRelocEntry = (UINT16 *) (pReloc + 1);
         UINT16 *pRelocEntryEnd = (UINT16 *) ((BYTE *) pReloc + VAL32(pReloc->SizeOfBlock));
-        if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_IA64))
-        {
-            // Exactly 2 Reloc records, both IMAGE_REL_BASED_DIR64
-            CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+2*sizeof(UINT16)));
+
+        // Only one Reloc record is expected
+        CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+sizeof(UINT16)));
+        if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_AMD64))
             CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-            pRelocEntry++;
-            CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-        }
         else
-        {
-            // Only one Reloc record is expected
-            CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+sizeof(UINT16)));
-            if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_AMD64))
-                CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-            else
-                CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_HIGHLOW << 12));
-        }
+            CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_HIGHLOW << 12));
 
         while (++pRelocEntry < pRelocEntryEnd)
         {
@@ -2435,44 +2423,6 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
     RETURN dac_cast<PTR_VOID>(GetDirectoryData(pDir));
 }
 
-// Get the SizeOfStackReserve and SizeOfStackCommit from the PE file that was used to create
-// the calling process (.exe file).
-void PEDecoder::GetEXEStackSizes(SIZE_T *PE_SizeOfStackReserve, SIZE_T *PE_SizeOfStackCommit) const
-{
-    CONTRACTL {
-        PRECONDITION(!IsDll()); // This routine should only be called for EXE files.
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    * PE_SizeOfStackReserve = GetSizeOfStackReserve();
-    * PE_SizeOfStackCommit  = GetSizeOfStackCommit();
-}
-
-CHECK PEDecoder::CheckWillCreateGuardPage() const
-{
-    CONTRACT_CHECK
-    {
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_CHECK_END;
-
-    if (!IsDll())
-    {
-        SIZE_T sizeReservedStack = 0;
-        SIZE_T sizeCommittedStack = 0;
-
-        GetEXEStackSizes(&sizeReservedStack, &sizeCommittedStack);
-
-        CHECK(ThreadWillCreateGuardPage(sizeReservedStack, sizeCommittedStack));
-
-    }
-
-    CHECK_OK;
-}
-
 BOOL PEDecoder::HasNativeEntryPoint() const
 {
     CONTRACTL {
@@ -2576,7 +2526,7 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
     if (hFile == INVALID_HANDLE_VALUE)
         goto ErrExit;
 
-    HANDLE hMap = WszCreateFileMapping(hFile,
+    HANDLE hMap = CreateFileMapping(hFile,
                                        NULL,
                                        SEC_IMAGE | PAGE_READONLY,
                                        0,
@@ -2631,6 +2581,8 @@ ErrExit:
 MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
                                              const void *codeTable, SIZE_T codeTableSize)
 {
+    using namespace NibbleMap;
+
     //For DAC builds,we'll read the table one DWORD at a time.  Note that m_code IS
     //NOT a host pointer.
     m_codeTableStart = PTR_DWORD(TADDR(codeTable));
@@ -2645,6 +2597,11 @@ MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
     {
         m_dword = *m_codeTable++;
         m_index = 0;
+        while(m_codeTable < m_codeTableEnd && IsPointer(m_dword))
+        {
+            m_dword = *m_codeTable++;
+            m_code += BYTES_PER_DWORD;
+        }
     }
     else
     {
@@ -2654,6 +2611,8 @@ MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
 
 BOOL MethodSectionIterator::Next()
 {
+    using namespace NibbleMap;
+
     while (m_codeTable < m_codeTableEnd || m_index < (int)NIBBLES_PER_DWORD)
     {
         while (m_index++ < (int)NIBBLES_PER_DWORD)
@@ -2664,7 +2623,7 @@ BOOL MethodSectionIterator::Next()
             if (nibble != 0)
             {
                 // We have found a method start
-                m_current = m_code + ((nibble-1)*CODE_ALIGN);
+                m_current = m_code + ((nibble-1) << LOG2_CODE_ALIGN);
                 m_code += BYTES_PER_BUCKET;
                 return TRUE;
             }
@@ -2676,6 +2635,11 @@ BOOL MethodSectionIterator::Next()
         {
             m_dword = *m_codeTable++;
             m_index = 0;
+            while(m_codeTable < m_codeTableEnd && (IsPointer(m_dword) || m_dword == 0))
+            {
+                m_dword = *m_codeTable++;
+                m_code += BYTES_PER_DWORD;
+            }
         }
     }
     return FALSE;

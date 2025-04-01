@@ -213,7 +213,7 @@ namespace System.Collections.Immutable.Tests
             Assert.False(queue.IsEmpty);
             Assert.Equal(new[] { 1 }, queue);
 
-            queue = ImmutableQueue.Create(1, 2);
+            queue = ImmutableQueue.Create(new int[] { 1, 2 });
             Assert.False(queue.IsEmpty);
             Assert.Equal(new[] { 1, 2 }, queue);
 

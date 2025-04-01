@@ -499,7 +499,7 @@ namespace System.Security.Tests
                                 break;
                         }
                     }
-                })).ToArray());
+                })));
             }
         }
 

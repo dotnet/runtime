@@ -14,11 +14,16 @@ namespace System.Net.Http
                 "System.Net.Http.EnableActivityPropagation",
                 "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION",
                 true);
+
+            public static bool DisableUriRedaction { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
+                "System.Net.Http.DisableUriRedaction",
+                "DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION",
+                false);
         }
 
         internal static class SocketsHttpHandler
         {
-#if !BROWSER
+#if !TARGET_BROWSER && !TARGET_WASI
             // Default to allowing HTTP/2, but enable that to be overridden by an
             // AppContext switch, or by an environment variable being set to false/0.
             public static bool AllowHttp2 { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(

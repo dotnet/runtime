@@ -29,14 +29,6 @@ class MethodDesc;
 class FramedMethodFrame;
 class Module;
 class ComCallMethodDesc;
-class BaseDomain;
-
-// CPU-dependent functions
-Stub * GenerateInitPInvokeFrameHelper();
-
-#ifdef FEATURE_STUBS_AS_IL
-EXTERN_C void SinglecastDelegateInvokeStub();
-#endif // FEATURE_STUBS_AS_IL
 
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
@@ -50,12 +42,6 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
-
-#ifdef FEATURE_EH_FUNCLETS
-#define USE_INDIRECT_CODEHEADER
-#endif // FEATURE_EH_FUNCLETS
-
-#define HAS_COMPACT_ENTRYPOINTS                 1
 
 // Needed for PInvoke inlining in ngened images
 #define HAS_NDIRECT_IMPORT_PRECODE              1
@@ -102,6 +88,9 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unu
     CALLEE_SAVED_REGISTER(Esi) \
     CALLEE_SAVED_REGISTER(Ebx) \
     CALLEE_SAVED_REGISTER(Ebp)
+
+// There are no FP callee saved registers on x86
+#define ENUM_FP_CALLEE_SAVED_REGISTERS()
 
 typedef DPTR(struct CalleeSavedRegisters) PTR_CalleeSavedRegisters;
 struct CalleeSavedRegisters {
@@ -408,34 +397,6 @@ EXTERN_C void __stdcall getFPReturn(int fpSize, INT64 *pretval);
 
 
 // SEH info forward declarations
-
-#include <pshpack1.h>
-struct DECLSPEC_ALIGN(4) UMEntryThunkCode
-{
-    BYTE            m_alignpad[2];  // used to guarantee alignment of backpactched portion
-    BYTE            m_movEAX;   //MOV EAX,imm32
-    LPVOID          m_uet;      // pointer to start of this structure
-    BYTE            m_jmp;      //JMP NEAR32
-    const BYTE *    m_execstub; // pointer to destination code  // make sure the backpatched portion is dword aligned.
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)&m_movEAX;
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return 2;
-    }
-};
-#include <poppack.h>
 
 struct HijackArgs
 {

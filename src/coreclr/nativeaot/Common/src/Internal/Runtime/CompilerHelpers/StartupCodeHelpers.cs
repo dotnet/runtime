@@ -27,7 +27,7 @@ namespace Internal.Runtime.CompilerHelpers
         /// </summary>
         private static IntPtr s_moduleGCStaticsSpines;
 
-        [UnmanagedCallersOnly(EntryPoint = "InitializeModules", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(EntryPoint = "InitializeModules")]
         internal static unsafe void InitializeModules(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             RuntimeImports.RhpRegisterOsModule(osModule);
@@ -210,7 +210,7 @@ namespace Internal.Runtime.CompilerHelpers
                     RuntimeImports.RhAllocateNewObject(
                         new IntPtr(blockAddr & ~GCStaticRegionConstants.Mask),
                         (uint)GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP,
-                        Unsafe.AsPointer(ref obj));
+                        &obj);
                     if (obj == null)
                     {
                         RuntimeExceptionHelpers.FailFast("Failed allocating GC static bases");
@@ -232,7 +232,7 @@ namespace Internal.Runtime.CompilerHelpers
                     Unsafe.Add(ref rawSpineData, currentBase) = obj;
 
                     // Update the base pointer to point to the pinned object
-                    *pBlock = *(IntPtr*)Unsafe.AsPointer(ref obj);
+                    *pBlock = *(IntPtr*)&obj;
                 }
 
                 currentBase++;
@@ -290,12 +290,7 @@ namespace Internal.Runtime.CompilerHelpers
                         {
                             // At the time of writing this, 90% of DehydratedDataCommand.Copy cases
                             // would fall into the above specialized cases. 10% fall back to memmove.
-                            memmove(pDest, pCurrent, (nuint)payload);
-
-                            // Not a DllImport - we don't need a GC transition since this is early startup
-                            [MethodImplAttribute(MethodImplOptions.InternalCall)]
-                            [RuntimeImport("*", "memmove")]
-                            static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
+                            Unsafe.CopyBlock(pDest, pCurrent, (uint)payload);
                         }
 
                         pDest += payload;

@@ -44,7 +44,9 @@ if(CLR_CMAKE_TARGET_WIN32)
     ${STATIC_MT_CRT_LIB}
     ${STATIC_MT_VCRT_LIB}
     kernel32.lib
-    advapi32.lib)
+    advapi32.lib
+    minipal
+  )
 endif(CLR_CMAKE_TARGET_WIN32)
 
 add_definitions(-DVERIFY_HEAP)
@@ -53,6 +55,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         ../windows/gcenv.windows.cpp)
     add_definitions(-DUNICODE)
+    add_compile_definitions(NOMINMAX)
 else()
     list(APPEND SOURCES
         ../gcenv.unix.cpp)

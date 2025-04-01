@@ -204,7 +204,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     }
 
     clr_path = probe_paths.coreclr;
-    if (clr_path.empty() || !pal::realpath(&clr_path))
+    if (clr_path.empty() || !pal::fullpath(&clr_path))
     {
         // in a single-file case we may not need coreclr,
         // otherwise fail early.

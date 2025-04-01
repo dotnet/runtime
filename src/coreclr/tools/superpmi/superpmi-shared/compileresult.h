@@ -121,6 +121,8 @@ public:
     void dmpSetVars(DWORD key, const Agnostic_SetVars& value);
     bool repSetVars(CORINFO_METHOD_HANDLE* ftn, ULONG32* cVars, ICorDebugInfo::NativeVarInfo** vars);
 
+    void recMetadata(const char* key, const void* value);
+
     void recSetPatchpointInfo(PatchpointInfo* patchpointInfo);
     void dmpSetPatchpointInfo(DWORD key, const Agnostic_SetPatchpointInfo& value);
     bool repSetPatchpointInfo(PatchpointInfo** patchpointInfo);
@@ -215,9 +217,19 @@ public:
 #define DENSELWM(map, value) DenseLightWeightMap<value>* map;
 #include "crlwmlist.h"
 
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) type name;
+#include "jitmetadatalist.h"
+
+    // Reported method full name from JIT (not available with release JIT)
+    const char* MethodFullName;
+    // Reported compilation tier from JIT
+    const char* TieringName;
+
     // not persisted to disk.
 public:
     LightWeightMap<DWORDLONG, DWORD>* CallTargetTypes;
+    MemoryTracker* getOrCreateMemoryTracker();
 
 private:
     MemoryTracker*          memoryTracker;

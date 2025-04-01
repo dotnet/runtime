@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -261,15 +262,15 @@ namespace System.Tests
         }
 
         // In Mono AOT, loading assemblies can happen, but they need to be AOT'd and registered on startup.  That is not the case
-        // with TestAppOutsideOfTPA.exe
+        // with TestAppOutsideOfTPA.dll
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonBundledAssemblyLoadingSupported))]
         public void ExecuteAssembly()
         {
             CopyTestAssemblies();
 
-            string name = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.exe");
+            string name = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.dll");
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => AppDomain.CurrentDomain.ExecuteAssembly(null));
-            Assert.Throws<FileNotFoundException>(() => AppDomain.CurrentDomain.ExecuteAssembly("NonExistentFile.exe"));
+            Assert.Throws<FileNotFoundException>(() => AppDomain.CurrentDomain.ExecuteAssembly("NonExistentFile.dll"));
 
 #pragma warning disable SYSLIB0003 // Code Access Security is not supported or honored by the runtime.
             Func<int> executeAssembly = () => AppDomain.CurrentDomain.ExecuteAssembly(name, new string[2] { "2", "3" }, null, Configuration.Assemblies.AssemblyHashAlgorithm.SHA1);
@@ -600,7 +601,7 @@ namespace System.Tests
             RemoteExecutor.Invoke(() => {
                 // bool AssemblyResolveFlag = false;
 
-                Assembly a = Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.exe"));
+                Assembly a = Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.dll"));
 
                 ResolveEventHandler handler = (sender, args) =>
                 {
@@ -651,6 +652,24 @@ namespace System.Tests
                 {
                     CultureInfo.CurrentUICulture = previousUICulture;
                 }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void AssemblyResolve_IgnoresStrongNameMismatches()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.AssemblyResolve +=
+                    (sender, e) =>
+                    {
+                        if (!e.Name.StartsWith("MyAssembly"))
+                            return null;
+
+                        return AssemblyBuilder.DefineDynamicAssembly(
+                            new AssemblyName("MyAssembly"), AssemblyBuilderAccess.Run);
+                    };
+                Assembly.Load("MyAssembly, PublicKeyToken=1234567890ABCDEF");
             }).Dispose();
         }
 
@@ -793,11 +812,11 @@ namespace System.Tests
                 File.Copy("AssemblyResolveTestApp.dll", destTestAssemblyPath, false);
             }
 
-            destTestAssemblyPath = Path.Combine(appOutsideTPAPath, "TestAppOutsideOfTPA.exe");
-            if (!File.Exists(destTestAssemblyPath) && File.Exists("TestAppOutsideOfTPA.exe"))
+            destTestAssemblyPath = Path.Combine(appOutsideTPAPath, "TestAppOutsideOfTPA.dll");
+            if (!File.Exists(destTestAssemblyPath) && File.Exists("TestAppOutsideOfTPA.dll"))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
-                File.Copy("TestAppOutsideOfTPA.exe", destTestAssemblyPath, false);
+                File.Copy("TestAppOutsideOfTPA.dll", destTestAssemblyPath, false);
             }
         }
 

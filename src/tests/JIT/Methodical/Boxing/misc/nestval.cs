@@ -50,6 +50,7 @@ namespace BoxTest_nestval_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             ArgInfo args = new ArgInfo();

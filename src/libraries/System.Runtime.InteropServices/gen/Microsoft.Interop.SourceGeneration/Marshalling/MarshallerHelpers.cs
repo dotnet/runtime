@@ -61,34 +61,50 @@ namespace Microsoft.Interop
         public static StatementSyntax CreateSetLastPInvokeErrorStatement(string lastErrorIdentifier) =>
             MethodInvocationStatement(TypeSyntaxes.System_Runtime_InteropServices_Marshal, IdentifierName("SetLastPInvokeError"), Argument(IdentifierName(lastErrorIdentifier)));
 
-        public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
+        public static string GetMarshallerIdentifier(TypePositionInfo info, StubIdentifierContext context)
         {
             return context.GetAdditionalIdentifier(info, "marshaller");
         }
 
-        public static string GetManagedSpanIdentifier(TypePositionInfo info, StubCodeContext context)
+        public static string GetManagedSpanIdentifier(TypePositionInfo info, StubIdentifierContext context)
         {
             return context.GetAdditionalIdentifier(info, "managedSpan");
         }
 
-        public static string GetNativeSpanIdentifier(TypePositionInfo info, StubCodeContext context)
+        public static string GetNativeSpanIdentifier(TypePositionInfo info, StubIdentifierContext context)
         {
             return context.GetAdditionalIdentifier(info, "nativeSpan");
         }
 
-        public static string GetNumElementsIdentifier(TypePositionInfo info, StubCodeContext context)
+        public static string GetNumElementsIdentifier(TypePositionInfo info, StubIdentifierContext context)
         {
             return context.GetAdditionalIdentifier(info, "numElements");
         }
 
-        public static string GetLastIndexMarshalledIdentifier(TypePositionInfo info, StubCodeContext context)
+        public static string GetLastIndexMarshalledIdentifier(TypePositionInfo info, StubIdentifierContext context)
         {
             return context.GetAdditionalIdentifier(info, "lastIndexMarshalled");
         }
 
+        public static string GetIndexerIdentifier(int i)
+        {
+            return $"__i{i}";
+        }
+
+        public static ExpressionSyntax GetIndexedManagedElementExpression(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
+        {
+            ExpressionSyntax indexedManagedElement = IdentifierName(context.GetIdentifiers(info).managed);
+            for (int i = 0; i < codeContext.ElementIndirectionLevel; i++)
+            {
+                indexedManagedElement = ElementAccessExpression(indexedManagedElement)
+                    .AddArgumentListArguments(Argument(IdentifierName(GetIndexerIdentifier(i))));
+            }
+            return indexedManagedElement;
+        }
+
         internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
         {
-            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In);
+            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In || info.RefKind == RefKind.RefReadOnlyParameter);
         }
 
         /// <summary>
@@ -213,35 +229,8 @@ namespace Microsoft.Interop
             }
         }
 
-        public static IEnumerable<TypePositionInfo> GetDependentElementsOfMarshallingInfo(
-            MarshallingInfo elementMarshallingInfo)
-        {
-            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo nestedCollection)
-            {
-                if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
-                {
-                    // Do not include dependent elements with no managed or native index.
-                    // These values are dummy values that are inserted earlier to avoid emitting extra diagnostics.
-                    if (nestedCountElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedCountElement.NativeIndex != TypePositionInfo.UnsetIndex)
-                    {
-                        yield return nestedCountElement;
-                    }
-                }
-                foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in nestedCollection.Marshallers.Modes)
-                {
-                    foreach (TypePositionInfo nestedElement in GetDependentElementsOfMarshallingInfo(mode.Value.CollectionElementMarshallingInfo))
-                    {
-                        if (nestedElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedElement.NativeIndex != TypePositionInfo.UnsetIndex)
-                        {
-                            yield return nestedElement;
-                        }
-                    }
-                }
-            }
-        }
-
         // private static readonly InvocationExpressionSyntax SkipInitInvocation =
-        public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubCodeContext context)
+        public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubIdentifierContext context)
         {
             if (info.ManagedType is not PointerTypeInfo
                 && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
@@ -261,6 +250,14 @@ namespace Microsoft.Interop
                     IdentifierName(info.InstanceIdentifier),
                     LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword)));
             }
+        }
+
+        public static StatementSyntax DefaultInit(TypePositionInfo info, StubIdentifierContext context)
+        {
+            // Assign out params to default
+            return AssignmentStatement(
+                IdentifierName(info.InstanceIdentifier),
+                LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword)));
         }
 
         /// <summary>
@@ -291,6 +288,7 @@ namespace Microsoft.Interop
                 switch (info.RefKind)
                 {
                     case RefKind.In:
+                    case RefKind.RefReadOnlyParameter:
                         return MarshalDirection.ManagedToUnmanaged;
                     case RefKind.Ref:
                         return MarshalDirection.Bidirectional;
@@ -312,6 +310,7 @@ namespace Microsoft.Interop
             switch (info.RefKind)
             {
                 case RefKind.In:
+                case RefKind.RefReadOnlyParameter:
                     return MarshalDirection.UnmanagedToManaged;
                 case RefKind.Ref:
                     return MarshalDirection.Bidirectional;
@@ -324,19 +323,19 @@ namespace Microsoft.Interop
         /// <summary>
         /// Returns which stage cleanup should be performed for the parameter.
         /// </summary>
-        public static StubCodeContext.Stage GetCleanupStage(TypePositionInfo info, StubCodeContext context)
+        public static StubIdentifierContext.Stage GetCleanupStage(TypePositionInfo info, StubCodeContext context)
         {
             // Unmanaged to managed doesn't properly handle lifetimes right now and will default to the original behavior.
             // Failures will only occur when marshalling fails, and would only cause leaks, not double frees.
             // See https://github.com/dotnet/runtime/issues/89483 for more details
             if (context.Direction is MarshalDirection.UnmanagedToManaged)
-                return StubCodeContext.Stage.CleanupCallerAllocated;
+                return StubIdentifierContext.Stage.CleanupCallerAllocated;
 
             return GetMarshalDirection(info, context) switch
             {
-                MarshalDirection.UnmanagedToManaged => StubCodeContext.Stage.CleanupCalleeAllocated,
-                MarshalDirection.ManagedToUnmanaged => StubCodeContext.Stage.CleanupCallerAllocated,
-                MarshalDirection.Bidirectional => StubCodeContext.Stage.CleanupCallerAllocated,
+                MarshalDirection.UnmanagedToManaged => StubIdentifierContext.Stage.CleanupCalleeAllocated,
+                MarshalDirection.ManagedToUnmanaged => StubIdentifierContext.Stage.CleanupCallerAllocated,
+                MarshalDirection.Bidirectional => StubIdentifierContext.Stage.CleanupCallerAllocated,
                 _ => throw new UnreachableException()
             };
         }
@@ -379,6 +378,92 @@ namespace Microsoft.Interop
                 }
                 // If the parameter is multidimensional and a higher indirection level parameter is ByValue [Out], then we should warn.
             }
+        }
+
+        public static SyntaxTokenList GetManagedParameterModifiers(TypePositionInfo typeInfo)
+        {
+            SyntaxTokenList tokens = TokenList();
+
+            // "out" parameters are implicitly scoped, so we can't put the "scoped" keyword on them.
+            // All other cases of explicit parameters are only scoped when the "scoped" keyword is present.
+            // When the "scoped" keyword is present, it must be present on all declarations.
+            if (typeInfo.ScopedKind != ScopedKind.None && typeInfo.RefKind != RefKind.Out)
+            {
+                tokens = tokens.Add(Token(SyntaxKind.ScopedKeyword));
+            }
+
+            if (typeInfo.IsByRef)
+            {
+                switch (typeInfo.RefKind)
+                {
+                    case RefKind.In:
+                        tokens = tokens.Add(Token(SyntaxKind.InKeyword));
+                        break;
+                    case RefKind.Ref:
+                        tokens = tokens.Add(Token(SyntaxKind.RefKeyword));
+                        break;
+
+                    case RefKind.Out:
+                        tokens = tokens.Add(Token(SyntaxKind.OutKeyword));
+                        break;
+                    case RefKind.RefReadOnlyParameter:
+                        tokens = tokens.Add(Token(SyntaxKind.RefKeyword));
+                        tokens = tokens.Add(Token(SyntaxKind.ReadOnlyKeyword));
+                        break;
+                    default:
+                        throw new NotImplementedException($"Support for some RefKind: {typeInfo.RefKind}");
+                }
+            }
+
+            if (typeInfo.IsExplicitThis)
+            {
+                tokens = tokens.Add(Token(SyntaxKind.ThisKeyword));
+            }
+
+            return tokens;
+        }
+
+        public static SyntaxToken GetManagedArgumentRefKindKeyword(TypePositionInfo typeInfo)
+        {
+            return typeInfo.RefKind switch
+            {
+                RefKind.None => default,
+                RefKind.In => Token(SyntaxKind.InKeyword),
+                RefKind.Ref => Token(SyntaxKind.RefKeyword),
+                RefKind.Out => Token(SyntaxKind.OutKeyword),
+                RefKind.RefReadOnlyParameter => Token(SyntaxKind.InKeyword),
+                _ => throw new NotImplementedException($"Support for some RefKind: {typeInfo.RefKind}")
+            };
+        }
+
+        /// <summary>
+        /// Compute if the provided element is the return element for the stub that is being generated (not any inner call).
+        /// </summary>
+        /// <param name="info">The element information</param>
+        /// <returns><c>true</c> if the element is in the return position for this stub; otherwise, false.</returns>
+        public static bool IsInStubReturnPosition(TypePositionInfo info, MarshalDirection direction)
+        {
+            return direction switch
+            {
+                MarshalDirection.ManagedToUnmanaged => info.IsManagedReturnPosition,
+                MarshalDirection.UnmanagedToManaged => info.IsNativeReturnPosition,
+                _ => throw new ArgumentException("Cannot determine the return position of a bidirectional stub", nameof(direction)),
+            };
+        }
+
+        /// <summary>
+        /// Compute if the provided element is the return element for the invocation in the stub.
+        /// </summary>
+        /// <param name="info">The element information</param>
+        /// <returns><c>true</c> if the element is in the return position for the invocation; otherwise, false.</returns>
+        public static bool IsInInvocationReturnPosition(TypePositionInfo info, MarshalDirection direction)
+        {
+            return direction switch
+            {
+                MarshalDirection.ManagedToUnmanaged => info.IsNativeReturnPosition,
+                MarshalDirection.UnmanagedToManaged => info.IsManagedReturnPosition,
+                _ => throw new ArgumentException("Cannot determine the return position of a bidirectional stub", nameof(direction)),
+            };
         }
     }
 }

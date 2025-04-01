@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -39,21 +40,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("DelayLoadHelperImport(");
+            sb.Append("DelayLoadHelperImport("u8);
             if (_useVirtualCall)
             {
-                sb.Append("[VSD] ");
+                sb.Append("[VSD] "u8);
             }
             if (_useJumpableStub)
             {
-                sb.Append("[JMP] ");
+                sb.Append("[JMP] "u8);
             }
             sb.Append(_helper.ToString());
-            sb.Append(") -> ");
+            sb.Append(") -> "u8);
             ImportSignature.AppendMangledName(nameMangler, sb);
             if (CallingMethod != null)
             {
-                sb.Append(" @ ");
+                sb.Append(" @ "u8);
                 sb.Append(nameMangler.GetMangledMethodName(CallingMethod));
             }
         }
@@ -66,6 +67,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // when loaded by CoreCLR
             dataBuilder.EmitReloc(_delayLoadHelper,
                 factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64, factory.Target.CodeDelta);
+
+            if (Table.EntrySize == (factory.Target.PointerSize * 2))
+            {
+                dataBuilder.EmitNaturalInt(0);
+            }
+            else
+            {
+                Debug.Assert(Table.EntrySize == factory.Target.PointerSize);
+            }
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)

@@ -118,9 +118,7 @@ namespace ILCompiler.ObjectWriter
                 return false;
 
             // Foldable sections are always COMDATs
-            if (section == ObjectNodeSection.FoldableManagedCodeUnixContentSection ||
-                section == ObjectNodeSection.FoldableManagedCodeWindowsContentSection ||
-                section == ObjectNodeSection.FoldableReadOnlyDataSection)
+            if (section == ObjectNodeSection.FoldableReadOnlyDataSection)
                 return true;
 
             if (_isSingleFileCompilation)
@@ -134,15 +132,6 @@ namespace ILCompiler.ObjectWriter
                 return false;
 
             return true;
-        }
-
-        private protected static ObjectNodeSection GetSharedSection(ObjectNodeSection section, string key)
-        {
-            string standardSectionPrefix = "";
-            if (section.IsStandardSection)
-                standardSectionPrefix = ".";
-
-            return new ObjectNodeSection(standardSectionPrefix + section.Name, section.Type, key);
         }
 
         private unsafe void EmitOrResolveRelocation(
@@ -169,8 +158,9 @@ namespace ILCompiler.ObjectWriter
                     // For R_ARM_THM_JUMP24 the thumb bit cannot be encoded, so mask it out.
                     long maskThumbBitOut = relocType is IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
                     long maskThumbBitIn = relocType is IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
+                    long adjustedAddend = addend;
 
-                    addend -= relocType switch
+                    adjustedAddend -= relocType switch
                     {
                         IMAGE_REL_BASED_REL32 => 4,
                         IMAGE_REL_BASED_THUMB_BRANCH24 => 4,
@@ -178,11 +168,19 @@ namespace ILCompiler.ObjectWriter
                         _ => 0
                     };
 
-                    addend += definedSymbol.Value & ~maskThumbBitOut;
-                    addend += Relocation.ReadValue(relocType, (void*)pData);
-                    addend |= definedSymbol.Value & maskThumbBitIn;
-                    addend -= offset;
-                    Relocation.WriteValue(relocType, (void*)pData, addend);
+                    adjustedAddend += definedSymbol.Value & ~maskThumbBitOut;
+                    adjustedAddend += Relocation.ReadValue(relocType, (void*)pData);
+                    adjustedAddend |= definedSymbol.Value & maskThumbBitIn;
+                    adjustedAddend -= offset;
+
+                    if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend))
+                    {
+                        EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
+                    }
+                    else
+                    {
+                        Relocation.WriteValue(relocType, (void*)pData, adjustedAddend);
+                    }
                 }
             }
             else
@@ -329,6 +327,13 @@ namespace ILCompiler.ObjectWriter
             INodeWithDebugInfo debugNode,
             bool hasSequencePoints);
 
+        private protected virtual void EmitDebugThunkInfo(
+            string methodName,
+            SymbolDefinition methodSymbol,
+            INodeWithDebugInfo debugNode)
+        {
+        }
+
         private protected abstract void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols);
 
         private void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
@@ -379,12 +384,16 @@ namespace ILCompiler.ObjectWriter
                 if (node.ShouldSkipEmittingObjectNode(_nodeFactory))
                     continue;
 
+                ISymbolNode symbolNode = node as ISymbolNode;
+                if (_nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode) != symbolNode)
+                    continue;
+
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
                 dumper?.DumpObjectNode(_nodeFactory, node, nodeContents);
 
                 string currentSymbolName = null;
-                if (node is ISymbolNode symbolNode)
+                if (symbolNode != null)
                 {
                     currentSymbolName = GetMangledName(symbolNode);
                 }
@@ -404,13 +413,20 @@ namespace ILCompiler.ObjectWriter
                         n == node ? currentSymbolName : GetMangledName(n),
                         n.Offset + thumbBit,
                         n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0);
-                    if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
+                    if (_nodeFactory.GetSymbolAlternateName(n, out bool isHidden) is string alternateName)
                     {
+                        string alternateCName = ExternCName(alternateName);
                         sectionWriter.EmitSymbolDefinition(
-                            ExternCName(alternateName),
+                            alternateCName,
                             n.Offset + thumbBit,
                             n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
-                            global: true);
+                            global: !isHidden);
+
+                        if (n is IMethodNode)
+                        {
+                            // https://github.com/dotnet/runtime/issues/105330: consider exports CFG targets
+                            EmitReferencedMethod(alternateCName);
+                        }
                     }
                 }
 
@@ -438,7 +454,9 @@ namespace ILCompiler.ObjectWriter
             {
                 foreach (Relocation reloc in blockToRelocate.Relocations)
                 {
-                    string relocSymbolName = GetMangledName(reloc.Target);
+                    ISymbolNode relocTarget = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, reloc.Target);
+
+                    string relocSymbolName = GetMangledName(relocTarget);
 
                     EmitOrResolveRelocation(
                         blockToRelocate.SectionIndex,
@@ -446,10 +464,10 @@ namespace ILCompiler.ObjectWriter
                         blockToRelocate.Data.AsSpan(reloc.Offset),
                         reloc.RelocType,
                         relocSymbolName,
-                        reloc.Target.Offset);
+                        relocTarget.Offset);
 
                     if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard) &&
-                        reloc.Target is IMethodNode or AssemblyStubNode)
+                        relocTarget is IMethodNode or AssemblyStubNode or AddressTakenExternSymbolNode)
                     {
                         // For now consider all method symbols address taken.
                         // We could restrict this in the future to those that are referenced from
@@ -481,15 +499,21 @@ namespace ILCompiler.ObjectWriter
                         _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
                     }
 
-                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode and IMethodNode methodNode)
+                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode)
                     {
-                        bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
-                        uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
                         string methodName = GetMangledName(symbolDefinitionNode);
-
                         if (_definedSymbols.TryGetValue(methodName, out var methodSymbol))
                         {
-                            EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            if (node is IMethodNode methodNode)
+                            {
+                                bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
+                                uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
+                                EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            }
+                            else
+                            {
+                                EmitDebugThunkInfo(methodName, methodSymbol, debugNode);
+                            }
                         }
                     }
                 }
@@ -517,21 +541,13 @@ namespace ILCompiler.ObjectWriter
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            var stopwatch = Stopwatch.StartNew();
 
-            if (Environment.GetEnvironmentVariable("DOTNET_USE_LLVM_OBJWRITER") == "1")
-            {
-                LegacyObjectWriter.EmitObject(objectFilePath, nodes, factory, options, dumper, logger);
-            }
-            else
-            {
-                ObjectWriter objectWriter =
-                    factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
-                    factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
-                    new ElfObjectWriter(factory, options);
-                objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
-            }
+            ObjectWriter objectWriter =
+                factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
+                factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
+                new ElfObjectWriter(factory, options);
+            objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
 
             stopwatch.Stop();
             if (logger.IsVerbose)

@@ -62,7 +62,7 @@ namespace System.Reflection
             }
         }
 
-        internal unsafe object? InvokeWithOneArg(
+        internal object? InvokeWithOneArg(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
@@ -108,7 +108,7 @@ namespace System.Reflection
             return ret;
         }
 
-        internal unsafe object? InvokeWithFewArgs(
+        internal object? InvokeWithFewArgs(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
@@ -118,8 +118,8 @@ namespace System.Reflection
             Debug.Assert(_argCount <= MaxStackAllocArgCount);
 
             StackAllocatedArgumentsWithCopyBack stackArgStorage = default;
-            Span<object?> copyOfArgs = stackArgStorage._args.AsSpan(_argCount);
-            Span<bool> shouldCopyBack = stackArgStorage._shouldCopyBack.AsSpan(_argCount);
+            Span<object?> copyOfArgs = ((Span<object?>)stackArgStorage._args).Slice(0, _argCount);
+            Span<bool> shouldCopyBack = ((Span<bool>)stackArgStorage._shouldCopyBack).Slice(0, _argCount);
 
             object? ret;
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
@@ -160,15 +160,11 @@ namespace System.Reflection
             }
 
             StackAllocatedByRefs byrefs = default;
-#pragma warning disable CS8500
             IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
-#pragma warning restore CS8500
 
             for (int i = 0; i < _argCount; i++)
             {
-#pragma warning disable CS8500
                 *(ByReference*)(pByRefFixedStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
-#pragma warning restore CS8500
                     ByReference.Create(ref copyOfArgs[i]!.GetRawData()) :
                     ByReference.Create(ref copyOfArgs[i]);
             }
@@ -256,9 +252,7 @@ namespace System.Reflection
 
                     for (int i = 0; i < _argCount; i++)
                     {
-    #pragma warning disable CS8500
                         *(ByReference*)(pByRefStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
-    #pragma warning restore CS8500
                             ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i).GetRawData()) :
                             ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
                     }
@@ -402,6 +396,7 @@ namespace System.Reflection
             {
                 if (sigElementType.IsValueType)
                 {
+                    Debug.Assert(!sigElementType.IsNullableOfT, "A true boxed Nullable<T> should never be here.");
                     // Make a copy to prevent the boxed instance from being directly modified by the method.
                     arg = RuntimeType.AllocateValueType(sigElementType, arg);
                 }

@@ -69,5 +69,11 @@
     <UnofficialBuildRID Include="linux-musl-ppc64le">
       <Platform>ppc64le</Platform>
     </UnofficialBuildRID>
+    <UnofficialBuildRID Include="linux-riscv64">
+      <Platform>riscv64</Platform>
+    </UnofficialBuildRID>
+    <UnofficialBuildRID Include="linux-musl-riscv64">
+      <Platform>riscv64</Platform>
+    </UnofficialBuildRID>
   </ItemGroup>
 </Project>

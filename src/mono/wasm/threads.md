@@ -2,7 +2,7 @@
 
 ## Building the runtime ##
 
-Build the runtime with `/p:MonoWasmBuildVariant=multithread` to enable support for multi-threading.
+Build the runtime with `/p:WasmEnableThreads=true` to enable support for multi-threading.
 
 ## Building sample apps ##
 
@@ -11,19 +11,14 @@ This also works with released versions of .NET 7 or later and the `wasmbrowser` 
 
 ## Libraries feature defines ##
 
-We use the `FeatureWasmThreads` property in the libraries projects to conditionally define
-`FEATURE_WASM_THREADS` which is used to affect how the libraries are built for the multi-threaded
+We use the `FeatureWasmManagedThreads` property in the libraries projects to conditionally define
+`FEATURE_WASM_MANAGED_THREADS` which is used to affect how the libraries are built for the multi-threaded
 runtime.
-
-We use the `FeatureWasmPerfTracing` property in the libraries projects to
-conditionally define `FEATURE_WASM_PERFTRACING` which is used to affect how the
-libraries are built for a runtime that is single-threaded for users, but
-internally can use multithreading for EventPipe diagnostics.
 
 ### Ref asssemblies ###
 
 For ref assemblies that have APIs that are related to threading, we use
-`[UnsupportedOSPlatform("browser")]` under a `FEATURE_WASM_THREADS` define to mark APIs that are not
+`[UnsupportedOSPlatform("browser")]` under a `FEATURE_WASM_MANAGED_THREADS` define to mark APIs that are not
 supported with the single-threaded runtime.  Each such ref assembly (for example
 `System.Threading.Thread`) is defined in two places: `src/libraries/System.Threading.Thread/ref` for
 the single-threaded ref assemblies, and
@@ -41,9 +36,6 @@ multi-threading.  The property is a boolean constant that will allow the IL trim
 JIT/interpreter/AOT to drop the multi-threaded implementation in the single-threaded CoreLib.
 
 The implementation should not use `[UnsupportedOSPlatform("browser")]`
-
-**TODO** For `FeatureWasmPerfTracing`, the implementation should check *some
-runtime constant* and throw PNSE if diagnostics are not enabled.
 
 ## Native runtime preprocessor defines ##
 
@@ -80,7 +72,7 @@ a worker thread will use `async_run_in_main_thread` to queue up work for the mai
 
 To run the debugger tests in the runtime [built with enabled support for multi-threading](#building-the-runtime) we use:
 ```
-dotnet test src/mono/wasm/debugger/DebuggerTestSuite -e RuntimeConfiguration=Debug -e Configuration=Debug -e DebuggerHost=chrome -e WasmEnableThreads=true -e WASM_TESTS_USING_VARIANT=multithreaded
+dotnet test src/mono/browser/debugger/DebuggerTestSuite -e RuntimeConfiguration=Debug -e Configuration=Debug -e DebuggerHost=chrome -e WasmEnableThreads=true
 ```
 
 ## JS interop on dedicated threads ##

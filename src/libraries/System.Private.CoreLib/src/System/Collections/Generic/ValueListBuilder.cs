@@ -13,11 +13,14 @@ namespace System.Collections.Generic
         private T[]? _arrayFromPool;
         private int _pos;
 
-        public ValueListBuilder(Span<T> initialSpan)
+        public ValueListBuilder(Span<T?> scratchBuffer)
         {
-            _span = initialSpan;
-            _arrayFromPool = null;
-            _pos = 0;
+            _span = scratchBuffer!;
+        }
+
+        public ValueListBuilder(int capacity)
+        {
+            Grow(capacity);
         }
 
         public int Length
@@ -88,7 +91,7 @@ namespace System.Collections.Generic
 
         public void Insert(int index, scoped ReadOnlySpan<T> source)
         {
-            Debug.Assert(index >= 0 && index <= _pos);
+            Debug.Assert(index == 0, "Implementation currently only supports index == 0");
 
             if ((uint)(_pos + source.Length) > (uint)_span.Length)
             {

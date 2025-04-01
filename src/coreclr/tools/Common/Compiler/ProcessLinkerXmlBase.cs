@@ -128,7 +128,7 @@ namespace ILCompiler
 
         protected virtual AllowedAssemblies AllowedAssemblySelector { get => _owningModule != null ? AllowedAssemblies.ContainingAssembly : AllowedAssemblies.AnyAssembly; }
 
-        private bool ShouldProcessAllAssemblies(XPathNavigator nav, [NotNullWhen(false)] out AssemblyName? assemblyName)
+        private bool ShouldProcessAllAssemblies(XPathNavigator nav, [NotNullWhen(false)] out AssemblyNameInfo? assemblyName)
         {
             assemblyName = null;
             if (GetFullName(nav) == AllAssembliesFullName)
@@ -147,7 +147,7 @@ namespace ILCompiler
 
                 // Errors for invalid assembly names should show up even if this element will be
                 // skipped due to feature conditions.
-                bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyName? name);
+                bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyNameInfo? name);
                 if (processAllAssemblies && !_globalAttributeRemoval)
                 {
 #if !READYTORUN
@@ -175,7 +175,7 @@ namespace ILCompiler
                         if (_owningModule.Assembly.GetName().Name != name!.Name)
                         {
 #if !READYTORUN
-                            LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _owningModule.Assembly.GetName().Name ?? "", name.ToString());
+                            LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _owningModule.Assembly.GetName().Name, name.FullName);
 #endif
                             continue;
                         }
@@ -188,7 +188,7 @@ namespace ILCompiler
                     if (assembly == null)
                     {
 #if !READYTORUN
-                        LogWarning(assemblyNav, DiagnosticId.XmlCouldNotResolveAssembly, name!.Name ?? "");
+                        LogWarning(assemblyNav, DiagnosticId.XmlCouldNotResolveAssembly, name!.Name);
 #endif
                         continue;
                     }
@@ -217,9 +217,10 @@ namespace ILCompiler
                         continue;
                 }
 
-                // TODO: Process exported types
+                MetadataType? type = CecilCompatibleTypeParser.GetType(assembly, fullname);
 
-                TypeDesc? type = CecilCompatibleTypeParser.GetType(assembly, fullname);
+                if (type != null && type.Module != assembly)
+                    type = ProcessExportedType(type, assembly, typeNav);
 
                 if (type == null)
                 {
@@ -233,6 +234,8 @@ namespace ILCompiler
                 ProcessType(type, typeNav);
             }
         }
+
+        protected virtual MetadataType? ProcessExportedType(MetadataType exported, ModuleDesc assembly, XPathNavigator nav) => exported;
 
         private void MatchType(TypeDesc type, Regex regex, XPathNavigator nav)
         {
@@ -499,9 +502,9 @@ namespace ILCompiler
 
         protected virtual void ProcessProperty(TypeDesc type, PropertyPseudoDesc property, XPathNavigator nav, object? customData, bool fromSignature) { }
 
-        protected virtual AssemblyName GetAssemblyName(XPathNavigator nav)
+        protected virtual AssemblyNameInfo GetAssemblyName(XPathNavigator nav)
         {
-            return new AssemblyName(GetFullName(nav));
+            return AssemblyNameInfo.Parse(GetFullName(nav));
         }
 
         protected static string GetFullName(XPathNavigator nav)
@@ -759,7 +762,7 @@ namespace ILCompiler
 
     public class CecilCompatibleTypeParser
     {
-        public static TypeDesc? GetType(ModuleDesc assembly, string fullName)
+        public static MetadataType? GetType(ModuleDesc assembly, string fullName)
         {
             Debug.Assert(!string.IsNullOrEmpty(fullName));
             var position = fullName.IndexOf('/');

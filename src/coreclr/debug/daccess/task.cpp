@@ -121,16 +121,8 @@ ClrDataTask::GetCurrentAppDomain(
 
     EX_TRY
     {
-        if (m_thread->GetDomain())
-        {
-            *appDomain = new (nothrow)
-                ClrDataAppDomain(m_dac, m_thread->GetDomain());
-            status = *appDomain ? S_OK : E_OUTOFMEMORY;
-        }
-        else
-        {
-            status = E_INVALIDARG;
-        }
+        *appDomain = new (nothrow) ClrDataAppDomain(m_dac, AppDomain::GetCurrentDomain());
+        status = *appDomain ? S_OK : E_OUTOFMEMORY;
     }
     EX_CATCH
     {
@@ -549,7 +541,7 @@ ClrDataTask::GetLastExceptionState(
         {
             *exception = new (nothrow)
                 ClrDataExceptionState(m_dac,
-                                      m_thread->GetDomain(),
+                                      AppDomain::GetCurrentDomain(),
                                       m_thread,
                                       CLRDATA_EXCEPTION_PARTIAL,
                                       NULL,
@@ -721,30 +713,21 @@ ClrDataAppDomain::GetName(
 
     EX_TRY
     {
-        bool isUtf8;
-        PVOID rawName = m_appDomain->GetFriendlyNameNoSet(&isUtf8);
+        LPCWSTR rawName = m_appDomain->GetFriendlyName();
         if (rawName)
         {
-            if (isUtf8)
+            status = StringCchCopy(name, bufLen, rawName) == S_OK ?
+                S_OK : S_FALSE;
+            if (nameLen)
             {
-                status = ConvertUtf8((LPCUTF8)rawName,
-                                     bufLen, nameLen, name);
-            }
-            else
-            {
-                status = StringCchCopy(name, bufLen, (PCWSTR)rawName) == S_OK ?
-                    S_OK : S_FALSE;
-                if (nameLen)
+                size_t cchName = u16_strlen(rawName) + 1;
+                if (FitsIn<ULONG32>(cchName))
                 {
-                    size_t cchName = u16_strlen((PCWSTR)rawName) + 1;
-                    if (FitsIn<ULONG32>(cchName))
-                    {
-                        *nameLen = (ULONG32) cchName;
-                    }
-                    else
-                    {
-                        status = COR_E_OVERFLOW;
-                    }
+                    *nameLen = (ULONG32) cchName;
+                }
+                else
+                {
+                    status = COR_E_OVERFLOW;
                 }
             }
         }
@@ -2491,20 +2474,15 @@ ClrDataModule::GetFlags(
     {
         *flags = 0;
 
-        if (m_module->IsReflection())
+        if (m_module->IsReflectionEmit())
         {
             (*flags) |= CLRDATA_MODULE_IS_DYNAMIC;
         }
 
         PTR_Assembly pAssembly = m_module->GetAssembly();
-        PTR_BaseDomain pBaseDomain = pAssembly->GetDomain();
-        if (pBaseDomain->IsAppDomain())
+        if (pAssembly == AppDomain::GetCurrentDomain()->GetRootAssembly())
         {
-            PTR_AppDomain pAppDomain = pBaseDomain->AsAppDomain();
-            if (pAssembly == pAppDomain->GetRootAssembly())
-            {
-                (*flags) |= CLRDATA_MODULE_IS_MAIN_MODULE;
-            }
+            (*flags) |= CLRDATA_MODULE_IS_MAIN_MODULE;
         }
         status = S_OK;
     }
@@ -2718,8 +2696,8 @@ ClrDataModule::RequestGetModuleData(
     Module* pModule = GetModule();
     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
-    outGMD->PEAssembly = TO_CDADDR(PTR_HOST_TO_TADDR(pPEAssembly));
-    outGMD->IsDynamic = pModule->IsReflection();
+    outGMD->PEAssembly = TO_CDADDR(PTR_HOST_TO_TADDR(pModule));
+    outGMD->IsDynamic = pModule->IsReflectionEmit();
 
     if (pPEAssembly != NULL)
     {
@@ -4967,7 +4945,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
 
     exIf = new (nothrow)
         ClrDataExceptionState(dac,
-                              thread->GetDomain(),
+                              AppDomain::GetCurrentDomain(),
                               thread,
                               CLRDATA_EXCEPTION_DEFAULT,
                               exState,
@@ -5127,7 +5105,7 @@ EnumMethodDefinitions::CdStart(Module* mod,
 {
     HRESULT status;
 
-    *handle = NULL;
+    *handle = 0;
 
     if (!mod)
     {
@@ -5218,8 +5196,8 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
  NextMethod:
     {
         // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        if (!m_methodIter.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        if (!m_methodIter.Next(pAssembly.This()))
         {
             return S_FALSE;
         }

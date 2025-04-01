@@ -26,7 +26,11 @@ namespace System.Globalization.Tests
         private static Stream GetIdnaTestTxt()
         {
             string fileName = null;
-            if (PlatformDetection.ICUVersion >= new Version(66, 0) || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
+            if (PlatformDetection.ICUVersion >= new Version(76, 0))
+                fileName = "IdnaTest_16.txt";
+            else if (PlatformDetection.ICUVersion >= new Version(74, 0))
+                fileName = "IdnaTest_15_1.txt";
+            else if (PlatformDetection.ICUVersion >= new Version(66, 0) || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
                 fileName = "IdnaTest_13.txt";
             else if (PlatformDetection.IsWindows7)
                 fileName = "IdnaTest_Win7.txt";
@@ -61,7 +65,11 @@ namespace System.Globalization.Tests
 
         private static IConformanceIdnaTest GetConformanceIdnaTest(string line, int lineCount)
         {
-            if (PlatformDetection.ICUVersion >= new Version(66, 0) || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
+            if (PlatformDetection.ICUVersion >= new Version(76, 0))
+                return new Unicode_16_0_IdnaTest(line, lineCount);
+            else if (PlatformDetection.ICUVersion >= new Version(74, 0))
+                return new Unicode_15_1_IdnaTest(line, lineCount);
+            else if (PlatformDetection.ICUVersion >= new Version(66, 0) || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
                 return new Unicode_13_0_IdnaTest(line, lineCount);
             else if (PlatformDetection.IsWindows7)
                 return new Unicode_Win7_IdnaTest(line, lineCount);

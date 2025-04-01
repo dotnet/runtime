@@ -3,7 +3,19 @@
 
 namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
+    using System;
     using NamespaceForABC;
+
+    public partial class NestedClassWithNoTypeConstraintTestsExtensions<T>
+    {
+        public void M7(ILogger logger) => Log.M7(logger);
+
+        private static partial class Log
+        {
+            [LoggerMessage(EventId = 7, Level = LogLevel.Debug, Message = "M7")]
+            public static partial void M7(ILogger logger);
+        }
+    }
 
     internal static partial class NestedClassTestsExtensions<T> where T : ABC
     {
@@ -61,6 +73,23 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             }
         }
     }
+
+    public partial class NestedClassWithGenericTypesWithAttributesTestsExtensions<[Foo] A, [Bar] B, C>
+    {
+        public void M13<D>(A a, B b, C c, ILogger logger) => Log<D>.M13(logger, a, b, c);
+
+        private static partial class Log<[Foo] D>
+        {
+            [LoggerMessage(EventId = 13, Level = LogLevel.Debug, Message = "M13: A = {a}; B = {b}; C = {c}")]
+            public static partial void M13(ILogger logger, A a, B b, C c);
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.GenericParameter)]
+    public sealed class FooAttribute : Attribute { }
+
+    [AttributeUsage(AttributeTargets.GenericParameter)]
+    public sealed class BarAttribute : Attribute { }
 }
 
 namespace NamespaceForABC
