@@ -1952,19 +1952,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             StoreFFRValue(node);
             break;
         }
-        case NI_Sve_Index:
-        {
-            int start = (int)node->Op(1)->AsIntCon()->IconValue();
-            int step = (int)node->Op(1)->AsIntCon()->IconValue();
-            bool encodableStart = ((-16 <= start) && (start <= 15));
-            bool encodableStep = ((-16 <= step) && (step <= 15));
-            if (encodableStart && encodableStep)
-            {
-                node->Op(1)->SetContained();
-                node->Op(2)->SetContained();
-            }
-            break;
-        }
 
         default:
             break;
@@ -4404,7 +4391,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
             case NI_Sve_DuplicateScalarToVector:
-                assert(hasImmediateOperand);
+                assert(!hasImmediateOperand);
                 if (intrin.op1->IsCnsIntOrI())
                 {
                     ssize_t iconValue = intrin.op1->AsIntCon()->IconValue();
@@ -4414,6 +4401,21 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                 }
                 break;
+            case NI_Sve_Index:
+            {
+                assert(!hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op1));
+                assert(varTypeIsIntegral(intrin.op2));
+                if (intrin.op1->IsCnsIntOrI() && emitter::isValidSimm<5>(intrin.op1->AsIntCon()->IconValue()))
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+                if (intrin.op2->IsCnsIntOrI() && emitter::isValidSimm<5>(intrin.op2->AsIntCon()->IconValue()))
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+            }
 
             default:
                 unreached();

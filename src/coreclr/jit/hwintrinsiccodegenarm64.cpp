@@ -2652,18 +2652,29 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             case NI_Sve_Index:
             {
-                // either both should be available or both not.
-                assert ((op1Reg == REG_NA) == (op2Reg == REG_NA));
-
-                if (op1Reg == REG_NA)
+                if ((op1Reg == REG_NA) && (op2Reg == REG_NA))
                 {
                     int start = (int)intrin.op1->AsIntCon()->gtIconVal;
                     int step = (int)intrin.op2->AsIntCon()->gtIconVal;
-                    GetEmitter()->emitIns_R_I_I(ins, EA_SCALABLE, targetReg, start, step, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    GetEmitter()->emitInsSve_R_I_I(ins, EA_SCALABLE, targetReg, start, step, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                }
+                else if ((op1Reg != REG_NA) && (op2Reg != REG_NA))
+                {
+                    emitAttr scalarSize = emitActualTypeSize(node->GetSimdBaseType());
+                    GetEmitter()->emitInsSve_R_R_R(ins, scalarSize, targetReg, op1Reg, op2Reg, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                }
+                else if (op1Reg != REG_NA)
+                {
+                    assert(op2Reg == REG_NA);
+                    int step = (int)intrin.op2->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitInsSve_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, step, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
                 }
                 else
                 {
-                    GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, op2Reg, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    assert(op1Reg == REG_NA);
+
+                    int start = (int)intrin.op1->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitInsSve_R_R_I(ins, EA_SCALABLE, targetReg, op2Reg, start, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)), INS_SCALABLE_OPTS_IMM_FIRST);
                 }
                 break;
             }
