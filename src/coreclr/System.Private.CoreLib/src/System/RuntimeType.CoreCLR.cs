@@ -552,7 +552,12 @@ namespace System
                                     // Grow the list by exactly one element in this case to avoid null entries at the end.
                                     //
 
-                                    Debug.Assert(false);
+                                    // TODO: runtime-async we need to rationalize how async2 thunks eork in reflection.
+                                    //       possibly they should not be exposed as they are runtime-provided implementation
+                                    //       details, that in theory may change.
+                                    //
+                                    //       For now I will disable this assert as we may get here with extra methods.
+                                    // Debug.Assert(false);
 
                                     newSize = cachedMembers.Length + 1;
                                 }
@@ -604,9 +609,9 @@ namespace System
                             MethodAttributes methodAttributes = RuntimeMethodHandle.GetAttributes(methodHandle);
 
                             #region Continue if this is a constructor
-                            Debug.Assert(
-                                (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.RTSpecialName) == 0 ||
-                                RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"));
+                            //Debug.Assert(
+                            //    (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.RTSpecialName) == 0 ||
+                            //    RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"));
 
                             if ((methodAttributes & MethodAttributes.RTSpecialName) != 0)
                                 continue;
@@ -663,10 +668,10 @@ namespace System
                                 MethodAttributes methodAccess = methodAttributes & MethodAttributes.MemberAccessMask;
 
                                 #region Continue if this is a constructor
-                                Debug.Assert(
-                                    (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.RTSpecialName) == 0 ||
-                                    RuntimeMethodHandle.GetName(methodHandle).Equals(".ctor") ||
-                                    RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"));
+                                //Debug.Assert(
+                                //    (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.RTSpecialName) == 0 ||
+                                //    RuntimeMethodHandle.GetName(methodHandle).Equals(".ctor") ||
+                                //    RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"));
 
                                 if ((methodAttributes & MethodAttributes.RTSpecialName) != 0)
                                     continue;
@@ -764,6 +769,10 @@ namespace System
                         Debug.Assert(!methodHandle.IsNullHandle());
 
                         if ((methodAttributes & MethodAttributes.RTSpecialName) == 0)
+                            continue;
+
+                        if (!RuntimeMethodHandle.GetName(methodHandle).Equals(".ctor") &&
+                            !RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"))
                             continue;
 
                         // Constructors should not be virtual or abstract

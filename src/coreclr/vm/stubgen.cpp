@@ -173,6 +173,21 @@ void ILCodeStream::Emit(ILInstrEnum instr, INT16 iStackDelta, UINT_PTR uArg)
     pInstrBuffer[idxCurInstr].uInstruction = static_cast<UINT16>(instr);
     pInstrBuffer[idxCurInstr].iStackDelta = iStackDelta;
     pInstrBuffer[idxCurInstr].uArg = uArg;
+
+    if (m_buildingEHClauses.GetCount() > 0)
+    {
+        ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
+
+        if (clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL &&
+             clause.handlerBeginLabel != NULL && clause.kind == ILStubEHClause::kTypedCatch)
+        {
+            if (clause.handlerBeginLabel->m_idxLabeledInstruction == idxCurInstr)
+            {
+                // Catch clauses start with an exception on the stack
+                pInstrBuffer[idxCurInstr].iStackDelta++;
+            }
+        }
+    }
 }
 
 ILCodeLabel* ILStubLinker::NewCodeLabel()

@@ -536,6 +536,25 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, const ClassLayoutBuilder& b
     return newLayout;
 }
 
+bool ClassLayout::HasGCByRef() const
+{
+    if (!HasGCPtr())
+    {
+        return false;
+    }
+
+    unsigned numSlots = GetSlotCount();
+    for (unsigned i = 0; i < numSlots; i++)
+    {
+        if (GetGCPtrType(i) == TYP_BYREF)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 //------------------------------------------------------------------------
 // IsStackOnly: does the layout represent a block that can never be on the heap?
 //

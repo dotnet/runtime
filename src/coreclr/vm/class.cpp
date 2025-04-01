@@ -741,6 +741,7 @@ HRESULT EEClass::AddMethodDesc(
                                                             classification,
                                                             TRUE, // fNonVtableSlot
                                                             TRUE, // fNativeCodeSlot
+                                                            FALSE, /* HasAsyncMethodData */
                                                             pMT,
                                                             &dummyAmTracker);
 
@@ -788,7 +789,9 @@ HRESULT EEClass::AddMethodDesc(
                                 TRUE,   // fEnC
                                 0,      // RVA - non-zero only for NDirect
                                 pImport,
-                                NULL
+                                NULL,
+                                Signature(),
+                                AsyncMethodKind::NotAsync
                                 COMMA_INDEBUG(debug_szMethodName)
                                 COMMA_INDEBUG(pMT->GetDebugClassName())
                                 COMMA_INDEBUG(NULL)

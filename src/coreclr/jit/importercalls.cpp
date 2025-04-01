@@ -96,7 +96,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool bIntrinsicImported = false;
 
     CORINFO_SIG_INFO calliSig;
-    NewCallArg       extraArg;
+    GenTree*         varArgsCookie = nullptr;
+    GenTree*         instParam     = nullptr;
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
@@ -520,6 +521,18 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
         }
+
+        // Temporary hack since these functions have to be recognized as async2
+        // calls in JIT generated state machines only.
+        if (compIsAsync2() &&
+            ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync) ||
+             (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync) ||
+             (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_Await)))
+        {
+            assert((call != nullptr) && call->OperIs(GT_CALL));
+            call->AsCall()->gtIsAsyncCall = true;
+            JITDUMP("Marking [%06u] as a special-case async call\n", dspTreeID(call));
+        }
     }
     assert(sig);
     assert(clsHnd || (opcode == CEE_CALLI)); // We're never verifying for CALLI, so this is not set.
@@ -709,12 +722,15 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
-    /*-------------------------------------------------------------------------
-     * Create the argument list
-     */
+    if (sig->isAsyncCall())
+    {
+        call->AsCall()->gtIsAsyncCall = true;
+    }
+
+    // Now create the argument list.
 
     //-------------------------------------------------------------------------
-    // Special case - for varargs we have an implicit last argument
+    // Special case - for varargs we have an extra argument
 
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
     {
@@ -727,9 +743,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         varCookie = info.compCompHnd->getVarArgsHandle(sig, &pVarCookie);
         assert((!varCookie) != (!pVarCookie));
-        GenTree* cookieNode = gtNewIconEmbHndNode(varCookie, pVarCookie, GTF_ICON_VARG_HDL, sig);
-        assert(extraArg.Node == nullptr);
-        extraArg = NewCallArg::Primitive(cookieNode).WellKnown(WellKnownArg::VarArgsCookie);
+        varArgsCookie = gtNewIconEmbHndNode(varCookie, pVarCookie, GTF_ICON_VARG_HDL, sig);
     }
 
     //-------------------------------------------------------------------------
@@ -749,7 +763,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // We also set the exact type context associated with the call so we can
     // inline the call correctly later on.
 
-    if (sig->callConv & CORINFO_CALLCONV_PARAMTYPE)
+    if (sig->hasTypeArg())
     {
         assert(call->AsCall()->gtCallType == CT_USER_FUNC);
         if (clsHnd == nullptr)
@@ -759,8 +773,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         assert(opcode != CEE_CALLI);
 
-        GenTree* instParam;
-        bool     runtimeLookup;
+        bool runtimeLookup;
 
         // Instantiated generic method
         if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
@@ -850,9 +863,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 }
             }
         }
-
-        assert(extraArg.Node == nullptr);
-        extraArg = NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam);
     }
 
     if ((opcode == CEE_NEWOBJ) && ((clsFlags & CORINFO_FLG_DELEGATE) != 0))
@@ -888,18 +898,50 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     }
 
     impPopCallArgs(sig, call->AsCall());
-    if (extraArg.Node != nullptr)
+
+    // Extra args
+    if ((instParam != nullptr) || call->AsCall()->IsAsync2() || (varArgsCookie != nullptr))
     {
         if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
         {
-            call->AsCall()->gtArgs.PushFront(this, extraArg);
+            if (varArgsCookie != nullptr)
+            {
+                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(varArgsCookie)
+                                                           .WellKnown(WellKnownArg::VarArgsCookie));
+            }
+
+            if (call->AsCall()->IsAsync2())
+            {
+                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                                                           .WellKnown(WellKnownArg::AsyncContinuation));
+            }
+
+            if (instParam != nullptr)
+            {
+                call->AsCall()->gtArgs.PushFront(this,
+                                                 NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
+            }
         }
         else
         {
-            call->AsCall()->gtArgs.PushBack(this, extraArg);
-        }
+            if (instParam != nullptr)
+            {
+                call->AsCall()->gtArgs.PushBack(this,
+                                                NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
+            }
 
-        call->gtFlags |= extraArg.Node->gtFlags & GTF_GLOB_EFFECT;
+            if (call->AsCall()->IsAsync2())
+            {
+                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                                                          .WellKnown(WellKnownArg::AsyncContinuation));
+            }
+
+            if (varArgsCookie != nullptr)
+            {
+                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(varArgsCookie, TYP_REF)
+                                                          .WellKnown(WellKnownArg::VarArgsCookie));
+            }
+        }
     }
 
     //-------------------------------------------------------------------------
@@ -3299,6 +3341,35 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         // the return address of.
         info.compHasNextCallRetAddr = true;
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
+    }
+
+    if (ni == NI_System_StubHelpers_Async2CallContinuation)
+    {
+        GenTree* node = new (this, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
+        node->SetHasOrderingSideEffect();
+        node->gtFlags |= GTF_CALL | GTF_GLOB_REF;
+        info.compUsesAsyncContinuation = true;
+        return node;
+    }
+
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SuspendAsync2)
+    {
+        GenTree* node = gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, impPopStack().val);
+        node->SetHasOrderingSideEffect();
+        node->gtFlags |= GTF_CALL | GTF_GLOB_REF;
+        return node;
+    }
+
+    if ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync) ||
+        (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync) ||
+        (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_Await))
+    {
+        // These are marked intrinsics simply to mark the call node as async,
+        // which the caller will do. Make sure we keep pIntrinsicName assigned
+        // (it would be overridden if we left this up to the rest of this
+        // function).
+        *pIntrinsicName = ni;
+        return nullptr;
     }
 
     bool betterToExpand = false;
@@ -10864,6 +10935,28 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                             }
+                            else if (strcmp(methodName, "AwaitAwaiterFromRuntimeAsync") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync;
+                            }
+                            else if (strcmp(methodName, "UnsafeAwaitAwaiterFromRuntimeAsync") == 0)
+                            {
+                                result =
+                                    NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync;
+                            }
+                            else if (strcmp(methodName, "Await") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_Await;
+                            }
+                            else if (strcmp(methodName, "SuspendAsync2") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_SuspendAsync2;
+                            }
+                            else if (strcmp(methodName, "get_RuntimeAsyncViaJitGeneratedStateMachines") == 0)
+                            {
+                                result =
+                                    NI_System_Runtime_CompilerServices_RuntimeHelpers_get_RuntimeAsyncViaJitGeneratedStateMachines;
+                            }
                         }
                         else if (strcmp(className, "StaticsHelpers") == 0)
                         {
@@ -11113,6 +11206,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_StubHelpers_NextCallReturnAddress;
                         }
+                        else if (strcmp(methodName, "Async2CallContinuation") == 0)
+                        {
+                            result = NI_System_StubHelpers_Async2CallContinuation;
+                        }
                     }
                 }
                 else if (strcmp(namespaceName, "Text") == 0)
@@ -11187,6 +11284,17 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "WriteBarrier") == 0)
                         {
                             result = NI_System_Threading_Volatile_WriteBarrier;
+                        }
+                    }
+                }
+                else if (strcmp(namespaceName, "Threading.Tasks") == 0)
+                {
+                    if (strcmp(methodName, "ConfigureAwait") == 0)
+                    {
+                        if (strcmp(className, "Task`1") == 0 || strcmp(className, "Task") == 0 ||
+                            strcmp(className, "ValuTask`1") == 0 || strcmp(className, "ValueTask") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_Task_ConfigureAwait;
                         }
                     }
                 }

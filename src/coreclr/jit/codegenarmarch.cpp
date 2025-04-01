@@ -295,6 +295,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // SWIFT_SUPPORT
 
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());
@@ -508,6 +512,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
             genConsumeReg(treeNode);
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
             break;
 
         case GT_PINVOKE_PROLOG:
@@ -3536,6 +3544,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 #endif // DEBUG
+
+    bool                  hasAsyncRet = call->IsAsync2();
     CORINFO_METHOD_HANDLE methHnd;
     GenTree*              target = getCallTarget(call, &methHnd);
 
@@ -3604,6 +3614,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     nullptr, // addr
                     retSize
                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    hasAsyncRet,
                     di,
                     target->GetRegNum(),
                     call->IsFastTailCall(),
@@ -3671,6 +3682,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                         nullptr, // addr
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        hasAsyncRet,
                         di,
                         targetAddrReg,
                         call->IsFastTailCall());
@@ -3719,6 +3731,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                             INDEBUG_LDISASM_COMMA(sigInfo)
                             NULL,
                             retSize,
+                            hasAsyncRet,
                             di,
                             tmpReg,
                             call->IsFastTailCall());
@@ -3734,6 +3747,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                             addr,
                             retSize
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            hasAsyncRet,
                             di,
                             REG_NA,
                             call->IsFastTailCall());
@@ -5395,6 +5409,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if defined(TARGET_ARM64)
                                        EA_UNKNOWN, // secondRetSize
 #endif
+                                       false,      // hasAsyncRet
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,

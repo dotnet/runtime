@@ -919,6 +919,12 @@ struct HijackArgs
                                // this is only used by functions OnHijackWorker()
     };
 
+    union
+    {
+        DWORD R2;
+        size_t AsyncRet;
+    };
+
     //
     // Non-volatile Integer registers
     //

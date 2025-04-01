@@ -264,6 +264,7 @@ public:
     static FCDECL1(CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
     static FCDECL2(MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
     static FCDECL1(MethodTable*, InstantiationArg0, MethodTable* mt);
+    static FCDECL1(OBJECTHANDLE, GetLoaderAllocatorHandle, MethodTable* mt);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);

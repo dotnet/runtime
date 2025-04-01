@@ -534,6 +534,12 @@ struct HijackArgs
     };
     union
     {
+        DWORD64 X2;
+        size_t AsyncRet;
+    };
+    DWORD64 Pad;
+    union
+    {
         struct {
              NEON128 Q0;
              NEON128 Q1;

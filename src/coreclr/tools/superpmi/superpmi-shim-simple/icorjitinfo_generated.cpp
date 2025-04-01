@@ -849,6 +849,12 @@ void interceptor_ICJI::getEEInfo(
     original_ICorJitInfo->getEEInfo(pEEInfoOut);
 }
 
+void interceptor_ICJI::getAsync2Info(
+          CORINFO_ASYNC2_INFO* pAsync2InfoOut)
+{
+    original_ICorJitInfo->getAsync2Info(pAsync2InfoOut);
+}
+
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -1120,6 +1126,11 @@ bool interceptor_ICJI::getTailCallHelpers(
           CORINFO_TAILCALL_HELPERS* pResult)
 {
     return original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+{
+    return original_ICorJitInfo->getAsyncResumptionStub();
 }
 
 bool interceptor_ICJI::convertPInvokeCalliToCall(
