@@ -2279,6 +2279,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_ShiftLeft:
+        case NI_Vector_op_LeftShift:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdBinOpNode(GT_LSH, retType, op1, op2, simdBaseJitType, simdSize);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(simdBaseJitType);
+            break;
+        }
         case NI_Vector64_op_LeftShift:
         case NI_Vector128_op_LeftShift:
         {

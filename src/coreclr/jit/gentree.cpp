@@ -20969,7 +20969,14 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     op2 = gtNewOperNode(GT_NEG, TYP_INT, op2);
                 }
 
-                op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize);
+                if (simdSize > 16)
+                {
+                    op2 = gtNewSimdHWIntrinsicNode(type, op2, NI_Sve_DuplicateScalarToVector, simdBaseJitType, simdSize);
+                }
+                else
+                {
+                    op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize);
+                }
 #endif // !TARGET_XARCH && !TARGET_ARM64
             }
             break;
@@ -29047,6 +29054,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
                 break;
             case NI_AdvSimd_RoundToZero:
                 sveId = NI_Sve_RoundToZero;
+                break;
+            case NI_AdvSimd_ShiftLogical:
+                sveId = NI_Sve_ShiftLeftLogical;
+                break;
+            case NI_AdvSimd_ShiftLeftLogical:
+                sveId = NI_Sve_ShiftLeftLogicalImm;
                 break;
             case NI_AdvSimd_SignExtendWideningLower:
                 sveId = NI_Sve_SignExtendWideningLower;
