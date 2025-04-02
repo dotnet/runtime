@@ -192,10 +192,11 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     {
         GenTree*& op1 = binOp->gtOp1;
         GenTree*& op2 = binOp->gtOp2;
-        if (binOp->OperIs(GT_AND, GT_OR, GT_XOR) && (op1->OperIs(GT_NOT) || op2->OperIs(GT_NOT)))
+
+        bool isOp1Negated = op1->OperIs(GT_NOT);
+        bool isOp2Negated = op2->OperIs(GT_NOT);
+        if (binOp->OperIs(GT_AND, GT_OR, GT_XOR) && (isOp1Negated || isOp2Negated))
         {
-            bool isOp1Negated = op1->OperIs(GT_NOT);
-            bool isOp2Negated = op2->OperIs(GT_NOT);
             if ((isOp1Negated && isOp2Negated) || comp->compOpportunisticallyDependsOn(InstructionSet_Zbb))
             {
                 if (isOp1Negated)

@@ -730,7 +730,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
             return LowerArrLength(node->AsArrCommon());
-            break;
 
         default:
             break;
