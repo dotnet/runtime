@@ -34,6 +34,7 @@
 
     <UseLocalILCompilerPack Condition="'$(UseLocalILCompilerPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalILCompilerPack>
     <UseLocalCrossgen2Pack Condition="'$(UseLocalCrossgen2Pack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalCrossgen2Pack>
+    <UseLocalNativeAotPack Condition="'$(UseLocalNativeAotPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalNativeAotPack>
   </PropertyGroup>
 
   <!-- Add Known* items if the SDK doesn't support the TargetFramework yet. -->
@@ -164,9 +165,17 @@
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
       <RuntimeFramework Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'">
-        <Version Condition="'$(StageTwoBuild)' != 'true'">$(ProductVersion)</Version>
-        <Version Condition="'$(StageTwoBuild)' == 'true'">$(BundledNETCoreAppPackageVersion)</Version>
+        <Version>$(ProductVersion)</Version>
       </RuntimeFramework>
     </ItemGroup>
   </Target>
+
+  <PropertyGroup Condition="'$(UseLocalNativeAotPack)' == 'true'">
+    <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
+    <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
+    <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
+    <IlcFrameworkPath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkPath>
+    <IlcFrameworkNativePath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkNativePath>
+  </PropertyGroup>
 </Project>
