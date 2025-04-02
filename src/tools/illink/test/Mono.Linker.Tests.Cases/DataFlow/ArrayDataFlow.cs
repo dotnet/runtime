@@ -55,6 +55,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			ConstantFieldValuesAsIndex.Test ();
 
 			HoistedArrayMutation.Test ();
+
+			TestGetInterfacesDataflow.Test ();
 		}
 
 		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
@@ -766,6 +768,93 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				LoopAssignmentWithInitAfter ();
+			}
+		}
+
+		class TestGetInterfacesDataflow
+		{
+			static void GetInterfacesOnInterfaces ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type t)
+			{
+				t.GetInterfaces ()[0].RequiresInterfaces ();
+
+				Type[] interfaces = t.GetInterfaces ();
+				for (int i = 0; i < interfaces.Length; i++) {
+					interfaces[i].RequiresInterfaces ();
+				}
+
+				foreach (var i in t.GetInterfaces ())
+					i.RequiresInterfaces ();
+			}
+
+			static void GetAllOnAll ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t)
+			{
+				t.GetInterfaces ()[0].RequiresAll ();
+
+				Type[] interfaces = t.GetInterfaces ();
+				for (int i = 0; i < interfaces.Length; i++) {
+					interfaces[i].RequiresAll ();
+				}
+
+				foreach (var i in t.GetInterfaces ())
+					i.RequiresAll ();
+			}
+
+
+			[ExpectedWarning ("IL2072", nameof(Type.GetInterfaces), nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+			static void GetMethodsOnInterfaces ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type t)
+			{
+				t.GetInterfaces ()[0].RequiresPublicMethods ();
+			}
+
+			static void GetMethodsOnAll ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t)
+			{
+				t.GetInterfaces ()[0].RequiresPublicMethods ();
+
+				Type[] interfaces = t.GetInterfaces ();
+				for (int i = 0; i < interfaces.Length; i++) {
+					interfaces[i].RequiresPublicMethods ();
+				}
+
+				foreach (var i in t.GetInterfaces ())
+					i.RequiresPublicMethods ();
+			}
+
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresInterfaces))]
+			static void GetInterfacesOnModified ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type t)
+			{
+				Type[] interfaces = t.GetInterfaces ();
+				interfaces[0] = typeof (object);
+				interfaces[0].RequiresInterfaces ();
+			}
+
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresInterfaces), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2680")]
+			static void GetInterfacesOnPassedByRef ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type t)
+			{
+				Type[] interfaces = t.GetInterfaces ();
+				Use (ref interfaces[0]);
+				interfaces[0].RequiresInterfaces ();
+
+				static void Use (ref Type t) => t = null;
+			}
+
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresInterfaces), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2680")]
+			static void GetInterfacesOnSetValued ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type t)
+			{
+				Type[] interfaces = t.GetInterfaces ();
+				interfaces.SetValue (typeof (object), 0);
+				interfaces[0].RequiresInterfaces ();
+			}
+
+			public static void Test()
+			{
+				GetInterfacesOnInterfaces (null);
+				GetAllOnAll (null);
+				GetMethodsOnAll (null);
+				GetMethodsOnInterfaces (null);
+
+				GetInterfacesOnModified (null);
+				GetInterfacesOnPassedByRef (null);
+				GetInterfacesOnSetValued (null);
 			}
 		}
 

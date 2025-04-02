@@ -243,6 +243,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override MultiValue HandleArrayElementRead (MultiValue arrayValue, MultiValue indexValue, IOperation operation)
 		{
+			if (arrayValue.AsSingleValue() is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated && !arrayOfAnnotated.IsModified) {
+				return arrayOfAnnotated.GetAnyElementValue ();
+			}
+
 			if (indexValue.AsConstInt () is not int index)
 				return UnknownValue.Instance;
 
@@ -270,6 +274,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 							? _multiValueLattice.Meet (arr.IndexValues[index.Value], sanitizedValue)
 							: sanitizedValue;
 					}
+				} else if (arraySingleValue is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated) {
+					arrayOfAnnotated.MarkModified ();
 				}
 			}
 		}
@@ -308,6 +314,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				foreach (var argumentValue in argument.AsEnumerable ()) {
 					if (argumentValue is ArrayValue arrayValue)
 						arrayValue.IndexValues.Clear ();
+					else if (argumentValue is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated)
+						arrayOfAnnotated.MarkModified ();
 				}
 			}
 

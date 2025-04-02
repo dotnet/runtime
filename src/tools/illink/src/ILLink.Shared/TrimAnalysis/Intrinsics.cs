@@ -245,6 +245,11 @@ namespace ILLink.Shared.TrimAnalysis
 					(calledMethod.HasMetadataParametersCount (2) && calledMethod.HasParameterOfType ((ParameterIndex) 2, "System.Boolean")))
 					=> IntrinsicId.Type_GetInterface,
 
+				"GetInterfaces" when calledMethod.IsDeclaredOnType ("System.Type")
+					&& calledMethod.HasImplicitThis ()
+					&& calledMethod.HasMetadataParametersCount (0)
+					=> IntrinsicId.Type_GetInterfaces,
+
 				// System.Type.AssemblyQualifiedName
 				"get_AssemblyQualifiedName" when calledMethod.IsDeclaredOnType ("System.Type")
 					&& calledMethod.HasImplicitThis ()
