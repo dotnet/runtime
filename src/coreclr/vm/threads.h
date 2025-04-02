@@ -2308,7 +2308,12 @@ public:
 #ifdef FEATURE_EH_FUNCLETS
     static PCODE VirtualUnwindCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
                                            EECodeInfo * pCodeInfo = NULL);
+#ifdef TARGET_X86
+    static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD);
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
+#else
+    static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
+#endif
 #ifndef DACCESS_COMPILE
     static PCODE VirtualUnwindLeafCallFrame(T_CONTEXT* pContext);
     static UINT_PTR VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext);

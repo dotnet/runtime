@@ -752,12 +752,8 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         pThread->Thread::InitRegDisplay(&regDisp, &copyRegs, true);
         pThread->UnhijackThread();
 
-        CodeManState codeManState;
-        codeManState.dwIsSet = 0;
-
         // unwind out of the prolog or epilog
-        gcCover->codeMan->UnwindStackFrame(&regDisp,
-                &codeInfo, UpdateAllRegs, &codeManState);
+        gcCover->codeMan->UnwindStackFrame(&regDisp, &codeInfo, UpdateAllRegs);
 
         // Note we always doing the unwind, since that at does some checking (that we
         // unwind to a valid return address), but we only do the precise checking when
