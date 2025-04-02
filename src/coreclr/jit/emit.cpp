@@ -8208,8 +8208,9 @@ CORINFO_FIELD_HANDLE emitter::emitSimdConst(simd_t* constValue, emitAttr attr)
 //
 void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, regNumber targetReg)
 {
-    instruction ins     = INS_movups;
+    assert(EA_SIZE(attr) >= 8);
     unsigned    cnsSize = EA_SIZE(attr);
+    instruction ins     = (cnsSize == 8) ? INS_movsd_simd : INS_movups;
 
     for (unsigned size = 4; size < cnsSize; size *= 2)
     {
