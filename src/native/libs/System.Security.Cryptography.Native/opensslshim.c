@@ -57,6 +57,14 @@ static void DlOpen(const char* libraryName)
 {
     void* libsslNew = dlopen(libraryName, RTLD_LAZY);
 
+#if DEBUG
+    if (libsslNew == NULL)
+    {
+        char* err = dlerror();
+        printf("%s\n", err);
+    }
+#endif
+
     // check is someone else has opened and published libssl already
     if (!pal_atomic_cas_ptr(&libssl, libsslNew, NULL))
     {
