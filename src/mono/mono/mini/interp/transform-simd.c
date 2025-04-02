@@ -184,7 +184,7 @@ resolve_native_size (MonoTypeEnum type)
 static gboolean
 emit_common_simd_operations (TransformData *td, int id, int atype, int vector_size, int arg_size, int scalar_arg, gint16 *simd_opcode, gint16 *simd_intrins)
 {
-	//atype = resolve_native_size (atype);
+	atype = resolve_native_size (atype);
 	switch (id) {
 		case SN_get_AllBitsSet: {
 			interp_add_ins (td, MINT_SIMD_V128_LDC);
@@ -867,7 +867,7 @@ opcode_added:
 static gboolean
 packedsimd_type_matches (MonoTypeEnum type, int expected_type)
 {
-	type = resolve_native_size (type);
+	//type = resolve_native_size (type);
 
 	if (expected_type == PSIMD_ARGTYPE_ANY)
 		return TRUE;
