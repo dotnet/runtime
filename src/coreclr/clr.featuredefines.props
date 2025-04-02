@@ -3,6 +3,9 @@
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
+
+        <!-- !TODO-JAVA! Limit to Android build -->
+        <FeatureJavaMarshal>true</FeatureJavaMarshal>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -27,6 +30,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
+        <DefineConstants Condition="'$(FeatureJavaMarshal)' == 'true'">$(DefineConstants);FEATURE_JAVAMARSHAL;FEATURE_GCBRIDGE</DefineConstants>
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>

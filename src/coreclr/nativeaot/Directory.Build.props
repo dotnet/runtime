@@ -71,7 +71,13 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">FEATURE_PERFTRACING;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-
+  <PropertyGroup>
+    <!-- !TODO-JAVA! Limit to Android build -->
+    <FeatureJavaMarshal>true</FeatureJavaMarshal>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureJavaMarshal)' == 'true'">FEATURE_JAVAMARSHAL;FEATURE_GCBRIDGE;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
 
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
