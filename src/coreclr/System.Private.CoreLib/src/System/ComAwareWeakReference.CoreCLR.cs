@@ -69,9 +69,7 @@ namespace System
 
             if (PossiblyComWrappersObject(target))
             {
-                // This object is using ComWrappers, so use ComWrappers to create the weak reference.
-                context = target;
-                return ComWrappersObjectToComWeakRef(ObjectHandleOnStack.Create(ref target));
+                return ComWrappersObjectToComWeakRef(target, out context);
             }
 
             // This object is not produced using built-in COM or ComWrappers
