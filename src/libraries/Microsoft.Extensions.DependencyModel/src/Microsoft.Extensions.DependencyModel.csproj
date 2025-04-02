@@ -31,15 +31,13 @@ By default, the dependency manifest contains information about the application's
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="$(SystemTextEncodingsWebToolsetVersion)" />
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
-    <!-- 4.6.1 is a temporary workaround to prevent failure coming from System.Runtime.CompilerServices.Unsafe
-         wrong assembly version - https://github.com/dotnet/maintenance-packages/pull/221 -->
-    <PackageReference Include="System.Memory" Version="4.6.1" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersToolsetVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryToolsetVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
