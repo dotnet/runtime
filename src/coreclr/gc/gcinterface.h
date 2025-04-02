@@ -143,6 +143,19 @@ struct EtwGCSettingsInfo
     bool no_affinitize_p;
 };
 
+// These definitions are also in managed code.
+struct StronglyConnectedComponent
+{
+    size_t Count;
+    uintptr_t* Context;
+};
+
+struct ComponentCrossReference
+{
+    size_t SourceGroupIndex;
+    size_t DestinationGroupIndex;
+};
+
 // Opaque type for tracking object pointers
 #ifndef DACCESS_COMPILE
 struct OBJECTHANDLE__
@@ -506,7 +519,14 @@ typedef enum
      * have an extra pointer which points at an interior pointer into the first object.
      *
      */
-    HNDTYPE_WEAK_INTERIOR_POINTER = 10
+    HNDTYPE_WEAK_INTERIOR_POINTER = 10,
+
+    /*
+     * CROSSREFERENCE HANDLES
+     *
+     * Crossreference handles are used to track the lifetime of an object in another VM heap.
+     */
+    HNDTYPE_CROSSREFERENCE = 11
 } HandleType;
 
 typedef enum

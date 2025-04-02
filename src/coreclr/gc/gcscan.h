@@ -43,6 +43,10 @@ class GCScan
     //
     static void GcScanHandles (promote_func* fn, int condemned, int max_gen, ScanContext* sc);
 
+#ifdef FEATURE_GCBRIDGE
+    static void GcScanWithBridge (promote_func* fn, int condemned, int max_gen, ScanContext* sc);
+#endif // FEATURE_GCBRIDGE
+
     static void GcRuntimeStructuresValid (BOOL bValid);
 
     static bool GetGcRuntimeStructuresValid ();

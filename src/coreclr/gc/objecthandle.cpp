@@ -478,7 +478,10 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     case    HNDTYPE_STRONG:
 #ifdef FEATURE_SIZED_REF_HANDLES
     case    HNDTYPE_SIZEDREF:
-#endif
+#endif // FEATURE_SIZED_REF_HANDLES
+#ifdef FEATURE_GCBRIDGE
+    case    HNDTYPE_CROSSREFERENCE:
+#endif // FEATURE_GCBRIDGE
         break;
 
     case    HNDTYPE_PINNED:
@@ -572,6 +575,7 @@ static const uint32_t s_rgTypeFlags[] =
     HNDF_EXTRAINFO, // HNDTYPE_SIZEDREF
     HNDF_EXTRAINFO, // HNDTYPE_WEAK_NATIVE_COM
     HNDF_EXTRAINFO, // HNDTYPE_WEAK_INTERIOR_POINTER
+    HNDF_EXTRAINFO, // HNDTYPE_CROSSREFERENCE
 };
 
 int getNumberOfSlots()
@@ -1529,6 +1533,162 @@ void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* s
 }
 #endif // FEATURE_SIZED_REF_HANDLES
 
+#ifdef FEATURE_GCBRIDGE
+
+// [REMOVE] This is for a prototype implementation of the SCC algorithm.
+class CrossReferenceList final
+{
+private:
+    struct Node
+    {
+        _UNCHECKED_OBJECTREF* pObjRef;
+        uintptr_t pExtraInfo;
+        Node* next;
+    };
+
+    Node* head;
+    size_t count;
+
+public:
+    CrossReferenceList() : head(nullptr), count(0) {}
+
+    ~CrossReferenceList()
+    {
+        Node* current = head;
+        while (current != nullptr)
+        {
+            Node* next = current->next;
+            delete current;
+            current = next;
+        }
+    }
+
+    void Add(_UNCHECKED_OBJECTREF* pObjRef, uintptr_t pExtraInfo)
+    {
+        Node* newNode = new Node{ pObjRef, pExtraInfo, head };
+        head = newNode;
+        ++count;
+    }
+
+    size_t Count() const
+    {
+        return count;
+    }
+
+    class Iterator
+    {
+    private:
+        Node* current;
+
+    public:
+        Iterator(Node* start) : current(start) {}
+
+        bool operator!=(const Iterator& other) const
+        {
+            return current != other.current;
+        }
+
+        void operator++()
+        {
+            if (current != nullptr)
+                current = current->next;
+        }
+
+        std::pair<_UNCHECKED_OBJECTREF*, uintptr_t> operator*() const
+        {
+            return { current->pObjRef, current->pExtraInfo };
+        }
+    };
+
+    Iterator begin() const
+    {
+        return Iterator(head);
+    }
+
+    Iterator end() const
+    {
+        return Iterator(nullptr);
+    }
+};
+
+void CALLBACK CollectCrossReferenceEntries(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(pObjRef != NULL);
+    _ASSERTE(lp1 != NULL);
+
+    Object** pRef = (Object** )pObjRef;
+    _ASSERTE(*pRef != NULL);
+
+    // The object is already marked, so we don't need to ask the bridge about it.
+    if (g_theGCHeap->IsPromoted(*pRef))
+        return;
+
+    // The object is not marked, so we need to ask the bridge about it.
+    CrossReferenceList* list = (CrossReferenceList*)lp1;
+    list->Add(pObjRef, *pExtraInfo);
+}
+
+void Ref_TraceGCBridge(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(!sc->concurrent);
+
+    uint32_t types[] =
+    {
+        HNDTYPE_CROSSREFERENCE
+    };
+    uint32_t flags = HNDGCF_NORMAL | HNDGCF_EXTRAINFO;
+
+    CrossReferenceList list;
+    HandleTableMap *walk = &g_HandleTableMap;
+    while (walk)
+    {
+        for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
+        {
+            if (walk->pBuckets[i] != NULL)
+            {
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
+                {
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                        HndScanHandlesForGC(hTable, CollectCrossReferenceEntries, (uintptr_t)&list, 0, types, ARRAY_SIZE(types), condemned, maxgen, flags);
+                }
+            }
+        }
+        walk = walk->pNext;
+    }
+
+    if (list.Count() != 0)
+    {
+        // [TODO] Implement the SCC algorithm.
+        size_t sccsCount = 1;
+        StronglyConnectedComponent* sccs = (StronglyConnectedComponent*)malloc(sizeof(StronglyConnectedComponent) * sccsCount);
+        sccs->Count = list.Count();
+        sccs->Context = (uintptr_t*)malloc(sizeof(uintptr_t) * sccs->Count);
+
+        uintptr_t* curr = sccs->Context;
+        for (auto& entry : list)
+        {
+            // Promote the object and let the bridge indicate when the
+            // object is actually dead.
+            fn(entry.first, sc, 0);
+
+            *curr = entry.second;
+            curr++;
+        }
+
+        // The callee here will free the allocated memory.
+        GCToEEInterface::TriggerGCBridge(sccsCount, sccs, 0, nullptr);
+    }
+}
+#endif // FEATURE_GCBRIDGE
+
 void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1614,6 +1774,9 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
+#ifdef FEATURE_GCBRIDGE
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // perform a multi-type scan that updates pointers
@@ -1679,7 +1842,10 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_GCBRIDGE
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     uint32_t flags = HNDGCF_NORMAL;
@@ -1804,7 +1970,10 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_GCBRIDGE
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // perform a multi-type scan that ages the handles
@@ -1861,7 +2030,10 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_GCBRIDGE
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // reset the ages of these handles
@@ -1917,7 +2089,10 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_SIZEDREF,
 #endif
         HNDTYPE_DEPENDENT,
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_GCBRIDGE
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // verify these handles

@@ -150,6 +150,18 @@ inline OBJECTHANDLE CreateWeakInteriorHandle(IGCHandleStore* store, OBJECTREF pr
     return hnd;
 }
 
+inline OBJECTHANDLE CreateCrossReferenceHandle(IGCHandleStore* store, OBJECTREF primary, void* userContext)
+{
+    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(primary), HNDTYPE_CROSSREFERENCE, userContext);
+    if (!hnd)
+    {
+        COMPlusThrowOM();
+    }
+
+    DiagHandleCreated(hnd, primary);
+    return hnd;
+}
+
 // Global handle creation convenience functions
 inline OBJECTHANDLE CreateGlobalHandleCommon(OBJECTREF object, HandleType type)
 {
