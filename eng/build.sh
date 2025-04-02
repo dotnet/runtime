@@ -156,7 +156,6 @@ cmakeargs=''
 extraargs=''
 crossBuild=0
 portableBuild=1
-buildBootstrap=0
 bootstrap=0
 
 source $scriptroot/common/native/init-os-and-arch.sh
@@ -510,11 +509,6 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
-      -build-bootstrap)
-      buildBootstrap=1
-      shift 1
-      ;;
-
       -use-bootstrap)
       arguments="$arguments /p:UseBootstrap=true"
       shift 1
@@ -571,10 +565,6 @@ fi
 
 if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError false"
-fi
-
-if [[ "$buildBootstrap" == "1" ]]; then
-  arguments="$arguments /p:Subset=bootstrap"
 fi
 
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211

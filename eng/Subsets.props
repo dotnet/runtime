@@ -151,8 +151,12 @@
     <DefaultPacksSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(DotNetBuildSourceOnly)' != 'true'">$(DefaultPacksSubsets)+packs.tests</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(RuntimeFlavor)' != 'Mono' and '$(ForceBuildMobileManifests)' == 'true'">$(DefaultPacksSubsets)+mono.manifests</DefaultPacksSubsets>
 
-    <BootstrapSubsets>host.native+libs.sfx+libs.oob</BootstrapSubsets>
+    <BootstrapSubsets>host.native+libs.sfx+libs.oob+libs.pretest</BootstrapSubsets>
+    <BootstrapSubsets Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(BootstrapSubsets)+clr.corelib</BootstrapSubsets>
+    <BootstrapSubsets Condition="'$(RuntimeFlavor)' == 'Mono'">$(BootstrapSubsets)+mono.corelib</BootstrapSubsets>
     <BootstrapSubsets Condition="'$(UseNativeAotForComponents)' == 'true'">$(BootstrapSubsets)+clr.nativeaotlibs+clr.nativeaotruntime</BootstrapSubsets>
+
+    <SwapNativeForIL Condition="$(_subset.Contains('+bootstrap+')) and '$(RuntimeFlavor)' == 'CoreCLR'">true</SwapNativeForIL>
   </PropertyGroup>
 
   <PropertyGroup>
