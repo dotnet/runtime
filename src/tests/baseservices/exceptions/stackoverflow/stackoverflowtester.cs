@@ -23,7 +23,7 @@ namespace TestStackOverflow
             testProcess.StartInfo.Arguments = $"{Path.Combine(Directory.GetCurrentDirectory(), "..", testName, $"{testName}.dll")} {testArgs}";
             testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
-            testProcess.StartInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
+            //testProcess.StartInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
             testProcess.StartInfo.Environment.Add("DOTNET_LogStackOverflowExit", "1");
             bool endOfStackTrace = false;
             
