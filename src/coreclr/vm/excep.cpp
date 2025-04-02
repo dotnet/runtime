@@ -6245,7 +6245,7 @@ static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
+void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -6278,34 +6278,6 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     CALL_MANAGED_METHOD_NORET(args)
 
     GCPROTECT_END();
-}
-
-void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Ok.  Now we have a brand new fault in jitted code.
-    FaultingExceptionFrame fef;
-    FaultingExceptionFrame *frame = &fef;
-    frame->InitAndLink(pContext);
-
-    HandleManagedFaultFilterParam param;
-    param.fFilterExecuted = FALSE;
-    param.pOriginalExceptionRecord = pExceptionRecord;
-
-    PAL_TRY(HandleManagedFaultFilterParam *, pParam, &param)
-    {
-        GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-
-        EXCEPTION_RECORD *pRecord = pParam->pOriginalExceptionRecord;
-
-        RaiseException(pRecord->ExceptionCode, 0,
-            pRecord->NumberParameters, pRecord->ExceptionInformation);
-    }
-    PAL_EXCEPT_FILTER(HandleManagedFaultFilter)
-    {
-    }
-    PAL_ENDTRY
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -6542,10 +6514,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         // Not an Out-of-memory situation, so no need for a forbid fault region here
         //
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled)
-        {
-            EEPolicy::HandleStackOverflow();
-        }
+        EEPolicy::HandleStackOverflow();
 #endif // FEATURE_EH_FUNCLETS
         return VEH_CONTINUE_SEARCH;
     }
@@ -7240,14 +7209,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 //
                 // HandleManagedFault may never return, so we cannot use a forbid fault region around it.
                 //
-                if (g_isNewExceptionHandlingEnabled)
-                {
-                    HandleManagedFaultNew(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
-                else
-                {
-                    HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
+                HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
 #endif // FEATURE_EH_FUNCLETS
@@ -7457,7 +7419,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     Exception::Delete(pException);
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && !nativeRethrow)
+    if (!nativeRethrow)
     {
         Thread *pThread = GetThread();
         ThreadExceptionState* pExState = pThread->GetExceptionState();

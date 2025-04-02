@@ -17,6 +17,10 @@
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 #ifdef TARGET_X86
 
 // NOTE: enabling compiler optimizations, even for debug builds.
@@ -72,11 +76,11 @@ void EECodeManager::FixContext( ContextType     ctxType,
 
 #ifdef  _DEBUG
     if (trFixContext) {
-        printf("FixContext [%s][%s] for %s.%s: ",
+        minipal_log_print_info("FixContext [%s][%s] for %s.%s: ",
                stateBuf->hdrInfoBody.ebpFrame?"ebp":"   ",
                stateBuf->hdrInfoBody.interruptible?"int":"   ",
                "UnknownClass","UnknownMethod");
-        fflush(stdout);
+        minipal_log_flush_info();
     }
 #endif
 
@@ -962,7 +966,7 @@ size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
     // See ExceptionTracker::InitializeCrawlFrame() for more information.
     if (!pRD->IsCallerSPValid)
     {
-        EnsureCallerContextIsValid(pRD, NULL);
+        ExecutionManager::GetDefaultCodeManager()->EnsureCallerContextIsValid(pRD, NULL);
     }
 
     return GetSP(pRD->pCallerContext);
@@ -1091,14 +1095,14 @@ size_t EECodeManager::GetResumeSp( PCONTEXT  pContext )
 /*****************************************************************************
  *
  *  Unwind the current stack frame, i.e. update the virtual register
- *  set in pContext. This will be similar to the state after the function
+ *  set in pRD. This will be similar to the state after the function
  *  returns back to caller (IP points to after the call, Frame and Stack
  *  pointer has been reset, callee-saved registers restored (if UpdateAllRegs),
  *  callee-unsaved registers are trashed.
  *  Returns success of operation.
  */
 
-bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
+bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
                                      EECodeInfo     *pCodeInfo,
                                      unsigned        flags,
                                      CodeManState   *pState)
@@ -1113,7 +1117,7 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
     bool updateAllRegs = flags & UpdateAllRegs;
 
     // Address where the method has been interrupted
-    PCODE       breakPC = pContext->ControlPC;
+    PCODE       breakPC = pRD->ControlPC;
     _ASSERTE(PCODEToPINSTR(breakPC) == pCodeInfo->GetCodeAddress());
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
@@ -1138,7 +1142,7 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
 
     info->isSpeculativeStackWalk = ((flags & SpeculativeStackwalk) != 0);
 
-    return UnwindStackFrameX86(pContext,
+    return UnwindStackFrameX86(pRD,
                                PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
                                curOffs,
                                info,
@@ -1156,7 +1160,7 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
 #else // !FEATURE_EH_FUNCLETS
 /*****************************************************************************/
 
-bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
+bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
                                      EECodeInfo     *pCodeInfo,
                                      unsigned        flags,
                                      CodeManState   *pState)
@@ -1171,12 +1175,12 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
 #ifdef HAS_LIGHTUNWIND
     if (flags & LightUnwind)
     {
-        LightUnwindStackFrame(pContext, pCodeInfo, UnwindCurrentStackFrame);
+        LightUnwindStackFrame(pRD, pCodeInfo, UnwindCurrentStackFrame);
         return true;
     }
 #endif
 
-    Thread::VirtualUnwindCallFrame(pContext, pCodeInfo);
+    Thread::VirtualUnwindCallFrame(pRD, pCodeInfo);
     return true;
 }
 
@@ -2174,11 +2178,11 @@ TADDR EECodeManager::GetAmbientSP(PREGDISPLAY     pContext,
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     if (trFixContext)
     {
-        printf("GetAmbientSP [%s][%s] for %s.%s: ",
+        minipal_log_print_info("GetAmbientSP [%s][%s] for %s.%s: ",
                stateBuf->hdrInfoBody.ebpFrame?"ebp":"   ",
                stateBuf->hdrInfoBody.interruptible?"int":"   ",
                "UnknownClass","UnknownMethod");
-        fflush(stdout);
+        minipal_log_flush_info();
     }
 #endif // _DEBUG && !DACCESS_COMPILE
 
@@ -2277,13 +2281,78 @@ ULONG32 EECodeManager::GetStackParameterSize(EECodeInfo * pCodeInfo)
 
 #ifdef FEATURE_INTERPRETER
 
-bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
+static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
+{
+    PTR_InterpMethodContextFrame pFrame = dac_cast<PTR_InterpMethodContextFrame>(sp);
+    pFrame = pFrame->pParent;
+    if (pFrame != NULL)
+    {
+        SetIP(pContext, (TADDR)pFrame->ip);
+        SetSP(pContext, dac_cast<TADDR>(pFrame));
+    }
+    else
+    {
+        // This indicates that there are no more interpreter frames to unwind in the current InterpExecMethod
+        // The stack walker will not find any code manager for the address 0 and move on to the next explicit
+        // frame which is the InterpreterFrame.
+        // Interpreter-TODO: Consider returning the context of the JITted / AOTed code that called the interpreter instead
+        SetIP(pContext, 0);
+        SetSP(pContext, sp);
+    }
+    pContext->ContextFlags = CONTEXT_CONTROL;
+}
+
+bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
                                               EECodeInfo     *pCodeInfo,
                                               unsigned        flags,
                                               CodeManState   *pState)
 {
-    // Interpreter-TODO: Implement this
-    return false;
+    if (pRD->IsCallerContextValid)
+    {
+        // We already have the caller's frame context
+        // We just switch the pointers
+        PT_CONTEXT temp      = pRD->pCurrentContext;
+        pRD->pCurrentContext = pRD->pCallerContext;
+        pRD->pCallerContext  = temp;
+
+        PT_KNONVOLATILE_CONTEXT_POINTERS tempPtrs = pRD->pCurrentContextPointers;
+        pRD->pCurrentContextPointers            = pRD->pCallerContextPointers;
+        pRD->pCallerContextPointers             = tempPtrs;
+    }
+    else
+    {
+        TADDR sp = (TADDR)GetRegdisplaySP(pRD);
+        VirtualUnwindInterpreterCallFrame(sp, pRD->pCurrentContext);
+    }
+
+    SyncRegDisplayToCurrentContext(pRD);
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid = FALSE;
+
+    return true;
+}
+
+void InterpreterCodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * pCodeInfo /*= NULL*/, unsigned flags /*= 0*/)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    if( !pRD->IsCallerContextValid )
+    {
+        // We need to make a copy here (instead of switching the pointers), in order to preserve the current context
+        TADDR sp = (TADDR)GetRegdisplaySP(pRD);
+        VirtualUnwindInterpreterCallFrame(sp, pRD->pCallerContext);
+        memset(pRD->pCallerContextPointers, 0, sizeof(KNONVOLATILE_CONTEXT_POINTERS));
+
+        pRD->IsCallerContextValid = TRUE;
+    }
+
+    _ASSERTE( pRD->IsCallerContextValid );
 }
 
 bool InterpreterCodeManager::IsGcSafe(EECodeInfo *pCodeInfo,

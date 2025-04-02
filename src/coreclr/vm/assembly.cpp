@@ -1226,10 +1226,7 @@ static void RunMainInternal(Param* pParam)
 
     GCPROTECT_END();
 
-    //<TODO>
-    // When we get mainCRTStartup from the C++ then this should be able to go away.</TODO>
-    fflush(stdout);
-    fflush(stderr);
+    minipal_log_flush_all();
 }
 
 /* static */

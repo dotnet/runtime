@@ -4097,6 +4097,16 @@ BOOL InterpreterJitManager::GetBoundariesAndVars(
 
     PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
 
+    // Interpreter-TODO: This is a temporary workaround until the interpreter produces the debug info
+    if (pDebugInfo == NULL)
+    {
+        if (pcMap) *pcMap = 0;
+        if (ppMap) *ppMap = NULL;
+        if (pcVars) *pcVars = 0;
+        if (ppVars) *ppVars = NULL;
+        return TRUE;
+    }
+
     return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
 }
 
@@ -4321,6 +4331,28 @@ BOOL InterpreterJitManager::JitCodeToMethodInfo(
 
     return JitCodeToMethodInfoWorker<InterpreterCodeHeader>(pRangeSection, currentPC, ppMethodDesc, pCodeInfo);
 }
+
+TADDR InterpreterJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
+{
+    // Interpreter-TODO: Verify that this is correct
+    return pCodeInfo->GetCodeAddress() - pCodeInfo->GetRelOffset();
+}
+
+void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+        PRECONDITION(methodRegionInfo != NULL);
+    } CONTRACTL_END;
+
+    methodRegionInfo->hotStartAddress  = JitTokenToStartAddress(MethodToken);
+    methodRegionInfo->hotSize          = GetCodeManager()->GetFunctionSize(GetGCInfoToken(MethodToken));
+    methodRegionInfo->coldStartAddress = 0;
+    methodRegionInfo->coldSize         = 0;
+}
+
 #endif // FEATURE_INTERPRETER
 
 StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)

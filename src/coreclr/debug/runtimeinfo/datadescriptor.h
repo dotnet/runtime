@@ -764,7 +764,7 @@ CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 
 // Add FrameIdentifier for all defined Frame types. Used to differentiate Frame objects.
 #define FRAME_TYPE_NAME(frameType) \
-    CDAC_GLOBAL_POINTER(frameType##Identifier, FrameIdentifier::frameType)
+    CDAC_GLOBAL(frameType##Identifier, nuint, (uint64_t)FrameIdentifier::frameType)
 
     #include "frames.h"
 #undef FRAME_TYPE_NAME
