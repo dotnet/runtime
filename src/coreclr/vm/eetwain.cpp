@@ -1095,6 +1095,7 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
     PCODE       breakPC = pRD->ControlPC;
     _ASSERTE(PCODEToPINSTR(breakPC) == pCodeInfo->GetCodeAddress());
 
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     PTR_VOID    methodInfoPtr = gcInfoToken.Info;
     DWORD       curOffs = ;
     hdrInfo    *hdrInfoBody;
@@ -1104,7 +1105,7 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
 
     PTR_CBYTE table = dac_cast<PTR_CBYTE>(methodInfoPtr) + hdrInfoSize;
 
-    info->isSpeculativeStackWalk = ((flags & SpeculativeStackwalk) != 0);
+    hdrInfoBody->isSpeculativeStackWalk = ((flags & SpeculativeStackwalk) != 0);
 
     return UnwindStackFrameX86(pRD,
                                PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
