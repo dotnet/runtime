@@ -2310,7 +2310,7 @@ public:
                                            EECodeInfo * pCodeInfo = NULL);
 #ifdef TARGET_X86
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD);
-    static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
+    static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo);
 #else
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
 #endif

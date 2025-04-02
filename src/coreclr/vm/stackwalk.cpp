@@ -396,7 +396,7 @@ void ExInfoWalker::WalkToManaged()
 UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD)
 {
     EECodeInfo codeInfo(GetControlPC(pRD));
-    VirtualUnwindCallFrame(pRD, &codeInfo);
+    return VirtualUnwindCallFrame(pRD, &codeInfo);
 }
 #endif
 
