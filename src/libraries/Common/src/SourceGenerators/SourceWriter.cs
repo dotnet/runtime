@@ -110,11 +110,11 @@ namespace SourceGenerators
             return next;
         }
 
-        private static unsafe void AppendSpan(StringBuilder builder, ReadOnlySpan<char> span)
+        private static void AppendSpan(StringBuilder builder, ReadOnlySpan<char> span)
         {
-            fixed (char* ptr = span)
+            foreach (char c in span)
             {
-                builder.Append(ptr, span.Length);
+                builder.Append(c);
             }
         }
     }

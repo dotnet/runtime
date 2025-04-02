@@ -14,12 +14,13 @@ namespace System.Text
 {
     internal static class StringBuilderExtensions
     {
-        public static unsafe StringBuilder Append(this StringBuilder stringBuilder, ReadOnlySpan<char> span)
+        public static StringBuilder Append(this StringBuilder stringBuilder, ReadOnlySpan<char> span)
         {
-            fixed (char* ptr = &MemoryMarshal.GetReference(span))
+            foreach (char c in span)
             {
-                return stringBuilder.Append(ptr, span.Length);
+                stringBuilder.Append(c);
             }
+            return stringBuilder;
         }
 
         public static ReadOnlyMemory<char>[] GetChunks(this StringBuilder stringBuilder)

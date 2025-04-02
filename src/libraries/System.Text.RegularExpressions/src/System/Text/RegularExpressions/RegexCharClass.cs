@@ -1543,7 +1543,11 @@ namespace System.Text.RegularExpressions
         public static string OneToStringClass(char c)
             => CharsToStringClass([c]);
 
-        internal static unsafe string CharsToStringClass(ReadOnlySpan<char> chars)
+        internal static
+#if !NET
+        unsafe
+#endif
+        string CharsToStringClass(ReadOnlySpan<char> chars)
         {
 #if DEBUG
             // Make sure they're all sorted with no duplicates
@@ -1594,18 +1598,20 @@ namespace System.Text.RegularExpressions
             ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
             return
 #if NET
-                string
+                string.Create(SetStartIndex + count, tmpChars, static (span, chars) =>
 #else
-                StringExtensions
+                StringExtensions.Create(SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
 #endif
-                .Create(SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
             {
                 // Fill in the set string
                 span[FlagsIndex] = (char)0;
                 span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
                 span[CategoryLengthIndex] = (char)0;
                 int i = SetStartIndex;
-                foreach (char c in *(ReadOnlySpan<char>*)charsPtr)
+#if !NET
+                ReadOnlySpan<char> chars = *(ReadOnlySpan<char>*)charsPtr;
+#endif
+                foreach (char c in chars)
                 {
                     span[i++] = c;
                     if (c != LastChar)
