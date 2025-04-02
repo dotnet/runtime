@@ -11,6 +11,7 @@ namespace System.Security.Cryptography
     {
         internal delegate TAlg ImportFactoryKeyAction<TAlg>(ReadOnlySpan<byte> source);
         internal delegate ImportFactoryKeyAction<TAlg>? FindImportFactoryActionFunc<TAlg>(ReadOnlySpan<char> label);
+        internal delegate TAlg ImportFactoryEncryptedKeyAction<TAlg, TPass>(ReadOnlySpan<TPass> password, ReadOnlySpan<byte> source);
 
         internal static TAlg ImportFactoryPem<TAlg>(ReadOnlySpan<char> source, FindImportFactoryActionFunc<TAlg> callback) where TAlg : class
         {
@@ -65,9 +66,8 @@ namespace System.Security.Cryptography
             }
 
             ReadOnlySpan<char> base64Contents = foundSlice[foundFields.Base64Data];
-            int base64size = foundFields.DecodedDataLength;
-
 #if NET
+            int base64size = foundFields.DecodedDataLength;
             byte[] decodeBuffer = CryptoPool.Rent(base64size);
             int bytesWritten = 0;
 
@@ -85,6 +85,71 @@ namespace System.Security.Cryptography
                 Span<byte> decodedBase64 = decodeBuffer.AsSpan(0, bytesWritten);
 
                 return importAction(decodedBase64);
+            }
+            finally
+            {
+                CryptoPool.Return(decodeBuffer, clearSize: bytesWritten);
+            }
+#else
+            return importAction(Convert.FromBase64String(base64Contents.ToString()));
+#endif
+        }
+
+        internal static TAlg ImportEncryptedFactoryPem<TAlg, TPass>(
+            ReadOnlySpan<char> source,
+            ReadOnlySpan<TPass> password,
+            ImportFactoryEncryptedKeyAction<TAlg, TPass> importAction) where TAlg : class
+        {
+            bool foundEncryptedPem = false;
+            PemFields foundFields = default;
+            ReadOnlySpan<char> foundSlice = default;
+
+            ReadOnlySpan<char> pem = source;
+            while (PemEncoding.TryFind(pem, out PemFields fields))
+            {
+                ReadOnlySpan<char> label = pem[fields.Label];
+
+                if (label.SequenceEqual(PemLabels.EncryptedPkcs8PrivateKey))
+                {
+                    if (foundEncryptedPem)
+                    {
+                        throw new ArgumentException(SR.Argument_PemImport_AmbiguousPem, nameof(source));
+                    }
+
+                    foundEncryptedPem = true;
+                    foundFields = fields;
+                    foundSlice = pem;
+                }
+
+                Index offset = fields.Location.End;
+                pem = pem[offset..];
+            }
+
+            if (!foundEncryptedPem)
+            {
+                throw new ArgumentException(SR.Argument_PemImport_NoPemFound, nameof(source));
+            }
+
+            ReadOnlySpan<char> base64Contents = foundSlice[foundFields.Base64Data];
+#if NET
+            int base64size = foundFields.DecodedDataLength;
+            byte[] decodeBuffer = CryptoPool.Rent(base64size);
+            int bytesWritten = 0;
+
+            try
+            {
+                if (!Convert.TryFromBase64Chars(base64Contents, decodeBuffer, out bytesWritten))
+                {
+                    // Couldn't decode base64. We shouldn't get here since the
+                    // contents are pre-validated.
+                    Debug.Fail("Base64 decoding failed on already validated contents.");
+                    throw new ArgumentException();
+                }
+
+                Debug.Assert(bytesWritten == base64size);
+                Span<byte> decodedBase64 = decodeBuffer.AsSpan(0, bytesWritten);
+
+                return importAction(password, decodedBase64);
             }
             finally
             {
