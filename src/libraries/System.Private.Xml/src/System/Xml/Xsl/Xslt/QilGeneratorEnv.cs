@@ -184,11 +184,10 @@ namespace System.Xml.Xsl.Xslt
                         when ns == XmlReservedNs.NsMsxsl:
                     {
                         FunctionInfo.CheckArity(1, 3, name, args.Count);
-                        return _f.InvokeMsFormatDateTime(
+                        return _f.InvokeMSFormatTime(
                             _f.ConvertToString(args[0]),
                             1 < args.Count ? _f.ConvertToString(args[1]) : _f.String(string.Empty),
-                            2 < args.Count ? _f.ConvertToString(args[2]) : _f.String(string.Empty),
-                            _f.Boolean(false)
+                            2 < args.Count ? _f.ConvertToString(args[2]) : _f.String(string.Empty)
                         );
                     }
                     case XsltFunctionNames.LocalName

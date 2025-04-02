@@ -8,32 +8,23 @@ namespace System.Xml.Schema.DateAndTime.Helpers
     internal struct DateAndTimeInfo
     {
         public DateInfo Date { get; }
-        public int Fraction { get; }
-        public int Hour { get; }
         public XsdDateTimeKind Kind { get; }
-        public int Minute { get; }
-        public int Second { get; }
+        public TimeInfo Time { get; }
         public DateTimeTypeCode TypeCode { get; }
         public int ZoneHour { get; }
         public int ZoneMinute { get; }
 
         public DateAndTimeInfo(
             DateInfo date,
-            int fraction,
-            int hour,
             XsdDateTimeKind kind,
-            int minute,
-            int second,
+            TimeInfo time,
             DateTimeTypeCode typeCode,
             int zoneHour,
             int zoneMinute)
         {
             Date = date;
-            Fraction = fraction;
-            Hour = hour;
             Kind = kind;
-            Minute = minute;
-            Second = second;
+            Time = time;
             TypeCode = typeCode;
             ZoneHour = zoneHour;
             ZoneMinute = zoneMinute;
@@ -42,10 +33,7 @@ namespace System.Xml.Schema.DateAndTime.Helpers
         public DateAndTimeInfo()
             : this(
                   default,
-                  default,
-                  default,
                   XsdDateTimeKind.Unspecified,
-                  default,
                   default,
                   default,
                   0,

@@ -66,6 +66,8 @@ namespace System.Xml.Xsl.Runtime
             .GetMethod(nameof(XsltFunctions.MSFormatDate))!;
         public static readonly MethodInfo MSFormatDateTime = typeof(XsltFunctions)
             .GetMethod(nameof(XsltFunctions.MSFormatDateTime))!;
+        public static readonly MethodInfo MSFormatTime = typeof(XsltFunctions)
+            .GetMethod(nameof(XsltFunctions.MSFormatTime))!;
         public static readonly MethodInfo MSStringCompare = typeof(XsltFunctions)
             .GetMethod(nameof(XsltFunctions.MSStringCompare))!;
         public static readonly MethodInfo MSUtc = typeof(XsltFunctions)
