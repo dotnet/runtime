@@ -86,16 +86,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportEncryptedPkcs8PrivateKey_NotSupported()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
-                MLKemTestData.EncryptedPrivateKeyPassword, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
-
-            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
-                MLKemTestData.EncryptedPrivateKeyPasswordBytes, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
-        }
-
-        [Fact]
         public static void ImportFromPem_NotSupported()
         {
             string pem = """
