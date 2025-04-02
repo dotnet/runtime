@@ -279,6 +279,35 @@ public class BridgeTest
         asyncStreamWriter.Link2 = asyncStateMachineBox;
     }
 
+	// Simulates a graph where a heavy node has its fanout components
+	// represented by cycles with back-references to the heavy node and
+	// references to the same bridge objects.
+	// This enters a pathological path in the SCC contraction where the
+	// links to the bridge objects need to be correctly deduplicated. The
+	// deduplication causes the heavy node to no longer be heavy.
+	static void FauxHeavyNodeWithCycles()
+	{
+		Bridge fanout = new Bridge();
+
+		// Need enough edges for the node to be considered heavy by bridgeless_color_is_heavy
+		NonBridge[] fauxHeavyNode = new NonBridge[100];
+		for (int i = 0; i < fauxHeavyNode.Length; i++)
+        {
+			NonBridge2 cycle = new NonBridge2();
+			cycle.Link = fanout;
+			cycle.Link2 = fauxHeavyNode;
+			fauxHeavyNode[i] = cycle;
+		}
+
+		// Need at least HEAVY_REFS_MIN + 1 fan-in nodes
+		Bridge[] faninNodes = new Bridge[3];
+		for (int i = 0; i < faninNodes.Length; i++)
+        {
+			faninNodes[i] = new Bridge();
+			faninNodes[i].Links.Add(fauxHeavyNode);
+		}
+	}
+
     static void RunGraphTest(Action test)
     {
         Console.WriteLine("Start test {0}", test.Method.Name);
@@ -386,6 +415,7 @@ public class BridgeTest
         RunGraphTest(SetupDeadList);
         RunGraphTest(SetupSelfLinks);
         RunGraphTest(NestedCycles);
+        RunGraphTest(FauxHeavyNodeWithCycles);
 //        RunGraphTest(Spider); // Crashes
         return 100;
     }
