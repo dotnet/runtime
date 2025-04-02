@@ -37,13 +37,13 @@
                     <xsl:value-of select="ms:format-time(date, 'hh:mm:ss.ffftt')" />
                 </test4>
                 <test5>
-                    <xsl:value-of select="ms:format-date(date, 't', 'en-US')" />
+                    <xsl:value-of select="ms:format-time(date, 't', 'en-US')" />
                 </test5>
                 <test6>
-                    <xsl:value-of select="ms:format-date(date, 'T', 'fr-FR')" />
+                    <xsl:value-of select="ms:format-time(date, 'T', 'fr-FR')" />
                 </test6>
                 <test7>
-                    <xsl:value-of select="ms:format-date(date, 't', 'fr-FR')" />
+                    <xsl:value-of select="ms:format-time(date, 't', 'fr-FR')" />
                 </test7>
             </times>
         </out>

@@ -62,6 +62,8 @@ namespace System.Xml.Xsl.Runtime
             .GetMethod(nameof(XmlQueryRuntime.OnCurrentNodeChanged))!;
 
         // MSXML extension functions
+        public static readonly MethodInfo MSFormatDate = typeof(XsltFunctions)
+            .GetMethod(nameof(XsltFunctions.MSFormatDate))!;
         public static readonly MethodInfo MSFormatDateTime = typeof(XsltFunctions)
             .GetMethod(nameof(XsltFunctions.MSFormatDateTime))!;
         public static readonly MethodInfo MSStringCompare = typeof(XsltFunctions)
