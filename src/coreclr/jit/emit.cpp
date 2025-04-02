@@ -8208,76 +8208,92 @@ CORINFO_FIELD_HANDLE emitter::emitSimdConst(simd_t* constValue, emitAttr attr)
 //
 void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, regNumber targetReg)
 {
-    assert(EA_SIZE(attr) >= 8);
-    unsigned    cnsSize = EA_SIZE(attr);
-    instruction ins     = (cnsSize == 8) ? INS_movsd_simd : INS_movups;
+    assert(EA_SIZE(attr) >= 8 && EA_SIZE(attr) <= 64);
 
-    for (unsigned size = 4; size < cnsSize; size *= 2)
+    unsigned    cnsSize  = EA_SIZE(attr);
+    unsigned    dataSize = cnsSize;
+    instruction ins      = (cnsSize == 8) ? INS_movsd_simd : INS_movups;
+
+    // Most constant vectors tend to have repeated values, so we will first check to see if
+    // we can replace a full vector load with a smaller broadcast.
+
+    if ((dataSize == 64) && (constValue->v256[1] == constValue->v256[0]))
     {
-        // If the constant has zero upper elements/lanes, we can use a smaller load,
-        // because all scalar and vector loads from memory zero the upper.
+        assert(emitComp->IsBaselineVector512IsaSupportedDebugOnly());
+        dataSize = 32;
+        ins      = INS_vbroadcastf32x8;
+    }
 
-        simd_t val = {};
-        memcpy(&val, constValue, size);
+    if ((dataSize == 32) && (constValue->v128[1] == constValue->v128[0]))
+    {
+        assert(emitComp->IsBaselineVector256IsaSupportedDebugOnly());
+        dataSize = 16;
+        ins      = INS_vbroadcastf128;
+    }
 
-        if (memcmp(&val, constValue, cnsSize) == 0)
-        {
-            switch (size)
-            {
-                case 4:
-                    ins = INS_movss;
-                    break;
-                case 8:
-                    ins = INS_movsd_simd;
-                    break;
-                default:
-                    ins = INS_movups;
-                    break;
-            }
-
-            cnsSize = size;
-            attr    = EA_ATTR(size);
-            break;
-        }
-
-        if (((size == 8) && (cnsSize == 16) && emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE3)) ||
+    if ((dataSize == 16) && (constValue->u64[1] == constValue->u64[0]))
+    {
+        if (((cnsSize == 16) && emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE3)) ||
             emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
-            // If the value repeats, we can use an appropriate-sized broadcast instruction.
-
-            for (unsigned i = 1; i < (cnsSize / size); i++)
-            {
-                memcpy((simd_t*)((uint8_t*)&val + (i * size)), constValue, size);
-            }
-
-            if (memcmp(&val, constValue, cnsSize) == 0)
-            {
-                switch (size)
-                {
-                    case 4:
-                        ins = INS_vbroadcastss;
-                        break;
-                    case 8:
-                        ins = (cnsSize == 16) ? INS_movddup : INS_vbroadcastsd;
-                        break;
-                    case 16:
-                        ins = INS_vbroadcastf128;
-                        break;
-                    case 32:
-                        assert(emitComp->IsBaselineVector512IsaSupportedDebugOnly());
-                        ins = INS_vbroadcastf32x8;
-                        break;
-                    default:
-                        unreached();
-                }
-
-                cnsSize = size;
-                break;
-            }
+            dataSize = 8;
+            ins      = (cnsSize == 16) ? INS_movddup : INS_vbroadcastsd;
         }
     }
 
-    CORINFO_FIELD_HANDLE hnd = emitSimdConst(constValue, EA_ATTR(cnsSize));
+    if ((dataSize == 8) && (cnsSize >= 16) && (constValue->u32[1] == constValue->u32[0]))
+    {
+        if (emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+        {
+            dataSize = 4;
+            ins      = INS_vbroadcastss;
+        }
+    }
+
+    if (dataSize < cnsSize)
+    {
+        // We found a broadcast match, so emit the broadcast instruction and return.
+        // Here we use the original emitAttr for the instruction, because we need to
+        // produce a register of the original constant's size, filled with the pattern.
+
+        CORINFO_FIELD_HANDLE hnd = emitSimdConst(constValue, EA_ATTR(dataSize));
+        emitIns_R_C(ins, attr, targetReg, hnd, 0);
+        return;
+    }
+
+    // Otherwise, if the upper lanes and/or elements of the constant are zero, we can use a
+    // smaller load, because all scalar and vector memory load instructions zero the uppers.
+
+    simd32_t zeroValue = {};
+
+    if ((dataSize == 64) && (constValue->v256[1] == zeroValue))
+    {
+        dataSize = 32;
+    }
+
+    if ((dataSize == 32) && (constValue->v128[1] == zeroValue.v128[0]))
+    {
+        dataSize = 16;
+    }
+
+    if ((dataSize == 16) && (constValue->u64[1] == 0))
+    {
+        dataSize = 8;
+        ins      = INS_movsd_simd;
+    }
+
+    if ((dataSize == 8) && (constValue->u32[1] == 0))
+    {
+        dataSize = 4;
+        ins      = INS_movss;
+    }
+
+    // Here we set the emitAttr to the size of the actual load. It will zero extend
+    // up to the native SIMD register size.
+
+    attr = EA_ATTR(dataSize);
+
+    CORINFO_FIELD_HANDLE hnd = emitSimdConst(constValue, attr);
     emitIns_R_C(ins, attr, targetReg, hnd, 0);
 }
 #endif // TARGET_XARCH
