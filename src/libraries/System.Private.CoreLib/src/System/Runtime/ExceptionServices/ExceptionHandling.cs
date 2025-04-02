@@ -28,5 +28,29 @@ namespace System.Runtime.ExceptionServices
                 throw new InvalidOperationException(SR.InvalidOperation_CannotRegisterSecondHandler);
             }
         }
+
+        /// <summary>
+        /// Raises the runtime's UnhandledException event.
+        /// </summary>
+        /// <param name="exception">Exception to pass to event handlers.</param>
+        /// <remarks>
+        /// This method will raise the <see cref="AppDomain.UnhandledException"/>
+        /// event and then return.
+        ///
+        /// It will not raise the the handler registered with <see cref="SetUnhandledExceptionHandler"/>.
+        /// </remarks>
+        public static void RaiseUnhandledExceptionEvent(Exception exception)
+        {
+            ArgumentNullException.ThrowIfNull(exception);
+
+            try
+            {
+                AppContext.OnUnhandledException(exception);
+            }
+            catch
+            {
+                // Ignore any exceptions thrown by the handlers.
+            }
+        }
     }
 }
