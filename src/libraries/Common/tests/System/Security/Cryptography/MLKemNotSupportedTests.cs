@@ -64,5 +64,25 @@ namespace System.Security.Cryptography.Tests
                 algorithm,
                 new Span<byte>(new byte[algorithm.DecapsulationKeySizeInBytes])));
         }
+
+        [Fact]
+        public static void ImportPkcs8PrivateKey_NotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportPkcs8PrivateKey(
+                MLKemTestData.IetfMlKem512PrivateKeySeed));
+
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportPkcs8PrivateKey(
+                new ReadOnlySpan<byte>(MLKemTestData.IetfMlKem512PrivateKeySeed)));
+        }
+
+        [Fact]
+        public static void ImportEncryptedPkcs8PrivateKey_NotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
+
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPasswordBytes, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
+        }
     }
 }
