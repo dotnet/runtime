@@ -1061,8 +1061,9 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		if (csignature->ret->type == MONO_TYPE_VOID && csignature->param_count > 1 && mono_type_is_pointer (csignature->params [0])) {
 			// The Store* methods have a more complicated signature
 			vector_klass = mono_class_from_mono_type_internal (csignature->params [1]);
+		} else {
+			vector_klass = mono_class_from_mono_type_internal (csignature->ret);
 		}
-		vector_klass = mono_class_from_mono_type_internal (csignature->ret);
 	} else {
 		if (csignature->ret->type == MONO_TYPE_GENERICINST) {
 			vector_klass = mono_class_from_mono_type_internal (csignature->ret);
