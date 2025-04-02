@@ -86,6 +86,8 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
     DWORD * pEax;
 
     DWORD * pEbp;
+
+    TADDR   PCTAddr;
 #endif // !FEATURE_EH_FUNCLETS
 
 #ifndef FEATURE_EH_FUNCLETS
@@ -104,6 +106,7 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
         pCurrentContext->reg = *p##reg; \
     }
 
+    REG_METHODS(Eip)
 #endif // FEATURE_EH_FUNCLETS
 
     REG_METHODS(Eax)
@@ -116,8 +119,6 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
     REG_METHODS(Ebp)
 
 #undef REG_METHODS
-
-    TADDR   PCTAddr;
 };
 
 inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
@@ -135,9 +136,22 @@ inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display) {
     return (LPVOID)display->GetEbpLocation();
 }
 
+inline TADDR GetRegdisplayPCTAddr(REGDISPLAY *display)
+{
+#ifdef FEATURE_EH_FUNCLETS
+    return (TADDR)display->GetEipLocation();
+#else
+    return display->PCTAddr;
+#endif
+}
+
 inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 {
+#ifdef FEATURE_EH_FUNCLETS
+    display->SetEipLocation((PDWORD)addr);
+#else
     display->PCTAddr = addr;
+#endif
     display->ControlPC = *PTR_PCODE(addr);
 }
 
@@ -146,12 +160,12 @@ inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
     LIMITED_METHOD_CONTRACT;
 
-    return (TADDR)stackPointer < display->PCTAddr;
+    return (TADDR)stackPointer < GetRegdisplayPCTAddr(display);
 }
 inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return display->PCTAddr;
+    return GetRegdisplayPCTAddr(display);
 }
 
 #elif defined(TARGET_64BIT)
@@ -444,6 +458,7 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     {
         *(&pCtxPtrs->Edi + i) = (&pCtx->Edi + i);
     }
+    pCtxPtrs->Eip = &pCtx->Eip;
 #elif defined(TARGET_RISCV64) // TARGET_X86
     *(&pCtxPtrs->S1) = &pCtx->S1;
     *(&pCtxPtrs->S2) = &pCtx->S2;
@@ -522,10 +537,6 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
 
     // This will setup the PC and SP
     SyncRegDisplayToCurrentContext(pRD);
-
-#ifdef TARGET_X86
-    pRD->PCTAddr = (UINT_PTR)&(pctx->Eip);
-#endif
 
 #if !defined(DACCESS_COMPILE)
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)

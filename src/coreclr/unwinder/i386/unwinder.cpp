@@ -13,9 +13,6 @@ BOOL OOPStackUnwinderX86::Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTE
 
     FillRegDisplay(&rd, pContextRecord);
 
-    rd.SP = pContextRecord->Esp;
-    rd.PCTAddr = (UINT_PTR)&(pContextRecord->Eip);
-
     if (pContextPointers)
     {
         rd.pCurrentContextPointers = pContextPointers;
@@ -27,13 +24,13 @@ BOOL OOPStackUnwinderX86::Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTE
     codeInfo.Init((PCODE) ControlPc);
 
     GCInfoToken gcInfoToken = codeInfo.GetGCInfoToken();
-    hdrInfo hdrInfoBody;
-    DWORD hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, codeInfo.GetRelOffset(), &hdrInfoBody);
+    hdrInfo *hdrInfoBody;
+    DWORD hdrInfoSize = codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
 
     if (!UnwindStackFrameX86(&rd,
                              PTR_CBYTE(codeInfo.GetSavedMethodCode()),
                              codeInfo.GetRelOffset(),
-                             &hdrInfoBody,
+                             hdrInfoBody,
                              dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
                              PTR_CBYTE(codeInfo.GetJitManager()->GetFuncletStartAddress(&codeInfo)),
                              codeInfo.IsFunclet(),

@@ -3931,9 +3931,9 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
         GcInfoDecoder gcInfoDecoder(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
         invalidRevPInvoke = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
 #else // USE_GC_INFO_DECODER
-        hdrInfo gcHdrInfo;
-        DecodeGCHdrInfo(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), 0, &gcHdrInfo);
-        invalidRevPInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+        hdrInfo *hdrInfoBody;
+        pThis->m_crawl.GetCodeInfo()->DecodeGCHdrInfo(&hdrInfoBody);
+        invalidRevPInvoke = hdrInfoBody->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
         bool isFilterFunclet = false;
         bool isPropagatingToExternalNativeCode = false;
