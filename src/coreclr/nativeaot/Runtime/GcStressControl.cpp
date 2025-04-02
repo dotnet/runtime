@@ -15,7 +15,6 @@
 #include "Crst.h"
 #include "RhConfig.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "forward_declarations.h"
 #include "StackFrameIterator.h"

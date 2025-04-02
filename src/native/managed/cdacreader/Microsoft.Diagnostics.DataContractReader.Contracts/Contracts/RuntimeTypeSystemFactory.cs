@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class RuntimeTypeSystemFactory : IContractFactory<IRuntimeTypeSystem>
+public sealed class RuntimeTypeSystemFactory : IContractFactory<IRuntimeTypeSystem>
 {
     IRuntimeTypeSystem IContractFactory<IRuntimeTypeSystem>.CreateContract(Target target, int version)
     {
@@ -14,7 +14,7 @@ internal sealed class RuntimeTypeSystemFactory : IContractFactory<IRuntimeTypeSy
         ulong methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
         return version switch
         {
-            1 => new RuntimeTypeSystem_1(target, freeObjectMethodTable, methodDescAlignment),
+            1 => new RuntimeTypeSystem_1(target, new RuntimeTypeSystemHelpers.TypeValidation(target), new RuntimeTypeSystemHelpers.MethodValidation(target, methodDescAlignment), freeObjectMethodTable, methodDescAlignment),
             _ => default(RuntimeTypeSystem),
         };
     }

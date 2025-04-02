@@ -838,7 +838,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Algorithm = new AlgorithmIdentifierAsn
                     {
                         Algorithm = PublicKey.Oid!.Value!,
-                        Parameters = PublicKey.EncodedParameters.RawData,
+                        Parameters = PublicKey.EncodedParameters?.RawData.ToNullableMemory(),
                     },
                     SubjectPublicKey = PublicKey.EncodedKeyValue.RawData,
                 },

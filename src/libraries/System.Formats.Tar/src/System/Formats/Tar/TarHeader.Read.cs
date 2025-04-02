@@ -566,15 +566,16 @@ namespace System.Formats.Tar
         // Throws if end of stream is reached or if an attribute is malformed.
         private void ReadExtendedAttributesBlock(Stream archiveStream)
         {
-            if (_size != 0)
+            long size = _size;
+            if (size != 0)
             {
                 ValidateSize();
 
                 byte[]? buffer = null;
-                Span<byte> span = _size <= 256 ?
+                Span<byte> span = (ulong)size <= 256 ?
                     stackalloc byte[256] :
-                    (buffer = ArrayPool<byte>.Shared.Rent((int)_size));
-                span = span.Slice(0, (int)_size);
+                    (buffer = ArrayPool<byte>.Shared.Rent((int)size));
+                span = span.Slice(0, (int)size);
 
                 archiveStream.ReadExactly(span);
                 ReadExtendedAttributesFromBuffer(span, _name);
@@ -636,15 +637,16 @@ namespace System.Formats.Tar
         // Throws if end of stream is reached.
         private void ReadGnuLongPathDataBlock(Stream archiveStream)
         {
-            if (_size != 0)
+            long size = _size;
+            if (size != 0)
             {
                 ValidateSize();
 
                 byte[]? buffer = null;
-                Span<byte> span = _size <= 256 ?
+                Span<byte> span = (ulong)size <= 256 ?
                     stackalloc byte[256] :
-                    (buffer = ArrayPool<byte>.Shared.Rent((int)_size));
-                span = span.Slice(0, (int)_size);
+                    (buffer = ArrayPool<byte>.Shared.Rent((int)size));
+                span = span.Slice(0, (int)size);
 
                 archiveStream.ReadExactly(span);
                 ReadGnuLongPathDataFromBuffer(span);

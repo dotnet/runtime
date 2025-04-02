@@ -123,7 +123,14 @@ internal static partial class Interop
         internal static partial IntPtr SslGetCertificate(IntPtr ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertChain")]
-        internal static partial SafeSharedX509StackHandle SslGetPeerCertChain(SafeSslHandle ssl);
+        private static partial SafeSharedX509StackHandle SslGetPeerCertChain_private(SafeSslHandle ssl);
+
+        internal static SafeSharedX509StackHandle SslGetPeerCertChain(SafeSslHandle ssl)
+        {
+            return SafeInteriorHandle.OpenInteriorHandle(
+                SslGetPeerCertChain_private,
+                ssl);
+        }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerFinished")]
         internal static partial int SslGetPeerFinished(SafeSslHandle ssl, IntPtr buf, int count);
@@ -236,7 +243,7 @@ internal static partial class Interop
         internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, List<SslApplicationProtocol> applicationProtocols)
         {
             int length = GetAlpnProtocolListSerializedLength(applicationProtocols);
-            Span<byte> buffer = length <= 256 ? stackalloc byte[256].Slice(0, length) : new byte[length];
+            Span<byte> buffer = (uint)length <= 256 ? stackalloc byte[256].Slice(0, length) : new byte[length];
             SerializeAlpnProtocolList(applicationProtocols, buffer);
             return SslSetAlpnProtos(ssl, buffer);
         }
@@ -352,6 +359,8 @@ namespace Microsoft.Win32.SafeHandles
         private bool _handshakeCompleted;
 
         public GCHandle AlpnHandle;
+        // Reference to the parent SSL_CTX handle in the SSL_CTX is being cached. Only used for
+        // refcount management.
         public SafeSslContextHandle? SslContextHandle;
 
         public bool IsServer
@@ -445,8 +454,6 @@ namespace Microsoft.Win32.SafeHandles
                 Disconnect();
             }
 
-            // drop reference to any SSL_CTX handle, any handle present here is being
-            // rented from (client) SSL_CTX cache.
             SslContextHandle?.Dispose();
 
             if (AlpnHandle.IsAllocated)

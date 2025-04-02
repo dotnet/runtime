@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+     <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
+    <ExplicitlyImportCustomILLinkTargets>true</ExplicitlyImportCustomILLinkTargets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
+    <ProjectReference Include="oob-src.proj" OutputItemType="OOBAssembly" />
+  </ItemGroup>
+
+  <Target Name="GetTrimOOBAssembliesInputs"
+          DependsOnTargets="ResolveProjectReferences">
+    <PropertyGroup>
+      <OOBAssembliesTrimDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'illink-$(TargetArchitecture)'))</OOBAssembliesTrimDir>
+      <OOBAssembliesTrimMarkerFile>$(OOBAssembliesTrimDir)marker.txt</OOBAssembliesTrimMarkerFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <OOBLibrarySuppressionsXml Include="@(OOBAssembly->Metadata('ILLinkSuppressionsXmls'))" />
+
+      <OOBAssemblyToTrim Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'true'))" />
+      <OOBAssemblyReference Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'false'));
+                                     @(SharedFrameworkAssembly)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="TrimOOBAssemblies"
+          AfterTargets="Build"
+          DependsOnTargets="GetTrimOOBAssembliesInputs;PrepareForAssembliesTrim"
+          Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
+          Outputs="$(OOBAssembliesTrimMarkerFile)">
+    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRID) out-of-band assemblies with ILLinker..." Importance="high" />
+
+    <PropertyGroup>
+      <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
+      <!-- Unnecessary suppressions - disable for now since we didn't clean the runtime yet -->
+      <OOBILLinkArgs>$(ILLinkArgs) --nowarn IL2121</OOBILLinkArgs>
+      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes "@(OOBLibrarySuppressionsXml->'%(FullPath)', '" --link-attributes "')"</OOBILLinkArgs>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(OOBAssembliesTrimDir)" />
+    <ILLink AssemblyPaths=""
+        RootAssemblyNames="@(OOBAssemblyToTrim)"
+        ReferenceAssemblyPaths="@(OOBAssemblyReference)"
+        OutputDirectory="$(OOBAssembliesTrimDir)"
+        ExtraArgs="$(OOBILLinkArgs)"
+        ToolExe="$(_DotNetHostFileName)"
+        ToolPath="$(_DotNetHostDirectory)" />
+
+    <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
+    <Touch Files="$(OOBAssembliesTrimMarkerFile)"
+           AlwaysCreate="true" />
+  </Target>
+
+</Project>

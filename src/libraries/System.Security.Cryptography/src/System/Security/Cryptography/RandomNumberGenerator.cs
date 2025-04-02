@@ -313,7 +313,9 @@ namespace System.Security.Cryptography
 
             // Don't overfill the buffer if the destination is smaller than the buffer size. We need to round up when
             // when dividing by two to account for an odd-length destination.
-            int needed = (destination.Length + 1) / 2;
+            // Adding one to a span of length int.MaxValue may overflow. This is handled by the unsigned shift to the right
+            // which will correct the overflow.
+            int needed = (destination.Length + 1) >>> 1;
             Span<byte> remainingRandom = randomBuffer.Slice(0, Math.Min(RandomBufferSize, needed));
             RandomNumberGenerator.Fill(remainingRandom);
 

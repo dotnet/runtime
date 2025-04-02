@@ -19,6 +19,7 @@ internal sealed class MethodTable : IData<MethodTable>
         NumInterfaces = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumInterfaces)].Offset);
         NumVirtuals = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumVirtuals)].Offset);
         PerInstInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PerInstInfo)].Offset);
+        AuxiliaryData = target.ReadPointer(address + (ulong)type.Fields[nameof(AuxiliaryData)].Offset);
     }
 
     public uint MTFlags { get; init; }
@@ -30,4 +31,5 @@ internal sealed class MethodTable : IData<MethodTable>
     public TargetPointer PerInstInfo { get; init; }
     public ushort NumInterfaces { get; init; }
     public ushort NumVirtuals { get; init; }
+    public TargetPointer AuxiliaryData { get; init; }
 }

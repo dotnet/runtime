@@ -207,6 +207,8 @@
     </ItemGroup>
 
     <WriteLinesToFile File="$(WasmMainHtmlPath)" Lines="&lt;html&gt;&lt;body&gt;&lt;script type='module' src='$(WasmMainJSFileName)'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" Overwrite="True" Condition="!Exists('$(WasmMainHtmlPath)')"/>
+
+    <ForceMSBuildGC />
   </Target>
 
   <Target Name="_PrepareForAOTOnHelix">
@@ -227,7 +229,6 @@
       <_WasmPropertyNames Include="EmccLinkOptimizationFlag" />
       <_WasmPropertyNames Include="WasmIncludeFullIcuData" />
       <_WasmPropertyNames Include="WasmIcuDataFileName" />
-      <_WasmPropertyNames Include="HybridGlobalization" />
     </ItemGroup>
   </Target>
 
@@ -245,9 +246,8 @@
     <Error Condition="'$(Scenario)' != 'WasmTestOnV8' and 
                       '$(Scenario)' != 'WasmTestOnChrome' and 
                       '$(Scenario)' != 'WasmTestOnFirefox' and 
-                      '$(Scenario)' != 'WasmDebuggerTests' and 
                       '$(Scenario)' != 'BuildWasmApps'" 
-                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment. It was $(Scenario)." />
+                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnChrome, WasmTestOnFirefox and BuildWasmApps at the moment. It was $(Scenario)." />
 
     <!-- Restore NPM packages -->
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">

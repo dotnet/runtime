@@ -361,7 +361,6 @@ GVAL_DECL(DWORD,            g_TlsIndex);
 GPTR_DECL(MethodTable,      g_pEHClass);
 GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
-GVAL_DECL(bool,             g_isNewExceptionHandlingEnabled);
 #endif
 
 // Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
@@ -405,7 +404,7 @@ GPTR_DECL(StressLog, g_pStressLog);
 
 
 //
-// Support for the COM+ Debugger.
+// Support for the CLR Debugger.
 //
 GPTR_DECL(DebugInterface,     g_pDebugInterface);
 GVAL_DECL(DWORD,              g_CORDebuggerControlFlags);
@@ -414,6 +413,7 @@ GPTR_DECL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
 
 #ifndef DACCESS_COMPILE
 GVAL_DECL(DWORD, g_multicastDelegateTraceActiveCount);
+GVAL_DECL(DWORD, g_externalMethodFixupTraceActiveCount);
 #endif // DACCESS_COMPILE
 
 #endif // DEBUGGING_SUPPORTED

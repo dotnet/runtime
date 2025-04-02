@@ -67,9 +67,6 @@ public:
     {
         STEC_All,
         STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow,
-#ifdef FEATURE_INTERPRETER
-        STEC_CurrentTrackerEqualNullOkForInterpreter,
-#endif // FEATURE_INTERPRETER
     } SetThrowableErrorChecking;
 #endif
 

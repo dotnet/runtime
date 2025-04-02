@@ -253,4 +253,32 @@
     <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Numerics.Tensors.Tensor.Average``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@)``0:T:System.Numerics.INumberBase{``0}</Target>
+    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
+    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Numerics.Tensors.Tensor.StdDev``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@)``0:T:System.Numerics.IRootFunctions{``0}</Target>
+    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
+    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Numerics.Tensors.Tensor.Average``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@)``0:T:System.Numerics.INumberBase{``0}</Target>
+    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
+    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Numerics.Tensors.Tensor.StdDev``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@)``0:T:System.Numerics.IRootFunctions{``0}</Target>
+    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
+    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
 </Suppressions>

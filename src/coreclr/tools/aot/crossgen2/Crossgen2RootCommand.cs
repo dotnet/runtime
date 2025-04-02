@@ -39,6 +39,8 @@ namespace ILCompiler
             new("--optimize-space", "--Os") { Description = SR.OptimizeSpaceOption };
         public CliOption<bool> OptimizeTime { get; } =
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
+        public CliOption<bool> EnableCachedInterfaceDispatchSupport { get; } =
+            new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
         public CliOption<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
         public CliOption<bool> InputBubble { get; } =
@@ -163,6 +165,7 @@ namespace ILCompiler
             Options.Add(OptimizeDisabled);
             Options.Add(OptimizeSpace);
             Options.Add(OptimizeTime);
+            Options.Add(EnableCachedInterfaceDispatchSupport);
             Options.Add(TypeValidation);
             Options.Add(InputBubble);
             Options.Add(InputBubbleReferenceFilePaths);
@@ -295,7 +298,7 @@ namespace ILCompiler
                 Console.WriteLine();
 
                 string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64"};
-                string[] ValidOS = new string[] {"windows", "linux", "osx"};
+                string[] ValidOS = new string[] {"windows", "linux", "osx", "ios", "iossimulator", "maccatalyst"};
 
                 Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
                 Console.WriteLine();

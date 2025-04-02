@@ -121,7 +121,7 @@ void CHECK::Trigger(LPCSTR reason)
             pMessage->AppendASCII((m_message != (LPCSTR)1) ? m_message : "<runtime check failure>");
 
 #if _DEBUG
-        pMessage->AppendASCII("FAILED: ");
+        pMessage->AppendASCII("\nFAILED: ");
         pMessage->AppendASCII(m_condition);
 #endif
 

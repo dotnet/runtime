@@ -90,7 +90,7 @@ namespace System.Security.Claims
         public ClaimsPrincipal(System.Security.Principal.IIdentity identity) { }
         public ClaimsPrincipal(System.Security.Principal.IPrincipal principal) { }
         public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> Claims { get { throw null; } }
-        public static System.Func<System.Security.Claims.ClaimsPrincipal> ClaimsPrincipalSelector { get { throw null; } set { } }
+        public static System.Func<System.Security.Claims.ClaimsPrincipal?>? ClaimsPrincipalSelector { get { throw null; } set { } }
         public static System.Security.Claims.ClaimsPrincipal? Current { get { throw null; } }
         protected virtual byte[]? CustomSerializationData { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity> Identities { get { throw null; } }

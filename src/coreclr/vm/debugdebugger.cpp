@@ -957,7 +957,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 #if defined(DACCESS_COMPILE) && defined(TARGET_AMD64)
                 // Compensate for a bug in the old EH that for a frame that faulted
                 // has the ip pointing to an address before the faulting instruction
-                if (g_isNewExceptionHandlingEnabled && (i == 0) && ((cur.flags & STEF_IP_ADJUSTED) == 0))
+                if ((i == 0) && ((cur.flags & STEF_IP_ADJUSTED) == 0))
                 {
                     ip -= 1;
                 }

@@ -383,7 +383,7 @@ void OptIfConversionDsc::IfConvertDump()
 {
     assert(m_startBlock != nullptr);
     m_comp->fgDumpBlock(m_startBlock);
-    BasicBlock* dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetFalseTarget() : m_startBlock->Next();
+    BasicBlock* dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetFalseTarget() : m_startBlock->GetTarget();
     for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
     {
         m_comp->fgDumpBlock(dumpBlock);
@@ -704,9 +704,27 @@ bool OptIfConversionDsc::optIfConvert()
         selectType       = genActualType(m_thenOperation.node);
     }
 
-    // Create a select node.
-    GenTreeConditional* select =
-        m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
+    GenTree* select = nullptr;
+    if (selectTrueInput->TypeIs(TYP_INT) && selectFalseInput->TypeIs(TYP_INT))
+    {
+        if (selectTrueInput->IsIntegralConst(1) && selectFalseInput->IsIntegralConst(0))
+        {
+            // compare ? true : false  -->  compare
+            select = m_cond;
+        }
+        else if (selectTrueInput->IsIntegralConst(0) && selectFalseInput->IsIntegralConst(1))
+        {
+            // compare ? false : true  -->  reversed_compare
+            select = m_comp->gtReverseCond(m_cond);
+        }
+    }
+
+    if (select == nullptr)
+    {
+        // Create a select node
+        select = m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
+    }
+
     m_thenOperation.node->AddAllEffectsFlags(select);
 
     // Use the select as the source of the Then operation.
@@ -740,8 +758,10 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Update the flow from the original block.
-    m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
-    m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, m_startBlock->GetTrueEdge());
+    FlowEdge* const removedEdge  = m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
+    FlowEdge* const retainedEdge = m_startBlock->GetTrueEdge();
+    m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+    m_comp->fgRepairProfileCondToUncond(m_startBlock, retainedEdge, removedEdge);
 
 #ifdef DEBUG
     if (m_comp->verbose)

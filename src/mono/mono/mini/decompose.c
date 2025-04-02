@@ -1565,18 +1565,17 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 				case OP_BOUNDS_CHECK: {
 					gboolean need_sext = ins->backend.need_sext;
 					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1, FALSE);
+					int index2_reg;
+					if (need_sext) {
+						index2_reg = alloc_preg (cfg);
+						MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
+					} else {
+						index2_reg = ins->sreg2;
+					}
 					if (COMPILE_LLVM (cfg)) {
-						int index2_reg;
-						if (need_sext) {
-							index2_reg = alloc_preg (cfg);
-							MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
-						} else {
-							index2_reg = ins->sreg2;
-						}
 						MONO_EMIT_DEFAULT_BOUNDS_CHECK (cfg, ins->sreg1, GINT32_TO_UINT32(ins->inst_imm), index2_reg, ins->flags & MONO_INST_FAULT, ins->inst_p0);
 					} else {
-						g_assert (!need_sext);
-						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->inst_p0);
+						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, index2_reg, ins->inst_p0);
 					}
 					break;
 				}

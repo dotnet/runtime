@@ -15,7 +15,7 @@ namespace System
     // to 100 nanoseconds. While this maps well into units of time such as hours
     // and days, any periods longer than that aren't representable in a nice fashion.
     // For instance, a month can be between 28 and 31 days, while a year
-    // can contain 365 or 366 days.  A decade can have between 1 and 3 leapyears,
+    // can contain 365 or 366 days.  A decade can have between 1 and 3 leap-years,
     // depending on when you map the TimeSpan into the calendar.  This is why
     // we do not provide Years() or Months().
     //
@@ -587,6 +587,18 @@ namespace System
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// milliseconds.
+        /// </summary>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of milliseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameter specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromMilliseconds(long milliseconds)
+            => FromUnits(milliseconds, TicksPerMillisecond, MinMilliseconds, MaxMilliseconds);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
         /// milliseconds, and microseconds.
         /// </summary>
         /// <param name="milliseconds">Number of milliseconds.</param>
@@ -595,7 +607,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
         /// </exception>
-        public static TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0)
+        public static TimeSpan FromMilliseconds(long milliseconds, long microseconds)
         {
             Int128 totalMicroseconds = Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
                                      + microseconds;

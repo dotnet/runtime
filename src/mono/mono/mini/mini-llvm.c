@@ -698,7 +698,7 @@ simd_valuetuple_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 	MonoGenericInst *class_inst = mono_class_get_generic_class (klass)->context.class_inst;
 	MonoType *etype = class_inst->type_argv [0];
 	g_assert (etype->type == MONO_TYPE_GENERICINST);
-	MonoClass *eklass = etype->data.generic_class->cached_class;
+	MonoClass *eklass = m_type_data_get_generic_class_unchecked (etype)->cached_class;
 	LLVMTypeRef ltype = simd_class_to_llvm_type (ctx, eklass);
 	return LLVMArrayType (ltype, class_inst->type_argc);
 }
@@ -8433,7 +8433,21 @@ MONO_RESTORE_WARNING
 			LLVMValueRef dest;
 
 			dest = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_destbasereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), pointer_type (t));
-			mono_llvm_build_aligned_store (builder, lhs, dest, FALSE, 1);
+			if (mono_class_value_size (ins->klass, NULL) == 12) {
+				const int mask_values [] = { 0, 1, 2 };
+
+				LLVMValueRef truncatedVec3 = LLVMBuildShuffleVector (
+					builder,
+					lhs,
+					LLVMGetUndef (t),
+					create_const_vector_i32 (mask_values, 3),
+					"truncated_vec3"
+				);
+
+				mono_llvm_build_aligned_store (builder, truncatedVec3, dest, FALSE, 1);
+			} else {
+				mono_llvm_build_aligned_store (builder, lhs, dest, FALSE, 1);
+			}
 			break;
 		}
 		case OP_XBINOP:
@@ -11722,7 +11736,7 @@ MONO_RESTORE_WARNING
 			default:
 				g_assert_not_reached ();
 				break;
-			
+
 			}
 
 			lhs = LLVMBuildLoad2 (builder, ret_t, addresses [ins->sreg1]->value, "");
@@ -11930,7 +11944,7 @@ MONO_RESTORE_WARNING
 				default:
 					g_assert_not_reached ();
 					break;
-				
+
 				}
 			}
 

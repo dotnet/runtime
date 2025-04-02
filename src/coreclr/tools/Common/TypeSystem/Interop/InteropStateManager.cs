@@ -182,7 +182,7 @@ namespace Internal.TypeSystem
 
         public FieldDesc GetPInvokeLazyFixupField(MethodDesc method, MethodSignature nativeSig)
         {
-            return _pInvokeLazyFixupFieldHashtable.GetOrCreateValue(new (method, nativeSig));
+            return _pInvokeLazyFixupFieldHashtable.GetOrCreateValue(new(method, nativeSig));
         }
 
         public MethodDesc GetPInvokeCalliStub(MethodSignature signature, ModuleDesc moduleContext)

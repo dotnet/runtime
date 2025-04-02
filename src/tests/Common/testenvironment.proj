@@ -37,6 +37,7 @@
       DOTNET_EnableSSE41;
       DOTNET_EnableSSE42;
       DOTNET_EnableSSSE3;
+      DOTNET_EnableAPX;
       DOTNET_JitStressEvexEncoding;
       DOTNET_PreferredVectorBitWidth;
       DOTNET_MaxVectorTBitWidth;
@@ -136,7 +137,8 @@
     <TestEnvironment Include="jitstress_isas_x86_nosse42" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_x86_nossse3" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
     <TestEnvironment Include="jitstress_isas_x86_vectort128" JitStressEvexEncoding="1" MaxVectorTBitWidth="128" />
-    <TestEnvironment Include="jitstress_isas_x86_vectort512" JitStressEvexEncoding="1" MaxVectorTBitWidth="512" />
+    <TestEnvironment Include="jitstress_isas_x86_vectort512" JitStressEvexEncoding="1" PreferredVectorBitWidth="512" MaxVectorTBitWidth="512" />
+    <TestEnvironment Include="jitstress_isas_x86_noavx512_vectort128" EnableAVX512F="0" MaxVectorTBitWidth="128" />
     <TestEnvironment Include="jitstress_isas_1_x86_noaes" JitStress="1" EnableAES="0" /> <!-- Depends on SSE2 -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx" JitStress="1" EnableAVX="0" /> <!-- Depends on SSE42 -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx2" JitStress="1" EnableAVX2="0" /> <!-- Depends on AVX -->
@@ -247,7 +249,6 @@
     <TestEnvironment Include="syntheticpgo_blend" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitSynthesizeCounts="3" JitCheckSynthesizedCounts="1" />
     <TestEnvironment Include="jitrlcse" JitRLCSEGreedy="1" />
     <TestEnvironment Include="jitoptrepeat" JitEnableOptRepeat="1" JitOptRepeat="*" JitOptRepeatCount="2"/>
-    <TestEnvironment Include="jitoldlayout" JitDoReversePostOrderLayout="0"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
     <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' == 'true'" gcServer="1" GCName="clrgc.dll"/>

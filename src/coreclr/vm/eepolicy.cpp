@@ -48,7 +48,7 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
             {
                 _ASSERTE(!"Bad Exit value");
                 FAULT_NOT_FATAL();      // if we OOM we can simply give up
-                fprintf(stderr, "Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
+                minipal_log_print_error("Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
                 DebugBreak();
             }
         }
@@ -233,8 +233,9 @@ class CallStackLogger
 
         MethodDesc* pMD = m_frames[index];
         TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
+        str.Append(W("\n"));
+
         PrintToStdErrW(str.GetUnicode());
-        PrintToStdErrA("\n");
     }
 
 public:
@@ -265,6 +266,7 @@ public:
             repeatStr.AppendPrintf("Repeated %d times:\n", m_largestCommonStartRepeat);
 
             PrintToStdErrW(repeatStr.GetUnicode());
+
             PrintToStdErrA("--------------------------------\n");
             for (int i = 0; i < m_largestCommonStartLength; i++)
             {
@@ -279,6 +281,12 @@ public:
         }
     }
 };
+
+#ifdef _DEBUG
+// Temporarilly added flag to enable extra verbose printing of progress of stack overflow handling
+// to catch a bug that is not reproducible locally.
+static bool g_LogStackOverflowExit = false;
+#endif // _DEBUG
 
 //---------------------------------------------------------------------------------------
 //
@@ -311,7 +319,10 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
     pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 
     logger.PrintStackTrace(WordAt.GetUnicode());
-
+#ifdef _DEBUG
+    if (g_LogStackOverflowExit)
+        PrintToStdErrA("@Exiting stack trace printing thread.\n");
+#endif
 }
 
 //---------------------------------------------------------------------------------------
@@ -364,11 +375,11 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
     {
         if (exitCode == (UINT)COR_E_FAILFAST)
         {
-            PrintToStdErrA("Process terminated. ");
+            PrintToStdErrA("Process terminated.\n");
         }
         else
         {
-            PrintToStdErrA("Fatal error. ");
+            PrintToStdErrA("Fatal error.\n");
         }
 
         if (errorSource != NULL)
@@ -384,9 +395,9 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
         else
         {
             // If no message was passed in, generate it from the exitCode
-            SString exitCodeMessage;
+            InlineSString<256> exitCodeMessage;
             GetHRMsg(exitCode, exitCodeMessage);
-            PrintToStdErrW((LPCWSTR)exitCodeMessage);
+            PrintToStdErrW(exitCodeMessage.GetUnicode());
         }
 
         PrintToStdErrA("\n");
@@ -615,10 +626,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleFatalStackOverflow\n");
 
-    FrameWithCookie<FaultingExceptionFrame> fef;
-#if defined(FEATURE_EH_FUNCLETS)
-    *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
+    FaultingExceptionFrame fef;
     if (pExceptionInfo->ContextRecord)
     {
         GCX_COOP();
@@ -663,6 +671,10 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     // multiple stack traces together.
     if (InterlockedCompareExchange(&g_stackOverflowCallStackLogged, 1, 0) == 0)
     {
+#ifdef _DEBUG
+        g_LogStackOverflowExit = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogStackOverflowExit) != 0;
+#endif
+ 
         DisplayStackOverflowException();
 
         HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET Stack overflow trace logger"));
@@ -671,18 +683,31 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             // Wait for the stack trace logging completion
             DWORD res = WaitForSingleObject(stackDumpThreadHandle, INFINITE);
             _ASSERTE(res == WAIT_OBJECT_0);
+ #ifdef _DEBUG
+            if (g_LogStackOverflowExit)
+                PrintToStdErrA("@Stack trace printing helper thread exited.\n");
+ #endif
         }
 
         g_stackOverflowCallStackLogged = 2;
     }
     else
     {
+#ifdef _DEBUG
+        if (g_LogStackOverflowExit)
+            PrintToStdErrA("@Waiting for thread that's logging stack overflow.\n");
+#endif
         // Wait for the thread that is logging the stack trace to complete
         while (g_stackOverflowCallStackLogged != 2)
         {
             Sleep(50);
         }
     }
+
+#ifdef _DEBUG
+    if (g_LogStackOverflowExit)
+        PrintToStdErrA("@Proceeding with exit.\n");
+#endif
 
     if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, FailFast))
     {
@@ -701,6 +726,10 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         if (pThread)
         {
             GCX_COOP();
+#ifdef _DEBUG
+            if (g_LogStackOverflowExit)
+                PrintToStdErrA("@Setting throwable.\n");
+#endif
             // If we had a SO before preallocated exception objects are initialized, we will AV here. This can happen
             // during the initialization of SystemDomain during EEStartup. Thus, setup the SO throwable only if its not
             // NULL.
@@ -734,10 +763,17 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         }
 #endif // !TARGET_UNIX
 
+#ifdef _DEBUG
+        if (g_LogStackOverflowExit)
+            PrintToStdErrA("@Calling WatsonLastChance.\n");
+#endif
         WatsonLastChance(pThread, pExceptionInfo,
             (fTreatAsNativeUnhandledException == FALSE)? TypeOfReportedError::UnhandledException: TypeOfReportedError::NativeThreadUnhandledException);
     }
-
+#ifdef _DEBUG
+    if (g_LogStackOverflowExit)
+        PrintToStdErrA("@Terminating the process.\n");
+#endif
     CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();
 }

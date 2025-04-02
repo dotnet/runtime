@@ -16,7 +16,7 @@ namespace System.Threading.Tasks.Tests
             Action[] actions = new Action[256];
 
             // The thinking here is that we'll put enough "filler" into this array to
-            // insure that "natural" chunk size is greater than 2.  Without the
+            // ensure that "natural" chunk size is greater than 2.  Without the
             // NoBuffering option, the Parallel.ForEach below is certain to deadlock.
             // Somewhere a Signal() is going to be after a Wait() in the same chunk, and
             // the loop will deadlock.

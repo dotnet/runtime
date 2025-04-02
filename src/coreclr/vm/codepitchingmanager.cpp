@@ -36,7 +36,6 @@
 
 #if defined(FEATURE_JIT_PITCHING)
 
-#include "nibblemapmacros.h"
 #include "threadsuspend.h"
 
 static PtrHashMap* s_pPitchingCandidateMethods = nullptr;
@@ -235,7 +234,7 @@ static void LookupOrCreateInPitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
             const char* szClassName = className.GetUTF8();
             const char* szMethodSig = methodSig.GetUTF8();
 
-            printf("Candidate %lu %s :: %s %s\n",
+            minipal_log_print_info("Candidate %lu %s :: %s %s\n",
                    sizeOfCode, szClassName, pMD->GetName(), szMethodSig);
         }
 #endif
@@ -386,11 +385,7 @@ void MethodDesc::PitchNativeCode()
     }
     else
     {
-#ifdef FEATURE_INTERPRETER
-        SetNativeCodeInterlocked(NULL, NULL, FALSE);
-#else
         SetNativeCodeInterlocked(NULL, NULL);
-#endif
     }
 
     _ASSERTE(!HasNativeCode());
@@ -420,7 +415,7 @@ void MethodDesc::PitchNativeCode()
         const char* szClassName = className.GetUTF8();
         const char* szMethodSig = methodSig.GetUTF8();
 
-        printf("Pitched %lu %lu %s :: %s %s\n",
+        minipal_log_print_info("Pitched %lu %lu %s :: %s %s\n",
                s_PitchedMethodCounter, pitchedBytes, szClassName, GetName(), szMethodSig);
     }
 
@@ -495,7 +490,7 @@ EXTERN_C void SavePitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
         SimpleWriteLockHolder swlh(s_totalNCSizeLock);
         s_totalNCSize += sizeOfCode;
         if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchPrintStat) != 0)
-            printf("jitted %lu (bytes) pitched %lu (bytes)\n", s_totalNCSize, s_jitPitchedBytes);
+            minipal_log_print_info("jitted %lu (bytes) pitched %lu (bytes)\n", s_totalNCSize, s_jitPitchedBytes);
     }
 }
 #endif

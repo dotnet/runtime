@@ -32,6 +32,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         [OuterLoop]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/110578")]
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
             var handler = new WinHttpHandler();

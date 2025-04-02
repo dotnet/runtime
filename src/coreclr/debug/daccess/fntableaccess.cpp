@@ -44,10 +44,12 @@
 
 static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUserContext, DWORD_PTR pMapIn, DWORD_PTR addr, DWORD_PTR &codeHead)
 {
+    using namespace NibbleMap;
     codeHead = 0;
 
+    DWORD       dword;
     DWORD       tmp;                              // must be a DWORD, not a DWORD_PTR
-    DWORD_PTR   startPos  = ADDR2POS(addr);       // align to  128 byte buckets ( == index into the array of nibbles)
+    DWORD_PTR   startPos  = ADDR2POS(addr);       // align to 32 byte buckets ( == index into the array of nibbles)
     DWORD_PTR   offset    = ADDR2OFFS(addr);      // this is the offset inside the bucket + 1
     DWORD *     pMap      = (DWORD *) pMapIn;     // make this a pointer type so our pointer math is correct w/o adding sizeof(DWORD) everywhere
 
@@ -55,12 +57,19 @@ static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUs
 
     pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
 
-    //
-    // get DWORD and shift down our nibble
-    //
-    move(tmp, pMap);
-    tmp = tmp >> POS2SHIFTCOUNT(startPos);
+    // #1 look up DWORD represnting current PC
+    move(dword, pMap);
 
+    // #2 if DWORD is a pointer, then we can return
+    if (IsPointer(dword))
+    {
+        codeHead = DecodePointer(dword) - sizeof(CodeHeader);
+        return STATUS_SUCCESS;
+    }
+
+    tmp = dword >> POS2SHIFTCOUNT(startPos);
+
+    // #3 check if corresponding nibble is intialized and points to an equal or earlier address
     // don't allow equality in the next check (tmp & NIBBLE_MASK == offset)
     // there are code blocks that terminate with a call instruction
     // (like call throwobject), i.e. their return address is
@@ -76,9 +85,8 @@ static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUs
         return STATUS_SUCCESS;
     }
 
-    // is there a header in the remainder of the DWORD ?
+    // #4 try to find preceeding nibble in the DWORD
     tmp = tmp >> NIBBLE_SIZE;
-
     if (tmp)
     {
         startPos--;
@@ -92,40 +100,40 @@ static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUs
         return STATUS_SUCCESS;
     }
 
-    // we skipped the remainder of the DWORD,
+    // #5.1 read previous DWORD
+    // We skipped the remainder of the DWORD,
     // so we must set startPos to the highest position of
-    // previous DWORD
+    // previous DWORD, unless we are already on the first DWORD
+    if (startPos < NIBBLES_PER_DWORD)
+    {
+        return 0;
+    }
 
     startPos = ((startPos >> LOG2_NIBBLES_PER_DWORD) << LOG2_NIBBLES_PER_DWORD) - 1;
+    pMap--;
+    move(dword, pMap);
 
-    if ((INT_PTR)startPos < 0)
+    // If the second dword is not empty, it either has a nibble or a pointer
+    if (dword)
     {
+        // #5.2 either DWORD is a pointer
+        if (IsPointer(dword))
+        {
+            codeHead = DecodePointer(dword) - sizeof(CodeHeader);
+            return STATUS_SUCCESS;
+        }
+
+        // #5.4 or contains a nibble
+        tmp = dword;
+        while(!(tmp & NIBBLE_MASK))
+        {
+            tmp >>= NIBBLE_SIZE;
+            startPos--;
+        }
+        codeHead = POSOFF2ADDR(startPos, tmp & NIBBLE_MASK) - sizeof(CodeHeader);
         return STATUS_SUCCESS;
     }
 
-    // skip "headerless" DWORDS
-
-    pMap--;
-    move(tmp, pMap);
-    while (!tmp)
-    {
-        startPos -= NIBBLES_PER_DWORD;
-        if ((INT_PTR)startPos < 0)
-        {
-            return STATUS_SUCCESS;
-        }
-        pMap--;
-        move (tmp, pMap);
-    }
-
-
-    while (!(tmp & NIBBLE_MASK))
-    {
-        tmp = tmp >> NIBBLE_SIZE;
-        startPos--;
-    }
-
-    codeHead = POSOFF2ADDR(startPos, tmp & NIBBLE_MASK) - sizeof(CodeHeader);
     return STATUS_SUCCESS;
 }
 

@@ -72,22 +72,16 @@ namespace ILCompiler
             // information proving that it isn't, give RyuJIT the constructed symbol even
             // though we just need the unconstructed one.
             // https://github.com/dotnet/runtimelab/issues/1128
-            bool canPotentiallyConstruct = ConstructedEETypeNode.CreationAllowed(type)
-                && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
-            if (canPotentiallyConstruct)
-                return _nodeFactory.MaximallyConstructableType(type);
-
-            return _nodeFactory.NecessaryTypeSymbol(type);
+            return GetLdTokenHelperForType(type) == ReadyToRunHelperId.TypeHandle
+                ? _nodeFactory.ConstructedTypeSymbol(type)
+                : _nodeFactory.NecessaryTypeSymbol(type);
         }
 
         public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
         {
-            bool canPotentiallyConstruct = ConstructedEETypeNode.CreationAllowed(type)
-                && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
-            if (canPotentiallyConstruct)
-                return _nodeFactory.SerializedMaximallyConstructableRuntimeTypeObject(type);
-
-            return _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
+            return GetLdTokenHelperForType(type) == ReadyToRunHelperId.TypeHandle
+                ? _nodeFactory.SerializedConstructedRuntimeTypeObject(type)
+                : _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)

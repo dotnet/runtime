@@ -1341,6 +1341,7 @@ namespace System.Xml.Serialization
             //XmlSerializableMissingClrType= Type '{0}' from namespace '{1}' doesnot have corresponding IXmlSerializable type. Please consider adding {2} to '{3}'.
         }
 
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected Array EnsureArrayIndex(Array? a, int index, Type elementType)
         {
             if (a == null) return Array.CreateInstance(elementType, 32);
@@ -1350,6 +1351,7 @@ namespace System.Xml.Serialization
             return b;
         }
 
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected Array? ShrinkArray(Array? a, int length, Type elementType, bool isNullable)
         {
             if (a == null)
@@ -1548,6 +1550,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetArrayElementType")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private Array? ReadArray(string? typeName, string? typeNs)
         {
             SoapArrayInfo arrayInfo;
@@ -1748,9 +1751,11 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected abstract void InitCallbacks();
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected void ReadReferencedElements()
         {
             _r.MoveToContent();
@@ -1765,24 +1770,28 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected object? ReadReferencedElement()
         {
             return ReadReferencedElement(null, null);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected object? ReadReferencedElement(string? name, string? ns)
         {
             return ReadReferencingElement(name, ns, out _);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected object? ReadReferencingElement(out string? fixupReference)
         {
             return ReadReferencingElement(null, null, out fixupReference);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected object? ReadReferencingElement(string? name, string? ns, out string? fixupReference)
         {
             return ReadReferencingElement(name, ns, false, out fixupReference);
@@ -1790,6 +1799,7 @@ namespace System.Xml.Serialization
 
         [MemberNotNull(nameof(_callbacks))]
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected object? ReadReferencingElement(string? name, string? ns, bool elementCanBeType, out string? fixupReference)
         {
             object? o;
@@ -1829,6 +1839,7 @@ namespace System.Xml.Serialization
 
         [MemberNotNull(nameof(_callbacks))]
         [RequiresUnreferencedCode("calls InitCallbacks")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void EnsureCallbackTables()
         {
             if (_callbacks == null)

@@ -10,12 +10,13 @@ namespace System.Security.Cryptography
     public sealed partial class AesGcm
     {
         private SafeEvpCipherCtxHandle _ctxHandle;
+        private static readonly KeySizes s_tagByteSizes = new KeySizes(12, 16, 1);
 
-        public static bool IsSupported => true;
-        public static KeySizes TagByteSizes { get; } = new KeySizes(12, 16, 1);
+        public static partial bool IsSupported => true;
+        public static partial KeySizes TagByteSizes => s_tagByteSizes;
 
         [MemberNotNull(nameof(_ctxHandle))]
-        private void ImportKey(ReadOnlySpan<byte> key)
+        private partial void ImportKey(ReadOnlySpan<byte> key)
         {
             // Convert key length to bits.
             _ctxHandle = Interop.Crypto.EvpCipherCreatePartial(GetCipher(key.Length * 8));
@@ -29,12 +30,12 @@ namespace System.Security.Cryptography
             Interop.Crypto.CipherSetNonceLength(_ctxHandle, NonceSize);
         }
 
-        private void EncryptCore(
+        private partial void EncryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
             Span<byte> tag,
-            ReadOnlySpan<byte> associatedData = default)
+            ReadOnlySpan<byte> associatedData)
         {
 
             if (!Interop.Crypto.CipherSetTagLength(_ctxHandle, tag.Length))
@@ -107,7 +108,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private void DecryptCore(
+        private partial void DecryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> tag,
@@ -180,7 +181,7 @@ namespace System.Security.Cryptography
             };
         }
 
-        public void Dispose()
+        public partial void Dispose()
         {
             _ctxHandle.Dispose();
         }

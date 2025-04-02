@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// <summary>
 /// A registry of all the contracts that may be provided by a target.
 /// </summary>
-internal abstract class ContractRegistry
+public abstract class ContractRegistry
 {
     /// <summary>
     /// Gets an instance of the Exception contract for the target.
@@ -47,4 +47,20 @@ internal abstract class ContractRegistry
     /// Gets an instance of the CodeVersions contract for the target.
     /// </summary>
     public abstract ICodeVersions CodeVersions { get; }
+    /// <summary>
+    /// Gets an instance of the PlatformMetadata contract for the target.
+    /// </summary>
+    public abstract IPlatformMetadata PlatformMetadata { get; }
+    /// <summary>
+    /// Gets an instance of the PrecodeStubs contract for the target.
+    /// </summary>
+    public abstract IPrecodeStubs PrecodeStubs { get; }
+    /// <summary>
+    /// Gets an instance of the ReJIT contract for the target.
+    /// </summary>
+    public abstract IReJIT ReJIT { get; }
+    /// <summary>
+    /// Gets an instance of the StackWalk contract for the target.
+    /// </summary>
+    public abstract IStackWalk StackWalk { get; }
 }

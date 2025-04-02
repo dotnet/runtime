@@ -309,7 +309,7 @@ public:
     // Arguments:
     //    k - the key
     //    v - the value
-    //    kind - Normal, we are not allowed to overwrite
+    //    kind - None, we are not allowed to overwrite
     //           Overwrite, we are allowed to overwrite
     //           currently only used by CHK/DBG builds in an assert.
     //

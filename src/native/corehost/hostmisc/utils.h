@@ -91,7 +91,7 @@ pal::string_t get_runtime_id();
 bool try_get_runtime_id_from_env(pal::string_t& out_rid);
 
 bool multilevel_lookup_enabled();
-void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations);
+void get_framework_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations);
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
 size_t index_of_non_numeric(const pal::string_t& str, size_t i);
 bool try_stou(const pal::string_t& str, unsigned* num);

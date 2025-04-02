@@ -474,25 +474,6 @@ void *FieldDesc::GetInstanceAddress(OBJECTREF o)
     return (void *) (dac_cast<TADDR>(o->GetData()) + dwOffset);
 }
 
-// And here's the equivalent, when you are guaranteed that the enclosing instance of
-// the field is in the GC Heap.  So if the enclosing instance is a value type, it had
-// better be boxed.  We ASSERT this.
-void *FieldDesc::GetAddressGuaranteedInHeap(void *o)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!IsEnCNew());
-
-    return ((BYTE*)(o)) + sizeof(Object) + m_dwOffset;
-}
-
-
 DWORD   FieldDesc::GetValue32(OBJECTREF o)
 {
     WRAPPER_NO_CONTRACT;
@@ -785,7 +766,7 @@ TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
 }
 
 #if !defined(DACCESS_COMPILE)
-REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
+REFLECTFIELDREF FieldDesc::AllocateStubFieldInfo()
 {
     CONTRACTL
     {

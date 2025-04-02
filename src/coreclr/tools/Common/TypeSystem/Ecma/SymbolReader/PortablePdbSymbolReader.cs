@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -205,6 +206,22 @@ namespace Internal.TypeSystem.Ecma
                 ProbeScopeForLocals(variables, localScopeHandle);
             }
             return variables;
+        }
+
+        public override unsafe ReadOnlySpan<byte> GetSourceLinkData()
+        {
+            // {CC110556-A091-4D38-9FEC-25AB9A351A6A}
+            Guid sourceLinkDataGuid = new Guid(0xCC110556, 0xA091, 0x4D38, 0x9F, 0xEC, 0x25, 0xAB, 0x9A, 0x35, 0x1A, 0x6A);
+            foreach (CustomDebugInformationHandle cdiHandle in _reader.GetCustomDebugInformation(Handle.ModuleDefinition))
+            {
+                CustomDebugInformation cdi = _reader.GetCustomDebugInformation(cdiHandle);
+                if (_reader.GetGuid(cdi.Kind) == sourceLinkDataGuid)
+                {
+                    BlobReader br = _reader.GetBlobReader(cdi.Value);
+                    return new ReadOnlySpan<byte>(br.StartPointer, br.Length);
+                }
+            }
+            return ReadOnlySpan<byte>.Empty;
         }
     }
 }

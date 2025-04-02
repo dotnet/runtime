@@ -14,16 +14,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// <summary>
     /// Invokes the object. If it falls back, just produce an error.
     /// </summary>
+    [RequiresUnreferencedCode(Binder.TrimmerWarning)]
     internal sealed class ComInvokeAction : InvokeBinder
     {
-        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal ComInvokeAction(CallInfo callInfo)
             : base(callInfo)
         {
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion)
         {
             if (ComBinder.TryBindInvoke(this, target, args, out DynamicMetaObject res))
@@ -48,21 +46,19 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// Splats the arguments to another nested dynamic site, which does the
     /// real invocation of the IDynamicMetaObjectProvider.
     /// </summary>
+    [RequiresUnreferencedCode(Binder.TrimmerWarning)]
     internal sealed class SplatInvokeBinder : CallSiteBinder
     {
         private static readonly SplatInvokeBinder s_instance = new SplatInvokeBinder();
 
         internal static SplatInvokeBinder Instance
         {
-            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get => s_instance;
         }
 
         private SplatInvokeBinder() { }
 
         // Just splat the args and dispatch through a nested site
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. The only entry-point to this class is through Instance property which is marked as unsafe.")]
         public override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel)
         {
             Debug.Assert(args.Length == 2);

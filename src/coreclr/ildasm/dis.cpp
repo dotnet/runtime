@@ -819,7 +819,7 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, _Out_writes_(nSize)
 
     PAL_TRY(Param *, pParam, &param) {
         GUID guidLang={0},guidLangVendor={0},guidDoc={0};
-        CHAR zLang[GUID_STR_BUFFER_LEN],zVendor[GUID_STR_BUFFER_LEN],zDoc[GUID_STR_BUFFER_LEN];
+        CHAR zLang[MINIPAL_GUID_BUFFER_LEN],zVendor[MINIPAL_GUID_BUFFER_LEN],zDoc[MINIPAL_GUID_BUFFER_LEN];
         ULONG32 k;
         if(pParam->pLCD->FileToken != ulWasFileToken)
         {
@@ -830,9 +830,9 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, _Out_writes_(nSize)
                 ||memcmp(&guidLangVendor,&guidWasLangVendor,sizeof(GUID))
                 ||memcmp(&guidDoc,&guidWasDoc,sizeof(GUID)))
             {
-                GuidToLPSTR(guidLang,zLang);
-                GuidToLPSTR(guidLangVendor,zVendor);
-                GuidToLPSTR(guidDoc,zDoc);
+                minipal_guid_as_string(guidLang, zLang, MINIPAL_GUID_BUFFER_LEN);
+                minipal_guid_as_string(guidLangVendor, zVendor, MINIPAL_GUID_BUFFER_LEN);
+                minipal_guid_as_string(guidDoc, zDoc, MINIPAL_GUID_BUFFER_LEN);
                 sprintf_s(szString,SZSTRING_SIZE,"%s%s '%s', '%s', '%s'", g_szAsmCodeIndent,KEYWORD(".language"),
                     zLang,zVendor,zDoc);
                 printLine(pParam->GUICookie,szString);

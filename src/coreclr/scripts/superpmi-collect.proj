@@ -120,6 +120,9 @@
   <PropertyGroup Condition=" '$(CollectionType)' == 'run_pgo' ">
     <RunArguments>--tiered_pgo</RunArguments>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(CollectionType)' == 'run_pgo_optrepeat' ">
+    <RunArguments>--tiered_pgo --jitoptrepeat_all</RunArguments>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(CollectionType)' != 'run_tiered' and '$(CollectionType)' != 'run_pgo' ">
     <RunArguments></RunArguments>
   </PropertyGroup>

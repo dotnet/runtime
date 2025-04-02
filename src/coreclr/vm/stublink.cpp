@@ -281,7 +281,7 @@ VOID StubLinker::EmitPtr(const VOID *val)
 //---------------------------------------------------------------
 // Create a new undefined label. Label must be assigned to a code
 // location using EmitLabel() prior to final linking.
-// Throws COM+ exception on failure.
+// Throws exception on failure.
 //---------------------------------------------------------------
 CodeLabel* StubLinker::NewCodeLabel()
 {
@@ -346,7 +346,7 @@ VOID StubLinker::EmitLabel(CodeLabel* pCodeLabel)
 
 //---------------------------------------------------------------
 // Combines NewCodeLabel() and EmitLabel() for convenience.
-// Throws COM+ exception on failure.
+// Throws exception on failure.
 //---------------------------------------------------------------
 CodeLabel* StubLinker::EmitNewCodeLabel()
 {
@@ -383,7 +383,7 @@ UINT32 StubLinker::GetLabelOffset(CodeLabel *pLabel)
 
 //---------------------------------------------------------------
 // Create a new label to an external address.
-// Throws COM+ exception on failure.
+// Throws exception on failure.
 //---------------------------------------------------------------
 CodeLabel* StubLinker::NewExternalCodeLabel(LPVOID pExternalAddress)
 {
@@ -556,7 +556,7 @@ static BOOL LabelCanReach(LabelRef *pLabelRef)
 // No other methods (other than the destructor) should be called
 // after calling Link().
 //
-// Throws COM+ exception on failure.
+// Throws exception on failure.
 //---------------------------------------------------------------
 Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags)
 {

@@ -1,9 +1,7 @@
 <Project>
     <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>
-        <FeatureEventTrace>true</FeatureEventTrace>
         <FeaturePerfTracing>true</FeaturePerfTracing>
-        <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
     </PropertyGroup>
 
@@ -16,6 +14,8 @@
         <FeatureComWrappers>true</FeatureComWrappers>
         <FeatureCominterop>true</FeatureCominterop>
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
+        <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
+        <FeatureIjw>true</FeatureIjw>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsOSX)' == 'true' OR '$(TargetsMacCatalyst)' == 'true' OR '$(TargetsiOS)' == 'true' OR '$(TargetstvOS)' == 'true'">
@@ -30,6 +30,7 @@
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
+        <DefineConstants Condition="'$(FeatureIjw)' == 'true'">$(DefineConstants);FEATURE_IJW</DefineConstants>
         <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>

@@ -259,8 +259,7 @@ namespace System.Net.Http
             HttpConnection? connection = null;
             Exception? connectionException = null;
 
-            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
-            waiter.ConnectionCancellationTokenSource = cts;
+            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource(waiter);
             try
             {
                 connection = await CreateHttp11ConnectionAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);

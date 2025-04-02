@@ -3,8 +3,10 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -242,6 +244,38 @@ namespace System.Linq
                     outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
+        [DynamicDependency("LeftJoin`4", typeof(Enumerable))]
+        public static IQueryable<TResult> LeftJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner?, TResult>> resultSelector)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
+
+            return outer.Provider.CreateQuery<TResult>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter, TInner?, TResult>>, IQueryable<TResult>>(LeftJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
+        }
+
+        [DynamicDependency("LeftJoin`4", typeof(Enumerable))]
+        public static IQueryable<TResult> LeftJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner?, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
+
+            return outer.Provider.CreateQuery<TResult>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter, TInner?, TResult>>, IEqualityComparer<TKey>, IQueryable<TResult>>(LeftJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
+        }
+
         /// <summary>
         /// Sorts the elements of a sequence in ascending order.
         /// </summary>
@@ -438,6 +472,38 @@ namespace System.Linq
                     null,
                     new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, IOrderedQueryable<TSource>>(OrderByDescending).Method,
                     source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))));
+        }
+
+        [DynamicDependency("RightJoin`4", typeof(Enumerable))]
+        public static IQueryable<TResult> RightJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter?, TInner, TResult>> resultSelector)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
+
+            return outer.Provider.CreateQuery<TResult>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter?, TInner, TResult>>, IQueryable<TResult>>(RightJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
+        }
+
+        [DynamicDependency("RightJoin`4", typeof(Enumerable))]
+        public static IQueryable<TResult> RightJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter?, TInner, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
+
+            return outer.Provider.CreateQuery<TResult>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter?, TInner, TResult>>, IEqualityComparer<TKey>, IQueryable<TResult>>(RightJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("ThenBy`2", typeof(Enumerable))]
@@ -1523,6 +1589,18 @@ namespace System.Linq
                     Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))));
         }
 
+        [DynamicDependency("Shuffle`1", typeof(Enumerable))]
+        public static IQueryable<TSource> Shuffle<TSource>(this IQueryable<TSource> source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, IQueryable<TSource>>(Shuffle).Method,
+                    source.Expression));
+        }
+
         [DynamicDependency("Any`1", typeof(Enumerable))]
         public static bool Any<TSource>(this IQueryable<TSource> source)
         {
@@ -1704,11 +1782,14 @@ namespace System.Linq
         /// <typeparam name="TKey">The type of key to compare elements by.</typeparam>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="keySelector">A function to extract the key for each element.</param>
-        /// <param name="comparer">The <see cref="IComparer{TKey}" /> to compare keys.</param>
+        /// <param name="comparer">The <see cref="IComparer{TSource}" /> to compare elements.</param>
         /// <returns>The value with the minimum key in the sequence.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TKey}" /> interface.</exception>
+        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TSource}" /> interface.</exception>
         [DynamicDependency("MinBy`2", typeof(Enumerable))]
+        [Obsolete(Obsoletions.QueryableMinByMaxByTSourceObsoleteMessage, DiagnosticId=Obsoletions.QueryableMinByMaxByTSourceObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [OverloadResolutionPriority(-1)]
         public static TSource? MinBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TSource>? comparer)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -1721,6 +1802,30 @@ namespace System.Linq
                     source.Expression,
                     Expression.Quote(keySelector),
                     Expression.Constant(comparer, typeof(IComparer<TSource>))));
+        }
+
+        /// <summary>Returns the minimum value in a generic <see cref="IQueryable{T}"/> according to a specified key selector function.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <typeparam name="TKey">The type of key to compare elements by.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="comparer">The <see cref="IComparer{TKey}" /> to compare keys.</param>
+        /// <returns>The value with the minimum key in the sequence.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TKey}" /> interface.</exception>
+        [DynamicDependency("MinBy`2", typeof(Enumerable))]
+        public static TSource? MinBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, TSource?>(MinBy).Method,
+                    source.Expression,
+                    Expression.Quote(keySelector),
+                    Expression.Constant(comparer, typeof(IComparer<TKey>))));
         }
 
         [DynamicDependency("Max`1", typeof(Enumerable))]
@@ -1794,11 +1899,14 @@ namespace System.Linq
         /// <typeparam name="TKey">The type of key to compare elements by.</typeparam>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="keySelector">A function to extract the key for each element.</param>
-        /// <param name="comparer">The <see cref="IComparer{TKey}" /> to compare keys.</param>
+        /// <param name="comparer">The <see cref="IComparer{TSource}" /> to compare elements.</param>
         /// <returns>The value with the maximum key in the sequence.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TKey}" /> interface.</exception>
+        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TSource}" /> interface.</exception>
         [DynamicDependency("MaxBy`2", typeof(Enumerable))]
+        [Obsolete(Obsoletions.QueryableMinByMaxByTSourceObsoleteMessage, DiagnosticId=Obsoletions.QueryableMinByMaxByTSourceObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [OverloadResolutionPriority(-1)]
         public static TSource? MaxBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TSource>? comparer)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -1811,6 +1919,30 @@ namespace System.Linq
                     source.Expression,
                     Expression.Quote(keySelector),
                     Expression.Constant(comparer, typeof(IComparer<TSource>))));
+        }
+
+        /// <summary>Returns the maximum value in a generic <see cref="IQueryable{T}"/> according to a specified key selector function.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <typeparam name="TKey">The type of key to compare elements by.</typeparam>
+        /// <param name="source">A sequence of values to determine the maximum value of.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="comparer">The <see cref="IComparer{TKey}" /> to compare keys.</param>
+        /// <returns>The value with the maximum key in the sequence.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TKey}" /> interface.</exception>
+        [DynamicDependency("MaxBy`2", typeof(Enumerable))]
+        public static TSource? MaxBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, TSource?>(MaxBy).Method,
+                    source.Expression,
+                    Expression.Quote(keySelector),
+                    Expression.Constant(comparer, typeof(IComparer<TKey>))));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]

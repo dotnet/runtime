@@ -2,25 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Runtime.CompilerServices
 {
     [StackTraceHidden]
     [DebuggerStepThrough]
-    internal static unsafe class CastHelpers
+    internal static unsafe partial class CastHelpers
     {
         // In coreclr the table is allocated and written to on the native side.
         internal static int[]? s_table;
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);
+        [LibraryImport(RuntimeHelpers.QCall)]
+        internal static partial void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj);
+        [DoesNotReturn]
+        internal static void ThrowInvalidCastException(object fromType, void* toTypeHnd)
+        {
+            ThrowInvalidCastException(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd);
+            throw null!; // Provide hint to the inliner that this method does not return
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern ref byte Unbox_Helper(void* toTypeHnd, object obj);
+        [LibraryImport(RuntimeHelpers.QCall)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static object? IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj)
+        {
+            if (IsInstanceOf_NoCacheLookup(toTypeHnd, false, ObjectHandleOnStack.Create(ref obj)))
+            {
+                return obj;
+            }
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj)
+        {
+            IsInstanceOf_NoCacheLookup(toTypeHnd, true, ObjectHandleOnStack.Create(ref obj));
+            return obj;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
@@ -167,8 +190,10 @@ namespace System.Runtime.CompilerServices
                 mt = mt->ParentMethodTable;
             }
 
+#if FEATURE_TYPEEQUIVALENCE
             // this helper is not supposed to be used with type-equivalent "to" type.
             Debug.Assert(!((MethodTable*)toTypeHnd)->HasTypeEquivalence);
+#endif // FEATURE_TYPEEQUIVALENCE
 
             obj = null;
 
@@ -365,7 +390,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        private static ref byte Unbox(void* toTypeHnd, object obj)
+        private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
         {
             // This will throw NullReferenceException if obj is null.
             if (RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
@@ -454,17 +479,17 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(obj != null);
 
-            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (obj == null)
+            object? obj2 = IsInstanceOfAny_NoCacheLookup(elementType, obj);
+            if (obj2 == null)
             {
                 ThrowArrayMismatchException();
             }
 
-            WriteBarrier(ref element, obj);
+            WriteBarrier(ref element, obj2);
         }
 
         [DebuggerHidden]
-        private static unsafe void ArrayTypeCheck(object obj, Array array)
+        private static void ArrayTypeCheck(object obj, Array array)
         {
             Debug.Assert(obj != null);
 
@@ -482,15 +507,180 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void ArrayTypeCheck_Helper(object obj, void* elementType)
+        private static void ArrayTypeCheck_Helper(object obj, void* elementType)
         {
             Debug.Assert(obj != null);
 
-            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (obj == null)
+            if (IsInstanceOfAny_NoCacheLookup(elementType, obj) == null)
             {
                 ThrowArrayMismatchException();
             }
+        }
+
+        // Helpers for Unboxing
+#if FEATURE_TYPEEQUIVALENCE
+        [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb)
+        {
+            if (pMTa == pMTb)
+            {
+                return true;
+            }
+
+            if (!pMTa->HasTypeEquivalence || !pMTb->HasTypeEquivalence)
+            {
+                return false;
+            }
+
+            return RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb);
+        }
+#endif // FEATURE_TYPEEQUIVALENCE
+
+        [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNullableForType(MethodTable* typeMT, MethodTable* boxedMT)
+        {
+            if (!typeMT->IsNullable)
+            {
+                return false;
+            }
+
+            // Normally getting the first generic argument involves checking the PerInstInfo to get the count of generic dictionaries
+            // in the hierarchy, and then doing a bit of math to find the right dictionary, but since we know this is nullable
+            // we can do a simple double deference to do the same thing.
+            Debug.Assert(typeMT->InstantiationArg0() == **typeMT->PerInstInfo);
+            MethodTable *pMTNullableArg = **typeMT->PerInstInfo;
+            if (pMTNullableArg == boxedMT)
+            {
+                return true;
+            }
+            else
+            {
+#if FEATURE_TYPEEQUIVALENCE
+                return AreTypesEquivalent(pMTNullableArg, boxedMT);
+#else
+                return false;
+#endif // FEATURE_TYPEEQUIVALENCE
+            }
+        }
+
+        [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Unbox_Nullable_NotIsNullableForType(ref byte destPtr, MethodTable* typeMT, object obj)
+        {
+            // Also allow true nullables to be unboxed normally.
+            // This should not happen normally, but can happen in debugger scenarios.
+            if (typeMT != RuntimeHelpers.GetMethodTable(obj))
+            {
+                CastHelpers.ThrowInvalidCastException(obj, typeMT);
+            }
+            Buffer.BulkMoveWithWriteBarrier(ref destPtr, ref RuntimeHelpers.GetRawData(obj), typeMT->GetNullableNumInstanceFieldBytes());
+        }
+
+        [DebuggerHidden]
+        internal static void Unbox_Nullable(ref byte destPtr, MethodTable* typeMT, object? obj)
+        {
+            if (obj == null)
+            {
+                if (!typeMT->ContainsGCPointers)
+                {
+                    SpanHelpers.ClearWithoutReferences(ref destPtr, typeMT->GetNullableNumInstanceFieldBytes());
+                }
+                else
+                {
+                    SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref destPtr), typeMT->GetNumInstanceFieldBytesIfContainsGCPointers() / (nuint)sizeof(IntPtr));
+                }
+            }
+            else
+            {
+                if (!IsNullableForType(typeMT, RuntimeHelpers.GetMethodTable(obj)))
+                {
+                    Unbox_Nullable_NotIsNullableForType(ref destPtr, typeMT, obj);
+                }
+                else
+                {
+                    Unsafe.As<byte, bool>(ref destPtr) = true;
+                    ref byte dst = ref Unsafe.Add(ref destPtr, typeMT->NullableValueAddrOffset);
+                    uint valueSize = typeMT->NullableValueSize;
+                    ref byte src = ref RuntimeHelpers.GetRawData(obj);
+                    if (typeMT->ContainsGCPointers)
+                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, valueSize);
+                    else
+                        SpanHelpers.Memmove(ref dst, ref src, valueSize);
+                }
+            }
+        }
+
+        [DebuggerHidden]
+        internal static object? ReboxFromNullable(MethodTable* srcMT, object src)
+        {
+            Debug.Assert(srcMT->IsNullable);
+
+            ref byte nullableData = ref src.GetRawData();
+
+            // If 'hasValue' is false, return null.
+            if (!Unsafe.As<byte, bool>(ref nullableData))
+                return null;
+
+            // Allocate a new instance of the T in Nullable<T>.
+            MethodTable* dstMT = srcMT->InstantiationArg0();
+            object dst = RuntimeTypeHandle.InternalAlloc(dstMT);
+
+            // Copy data from the Nullable<T>.
+            ref byte srcData = ref Unsafe.Add(ref nullableData, srcMT->NullableValueAddrOffset);
+            ref byte dstData = ref RuntimeHelpers.GetRawData(dst);
+            if (dstMT->ContainsGCPointers)
+                Buffer.BulkMoveWithWriteBarrier(ref dstData, ref srcData, dstMT->GetNumInstanceFieldBytesIfContainsGCPointers());
+            else
+                SpanHelpers.Memmove(ref dstData, ref srcData, dstMT->GetNumInstanceFieldBytes());
+
+            return dst;
+        }
+
+        [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ref byte Unbox_Helper(MethodTable* pMT1, object obj)
+        {
+            // must be a value type
+            Debug.Assert(pMT1->IsValueType);
+
+            MethodTable* pMT2 = RuntimeHelpers.GetMethodTable(obj);
+            if ((!pMT1->IsPrimitive || !pMT2->IsPrimitive ||
+                pMT1->GetPrimitiveCorElementType() != pMT2->GetPrimitiveCorElementType())
+#if FEATURE_TYPEEQUIVALENCE
+                && !AreTypesEquivalent(pMT1, pMT2)
+#endif // FEATURE_TYPEEQUIVALENCE
+                )
+            {
+                CastHelpers.ThrowInvalidCastException(obj, pMT1);
+            }
+
+            return ref RuntimeHelpers.GetRawData(obj);
+        }
+
+        [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Unbox_TypeTest_Helper(MethodTable *pMT1, MethodTable *pMT2)
+        {
+            if ((!pMT1->IsPrimitive || !pMT2->IsPrimitive ||
+                pMT1->GetPrimitiveCorElementType() != pMT2->GetPrimitiveCorElementType())
+#if FEATURE_TYPEEQUIVALENCE
+                && !AreTypesEquivalent(pMT1, pMT2)
+#endif // FEATURE_TYPEEQUIVALENCE
+                )
+            {
+                CastHelpers.ThrowInvalidCastException(pMT1, pMT2);
+            }
+        }
+
+        [DebuggerHidden]
+        private static void Unbox_TypeTest(MethodTable *pMT1, MethodTable *pMT2)
+        {
+            if (pMT1 == pMT2)
+                return;
+            else
+                Unbox_TypeTest_Helper(pMT1, pMT2);
         }
     }
 }

@@ -101,7 +101,7 @@ public:
     // is compiling a method containing a P/Invoke that is being considered for inlining.
     static BOOL MarshalingRequired(
         _In_opt_ MethodDesc* pMD,
-        _In_opt_ PCCOR_SIGNATURE pSig = NULL,
+        _In_opt_ SigPointer sigPointer = {},
         _In_opt_ Module* pModule = NULL,
         _In_opt_ SigTypeContext* pTypeContext = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
@@ -594,7 +594,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 #ifndef DACCESS_COMPILE
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
-bool GenerateCopyConstructorHelper(MethodDesc* ftn, TypeHandle type, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader, CORINFO_METHOD_INFO* methInfo);
+bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader);
 #endif // DACCESS_COMPILE
 
 //

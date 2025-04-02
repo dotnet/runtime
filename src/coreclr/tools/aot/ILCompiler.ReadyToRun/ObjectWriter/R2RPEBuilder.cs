@@ -507,9 +507,12 @@ namespace ILCompiler.PEWriter
             if (_getRuntimeFunctionsTable != null)
             {
                 RuntimeFunctionsTableNode runtimeFunctionsTable = _getRuntimeFunctionsTable();
-                builder.ExceptionTable = new DirectoryEntry(
-                    relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(runtimeFunctionsTable),
-                    size: runtimeFunctionsTable.TableSizeExcludingSentinel);
+                if (runtimeFunctionsTable.TableSizeExcludingSentinel != 0)
+                {
+                    builder.ExceptionTable = new DirectoryEntry(
+                        relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(runtimeFunctionsTable),
+                        size: runtimeFunctionsTable.TableSizeExcludingSentinel);
+                }
             }
     
             return builder;

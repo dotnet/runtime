@@ -15,7 +15,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class GenericVirtualMethodImplNode : DependencyNodeCore<NodeFactory>
     {
-        private const int UniversalCanonGVMDepthHeuristic_CanonDepth = 2;
         private readonly MethodDesc _method;
 
         public GenericVirtualMethodImplNode(MethodDesc method)
@@ -49,12 +48,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (validInstantiation)
             {
-                if (factory.TypeSystemContext.SupportsUniversalCanon && _method.IsGenericDepthGreaterThan(UniversalCanonGVMDepthHeuristic_CanonDepth))
-                {
-                    // fall back to using the universal generic variant of the generic method
-                    return dependencies;
-                }
-
                 bool getUnboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.MethodEntrypoint(_method, getUnboxingStub), "GVM Dependency - Canon method");

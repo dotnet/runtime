@@ -760,7 +760,7 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
 
     PCODE codeEntryPoint = 0;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
@@ -774,8 +774,8 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
         CallCountingInfo::From(CallCountingStub::From(stubIdentifyingToken)->GetRemainingCallCountCell())->GetCodeVersion();
 
     MethodDesc *methodDesc = codeVersion.GetMethodDesc();
-    FrameWithCookie<CallCountingHelperFrame> frameWithCookie(transitionBlock, methodDesc);
-    CallCountingHelperFrame *frame = &frameWithCookie;
+    CallCountingHelperFrame callCountingFrame(transitionBlock, methodDesc);
+    CallCountingHelperFrame *frame = &callCountingFrame;
     frame->Push(CURRENT_THREAD);
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -822,8 +822,6 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
     frame->Pop(CURRENT_THREAD);
-
-    END_PRESERVE_LAST_ERROR;
 
     return codeEntryPoint;
 }

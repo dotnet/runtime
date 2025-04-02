@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[Kept]
 				static void GenericMethod<T> () { }
 
-				[Kept]
+				[Kept (By = Tool.Trimmer)]
 				class TargetTypeForNothing
 				{
 					public int PublicField;
@@ -89,7 +89,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[Kept]
 				static void GenericMethod<T> (T value) where T : IUse { value.Use (); }
 
-				[Kept]
+				[Kept (By = Tool.Trimmer)]
 				[KeptInterfaceAttribute (typeof (IUse), By = Tool.Trimmer)]
 				class TargetTypeForNothing : IUse
 				{

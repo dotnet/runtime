@@ -502,8 +502,11 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
     gcPrintf("Size of parameter area: %x\n", hdrdecoder.GetSizeOfStackParameterArea());
 #endif
 
-    ReturnKind returnKind = hdrdecoder.GetReturnKind();
-    gcPrintf("Return Kind: %s\n", ReturnKindToString(returnKind));
+    if (hdrdecoder.Version() < 4)
+    {
+        ReturnKind returnKind = hdrdecoder.GetReturnKind();
+        gcPrintf("Return Kind: %s\n", ReturnKindToString(returnKind));
+    }
 
     UINT32 cbEncodedMethodSize = hdrdecoder.GetCodeLength();
     gcPrintf("Code size: %x\n", cbEncodedMethodSize);

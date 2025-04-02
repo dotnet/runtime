@@ -85,7 +85,7 @@ namespace Internal.Runtime.TypeLoader
 
                     _templateTypeLoaderNativeLayout = true;
                     _templateComputed = true;
-                    if ((_templateType != null) && !_templateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                    if (_templateType != null)
                         _nativeLayoutTokenComputed = true;
                 }
 
@@ -267,7 +267,6 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else
                     {
-                        // This should only happen for non-universal templates
                         Debug.Assert(TypeBeingBuilt.IsTemplateCanonical());
 
                         TypeDesc templateType = TypeBeingBuilt.ComputeTemplate(false);

@@ -111,6 +111,36 @@ namespace CoreclrTestLib
 
     internal static class ProcessExtensions
     {
+        public static bool TryGetProcessId(this Process process, out int processId)
+        {
+            try
+            {
+                processId = process.Id;
+                return true;
+            }
+            catch
+            {
+                // Process exited
+                processId = default;
+                return false;
+            }
+        }
+
+        public static bool TryGetProcessName(this Process process, out string processName)
+        {
+            try
+            {
+                processName = process.ProcessName;
+                return true;
+            }
+            catch
+            {
+                // Process exited
+                processName = default;
+                return false;
+            }
+        }
+
         public unsafe static IEnumerable<Process> GetChildren(this Process process)
         {
             var children = new List<Process>();
@@ -353,7 +383,7 @@ namespace CoreclrTestLib
 
             Task<string> stdOut = proc.StandardOutput.ReadToEndAsync();
             Task<string> stdErr = proc.StandardError.ReadToEndAsync();
-            if(!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
+            if (!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
             {
                 proc.Kill(true);
                 outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
@@ -392,24 +422,31 @@ namespace CoreclrTestLib
 
                 Console.WriteLine("=========================================");
                 string? userName = Environment.GetEnvironmentVariable("USER");
-                if (!string.IsNullOrEmpty(userName))
+                if (string.IsNullOrEmpty(userName))
                 {
-                    if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                    userName = "helixbot";
+                }
 
-                    Console.WriteLine("=========================================");
-                    if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                if (!RunProcess("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
 
-                    Console.WriteLine("=========================================");
-                    if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
+
+                Console.WriteLine("=========================================");
+                if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
+
+                Console.WriteLine("=========================================");
+                if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
                 }
             }
 
@@ -562,7 +599,9 @@ namespace CoreclrTestLib
 
                 symbolizerOutput = stdout.Result;
 
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
                 outputWriter.WriteLine(e.ToString());
                 return false;
@@ -642,6 +681,8 @@ namespace CoreclrTestLib
         // The children are sorted in the order they should be dumped
         static unsafe IEnumerable<Process> FindChildProcessesByName(Process process, string childName)
         {
+            Console.WriteLine($"Finding all child processes of '{process.ProcessName}' (ID: {process.Id}) with name '{childName}'");
+
             var children = new Stack<Process>();
             Queue<Process> childrenToCheck = new Queue<Process>();
             HashSet<int> seen = new HashSet<int>();
@@ -653,15 +694,23 @@ namespace CoreclrTestLib
             while (childrenToCheck.Count != 0)
             {
                 Process child = childrenToCheck.Dequeue();
-                if (seen.Contains(child.Id))
+
+                if (!child.TryGetProcessId(out int processId))
                     continue;
 
-                seen.Add(child.Id);
+                if (seen.Contains(processId))
+                    continue;
+
+                if (!child.TryGetProcessName(out string processName))
+                    continue;
+
+                Console.WriteLine($"Checking child process: '{processName}' (ID: {processId})");
+                seen.Add(processId);
 
                 foreach (var grandchild in child.GetChildren())
                     childrenToCheck.Enqueue(grandchild);
 
-                if (child.ProcessName.Equals(childName, StringComparison.OrdinalIgnoreCase))
+                if (processName.Equals(childName, StringComparison.OrdinalIgnoreCase))
                 {
                     children.Push(child);
                 }
@@ -779,14 +828,30 @@ namespace CoreclrTestLib
                         {
                             cts.Cancel();
                         }
-                        catch {}
+                        catch { }
 
                         outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
                                 executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
                                 startTime.ToString(), endTime.ToString());
+                        outputWriter.Flush();
                         errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
                                 executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
                                 startTime.ToString(), endTime.ToString());
+                        errorWriter.Flush();
+
+                        Console.WriteLine("Collecting diagnostic information...");
+                        Console.WriteLine("Snapshot of processes currently running:");
+                        Console.WriteLine($"\t{"ID",-6} ProcessName");
+                        foreach (var activeProcess in Process.GetProcesses())
+                        {
+                            Console.WriteLine($"\t{activeProcess.Id,-6} {activeProcess.ProcessName}");
+                        }
+
+                        if (OperatingSystem.IsWindows())
+                        {
+                            Console.WriteLine("Snapshot of processes currently running (using wmic):");
+                            Console.WriteLine(GetAllProcessNames_wmic());
+                        }
 
                         if (collectCrashDumps)
                         {
@@ -819,6 +884,28 @@ namespace CoreclrTestLib
             }
 
             return exitCode;
+        }
+
+        private static string GetAllProcessNames_wmic()
+        {
+            // The command to execute
+            string command = "wmic process get Name, ProcessId, ParentProcessId";
+
+            // Start the process and capture the output
+            Process process = new Process();
+            process.StartInfo.FileName = "cmd.exe";
+            process.StartInfo.Arguments = $"/c {command}";
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+
+            // Start the process and read the output
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(100); // wait for 100 ms
+
+            // Output the result
+            return output;
         }
     }
 }

@@ -21,19 +21,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AllPropagatedWithDerivedClass.Test ();
 
 			TestPublicConstructorsAreNotPropagated (typeof (TestType));
+			TestPublicConstructorsWithInheritedArePropagated (typeof (TestType));
 			TestPublicEventsPropagated (typeof (TestType));
 			TestPublicFieldsPropagated (typeof (TestType));
 			TestPublicMethodsPropagated (typeof (TestType));
 			TestPublicNestedTypesAreNotPropagated (typeof (TestType));
+			TestPublicNestedTypesWithInheritedArePropagated (typeof (TestType));
 			TestPublicParameterlessConstructorIsNotPropagated (typeof (TestType));
 			TestPublicPropertiesPropagated (typeof (TestType));
 
 			TestNonPublicConstructorsAreNotPropagated (typeof (TestType));
+			TestNonPublicConstructorsWithInheritedArePropagated (typeof (TestType));
 			TestNonPublicEventsAreNotPropagated (typeof (TestType));
+			TestNonPublicEventsWithInheritedArePropagated (typeof (TestType));
 			TestNonPublicFieldsAreNotPropagated (typeof (TestType));
+			TestNonPublicFieldsWithInheritedArePropagated (typeof (TestType));
 			TestNonPublicMethodsAreNotPropagated (typeof (TestType));
+			TestNonPublicMethodsWithInheritedArePropagated (typeof (TestType));
 			TestNonPublicNestedTypesAreNotPropagated (typeof (TestType));
+			TestNonPublicNestedTypesWithInheritedArePropagated (typeof (TestType));
 			TestNonPublicPropertiesAreNotPropagated (typeof (TestType));
+			TestNonPublicPropertiesWithInheritedArePropagated (typeof (TestType));
 
 			TestInterfacesPropagated (typeof (TestType));
 
@@ -74,9 +82,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructorsWithInherited))]
 		static void TestPublicConstructorsAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresPublicConstructors ();
+			derivedType.BaseType.RequiresPublicConstructorsWithInherited ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructorsWithInherited))]
+		static void TestPublicConstructorsWithInheritedArePropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypesEx.PublicConstructorsWithInherited)] Type derivedType)
+		{
+			derivedType.BaseType.RequiresPublicConstructors ();
+			derivedType.BaseType.RequiresPublicConstructorsWithInherited ();
+
+			// Should warn
+			derivedType.BaseType.RequiresNonPublicConstructors ();
+
+			// Should warn
+			derivedType.BaseType.RequiresNonPublicConstructorsWithInherited ();
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
@@ -119,9 +143,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicNestedTypes))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicNestedTypesWithInherited))]
 		static void TestPublicNestedTypesAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicNestedTypes)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresPublicNestedTypes ();
+			derivedType.BaseType.RequiresPublicNestedTypesWithInherited ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicNestedTypes))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicNestedTypesWithInherited))]
+		static void TestPublicNestedTypesWithInheritedArePropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypesEx.PublicNestedTypesWithInherited)] Type derivedType)
+		{
+			derivedType.BaseType.RequiresPublicNestedTypes ();
+			derivedType.BaseType.RequiresPublicNestedTypesWithInherited ();
+
+			// Should warn
+			derivedType.BaseType.RequiresNonPublicNestedTypes ();
+
+			// Should warn
+			derivedType.BaseType.RequiresNonPublicNestedTypesWithInherited ();
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicParameterlessConstructor))]
@@ -144,39 +184,119 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructorsWithInherited))]
 		static void TestNonPublicConstructorsAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicConstructors ();
+			derivedType.BaseType.RequiresNonPublicConstructorsWithInherited ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructorsWithInherited))]
+		static void TestNonPublicConstructorsWithInheritedArePropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypesEx.NonPublicConstructorsWithInherited)] Type derivedType)
+		{
+			derivedType.BaseType.RequiresNonPublicConstructors ();
+			derivedType.BaseType.RequiresNonPublicConstructorsWithInherited ();
+
+			// Should warn
+			derivedType.BaseType.RequiresPublicConstructors ();
+
+			// Should warn
+			derivedType.BaseType.RequiresPublicConstructorsWithInherited ();
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicEvents))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicEventsWithInherited))]
 		static void TestNonPublicEventsAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicEvents)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicEvents ();
+			derivedType.BaseType.RequiresNonPublicEventsWithInherited ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicEvents))]
+		static void TestNonPublicEventsWithInheritedArePropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypesEx.NonPublicEventsWithInherited)] Type derivedType)
+		{
+			derivedType.BaseType.RequiresNonPublicEvents ();
+			derivedType.BaseType.RequiresNonPublicEventsWithInherited ();
+
+			// Should warn
+			derivedType.BaseType.RequiresPublicEvents ();
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicFields))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicFieldsWithInherited))]
 		static void TestNonPublicFieldsAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicFields)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicFields ();
+			derivedType.BaseType.RequiresNonPublicFieldsWithInherited ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+		static void TestNonPublicFieldsWithInheritedArePropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypesEx.NonPublicFieldsWithInherited)] Type derivedType)
+		{
+			derivedType.BaseType.RequiresNonPublicFields ();
+			derivedType.BaseType.RequiresNonPublicFieldsWithInherited ();
+
+			// Should warn
+			derivedType.BaseType.RequiresPublicFields ();
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicMethods))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicMethodsWithInherited))]
 		static void TestNonPublicMethodsAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicMethods ();
+			derivedType.BaseType.RequiresNonPublicMethodsWithInherited ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+		static void TestNonPublicMethodsWithInheritedArePropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypesEx.NonPublicMethodsWithInherited)] Type derivedType)
+		{
+			derivedType.BaseType.RequiresNonPublicMethods ();
+			derivedType.BaseType.RequiresNonPublicMethodsWithInherited ();
+
+			// Should warn
+			derivedType.BaseType.RequiresPublicMethods ();
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicNestedTypes))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicNestedTypesWithInherited))]
 		static void TestNonPublicNestedTypesAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicNestedTypes)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicNestedTypes ();
+			derivedType.BaseType.RequiresNonPublicNestedTypesWithInherited ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicNestedTypes))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicNestedTypesWithInherited))]
+		static void TestNonPublicNestedTypesWithInheritedArePropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypesEx.NonPublicNestedTypesWithInherited)] Type derivedType)
+		{
+			derivedType.BaseType.RequiresNonPublicNestedTypes ();
+			derivedType.BaseType.RequiresNonPublicNestedTypesWithInherited ();
+
+			// Should warn
+			derivedType.BaseType.RequiresPublicNestedTypes ();
+
+			// Should warn
+			derivedType.BaseType.RequiresPublicNestedTypesWithInherited ();
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicProperties))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicPropertiesWithInherited))]
 		static void TestNonPublicPropertiesAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicProperties)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicProperties ();
+			derivedType.BaseType.RequiresNonPublicPropertiesWithInherited ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicProperties))]
+		static void TestNonPublicPropertiesWithInheritedArePropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypesEx.NonPublicPropertiesWithInherited)] Type derivedType)
+		{
+			derivedType.BaseType.RequiresNonPublicProperties ();
+			derivedType.BaseType.RequiresNonPublicPropertiesWithInherited ();
+
+			// Should warn
+			derivedType.BaseType.RequiresPublicProperties ();
 		}
 
 		static void TestInterfacesPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type derivedType)

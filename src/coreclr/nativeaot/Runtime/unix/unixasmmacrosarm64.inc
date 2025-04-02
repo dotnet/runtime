@@ -306,6 +306,7 @@ C_FUNC(\Name):
 #define PTFF_SAVE_X0            0x00000800
 #define PTFF_SAVE_X1            0x00001000
 #define PTFF_SAVE_ALL_PRESERVED 0x000003FF  // NOTE: x19-x28
+#define PTFF_THREAD_HIJACK_HI   0x00000002  // upper 32 bits of the PTFF_THREAD_HIJACK
 
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
@@ -345,7 +346,7 @@ C_FUNC(\Name):
 .endm
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions
-#define PTFF_THREAD_ABORT_BIT 36
+#define PTFF_THREAD_ABORT_BIT 32
 
 //
 // CONSTANTS -- INTEGER

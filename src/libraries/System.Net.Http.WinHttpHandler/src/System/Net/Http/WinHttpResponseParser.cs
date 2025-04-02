@@ -64,7 +64,7 @@ namespace System.Net.Http
 
                 // Create response stream and wrap it in a StreamContent object.
                 var responseStream = new WinHttpResponseStream(requestHandle, state, response);
-                state.RequestHandle = null; // ownership successfully transferred to WinHttpResponseStram.
+                state.RequestHandle = null; // ownership successfully transferred to WinHttpResponseStream.
                 Stream decompressedStream = responseStream;
 
                 if (manuallyProcessedDecompressionMethods != DecompressionMethods.None)
@@ -187,7 +187,16 @@ namespace System.Net.Http
                 index = originalIndex;
 
                 buffer = new char[bufferLength];
-                return GetResponseHeader(requestHandle, infoLevel, ref buffer, ref index, out headerValue);
+                fixed (char* pBuffer = &buffer[0])
+                {
+                    if (QueryHeaders(requestHandle, infoLevel, pBuffer, ref bufferLength, ref index))
+                    {
+                        headerValue = new string(pBuffer, 0, bufferLength);
+                        return true;
+                    }
+                }
+
+                lastError = Marshal.GetLastWin32Error();
             }
 
             throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpQueryHeaders));

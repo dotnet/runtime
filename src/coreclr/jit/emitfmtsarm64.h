@@ -227,6 +227,11 @@ IF_DEF(SN_0A, IS_NONE, NONE) // SN_0A   ................ ................
 IF_DEF(SI_0A, IS_NONE, NONE) // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
 IF_DEF(SI_0B, IS_NONE, NONE) // SI_0B   ................ ....bbbb........               imm4 - barrier
 
+// Pointer Authentication (PAC) groups
+IF_DEF(PC_0A, IS_NONE, NONE) // PC_0A   ................ ................               (autia1716, autiasp, autiaz, pacia1716, paciasp, paciaz, xpaclri)
+IF_DEF(PC_1A, IS_NONE, NONE) // PC_1A   ................ ...........ddddd      Rd       (autiza, paciza, xpacd, xpaci)
+IF_DEF(PC_2A, IS_NONE, NONE) // PC_2A   X........X...... ......nnnnnddddd      Rd Rn    (autia, pacia)
+
 IF_DEF(SR_1A, IS_NONE, NONE) // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
 
 IF_DEF(INVALID, IS_NONE, NONE) //

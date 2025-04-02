@@ -22,13 +22,13 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
-    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(CrossBuild)' == 'true' or '$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkNativePath>
+    <IlcCppLinkerCustomWarningRegularExpression>module compiled with /GL found</IlcCppLinkerCustomWarningRegularExpression>
     <NoWarn>$(NoWarn);IL1005;IL2122;IL3000;IL3001;IL3002;IL3003;IL3050;IL3051;IL3052;IL3053</NoWarn>
     <TrimMode>partial</TrimMode>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
@@ -50,10 +50,6 @@
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <RdXmlFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />
-
-    <!-- xunit calls MakeGenericType to check if something is IEquatable -->
-    <IlcArg Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
-
     <TrimmerRootAssembly Include="TestUtilities" />
   </ItemGroup>
 

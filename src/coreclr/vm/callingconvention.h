@@ -159,10 +159,9 @@ struct TransitionBlock
             INT64 s6;
             INT64 s7;
             INT64 s8;
-            INT64 tp;
         };
     };
-    //TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
+    TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
     ArgumentRegisters       m_argumentRegisters;
 #elif defined(TARGET_RISCV64)
     union {
@@ -186,6 +185,16 @@ struct TransitionBlock
         };
     };
     TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
+    ArgumentRegisters       m_argumentRegisters;
+#elif defined(TARGET_WASM)
+    // No transition block on WASM yet
+    union {
+        CalleeSavedRegisters m_calleeSavedRegisters;
+        // alias saved link register as m_ReturnAddress
+        struct {
+            TADDR m_ReturnAddress;
+        };
+    };
     ArgumentRegisters       m_argumentRegisters;
 #else
     PORTABILITY_ASSERT("TransitionBlock");
@@ -925,6 +934,16 @@ public:
     }
 
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+
+#ifdef TARGET_WASM
+
+    // Get layout information for the argument that the ArgIterator is currently visiting.
+    void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
+    {
+        _ASSERTE(!"GetArgLoc not implemented for WASM");
+    }
+#endif // TARGET_WASM
+
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
@@ -949,9 +968,6 @@ protected:
 
 #ifdef TARGET_X86
     int                 m_numRegistersUsed;
-#ifdef FEATURE_INTERPRETER
-    bool                m_fUnmanagedCallConv;
-#endif
 #endif
 
 #ifdef UNIX_AMD64_ABI
@@ -1182,31 +1198,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
             numRegistersUsed = NUM_ARGUMENT_REGISTERS; // Nothing else gets passed in registers for varargs
         }
 
-#ifdef FEATURE_INTERPRETER
-        BYTE callconv = CallConv();
-        switch (callconv)
-        {
-        case IMAGE_CEE_CS_CALLCONV_C:
-        case IMAGE_CEE_CS_CALLCONV_STDCALL:
-            m_numRegistersUsed = NUM_ARGUMENT_REGISTERS;
-            m_ofsStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
-            m_fUnmanagedCallConv = true;
-            break;
-
-        case IMAGE_CEE_CS_CALLCONV_THISCALL:
-        case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-            _ASSERTE_MSG(false, "Unsupported calling convention.");
-
-        default:
-            m_fUnmanagedCallConv = false;
-            m_numRegistersUsed = numRegistersUsed;
-            m_ofsStack = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
-            break;
-        }
-#else
         m_numRegistersUsed = numRegistersUsed;
         m_ofsStack = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
-#endif
 
 #elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
@@ -1264,14 +1257,6 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 #endif
 
 #ifdef TARGET_X86
-#ifdef FEATURE_INTERPRETER
-    if (m_fUnmanagedCallConv)
-    {
-        int argOfs = m_ofsStack;
-        m_ofsStack += StackElemSize(argSize);
-        return argOfs;
-    }
-#endif
     if (IsArgumentInRegister(&m_numRegistersUsed, argType, thValueType))
     {
         return TransitionBlock::GetOffsetOfArgumentRegisters() + (NUM_ARGUMENT_REGISTERS - m_numRegistersUsed) * sizeof(void *);
@@ -1990,24 +1975,6 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         numRegistersUsed = NUM_ARGUMENT_REGISTERS; // Nothing else gets passed in registers for varargs
     }
 
-#ifdef FEATURE_INTERPRETER
-    BYTE callconv = CallConv();
-    switch (callconv)
-    {
-    case IMAGE_CEE_CS_CALLCONV_C:
-    case IMAGE_CEE_CS_CALLCONV_STDCALL:
-        numRegistersUsed = NUM_ARGUMENT_REGISTERS;
-        nSizeOfArgStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
-        break;
-
-    case IMAGE_CEE_CS_CALLCONV_THISCALL:
-    case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-        _ASSERTE_MSG(false, "Unsupported calling convention.");
-    default:
-        break;
-    }
-#endif // FEATURE_INTERPRETER
-
     DWORD nArgs = this->NumFixedArgs();
     for (DWORD i = 0; i < nArgs; i++)
     {
@@ -2187,13 +2154,6 @@ public:
         return m_pSig->NumFixedArgs();
     }
 
-#ifdef FEATURE_INTERPRETER
-    BYTE CallConv()
-    {
-        return m_pSig->GetCallingConvention();
-    }
-#endif // FEATURE_INTERPRETER
-
     //
     // The following is used by the profiler to dig into the iterator for
     // discovering if the method has a This pointer or a return buffer.
@@ -2213,16 +2173,6 @@ public:
     {
         m_pSig = pSig;
     }
-
-#ifdef FEATURE_INTERPRETER
-    ArgIterator(MetaSig* pSig, MethodDesc* pMD)
-    {
-        m_pSig = pSig;
-        bool fCtorOfVariableSizedObject = m_pSig->HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
-        if (fCtorOfVariableSizedObject)
-            m_pSig->ClearHasThis();
-    }
-#endif // FEATURE_INTERPRETER
 
     // This API returns true if we are returning a structure in registers instead of using a byref return buffer
     BOOL HasNonStandardByvalReturn()
@@ -2276,6 +2226,30 @@ inline BOOL IsRetBuffPassedAsFirstArg()
 #else
     return FALSE;
 #endif
+}
+
+inline TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
+{
+    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
+#ifdef TARGET_X86
+    // x86 is special as always
+    pArgument += offsetof(ArgumentRegisters, ECX);
+#endif
+
+    return pArgument;
+}
+
+inline TADDR GetSecondArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
+{
+    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
+#ifdef TARGET_X86
+    // x86 is special as always
+    pArgument += offsetof(ArgumentRegisters, EDX);
+#else
+    pArgument += sizeof(TADDR);
+#endif
+
+    return pArgument;
 }
 
 #endif // __CALLING_CONVENTION_INCLUDED

@@ -2434,12 +2434,9 @@ void Assembler::SetPdbFileName(_In_ __nullterminated char* szName)
 HRESULT Assembler::SavePdbFile()
 {
     HRESULT hr = S_OK;
-    mdMethodDef entryPoint;
 
     if (FAILED(hr = (m_pPortablePdbWriter == NULL ? E_FAIL : S_OK))) goto exit;
     if (FAILED(hr = (m_pPortablePdbWriter->GetEmitter() == NULL ? E_FAIL : S_OK))) goto exit;
-    if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
-    if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
     if (FAILED(hr = m_pPortablePdbWriter->GetEmitter()->Save(m_wzPdbFileName, 0))) goto exit;
 
 exit:

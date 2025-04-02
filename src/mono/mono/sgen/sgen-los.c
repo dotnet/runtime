@@ -334,7 +334,12 @@ get_los_section_memory (size_t size)
 	section->next = los_sections;
 	los_sections = section;
 
+#ifdef HOST_WASM
+	// on WASM there is no mmap and alignment has large overhead
+	sgen_los_memory_usage_total += LOS_SECTION_SIZE + LOS_SECTION_SIZE;
+#else
 	sgen_los_memory_usage_total += LOS_SECTION_SIZE;
+#endif
 	++los_num_sections;
 
 	goto retry;
@@ -542,7 +547,12 @@ sgen_los_sweep (void)
 			sgen_memgov_release_space (LOS_SECTION_SIZE, SPACE_LOS);
 			section = next;
 			--los_num_sections;
+#ifdef HOST_WASM
+			// on WASM there is no mmap and alignment has large overhead
+			sgen_los_memory_usage_total -= LOS_SECTION_SIZE + LOS_SECTION_SIZE;
+#else
 			sgen_los_memory_usage_total -= LOS_SECTION_SIZE;
+#endif
 			continue;
 		}
 

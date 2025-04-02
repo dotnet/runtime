@@ -36,6 +36,14 @@ bool interceptor_ICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
     return temp;
 }
 
+bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+{
+    mc->cr->AddCall("notifyInstructionSetUsage");
+    bool result = original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
+    mc->recNotifyInstructionSetUsage(instructionSet, supported, result);
+    return result;
+}
+
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 uint32_t interceptor_ICJI::getMethodAttribs(CORINFO_METHOD_HANDLE ftn /* IN */)
 {
@@ -244,6 +252,14 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ft
     {
         *requiresInstMethodTableArg = localRequiresInstMethodTableArg;
     }
+    return result;
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodHandle, CORINFO_CLASS_HANDLE* classHandle)
+{
+    mc->cr->AddCall("getInstantaitedEntry");
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getInstantiatedEntry(ftn, methodHandle, classHandle);
+    mc->recGetInstantiatedEntry(ftn, *methodHandle, *classHandle, result);
     return result;
 }
 
@@ -471,6 +487,14 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(CORINFO_CLAS
     mc->cr->AddCall("getTypeInstantiationArgument");
     CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
     mc->recGetTypeInstantiationArgument(cls, index, result);
+    return result;
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index)
+{
+    mc->cr->AddCall("getMethodInstantiationArgument");
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getMethodInstantiationArgument(ftn, index);
+    mc->recGetMethodInstantiationArgument(ftn, index, result);
     return result;
 }
 
@@ -1349,15 +1373,6 @@ void interceptor_ICJI::getEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     mc->recGetEEInfo(pEEInfoOut);
 }
 
-// Returns name of the JIT timer log
-const char16_t* interceptor_ICJI::getJitTimeLogFilename()
-{
-    mc->cr->AddCall("getJitTimeLogFilename");
-    const char16_t* temp = original_ICorJitInfo->getJitTimeLogFilename();
-    mc->recGetJitTimeLogFilename((LPCWSTR)temp);
-    return temp;
-}
-
 /*********************************************************************************/
 //
 // Diagnostic methods
@@ -2015,11 +2030,6 @@ uint32_t interceptor_ICJI::getExpectedTargetArchitecture()
     DWORD result = original_ICorJitInfo->getExpectedTargetArchitecture();
     mc->recGetExpectedTargetArchitecture(result);
     return result;
-}
-
-bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
-{
-    return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)

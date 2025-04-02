@@ -3,6 +3,8 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using TestLibrary;
 
 namespace TestStackOverflow
 {
@@ -136,6 +138,9 @@ namespace TestStackOverflow
 
         static void Main(string[] args)
         {
+            // Ensure that the OS doesn't generate core dump for this intentionally crashing process
+            Utilities.DisableOSCoreDump();
+
             bool smallframe = (args[0] == "smallframe");
             if (args[1] == "secondary")
             {

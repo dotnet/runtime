@@ -20,11 +20,11 @@ public class SignalRClientTests : SignalRTestsBase
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/100445")] // to be fixed by: "https://github.com/dotnet/aspnetcore/issues/54365"
-    [InlineData("Debug", "LongPolling")]
-    [InlineData("Release", "LongPolling")]
-    [InlineData("Debug", "WebSockets")]
-    [InlineData("Release", "WebSockets")]
-    public async Task SignalRPassMessageBlazor(string config, string transport) =>
+    [InlineData(Configuration.Debug, "LongPolling")]
+    [InlineData(Configuration.Release, "LongPolling")]
+    [InlineData(Configuration.Debug, "WebSockets")]
+    [InlineData(Configuration.Release, "WebSockets")]
+    public async Task SignalRPassMessageBlazor(Configuration config, string transport) =>
         await SignalRPassMessage("blazorclient", config, transport);
 }
 

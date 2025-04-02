@@ -1271,6 +1271,285 @@ namespace System.Text
             57011, // x-iscii-pa
         ];
 
+        internal const byte MIMECONTF_MAILNEWS = 0x01;
+        internal const byte MIMECONTF_BROWSER = 0x2;
+        internal const byte MIMECONTF_SAVABLE_MAILNEWS = 0x4;
+        internal const byte MIMECONTF_SAVABLE_BROWSER = 0x08;
+
+        // Map codepage number to MIME flags. Uses MappedCodePages to get the index of the codepage
+        private static ReadOnlySpan<byte> MappedFlags =>
+        [
+            0, // 37     IBM EBCDIC (US-Canada)
+            0, // 437    OEM United States
+            0, // 500    IBM EBCDIC (International)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER, // 708    Arabic (ASMO 708)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER, // 720    Arabic (DOS)
+            0, // 737    Greek (DOS)
+            0, // 775    Baltic (DOS)
+            0, // 850    Western European (DOS)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER, // 852    Central European (DOS)
+            0, // 855    OEM Cyrillic
+            0, // 857    Turkish (DOS)
+            0, // 858    OEM Multilingual Latin I
+            0, // 860    Portuguese (DOS)
+            0, // 861    Icelandic (DOS)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER, // 862    Hebrew (DOS)
+            0, // 863    French Canadian (DOS)
+            0, // 864    Arabic (864)
+            0, // 865    Nordic (DOS)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER, // 866    Cyrillic (DOS)
+            0, // 869    Greek, Modern (DOS)
+            0, // 870    IBM EBCDIC (Multilingual Latin-2)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 874    Thai (Windows)
+            0, // 875    IBM EBCDIC (Greek Modern)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 932    Japanese (Shift-JIS)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 936    Chinese Simplified (GB2312)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 949    Korean
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 950    Chinese Traditional (Big5)
+            0, // 1026   IBM EBCDIC (Turkish Latin-5)
+            0, // 1047   IBM Latin-1
+            0, // 1140   IBM EBCDIC (US-Canada-Euro)
+            0, // 1141   IBM EBCDIC (Germany-Euro)
+            0, // 1142   IBM EBCDIC (Denmark-Norway-Euro)
+            0, // 1143   IBM EBCDIC (Finland-Sweden-Euro)
+            0, // 1144   IBM EBCDIC (Italy-Euro)
+            0, // 1145   IBM EBCDIC (Spain-Euro)
+            0, // 1146   IBM EBCDIC (UK-Euro)
+            0, // 1147   IBM EBCDIC (France-Euro)
+            0, // 1148   IBM EBCDIC (International-Euro)
+            0, // 1149   IBM EBCDIC (Icelandic-Euro)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 1250   Central European (Windows)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 1251   Cyrillic (Windows)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 1252   Western European (Windows)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 1253   Greek (Windows)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 1254   Turkish (Windows)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 1255   Hebrew (Windows)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 1256   Arabic (Windows)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 1257   Baltic (Windows)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 1258   Vietnamese (Windows)
+            0, // 1361   Korean (Johab)
+            0, // 10000  Western European (Mac)
+            0, // 10001  Japanese (Mac)
+            0, // 10002  Chinese Traditional (Mac)
+            0, // 10003  Korean (Mac)
+            0, // 10004  Arabic (Mac)
+            0, // 10005  Hebrew (Mac)
+            0, // 10006  Greek (Mac)
+            0, // 10007  Cyrillic (Mac)
+            0, // 10008  Chinese Simplified (Mac)
+            0, // 10010  Romanian (Mac)
+            0, // 10017  Ukrainian (Mac)
+            0, // 10021  Thai (Mac)
+            0, // 10029  Central European (Mac)
+            0, // 10079  Icelandic (Mac)
+            0, // 10081  Turkish (Mac)
+            0, // 10082  Croatian (Mac)
+            0, // 20000  Chinese Traditional (CNS)
+            0, // 20001  TCA Taiwan
+            0, // 20002  Chinese Traditional (Eten)
+            0, // 20003  IBM5550 Taiwan
+            0, // 20004  TeleText Taiwan
+            0, // 20005  Wang Taiwan
+            0, // 20105  Western European (IA5)
+            0, // 20106  German (IA5)
+            0, // 20107  Swedish (IA5)
+            0, // 20108  Norwegian (IA5)
+            0, // 20261  T.61
+            0, // 20269  ISO-6937
+            0, // 20273  IBM EBCDIC (Germany)
+            0, // 20277  IBM EBCDIC (Denmark-Norway)
+            0, // 20278  IBM EBCDIC (Finland-Sweden)
+            0, // 20280  IBM EBCDIC (Italy)
+            0, // 20284  IBM EBCDIC (Spain)
+            0, // 20285  IBM EBCDIC (UK)
+            0, // 20290  IBM EBCDIC (Japanese katakana)
+            0, // 20297  IBM EBCDIC (France)
+            0, // 20420  IBM EBCDIC (Arabic)
+            0, // 20423  IBM EBCDIC (Greek)
+            0, // 20424  IBM EBCDIC (Hebrew)
+            0, // 20833  IBM EBCDIC (Korean Extended)
+            0, // 20838  IBM EBCDIC (Thai)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 20866  Cyrillic (KOI8-R)
+            0, // 20871  IBM EBCDIC (Icelandic)
+            0, // 20880  IBM EBCDIC (Cyrillic Russian)
+            0, // 20905  IBM EBCDIC (Turkish)
+            0, // 20924  IBM Latin-1
+            0, // 20932  Japanese (JIS 0208-1990 and 0212-1990)
+            0, // 20936  Chinese Simplified (GB2312-80)
+            0, // 20949  Korean Wansung
+            0, // 21025  IBM EBCDIC (Cyrillic Serbian-Bulgarian)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 21866  Cyrillic (KOI8-U)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 28592  Central European (ISO)
+            MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 28593  Latin 3 (ISO)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 28594  Baltic (ISO)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 28595  Cyrillic (ISO)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 28596  Arabic (ISO)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 28597  Greek (ISO)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER, // 28598  Hebrew (ISO-Visual)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 28599  Turkish (ISO)
+            MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 28603  Estonian (ISO)
+            MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 28605  Latin 9 (ISO)
+            0, // 29001  Europa
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 38598  Hebrew (ISO-Logical)
+            MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 50220  Japanese (JIS)
+            MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 50221  Japanese (JIS-Allow 1 byte Kana)
+            0, // 50222  Japanese (JIS-Allow 1 byte Kana - SO/SI)
+            MIMECONTF_MAILNEWS, // 50225  Korean (ISO)
+            0, // 50227  Chinese Simplified (ISO-2022)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 51932  Japanese (EUC)
+            0, // 51936  Chinese Simplified (EUC)
+            MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 51949  Korean (EUC)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 52936  Chinese Simplified (HZ)
+            MIMECONTF_BROWSER | MIMECONTF_SAVABLE_BROWSER | MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS, // 54936  Chinese Simplified (GB18030)
+            0, // 57002  ISCII Devanagari
+            0, // 57003  ISCII Bengali
+            0, // 57004  ISCII Tamil
+            0, // 57005  ISCII Telugu
+            0, // 57006  ISCII Assamese
+            0, // 57007  ISCII Oriya
+            0, // 57008  ISCII Kannada
+            0, // 57009  ISCII Malayalam
+            0, // 57010  ISCII Gujarati
+            0, // 57011  ISCII Punjabi
+        ];
+
+        // Map codepage number to family codepage. Uses MappedCodePages to get the index of the codepage
+        private static ReadOnlySpan<ushort> MappedFamilyCodePage =>
+        [
+            1252, // 37     IBM EBCDIC (US-Canada)
+            1252, // 437    OEM United States
+            1252, // 500    IBM EBCDIC (International)
+            1256, // 708    Arabic (ASMO 708)
+            1256, // 720    Arabic (DOS)
+            1253, // 737    Greek (DOS)
+            1257, // 775    Baltic (DOS)
+            1252, // 850    Western European (DOS)
+            1250, // 852    Central European (DOS)
+            1252, // 855    OEM Cyrillic
+            1254, // 857    Turkish (DOS)
+            1252, // 858    OEM Multilingual Latin I
+            1252, // 860    Portuguese (DOS)
+            1252, // 861    Icelandic (DOS)
+            1255, // 862    Hebrew (DOS)
+            1252, // 863    French Canadian (DOS)
+            1256, // 864    Arabic (864)
+            1252, // 865    Nordic (DOS)
+            1251, // 866    Cyrillic (DOS)
+            1253, // 869    Greek, Modern (DOS)
+            1250, // 870    IBM EBCDIC (Multilingual Latin-2)
+            874, // 874    Thai (Windows)
+            1253, // 875    IBM EBCDIC (Greek Modern)
+            932, // 932    Japanese (Shift-JIS)
+            936, // 936    Chinese Simplified (GB2312)
+            949, // 949    Korean
+            950, // 950    Chinese Traditional (Big5)
+            1254, // 1026   IBM EBCDIC (Turkish Latin-5)
+            1252, // 1047   IBM Latin-1
+            1252, // 1140   IBM EBCDIC (US-Canada-Euro)
+            1252, // 1141   IBM EBCDIC (Germany-Euro)
+            1252, // 1142   IBM EBCDIC (Denmark-Norway-Euro)
+            1252, // 1143   IBM EBCDIC (Finland-Sweden-Euro)
+            1252, // 1144   IBM EBCDIC (Italy-Euro)
+            1252, // 1145   IBM EBCDIC (Spain-Euro)
+            1252, // 1146   IBM EBCDIC (UK-Euro)
+            1252, // 1147   IBM EBCDIC (France-Euro)
+            1252, // 1148   IBM EBCDIC (International-Euro)
+            1252, // 1149   IBM EBCDIC (Icelandic-Euro)
+            1250, // 1250   Central European (Windows)
+            1251, // 1251   Cyrillic (Windows)
+            1252, // 1252   Western European (Windows)
+            1253, // 1253   Greek (Windows)
+            1254, // 1254   Turkish (Windows)
+            1255, // 1255   Hebrew (Windows)
+            1256, // 1256   Arabic (Windows)
+            1257, // 1257   Baltic (Windows)
+            1258, // 1258   Vietnamese (Windows)
+            949, // 1361   Korean (Johab)
+            1252, // 10000  Western European (Mac)
+            932, // 10001  Japanese (Mac)
+            950, // 10002  Chinese Traditional (Mac)
+            949, // 10003  Korean (Mac)
+            1256, // 10004  Arabic (Mac)
+            1255, // 10005  Hebrew (Mac)
+            1253, // 10006  Greek (Mac)
+            1251, // 10007  Cyrillic (Mac)
+            936, // 10008  Chinese Simplified (Mac)
+            1250, // 10010  Romanian (Mac)
+            1251, // 10017  Ukrainian (Mac)
+            874, // 10021  Thai (Mac)
+            1250, // 10029  Central European (Mac)
+            1252, // 10079  Icelandic (Mac)
+            1254, // 10081  Turkish (Mac)
+            1250, // 10082  Croatian (Mac)
+            950, // 20000  Chinese Traditional (CNS)
+            950, // 20001  TCA Taiwan
+            950, // 20002  Chinese Traditional (Eten)
+            950, // 20003  IBM5550 Taiwan
+            950, // 20004  TeleText Taiwan
+            950, // 20005  Wang Taiwan
+            1252, // 20105  Western European (IA5)
+            1252, // 20106  German (IA5)
+            1252, // 20107  Swedish (IA5)
+            1252, // 20108  Norwegian (IA5)
+            1252, // 20261  T.61
+            1252, // 20269  ISO-6937
+            1252, // 20273  IBM EBCDIC (Germany)
+            1252, // 20277  IBM EBCDIC (Denmark-Norway)
+            1252, // 20278  IBM EBCDIC (Finland-Sweden)
+            1252, // 20280  IBM EBCDIC (Italy)
+            1252, // 20284  IBM EBCDIC (Spain)
+            1252, // 20285  IBM EBCDIC (UK)
+            932, // 20290  IBM EBCDIC (Japanese katakana)
+            1252, // 20297  IBM EBCDIC (France)
+            1256, // 20420  IBM EBCDIC (Arabic)
+            1253, // 20423  IBM EBCDIC (Greek)
+            1255, // 20424  IBM EBCDIC (Hebrew)
+            949, // 20833  IBM EBCDIC (Korean Extended)
+            874, // 20838  IBM EBCDIC (Thai)
+            1251, // 20866  Cyrillic (KOI8-R)
+            1252, // 20871  IBM EBCDIC (Icelandic)
+            1251, // 20880  IBM EBCDIC (Cyrillic Russian)
+            1254, // 20905  IBM EBCDIC (Turkish)
+            1252, // 20924  IBM Latin-1
+            932, // 20932  Japanese (JIS 0208-1990 and 0212-1990)
+            936, // 20936  Chinese Simplified (GB2312-80)
+            949, // 20949  Korean Wansung
+            1251, // 21025  IBM EBCDIC (Cyrillic Serbian-Bulgarian)
+            1251, // 21866  Cyrillic (KOI8-U)
+            1250, // 28592  Central European (ISO)
+            1254, // 28593  Latin 3 (ISO)
+            1257, // 28594  Baltic (ISO)
+            1251, // 28595  Cyrillic (ISO)
+            1256, // 28596  Arabic (ISO)
+            1253, // 28597  Greek (ISO)
+            1255, // 28598  Hebrew (ISO-Visual)
+            1254, // 28599  Turkish (ISO)
+            1257, // 28603  Estonian (ISO)
+            1252, // 28605  Latin 9 (ISO)
+            1252, // 29001  Europa
+            1255, // 38598  Hebrew (ISO-Logical)
+            932, // 50220  Japanese (JIS)
+            932, // 50221  Japanese (JIS-Allow 1 byte Kana)
+            932, // 50222  Japanese (JIS-Allow 1 byte Kana - SO/SI)
+            949, // 50225  Korean (ISO)
+            936, // 50227  Chinese Simplified (ISO-2022)
+            932, // 51932  Japanese (EUC)
+            936, // 51936  Chinese Simplified (EUC)
+            949, // 51949  Korean (EUC)
+            936, // 52936  Chinese Simplified (HZ)
+            936, // 54936  Chinese Simplified (GB18030)
+            57002, // 57002  ISCII Devanagari
+            57003, // 57003  ISCII Bengali
+            57004, // 57004  ISCII Tamil
+            57005, // 57005  ISCII Telugu
+            57006, // 57006  ISCII Assamese
+            57007, // 57007  ISCII Oriya
+            57008, // 57008  ISCII Kannada
+            57009, // 57009  ISCII Malayalam
+            57010, // 57010  ISCII Gujarati
+            57011, // 57011  ISCII Punjabi
+        ];
+
         // s_webNames is a concatenation of the default encoding names
         // for each code page. It is used in retrieving the value for
         // System.Text.Encoding.WebName given System.Text.Encoding.CodePage.

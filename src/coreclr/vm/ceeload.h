@@ -578,7 +578,7 @@ public:
     }
 
     // Resolving
-    OBJECTHANDLE ResolveStringRef(DWORD Token, void** ppPinnedString = nullptr);
+    STRINGREF* ResolveStringRef(DWORD Token, void** ppPinnedString = nullptr);
 private:
     // string helper
     void InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb);
@@ -608,8 +608,9 @@ class Module : public ModuleBase
     VPTR_VTABLE_CLASS(Module, ModuleBase)
 
 private:
-    PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
-    const WCHAR*            m_path;        // Cached path for easier diagnostics
+    PTR_CUTF8               m_pSimpleName;  // Cached simple name for better performance and easier diagnostics
+    const WCHAR*            m_path;         // Cached path for easier diagnostics
+    const WCHAR*            m_fileName;     // Cached file name for easier diagnostics
 
     PTR_PEAssembly          m_pPEAssembly;
     PTR_VOID                m_baseAddress; // Cached base address for easier diagnostics
@@ -1498,14 +1499,6 @@ public:
     InstrumentedILOffsetMapping GetInstrumentedILOffsetMapping(mdMethodDef token);
 
 public:
-    // LoaderHeap for storing IJW thunks
-    PTR_LoaderHeap           m_pThunkHeap;
-
-    // Self-initializing accessor for IJW thunk heap
-    LoaderHeap              *GetThunkHeap();
-    // Self-initializing accessor for domain-independent IJW thunk heap
-    LoaderHeap              *GetDllThunkHeap();
-
     const ReadyToRun_MethodIsGenericMap *m_pMethodIsGenericMap = &ReadyToRun_MethodIsGenericMap::EmptyInstance;
     const ReadyToRun_TypeGenericInfoMap *m_pTypeGenericInfoMap = &ReadyToRun_TypeGenericInfoMap::EmptyInstance;
 
@@ -1644,9 +1637,10 @@ struct cdac_data<Module>
     static constexpr size_t Base = offsetof(Module, m_baseAddress);
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
-    static constexpr size_t ThunkHeap = offsetof(Module, m_pThunkHeap);
     static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
     static constexpr size_t Path = offsetof(Module, m_path);
+    static constexpr size_t FileName = offsetof(Module, m_fileName);
+    static constexpr size_t ReadyToRunInfo = offsetof(Module, m_pReadyToRunInfo);
 
     // Lookup map pointers
     static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);

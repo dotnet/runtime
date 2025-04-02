@@ -58,6 +58,8 @@
 #define DTCONTEXT_IS_LOONGARCH64
 #elif defined (TARGET_RISCV64)
 #define DTCONTEXT_IS_RISCV64
+#elif defined (TARGET_WASM)
+#define DTCONTEXT_IS_WASM
 #endif
 
 #define CONTEXT_AREA_MASK 0xffff
@@ -614,6 +616,10 @@ typedef struct DECLSPEC_ALIGN(16) {
 
 static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size");
 
+#elif defined(DTCONTEXT_IS_WASM)
+// no context for wasm
+typedef struct {
+} DT_CONTEXT;
 #else
 #error Unsupported platform
 #endif

@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
         {
             Debug.Assert(throwIfNotMarshalable);
 
-            if (t.IsPointer /* or IsFunctionPointer */)
+            if (t.IsPointer || t.IsFunctionPointer)
                 return IntPtr.Size;
 
             if (t.IsByRef || t.IsArray || t.ContainsGenericParameters)

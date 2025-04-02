@@ -124,10 +124,9 @@ namespace System
             }
             else
             {
-                // An object of type Attribute will cause a stack overflow.
-                // However, this should never happen because custom attributes cannot contain values other than
-                // constants, single-dimensional arrays and typeof expressions.
-                Debug.Assert(thisValue is not Attribute);
+                // An object of type Attribute will cause a stack overflow, but is unpractical to fight every recursion here.
+                // There are many ways the default implementation of Equals for ValueTypes or Attributes can lead to an infinite recursion. It is not practical to prevent it.
+                // If users will hit this, they should declare custom Equals.
                 if (!thisValue.Equals(thatValue))
                     return false;
             }

@@ -1058,7 +1058,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     {
         // Did the current rejit provide a map?
         const InstrumentedILOffsetMapping *pReJitMap = NULL;
-        if (ilVersion.GetRejitState() == ILCodeVersion::kStateActive)
+        if (ilVersion.GetRejitState() == RejitFlags::kStateActive)
         {
             pReJitMap = ilVersion.GetInstrumentedILMap();
         }

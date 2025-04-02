@@ -23,9 +23,8 @@
   <PropertyGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
     <!-- Don't use SDK's trimming functionality. -->
     <_RequiresILLinkPack>false</_RequiresILLinkPack>
-    <!-- Keep in sync with SetTargetFramework metadata on the ProjectReference below. -->
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(ToolsILLinkDir)$(NetCoreAppToolCurrent)\ILLink.Tasks.dll</ILLinkTasksAssembly>
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsILLinkDir)$(NetFrameworkToolCurrent)\ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(ToolsILLinkDir)net\ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsILLinkDir)netframework\ILLink.Tasks.dll</ILLinkTasksAssembly>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_RequiresLiveILLink)' == 'true'">

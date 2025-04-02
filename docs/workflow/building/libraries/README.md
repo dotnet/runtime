@@ -76,7 +76,7 @@ The libraries build has two logical components, the native build which produces 
 
 The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
-- `-framework|-f` identifies the target framework for the build. Possible values include `net10.0` (currently the latest .NET version) or `net48` (the latest .NET Framework version). (msbuild property `BuildTargetFramework`)
+- `-framework|-f` identifies the target framework for the build. Possible values include `net10.0` (currently the latest .NET version) or `net481` (the latest .NET Framework version). (msbuild property `BuildTargetFramework`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `windows`, `unix`, `linux`, or `osx`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
@@ -256,3 +256,11 @@ Same as for `dotnet build` or `dotnet publish`, you can specify the desired conf
 ```cmd
 dotnet.cmd pack src\libraries\System.Text.Json\src\ -c Release
 ```
+
+## APICompat
+
+If changes to the library include any API incompatibilities, calling `dotnet build` or `dotnet pack` may result in API compatibility errors.
+
+In rare cases where these are expected (e.g. updating APIs previously shipped only in preview or as experimental), the errors may be suppressed. This can be done by following the directions in the error to invoke `dotnet build` (if the project isn't packable) or `dotnet pack` (if the project is packable) with an additional `/p:ApiCompatGenerateSuppressionFile=true` argument.
+
+See https://learn.microsoft.com/dotnet/fundamentals/apicompat/overview for more details.

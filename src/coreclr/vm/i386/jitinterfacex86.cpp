@@ -44,7 +44,7 @@ public:
         MP_ALLOCATOR = 0x1,
         SIZE_IN_EAX  = 0x2,
         OBJ_ARRAY    = 0x4,
-        ALIGN8       = 0x8,     // insert a dummy object to insure 8 byte alignment (until the next GC)
+        ALIGN8       = 0x8,     // insert a dummy object to ensure 8 byte alignment (until the next GC)
         ALIGN8OBJ    = 0x10,
     };
 
@@ -97,11 +97,6 @@ extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 #endif // _DEBUG
 
 /*********************************************************************/
-#ifndef UNIX_X86_ABI
-extern "C" void* g_TailCallFrameVptr;
-void* g_TailCallFrameVptr;
-#endif // !UNI_X86_ABI
-
 #ifdef FEATURE_HIJACK
 extern "C" void STDCALL JIT_TailCallHelper(Thread * pThread);
 void STDCALL JIT_TailCallHelper(Thread * pThread)
@@ -908,11 +903,6 @@ void InitJITHelpers1()
 #endif
 
     // Leave the patched region writable for StompWriteBarrierEphemeral(), StompWriteBarrierResize()
-
-#ifndef UNIX_X86_ABI
-    // Initialize g_TailCallFrameVptr for JIT_TailCall helper
-    g_TailCallFrameVptr = (void*)TailCallFrame::GetMethodFrameVPtr();
-#endif // !UNIX_X86_ABI
 }
 #pragma warning (default : 4731)
 

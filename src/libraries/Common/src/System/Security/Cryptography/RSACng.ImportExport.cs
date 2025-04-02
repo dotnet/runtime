@@ -180,6 +180,20 @@ namespace System.Security.Cryptography
         /// </summary>
         public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
+            bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(Key);
+
+            if (includePrivateParameters && encryptedOnlyExport)
+            {
+                const string TemporaryExportPassword = "DotnetExportPhrase";
+                byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
+                RSAKeyFormatHelper.ReadEncryptedPkcs8(
+                    exported,
+                    TemporaryExportPassword,
+                    out _,
+                    out RSAParameters rsaParameters);
+                return rsaParameters;
+            }
+
             byte[] rsaBlob = ExportKeyBlob(includePrivateParameters);
             RSAParameters rsaParams = default;
             rsaParams.FromBCryptBlob(rsaBlob, includePrivateParameters);

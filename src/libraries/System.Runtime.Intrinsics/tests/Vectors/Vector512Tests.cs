@@ -3,8 +3,8 @@
 
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.X86;
 using System.Tests;
 using Xunit;
 
@@ -3395,6 +3395,996 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector512ByteShuffleNativeOneInputTest()
+        {
+            Vector512<byte> vector = Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
+            Vector512<byte> result = Vector512.ShuffleNative(vector, Vector512.Create((byte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector512<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector512<byte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512DoubleShuffleNativeOneInputTest()
+        {
+            Vector512<double> vector = Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector512<double> result = Vector512.ShuffleNative(vector, Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector512<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector512<double>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int16ShuffleNativeOneInputTest()
+        {
+            Vector512<short> vector = Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector512<short> result = Vector512.ShuffleNative(vector, Vector512.Create((short)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector512<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector512<short>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int32ShuffleNativeOneInputTest()
+        {
+            Vector512<int> vector = Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector512<int> result = Vector512.ShuffleNative(vector, Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector512<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector512<int>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int64ShuffleNativeOneInputTest()
+        {
+            Vector512<long> vector = Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector512<long> result = Vector512.ShuffleNative(vector, Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector512<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector512<long>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SByteShuffleNativeOneInputTest()
+        {
+            Vector512<sbyte> vector = Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
+            Vector512<sbyte> result = Vector512.ShuffleNative(vector, Vector512.Create((sbyte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector512<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector512<sbyte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SingleShuffleNativeOneInputTest()
+        {
+            Vector512<float> vector = Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector512<float> result = Vector512.ShuffleNative(vector, Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector512<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector512<float>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt16ShuffleNativeOneInputTest()
+        {
+            Vector512<ushort> vector = Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector512<ushort> result = Vector512.ShuffleNative(vector, Vector512.Create((ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector512<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector512<ushort>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt32ShuffleNativeOneInputTest()
+        {
+            Vector512<uint> vector = Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector512<uint> result = Vector512.ShuffleNative(vector, Vector512.Create((uint)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector512<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector512<uint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt64ShuffleNativeOneInputTest()
+        {
+            Vector512<ulong> vector = Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector512<ulong> result = Vector512.ShuffleNative(vector, Vector512.Create((ulong)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector512<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector512<ulong>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512ByteShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector512<byte> result = Vector512.ShuffleNative(
+                Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
+                Vector512.Create((byte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+            );
+
+            for (int index = 0; index < Vector512<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector512<byte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512DoubleShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector512<double> result = Vector512.ShuffleNative(
+                Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8),
+                Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0)
+            );
+
+            for (int index = 0; index < Vector512<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector512<double>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int16ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector512<short> result = Vector512.ShuffleNative(
+                Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
+                Vector512.Create((short)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+            );
+
+            for (int index = 0; index < Vector512<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector512<short>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int32ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector512<int> result = Vector512.ShuffleNative(
+                Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
+                Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+            );
+
+            for (int index = 0; index < Vector512<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector512<int>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int64ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector512<long> result = Vector512.ShuffleNative(
+                Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8),
+                Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0)
+            );
+
+            for (int index = 0; index < Vector512<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector512<long>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SByteShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector512<sbyte> result = Vector512.ShuffleNative(
+                Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
+                Vector512.Create((sbyte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+            );
+
+            for (int index = 0; index < Vector512<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector512<sbyte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SingleShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector512<float> result = Vector512.ShuffleNative(
+                Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
+                Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+            );
+
+            for (int index = 0; index < Vector512<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector512<float>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt16ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector512<ushort> result = Vector512.ShuffleNative(
+                Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
+                Vector512.Create((ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+            );
+
+            for (int index = 0; index < Vector512<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector512<ushort>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt32ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector512<uint> result = Vector512.ShuffleNative(
+                Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
+                Vector512.Create((uint)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+            );
+
+            for (int index = 0; index < Vector512<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector512<uint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt64ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector512<ulong> result = Vector512.ShuffleNative(
+                Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8),
+                Vector512.Create((ulong)7, 6, 5, 4, 3, 2, 1, 0)
+            );
+
+            for (int index = 0; index < Vector512<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector512<ulong>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512ByteShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        {
+            Vector512<byte> result = Vector512.ShuffleNative(
+                Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
+                Vector512.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48)
+            );
+
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector128<byte>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<byte>.Count; index < Vector256<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector256<byte>.Count - (index - Vector128<byte>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<byte>.Count; index < Vector512<byte>.Count - Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector512<byte>.Count - Vector128<byte>.Count - (index - Vector256<byte>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<byte>.Count + Vector128<byte>.Count; index < Vector512<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector512<byte>.Count - (index - Vector256<byte>.Count - Vector128<byte>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512DoubleShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        {
+            Vector512<double> result = Vector512.ShuffleNative(
+                Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8),
+                Vector512.Create((long)1, 0, 3, 2, 5, 4, 7, 6)
+            );
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector128<double>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<double>.Count; index < Vector256<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector256<double>.Count - (index - Vector128<double>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<double>.Count; index < Vector512<double>.Count - Vector128<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector512<double>.Count - Vector128<double>.Count - (index - Vector256<double>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<double>.Count + Vector128<double>.Count; index < Vector512<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector512<double>.Count - (index - Vector256<double>.Count - Vector128<double>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int16ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        {
+            Vector512<short> result = Vector512.ShuffleNative(
+                Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
+                Vector512.Create((short)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 23, 22, 21, 20, 19, 18, 17, 16, 31, 30, 29, 28, 27, 26, 25, 24)
+            );
+
+            for (int index = 0; index < Vector128<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector128<short>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<short>.Count; index < Vector256<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector256<short>.Count - (index - Vector128<short>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<short>.Count; index < Vector512<short>.Count - Vector128<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector512<short>.Count - Vector128<short>.Count - (index - Vector256<short>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<short>.Count + Vector128<short>.Count; index < Vector512<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector512<short>.Count - (index - Vector256<short>.Count - Vector128<short>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int32ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        {
+            Vector512<int> result = Vector512.ShuffleNative(
+                Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
+                Vector512.Create((int)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12)
+            );
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector128<int>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<int>.Count; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector256<int>.Count - (index - Vector128<int>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<int>.Count; index < Vector512<int>.Count - Vector128<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector512<int>.Count - Vector128<int>.Count - (index - Vector256<int>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<int>.Count + Vector128<int>.Count; index < Vector512<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector512<int>.Count - (index - Vector256<int>.Count - Vector128<int>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int64ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        {
+            Vector512<long> result = Vector512.ShuffleNative(
+                Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8),
+                Vector512.Create((long)1, 0, 3, 2, 5, 4, 7, 6)
+            );
+
+            for (int index = 0; index < Vector128<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector128<long>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<long>.Count; index < Vector256<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector256<long>.Count - (index - Vector128<long>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<long>.Count; index < Vector512<long>.Count - Vector128<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector512<long>.Count - Vector128<long>.Count - (index - Vector256<long>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<long>.Count + Vector128<long>.Count; index < Vector512<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector512<long>.Count - (index - Vector256<long>.Count - Vector128<long>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SByteShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        {
+            Vector512<sbyte> result = Vector512.ShuffleNative(
+                Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
+                Vector512.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48)
+            );
+
+            for (int index = 0; index < Vector128<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector128<sbyte>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<sbyte>.Count; index < Vector256<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector256<sbyte>.Count - (index - Vector128<sbyte>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<sbyte>.Count; index < Vector512<sbyte>.Count - Vector128<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector512<sbyte>.Count - Vector128<sbyte>.Count - (index - Vector256<sbyte>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<sbyte>.Count + Vector128<sbyte>.Count; index < Vector512<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector512<sbyte>.Count - (index - Vector256<sbyte>.Count - Vector128<sbyte>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SingleShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        {
+            Vector512<float> result = Vector512.ShuffleNative(
+                Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
+                Vector512.Create((int)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12)
+            );
+
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector128<float>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<float>.Count; index < Vector256<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector256<float>.Count - (index - Vector128<float>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<float>.Count; index < Vector512<float>.Count - Vector128<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector512<float>.Count - Vector128<float>.Count - (index - Vector256<float>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<float>.Count + Vector128<float>.Count; index < Vector512<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector512<float>.Count - (index - Vector256<float>.Count - Vector128<float>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt16ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        {
+            Vector512<ushort> result = Vector512.ShuffleNative(
+                Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
+                Vector512.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 23, 22, 21, 20, 19, 18, 17, 16, 31, 30, 29, 28, 27, 26, 25, 24)
+            );
+
+            for (int index = 0; index < Vector128<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector128<ushort>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<ushort>.Count; index < Vector256<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector256<ushort>.Count - (index - Vector128<ushort>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<ushort>.Count; index < Vector512<ushort>.Count - Vector128<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector512<ushort>.Count - Vector128<ushort>.Count - (index - Vector256<ushort>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<ushort>.Count + Vector128<ushort>.Count; index < Vector512<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector512<ushort>.Count - (index - Vector256<ushort>.Count - Vector128<ushort>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt32ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        {
+            Vector512<uint> result = Vector512.ShuffleNative(
+                Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
+                Vector512.Create((uint)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12)
+            );
+
+            for (int index = 0; index < Vector128<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector128<uint>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<uint>.Count; index < Vector256<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector256<uint>.Count - (index - Vector128<uint>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<uint>.Count; index < Vector512<uint>.Count - Vector128<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector512<uint>.Count - Vector128<uint>.Count - (index - Vector256<uint>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<uint>.Count + Vector128<uint>.Count; index < Vector512<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector512<uint>.Count - (index - Vector256<uint>.Count - Vector128<uint>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt64ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        {
+            Vector512<ulong> result = Vector512.ShuffleNative(
+                Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8),
+                Vector512.Create((ulong)1, 0, 3, 2, 5, 4, 7, 6)
+            );
+
+            for (int index = 0; index < Vector128<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector128<ulong>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<ulong>.Count; index < Vector256<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector256<ulong>.Count - (index - Vector128<ulong>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<ulong>.Count; index < Vector512<ulong>.Count - Vector128<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector512<ulong>.Count - Vector128<ulong>.Count - (index - Vector256<ulong>.Count)), result.GetElement(index));
+            }
+
+            for (int index = Vector256<ulong>.Count + Vector128<ulong>.Count; index < Vector512<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector512<ulong>.Count - (index - Vector256<ulong>.Count - Vector128<ulong>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512ByteShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        {
+            Vector512<byte> result = Vector512.ShuffleNative(
+                Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
+                Vector512.Create((byte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32)
+            );
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector256<byte>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector256<byte>.Count; index < Vector512<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector512<byte>.Count - (index - Vector256<byte>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512DoubleShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        {
+            Vector512<double> result = Vector512.ShuffleNative(
+                Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8),
+                Vector512.Create((long)3, 2, 1, 0, 7, 6, 5, 4)
+            );
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector256<double>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector256<double>.Count; index < Vector512<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector512<double>.Count - (index - Vector256<double>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int16ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        {
+            Vector512<short> result = Vector512.ShuffleNative(
+                Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
+                Vector512.Create((short)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16)
+            );
+
+            for (int index = 0; index < Vector256<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector256<short>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector256<short>.Count; index < Vector512<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector512<short>.Count - (index - Vector256<short>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int32ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        {
+            Vector512<int> result = Vector512.ShuffleNative(
+                Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
+                Vector512.Create((int)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8)
+            );
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector256<int>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector256<int>.Count; index < Vector512<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector512<int>.Count - (index - Vector256<int>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int64ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        {
+            Vector512<long> result = Vector512.ShuffleNative(
+                Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8),
+                Vector512.Create((long)3, 2, 1, 0, 7, 6, 5, 4)
+            );
+
+            for (int index = 0; index < Vector256<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector256<long>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector256<long>.Count; index < Vector512<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector512<long>.Count - (index - Vector256<long>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SByteShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        {
+            Vector512<sbyte> result = Vector512.ShuffleNative(
+                Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
+                Vector512.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32)
+            );
+
+            for (int index = 0; index < Vector256<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector256<sbyte>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector256<sbyte>.Count; index < Vector512<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector512<sbyte>.Count - (index - Vector256<sbyte>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SingleShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        {
+            Vector512<float> result = Vector512.ShuffleNative(
+                Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
+                Vector512.Create((int)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8)
+            );
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector256<float>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector256<float>.Count; index < Vector512<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector512<float>.Count - (index - Vector256<float>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt16ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        {
+            Vector512<ushort> result = Vector512.ShuffleNative(
+                Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
+                Vector512.Create((ushort)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16)
+            );
+
+            for (int index = 0; index < Vector256<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector256<ushort>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector256<ushort>.Count; index < Vector512<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector512<ushort>.Count - (index - Vector256<ushort>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt32ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        {
+            Vector512<uint> result = Vector512.ShuffleNative(
+                Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
+                Vector512.Create((uint)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8)
+            );
+
+            for (int index = 0; index < Vector256<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector256<uint>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector256<uint>.Count; index < Vector512<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector512<uint>.Count - (index - Vector256<uint>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt64ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        {
+            Vector512<ulong> result = Vector512.ShuffleNative(
+                Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8),
+                Vector512.Create((ulong)3, 2, 1, 0, 7, 6, 5, 4)
+            );
+
+            for (int index = 0; index < Vector256<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector256<ulong>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector256<ulong>.Count; index < Vector512<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector512<ulong>.Count - (index - Vector256<ulong>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512ByteShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector512<byte> vector = Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
+            Vector512<byte> indices = Vector512.Create((byte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector512<byte> result = Vector512.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector512<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector512<byte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512DoubleShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector512<double> vector = Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector512<long> indices = Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0);
+            Vector512<double> result = Vector512.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector512<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector512<double>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int16ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector512<short> vector = Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector512<short> indices = Vector512.Create((short)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector512<short> result = Vector512.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector512<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector512<short>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int32ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector512<int> vector = Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector512<int> indices = Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector512<int> result = Vector512.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector512<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector512<int>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int64ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector512<long> vector = Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector512<long> indices = Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0);
+            Vector512<long> result = Vector512.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector512<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector512<long>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SByteShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector512<sbyte> vector = Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
+            Vector512<sbyte> indices = Vector512.Create((sbyte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector512<sbyte> result = Vector512.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector512<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector512<sbyte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SingleShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector512<float> vector = Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector512<int> indices = Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector512<float> result = Vector512.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector512<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector512<float>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt16ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector512<ushort> vector = Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector512<ushort> indices = Vector512.Create((ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector512<ushort> result = Vector512.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector512<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector512<ushort>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt32ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector512<uint> vector = Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector512<uint> indices = Vector512.Create((uint)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector512<uint> result = Vector512.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector512<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector512<uint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt64ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector512<ulong> vector = Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector512<ulong> indices = Vector512.Create((ulong)7, 6, 5, 4, 3, 2, 1, 0);
+            Vector512<ulong> result = Vector512.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector512<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector512<ulong>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512ByteShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector512<byte> vector = Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
+            Vector512<byte> result = Vector512.ShuffleNative(vector, Vector512<byte>.Zero);
+
+            for (int index = 0; index < Vector512<byte>.Count; index++)
+            {
+                Assert.Equal((byte)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512DoubleShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector512<double> vector = Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector512<double> result = Vector512.ShuffleNative(vector, Vector512<long>.Zero);
+
+            for (int index = 0; index < Vector512<double>.Count; index++)
+            {
+                Assert.Equal((double)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int16ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector512<short> vector = Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector512<short> result = Vector512.ShuffleNative(vector, Vector512<short>.Zero);
+
+            for (int index = 0; index < Vector512<short>.Count; index++)
+            {
+                Assert.Equal((short)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int32ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector512<int> vector = Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector512<int> result = Vector512.ShuffleNative(vector, Vector512<int>.Zero);
+
+            for (int index = 0; index < Vector512<int>.Count; index++)
+            {
+                Assert.Equal((int)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512Int64ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector512<long> vector = Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector512<long> result = Vector512.ShuffleNative(vector, Vector512<long>.Zero);
+
+            for (int index = 0; index < Vector512<long>.Count; index++)
+            {
+                Assert.Equal((long)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SByteShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector512<sbyte> vector = Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
+            Vector512<sbyte> result = Vector512.ShuffleNative(vector, Vector512<sbyte>.Zero);
+
+            for (int index = 0; index < Vector512<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512SingleShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector512<float> vector = Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector512<float> result = Vector512.ShuffleNative(vector, Vector512<int>.Zero);
+
+            for (int index = 0; index < Vector512<float>.Count; index++)
+            {
+                Assert.Equal((float)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt16ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector512<ushort> vector = Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector512<ushort> result = Vector512.ShuffleNative(vector, Vector512<ushort>.Zero);
+
+            for (int index = 0; index < Vector512<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt32ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector512<uint> vector = Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector512<uint> result = Vector512.ShuffleNative(vector, Vector512<uint>.Zero);
+
+            for (int index = 0; index < Vector512<uint>.Count; index++)
+            {
+                Assert.Equal((uint)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector512UInt64ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector512<ulong> vector = Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector512<ulong> result = Vector512.ShuffleNative(vector, Vector512<ulong>.Zero);
+
+            for (int index = 0; index < Vector512<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
         public unsafe void Vector512ByteStoreTest()
         {
             byte* value = stackalloc byte[64];
@@ -5007,9 +5997,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             };
 
             // all Vector<double> NaNs .Equals compare the same, but == compare as different
-            foreach(var i in nans)
+            foreach (var i in nans)
             {
-                foreach(var j in nans)
+                foreach (var j in nans)
                 {
                     Assert.True(Vector512.Create(i).Equals(Vector512.Create(j)));
                     Assert.False(Vector512.Create(i) == Vector512.Create(j));
@@ -5031,9 +6021,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             };
 
             // all Vector<float> NaNs .Equals compare the same, but == compare as different
-            foreach(var i in nans)
+            foreach (var i in nans)
             {
-                foreach(var j in nans)
+                foreach (var j in nans)
                 {
                     Assert.True(Vector512.Create(i).Equals(Vector512.Create(j)));
                     Assert.False(Vector512.Create(i) == Vector512.Create(j));
@@ -5516,75 +6506,603 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertEqual(Vector512.Create(expectedResult), Vector512.Hypot(Vector512.Create(+y), Vector512.Create(+x)), Vector512.Create(variance));
         }
 
-        [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNaNDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNaNDoubleTest(double value, bool expectedResult)
+        private void IsEvenInteger<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector512<double>.AllBitsSet : Vector512<double>.Zero, Vector512.IsNaN(Vector512.Create(value)));
+            Assert.Equal(T.IsEvenInteger(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsEvenInteger(Vector512.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNaNSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNaNSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerByteTest(byte value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerDoubleTest(double value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt16Test(short value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt32Test(int value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt64Test(long value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerSByteTest(sbyte value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerSingleTest(float value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt16Test(ushort value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt32Test(uint value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt64Test(ulong value) => IsEvenInteger(value);
+
+        private void IsFinite<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector512<float>.AllBitsSet : Vector512<float>.Zero, Vector512.IsNaN(Vector512.Create(value)));
+            Assert.Equal(T.IsFinite(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsFinite(Vector512.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNegativeDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNegativeDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteByteTest(byte value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteDoubleTest(double value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt16Test(short value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt32Test(int value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt64Test(long value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteSByteTest(sbyte value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteSingleTest(float value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt16Test(ushort value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt32Test(uint value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt64Test(ulong value) => IsFinite(value);
+
+        private void IsInfinity<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector512<double>.AllBitsSet : Vector512<double>.Zero, Vector512.IsNegative(Vector512.Create(value)));
+            Assert.Equal(T.IsInfinity(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsInfinity(Vector512.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNegativeSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNegativeSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityByteTest(byte value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityDoubleTest(double value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt16Test(short value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt32Test(int value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt64Test(long value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinitySByteTest(sbyte value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinitySingleTest(float value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt16Test(ushort value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt32Test(uint value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt64Test(ulong value) => IsInfinity(value);
+
+        private void IsInteger<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector512<float>.AllBitsSet : Vector512<float>.Zero, Vector512.IsNegative(Vector512.Create(value)));
+            Assert.Equal(T.IsInteger(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsInteger(Vector512.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerByteTest(byte value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerDoubleTest(double value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt16Test(short value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt32Test(int value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt64Test(long value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerSByteTest(sbyte value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerSingleTest(float value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt16Test(ushort value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt32Test(uint value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt64Test(ulong value) => IsInteger(value);
+
+        private void IsNaN<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector512<double>.AllBitsSet : Vector512<double>.Zero, Vector512.IsPositive(Vector512.Create(value)));
+            Assert.Equal(T.IsNaN(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsNaN(Vector512.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNByteTest(byte value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNDoubleTest(double value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt16Test(short value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt32Test(int value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt64Test(long value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNSByteTest(sbyte value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNSingleTest(float value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt16Test(ushort value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt32Test(uint value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt64Test(ulong value) => IsNaN(value);
+
+        private void IsNegative<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector512<float>.AllBitsSet : Vector512<float>.Zero, Vector512.IsPositive(Vector512.Create(value)));
+            Assert.Equal(T.IsNegative(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsNegative(Vector512.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveInfinityDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveInfinityDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeByteTest(byte value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeDoubleTest(double value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt16Test(short value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt32Test(int value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt64Test(long value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeSByteTest(sbyte value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeSingleTest(float value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt16Test(ushort value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt32Test(uint value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt64Test(ulong value) => IsNegative(value);
+
+        private void IsNegativeInfinity<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector512<double>.AllBitsSet : Vector512<double>.Zero, Vector512.IsPositiveInfinity(Vector512.Create(value)));
+            Assert.Equal(T.IsNegativeInfinity(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsNegativeInfinity(Vector512.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveInfinitySingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveInfinitySingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityByteTest(byte value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityDoubleTest(double value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt16Test(short value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt32Test(int value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt64Test(long value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinitySByteTest(sbyte value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinitySingleTest(float value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt16Test(ushort value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt32Test(uint value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt64Test(ulong value) => IsNegativeInfinity(value);
+
+        private void IsNormal<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector512<float>.AllBitsSet : Vector512<float>.Zero, Vector512.IsPositiveInfinity(Vector512.Create(value)));
+            Assert.Equal(T.IsNormal(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsNormal(Vector512.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsZeroDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsZeroDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalByteTest(byte value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalDoubleTest(double value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt16Test(short value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt32Test(int value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt64Test(long value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalSByteTest(sbyte value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalSingleTest(float value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt16Test(ushort value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt32Test(uint value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt64Test(ulong value) => IsNormal(value);
+
+        private void IsOddInteger<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector512<double>.AllBitsSet : Vector512<double>.Zero, Vector512.IsZero(Vector512.Create(value)));
+            Assert.Equal(T.IsOddInteger(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsOddInteger(Vector512.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsZeroSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsZeroSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerByteTest(byte value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerDoubleTest(double value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt16Test(short value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt32Test(int value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt64Test(long value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerSByteTest(sbyte value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerSingleTest(float value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt16Test(ushort value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt32Test(uint value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt64Test(ulong value) => IsOddInteger(value);
+
+        private void IsPositive<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector512<float>.AllBitsSet : Vector512<float>.Zero, Vector512.IsZero(Vector512.Create(value)));
+            Assert.Equal(T.IsPositive(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsPositive(Vector512.Create(value)));
         }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveByteTest(byte value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveDoubleTest(double value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt16Test(short value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt32Test(int value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt64Test(long value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveSByteTest(sbyte value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveSingleTest(float value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt16Test(ushort value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt32Test(uint value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt64Test(ulong value) => IsPositive(value);
+
+        private void IsPositiveInfinity<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsPositiveInfinity(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsPositiveInfinity(Vector512.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityByteTest(byte value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityDoubleTest(double value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt16Test(short value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt32Test(int value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt64Test(long value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinitySByteTest(sbyte value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinitySingleTest(float value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt16Test(ushort value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt32Test(uint value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt64Test(ulong value) => IsPositiveInfinity(value);
+
+        private void IsSubnormal<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsSubnormal(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsSubnormal(Vector512.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalByteTest(byte value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalDoubleTest(double value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt16Test(short value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt32Test(int value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt64Test(long value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalSByteTest(sbyte value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalSingleTest(float value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt16Test(ushort value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt32Test(uint value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt64Test(ulong value) => IsSubnormal(value);
+
+        private void IsZero<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsZero(value) ? Vector512<T>.AllBitsSet : Vector512<T>.Zero, Vector512.IsZero(Vector512.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroByteTest(byte value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroDoubleTest(double value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt16Test(short value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt32Test(int value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt64Test(long value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroSByteTest(sbyte value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroSingleTest(float value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt16Test(ushort value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt32Test(uint value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt64Test(ulong value) => IsZero(value);
 
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.LerpDouble), MemberType = typeof(GenericMathTestMemberData))]
@@ -5843,5 +7361,275 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             Vector512<float> actualResult = Vector512.Truncate(Vector512.Create(value));
             AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512<float>.Zero);
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneTest<T>(T value1, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector512.Create<T>(value1);
+            var input2 = Vector512.Create<T>(value2);
+
+            Assert.True(Vector512.All(input1, value1));
+            Assert.True(Vector512.All(input2, value2));
+            Assert.False(Vector512.All(input1.WithElement(0, value2), value1));
+            Assert.False(Vector512.All(input2.WithElement(0, value1), value2));
+            Assert.False(Vector512.All(input1, value2));
+            Assert.False(Vector512.All(input2, value1));
+            Assert.False(Vector512.All(input1.WithElement(0, value2), value2));
+            Assert.False(Vector512.All(input2.WithElement(0, value1), value1));
+
+            Assert.True(Vector512.Any(input1, value1));
+            Assert.True(Vector512.Any(input2, value2));
+            Assert.True(Vector512.Any(input1.WithElement(0, value2), value1));
+            Assert.True(Vector512.Any(input2.WithElement(0, value1), value2));
+            Assert.False(Vector512.Any(input1, value2));
+            Assert.False(Vector512.Any(input2, value1));
+            Assert.True(Vector512.Any(input1.WithElement(0, value2), value2));
+            Assert.True(Vector512.Any(input2.WithElement(0, value1), value1));
+
+            Assert.False(Vector512.None(input1, value1));
+            Assert.False(Vector512.None(input2, value2));
+            Assert.False(Vector512.None(input1.WithElement(0, value2), value1));
+            Assert.False(Vector512.None(input2.WithElement(0, value1), value2));
+            Assert.True(Vector512.None(input1, value2));
+            Assert.True(Vector512.None(input2, value1));
+            Assert.False(Vector512.None(input1.WithElement(0, value2), value2));
+            Assert.False(Vector512.None(input2.WithElement(0, value1), value1));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneTest_IFloatingPointIeee754<T>(T value)
+            where T : struct, IFloatingPointIeee754<T>
+        {
+            var input = Vector512.Create<T>(value);
+
+            Assert.False(Vector512.All(input, value));
+            Assert.False(Vector512.Any(input, value));
+            Assert.True(Vector512.None(input, value));
+        }
+
+        [Fact]
+        public void AllAnyNoneByteTest() => AllAnyNoneTest<byte>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneDoubleTest() => AllAnyNoneTest<double>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneDoubleTest_AllBitsSet() => AllAnyNoneTest_IFloatingPointIeee754<double>(BitConverter.Int64BitsToDouble(-1));
+
+        [Fact]
+        public void AllAnyNoneInt16Test() => AllAnyNoneTest<short>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneInt32Test() => AllAnyNoneTest<int>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneInt64Test() => AllAnyNoneTest<long>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSByteTest() => AllAnyNoneTest<sbyte>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSingleTest() => AllAnyNoneTest<float>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSingleTest_AllBitsSet() => AllAnyNoneTest_IFloatingPointIeee754<float>(BitConverter.Int32BitsToSingle(-1));
+
+        [Fact]
+        public void AllAnyNoneUInt16Test() => AllAnyNoneTest<ushort>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneUInt32Test() => AllAnyNoneTest<uint>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneUInt64Test() => AllAnyNoneTest<ulong>(3, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneWhereAllBitsSetTest<T>(T allBitsSet, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector512.Create<T>(allBitsSet);
+            var input2 = Vector512.Create<T>(value2);
+
+            Assert.True(Vector512.AllWhereAllBitsSet(input1));
+            Assert.False(Vector512.AllWhereAllBitsSet(input2));
+            Assert.False(Vector512.AllWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.False(Vector512.AllWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.True(Vector512.AnyWhereAllBitsSet(input1));
+            Assert.False(Vector512.AnyWhereAllBitsSet(input2));
+            Assert.True(Vector512.AnyWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.True(Vector512.AnyWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.False(Vector512.NoneWhereAllBitsSet(input1));
+            Assert.True(Vector512.NoneWhereAllBitsSet(input2));
+            Assert.False(Vector512.NoneWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.False(Vector512.NoneWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+        }
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetByteTest() => AllAnyNoneWhereAllBitsSetTest<byte>(byte.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetDoubleTest() => AllAnyNoneWhereAllBitsSetTest<double>(BitConverter.Int64BitsToDouble(-1), 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt16Test() => AllAnyNoneWhereAllBitsSetTest<short>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt32Test() => AllAnyNoneWhereAllBitsSetTest<int>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt64Test() => AllAnyNoneWhereAllBitsSetTest<long>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetSByteTest() => AllAnyNoneWhereAllBitsSetTest<sbyte>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetSingleTest() => AllAnyNoneWhereAllBitsSetTest<float>(BitConverter.Int32BitsToSingle(-1), 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt16Test() => AllAnyNoneWhereAllBitsSetTest<ushort>(ushort.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt32Test() => AllAnyNoneWhereAllBitsSetTest<uint>(uint.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt64Test() => AllAnyNoneWhereAllBitsSetTest<ulong>(ulong.MaxValue, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfTest<T>(T value1, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector512.Create<T>(value1);
+            var input2 = Vector512.Create<T>(value2);
+
+            Assert.Equal(Vector512<T>.Count, Vector512.Count(input1, value1));
+            Assert.Equal(Vector512<T>.Count, Vector512.Count(input2, value2));
+            Assert.Equal(Vector512<T>.Count - 1, Vector512.Count(input1.WithElement(0, value2), value1));
+            Assert.Equal(Vector512<T>.Count - 1, Vector512.Count(input2.WithElement(0, value1), value2));
+            Assert.Equal(0, Vector512.Count(input1, value2));
+            Assert.Equal(0, Vector512.Count(input2, value1));
+            Assert.Equal(1, Vector512.Count(input1.WithElement(0, value2), value2));
+            Assert.Equal(1, Vector512.Count(input2.WithElement(0, value1), value1));
+
+            Assert.Equal(0, Vector512.IndexOf(input1, value1));
+            Assert.Equal(0, Vector512.IndexOf(input2, value2));
+            Assert.Equal(1, Vector512.IndexOf(input1.WithElement(0, value2), value1));
+            Assert.Equal(1, Vector512.IndexOf(input2.WithElement(0, value1), value2));
+            Assert.Equal(-1, Vector512.IndexOf(input1, value2));
+            Assert.Equal(-1, Vector512.IndexOf(input2, value1));
+            Assert.Equal(0, Vector512.IndexOf(input1.WithElement(0, value2), value2));
+            Assert.Equal(0, Vector512.IndexOf(input2.WithElement(0, value1), value1));
+
+            Assert.Equal(Vector512<T>.Count - 1, Vector512.LastIndexOf(input1, value1));
+            Assert.Equal(Vector512<T>.Count - 1, Vector512.LastIndexOf(input2, value2));
+            Assert.Equal(Vector512<T>.Count - 1, Vector512.LastIndexOf(input1.WithElement(0, value2), value1));
+            Assert.Equal(Vector512<T>.Count - 1, Vector512.LastIndexOf(input2.WithElement(0, value1), value2));
+            Assert.Equal(-1, Vector512.LastIndexOf(input1, value2));
+            Assert.Equal(-1, Vector512.LastIndexOf(input2, value1));
+            Assert.Equal(0, Vector512.LastIndexOf(input1.WithElement(0, value2), value2));
+            Assert.Equal(0, Vector512.LastIndexOf(input2.WithElement(0, value1), value1));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfTest_IFloatingPointIeee754<T>(T value)
+            where T : struct, IFloatingPointIeee754<T>
+        {
+            var input = Vector512.Create<T>(value);
+
+            Assert.Equal(0, Vector512.Count(input, value));
+            Assert.Equal(-1, Vector512.IndexOf(input, value));
+            Assert.Equal(-1, Vector512.LastIndexOf(input, value));
+        }
+
+        [Fact]
+        public void CountIndexOfLastIndexOfByteTest() => CountIndexOfLastIndexOfTest<byte>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfDoubleTest() => CountIndexOfLastIndexOfTest<double>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfDoubleTest_AllBitsSet() => CountIndexOfLastIndexOfTest_IFloatingPointIeee754<double>(BitConverter.Int64BitsToDouble(-1));
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt16Test() => CountIndexOfLastIndexOfTest<short>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt32Test() => CountIndexOfLastIndexOfTest<int>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt64Test() => CountIndexOfLastIndexOfTest<long>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSByteTest() => CountIndexOfLastIndexOfTest<sbyte>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSingleTest() => CountIndexOfLastIndexOfTest<float>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSingleTest_AllBitsSet() => CountIndexOfLastIndexOfTest_IFloatingPointIeee754<float>(BitConverter.Int32BitsToSingle(-1));
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt16Test() => CountIndexOfLastIndexOfTest<ushort>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt32Test() => CountIndexOfLastIndexOfTest<uint>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt64Test() => CountIndexOfLastIndexOfTest<ulong>(3, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfWhereAllBitsSetTest<T>(T allBitsSet, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector512.Create<T>(allBitsSet);
+            var input2 = Vector512.Create<T>(value2);
+
+            Assert.Equal(Vector512<T>.Count, Vector512.CountWhereAllBitsSet(input1));
+            Assert.Equal(0, Vector512.CountWhereAllBitsSet(input2));
+            Assert.Equal(Vector512<T>.Count - 1, Vector512.CountWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(1, Vector512.CountWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.Equal(0, Vector512.IndexOfWhereAllBitsSet(input1));
+            Assert.Equal(-1, Vector512.IndexOfWhereAllBitsSet(input2));
+            Assert.Equal(1, Vector512.IndexOfWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(0, Vector512.IndexOfWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.Equal(Vector512<T>.Count - 1, Vector512.LastIndexOfWhereAllBitsSet(input1));
+            Assert.Equal(-1, Vector512.LastIndexOfWhereAllBitsSet(input2));
+            Assert.Equal(Vector512<T>.Count - 1, Vector512.LastIndexOfWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(0, Vector512.LastIndexOfWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+        }
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetByteTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<byte>(byte.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetDoubleTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<double>(BitConverter.Int64BitsToDouble(-1), 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt16Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<short>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt32Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<int>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt64Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<long>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetSByteTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<sbyte>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetSingleTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<float>(BitConverter.Int32BitsToSingle(-1), 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt16Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<ushort>(ushort.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt32Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<uint>(uint.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt64Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<ulong>(ulong.MaxValue, 2);
     }
 }

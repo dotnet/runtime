@@ -7,6 +7,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Buffers.Binary;
 using System.Numerics;
+using System.Reflection;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
@@ -49,6 +50,7 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection ArmUnwindTableSection = new ObjectNodeSection(".ARM.extab", SectionType.ReadOnly);
         private static readonly ObjectNodeSection ArmAttributesSection = new ObjectNodeSection(".ARM.attributes", SectionType.ReadOnly);
         private static readonly ObjectNodeSection ArmTextThunkSection = new ObjectNodeSection(".text.thunks", SectionType.Executable);
+        private static readonly ObjectNodeSection CommentSection = new ObjectNodeSection(".comment", SectionType.ReadOnly);
 
         public ElfObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
@@ -60,6 +62,7 @@ namespace ILCompiler.ObjectWriter
                 TargetArchitecture.ARM => EM_ARM,
                 TargetArchitecture.ARM64 => EM_AARCH64,
                 TargetArchitecture.LoongArch64 => EM_LOONGARCH,
+                TargetArchitecture.RiscV64 => EM_RISCV,
                 _ => throw new NotSupportedException("Unsupported architecture")
             };
             _useInlineRelocationAddends = _machine is EM_386 or EM_ARM;
@@ -92,6 +95,11 @@ namespace ILCompiler.ObjectWriter
             else if (section == ArmAttributesSection)
             {
                 type = SHT_ARM_ATTRIBUTES;
+            }
+            else if (section == CommentSection)
+            {
+                type = SHT_PROGBITS;
+                flags = SHF_MERGE | SHF_STRINGS;
             }
             else if (_machine == EM_ARM && section.Type == SectionType.UnwindData)
             {
@@ -362,6 +370,9 @@ namespace ILCompiler.ObjectWriter
                 case EM_LOONGARCH:
                     EmitRelocationsLoongArch64(sectionIndex, relocationList);
                     break;
+                case EM_RISCV:
+                    EmitRelocationsRiscV64(sectionIndex, relocationList);
+                    break;
                 default:
                     Debug.Fail("Unsupported architecture");
                     break;
@@ -533,8 +544,39 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private void EmitRelocationsRiscV64(int sectionIndex, List<SymbolicRelocation> relocationList)
+        {
+            if (relocationList.Count > 0)
+            {
+                Span<byte> relocationEntry = stackalloc byte[24];
+                var relocationStream = new MemoryStream(24 * relocationList.Count);
+                _sections[sectionIndex].RelocationStream = relocationStream;
+
+                foreach (SymbolicRelocation symbolicRelocation in relocationList)
+                {
+                    uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
+                    uint type = symbolicRelocation.Type switch
+                    {
+                        IMAGE_REL_BASED_DIR64 => R_RISCV_64,
+                        IMAGE_REL_BASED_HIGHLOW => R_RISCV_32,
+                        IMAGE_REL_BASED_RELPTR32 => R_RISCV_32_PCREL,
+                        IMAGE_REL_BASED_RISCV64_PC => R_RISCV_CALL_PLT,
+                        _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
+                    };
+
+                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset);
+                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
+                    BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
+                    relocationStream.Write(relocationEntry);
+                }
+            }
+        }
+
         private protected override void EmitSectionsAndLayout()
         {
+            SectionWriter commentSectionWriter = GetOrCreateSection(CommentSection);
+            commentSectionWriter.WriteUtf8String($".NET: ilc {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion}");
+
             if (_machine == EM_ARM)
             {
                 // Emit EABI attributes section
@@ -805,6 +847,9 @@ namespace ILCompiler.ObjectWriter
                 {
                     EM_ARM => 0x05000000u, // For ARM32 claim conformance with the EABI specification
                     EM_LOONGARCH => 0x43u, // For LoongArch ELF psABI specify the ABI version (1) and modifiers (64-bit GPRs, 64-bit FPRs)
+                    // TODO: update once RISC-V runtime supports "C" extension (compressed instructions)
+                    // it should be 0x0005u EF_RISCV_RVC (0x0001) | EF_RISCV_FLOAT_ABI_DOUBLE (0x0006)
+                    EM_RISCV => 0x0004u, // EF_RISCV_FLOAT_ABI_DOUBLE (double precision floating-point ABI).
                     _ => 0u
                 },
             };

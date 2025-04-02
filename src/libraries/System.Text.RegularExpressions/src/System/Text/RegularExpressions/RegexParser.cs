@@ -1938,7 +1938,7 @@ namespace System.Text.RegularExpressions
                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Q, S, 0, 0, 0
         ];
 
-#if NET8_0_OR_GREATER
+#if NET
         private static readonly SearchValues<char> s_metachars =
             SearchValues.Create("\t\n\f\r #$()*+.?[\\^{|");
 

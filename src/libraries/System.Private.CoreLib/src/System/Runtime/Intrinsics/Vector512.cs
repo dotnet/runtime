@@ -88,6 +88,30 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector512<T> Add<T>(Vector512<T> left, Vector512<T> right) => left + right;
 
+        /// <inheritdoc cref="Vector256.All{T}(Vector256{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool All<T>(Vector512<T> vector, T value) => vector == Create(value);
+
+        /// <inheritdoc cref="Vector256.AllWhereAllBitsSet{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AllWhereAllBitsSet<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return All(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return All(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return All(vector, Scalar<T>.AllBitsSet);
+            }
+        }
+
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
@@ -97,6 +121,30 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> AndNot<T>(Vector512<T> left, Vector512<T> right) => left & ~right;
+
+        /// <inheritdoc cref="Vector256.Any{T}(Vector256{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Any<T>(Vector512<T> vector, T value) => EqualsAny(vector, Create(value));
+
+        /// <inheritdoc cref="Vector256.AnyWhereAllBitsSet{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AnyWhereAllBitsSet<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Any(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Any(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return Any(vector, Scalar<T>.AllBitsSet);
+            }
+        }
 
         /// <summary>Reinterprets a <see langword="Vector512&lt;TFrom&gt;" /> as a new <see langword="Vector512&lt;TTo&gt;" />.</summary>
         /// <typeparam name="TFrom">The type of the elements in the input vector.</typeparam>
@@ -313,7 +361,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector512<double> Ceiling(Vector512<double> vector) => Ceiling<double>(vector);
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.Clamp{T}(Vector256{T}, Vector256{T}, Vector256{T})" />
         [Intrinsic]
         public static Vector512<T> Clamp<T>(Vector512<T> value, Vector512<T> min, Vector512<T> max)
         {
@@ -321,7 +369,7 @@ namespace System.Runtime.Intrinsics
             return Min(Max(value, min), max);
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.ClampNative{T}(Vector256{T}, Vector256{T}, Vector256{T})" />
         [Intrinsic]
         public static Vector512<T> ClampNative<T>(Vector512<T> value, Vector512<T> min, Vector512<T> max)
         {
@@ -336,6 +384,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector that is selected when the corresponding bit in <paramref name="condition" /> is zero.</param>
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="condition" />, <paramref name="left" />, and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <remarks>The returned vector is equivalent to <paramref name="condition" /> <c>?</c> <paramref name="left" /> <c>:</c> <paramref name="right" /> on a per-bit basis.</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> ConditionalSelect<T>(Vector512<T> condition, Vector512<T> left, Vector512<T> right) => (left & condition) | AndNot(right, condition);
@@ -502,7 +551,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.CopySign{T}(Vector256{T}, Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> CopySign<T>(Vector512<T> value, Vector512<T> sign)
@@ -620,6 +669,30 @@ namespace System.Runtime.Intrinsics
                     Vector256.Cos(vector._lower),
                     Vector256.Cos(vector._upper)
                 );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.Count{T}(Vector256{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Count<T>(Vector512<T> vector, T value) => BitOperations.PopCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+
+        /// <inheritdoc cref="Vector256.CountWhereAllBitsSet{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountWhereAllBitsSet<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Count(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Count(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return Count(vector, Scalar<T>.AllBitsSet);
             }
         }
 
@@ -1879,7 +1952,91 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNaN(TSelf)" />
+        /// <inheritdoc cref="Vector256.IndexOf{T}(Vector256{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOf<T>(Vector512<T> vector, T value)
+        {
+            int result = BitOperations.TrailingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+            return (result != 64) ? result : -1;
+        }
+
+        /// <inheritdoc cref="Vector256.IndexOfWhereAllBitsSet{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfWhereAllBitsSet<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return IndexOf(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return IndexOf(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return IndexOf(vector, Scalar<T>.AllBitsSet);
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.IsEvenInteger{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> IsEvenInteger<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return VectorMath.IsEvenIntegerSingle<Vector512<float>, Vector512<uint>>(vector.AsSingle()).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return VectorMath.IsEvenIntegerDouble<Vector512<double>, Vector512<ulong>>(vector.AsDouble()).As<double, T>();
+            }
+            return IsZero(vector & Vector512<T>.One);
+        }
+
+        /// <inheritdoc cref="Vector256.IsFinite{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> IsFinite<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return ~IsZero(AndNot(Create<uint>(float.PositiveInfinityBits), vector.AsUInt32())).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return ~IsZero(AndNot(Create<ulong>(double.PositiveInfinityBits), vector.AsUInt64())).As<ulong, T>();
+            }
+            return Vector512<T>.AllBitsSet;
+        }
+
+        /// <inheritdoc cref="Vector256.IsInfinity{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> IsInfinity<T>(Vector512<T> vector)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return IsPositiveInfinity(Abs(vector));
+            }
+            return Vector512<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector256.IsInteger{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> IsInteger<T>(Vector512<T> vector)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return IsFinite(vector) & Equals(vector, Truncate(vector));
+            }
+            return Vector512<T>.AllBitsSet;
+        }
+
+        /// <inheritdoc cref="Vector256.IsNaN{T}(Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> IsNaN<T>(Vector512<T> vector)
@@ -1891,7 +2048,7 @@ namespace System.Runtime.Intrinsics
             return Vector512<T>.Zero;
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegative(TSelf)" />
+        /// <inheritdoc cref="Vector256.IsNegative{T}(Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> IsNegative<T>(Vector512<T> vector)
@@ -1918,7 +2075,55 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositive(TSelf)" />
+        /// <inheritdoc cref="Vector256.IsNegativeInfinity{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> IsNegativeInfinity<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Equals(vector, Create(float.NegativeInfinity).As<float, T>());
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Equals(vector, Create(double.NegativeInfinity).As<double, T>());
+            }
+            return Vector512<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector256.IsNormal{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> IsNormal<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LessThan(Abs(vector).AsUInt32() - Create<uint>(float.SmallestNormalBits), Create<uint>(float.PositiveInfinityBits - float.SmallestNormalBits)).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LessThan(Abs(vector).AsUInt64() - Create<ulong>(double.SmallestNormalBits), Create<ulong>(double.PositiveInfinityBits - double.SmallestNormalBits)).As<ulong, T>();
+            }
+            return ~IsZero(vector);
+        }
+
+        /// <inheritdoc cref="Vector256.IsOddInteger{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> IsOddInteger<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return VectorMath.IsOddIntegerSingle<Vector512<float>, Vector512<uint>>(vector.AsSingle()).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return VectorMath.IsOddIntegerDouble<Vector512<double>, Vector512<ulong>>(vector.AsDouble()).As<double, T>();
+            }
+            return ~IsZero(vector & Vector512<T>.One);
+        }
+
+        /// <inheritdoc cref="Vector256.IsPositive{T}(Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> IsPositive<T>(Vector512<T> vector)
@@ -1945,7 +2150,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositiveInfinity(TSelf)" />
+        /// <inheritdoc cref="Vector256.IsPositiveInfinity{T}(Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> IsPositiveInfinity<T>(Vector512<T> vector)
@@ -1961,10 +2166,50 @@ namespace System.Runtime.Intrinsics
             return Vector512<T>.Zero;
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsZero(TSelf)" />
+        /// <inheritdoc cref="Vector256.IsSubnormal{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> IsSubnormal<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LessThan(Abs(vector).AsUInt32() - Vector512<uint>.One, Create<uint>(float.MaxTrailingSignificand)).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LessThan(Abs(vector).AsUInt64() - Vector512<ulong>.One, Create<ulong>(double.MaxTrailingSignificand)).As<ulong, T>();
+            }
+            return Vector512<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector256.IsZero{T}(Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> IsZero<T>(Vector512<T> vector) => Equals(vector, Vector512<T>.Zero);
+
+        /// <inheritdoc cref="Vector256.LastIndexOf{T}(Vector256{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOf<T>(Vector512<T> vector, T value) => 63 - BitOperations.LeadingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+
+        /// <inheritdoc cref="Vector256.LastIndexOfWhereAllBitsSet{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfWhereAllBitsSet<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LastIndexOf(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LastIndexOf(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return LastIndexOf(vector, Scalar<T>.AllBitsSet);
+            }
+        }
 
         /// <inheritdoc cref="Vector256.Lerp(Vector256{double}, Vector256{double}, Vector256{double})" />
         [Intrinsic]
@@ -2238,7 +2483,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.Max{T}(Vector256{T}, Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> Max<T>(Vector512<T> left, Vector512<T> right)
@@ -2256,7 +2501,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.MaxMagnitude{T}(Vector256{T}, Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> MaxMagnitude<T>(Vector512<T> left, Vector512<T> right)
@@ -2274,7 +2519,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.MaxMagnitudeNumber{T}(Vector256{T}, Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> MaxMagnitudeNumber<T>(Vector512<T> left, Vector512<T> right)
@@ -2292,7 +2537,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.MaxNative{T}(Vector256{T}, Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> MaxNative<T>(Vector512<T> left, Vector512<T> right)
@@ -2310,7 +2555,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.MaxNumber{T}(Vector256{T}, Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> MaxNumber<T>(Vector512<T> left, Vector512<T> right)
@@ -2328,7 +2573,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.Min{T}(Vector256{T}, Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> Min<T>(Vector512<T> left, Vector512<T> right)
@@ -2346,7 +2591,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.MinMagnitude{T}(Vector256{T}, Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> MinMagnitude<T>(Vector512<T> left, Vector512<T> right)
@@ -2364,7 +2609,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.MinMagnitudeNumber{T}(Vector256{T}, Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> MinMagnitudeNumber<T>(Vector512<T> left, Vector512<T> right)
@@ -2382,7 +2627,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.MinNative{T}(Vector256{T}, Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> MinNative<T>(Vector512<T> left, Vector512<T> right)
@@ -2400,7 +2645,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector256.MinNumber{T}(Vector256{T}, Vector256{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> MinNumber<T>(Vector512<T> left, Vector512<T> right)
@@ -2586,6 +2831,30 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector512<T> Negate<T>(Vector512<T> vector) => -vector;
 
+        /// <inheritdoc cref="Vector256.None{T}(Vector256{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool None<T>(Vector512<T> vector, T value) => !EqualsAny(vector, Create(value));
+
+        /// <inheritdoc cref="Vector256.NoneWhereAllBitsSet{T}(Vector256{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool NoneWhereAllBitsSet<T>(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return None(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return None(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return None(vector, Scalar<T>.AllBitsSet);
+            }
+        }
+
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector whose ones-complement is to be computed.</param>
@@ -2746,6 +3015,15 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector512<uint> ShiftLeft(Vector512<uint> vector, int shiftCount) => vector << shiftCount;
 
+        [Intrinsic]
+        internal static Vector512<uint> ShiftLeft(Vector512<uint> vector, Vector512<uint> shiftCount)
+        {
+            return Create(
+                Vector256.ShiftLeft(vector._lower, shiftCount._lower),
+                Vector256.ShiftLeft(vector._lower, shiftCount._upper)
+            );
+        }
+
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
@@ -2753,6 +3031,15 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<ulong> ShiftLeft(Vector512<ulong> vector, int shiftCount) => vector << shiftCount;
+
+        [Intrinsic]
+        internal static Vector512<ulong> ShiftLeft(Vector512<ulong> vector, Vector512<ulong> shiftCount)
+        {
+            return Create(
+                Vector256.ShiftLeft(vector._lower, shiftCount._lower),
+                Vector256.ShiftLeft(vector._lower, shiftCount._upper)
+            );
+        }
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2879,6 +3166,72 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector512<ulong> ShiftRightLogical(Vector512<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
+#if !MONO
+        // These fallback methods only exist so that ShuffleNative has the same behaviour when called directly or via
+        // reflection - reflecting into internal runtime methods is not supported, so we don't worry about others
+        // reflecting into these. TODO: figure out if this can be solved in a nicer way.
+
+        [Intrinsic]
+        internal static Vector512<byte> ShuffleNativeFallback(Vector512<byte> vector, Vector512<byte> indices)
+        {
+            return Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector512<sbyte> ShuffleNativeFallback(Vector512<sbyte> vector, Vector512<sbyte> indices)
+        {
+            return Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector512<short> ShuffleNativeFallback(Vector512<short> vector, Vector512<short> indices)
+        {
+            return Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector512<ushort> ShuffleNativeFallback(Vector512<ushort> vector, Vector512<ushort> indices)
+        {
+            return Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector512<int> ShuffleNativeFallback(Vector512<int> vector, Vector512<int> indices)
+        {
+            return Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector512<uint> ShuffleNativeFallback(Vector512<uint> vector, Vector512<uint> indices)
+        {
+            return Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector512<float> ShuffleNativeFallback(Vector512<float> vector, Vector512<int> indices)
+        {
+            return Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector512<long> ShuffleNativeFallback(Vector512<long> vector, Vector512<long> indices)
+        {
+            return Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector512<ulong> ShuffleNativeFallback(Vector512<ulong> vector, Vector512<ulong> indices)
+        {
+            return Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector512<double> ShuffleNativeFallback(Vector512<double> vector, Vector512<long> indices)
+        {
+            return Shuffle(vector, indices);
+        }
+#endif
+
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
@@ -2928,6 +3281,47 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
+        /// Behavior is platform-dependent for out-of-range indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 63].</remarks>
+#if !MONO
+        [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        public static Vector512<byte> ShuffleNative(Vector512<byte> vector, Vector512<byte> indices)
+        {
+#if !MONO
+            return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
+        /// Behavior is platform-dependent for out-of-range indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 63].</remarks>
+#if !MONO
+        [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        [CLSCompliant(false)]
+        public static Vector512<sbyte> ShuffleNative(Vector512<sbyte> vector, Vector512<sbyte> indices)
+        {
+#if !MONO
+            return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
+        }
+
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
@@ -2975,6 +3369,45 @@ namespace System.Runtime.Intrinsics
             }
 
             return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
+#if !MONO
+        [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        public static Vector512<short> ShuffleNative(Vector512<short> vector, Vector512<short> indices)
+        {
+#if !MONO
+            return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
+#if !MONO
+        [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        [CLSCompliant(false)]
+        public static Vector512<ushort> ShuffleNative(Vector512<ushort> vector, Vector512<ushort> indices)
+        {
+#if !MONO
+            return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3054,6 +3487,64 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
+#if !MONO
+        [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        public static Vector512<int> ShuffleNative(Vector512<int> vector, Vector512<int> indices)
+        {
+#if !MONO
+            return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
+#if !MONO
+        [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        [CLSCompliant(false)]
+        public static Vector512<uint> ShuffleNative(Vector512<uint> vector, Vector512<uint> indices)
+        {
+#if !MONO
+            return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
+#if !MONO
+        [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        public static Vector512<float> ShuffleNative(Vector512<float> vector, Vector512<int> indices)
+        {
+#if !MONO
+            return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         [Intrinsic]
         public static Vector512<long> Shuffle(Vector512<long> vector, Vector512<long> indices)
         {
@@ -3121,6 +3612,64 @@ namespace System.Runtime.Intrinsics
             }
 
             return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
+#if !MONO
+        [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        public static Vector512<long> ShuffleNative(Vector512<long> vector, Vector512<long> indices)
+        {
+#if !MONO
+            return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
+#if !MONO
+        [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        [CLSCompliant(false)]
+        public static Vector512<ulong> ShuffleNative(Vector512<ulong> vector, Vector512<ulong> indices)
+        {
+#if !MONO
+            return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
+#if !MONO
+        [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        public static Vector512<double> ShuffleNative(Vector512<double> vector, Vector512<long> indices)
+        {
+#if !MONO
+            return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <inheritdoc cref="Vector256.Sin(Vector256{double})" />

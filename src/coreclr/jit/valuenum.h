@@ -529,6 +529,7 @@ public:
     CORINFO_CLASS_HANDLE GetObjectType(ValueNum vn, bool* pIsExact, bool* pIsNonNull);
 
     void PeelOffsets(ValueNum* vn, target_ssize_t* offset);
+    void PeelOffsetsI32(ValueNum* vn, int* offset);
 
     typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueNumSet;
 
@@ -1150,6 +1151,9 @@ public:
     // Check if "vn" is "new [] (type handle, size)"
     bool IsVNNewArr(ValueNum vn, VNFuncApp* funcApp);
 
+    // Check if "vn" is "new [] (type handle, size) [stack allocated]"
+    bool IsVNNewLocalArr(ValueNum vn, VNFuncApp* funcApp);
+
     // Check if "vn" IsVNNewArr and return false if arr size cannot be determined.
     bool TryGetNewArrSize(ValueNum vn, int* size);
 
@@ -1206,10 +1210,6 @@ public:
 
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
-
-    // Returns true if the two VNs represent the same value
-    // despite being different VNs. Useful for phi def VNs.
-    bool AreVNsEquivalent(ValueNum vn1, ValueNum vn2);
 
     enum class VN_RELATION_KIND
     {
@@ -1340,6 +1340,24 @@ public:
     T CoercedConstantValue(ValueNum vn)
     {
         return ConstantValueInternal<T>(vn DEBUGARG(true));
+    }
+
+    template <typename T>
+    bool IsVNIntegralConstant(ValueNum vn, T* value)
+    {
+        if (!IsVNConstant(vn) || !varTypeIsIntegral(TypeOfVN(vn)))
+        {
+            *value = 0;
+            return false;
+        }
+        ssize_t val = CoercedConstantValue<ssize_t>(vn);
+        if (FitsIn<T>(val))
+        {
+            *value = static_cast<T>(val);
+            return true;
+        }
+        *value = 0;
+        return false;
     }
 
     CORINFO_OBJECT_HANDLE ConstantObjHandle(ValueNum vn)

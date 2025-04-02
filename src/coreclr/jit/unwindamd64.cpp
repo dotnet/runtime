@@ -71,6 +71,30 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
         case REG_R15:
             dwarfReg = 15;
             break;
+        case REG_R16:
+            dwarfReg = 16;
+            break;
+        case REG_R17:
+            dwarfReg = 17;
+            break;
+        case REG_R18:
+            dwarfReg = 18;
+            break;
+        case REG_R19:
+            dwarfReg = 19;
+            break;
+        case REG_R20:
+            dwarfReg = 20;
+            break;
+        case REG_R21:
+            dwarfReg = 21;
+            break;
+        case REG_R22:
+            dwarfReg = 22;
+            break;
+        case REG_R23:
+            dwarfReg = 23;
+            break;
         default:
             noway_assert(!"unexpected REG_NUM");
     }
@@ -399,7 +423,22 @@ void Compiler::unwindSaveRegWindows(regNumber reg, unsigned offset)
             code             = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
             code->UnwindOp   = (genIsValidFloatReg(reg)) ? UWOP_SAVE_XMM128_FAR : UWOP_SAVE_NONVOL_FAR;
         }
-        code->OpInfo          = (BYTE)reg;
+        unsigned unwindRegNum;
+        if (genIsValidFloatReg(reg))
+        {
+            unwindRegNum = reg - XMMBASE;
+        }
+        else
+        {
+            assert(genIsValidIntReg(reg));
+            unwindRegNum = reg;
+        }
+        // We only add unwind codes for non-volatile registers and for x86/x64,
+        // the max registers index for a non-volatile register is 15.
+        assert(unwindRegNum <= 15);
+        code->OpInfo = (UCHAR)unwindRegNum;
+        assert((unsigned)code->OpInfo == unwindRegNum);
+
         unsigned int cbProlog = unwindGetCurrentOffset(func);
         noway_assert((BYTE)cbProlog == cbProlog);
         code->CodeOffset = (BYTE)cbProlog;

@@ -12,7 +12,47 @@ namespace System.Text
         private static readonly Dictionary<string, int> s_nameToCodePageCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<int, string> s_codePageToWebNameCache = new Dictionary<int, string>();
         private static readonly Dictionary<int, string> s_codePageToEnglishNameCache = new Dictionary<int, string>();
+        private static readonly Dictionary<int, (ushort FamilyCodePage, byte CodePageFlags)> s_codePageToItemCache = new Dictionary<int, (ushort FamilyCodePage, byte CodePageFlags)>();
         private static readonly ReaderWriterLockSlim s_cacheLock = new ReaderWriterLockSlim();
+
+        internal static (ushort FamilyCodePage, byte CodePageFlags) GetCodePageItem(int codePage)
+        {
+            s_cacheLock.EnterUpgradeableReadLock();
+            try
+            {
+                if (s_codePageToItemCache.TryGetValue(codePage, out (ushort FamilyCodePage, byte CodePageFlags) item))
+                {
+                    return item;
+                }
+
+                int i = MappedCodePages.IndexOf((ushort)codePage);
+                if (i < 0)
+                {
+                    return ((ushort)codePage, (byte)0);
+                }
+
+                s_cacheLock.EnterWriteLock();
+                try
+                {
+                    if (s_codePageToItemCache.TryGetValue(codePage, out item))
+                    {
+                        return item;
+                    }
+
+                    item = (MappedFamilyCodePage[i], MappedFlags[i]);
+                    s_codePageToItemCache.Add(codePage, item);
+                    return item;
+                }
+                finally
+                {
+                    s_cacheLock.ExitWriteLock();
+                }
+            }
+            finally
+            {
+                s_cacheLock.ExitUpgradeableReadLock();
+            }
+        }
 
         internal static int GetCodePageFromName(string name)
         {
@@ -73,8 +113,8 @@ namespace System.Text
 
             name = name.ToLowerInvariant();
 
-            //Binary search the array until we have only a couple of elements left and then
-            //just walk those elements.
+            // Binary search the array until we have only a couple of elements left and then
+            // just walk those elements.
             while ((right - left) > 3)
             {
                 index = ((right - left) / 2) + left;
@@ -98,7 +138,7 @@ namespace System.Text
                 }
             }
 
-            //Walk the remaining elements (it'll be 3 or fewer).
+            // Walk the remaining elements (it'll be 3 or fewer).
             for (; left <= right; left++)
             {
                 Debug.Assert(left < encodingNameIndices.Length - 1);
@@ -150,7 +190,7 @@ namespace System.Text
                 return null;
             }
 
-            //This is a linear search, but we probably won't be doing it very often.
+            // This is a linear search, but we probably won't be doing it very often.
             int i = MappedCodePages.IndexOf((ushort)codePage);
             if (i < 0)
             {

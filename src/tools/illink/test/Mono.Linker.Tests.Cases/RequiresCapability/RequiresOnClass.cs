@@ -821,13 +821,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--TestDAMOnTypeAccessInRUCScope--")]
+			[ExpectedWarning ("IL2026", "DAMAnnotatedClass.DAMAnnotatedClass()")]
+			[ExpectedWarning ("IL3050", "DAMAnnotatedClass.DAMAnnotatedClass()", Tool.NativeAot | Tool.Analyzer, "")]
 			public static void Test ()
 			{
 				TestDAMAccess ();
 				TestDirectReflectionAccess ();
 				TestDynamicDependencyAccess ();
-				TestDAMOnTypeAccess (null);
-				TestDAMOnTypeAccessInRUCScope ();
+				TestDAMOnTypeAccess (new DAMAnnotatedClass ());
+				TestDAMOnTypeAccessInRUCScope (new DAMAnnotatedClassAccessedFromRUCScope ());
 				TestDAMAccessOnOpenGeneric ();
 				TestDAMAccessOnInstantiatedGeneric ();
 			}
@@ -1208,12 +1210,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				instance.GetType ().GetProperty ("publicProperty");
 			}
 
+			[ExpectedWarning ("IL2026", "DAMAnnotatedClass.DAMAnnotatedClass()")]
+			[ExpectedWarning ("IL3050", "DAMAnnotatedClass.DAMAnnotatedClass()", Tool.NativeAot | Tool.Analyzer, "")]
 			public static void Test ()
 			{
 				TestDAMAccess ();
 				TestDirectReflectionAccess ();
 				TestDynamicDependencyAccess ();
-				TestDAMOnTypeAccess (null);
+				TestDAMOnTypeAccess (new DAMAnnotatedClass ());
 			}
 		}
 

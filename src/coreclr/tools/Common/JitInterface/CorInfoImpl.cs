@@ -270,9 +270,9 @@ namespace Internal.JitInterface
 
             bool isType = nativeSchema[index + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes;
 
-            fixed(PgoInstrumentationSchema* pSchema = &nativeSchema[index])
+            fixed (PgoInstrumentationSchema* pSchema = &nativeSchema[index])
             {
-                fixed(byte* pInstrumentationData = &instrumentationData[0])
+                fixed (byte* pInstrumentationData = &instrumentationData[0])
                 {
                     // We're going to store only the most popular type/method to reduce size of the profile
                     LikelyClassMethodRecord* likelyClassMethods = stackalloc LikelyClassMethodRecord[1];
@@ -1117,9 +1117,9 @@ namespace Internal.JitInterface
             // TODO: Cache inlining hits
             // Check for an inlining directive.
 
-            if (method.IsNoInlining)
+            if (method.IsNoInlining || method.IsNoOptimization)
             {
-                /* Function marked as not inlineable */
+                // NoOptimization implies NoInlining.
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
             }
             else if (method.IsAggressiveInlining)
@@ -1302,7 +1302,7 @@ namespace Internal.JitInterface
             info->devirtualizedMethod = null;
             info->exactContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
-            info->requiresInstMethodTableArg = false;
+            info->isInstantiatingStub = false;
             info->wasArrayInterfaceDevirt = false;
 
             TypeDesc objType = HandleToObject(info->objClass);
@@ -1450,7 +1450,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->requiresInstMethodTableArg = false;
+            info->isInstantiatingStub = false;
             info->exactContext = contextFromType(owningType);
 
             return true;
@@ -1506,6 +1506,13 @@ namespace Internal.JitInterface
             }
 
             return result != null ? ObjectToHandle(result) : null;
+        }
+
+        private CORINFO_METHOD_STRUCT_* getInstantiatedEntry(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_STRUCT_** methodArg, CORINFO_CLASS_STRUCT_** classArg)
+        {
+            *methodArg = null;
+            *classArg = null;
+            return null;
         }
 
         private CORINFO_CLASS_STRUCT_* getDefaultComparerClass(CORINFO_CLASS_STRUCT_* elemType)
@@ -1946,7 +1953,7 @@ namespace Internal.JitInterface
             return PrintFromUtf16(HandleToObject(handle).ToString(), buffer, bufferSize, pRequiredBufferSize);
         }
 
-        private nuint PrintFromUtf16(ReadOnlySpan<char> utf16, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
+        internal static nuint PrintFromUtf16(ReadOnlySpan<char> utf16, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
             int written = 0;
             if (bufferSize > 0)
@@ -2010,6 +2017,12 @@ namespace Internal.JitInterface
             return index < (uint)inst.Length ? ObjectToHandle(inst[(int)index]) : null;
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        private CORINFO_CLASS_STRUCT_* getMethodInstantiationArgument(CORINFO_METHOD_STRUCT_* ftn, uint index)
+        {
+#pragma warning restore CA1822 // Mark members as static
+            return null;
+        }
 
         private nuint printClassName(CORINFO_CLASS_STRUCT_* cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
@@ -2299,6 +2312,10 @@ namespace Internal.JitInterface
         private int GatherClassGCLayout(MetadataType type, byte* gcPtrs)
         {
             int result = 0;
+
+            if (type.MetadataBaseType is { ContainsGCPointers: true } baseType)
+                result += GatherClassGCLayout(baseType, gcPtrs);
+
             bool isInlineArray = type.IsInlineArray;
 
             foreach (var field in type.GetFields())
@@ -3342,13 +3359,6 @@ namespace Internal.JitInterface
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private char* getJitTimeLogFilename()
-#pragma warning restore CA1822 // Mark members as static
-        {
-            return null;
-        }
-
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
         {
             MethodDesc method = HandleToObject(hMethod);
@@ -4193,9 +4203,8 @@ namespace Internal.JitInterface
             flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
 
             // Set the rest of the flags that don't make sense to expose publicly.
-            flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
+            flags.Set(CorJitFlag.CORJIT_FLAG_AOT);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
-            flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
 
             TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
@@ -4206,9 +4215,6 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X86:
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
                     Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
-
-                    if ((_compilation.InstructionSetSupport.Flags & InstructionSetSupportFlags.Vector512Throttling) != 0)
-                        flags.Set(CorJitFlag.CORJIT_FLAG_VECTOR512_THROTTLING);
                     break;
 
                 case TargetArchitecture.ARM64:
@@ -4411,29 +4417,38 @@ namespace Internal.JitInterface
                 }
                 else
                 {
+                    // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+                    // but, they all prefix the qualified name of the interface first, so we'll check for that and
+                    // skip the prefix before trying to resolve the method.
                     ReadOnlySpan<char> methodName = MethodBeingCompiled.Name.AsSpan();
 
-                    if (methodName.StartsWith("System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"))
+                    if (methodName.StartsWith("System.Runtime.Intrinsics.ISimdVector<System."))
                     {
-                        // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
-                        // but, they all prefix the qualified name of the interface first, so we'll check for that and
-                        // skip the prefix before trying to resolve the method.
+                        ReadOnlySpan<char> partialMethodName = methodName.Slice(45);
 
-                        ReadOnlySpan<char> partialMethodName = methodName.Slice(70);
+                        if (partialMethodName.StartsWith("Numerics.Vector"))
+                        {
+                            partialMethodName = partialMethodName.Slice(15);
 
-                        if (partialMethodName.StartsWith("<T>,T>."))
-                        {
-                            methodName = partialMethodName.Slice(7);
+                            if (partialMethodName.StartsWith("<T>,T>."))
+                            {
+                                methodName = partialMethodName.Slice(7);
+                            }
                         }
-                        else if (partialMethodName.StartsWith("64<T>,T>."))
+                        if (partialMethodName.StartsWith("Runtime.Intrinsics.Vector"))
                         {
-                            methodName = partialMethodName.Slice(9);
-                        }
-                        else if (partialMethodName.StartsWith("128<T>,T>.") ||
-                                 partialMethodName.StartsWith("256<T>,T>.") ||
-                                 partialMethodName.StartsWith("512<T>,T>."))
-                        {
-                            methodName = partialMethodName.Slice(10);
+                            partialMethodName = partialMethodName.Slice(25);
+
+                            if (partialMethodName.StartsWith("64<T>,T>."))
+                            {
+                                methodName = partialMethodName.Slice(9);
+                            }
+                            else if (partialMethodName.StartsWith("128<T>,T>.") ||
+                                    partialMethodName.StartsWith("256<T>,T>.") ||
+                                    partialMethodName.StartsWith("512<T>,T>."))
+                            {
+                                methodName = partialMethodName.Slice(10);
+                            }
                         }
                     }
 

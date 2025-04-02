@@ -37,6 +37,7 @@ GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
+GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -46,8 +47,12 @@ GTNODE(CNS_INT          , GenTreeIntCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_LNG          , GenTreeLngCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_DBL          , GenTreeDblCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_STR          , GenTreeStrCon      ,0,0,GTK_LEAF)
+#if defined(FEATURE_SIMD)
 GTNODE(CNS_VEC          , GenTreeVecCon      ,0,0,GTK_LEAF)
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 GTNODE(CNS_MSK          , GenTreeMskCon      ,0,0,GTK_LEAF)
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 //-----------------------------------------------------------------------------
 //  Unary  operators (1 operand):
@@ -207,6 +212,12 @@ GTNODE(MUL_LONG         , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 // AndNot - emitted on ARM/ARM64 as the BIC instruction. Also used for creating AndNot HWINTRINSIC vector nodes in a cross-ISA manner.
 GTNODE(AND_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+
+// OrNot - emitted on ARM64 as the ORN instruction.
+GTNODE(OR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+
+// XorNot - emitted on ARM64 as the EON instruction.
+GTNODE(XOR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
 GTNODE(BFIZ             , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.

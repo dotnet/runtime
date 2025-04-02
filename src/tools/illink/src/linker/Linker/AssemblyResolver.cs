@@ -187,7 +187,7 @@ namespace Mono.Linker
 			throw new NotSupportedException ();
 		}
 
-		static readonly string[] Extensions = new[] { ".dll", ".exe", ".winmd" };
+		static readonly string[] Extensions = [".dll", ".exe", ".winmd"];
 
 		AssemblyDefinition? SearchDirectory (AssemblyNameReference name)
 		{

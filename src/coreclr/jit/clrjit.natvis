@@ -266,6 +266,7 @@ Documentation for VS debugger format specifiers: https://learn.microsoft.com/vis
     <Expand>
       <ExpandedItem Condition="optType == LcOptInfo::OptType::LcJaggedArray">(LcJaggedArrayOptInfo*)this,nd</ExpandedItem>
       <ExpandedItem Condition="optType == LcOptInfo::OptType::LcMdArray">(LcMdArrayOptInfo*)this,nd</ExpandedItem>
+      <ExpandedItem Condition="optType == LcOptInfo::OptType::LcSpan">(LcSpanOptInfo*)this,nd</ExpandedItem>
     </Expand>
   </Type>
 

@@ -48,6 +48,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestNoWarningsInRUCMethod<TestType> ();
 			TestNoWarningsInRUCType<TestType, TestType> ();
+			TestGenericParameterFlowsToNestedType.Test ();
 		}
 
 		static void TestSingleGenericParameterOnType ()
@@ -847,6 +848,63 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			rucType.InstanceMethodRequiresPublicMethods<T> ();
 			rucType.VirtualMethod ();
 			rucType.VirtualMethodRequiresPublicMethods<T> ();
+		}
+
+		class TestGenericParameterFlowsToNestedType
+		{
+			class Generic<T> {
+				[ExpectedWarning ("IL2091")]
+				public T CallNestedMethod () => GenericRequires<T>.Nested.Method ();
+
+				[ExpectedWarning ("IL2091")]
+				public T AccessNestedField () => GenericRequires<T>.Nested.Field;
+
+				[ExpectedWarning ("IL2091")]
+				public T AccessNestedProperty () => GenericRequires<T>.Nested.Property;
+
+				[ExpectedWarning ("IL2091")]
+				public void AccessNestedEvent () => GenericRequires<T>.Nested.Event += null;
+
+				[ExpectedWarning ("IL2091")]
+				public void UseNestedTypeArgument () {
+					new GenericTypeArgument<GenericRequires<T>.Nested> ();
+				}
+
+				[ExpectedWarning ("IL2091")]
+				public class DerivedFromNestedType : GenericRequires<T>.Nested
+				{
+					[ExpectedWarning ("IL2091")]
+					public DerivedFromNestedType () {
+					}
+				}
+			}
+
+			class GenericRequires<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> {
+				public class Nested {
+					public static T? Method () => default;
+
+					public static T? Field = default;
+
+					public static T? Property { get; set; } = default;
+
+					public static event Action<T>? Event;
+				}
+			}
+
+			class GenericTypeArgument<T>
+			{
+			}
+
+			public static void Test ()
+			{
+				var instance = new Generic<string> ();
+				instance.CallNestedMethod ();
+				instance.AccessNestedField ();
+				instance.AccessNestedProperty ();
+				instance.AccessNestedEvent ();
+				instance.UseNestedTypeArgument ();
+				new Generic<string>.DerivedFromNestedType ();
+			}
 		}
 
 		[RequiresUnreferencedCode ("message")]

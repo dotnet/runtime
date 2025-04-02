@@ -22,7 +22,7 @@ parameters:
         src/libraries/sendtohelix-browser.targets
         src/libraries/sendtohelix-wasi.targets
         src/libraries/sendtohelix-wasm.targets
-        src/libraries/System.Runtime.InteropServices.JavaScript/*
+        src/libraries/System.Runtime.InteropServices.JavaScript/src/*
         src/mono/mono/**/*wasm*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/*
@@ -61,12 +61,7 @@ parameters:
         eng/testing/BrowserVersions.props
     ]
     _perf_pipeline_specific_only: [
-        eng/pipelines/runtime-wasm-perf.yml
-        eng/pipelines/coreclr/perf*.yml
-        eng/pipelines/coreclr/templates/perf-job.yml
-        eng/pipelines/coreclr/templates/*-perf-*
-        eng/pipelines/coreclr/templates/run-perf*
-        eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        eng/pipelines/performance/*
         eng/testing/performance/*
     ]
 
@@ -255,22 +250,6 @@ jobs:
       - src/tasks/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       exclude:
-      - ${{ parameters._const_paths._always_exclude }}
-      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
-
-    - subset: wasmdebuggertests
-      combined: true
-      include:
-      - ${{ parameters._const_paths._wasm_chrome }}
-      - src/libraries/System.Runtime.InteropServices/*
-      - src/libraries/System.Runtime.InteropServices.JavaScript/*
-      - src/mono/mono/*
-      - src/mono/browser/debugger/*
-      - src/mono/browser/runtime/*
-      - ${{ parameters._const_paths._wasm_src_native }}
-      - ${{ parameters._const_paths._wasm_pipelines }}
-      exclude:
-      - src/mono/nuget/*
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 

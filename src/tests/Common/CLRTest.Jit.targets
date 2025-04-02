@@ -290,12 +290,23 @@ set DOTNET_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
       <InputAssemblyName>$(AssemblyName).dll</InputAssemblyName>
       <DisassemblyName>IL-RT/$(AssemblyName).il</DisassemblyName>
       <TargetAssemblyName>IL-RT/$(AssemblyName).dll</TargetAssemblyName>
-      <_IlasmRoundTripScriptText><![CDATA[
+      <_IlasmRoundTripScriptText>
+  <![CDATA[
 import os
 import shutil
 import subprocess
 import sys
 import glob
+import hashlib
+
+def hash_file(filename):
+    h  = hashlib.sha256()
+    b  = bytearray(128*1024)
+    mv = memoryview(b)
+    with open(filename, 'rb', buffering=0) as f:
+        for n in iter(lambda : f.readinto(mv), 0):
+            h.update(mv[:n])
+    return h.hexdigest()
 
 def is_managed_assembly(file):
     proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', file])
@@ -337,7 +348,7 @@ for inputAssemblyName in glob.glob("*.dll"):
   if is_managed_assembly(inputAssemblyName):
       print("ILASM RoundTrip for " + inputAssemblyName)
 
-      ilasmSwitches = ""
+      ilasmSwitches = "-DET"
 
       if not is_managed_exe_assembly(inputAssemblyName):
         ilasmSwitches = ilasmSwitches + " -DLL"
@@ -369,6 +380,64 @@ for inputAssemblyName in glob.glob("*.dll"):
       except:
           proc.kill()
           sys.exit(1)
+
+      test_det = proc.returncode == 0
+
+      # Test determinism
+      if test_det:
+
+        hash = hash_file(inputAssemblyName)
+
+        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
+        print(ilasm_args)
+        proc = subprocess.Popen(ilasm_args, shell=True)
+
+        try:
+            proc.communicate()
+        except:
+            proc.kill()
+            sys.exit(1)
+
+        if hash != hash_file(inputAssemblyName):
+          print("ILASM determinism failed")
+          sys.exit(1)
+        else:
+          print("ILASM determinism succeeded")
+
+        # Test PDB determinism
+
+        if not is_managed_debug_assembly(inputAssemblyName):
+          ilasmSwitches = ilasmSwitches + " -DEBUG"
+
+        pdbName = inputAssemblyName.replace('.dll', '.pdb')
+
+        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={pdbName} {ilasmSwitches} {disassemblyName}'
+        print(ilasm_args)
+        proc = subprocess.Popen(ilasm_args, shell=True)
+
+        try:
+            proc.communicate()
+        except:
+            proc.kill()
+            sys.exit(1)
+
+        hash = hash_file(pdbName)
+
+        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={pdbName} {ilasmSwitches} {disassemblyName}'
+        print(ilasm_args)
+        proc = subprocess.Popen(ilasm_args, shell=True)
+
+        try:
+            proc.communicate()
+        except:
+            proc.kill()
+            sys.exit(1)
+
+        if hash != hash_file(pdbName):
+          print("ILASM PDB determinism failed")
+          sys.exit(1)
+        else:
+          print("ILASM PDB determinism succeeded")
 
       print("")
 
