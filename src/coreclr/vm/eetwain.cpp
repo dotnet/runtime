@@ -21,6 +21,8 @@
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
 
+#include "exinfo.h"
+
 #ifdef TARGET_X86
 
 // NOTE: enabling compiler optimizations, even for debug builds.
@@ -2124,7 +2126,91 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 
     return;
 }
+#else // !FEATURE_EH_FUNCLETS
+
+typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
+static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
+{
+#ifdef HOST_AMD64
+    _ASSERTE(exInfo->m_frameIter.m_crawl.GetRegisterSet() == pvRegDisplay);
+    if (exInfo->m_frameIter.m_crawl.GetCodeInfo()->HasFrameRegister())
+    {
+        ULONG frameOffset = exInfo->m_frameIter.m_crawl.GetCodeInfo()->GetFrameOffsetFromUnwindInfo();
+        return pvRegDisplay->pCurrentContext->Rbp - 16 * frameOffset;
+    }
+    else
+    {
+        return pvRegDisplay->SP;
+    }
+#elif defined(HOST_ARM64)
+    return pvRegDisplay->SP;
+#elif defined(HOST_ARM)
+    return pvRegDisplay->SP;
+#elif defined(HOST_X86)
+    return pvRegDisplay->SP;
+#elif defined(HOST_RISCV64)
+    return pvRegDisplay->SP;
+#elif defined(HOST_LOONGARCH64)
+    return pvRegDisplay->SP;
+#endif
+}
+
+// Call catch, finally or filter funclet.
+// Return value:
+// * Catch funclet: address to resume at after the catch returns
+// * Finally funclet: unused
+// * Filter funclet: result of the filter funclet (EXCEPTION_CONTINUE_SEARCH (0) or EXCEPTION_EXECUTE_HANDLER (1))
+DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
+{
+    DWORD_PTR dwResult;
+    HandlerFn* pfnHandler = (HandlerFn*)pHandler;
+
+#ifdef USE_FUNCLET_CALL_HELPER
+    // Since the actual caller of the funclet is the assembly helper, pass the reference
+    // to the CallerStackFrame instance so that it can be updated.
+    CallerStackFrame* pCallerStackFrame = &pExInfo->m_csfEHClause;
+    UINT_PTR *pFuncletCallerSP = &(pCallerStackFrame->SP);
+
+    if (isFilterFunclet)
+    {
+        // For invoking IL filter funclet, we pass the CallerSP to the funclet using which
+        // it will retrieve the framepointer for accessing the locals in the parent
+        // method.
+        dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
+#ifdef USE_CURRENT_CONTEXT_IN_FILTER
+                                       GetFrameRestoreBase(pvRegDisplay->pCurrentContext),
+#else
+                                       GetFrameRestoreBase(pvRegDisplay->pCallerContext),
+#endif
+                                       CastHandlerFn(pfnHandler),
+                                       pFuncletCallerSP);
+    }
+    else
+    {
+        dwResult = CallEHFunclet(OBJECTREFToObject(throwable),
+                                 CastHandlerFn(pfnHandler),
+                                 GetFirstNonVolatileRegisterAddress(pRD->pCurrentContext),
+                                 pFuncletCallerSP);
+    }
+#else
+    UINT_PTR establisherFrame = GetEstablisherFrame(pRD, pExInfo);
+    dwResult = pfnHandler(establisherFrame, OBJECTREFToObject(throwable));
+#endif
+
+    return dwResult;
+}
+
+#ifdef FEATURE_INTERPRETER
+DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
+{
+    // Interpreter-TODO: implement calling the funclet in the intepreted code
+    _ASSERTE(FALSE);
+    return 0;
+}
+#endif // FEATURE_INTERPRETER
+
 #endif // !FEATURE_EH_FUNCLETS
+
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
