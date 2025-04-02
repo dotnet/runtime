@@ -883,8 +883,8 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     if (uRegSlots >= 12)
     {
-        // ensure loop will have even number of slots
-        // if there is odd number of slots, the last one will be handled later
+        // we make sure that the loop will have an even number of slots,
+        // if there is an odd number of slots, the last one will be handled later
         ssize_t uLoopBytes = (uRegSlots & ~1) * REGSIZE_BYTES;
 
         regNumber rEndAddr;
@@ -919,6 +919,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         }
     }
 
+    // check and zero the last register-sized stack slot (odd number)
     if (uLclBytes >= REGSIZE_BYTES)
     {
         GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0);
