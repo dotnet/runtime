@@ -1800,7 +1800,7 @@ HCIMPL0(void, JIT_DebugLogLoopCloning)
      } CONTRACTL_END;
 
 #ifdef _DEBUG
-     printf(">> Logging loop cloning optimization\n");
+     minipal_log_print_info(">> Logging loop cloning optimization\n");
 #endif
 }
 HCIMPLEND

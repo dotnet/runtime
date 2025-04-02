@@ -3,6 +3,7 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -366,6 +367,45 @@ namespace System.IO.Compression.Tests
 
                 source.Dispose();
             }
+        }
+
+        [Fact]
+        public static void EntriesMalformed_InvalidDataException()
+        {
+            string entryName = "entry.txt";
+
+            var stream = new MemoryStream();
+            using (var archiveWrite = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                archiveWrite.CreateEntry(entryName);
+            }
+
+            stream.Position = 0;
+
+            // Malform the archive
+            using (var archiveRead = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true))
+            {
+                var unused = archiveRead.Entries;
+
+                // Read the last 22 bytes of stream to get the EOCD.
+                byte[] buffer = new byte[22];
+                stream.Seek(-22, SeekOrigin.End);
+                stream.ReadExactly(buffer);
+
+                var startCentralDir = (long)typeof(ZipArchive).GetField("_centralDirectoryStart", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(archiveRead);
+                // Truncate to exactly 46 bytes after start.
+                stream.SetLength(startCentralDir + 46);
+
+                // Write the EOCD back.
+                stream.Seek(-22, SeekOrigin.End);
+                stream.Write(buffer);
+            }
+
+            stream.Position = 0;
+
+            ZipArchive archive = new ZipArchive(stream);
+
+            Assert.Throws<InvalidDataException>(() => _ = archive.Entries);
         }
 
         private static byte[] ReverseCentralDirectoryEntries(byte[] zipFile)

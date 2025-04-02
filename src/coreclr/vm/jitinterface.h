@@ -631,6 +631,15 @@ public:
 
     virtual void WriteCode(EECodeGenManager * jitMgr) = 0;
 
+    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
+                       void **            ppIndirection) override;  /* OUT */
+    static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
+
+    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
+    InfoAccessType emptyStringLiteral(void ** ppValue) override;
+    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
+    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
+
 protected:
 
     template <typename TCodeHeader>
@@ -924,15 +933,6 @@ public:
 #endif
     }
 
-    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
-                       void **            ppIndirection) override;  /* OUT */
-    static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
-
-    // Get the Helper Function Pointer, but don't throw an exception if its not found. Only
-    // safe to call if it is known that somewhere earlier in the process there was a call to
-    // getHelperFtnStatic with the same argument that did not throw.
-    static PCODE getHelperFtnStaticNoThrow(CorInfoHelpFunc ftnNum);
-
     // Override of CEEInfo::GetProfilingHandle.  The first time this is called for a
     // method desc, it calls through to CEEInfo::GetProfilingHandle and caches the
     // result in CEEJitInfo::GetProfilingHandleCache.  Thereafter, this wrapper regurgitates the cached values
@@ -943,11 +943,6 @@ public:
                     void                     **pProfilerHandle,
                     bool                      *pbIndirectedHandles
                     ) override;
-
-    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
-    InfoAccessType emptyStringLiteral(void ** ppValue) override;
-    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
-    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
 
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override;

@@ -14,6 +14,9 @@
 #include "eeconfig.h"
 #include "dbginterface.h"
 #include "generics.h"
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
 
 #include "gcinfodecoder.h"
 #ifdef FEATURE_EH_FUNCLETS
@@ -1057,6 +1060,9 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_movedPastFirstExInfo = false;
     m_fFuncletNotSeen = false;
     m_fFoundFirstFunclet = false;
+#ifdef FEATURE_INTERPRETER
+    m_walkingInterpreterFrames = false;
+#endif
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     m_pvResumableFrameTargetSP = NULL;
 #endif
@@ -1259,7 +1265,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
         {
             // On 64-bit and ARM, we stop at the explicit frames contained in a managed stack frame
             // before the managed stack frame itself.
-            EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
+            m_crawl.GetCodeManager()->EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
             curSP = GetSP(m_crawl.pRD->pCallerContext);
         }
 #endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
@@ -2658,7 +2664,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
                     // better not be suspended.
                     CONSISTENCY_CHECK(!(m_flags & THREAD_IS_SUSPENDED));
 
-                    EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
+                    m_crawl.GetCodeManager()->EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
                     m_pvResumableFrameTargetSP = (LPVOID)GetSP(m_crawl.pRD->pCallerContext);
                 }
 #endif // RECORD_RESUMABLE_FRAME_SP
@@ -2923,6 +2929,33 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                sizeof(m_crawl.codeManState.stateBuf));
 #endif // _DEBUG
 
+#ifdef FEATURE_INTERPRETER
+        if (!m_crawl.isFrameless)
+        {
+            if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                if (!m_walkingInterpreterFrames)
+                {
+                    // We have hit the InterpreterFrame while we were not processing the interpreter frames.
+                    // Switch to walking the underlying interpreted frames.
+                    PTR_InterpMethodContextFrame pTOSInterpMethodContextFrame = ((PTR_InterpreterFrame)m_crawl.pFrame)->GetTopInterpMethodContextFrame();
+                    PREGDISPLAY pRD = m_crawl.GetRegisterSet();
+                    SetIP(pRD->pCurrentContext, (TADDR)pTOSInterpMethodContextFrame->ip);
+                    SetSP(pRD->pCurrentContext, dac_cast<TADDR>(pTOSInterpMethodContextFrame));
+                    pRD->pCurrentContext->ContextFlags = CONTEXT_CONTROL;
+                    SyncRegDisplayToCurrentContext(pRD);
+                    ProcessIp(GetControlPC(pRD));
+                    m_walkingInterpreterFrames = m_crawl.isFrameless;
+                }
+                else
+                {
+                    // We have finished walking the interpreted frames. Process the InterpreterFrame itself.
+                    m_walkingInterpreterFrames = false;
+                }
+            }
+        }
+#endif // FEATURE_INTERPRETER
+
         if (m_crawl.isFrameless)
         {
             //------------------------------------------------------------------------
@@ -3001,7 +3034,8 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // frame will be reported before its containing method.
 
     // This should always succeed!  If it doesn't, it's a bug somewhere else!
-    EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, &m_cachedCodeInfo, m_codeManFlags);
+    ICodeManager *pCodeManager = (m_crawl.isFrameless) ? m_crawl.GetCodeManager() : ExecutionManager::GetDefaultCodeManager();
+    pCodeManager->EnsureCallerContextIsValid(m_crawl.pRD, &m_cachedCodeInfo, m_codeManFlags);
     pvReferenceSP = GetSP(m_crawl.pRD->pCallerContext);
 #endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 
