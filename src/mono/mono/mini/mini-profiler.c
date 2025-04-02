@@ -116,7 +116,10 @@ mini_profiler_emit_samplepoint (MonoCompile *cfg)
 
 	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
 	EMIT_NEW_PCONST (cfg, iargs [1], NULL);
-	iargs [2] = emit_fill_call_ctx (cfg, iargs [0], NULL);
+	if (MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT))
+		iargs [2] = emit_fill_call_ctx (cfg, iargs [0], NULL);
+	else
+		EMIT_NEW_PCONST (cfg, iargs [2], NULL);
 
 	/* void mono_profiler_raise_method_samplepoint (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx) */
 	if (trace)
