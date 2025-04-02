@@ -57,7 +57,7 @@ namespace System.Xml.Schema.DateAndTime
         /// <summary>
         /// Constructs an XsdDateTime from a string using specific format.
         /// </summary>
-        public XsdDateTime(string text, XsdDateTimeFlags kinds) : this()
+        public XsdDateTime(string text, XsdDateAndTimeFlags kinds) : this()
         {
             if (!DateAndTimeConverter.TryParse(text, kinds, out DateAndTimeInfo parsedValue))
             {
@@ -82,7 +82,7 @@ namespace System.Xml.Schema.DateAndTime
             _extra = (uint)(((int)parsedValue.TypeCode << TypeShift) | ((int)parsedValue.Kind << KindShift) | (parsedValue.ZoneHour << ZoneHourShift) | parsedValue.ZoneMinute);
         }
 
-        internal static bool TryParse(string text, XsdDateTimeFlags kinds, out XsdDateTime result)
+        internal static bool TryParse(string text, XsdDateAndTimeFlags kinds, out XsdDateTime result)
         {
             if (!DateAndTimeConverter.TryParse(text, kinds, out DateAndTimeInfo parsedValue))
             {
@@ -97,7 +97,7 @@ namespace System.Xml.Schema.DateAndTime
         /// <summary>
         /// Constructs an XsdDateTime from a DateTime.
         /// </summary>
-        public XsdDateTime(DateTime dateTime, XsdDateTimeFlags kinds)
+        public XsdDateTime(DateTime dateTime, XsdDateAndTimeFlags kinds)
         {
             Debug.Assert(BitOperations.IsPow2((uint)kinds), "One and only one DateTime type code can be set.");
             _dt = dateTime;
@@ -137,11 +137,11 @@ namespace System.Xml.Schema.DateAndTime
         }
 
         // Constructs an XsdDateTime from a DateTimeOffset
-        public XsdDateTime(DateTimeOffset dateTimeOffset) : this(dateTimeOffset, XsdDateTimeFlags.DateTime)
+        public XsdDateTime(DateTimeOffset dateTimeOffset) : this(dateTimeOffset, XsdDateAndTimeFlags.DateTime)
         {
         }
 
-        public XsdDateTime(DateTimeOffset dateTimeOffset, XsdDateTimeFlags kinds)
+        public XsdDateTime(DateTimeOffset dateTimeOffset, XsdDateAndTimeFlags kinds)
         {
             Debug.Assert(BitOperations.IsPow2((uint)kinds), "Only one DateTime type code can be set.");
 

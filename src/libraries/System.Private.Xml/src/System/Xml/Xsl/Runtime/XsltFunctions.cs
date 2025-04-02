@@ -364,7 +364,7 @@ namespace System.Xml.Xsl.Runtime
                 string locale = GetCultureInfo(lang).Name;
 
                 XsdDateTime xdt;
-                if (!XsdDateTime.TryParse(dateTime, XsdDateTimeFlags.AllXsd | XsdDateTimeFlags.XdrDateTime | XsdDateTimeFlags.XdrTimeNoTz, out xdt))
+                if (!XsdDateTime.TryParse(dateTime, XsdDateAndTimeFlags.AllXsd | XsdDateAndTimeFlags.XdrDateTime | XsdDateAndTimeFlags.XdrTimeNoTz, out xdt))
                 {
                     return string.Empty;
                 }
@@ -424,7 +424,7 @@ namespace System.Xml.Xsl.Runtime
             DateTime dt;
             try
             {
-                if (!XsdDateTime.TryParse(dateTime, XsdDateTimeFlags.AllXsd | XsdDateTimeFlags.XdrDateTime | XsdDateTimeFlags.XdrTimeNoTz, out xdt))
+                if (!XsdDateTime.TryParse(dateTime, XsdDateAndTimeFlags.AllXsd | XsdDateAndTimeFlags.XdrDateTime | XsdDateAndTimeFlags.XdrTimeNoTz, out xdt))
                 {
                     return string.Empty;
                 }

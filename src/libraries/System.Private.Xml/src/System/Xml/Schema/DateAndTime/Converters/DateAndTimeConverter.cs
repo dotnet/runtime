@@ -42,7 +42,7 @@ namespace System.Xml.Schema.DateAndTime.Converters
 
         private static ReadOnlySpan<int> Power10 => [-1, 10, 100, 1000, 10000, 100000, 1000000];
 
-        public static bool TryParse(string text, XsdDateTimeFlags kinds, out DateAndTimeInfo parsedValue)
+        public static bool TryParse(string text, XsdDateAndTimeFlags kinds, out DateAndTimeInfo parsedValue)
         {
             // Skip leading whitespace
             int start = 0;
@@ -86,14 +86,14 @@ namespace System.Xml.Schema.DateAndTime.Converters
 
         private static bool TryParseAsDate(
             string text,
-            XsdDateTimeFlags kinds,
+            XsdDateAndTimeFlags kinds,
             int start,
             out DateAndTimeInfo parsedValue)
         {
-            const XsdDateTimeFlags dateVariants = XsdDateTimeFlags.DateTime
-                | XsdDateTimeFlags.Date
-                | XsdDateTimeFlags.XdrDateTime
-                | XsdDateTimeFlags.XdrDateTimeNoTz;
+            const XsdDateAndTimeFlags dateVariants = XsdDateAndTimeFlags.DateTime
+                | XsdDateAndTimeFlags.Date
+                | XsdDateAndTimeFlags.XdrDateTime
+                | XsdDateAndTimeFlags.XdrDateTimeNoTz;
 
             int? year, month, day, hour, minute, second, fraction, zoneHour, zoneMinute;
             XsdDateTimeKind? kind;
@@ -101,7 +101,7 @@ namespace System.Xml.Schema.DateAndTime.Converters
             // Choose format starting from the most common and trying not to reparse the same thing too many times
             if (Test(kinds, dateVariants) && TryParseDate(text, start, out year, out month, out day))
             {
-                if (Test(kinds, XsdDateTimeFlags.DateTime) &&
+                if (Test(kinds, XsdDateAndTimeFlags.DateTime) &&
                     ParseChar(text, start + s_lzyyyy_MM_dd, 'T') &&
                     TryParseTimeAndZoneAndWhitespace(text, start + s_lzyyyy_MM_ddT, out hour, out minute, out second, out fraction, out kind, out zoneHour, out zoneMinute))
                 {
@@ -109,14 +109,14 @@ namespace System.Xml.Schema.DateAndTime.Converters
                     return true;
                 }
 
-                if (Test(kinds, XsdDateTimeFlags.Date)
+                if (Test(kinds, XsdDateAndTimeFlags.Date)
                     && TryParseZoneAndWhitespace(text, start + s_lzyyyy_MM_dd, out kind, out zoneHour, out zoneMinute))
                 {
                     parsedValue = new DateAndTimeInfo(day.Value, 0, 0, kind.Value, 0, month.Value, 0, DateTimeTypeCode.Date, year.Value, zoneHour.Value, zoneMinute.Value);
                     return true;
                 }
 
-                if (Test(kinds, XsdDateTimeFlags.XdrDateTime))
+                if (Test(kinds, XsdDateAndTimeFlags.XdrDateTime))
                 {
                     if (TryParseZoneAndWhitespace(text, start + s_lzyyyy_MM_dd, out kind, out zoneHour, out zoneMinute))
                     {
@@ -132,7 +132,7 @@ namespace System.Xml.Schema.DateAndTime.Converters
                     }
                 }
 
-                if (Test(kinds, XsdDateTimeFlags.XdrDateTimeNoTz))
+                if (Test(kinds, XsdDateAndTimeFlags.XdrDateTimeNoTz))
                 {
                     if (ParseChar(text, start + s_lzyyyy_MM_dd, 'T'))
                     {
@@ -156,11 +156,11 @@ namespace System.Xml.Schema.DateAndTime.Converters
 
         private static bool TryParseAsTime(
             string text,
-            XsdDateTimeFlags kinds,
+            XsdDateAndTimeFlags kinds,
             int start,
             out DateAndTimeInfo parsedValue)
         {
-            if (Test(kinds, XsdDateTimeFlags.Time) && TryParseTimeAndZoneAndWhitespace(text, start, out int? hour, out int? minute, out int? second, out int? fraction, out XsdDateTimeKind? kind, out int? zoneHour, out int? zoneMinute))
+            if (Test(kinds, XsdDateAndTimeFlags.Time) && TryParseTimeAndZoneAndWhitespace(text, start, out int? hour, out int? minute, out int? second, out int? fraction, out XsdDateTimeKind? kind, out int? zoneHour, out int? zoneMinute))
             {
                 parsedValue = new DateAndTimeInfo(firstDay, fraction.Value, hour.Value, kind.Value, minute.Value, firstMonth, second.Value, DateTimeTypeCode.Time, leapYear, zoneHour.Value, zoneMinute.Value);
                 return true;
@@ -172,11 +172,11 @@ namespace System.Xml.Schema.DateAndTime.Converters
 
         private static bool TryParseAsXdrTimeNoTz(
             string text,
-            XsdDateTimeFlags kinds,
+            XsdDateAndTimeFlags kinds,
             int start,
             out DateAndTimeInfo parsedValue)
         {
-            if (Test(kinds, XsdDateTimeFlags.XdrTimeNoTz) && ParseTimeAndWhitespace(text, start, out int? hour, out int? minute, out int? second, out int? fraction))
+            if (Test(kinds, XsdDateAndTimeFlags.XdrTimeNoTz) && ParseTimeAndWhitespace(text, start, out int? hour, out int? minute, out int? second, out int? fraction))
             {
                 parsedValue = new DateAndTimeInfo(firstDay, fraction.Value, hour.Value, XsdDateTimeKind.Unspecified, minute.Value, firstMonth, second.Value, DateTimeTypeCode.Time, leapYear, default, default);
                 return true;
@@ -188,16 +188,16 @@ namespace System.Xml.Schema.DateAndTime.Converters
 
         private static bool TryParseAsGYearOrGYearMonth(
             string text,
-            XsdDateTimeFlags kinds,
+            XsdDateAndTimeFlags kinds,
             int start,
             out DateAndTimeInfo parsedValue)
         {
             int? year, month, zoneHour, zoneMinute;
             XsdDateTimeKind? kind;
 
-            if (Test(kinds, XsdDateTimeFlags.GYearMonth | XsdDateTimeFlags.GYear) && ParseFourDigits(text, start, out year) && 1 <= year)
+            if (Test(kinds, XsdDateAndTimeFlags.GYearMonth | XsdDateAndTimeFlags.GYear) && ParseFourDigits(text, start, out year) && 1 <= year)
             {
-                if (Test(kinds, XsdDateTimeFlags.GYearMonth) &&
+                if (Test(kinds, XsdDateAndTimeFlags.GYearMonth) &&
                     ParseChar(text, start + s_lzyyyy, '-') &&
                     ParseTwoDigits(text, start + s_lzyyyy_, out month) &&
                     1 <= month &&
@@ -208,7 +208,7 @@ namespace System.Xml.Schema.DateAndTime.Converters
                     return true;
                 }
 
-                if (Test(kinds, XsdDateTimeFlags.GYear) && TryParseZoneAndWhitespace(text, start + s_lzyyyy, out kind, out zoneHour, out zoneMinute))
+                if (Test(kinds, XsdDateAndTimeFlags.GYear) && TryParseZoneAndWhitespace(text, start + s_lzyyyy, out kind, out zoneHour, out zoneMinute))
                 {
                     parsedValue = new DateAndTimeInfo(firstDay, default, default, kind.Value, default, firstMonth, default, DateTimeTypeCode.GYear, year.Value, zoneHour.Value, zoneMinute.Value);
                     return true;
@@ -221,19 +221,19 @@ namespace System.Xml.Schema.DateAndTime.Converters
 
         private static bool TryParseAsGMonthOrGMonthDay(
             string text,
-            XsdDateTimeFlags kinds,
+            XsdDateAndTimeFlags kinds,
             int start,
             out DateAndTimeInfo parsedValue)
         {
             int? month, day, zoneHour, zoneMinute;
             XsdDateTimeKind? kind;
 
-            if (Test(kinds, XsdDateTimeFlags.GMonthDay | XsdDateTimeFlags.GMonth) &&
+            if (Test(kinds, XsdDateAndTimeFlags.GMonthDay | XsdDateAndTimeFlags.GMonth) &&
                 ParseChar(text, start, '-') &&
                 ParseChar(text, start + s_Lz_, '-') &&
                 ParseTwoDigits(text, start + s_Lz__, out month) && 1 <= month && month <= 12)
             {
-                if (Test(kinds, XsdDateTimeFlags.GMonthDay) &&
+                if (Test(kinds, XsdDateAndTimeFlags.GMonthDay) &&
                     ParseChar(text, start + s_lz__mm, '-') &&
                     ParseTwoDigits(text, start + s_lz__mm_, out day) && 1 <= day && day <= DateTime.DaysInMonth(leapYear, month.Value) &&
                     TryParseZoneAndWhitespace(text, start + s_lz__mm_dd, out kind, out zoneHour, out zoneMinute))
@@ -242,7 +242,7 @@ namespace System.Xml.Schema.DateAndTime.Converters
                     return true;
                 }
 
-                if (Test(kinds, XsdDateTimeFlags.GMonth) &&
+                if (Test(kinds, XsdDateAndTimeFlags.GMonth) &&
                     (TryParseZoneAndWhitespace(text, start + s_lz__mm, out kind, out zoneHour, out zoneMinute) ||
                         ParseChar(text, start + s_lz__mm, '-') &&
                             ParseChar(text, start + s_lz__mm_, '-') &&
@@ -259,14 +259,14 @@ namespace System.Xml.Schema.DateAndTime.Converters
 
         private static bool TryParseAsGDay(
             string text,
-            XsdDateTimeFlags kinds,
+            XsdDateAndTimeFlags kinds,
             int start,
             out DateAndTimeInfo parsedValue)
         {
             int? day, zoneHour, zoneMinute;
             XsdDateTimeKind? kind;
 
-            if (Test(kinds, XsdDateTimeFlags.GDay) &&
+            if (Test(kinds, XsdDateAndTimeFlags.GDay) &&
                 ParseChar(text, start, '-') &&
                 ParseChar(text, start + s_Lz_, '-') &&
                 ParseChar(text, start + s_Lz__, '-') &&
@@ -337,7 +337,7 @@ namespace System.Xml.Schema.DateAndTime.Converters
             return start < rawValue.Length && rawValue[start] == ch;
         }
 
-        private static bool Test(XsdDateTimeFlags left, XsdDateTimeFlags right)
+        private static bool Test(XsdDateAndTimeFlags left, XsdDateAndTimeFlags right)
         {
             return (left & right) != 0;
         }

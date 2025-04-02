@@ -1971,7 +1971,7 @@ namespace System.Xml.Schema
 
     internal class Datatype_dateTimeBase : Datatype_anySimpleType
     {
-        private readonly XsdDateTimeFlags _dateTimeFlags;
+        private readonly XsdDateAndTimeFlags _dateTimeFlags;
 
         internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
@@ -1982,7 +1982,7 @@ namespace System.Xml.Schema
 
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.DateTime; } }
 
-        internal Datatype_dateTimeBase(XsdDateTimeFlags dateTimeFlags)
+        internal Datatype_dateTimeBase(XsdDateAndTimeFlags dateTimeFlags)
         {
             _dateTimeFlags = dateTimeFlags;
         }
@@ -2059,12 +2059,12 @@ namespace System.Xml.Schema
 
     internal sealed class Datatype_dateTimeNoTimeZone : Datatype_dateTimeBase
     {
-        internal Datatype_dateTimeNoTimeZone() : base(XsdDateTimeFlags.XdrDateTimeNoTz) { }
+        internal Datatype_dateTimeNoTimeZone() : base(XsdDateAndTimeFlags.XdrDateTimeNoTz) { }
     }
 
     internal sealed class Datatype_dateTimeTimeZone : Datatype_dateTimeBase
     {
-        internal Datatype_dateTimeTimeZone() : base(XsdDateTimeFlags.XdrDateTime) { }
+        internal Datatype_dateTimeTimeZone() : base(XsdDateAndTimeFlags.XdrDateTime) { }
     }
 
     /*
@@ -2095,17 +2095,17 @@ namespace System.Xml.Schema
     */
     internal sealed class Datatype_dateTime : Datatype_dateTimeBase
     {
-        internal Datatype_dateTime() : base(XsdDateTimeFlags.DateTime) { }
+        internal Datatype_dateTime() : base(XsdDateAndTimeFlags.DateTime) { }
     }
 
     internal sealed class Datatype_timeNoTimeZone : Datatype_dateTimeBase
     {
-        internal Datatype_timeNoTimeZone() : base(XsdDateTimeFlags.XdrTimeNoTz) { }
+        internal Datatype_timeNoTimeZone() : base(XsdDateAndTimeFlags.XdrTimeNoTz) { }
     }
 
     internal sealed class Datatype_timeTimeZone : Datatype_dateTimeBase
     {
-        internal Datatype_timeTimeZone() : base(XsdDateTimeFlags.Time) { }
+        internal Datatype_timeTimeZone() : base(XsdDateAndTimeFlags.Time) { }
     }
 
     /*
@@ -2138,7 +2138,7 @@ namespace System.Xml.Schema
     {
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.Time; } }
 
-        internal Datatype_time() : base(XsdDateTimeFlags.Time) { }
+        internal Datatype_time() : base(XsdDateAndTimeFlags.Time) { }
     }
 
     /*
@@ -2171,7 +2171,7 @@ namespace System.Xml.Schema
     {
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.Date; } }
 
-        internal Datatype_date() : base(XsdDateTimeFlags.Date) { }
+        internal Datatype_date() : base(XsdDateAndTimeFlags.Date) { }
     }
 
     /*
@@ -2204,7 +2204,7 @@ namespace System.Xml.Schema
     {
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.GYearMonth; } }
 
-        internal Datatype_yearMonth() : base(XsdDateTimeFlags.GYearMonth) { }
+        internal Datatype_yearMonth() : base(XsdDateAndTimeFlags.GYearMonth) { }
     }
 
 
@@ -2238,7 +2238,7 @@ namespace System.Xml.Schema
     {
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.GYear; } }
 
-        internal Datatype_year() : base(XsdDateTimeFlags.GYear) { }
+        internal Datatype_year() : base(XsdDateAndTimeFlags.GYear) { }
     }
 
     /*
@@ -2271,7 +2271,7 @@ namespace System.Xml.Schema
     {
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.GMonthDay; } }
 
-        internal Datatype_monthDay() : base(XsdDateTimeFlags.GMonthDay) { }
+        internal Datatype_monthDay() : base(XsdDateAndTimeFlags.GMonthDay) { }
     }
 
     /*
@@ -2304,7 +2304,7 @@ namespace System.Xml.Schema
     {
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.GDay; } }
 
-        internal Datatype_day() : base(XsdDateTimeFlags.GDay) { }
+        internal Datatype_day() : base(XsdDateAndTimeFlags.GDay) { }
     }
 
 
@@ -2338,7 +2338,7 @@ namespace System.Xml.Schema
     {
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.GMonth; } }
 
-        internal Datatype_month() : base(XsdDateTimeFlags.GMonth) { }
+        internal Datatype_month() : base(XsdDateAndTimeFlags.GMonth) { }
     }
 
     /*

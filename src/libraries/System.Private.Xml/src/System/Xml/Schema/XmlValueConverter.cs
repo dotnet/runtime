@@ -520,12 +520,12 @@ namespace System.Xml.Schema
 
         protected static DateTime StringToDate(string value)
         {
-            return (DateTime)(new XsdDateTime(value, XsdDateTimeFlags.Date));
+            return (DateTime)(new XsdDateTime(value, XsdDateAndTimeFlags.Date));
         }
 
         protected static DateTime StringToDateTime(string value)
         {
-            return (DateTime)(new XsdDateTime(value, XsdDateTimeFlags.DateTime));
+            return (DateTime)(new XsdDateTime(value, XsdDateAndTimeFlags.DateTime));
         }
 
         protected static TimeSpan StringToDayTimeDuration(string value)
@@ -541,62 +541,62 @@ namespace System.Xml.Schema
 
         protected static DateTime StringToGDay(string value)
         {
-            return (DateTime)(new XsdDateTime(value, XsdDateTimeFlags.GDay));
+            return (DateTime)(new XsdDateTime(value, XsdDateAndTimeFlags.GDay));
         }
 
         protected static DateTime StringToGMonth(string value)
         {
-            return (DateTime)(new XsdDateTime(value, XsdDateTimeFlags.GMonth));
+            return (DateTime)(new XsdDateTime(value, XsdDateAndTimeFlags.GMonth));
         }
 
         protected static DateTime StringToGMonthDay(string value)
         {
-            return (DateTime)(new XsdDateTime(value, XsdDateTimeFlags.GMonthDay));
+            return (DateTime)(new XsdDateTime(value, XsdDateAndTimeFlags.GMonthDay));
         }
 
         protected static DateTime StringToGYear(string value)
         {
-            return (DateTime)(new XsdDateTime(value, XsdDateTimeFlags.GYear));
+            return (DateTime)(new XsdDateTime(value, XsdDateAndTimeFlags.GYear));
         }
 
         protected static DateTime StringToGYearMonth(string value)
         {
-            return (DateTime)(new XsdDateTime(value, XsdDateTimeFlags.GYearMonth));
+            return (DateTime)(new XsdDateTime(value, XsdDateAndTimeFlags.GYearMonth));
         }
 
         protected static DateTimeOffset StringToDateOffset(string value)
         {
-            return (DateTimeOffset)(new XsdDateTime(value, XsdDateTimeFlags.Date));
+            return (DateTimeOffset)(new XsdDateTime(value, XsdDateAndTimeFlags.Date));
         }
 
         protected static DateTimeOffset StringToDateTimeOffset(string value)
         {
-            return (DateTimeOffset)(new XsdDateTime(value, XsdDateTimeFlags.DateTime));
+            return (DateTimeOffset)(new XsdDateTime(value, XsdDateAndTimeFlags.DateTime));
         }
 
         protected static DateTimeOffset StringToGDayOffset(string value)
         {
-            return (DateTimeOffset)(new XsdDateTime(value, XsdDateTimeFlags.GDay));
+            return (DateTimeOffset)(new XsdDateTime(value, XsdDateAndTimeFlags.GDay));
         }
 
         protected static DateTimeOffset StringToGMonthOffset(string value)
         {
-            return (DateTimeOffset)(new XsdDateTime(value, XsdDateTimeFlags.GMonth));
+            return (DateTimeOffset)(new XsdDateTime(value, XsdDateAndTimeFlags.GMonth));
         }
 
         protected static DateTimeOffset StringToGMonthDayOffset(string value)
         {
-            return (DateTimeOffset)(new XsdDateTime(value, XsdDateTimeFlags.GMonthDay));
+            return (DateTimeOffset)(new XsdDateTime(value, XsdDateAndTimeFlags.GMonthDay));
         }
 
         protected static DateTimeOffset StringToGYearOffset(string value)
         {
-            return (DateTimeOffset)(new XsdDateTime(value, XsdDateTimeFlags.GYear));
+            return (DateTimeOffset)(new XsdDateTime(value, XsdDateAndTimeFlags.GYear));
         }
 
         protected static DateTimeOffset StringToGYearMonthOffset(string value)
         {
-            return (DateTimeOffset)(new XsdDateTime(value, XsdDateTimeFlags.GYearMonth));
+            return (DateTimeOffset)(new XsdDateTime(value, XsdDateAndTimeFlags.GYearMonth));
         }
 
         protected static byte[] StringToHexBinary(string value)
@@ -643,12 +643,12 @@ namespace System.Xml.Schema
 
         protected static DateTime StringToTime(string value)
         {
-            return (DateTime)(new XsdDateTime(value, XsdDateTimeFlags.Time));
+            return (DateTime)(new XsdDateTime(value, XsdDateAndTimeFlags.Time));
         }
 
         protected static DateTimeOffset StringToTimeOffset(string value)
         {
-            return (DateTimeOffset)(new XsdDateTime(value, XsdDateTimeFlags.Time));
+            return (DateTimeOffset)(new XsdDateTime(value, XsdDateAndTimeFlags.Time));
         }
 
         protected static TimeSpan StringToYearMonthDuration(string value)
@@ -674,12 +674,12 @@ namespace System.Xml.Schema
 
         protected static string DateToString(DateTime value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.Date)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.Date)).ToString();
         }
 
         protected static string DateTimeToString(DateTime value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.DateTime)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.DateTime)).ToString();
         }
 
         protected static string DayTimeDurationToString(TimeSpan value)
@@ -694,62 +694,62 @@ namespace System.Xml.Schema
 
         protected static string GDayToString(DateTime value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.GDay)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.GDay)).ToString();
         }
 
         protected static string GMonthToString(DateTime value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.GMonth)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.GMonth)).ToString();
         }
 
         protected static string GMonthDayToString(DateTime value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.GMonthDay)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.GMonthDay)).ToString();
         }
 
         protected static string GYearToString(DateTime value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.GYear)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.GYear)).ToString();
         }
 
         protected static string GYearMonthToString(DateTime value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.GYearMonth)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.GYearMonth)).ToString();
         }
 
         protected static string DateOffsetToString(DateTimeOffset value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.Date)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.Date)).ToString();
         }
 
         protected static string DateTimeOffsetToString(DateTimeOffset value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.DateTime)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.DateTime)).ToString();
         }
 
         protected static string GDayOffsetToString(DateTimeOffset value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.GDay)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.GDay)).ToString();
         }
 
         protected static string GMonthOffsetToString(DateTimeOffset value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.GMonth)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.GMonth)).ToString();
         }
 
         protected static string GMonthDayOffsetToString(DateTimeOffset value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.GMonthDay)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.GMonthDay)).ToString();
         }
 
         protected static string GYearOffsetToString(DateTimeOffset value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.GYear)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.GYear)).ToString();
         }
 
         protected static string GYearMonthOffsetToString(DateTimeOffset value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.GYearMonth)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.GYearMonth)).ToString();
         }
 
         protected static string QNameToString(XmlQualifiedName qname, IXmlNamespaceResolver? nsResolver)
@@ -768,12 +768,12 @@ namespace System.Xml.Schema
 
         protected static string TimeToString(DateTime value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.Time)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.Time)).ToString();
         }
 
         protected static string TimeOffsetToString(DateTimeOffset value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.Time)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.Time)).ToString();
         }
 
         protected static string YearMonthDurationToString(TimeSpan value)
@@ -865,12 +865,12 @@ namespace System.Xml.Schema
 
         protected static DateTime UntypedAtomicToDateTime(string value)
         {
-            return (DateTime)(new XsdDateTime(value, XsdDateTimeFlags.AllXsd));
+            return (DateTime)(new XsdDateTime(value, XsdDateAndTimeFlags.AllXsd));
         }
 
         protected static DateTimeOffset UntypedAtomicToDateTimeOffset(string value)
         {
-            return (DateTimeOffset)(new XsdDateTime(value, XsdDateTimeFlags.AllXsd));
+            return (DateTimeOffset)(new XsdDateTime(value, XsdDateAndTimeFlags.AllXsd));
         }
     }
 

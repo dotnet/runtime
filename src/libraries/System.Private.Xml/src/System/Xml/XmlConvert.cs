@@ -723,7 +723,7 @@ namespace System.Xml
                     throw new ArgumentException(SR.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, nameof(dateTimeOption)));
             }
 
-            XsdDateTime xsdDateTime = new XsdDateTime(value, XsdDateTimeFlags.DateTime);
+            XsdDateTime xsdDateTime = new XsdDateTime(value, XsdDateAndTimeFlags.DateTime);
             return xsdDateTime.ToString();
         }
 
@@ -1210,7 +1210,7 @@ namespace System.Xml
 
         public static DateTime ToDateTime(string s, XmlDateTimeSerializationMode dateTimeOption)
         {
-            XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
+            XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateAndTimeFlags.AllXsd);
             DateTime dt = (DateTime)xsdDateTime;
 
             switch (dateTimeOption)
@@ -1240,7 +1240,7 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(s);
 
-            XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
+            XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateAndTimeFlags.AllXsd);
             DateTimeOffset dateTimeOffset = (DateTimeOffset)xsdDateTime;
             return dateTimeOffset;
         }
@@ -1785,7 +1785,7 @@ namespace System.Xml
                     throw new ArgumentException(SR.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, nameof(dateTimeOption)));
             }
 
-            XsdDateTime xsdDateTime = new XsdDateTime(value, XsdDateTimeFlags.DateTime);
+            XsdDateTime xsdDateTime = new XsdDateTime(value, XsdDateAndTimeFlags.DateTime);
             return xsdDateTime.TryFormat(destination, out charsWritten);
         }
 
