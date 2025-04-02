@@ -156,6 +156,8 @@ cmakeargs=''
 extraargs=''
 crossBuild=0
 portableBuild=1
+buildBootstrap=0
+bootstrap=0
 
 source $scriptroot/common/native/init-os-and-arch.sh
 
@@ -508,6 +510,21 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
+      -build-bootstrap)
+      buildBootstrap=1
+      shift 1
+      ;;
+
+      -use-bootstrap)
+      arguments="$arguments /p:UseBootstrap=true"
+      shift 1
+      ;;
+
+      -bootstrap)
+      bootstrap=1
+      shift 1
+      ;;
+
       -fsanitize)
       if [ -z ${2+x} ]; then
         echo "No value for -fsanitize is supplied. See help (--help) for supported values." 1>&2
@@ -556,6 +573,10 @@ if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError false"
 fi
 
+if [[ "$buildBootstrap" == "1" ]]; then
+  arguments="$arguments /p:Subset=bootstrap"
+fi
+
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
 arguments="$arguments -tl:false"
 
@@ -570,4 +591,10 @@ export DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 cmakeargs="${cmakeargs// /%20}"
 arguments="$arguments /p:TargetArchitecture=$arch /p:BuildArchitecture=$hostArch"
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
+
+if [[ "$bootstrap" == "1" ]]; then
+  "$scriptroot/common/build.sh" $arguments /p:Subset=bootstrap -bl:$scriptroot/artifacts/log/bootstrap.binlog
+  $arguments="$arguments /p:UseBootstrap=true"
+fi
+
 "$scriptroot/common/build.sh" $arguments
