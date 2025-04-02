@@ -54,7 +54,7 @@
     <_SdkToolsSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true' and '$(StageOneBuild)' != 'true'">true</_SdkToolsSupportedOS>
     <_SdkToolsSupportedArch Condition="'$(TargetArchitecture)' != 'armel'">true</_SdkToolsSupportedArch>
     <SdkToolsSupported Condition="'$(_SdkToolsSupportedOS)' == 'true' and '$(_SdkToolsSupportedArch)' == 'true'">true</SdkToolsSupported>
-  
+
     <_IsCommunityCrossArchitecture Condition="'$(CrossBuild)' == 'true' and ('$(TargetArchitecture)' == 'loongarch64' or '$(TargetArchitecture)' == 'riscv64')">true</_IsCommunityCrossArchitecture>
     <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and '$(TargetOS)' == '$(HostOS)' and '$(TargetsLinuxBionic)' != 'true' and '$(_IsCommunityCrossArchitecture)' != 'true'">true</UseNativeAotForComponents>
   </PropertyGroup>
@@ -150,9 +150,13 @@
     <DefaultPacksSubsets Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(DefaultPacksSubsets)+packs.installers</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(DotNetBuildSourceOnly)' != 'true'">$(DefaultPacksSubsets)+packs.tests</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(RuntimeFlavor)' != 'Mono' and '$(ForceBuildMobileManifests)' == 'true'">$(DefaultPacksSubsets)+mono.manifests</DefaultPacksSubsets>
-  
-    <BootstrapSubsets>host.native+libs.sfx+libs.oob</BootstrapSubsets>
+
+    <BootstrapSubsets>host.native+libs.sfx+libs.oob+libs.pretest</BootstrapSubsets>
+    <BootstrapSubsets Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(BootstrapSubsets)+clr.corelib</BootstrapSubsets>
+    <BootstrapSubsets Condition="'$(RuntimeFlavor)' == 'Mono'">$(BootstrapSubsets)+mono.corelib</BootstrapSubsets>
     <BootstrapSubsets Condition="'$(UseNativeAotForComponents)' == 'true'">$(BootstrapSubsets)+clr.nativeaotlibs+clr.nativeaotruntime</BootstrapSubsets>
+
+    <SwapNativeForIL Condition="$(_subset.Contains('+bootstrap+')) and '$(RuntimeFlavor)' == 'CoreCLR'">true</SwapNativeForIL>
   </PropertyGroup>
 
   <PropertyGroup>
