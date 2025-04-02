@@ -3297,7 +3297,8 @@ namespace System
         **Exceptions: FormatException if an abbreviated month name can not be found.
         ==============================================================================*/
 
-        private static bool MatchAbbreviatedMonthName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result)
+
+        private static bool MatchAbbreviatedMonthName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result, ParsingInfo parseInfo)
         {
             int maxMatchStrLen = 0;
             result = -1;
@@ -3358,7 +3359,7 @@ namespace System
                 }
 
                 // Search genitive form.
-                if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
+                if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0 && parseInfo.seenDaySpecifier)
                 {
                     int tempResult = str.MatchLongestWords(dtfi.InternalGetGenitiveMonthNames(abbreviated: true), ref maxMatchStrLen);
 
@@ -3984,6 +3985,12 @@ namespace System
             DateTimeFormatInfo dtfi,
             scoped ref DateTimeResult result)
         {
+            // Add a flag to track if we've seen day specifiers
+            if (!parseInfo.seenDaySpecifier && format.GetChar() == 'd')
+            {
+                parseInfo.seenDaySpecifier = true;
+            }
+
             int tokenLen;
             int tempYear = 0, tempMonth = 0, tempDay = 0, tempDayOfWeek = 0, tempHour = 0, tempMinute = 0, tempSecond = 0;
             double tempFraction = 0;
@@ -6130,12 +6137,14 @@ namespace System
         internal bool fAllowInnerWhite;
         internal bool fAllowTrailingWhite;
         internal bool fUseHebrewNumberParser;
+        internal bool seenDaySpecifier; // New flag to track if we've seen 'd' or 'dd' in the format
 
         public ParsingInfo(Calendar calendar)
         {
             this.calendar = calendar;
             dayOfWeek = -1;
             timeMark = DateTimeParse.TM.NotSet;
+            seenDaySpecifier = false; // Initialize the new flag
         }
     }
 
