@@ -43,7 +43,7 @@ if(NOT DISABLE_LIBS)
   endif()
 
   if(HOST_BROWSER)
-    add_library(mono-profiler-browser-static STATIC helper.c browser.c)
+    add_library(mono-profiler-browser-static STATIC browser.c)
     target_link_libraries(mono-profiler-browser-static PRIVATE monoapi)
     set_target_properties(mono-profiler-browser-static PROPERTIES OUTPUT_NAME mono-profiler-browser)
     install(TARGETS mono-profiler-browser-static LIBRARY)

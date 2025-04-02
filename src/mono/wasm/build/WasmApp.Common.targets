@@ -273,7 +273,7 @@
       <IsStub>false</IsStub>
       <ComponentName>libmono-profiler-aot</ComponentName>
     </_MonoRuntimeComponentLink>
-    <_MonoRuntimeComponentLink Include="libmono-profiler-browser.a" Condition="'$(WasmProfilers.Contains(&quot;browser&quot;))' == 'true'" >
+    <_MonoRuntimeComponentLink Include="libmono-profiler-browser.a" Condition="'$(WasmProfilers.Contains(&quot;browser&quot;))' == 'true' or '$(WasmPerfTracing)' == 'true'" >
       <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
       <IsStub>false</IsStub>
       <ComponentName>libmono-profiler-browser</ComponentName>
@@ -693,7 +693,7 @@
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnlyInterp</AOTMode>
       <_AOTCompilerCacheFile>$(_WasmIntermediateOutputPath)aot_compiler_cache.json</_AOTCompilerCacheFile>
       <_WasmProfilers>$(WasmProfilers)</_WasmProfilers>
-      <_WasmProfilers Condition="'$(WasmPerfInstrumentation)' != ''">$(_WasmProfilers);ds_sample:callspec=$(WasmPerfInstrumentation)</_WasmProfilers>
+      <_WasmProfilers Condition="'$(WasmPerfInstrumentation)' != ''">$(_WasmProfilers);browser:stacks,callspec=$(WasmPerfInstrumentation)</_WasmProfilers>
     </PropertyGroup>
 
     <!-- Dedup -->

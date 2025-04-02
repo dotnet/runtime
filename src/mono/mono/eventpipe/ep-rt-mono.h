@@ -70,6 +70,7 @@ extern void ep_rt_mono_init_providers_and_events (void);
 extern bool ep_rt_mono_providers_validate_all_disabled (void);
 extern bool ep_rt_mono_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event);
 extern void ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event);
+extern void ep_rt_mono_sample_profiler_session_enabled (void);
 extern void ep_rt_mono_sample_profiler_disabled (void);
 extern void ep_rt_mono_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
 extern int64_t ep_rt_mono_perf_counter_query (void);
@@ -645,6 +646,14 @@ void
 ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
 	ep_rt_mono_sample_profiler_enabled (sampling_event);
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_session_enabled (void)
+{
+	ep_rt_mono_sample_profiler_session_enabled ();
 }
 
 static

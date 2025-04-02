@@ -24,7 +24,6 @@ typedef void (*MonoProfilerInitializer) (const char *);
 
 #if defined(TARGET_BROWSER) && defined(MONO_CROSS_COMPILE)
 MONO_API void mono_profiler_init_browser (const char *desc);
-MONO_API void mono_profiler_init_ds_sample (const char *desc);
 #endif
 
 static gboolean
@@ -167,10 +166,6 @@ mono_profiler_load (const char *desc)
 	// in case of WASM we staticaly link in the browser.c profiler plugin
 	if(strcmp (mname, "browser") == 0) {
 		mono_profiler_init_browser (desc);
-		goto done;
-	}
-	if(strcmp (mname, "ds_sample") == 0) {
-		mono_profiler_init_ds_sample (desc);
 		goto done;
 	}
 #endif

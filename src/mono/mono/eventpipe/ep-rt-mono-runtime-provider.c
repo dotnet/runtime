@@ -1327,6 +1327,11 @@ ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 }
 
 void
+ep_rt_mono_sample_profiler_session_enabled (void)
+{
+}
+
+void
 ep_rt_mono_sample_profiler_disabled (void)
 {
 }
@@ -1408,7 +1413,6 @@ ep_write_empty_profile_event ()
 	ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 }
 
-
 static double desired_sample_interval_ms;
 
 static double last_sample_time;
@@ -1478,36 +1482,16 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 	sample_current_thread_stack_trace ();
 }
 
-char *monoeg_g_getenv(const char *variable);
-void mono_profhelper_parse_profiler_args (const char *desc, MonoCallSpec *callspec, double *desired_sample_interval_ms);
-static MonoCallSpec callspec;
+MonoProfilerHandle mono_profiler_init_browser_stacks ();
 
-static MonoProfilerCallInstrumentationFlags
-method_filter (MonoProfiler *prof, MonoMethod *method)
-{
-	if (callspec.len > 0 &&
-		!mono_callspec_eval (method, &callspec))
-		return MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
-
-	return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
-			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
-			MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
-}
 
 void
 ep_rt_mono_sampling_provider_component_init (void)
 {
-	char *args = monoeg_g_getenv ("DOTNET_WasmPerfInstrumentation");
-	memset (&callspec, 0, sizeof (MonoCallSpec));
-	mono_profhelper_parse_profiler_args (args, &callspec, &desired_sample_interval_ms);
-	free(args);
-
-
 	// in single-threaded mode, we install instrumentation callbacks on the mono profiler, instead of stop-the-world
-	_ep_rt_mono_sampling_profiler_provider = mono_profiler_create (NULL);
 	// this has negative performance impact even when the EP client is not connected!
 	// but it has to be enabled before managed code starts running, because the instrumentation needs to be in place
-	mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_mono_sampling_profiler_provider, method_filter);
+	_ep_rt_mono_sampling_profiler_provider = mono_profiler_init_browser_stacks ();
 }
 
 void
@@ -1536,7 +1520,11 @@ ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 	mono_profiler_set_method_samplepoint_callback (_ep_rt_mono_sampling_profiler_provider, method_samplepoint);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, method_enter);
 	mono_profiler_set_method_exception_leave_callback (_ep_rt_mono_sampling_profiler_provider, method_exc_leave);
+}
 
+void
+ep_rt_mono_sample_profiler_session_enabled (void)
+{
 #ifdef HOST_BROWSER
 	// in order to satisfy dotnet-gcdump, which is requesting one sample event, before the asking for GC dump
 	// see https://github.com/dotnet/diagnostics/blob/d2f05caf4a97d8dc2a75d910d5d0c1170e2ed640/src/Tools/dotnet-gcdump/DotNetHeapDump/EventPipeDotNetHeapDumper.cs#L135-L145
@@ -1552,6 +1540,8 @@ ep_rt_mono_sample_profiler_disabled (void)
 	mono_profiler_set_method_samplepoint_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
 	mono_profiler_set_method_exception_leave_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+	current_sampling_event = NULL;
+	current_sampling_thread = NULL;
 }
 
 #endif // PERFTRACING_DISABLE_THREADS
