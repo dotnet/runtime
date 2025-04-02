@@ -37,7 +37,9 @@ By default, the dependency manifest contains information about the application's
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <!-- 4.6.1 is a temporary workaround to prevent failure coming from System.Runtime.CompilerServices.Unsafe
+         wrong assembly version - https://github.com/dotnet/maintenance-packages/pull/221 -->
+    <PackageReference Include="System.Memory" Version="4.6.1" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
