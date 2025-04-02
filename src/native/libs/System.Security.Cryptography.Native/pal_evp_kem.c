@@ -3,57 +3,10 @@
 
 #include "openssl.h"
 #include "pal_evp_kem.h"
+#include "pal_evp_pkey.h"
 #include "pal_utilities.h"
 
 #include <assert.h>
-
-static int32_t GetKeyOctetStringParam(const EVP_PKEY* pKey,
-                                      const char* name,
-                                      uint8_t* destination,
-                                      int32_t destinationLength)
-{
-    assert(pKey);
-    assert(destination);
-    assert(name);
-
-#ifdef NEED_OPENSSL_3_0
-    if (API_EXISTS(EVP_PKEY_get_octet_string_param))
-    {
-        ERR_clear_error();
-
-        size_t destinationLengthT = Int32ToSizeT(destinationLength);
-        size_t outLength = 0;
-
-        int ret = EVP_PKEY_get_octet_string_param(pKey, name, NULL, 0, &outLength);
-
-        if (ret != 1)
-        {
-            return -1;
-        }
-
-        ret = EVP_PKEY_get_octet_string_param(pKey, name, (unsigned char*)destination, destinationLengthT, &outLength);
-
-        if (ret != 1)
-        {
-            return 0;
-        }
-
-        if (outLength != destinationLengthT)
-        {
-            return -2;
-        }
-
-        return 1;
-    }
-#else
-    (void)pKey;
-    (void)name;
-    (void)destination;
-    (void)destinationLength;
-#endif
-
-    return 0;
-}
 
 int32_t CryptoNative_EvpKemAvailable(const char* algorithm)
 {
@@ -74,6 +27,41 @@ int32_t CryptoNative_EvpKemAvailable(const char* algorithm)
     (void)algorithm;
 #endif
 
+    return 0;
+}
+
+int32_t CryptoNative_EvpKemGetPalId(const EVP_PKEY* pKey, int32_t* kemId)
+{
+#ifdef NEED_OPENSSL_3_0
+    assert(pKey && kemId);
+
+    if (API_EXISTS(EVP_PKEY_is_a))
+    {
+        ERR_clear_error();
+
+        if (EVP_PKEY_is_a(pKey, "ML-KEM-512"))
+        {
+            *kemId = PalKemId_MLKem512;
+        }
+        else if (EVP_PKEY_is_a(pKey, "ML-KEM-768"))
+        {
+            *kemId = PalKemId_MLKem768;
+        }
+        else if (EVP_PKEY_is_a(pKey, "ML-KEM-1024"))
+        {
+            *kemId = PalKemId_MLKem1024;
+        }
+        else
+        {
+            *kemId = PalKemId_Unknown;
+        }
+
+        return 1;
+    }
+#endif
+
+    (void)pKey;
+    *kemId = PalKemId_Unknown;
     return 0;
 }
 
@@ -149,6 +137,7 @@ done:
 }
 
 int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
+                                       void* extraHandle,
                                        uint8_t* ciphertext,
                                        int32_t ciphertextLength,
                                        uint8_t* sharedSecret,
@@ -165,7 +154,7 @@ int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
         ERR_clear_error();
 
         EVP_PKEY_CTX* ctx = NULL;
-        ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
+        ctx = EvpPKeyCtxCreateFromPKey(pKey, extraHandle);
         int32_t ret = 0;
 
         if (ctx == NULL)
@@ -205,6 +194,7 @@ done:
 #endif
 
     (void)pKey;
+    (void)extraHandle;
     (void)ciphertext;
     (void)ciphertextLength;
     (void)sharedSecret;
@@ -213,6 +203,7 @@ done:
 }
 
 int32_t CryptoNative_EvpKemDecapsulate(EVP_PKEY* pKey,
+                                       void* extraHandle,
                                        const uint8_t* ciphertext,
                                        int32_t ciphertextLength,
                                        uint8_t* sharedSecret,
@@ -229,7 +220,7 @@ int32_t CryptoNative_EvpKemDecapsulate(EVP_PKEY* pKey,
         ERR_clear_error();
 
         EVP_PKEY_CTX* ctx = NULL;
-        ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
+        ctx = EvpPKeyCtxCreateFromPKey(pKey, extraHandle);
         int32_t ret = 0;
 
         if (ctx == NULL)
@@ -269,6 +260,7 @@ done:
 #endif
 
     (void)pKey;
+    (void)extraHandle;
     (void)ciphertext;
     (void)ciphertextLength;
     (void)sharedSecret;
@@ -278,15 +270,15 @@ done:
 
 int32_t CryptoNative_EvpKemExportPrivateSeed(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
 {
-    return GetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_ML_KEM_SEED, destination, destinationLength);
+    return EvpPKeyGetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_ML_KEM_SEED, destination, destinationLength);
 }
 
 int32_t CryptoNative_EvpKemExportDecapsulationKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
 {
-    return GetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_PRIV_KEY, destination, destinationLength);
+    return EvpPKeyGetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_PRIV_KEY, destination, destinationLength);
 }
 
 int32_t CryptoNative_EvpKemExportEncapsulationKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
 {
-    return GetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_PUB_KEY, destination, destinationLength);
+    return EvpPKeyGetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_PUB_KEY, destination, destinationLength);
 }

@@ -66,7 +66,7 @@ internal sealed class FrameIterator
 
     public void UpdateContextFromFrame(IPlatformAgnosticContext context)
     {
-        switch (GetFrameType(CurrentFrame))
+        switch (GetFrameType(target, CurrentFrame.Identifier))
         {
             case FrameType.InlinedCallFrame:
                 Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(CurrentFrame.Address);
@@ -122,7 +122,7 @@ internal sealed class FrameIterator
 
     public bool IsInlineCallFrameWithActiveCall()
     {
-        if (GetFrameType(CurrentFrame) != FrameType.InlinedCallFrame)
+        if (GetFrameType(target, CurrentFrame.Identifier) != FrameType.InlinedCallFrame)
         {
             return false;
         }
@@ -130,22 +130,26 @@ internal sealed class FrameIterator
         return inlinedCallFrame.CallerReturnAddress != 0;
     }
 
-    private FrameType GetFrameType(Data.Frame frame)
+    public static string GetFrameName(Target target, TargetPointer frameIdentifier)
+    {
+        FrameType frameType = GetFrameType(target, frameIdentifier);
+        if (frameType == FrameType.Unknown)
+        {
+            return string.Empty;
+        }
+        return frameType.ToString();
+    }
+
+    private static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
     {
         foreach (FrameType frameType in Enum.GetValues<FrameType>())
         {
-            TargetPointer typeVptr;
-            try
+            if (target.TryReadGlobalPointer(frameType.ToString() + "Identifier", out TargetPointer? id))
             {
-                // not all Frames are in all builds, so we need to catch the exception
-                typeVptr = target.ReadGlobalPointer(frameType.ToString() + "Identifier");
-                if (frame.Identifier == typeVptr)
+                if (frameIdentifier == id)
                 {
                     return frameType;
                 }
-            }
-            catch (InvalidOperationException)
-            {
             }
         }
 

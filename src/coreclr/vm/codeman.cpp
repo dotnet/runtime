@@ -2604,7 +2604,7 @@ extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG     ControlPc
     PT_RUNTIME_FUNCTION prf = NULL;
 
     // We must preserve this so that GCStress=4 eh processing doesnt kill last error.
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
 #ifdef ENABLE_CONTRACTS
     // Some 64-bit OOM tests use the hosting interface to re-enter the CLR via
@@ -2626,8 +2626,6 @@ extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG     ControlPc
         prf = codeInfo.GetFunctionEntry();
 
     LOG((LF_EH, LL_INFO1000000, "GetRuntimeFunctionCallback(%p) returned %p\n", ControlPc, prf));
-
-    END_PRESERVE_LAST_ERROR;
 
     return  prf;
 }
@@ -4099,6 +4097,16 @@ BOOL InterpreterJitManager::GetBoundariesAndVars(
 
     PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
 
+    // Interpreter-TODO: This is a temporary workaround until the interpreter produces the debug info
+    if (pDebugInfo == NULL)
+    {
+        if (pcMap) *pcMap = 0;
+        if (ppMap) *ppMap = NULL;
+        if (pcVars) *pcVars = 0;
+        if (ppVars) *ppVars = NULL;
+        return TRUE;
+    }
+
     return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
 }
 
@@ -4323,6 +4331,28 @@ BOOL InterpreterJitManager::JitCodeToMethodInfo(
 
     return JitCodeToMethodInfoWorker<InterpreterCodeHeader>(pRangeSection, currentPC, ppMethodDesc, pCodeInfo);
 }
+
+TADDR InterpreterJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
+{
+    // Interpreter-TODO: Verify that this is correct
+    return pCodeInfo->GetCodeAddress() - pCodeInfo->GetRelOffset();
+}
+
+void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+        PRECONDITION(methodRegionInfo != NULL);
+    } CONTRACTL_END;
+
+    methodRegionInfo->hotStartAddress  = JitTokenToStartAddress(MethodToken);
+    methodRegionInfo->hotSize          = GetCodeManager()->GetFunctionSize(GetGCInfoToken(MethodToken));
+    methodRegionInfo->coldStartAddress = 0;
+    methodRegionInfo->coldSize         = 0;
+}
+
 #endif // FEATURE_INTERPRETER
 
 StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)
@@ -4779,7 +4809,7 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
 
     WRAPPER_NO_CONTRACT;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     if (pModuleBase)
         *pModuleBase = 0;
@@ -4792,7 +4822,7 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
 #if defined(DACCESS_COMPILE)
         GetUnmanagedStackWalkInfo(ControlPc, pModuleBase, pFuncEntry);
 #endif // DACCESS_COMPILE
-        goto Exit;
+        return;
     }
 
     if (pModuleBase)
@@ -4804,10 +4834,6 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
     {
         *pFuncEntry = (UINT_PTR)(PT_RUNTIME_FUNCTION)codeInfo.GetFunctionEntry();
     }
-
-Exit:
-    ;
-    END_PRESERVE_LAST_ERROR;
 }
 #endif // FEATURE_EH_FUNCLETS
 

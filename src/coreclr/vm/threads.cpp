@@ -5482,11 +5482,11 @@ Retry:
     {       // If count is off, try again, to account for multiple threads.
         if (iRetry < 4)
         {
-            //              printf("Retry %d.  cntReturn:%d, gReturn:%d\n", iRetry, cntReturn, g_TrapReturningThreads);
+            //              minipal_log_print_info("Retry %d.  cntReturn:%d, gReturn:%d\n", iRetry, cntReturn, g_TrapReturningThreads);
             ++iRetry;
             goto Retry;
         }
-        printf("cnt:%d, Un:%d, Back:%d, Dead:%d, cntReturn:%d, TrapReturn:%d, eeShutdown:%d, threadShutdown:%d\n",
+        minipal_log_print_info("cnt:%d, Un:%d, Back:%d, Dead:%d, cntReturn:%d, TrapReturn:%d, eeShutdown:%d, threadShutdown:%d\n",
                cnt,cntUnstart,cntBack,cntDead,cntReturn,g_TrapReturningThreads, g_fEEShutDown, Thread::IsAtProcessExit());
         LOG((LF_CORDB, LL_INFO1000,
              "SUSPEND: cnt:%d, Un:%d, Back:%d, Dead:%d, cntReturn:%d, TrapReturn:%d, eeShutdown:%d, threadShutdown:%d\n",
@@ -5496,7 +5496,7 @@ Retry:
     }
     if (iRetry > 0 && iRetry < 4)
     {
-        printf("%d retries to re-sync counted TrapReturn with global TrapReturn.\n", iRetry);
+        minipal_log_print_info("%d retries to re-sync counted TrapReturn with global TrapReturn.\n", iRetry);
     }
 #endif // g_TrapReturningThreads debug code.
 

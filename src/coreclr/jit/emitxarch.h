@@ -124,6 +124,7 @@ static bool IsAVXOnlyInstruction(instruction ins);
 static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsFMAInstruction(instruction ins);
 static bool IsPermuteVar2xInstruction(instruction ins);
+static bool IsKMOVInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);

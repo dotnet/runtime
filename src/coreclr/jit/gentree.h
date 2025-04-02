@@ -7374,8 +7374,6 @@ struct GenTreeIndexAddr : public GenTreeOp
 
     CORINFO_CLASS_HANDLE gtStructElemClass; // If the element type is a struct, this is the struct type.
 
-    BasicBlock* gtIndRngFailBB; // Basic block to jump to for array-index-out-of-range
-
     var_types gtElemType;   // The element type of the array.
     unsigned  gtElemSize;   // size of elements in the array
     unsigned  gtLenOffset;  // The offset from the array's base address to its length.
@@ -7391,7 +7389,6 @@ struct GenTreeIndexAddr : public GenTreeOp
                      bool                 boundsCheck)
         : GenTreeOp(GT_INDEX_ADDR, TYP_BYREF, arr, ind)
         , gtStructElemClass(structElemClass)
-        , gtIndRngFailBB(nullptr)
         , gtElemType(elemType)
         , gtElemSize(elemSize)
         , gtLenOffset(lenOffset)
@@ -7588,8 +7585,7 @@ public:
 //
 struct GenTreeBoundsChk : public GenTreeOp
 {
-    BasicBlock*     gtIndRngFailBB; // Basic block to jump to for index-out-of-range
-    SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
+    SpecialCodeKind gtThrowKind; // Kind of throw block to branch to on failure
 
     // Store some information about the array element type that was in the GT_INDEX_ADDR node before morphing.
     // Note that this information is also stored in the ARR_ADDR node of the morphed tree, but that can be hard
@@ -7598,7 +7594,6 @@ struct GenTreeBoundsChk : public GenTreeOp
 
     GenTreeBoundsChk(GenTree* index, GenTree* length, SpecialCodeKind kind)
         : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length)
-        , gtIndRngFailBB(nullptr)
         , gtThrowKind(kind)
         , gtInxType(TYP_UNKNOWN)
     {
