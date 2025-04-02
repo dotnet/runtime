@@ -316,15 +316,13 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [Fact]
         public unsafe void FloatingPointPseudoMinMaxTest()
         {
-            var v1 = Vector128.Create(1.0f, float.NaN, 3.0f, 4.0f);
-            var v2 = Vector128.Create(4.0f, 3.0f, float.NaN, 1.0f);
+            var a = Vector128.Create(1.0f, float.NaN, 3.0f, 4.0f);
+            var b = Vector128.Create(4.0f, 3.0f, float.NaN, 1.0f);
 
-            var pseudoMin = PackedSimd.PseudoMin(v1, v2);
-            var pseudoMax = PackedSimd.PseudoMax(v1, v2);
+            var pseudoMin = PackedSimd.PseudoMin(a, b);
+            var pseudoMax = PackedSimd.PseudoMax(a, b);
 
-            // PseudoMin returns the second operand if either is NaN
-            // PseudoMax returns the second operand if either is NaN
-            Assert.Equal(Vector128.Create(1.0f, 3.0f, float.NaN, 1.0f), pseudoMin);
+            Assert.Equal(Vector128.Create(1.0f, float.NaN, 3.0f, 1.0f), pseudoMin);
             Assert.Equal(Vector128.Create(4.0f, 3.0f, float.NaN, 4.0f), pseudoMax);
         }
 
