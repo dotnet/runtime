@@ -525,10 +525,15 @@ find_in_cache (int *insert_index)
 
 // Populate other_colors for a give color (other_colors represent the xrefs for this color)
 static void
-add_other_colors (ColorData *color, DynPtrArray *other_colors)
+add_other_colors (ColorData *color, DynPtrArray *other_colors, gboolean check_visited)
 {
 	for (int i = 0; i < dyn_array_ptr_size (other_colors); ++i) {
 		ColorData *points_to = (ColorData *)dyn_array_ptr_get (other_colors, i);
+		if (check_visited) {
+			if (points_to->visited)
+				continue;
+			points_to->visited = TRUE;
+		}
 		dyn_array_ptr_add (&color->other_colors, points_to);
 		// Inform targets
 		points_to->incoming_colors = MIN (points_to->incoming_colors + 1, INCOMING_COLORS_MAX);
@@ -552,7 +557,7 @@ new_color (gboolean has_bridges)
 	cd = alloc_color_data ();
 	cd->api_index = -1;
 
-	add_other_colors (cd, &color_merge_array);
+	add_other_colors (cd, &color_merge_array, FALSE);
 
 	/* if cacheSlot >= 0, it means we prepared a given slot to receive the new color */
 	if (cacheSlot >= 0)
@@ -791,12 +796,18 @@ create_scc (ScanData *data)
 			dyn_array_ptr_add (&color_data->bridges, other->obj);
 		}
 
-		// Maybe we should make sure we are not adding duplicates here. It is not really a problem
-		// since we will get rid of duplicates before submitting the SCCs to the client in gather_xrefs
-		if (color_data) {
-			add_other_colors (color_data, &other->xrefs);
-		} else {
-			g_assert (dyn_array_ptr_size (&other->xrefs) == 0);
+		if (dyn_array_ptr_size (&other->xrefs) > 0) {
+			g_assert (color_data != NULL);
+			g_assert (can_reduce_color == FALSE);
+			// We need to eliminate duplicates early otherwise the heaviness property
+			// can change in gather_xrefs and it breaks down the loop that reports the
+			// xrefs to the client.
+			//
+			// We reuse the visited flag to mark the objects that are already part of
+			// the color_data array. The array was created above with the new_color call
+			// and xrefs were populated from color_merge_array, which is already
+			// deduplicated and every entry is marked as visited.
+			add_other_colors (color_data, &other->xrefs, TRUE);
 		}
 		dyn_array_ptr_uninit (&other->xrefs);
 
@@ -806,6 +817,15 @@ create_scc (ScanData *data)
 		}
 	}
 	g_assert (found);
+
+	// Clear the visited flag on nodes that were added with add_other_colors in the loop above
+	if (!can_reduce_color) {
+		for (i = dyn_array_ptr_size (&color_merge_array); i < dyn_array_ptr_size (&color_data->other_colors); i++) {
+			ColorData *cd = (ColorData *)dyn_array_ptr_get (&color_data->other_colors, i);
+			g_assert (cd->visited);
+			cd->visited = FALSE;
+		}
+	}
 
 #if DUMP_GRAPH
     if (color_data) {
@@ -1116,6 +1136,7 @@ processing_build_callback_data (int generation)
 			gather_xrefs (cd);
 			reset_xrefs (cd);
 			dyn_array_ptr_set_all (&cd->other_colors, &color_merge_array);
+			g_assert (color_visible_to_client (cd));
 			xref_count += dyn_array_ptr_size (&cd->other_colors);
 		}
 	}
