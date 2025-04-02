@@ -1806,7 +1806,6 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 FALLTHROUGH;
             case GT_QMARK:
             case GT_ADD:
-            case GT_SUB:
             case GT_FIELD_ADDR:
             case GT_INDEX_ADDR:
             case GT_BOX:
@@ -1816,6 +1815,15 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 }
                 ++parentIndex;
                 keepChecking = true;
+                break;
+
+            case GT_SUB:
+                if (parent->TypeGet() != newType)
+                {
+                    parent->ChangeType(newType);
+                    ++parentIndex;
+                    keepChecking = true;
+                }
                 break;
 
             case GT_COLON:
