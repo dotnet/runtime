@@ -35,7 +35,7 @@ static double desired_sample_interval_ms;
 static MonoCallSpec callspec;
 static bool needs_balanced_events = true;
 
-MonoProfilerHandle mono_profiler_init_browser_stacks ();
+MonoProfilerHandle mono_profiler_init_browser_stacks (void);
 
 #ifdef HOST_BROWSER
 
@@ -332,7 +332,7 @@ parse_args (const char *desc)
 }
 
 MonoProfilerHandle 
-mono_profiler_init_browser_stacks ()
+mono_profiler_init_browser_stacks (void)
 {
 	memset (&callspec, 0, sizeof (MonoCallSpec));
 	needs_balanced_events = FALSE;

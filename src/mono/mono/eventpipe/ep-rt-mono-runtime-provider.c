@@ -1482,7 +1482,7 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 	sample_current_thread_stack_trace ();
 }
 
-MonoProfilerHandle mono_profiler_init_browser_stacks ();
+MonoProfilerHandle mono_profiler_init_browser_stacks (void);
 
 
 void

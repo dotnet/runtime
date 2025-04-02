@@ -692,8 +692,9 @@
       <!--<AOTMode Condition="'$(AOTMode)' == '' and '$(AOTProfilePath)' != ''">LLVMOnlyInterp</AOTMode>-->
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnlyInterp</AOTMode>
       <_AOTCompilerCacheFile>$(_WasmIntermediateOutputPath)aot_compiler_cache.json</_AOTCompilerCacheFile>
-      <_WasmProfilers>$(WasmProfilers)</_WasmProfilers>
-      <_WasmProfilers Condition="'$(WasmPerfInstrumentation)' != ''">$(_WasmProfilers);browser:stacks,callspec=$(WasmPerfInstrumentation)</_WasmProfilers>
+      <WasmPerfInstrumentation Condition="'$(WasmPerfInstrumentation)' == 'true'">all</WasmPerfInstrumentation>
+      <_WasmProfilers Condition="'$(WasmProfilers)' != ''">$(WasmProfilers)</_WasmProfilers>
+      <_WasmProfilers Condition="'$(WasmPerfInstrumentation)' != ''">browser:stacks,callspec=$(WasmPerfInstrumentation)</_WasmProfilers>
     </PropertyGroup>
 
     <!-- Dedup -->
