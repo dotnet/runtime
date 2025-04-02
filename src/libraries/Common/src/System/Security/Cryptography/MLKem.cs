@@ -997,6 +997,19 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
         /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///   are found, an exception is raised to prevent importing a key when the key is ambiguous.
+        ///   </para>
+        ///   <para>
+        ///   This method supports the following PEM labels:
+        ///   <list type="bullet">
+        ///     <item><description>PUBLIC KEY</description></item>
+        ///     <item><description>PRIVATE KEY</description></item>
+        ///   </list>
+        ///   </para>
+        /// </remarks>
         public static MLKem ImportFromPem(ReadOnlySpan<char> source)
         {
             return PemKeyHelpers.ImportFactoryPem<MLKem>(source, label =>

@@ -12,14 +12,14 @@ namespace System.Security.Cryptography
         internal delegate TAlg ImportFactoryKeyAction<TAlg>(ReadOnlySpan<byte> source);
         internal delegate ImportFactoryKeyAction<TAlg>? FindImportFactoryActionFunc<TAlg>(ReadOnlySpan<char> label);
 
-        internal static TAlg ImportFactoryPem<TAlg>(ReadOnlySpan<char> input, FindImportFactoryActionFunc<TAlg> callback) where TAlg : class
+        internal static TAlg ImportFactoryPem<TAlg>(ReadOnlySpan<char> source, FindImportFactoryActionFunc<TAlg> callback) where TAlg : class
         {
             ImportFactoryKeyAction<TAlg>? importAction = null;
             PemFields foundFields = default;
             ReadOnlySpan<char> foundSlice = default;
             bool containsEncryptedPem = false;
 
-            ReadOnlySpan<char> pem = input;
+            ReadOnlySpan<char> pem = source;
             while (PemEncoding.TryFind(pem, out PemFields fields))
             {
                 ReadOnlySpan<char> label = pem[fields.Label];
@@ -29,7 +29,7 @@ namespace System.Security.Cryptography
                 {
                     if (importAction is not null || containsEncryptedPem)
                     {
-                        throw new ArgumentException(SR.Argument_PemImport_AmbiguousPem, nameof(input));
+                        throw new ArgumentException(SR.Argument_PemImport_AmbiguousPem, nameof(source));
                     }
 
                     importAction = action;
@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
                 {
                     if (importAction != null || containsEncryptedPem)
                     {
-                        throw new ArgumentException(SR.Argument_PemImport_AmbiguousPem, nameof(input));
+                        throw new ArgumentException(SR.Argument_PemImport_AmbiguousPem, nameof(source));
                     }
 
                     containsEncryptedPem = true;
@@ -55,13 +55,13 @@ namespace System.Security.Cryptography
             // throw.
             if (containsEncryptedPem)
             {
-                throw new ArgumentException(SR.Argument_PemImport_EncryptedPem, nameof(input));
+                throw new ArgumentException(SR.Argument_PemImport_EncryptedPem, nameof(source));
             }
 
             // We went through the PEM and found nothing that could be handled.
             if (importAction is null)
             {
-                throw new ArgumentException(SR.Argument_PemImport_NoPemFound, nameof(input));
+                throw new ArgumentException(SR.Argument_PemImport_NoPemFound, nameof(source));
             }
 
             ReadOnlySpan<char> base64Contents = foundSlice[foundFields.Base64Data];
