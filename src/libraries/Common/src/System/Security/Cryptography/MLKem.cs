@@ -1012,6 +1012,8 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static MLKem ImportFromPem(ReadOnlySpan<char> source)
         {
+            ThrowIfNotSupported();
+
             return PemKeyHelpers.ImportFactoryPem<MLKem>(source, label =>
                 label switch
                 {
@@ -1019,6 +1021,16 @@ namespace System.Security.Cryptography
                     PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
                     _ => null,
                 });
+        }
+
+        /// <inheritdoc cref="ImportFromPem(ReadOnlySpan{char})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />
+        /// </exception>
+        public static MLKem ImportFromPem(string source)
+        {
+            ThrowIfNull(source);
+            return ImportFromPem(source.AsSpan());
         }
 
         /// <summary>
