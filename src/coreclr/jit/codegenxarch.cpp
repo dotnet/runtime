@@ -156,7 +156,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
     else
     {
-        // Ngen case - GS cookie value needs to be accessed through an indirection.
+        // AOT case - GS cookie value needs to be accessed through an indirection.
 
         pushedRegs = genPushRegs(regMaskGSCheck, &byrefPushedRegs, &norefPushedRegs);
 
@@ -190,17 +190,19 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // then RSP at this point is the same value as that stored in the PSPSym. So just copy RSP
         // instead of loading the PSPSym in this case, or if PSPSym is not used (NativeAOT ABI).
 
+        // x86 funclet ABI doesn't store the stack pointer in ECX. It's recovered from the context
+        // instead after executing the funclet.
+#ifndef TARGET_X86
         if ((compiler->lvaPSPSym == BAD_VAR_NUM) ||
             (!compiler->compLocallocUsed && (compiler->funCurrentFunc()->funKind == FUNC_ROOT)))
         {
-#ifndef UNIX_X86_ABI
             inst_Mov(TYP_I_IMPL, REG_ARG_0, REG_SPBASE, /* canSkip */ false);
-#endif // !UNIX_X86_ABI
         }
         else
         {
             GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
         }
+#endif // !TARGET_X86
 
         if (block->HasFlag(BBF_RETLESS_CALL))
         {
@@ -4678,7 +4680,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
 #endif // DEBUG
 
     GetEmitter()->emitInsBinary(cmpKind, emitTypeSize(bndsChkType), src1, src2);
-    genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind, bndsChk->gtIndRngFailBB);
+    genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind);
 }
 
 //---------------------------------------------------------------------
@@ -5414,7 +5416,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             GetEmitter()->emitIns_R_AR(INS_cmp, EA_4BYTE, indexReg, baseReg, static_cast<int>(node->gtLenOffset));
         }
 
-        genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
+        genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL);
     }
 
 #ifdef TARGET_64BIT
@@ -5685,6 +5687,13 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             // These intrinsics are "ins reg/mem, xmm"
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
                             attr = emitActualTypeSize(baseType);
+#if defined(TARGET_X86)
+                            if (varTypeIsLong(baseType))
+                            {
+                                ins  = INS_movq;
+                                attr = EA_8BYTE;
+                            }
+#endif // TARGET_X86
                             break;
                         }
 
@@ -9814,7 +9823,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // RCX = ProfilerMethHnd
     if (compiler->compProfilerMethHndIndirected)
     {
-        // Profiler hooks enabled during Ngen time.
+        // Profiler hooks enabled during AOT.
         // Profiler handle needs to be accessed through an indirection of a pointer.
         GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
@@ -9893,7 +9902,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // R14 = ProfilerMethHnd
     if (compiler->compProfilerMethHndIndirected)
     {
-        // Profiler hooks enabled during Ngen time.
+        // Profiler hooks enabled during AOT.
         // Profiler handle needs to be accessed through an indirection of a pointer.
         GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_PROFILER_ENTER_ARG_0,
                                    (ssize_t)compiler->compProfilerMethHnd);
@@ -9975,7 +9984,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     // RCX = ProfilerMethHnd
     if (compiler->compProfilerMethHndIndirected)
     {
-        // Profiler hooks enabled during Ngen time.
+        // Profiler hooks enabled during AOT.
         // Profiler handle needs to be accessed through an indirection of an address.
         GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
@@ -10905,7 +10914,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     assert(!regSet.rsRegsModified(RBM_FPBASE));
     assert(block != nullptr);
-    assert(block->HasFlag(BBF_FUNCLET_BEG));
+    assert(compiler->bbIsFuncletBeg(block));
     assert(isFramePointerUsed());
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
@@ -11711,7 +11720,7 @@ bool CodeGenInterface::genCodeIndirAddrCanBeEncodedAsZeroRelOffset(size_t addr)
 //
 bool CodeGenInterface::genCodeIndirAddrNeedsReloc(size_t addr)
 {
-    // If generating relocatable ngen code, then all code addr should go through relocation
+    // If generating relocatable AOT code, then all code addr should go through relocation
     if (compiler->opts.compReloc)
     {
         return true;
@@ -11744,7 +11753,7 @@ bool CodeGenInterface::genCodeIndirAddrNeedsReloc(size_t addr)
 //
 bool CodeGenInterface::genCodeAddrNeedsReloc(size_t addr)
 {
-    // If generating relocatable ngen code, then all code addr should go through relocation
+    // If generating relocatable AOT code, then all code addr should go through relocation
     if (compiler->opts.compReloc)
     {
         return true;

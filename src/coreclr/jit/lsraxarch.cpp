@@ -2045,39 +2045,47 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
-// SkipContainedCreateScalarUnsafe: Skips a contained CreateScalarUnsafe node
+// SkipContainedUnaryOp: Skips a contained non-memory or const node
 // and gets the underlying op1 instead
 //
 // Arguments:
 //    node - The node to handle
 //
 // Return Value:
-//    If node is a contained CreateScalarUnsafe, it's op1 is returned;
+//    If node is a contained non-memory or const unary op, its op1 is returned;
 //    otherwise node is returned unchanged.
-static GenTree* SkipContainedCreateScalarUnsafe(GenTree* node)
+static GenTree* SkipContainedUnaryOp(GenTree* node)
 {
-    if (!node->OperIsHWIntrinsic() || !node->isContained())
+    if (!node->isContained())
     {
         return node;
     }
 
-    GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
-    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-
-    switch (intrinsicId)
+    if (node->OperIsHWIntrinsic())
     {
-        case NI_Vector128_CreateScalarUnsafe:
-        case NI_Vector256_CreateScalarUnsafe:
-        case NI_Vector512_CreateScalarUnsafe:
-        {
-            return hwintrinsic->Op(1);
-        }
+        GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
 
-        default:
+        switch (intrinsicId)
         {
-            return node;
+            case NI_Vector128_CreateScalar:
+            case NI_Vector256_CreateScalar:
+            case NI_Vector512_CreateScalar:
+            case NI_Vector128_CreateScalarUnsafe:
+            case NI_Vector256_CreateScalarUnsafe:
+            case NI_Vector512_CreateScalarUnsafe:
+            {
+                return hwintrinsic->Op(1);
+            }
+
+            default:
+            {
+                break;
+            }
         }
     }
+
+    return node;
 }
 
 //------------------------------------------------------------------------
@@ -2134,8 +2142,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // A contained CreateScalarUnsafe is special in that we're not containing it to load from
-        // memory and it isn't a constant. Instead, its essentially a "transparent" node we're ignoring
+        // In a few cases, we contain an operand that isn't a load from memory or a constant. Instead,
+        // it is essentially a "transparent" node we're ignoring or handling specially in codegen
         // to simplify the overall IR handling. As such, we need to "skip" such nodes when present and
         // get the underlying op1 so that delayFreeUse and other preferencing remains correct.
 
@@ -2144,37 +2152,37 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         GenTree* op3    = nullptr;
         GenTree* op4    = nullptr;
         GenTree* op5    = nullptr;
-        GenTree* lastOp = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(numArgs));
+        GenTree* lastOp = SkipContainedUnaryOp(intrinsicTree->Op(numArgs));
 
         switch (numArgs)
         {
             case 5:
             {
-                op5 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(5));
+                op5 = SkipContainedUnaryOp(intrinsicTree->Op(5));
                 FALLTHROUGH;
             }
 
             case 4:
             {
-                op4 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(4));
+                op4 = SkipContainedUnaryOp(intrinsicTree->Op(4));
                 FALLTHROUGH;
             }
 
             case 3:
             {
-                op3 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(3));
+                op3 = SkipContainedUnaryOp(intrinsicTree->Op(3));
                 FALLTHROUGH;
             }
 
             case 2:
             {
-                op2 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(2));
+                op2 = SkipContainedUnaryOp(intrinsicTree->Op(2));
                 FALLTHROUGH;
             }
 
             case 1:
             {
-                op1 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(1));
+                op1 = SkipContainedUnaryOp(intrinsicTree->Op(1));
                 break;
             }
 
@@ -2223,11 +2231,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // must be handled within the case.
         switch (intrinsicId)
         {
+            case NI_Vector128_CreateScalar:
+            case NI_Vector256_CreateScalar:
+            case NI_Vector512_CreateScalar:
             case NI_Vector128_CreateScalarUnsafe:
-            case NI_Vector128_ToScalar:
             case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector256_ToScalar:
             case NI_Vector512_CreateScalarUnsafe:
+            case NI_Vector128_ToScalar:
+            case NI_Vector256_ToScalar:
             case NI_Vector512_ToScalar:
             {
                 assert(numArgs == 1);
@@ -2241,17 +2252,38 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
                     else
                     {
-                        // We will either be in memory and need to be moved
-                        // into a register of the appropriate size or we
-                        // are already in an XMM/YMM/ZMM register and can stay
-                        // where we are.
+                        // CreateScalarUnsafe and ToScalar are essentially no-ops for floating point types and can reuse
+                        // the op1 register. CreateScalar needs to clear the upper elements, so if we have a float and
+                        // can't use insertps to zero the upper elements in-place, we'll need a different target reg.
 
-                        tgtPrefUse = BuildUse(op1);
+                        RefPosition* op1Use = BuildUse(op1);
                         srcCount += 1;
+
+                        if ((baseType == TYP_FLOAT) && HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) &&
+                            !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                        {
+                            setDelayFree(op1Use);
+                        }
+                        else
+                        {
+                            tgtPrefUse = op1Use;
+                        }
                     }
 
                     buildUses = false;
                 }
+#if TARGET_X86
+                else if (varTypeIsByte(baseType) && HWIntrinsicInfo::IsVectorToScalar(intrinsicId))
+                {
+                    dstCandidates = allByteRegs();
+                }
+                else if (varTypeIsLong(baseType) && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    // For SSE2 fallbacks, we will need a temp register to insert the upper half of a long
+                    buildInternalFloatRegisterDefForNode(intrinsicTree);
+                    setInternalRegsDelayFree = true;
+                }
+#endif // TARGET_X86
                 break;
             }
 

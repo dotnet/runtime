@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "interpexec.h"
 #include <math.h>
 
 #ifdef FEATURE_INTERPRETER
+
+#include "interpexec.h"
 
 thread_local InterpThreadContext *t_pThreadContext = NULL;
 
@@ -31,7 +32,7 @@ InterpThreadContext* InterpGetThreadContext()
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 
-void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext)
+void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext)
 {
     const int32_t *ip;
     int8_t *stack;
@@ -46,6 +47,13 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
 MAIN_LOOP:
     while (true)
     {
+        // Interpreter-TODO: This is only needed to enable SOS see the exact location in the interpreted method.
+        // Neither the GC nor the managed debugger needs that as they walk the stack when the runtime is suspended
+        // and we can save the IP to the frame at the suspension time.
+        // It will be useful for testing e.g. the debug info at various locations in the current method, so let's
+        // keep it for such purposes until we don't need it anymore.
+        pFrame->ip = (int32_t*)ip;
+
         switch (*ip)
         {
             case INTOP_LDC_I4:
@@ -698,6 +706,14 @@ MAIN_LOOP:
                     MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_DESC_TAG);
                     PCODE code = pMD->GetNativeCode();
                     if (!code) {
+                        // This is an optimization to ensure that the stack walk will not have to search
+                        // for the topmost frame in the current InterpExecMethod. It is not required
+                        // for correctness, as the stack walk will find the topmost frame anyway. But it
+                        // would need to seek through the frames to find it.
+                        // An alternative approach would be to update the topmost frame during stack walk
+                        // to make the probability that the next stack walk will need to search only a
+                        // small subset of frames high.
+                        pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                         GCX_PREEMP();
                         pMD->PrepareInitialCode(CallerGCMode::Coop);
                         code = pMD->GetNativeCode();
@@ -750,6 +766,7 @@ EXIT_FRAME:
     if (pFrame->pParent && pFrame->pParent->ip)
     {
         // Return to the main loop after a non-recursive interpreter call
+        pFrame->ip = NULL;
         pFrame = pFrame->pParent;
         ip = pFrame->ip;
         stack = pFrame->pStack;

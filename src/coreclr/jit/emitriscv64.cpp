@@ -3310,31 +3310,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (vt == TYP_REF || vt == TYP_BYREF)
                 emitGCvarDeadUpd(adr + ofs, dst2 DEBUG_ARG(varNum));
         }
-        // if (emitInsWritesToLclVarStackLocPair(id))
-        //{
-        //    unsigned ofs2 = ofs + TARGET_POINTER_SIZE;
-        //    if (id->idGCrefReg2() != GCT_NONE)
-        //    {
-        //        emitGCvarLiveUpd(adr + ofs2, varNum, id->idGCrefReg2(), *dp);
-        //    }
-        //    else
-        //    {
-        //        // If the type of the local is a gc ref type, update the liveness.
-        //        var_types vt;
-        //        if (varNum >= 0)
-        //        {
-        //            // "Regular" (non-spill-temp) local.
-        //            vt = var_types(emitComp->lvaTable[varNum].lvType);
-        //        }
-        //        else
-        //        {
-        //            TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
-        //            vt              = tmpDsc->tdTempType();
-        //        }
-        //        if (vt == TYP_REF || vt == TYP_BYREF)
-        //            emitGCvarDeadUpd(adr + ofs2, *dp);
-        //    }
-        //}
     }
 
 #ifdef DEBUG
@@ -5219,11 +5194,10 @@ unsigned emitter::get_curTotalCodeSize()
 //    are NOT accurate and just a function feature.
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    insExecutionCharacteristics result = {
-        .insThroughput       = PERFSCORE_LATENCY_1C,
-        .insLatency          = PERFSCORE_THROUGHPUT_1C,
-        .insMemoryAccessKind = PERFSCORE_MEMORY_NONE,
-    };
+    insExecutionCharacteristics result;
+    result.insThroughput       = PERFSCORE_LATENCY_1C;
+    result.insLatency          = PERFSCORE_THROUGHPUT_1C;
+    result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
 
     unsigned codeSize = id->idCodeSize();
     assert((codeSize >= 4) && (codeSize % sizeof(code_t) == 0));

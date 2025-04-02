@@ -2494,7 +2494,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
-VOID DECLSPEC_NORETURN PropagateExceptionThroughNativeFrames(Object *exceptionObj)
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj)
 {
     CONTRACTL
     {
@@ -4756,8 +4756,6 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 #pragma code_seg(pop, uef)
 #endif // !TARGET_UNIX
 
-void PrintStackTraceToStdout();
-
 static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
@@ -4788,17 +4786,17 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
             wcsncpy_s(buf, buf_size, SZ_UNHANDLED_EXCEPTION, SZ_UNHANDLED_EXCEPTION_CHARLEN);
         }
 
-        PrintToStdErrW(buf);
-        PrintToStdErrA(" ");
+        SString message(buf);
+        SString exceptionMessage = GetExceptionMessageWrapper(pThread, throwable);
 
-        SString message = GetExceptionMessageWrapper(pThread, throwable);
-
-        if (!message.IsEmpty())
+        message.Append(W(" "));
+        if (!exceptionMessage.IsEmpty())
         {
-            PrintToStdErrW(message);
+            message.Append(exceptionMessage);
         }
+        message.Append(W("\n"));
 
-        PrintToStdErrA("\n");
+        PrintToStdErrW(message.GetUnicode());
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
         // Send the log to Windows Event Log
@@ -4810,9 +4808,9 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
 
                 if (IsException(throwable->GetMethodTable()))
                 {
-                    if (!message.IsEmpty())
+                    if (!exceptionMessage.IsEmpty())
                     {
-                        reporter.AddDescription(message);
+                        reporter.AddDescription(exceptionMessage);
                     }
                     reporter.Report();
                 }
@@ -5005,10 +5003,13 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
             EX_CATCH
             {
                 LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
-                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf, buf_size);
-                PrintToStdErrA("\n   ");
+
+                _ASSERTE(buf_size > 6);
+                wcscpy_s(buf, buf_size, W("\n   "));
+                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
+                wcscat_s(buf, buf_size, W("\n"));
+
                 PrintToStdErrW(buf);
-                PrintToStdErrA("\n");
             }
             EX_END_CATCH(SwallowAllExceptions);
         }
@@ -5873,9 +5874,10 @@ bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
         {
             // GCStress processing can disturb last error, so preserve it.
             BOOL res;
-            BEGIN_PRESERVE_LAST_ERROR;
-            res = OnGcCoverageInterrupt(pContext);
-            END_PRESERVE_LAST_ERROR;
+            {
+                PreserveLastErrorHolder preserveLastError;
+                res = OnGcCoverageInterrupt(pContext);
+            }
             if (res)
             {
                 return true;
@@ -6243,7 +6245,7 @@ static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
+void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -6276,34 +6278,6 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     CALL_MANAGED_METHOD_NORET(args)
 
     GCPROTECT_END();
-}
-
-void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Ok.  Now we have a brand new fault in jitted code.
-    FaultingExceptionFrame fef;
-    FaultingExceptionFrame *frame = &fef;
-    frame->InitAndLink(pContext);
-
-    HandleManagedFaultFilterParam param;
-    param.fFilterExecuted = FALSE;
-    param.pOriginalExceptionRecord = pExceptionRecord;
-
-    PAL_TRY(HandleManagedFaultFilterParam *, pParam, &param)
-    {
-        GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-
-        EXCEPTION_RECORD *pRecord = pParam->pOriginalExceptionRecord;
-
-        RaiseException(pRecord->ExceptionCode, 0,
-            pRecord->NumberParameters, pRecord->ExceptionInformation);
-    }
-    PAL_EXCEPT_FILTER(HandleManagedFaultFilter)
-    {
-    }
-    PAL_ENDTRY
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -6540,10 +6514,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         // Not an Out-of-memory situation, so no need for a forbid fault region here
         //
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled)
-        {
-            EEPolicy::HandleStackOverflow();
-        }
+        EEPolicy::HandleStackOverflow();
 #endif // FEATURE_EH_FUNCLETS
         return VEH_CONTINUE_SEARCH;
     }
@@ -6779,15 +6750,15 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                 // the subsequent logic here sees a managed fault.
                 //
                 // On 64-bit, some additional work is required..
-#ifdef FEATURE_EH_FUNCLETS
                 pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
+#ifdef FEATURE_EH_FUNCLETS
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
 #endif // defined(FEATURE_EH_FUNCLETS)
             }
             else if (AdjustContextForVirtualStub(pExceptionRecord, pContext))
             {
-#ifdef FEATURE_EH_FUNCLETS
                 pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
+#ifdef FEATURE_EH_FUNCLETS
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
 #endif
             }
@@ -7118,9 +7089,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING
     //
 
-#ifdef FEATURE_EH_FUNCLETS
     pExceptionInfo->ContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
-#endif // FEATURE_EH_FUNCLETS
 
     // WARNING
     //
@@ -7240,14 +7209,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 //
                 // HandleManagedFault may never return, so we cannot use a forbid fault region around it.
                 //
-                if (g_isNewExceptionHandlingEnabled)
-                {
-                    HandleManagedFaultNew(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
-                else
-                {
-                    HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
+                HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
 #endif // FEATURE_EH_FUNCLETS
@@ -7457,7 +7419,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     Exception::Delete(pException);
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && !nativeRethrow)
+    if (!nativeRethrow)
     {
         Thread *pThread = GetThread();
         ThreadExceptionState* pExState = pThread->GetExceptionState();
@@ -11547,6 +11509,30 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 }
 
 #ifndef DACCESS_COMPILE
+#ifdef TARGET_X86
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.Ecx = pTransitionBlock->m_argumentRegisters.ECX;
+    m_Context.Edx = pTransitionBlock->m_argumentRegisters.EDX;
+    m_ContextPointers.Ecx = &m_Context.Ecx;
+    m_ContextPointers.Edx = &m_Context.Edx;
+
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg; \
+    m_ContextPointers.reg = &m_Context.reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    m_Context.Esp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Eip = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#endif // TARGET_X86
+
 //
 // Init a new frame
 //
@@ -11554,6 +11540,9 @@ void SoftwareExceptionFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
 
+    // On x86 we initialize the context state from transition block in
+    // UpdateContextFromTransitionBlock method.
+#ifndef TARGET_X86
 #define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -11576,6 +11565,7 @@ void SoftwareExceptionFrame::Init()
     _ASSERTE(ExecutionManager::IsManagedCode(::GetIP(&m_Context)));
 
     m_ReturnAddress = ::GetIP(&m_Context);
+#endif // !TARGET_X86
 }
 
 //

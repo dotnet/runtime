@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Composition\Hosting\Core\CompositionContractTests.cs" />
     <Compile Include="System\Composition\Hosting\CompositionFailedExceptionTests.cs" />
@@ -10,10 +12,9 @@
     <Compile Include="System\Composition\ExportFactoryTests.cs" />
     <Compile Include="System\Composition\ExportTests.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\src\System.Composition.Runtime.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
-  </ItemGroup>
+
 </Project>

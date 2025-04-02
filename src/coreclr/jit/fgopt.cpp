@@ -814,8 +814,7 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
     // If target has multiple incoming edges, we can still compact if block is empty.
     // However, not if it is the beginning of a handler.
     //
-    if (target->countOfInEdges() != 1 &&
-        (!block->isEmpty() || block->HasFlag(BBF_FUNCLET_BEG) || (block->bbCatchTyp != BBCT_NONE)))
+    if (target->countOfInEdges() != 1 && (!block->isEmpty() || (block->bbCatchTyp != BBCT_NONE)))
     {
         return false;
     }
@@ -2526,7 +2525,6 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         return false;
     }
 
-    // We might be able to compact blocks that always jump to the next block.
     if (bJump->JumpsToNext())
     {
         return false;
@@ -2537,7 +2535,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         return false;
     }
 
-    BasicBlock* bDest = bJump->GetTarget();
+    BasicBlock* const bDest = bJump->GetTarget();
 
     if (!bDest->KindIs(BBJ_COND))
     {
@@ -2556,12 +2554,11 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         return false;
     }
 
-    // do not jump into another try region
-    BasicBlock* bDestNormalTarget = bDest->GetFalseTarget();
-    if (bDestNormalTarget->hasTryIndex() && !BasicBlock::sameTryRegion(bJump, bDestNormalTarget))
-    {
-        return false;
-    }
+    // We should have already compacted 'bDest' into 'bJump', if it is possible.
+    assert(!fgCanCompactBlock(bJump));
+
+    BasicBlock* const trueTarget  = bDest->GetTrueTarget();
+    BasicBlock* const falseTarget = bDest->GetFalseTarget();
 
     // This function is only called in the frontend.
     assert(!bJump->IsLIR());
@@ -2587,10 +2584,10 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     bool     haveProfileWeights = false;
     weight_t weightJump         = bJump->bbWeight;
     weight_t weightDest         = bDest->bbWeight;
-    weight_t weightNext         = bJump->Next()->bbWeight;
+    weight_t weightNext         = trueTarget->bbWeight;
     bool     rareJump           = bJump->isRunRarely();
     bool     rareDest           = bDest->isRunRarely();
-    bool     rareNext           = bJump->Next()->isRunRarely();
+    bool     rareNext           = trueTarget->isRunRarely();
 
     // If we have profile data then we calculate the number of time
     // the loop will iterate into loopIterations
@@ -2601,7 +2598,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         //
         if (bJump->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
             bDest->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
-            bJump->Next()->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
+            trueTarget->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
         {
             haveProfileWeights = true;
 
@@ -2639,12 +2636,10 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 
     //
-    // We we are ngen-ing:
-    // If the uncondional branch is a rarely run block then
-    // we are willing to have more code expansion since we
-    // won't be running code from this page
+    // If we are AOT compiling: if the unconditional branch is a rarely run block then we are willing to have
+    // more code expansion since we won't be running code from this page.
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    if (IsAot())
     {
         if (rareJump)
         {
@@ -2715,7 +2710,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     noway_assert(condTree->gtOper == GT_JTRUE);
 
     // Set condTree to the operand to the GT_JTRUE.
-    condTree = condTree->AsOp()->gtOp1;
+    condTree = condTree->gtGetOp1();
 
     // This condTree has to be a RelOp comparison.
     if (condTree->OperIsCompare() == false)
@@ -2767,12 +2762,11 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // because the comparison in 'bJump' is flipped.
     // Similarly, we will derive the true edge's likelihood from 'destFalseEdge'.
     //
-    BasicBlock* const bDestFalseTarget = bJump->Next();
-    FlowEdge* const   falseEdge        = fgAddRefPred(bDestFalseTarget, bJump, destTrueEdge);
+    FlowEdge* const falseEdge = fgAddRefPred(trueTarget, bJump, destTrueEdge);
 
     // bJump now jumps to bDest's normal jump target
     //
-    fgRedirectTargetEdge(bJump, bDestNormalTarget);
+    fgRedirectTargetEdge(bJump, falseTarget);
     bJump->GetTargetEdge()->setLikelihood(destFalseEdge->getLikelihood());
 
     bJump->SetCond(bJump->GetTargetEdge(), falseEdge);
@@ -2787,10 +2781,10 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
         // Propagate bJump's weight into its new successors
         //
-        bDestNormalTarget->setBBProfileWeight(bDestNormalTarget->computeIncomingWeight());
-        bDestFalseTarget->setBBProfileWeight(bDestFalseTarget->computeIncomingWeight());
+        trueTarget->setBBProfileWeight(trueTarget->computeIncomingWeight());
+        falseTarget->setBBProfileWeight(falseTarget->computeIncomingWeight());
 
-        if ((bDestNormalTarget->NumSucc() > 0) || (bDestFalseTarget->NumSucc() > 0))
+        if ((trueTarget->NumSucc() > 0) || (falseTarget->NumSucc() > 0))
         {
             JITDUMP("fgOptimizeBranch: New flow out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
                     bJump->bbNum, fgPgoConsistent ? "is now" : "was already");
@@ -2814,6 +2808,14 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         printf("\n");
     }
 #endif // DEBUG
+
+    // Removing flow from 'bJump' into 'bDest' may have made it possible to compact the latter.
+    BasicBlock* const uniquePred = bDest->GetUniquePred(this);
+    if ((uniquePred != nullptr) && fgCanCompactBlock(uniquePred))
+    {
+        JITDUMP(FMT_BB " can now be compacted into its remaining predecessor.\n", bDest->bbNum);
+        fgCompactBlock(uniquePred);
+    }
 
     return true;
 }
@@ -4255,6 +4257,64 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 }
 
 //-------------------------------------------------------------
+// fgDedupReturnComparison: Expands BBJ_RETURN <relop> into BBJ_COND <relop> with two
+//   BBJ_RETURN blocks ("return true" and "return false"). Such transformation
+//   helps other phases to focus only on BBJ_COND <relop> (normalization).
+//
+// Arguments:
+//    block - the BBJ_RETURN block to convert into BBJ_COND <relop>
+//
+// Returns:
+//    true if the block was converted into BBJ_COND <relop>
+//
+bool Compiler::fgDedupReturnComparison(BasicBlock* block)
+{
+#ifdef JIT32_GCENCODER
+    // JIT32_GCENCODER has a hard limit on the number of epilogues, let's not add more.
+    return false;
+#endif
+
+    assert(block->KindIs(BBJ_RETURN));
+
+    // We're only interested in boolean returns
+    if ((info.compRetType != TYP_UBYTE) || (block == genReturnBB) || (block->lastStmt() == nullptr))
+    {
+        return false;
+    }
+
+    GenTree* rootNode = block->lastStmt()->GetRootNode();
+    if (!rootNode->OperIs(GT_RETURN) || !rootNode->gtGetOp1()->OperIsCmpCompare())
+    {
+        return false;
+    }
+
+    GenTree* cmp = rootNode->gtGetOp1();
+    cmp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+    rootNode->ChangeOper(GT_JTRUE);
+    rootNode->ChangeType(TYP_VOID);
+
+    GenTree* retTrue  = gtNewOperNode(GT_RETURN, TYP_INT, gtNewTrue());
+    GenTree* retFalse = gtNewOperNode(GT_RETURN, TYP_INT, gtNewFalse());
+
+    // Create RETURN 1/0 blocks. We expect fgHeadTailMerge to handle them if there are similar returns.
+    DebugInfo   dbgInfo    = block->lastStmt()->GetDebugInfo();
+    BasicBlock* retTrueBb  = fgNewBBFromTreeAfter(BBJ_RETURN, block, retTrue, dbgInfo);
+    BasicBlock* retFalseBb = fgNewBBFromTreeAfter(BBJ_RETURN, block, retFalse, dbgInfo);
+
+    FlowEdge* trueEdge  = fgAddRefPred(retTrueBb, block);
+    FlowEdge* falseEdge = fgAddRefPred(retFalseBb, block);
+    block->SetCond(trueEdge, falseEdge);
+
+    // We might want to instrument 'return <cond>' too in the future. For now apply 50%/50%.
+    trueEdge->setLikelihood(0.5);
+    falseEdge->setLikelihood(0.5);
+    retTrueBb->inheritWeightPercentage(block, 50);
+    retFalseBb->inheritWeightPercentage(block, 50);
+
+    return true;
+}
+
+//-------------------------------------------------------------
 // fgUpdateFlowGraph: Removes any empty blocks, unreachable blocks, and redundant jumps.
 // Most of those appear after dead store removal and folding of conditionals.
 // Also, compact consecutive basic blocks.
@@ -4348,6 +4408,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
             bNext      = block->Next();
             bDest      = nullptr;
             bFalseDest = nullptr;
+
+            // Expand BBJ_RETURN <relop> into BBJ_COND <relop> when doTailDuplication is enabled
+            if (doTailDuplication && block->KindIs(BBJ_RETURN) && fgDedupReturnComparison(block))
+            {
+                assert(block->KindIs(BBJ_COND));
+                change   = true;
+                modified = true;
+                bNext    = block->Next();
+            }
 
             if (block->KindIs(BBJ_ALWAYS))
             {
