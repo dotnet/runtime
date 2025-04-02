@@ -3297,7 +3297,6 @@ namespace System
         **Exceptions: FormatException if an abbreviated month name can not be found.
         ==============================================================================*/
 
-
         private static bool MatchAbbreviatedMonthName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result, ParsingInfo parseInfo)
         {
             int maxMatchStrLen = 0;
@@ -3990,7 +3989,6 @@ namespace System
             {
                 parseInfo.seenDaySpecifier = true;
             }
-
             int tokenLen;
             int tempYear = 0, tempMonth = 0, tempDay = 0, tempDayOfWeek = 0, tempHour = 0, tempMinute = 0, tempSecond = 0;
             double tempFraction = 0;
