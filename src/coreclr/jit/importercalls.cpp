@@ -8040,7 +8040,7 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_PRIMITIVE_TrailingZeroCount:
         case NI_PRIMITIVE_PopCount:
         {
-            assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END) ||
+            assert(((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END)) ||
                    (intrinsicName == NI_PRIMITIVE_LeadingZeroCount) ||
                    (intrinsicName == NI_PRIMITIVE_TrailingZeroCount) || (intrinsicName == NI_PRIMITIVE_PopCount));
             return true;
