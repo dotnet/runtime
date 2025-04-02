@@ -89,5 +89,11 @@ namespace System.Security.Cryptography
         {
             Interop.Crypto.EvpKemExportEncapsulationKey(_key, destination);
         }
+
+        /// <inheritdoc />
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

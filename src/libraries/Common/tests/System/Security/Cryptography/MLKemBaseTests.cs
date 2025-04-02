@@ -459,6 +459,32 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(sharedSecret.Slice(0, sharedSecretWritten), decapsulated);
         }
 
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public void TryExportPkcs8PrivateKey_Roundtrip(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = GenerateKey(algorithm);
+            byte[] pkcs8 = DoTryUntilDone(kem.TryExportPkcs8PrivateKey);
+            using MLKem imported = MLKem.ImportPkcs8PrivateKey(pkcs8);
+            Assert.Equal(algorithm, imported.Algorithm);
+        }
+
+        private delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
+
+        private static byte[] DoTryUntilDone(TryExportFunc func)
+        {
+            byte[] buffer = new byte[512];
+            int written;
+
+            while (!func(buffer, out written))
+            {
+                Array.Resize(ref buffer, buffer.Length * 2);
+            }
+
+            return buffer[0..written];
+        }
+
+
         private static void Tamper(Span<byte> buffer)
         {
             buffer[buffer.Length - 1] ^= 0xFF;

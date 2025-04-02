@@ -778,6 +778,25 @@ namespace System.Security.Cryptography
             return ExportSubjectPublicKeyInfoCore().Encode();
         }
 
+        public bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            ThrowIfDisposed();
+
+            // An ML-KEM-512 "seed" export with no attributes is 86 bytes. A buffer smaller than that cannot hold a
+            // PKCS#8 encoded key.
+            const int MinimumPossiblePkcs8MLKemKey = 86;
+
+            if (destination.Length < MinimumPossiblePkcs8MLKemKey)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            return TryExportPkcs8PrivateKeyCore(destination, out bytesWritten);
+        }
+
+        protected abstract bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten);
+
         /// <summary>
         ///  Imports an ML-KEM encapsulation key from an X.509 SubjectPublicKeyInfo structure.
         /// </summary>

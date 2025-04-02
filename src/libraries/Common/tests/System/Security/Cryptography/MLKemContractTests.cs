@@ -860,6 +860,7 @@ namespace System.Security.Cryptography.Tests
         internal ExportKeyCoreCallback OnExportPrivateSeedCore { get; set; }
         internal ExportKeyCoreCallback OnExportEncapsulationKeyCore { get; set; }
         internal ExportKeyCoreCallback OnExportDecapsulationKeyCore { get; set; }
+        internal TryExportPkcs8PrivateKeyCoreCallback OnTryExportPkcs8PrivateKeyCore { get; set; }
         internal Action<bool> OnDispose { get; set; } = (bool disposing) => { };
 
         private int DecapsulateCoreCount { get; set; }
@@ -867,6 +868,7 @@ namespace System.Security.Cryptography.Tests
         private int ExportPrivateSeedCoreCount { get; set; }
         private int ExportEncapsulationKeyCoreCount { get; set; }
         private int ExportDecapsulationKeyCoreCount { get; set; }
+        private int TryExportPkcs8PrivateKeyCoreCount { get; set; }
 
         private bool _disposed;
 
@@ -904,6 +906,12 @@ namespace System.Security.Cryptography.Tests
             GetCallback(OnExportEncapsulationKeyCore)(destination);
         }
 
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            TryExportPkcs8PrivateKeyCoreCount++;
+            return GetCallback(OnTryExportPkcs8PrivateKeyCore)(destination, out bytesWritten);
+        }
+
         protected override void Dispose(bool disposing)
         {
             GetCallback(OnDispose)(disposing);
@@ -933,11 +941,16 @@ namespace System.Security.Cryptography.Tests
             {
                 Assert.Fail($"Expected call to {nameof(ExportEncapsulationKeyCore)}.");
             }
+            if (OnTryExportPkcs8PrivateKeyCore is not null && TryExportPkcs8PrivateKeyCoreCount == 0)
+            {
+                Assert.Fail($"Expected call to {nameof(TryExportPkcs8PrivateKeyCore)}.");
+            }
         }
 
         internal delegate void DecapsulateCoreCallback(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret);
         internal delegate void EncapsulateCoreCallback(Span<byte> ciphertext, Span<byte> sharedSecret);
         internal delegate void ExportKeyCoreCallback(Span<byte> destination);
+        internal delegate bool TryExportPkcs8PrivateKeyCoreCallback(Span<byte> destination, out int bytesWritten);
 
         private T GetCallback<T>(T callback, [CallerMemberNameAttribute]string caller = null) where T : Delegate
         {
