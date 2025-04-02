@@ -179,12 +179,14 @@ namespace System.Net.Http
         {
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[512]);
 
-            sb.Append($"StatusCode: {(int)_statusCode}");
+            sb.Append("StatusCode: ");
+            sb.AppendSpanFormattable((int)_statusCode);
 
             sb.Append(", ReasonPhrase: '");
             sb.Append(ReasonPhrase ?? "<null>");
 
-            sb.Append($"', Version: {_version}");
+            sb.Append("', Version: ");
+            sb.AppendSpanFormattable(_version);
 
             sb.Append(", Content: ");
             sb.Append(_content == null ? "<null>" : _content.GetType().ToString());

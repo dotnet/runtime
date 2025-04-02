@@ -153,10 +153,11 @@ namespace System.Net.Http
             }
             else
             {
-                sb.Append($"{_requestUri}");
+                sb.AppendSpanFormattable(_requestUri);
             }
 
-            sb.Append($"', Version: {_version}");
+            sb.Append("', Version: ");
+            sb.AppendSpanFormattable(_version);
 
             sb.Append(", Content: ");
             sb.Append(_content == null ? "<null>" : _content.GetType().ToString());
