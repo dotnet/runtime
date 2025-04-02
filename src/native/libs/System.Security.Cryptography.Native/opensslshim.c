@@ -57,7 +57,7 @@ static void DlOpen(const char* libraryName)
 {
     void* libsslNew = dlopen(libraryName, RTLD_LAZY);
 
-#if DEBUG
+#ifdef DEBUG
     if (libsslNew == NULL)
     {
         char* err = dlerror();
