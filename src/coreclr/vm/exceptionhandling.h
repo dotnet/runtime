@@ -305,57 +305,6 @@ public:
         STS_NewException,
     };
 
-    static void InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pThread, StackFrame sf, REGDISPLAY* pRD,
-                                     PT_DISPATCHER_CONTEXT pDispatcherContext, DWORD_PTR ControlPCForEHSearch,
-                                     UINT_PTR* puMethodStartPC,
-                                     ExceptionTracker *pCurrentTracker);
-
-    void InitializeCurrentContextForCrawlFrame(CrawlFrame* pcfThisFrame, PT_DISPATCHER_CONTEXT pDispatcherContext, StackFrame sfEstablisherFrame);
-
-    static void InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisFrame, Frame* pFrame, MethodDesc *pMD);
-
-#ifndef DACCESS_COMPILE
-    static void ResetThreadAbortStatus(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCurrentStackFrame);
-#endif // !DACCESS_COMPILE
-
-    CLRUnwindStatus ProcessOSExceptionNotification(
-        PEXCEPTION_RECORD pExceptionRecord,
-        PT_CONTEXT pContextRecord,
-        PT_DISPATCHER_CONTEXT pDispatcherContext,
-        DWORD dwExceptionFlags,
-        StackFrame sf,
-        Thread* pThread,
-        StackTraceState STState,
-        PVOID pICFSetAsLimitFrame
-        );
-
-    CLRUnwindStatus ProcessExplicitFrame(
-        CrawlFrame* pcfThisFrame,
-        StackFrame sf,
-        BOOL fIsFirstPass,
-        StackTraceState& STState
-        );
-
-    CLRUnwindStatus ProcessManagedCallFrame(
-        CrawlFrame* pcfThisFrame,
-        StackFrame sf,
-        StackFrame sfEstablisherFrame,
-        EXCEPTION_RECORD* pExceptionRecord,
-        StackTraceState STState,
-        UINT_PTR uMethodStartPC,
-        DWORD dwExceptionFlags,
-        DWORD dwTACatchHandlerClauseIndex,
-        StackFrame sfEstablisherOfActualHandlerFrame
-        );
-
-    bool UpdateScannedStackRange(StackFrame sf, bool fIsFirstPass);
-
-    void FirstPassIsComplete();
-    void SecondPassIsComplete(MethodDesc* pMD, StackFrame sfResumeStackFrame);
-
-    CLRUnwindStatus HandleFunclets(bool* pfProcessThisFrame, bool fIsFirstPass,
-        MethodDesc * pMD, bool fFunclet, StackFrame sf);
-
     static OBJECTREF CreateThrowable(
         PEXCEPTION_RECORD pExceptionRecord,
         BOOL bAsynchronousThreadStop
@@ -373,19 +322,6 @@ public:
     static bool IsInStackRegionUnwoundByCurrentException(CrawlFrame * pCF);
 
     static bool HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF);
-    void SetCurrentEstablisherFrame(StackFrame sfEstablisher)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_sfCurrentEstablisherFrame = sfEstablisher;
-    }
-
-    StackFrame GetCurrentEstablisherFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_sfCurrentEstablisherFrame;
-    }
 
     void SetLastUnwoundEstablisherFrame(StackFrame sfEstablisher)
     {
@@ -464,27 +400,6 @@ public:
     static void
         PopTrackers(void* pvStackPointer);
 
-    static void
-        PopTrackerIfEscaping(void* pvStackPointer);
-
-    static ExceptionTracker*
-        GetOrCreateTracker(UINT_PTR ControlPc,
-                           StackFrame sf,
-                           EXCEPTION_RECORD* pExceptionRecord,
-                           T_CONTEXT* pContextRecord,
-                           BOOL bAsynchronousThreadStop,
-                           bool fIsFirstPass,
-                           StackTraceState* pSTState);
-
-    static void
-        ResumeExecution(T_CONTEXT* pContextRecord);
-
-    void ResetLimitFrame();
-
-    static void DebugLogTrackerRanges(_In_z_ const char *pszTag);
-
-    bool IsStackOverflowException();
-
 #if defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
     void TakeExceptionPointersOwnership(PAL_SEHException* ex)
     {
@@ -496,59 +411,6 @@ public:
 #endif // TARGET_UNIX && !CROSS_COMPILE
 
 private:
-    DWORD_PTR
-        CallHandler(UINT_PTR                dwHandlerStartPC,
-                    StackFrame              sf,
-                    EE_ILEXCEPTION_CLAUSE*  pEHClause,
-                    MethodDesc*             pMD,
-                    EHFuncletType           funcletType,
-                    PT_CONTEXT              pContextRecord);
-
-    inline static BOOL
-        ClauseCoversPC(EE_ILEXCEPTION_CLAUSE* pEHClause,
-                       DWORD dwOffset);
-
-    static bool
-        IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC);
-
-    inline BOOL CanAllocateMemory()
-    {
-        CONTRACTL
-        {
-            MODE_COOPERATIVE;
-            NOTHROW;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-
-        OBJECTREF oThrowable = GetThrowable();
-
-        return !(oThrowable == CLRException::GetPreallocatedOutOfMemoryException()) &&
-               !(oThrowable == CLRException::GetPreallocatedStackOverflowException());
-    }
-
-    INDEBUG(inline  BOOL        ThrowableIsValid());
-
-    bool HandleNestedExceptionEscape(StackFrame sf, bool fIsFirstPass);
-
-#if defined(DEBUGGING_SUPPORTED)
-    void
-        MakeCallbacksRelatedToHandler(bool fBeforeCallingHandler,
-                                      Thread* pThread,
-                                      MethodDesc* pMD,
-                                      EE_ILEXCEPTION_CLAUSE* pEHClause,
-                                      DWORD_PTR dwHandlerStartPC,
-                                      StackFrame sf);
-#else  // !DEBUGGING_SUPPORTED
-    void
-        MakeCallbacksRelatedToHandler(bool fBeforeCallingHandler,
-                                      Thread* pThread,
-                                      MethodDesc* pMD,
-                                      EE_ILEXCEPTION_CLAUSE* pEHClause,
-                                      DWORD_PTR dwHandlerStartPC,
-                                      StackFrame sf) {return;}
-#endif // !DEBUGGING_SUPPORTED
-
     // private helpers
     static StackFrame GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(CrawlFrame *pCF);
 
@@ -570,11 +432,6 @@ private:
 
 public:
 
-    static UINT_PTR FinishSecondPass(Thread* pThread, UINT_PTR uResumePC, StackFrame sf,
-                                     T_CONTEXT* pContextRecord, ExceptionTracker *pTracker, bool* pfAborting = NULL);
-    UINT_PTR CallCatchHandler(T_CONTEXT* pContextRecord, bool* pfAborting = NULL);
-
-    static bool FindNonvolatileRegisterPointers(Thread* pThread, UINT_PTR uOriginalSP, REGDISPLAY* pRegDisplay, TADDR uResumeFrameFP);
     static void UpdateNonvolatileRegisters(T_CONTEXT* pContextRecord, REGDISPLAY *pRegDisplay, bool fAborting);
 
     PTR_Frame GetLimitFrame()
@@ -672,10 +529,6 @@ public:
 private: ;
 
     void ReleaseResources();
-
-    void SetEnclosingClauseInfo(bool     fEnclosingClauseIsFunclet,
-                                DWORD    dwEnclosingClauseOffset,
-                                UINT_PTR uEnclosingClauseCallerSP);
 
     struct EnclosingClauseInfo
     {

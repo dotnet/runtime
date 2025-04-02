@@ -640,6 +640,20 @@ bool Compiler::bbIsHandlerBeg(const BasicBlock* block)
     return (ehDsc != nullptr) && ((block == ehDsc->ebdHndBeg) || (ehDsc->HasFilter() && (block == ehDsc->ebdFilter)));
 }
 
+// bbIsFuncletBeg() returns true if "block" is the start of a handler or filter region,
+// and if the handler/filter is a funclet.
+//
+bool Compiler::bbIsFuncletBeg(const BasicBlock* block)
+{
+    if (UsesFunclets())
+    {
+        assert(fgFuncletsCreated);
+        return bbIsHandlerBeg(block);
+    }
+
+    return false;
+}
+
 bool Compiler::ehHasCallableHandlers()
 {
     if (UsesFunclets())
@@ -3287,11 +3301,11 @@ void Compiler::fgVerifyHandlerTab()
 
         if (fgFuncletsCreated)
         {
-            assert(HBtab->ebdHndBeg->HasFlag(BBF_FUNCLET_BEG));
+            assert(bbIsFuncletBeg(HBtab->ebdHndBeg));
 
             if (HBtab->HasFilter())
             {
-                assert(HBtab->ebdFilter->HasFlag(BBF_FUNCLET_BEG));
+                assert(bbIsFuncletBeg(HBtab->ebdFilter));
             }
         }
     }
@@ -3728,11 +3742,9 @@ void Compiler::fgVerifyHandlerTab()
         {
             assert(block->bbCatchTyp == BBCT_NONE);
 
-            if (fgFuncletsCreated)
-            {
-                // Make sure blocks that aren't the first block of a funclet do not have the BBF_FUNCLET_BEG flag set.
-                assert(!block->HasFlag(BBF_FUNCLET_BEG));
-            }
+            // If this block wasn't marked as an EH handler 'begin' block,
+            // it shouldn't be the beginning of a funclet.
+            assert(!fgFuncletsCreated || !bbIsFuncletBeg(block));
         }
 
         // Check for legal block types
@@ -4469,13 +4481,6 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             block->bbRefs--;
             bPrev->bbRefs++;
 
-            if (fgFuncletsCreated)
-            {
-                assert(block->HasFlag(BBF_FUNCLET_BEG));
-                bPrev->SetFlags(BBF_FUNCLET_BEG);
-                block->RemoveFlags(BBF_FUNCLET_BEG);
-            }
-
             // If this is a handler for a filter, the last block of the filter will end with
             // a BBJ_EHFILTERRET block that jumps to the first block of its handler.
             // So we need to update it to keep things in sync.
@@ -4513,13 +4518,6 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 
             HBtab->ebdFilter = bPrev;
             bPrev->SetFlags(BBF_DONT_REMOVE);
-
-            if (fgFuncletsCreated)
-            {
-                assert(block->HasFlag(BBF_FUNCLET_BEG));
-                bPrev->SetFlags(BBF_FUNCLET_BEG);
-                block->RemoveFlags(BBF_FUNCLET_BEG);
-            }
 
             bPrev->bbRefs++;
         }

@@ -285,6 +285,9 @@ private:
 
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
 
+    void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
+    CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
+
     void* AllocMethodData(size_t numBytes);
     // FIXME Mempool allocation currently leaks. We need to add an allocator and then
     // free all memory when method is finished compilling.
@@ -369,6 +372,11 @@ private:
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall);
     bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
+    void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
+    void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
+    void    EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken);
+    void    EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad);
+    void    EmitLdLocA(int32_t var);
 
     // Var Offset allocator
     TArray<InterpInst*> *m_pActiveCalls;

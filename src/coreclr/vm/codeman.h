@@ -88,6 +88,7 @@ class EECodeInfo;
 #define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)GetOsPageSize()-1))
 #define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (GetOsPageSize()-1)) & ~((size_t)GetOsPageSize()-1))
 
+
 enum StubCodeBlockKind : int
 {
     STUB_CODE_BLOCK_UNKNOWN = 0,
@@ -111,6 +112,44 @@ enum StubCodeBlockKind : int
     // Placeholdes used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK = 0x13,
 };
+
+inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
+{
+    switch (kind)
+    {
+    case STUB_CODE_BLOCK_JUMPSTUB:
+        return "JumpStub";
+    case STUB_CODE_BLOCK_STUBLINK:
+        return "StubLinkStub";
+    case STUB_CODE_BLOCK_MANAGED:
+        return "Managed";
+    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+        return "MethodCallThunk";
+    case STUB_CODE_BLOCK_DYNAMICHELPER:
+        return "MethodCallThunk";
+    case STUB_CODE_BLOCK_FIXUPPRECODE:
+        return "MethodCallThunk";
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
+        return "VSD_DispatchStub";
+    case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
+        return "VSD_ResolveStub";
+    case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
+        return "VSD_LookupStub";
+    case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
+        return "VSD_VTableStub";
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+    default:
+        return "Unknown";
+    }
+}
+
+void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind);
+#ifndef FEATURE_PERFMAP
+inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
+{
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Method header which exists just before the code.
@@ -2431,8 +2470,7 @@ public:
 
     static void DumpExecutionManagerUsage()
     {
-        fprintf(stderr, "JumpStub usage count:\n");
-        fprintf(stderr, "Normal: %u, LCG: %u\n", m_normal_JumpStubLookup, m_LCG_JumpStubLookup);
+        minipal_log_print_info("JumpStub usage count:\nNormal: %u, LCG: %u\n", m_normal_JumpStubLookup, m_LCG_JumpStubLookup);
     }
 
     struct JumpStubCache
@@ -2662,11 +2700,7 @@ public:
 
     virtual TADDR JitTokenToStartAddress(const METHODTOKEN& MethodToken);
 
-    virtual void JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo)
-    {
-        // Not used for the interpreter
-        _ASSERTE(FALSE);
-    }
+    virtual void JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo);
 
     static InterpreterCodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
     static InterpreterCodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
@@ -2701,12 +2735,7 @@ public:
         return PTR_NULL;
     }
 
-    virtual TADDR GetFuncletStartAddress(EECodeInfo * pCodeInfo)
-    {
-        // Not used for the interpreter
-        _ASSERTE(FALSE);
-        return 0;
-    }
+    virtual TADDR GetFuncletStartAddress(EECodeInfo * pCodeInfo);
 
     virtual DWORD GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
     {
