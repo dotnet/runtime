@@ -3602,8 +3602,6 @@ void emitter::emitDispInsName(
                         default:
                             return emitDispIllegalInstruction(code);
                     }
-                    printLength = printf("slli");
-                    imm12 &= 0x3f; // 6 BITS for SHAMT in RISCV64
                 }
                 break;
                 case 0x2: // SLTI
