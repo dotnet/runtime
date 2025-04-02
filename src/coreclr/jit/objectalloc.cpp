@@ -1818,13 +1818,31 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 break;
 
             case GT_SUB:
-                if (parent->TypeGet() != newType)
+            {
+                // Parent type can be TYP_I_IMPL, TYP_BYREF.
+                // But not TYP_REF.
+                //
+                var_types parentType = parent->TypeGet();
+                assert(parentType != TYP_REF);
+
+                // New type can be TYP_I_IMPL, TYP_BYREF.
+                // But TYP_BYREF only if parent is also
+                //
+                if (parentType != newType)
                 {
+                    // We must be retyping TYP_BYREF to TYP_I_IMPL.
+                    //
+                    assert(newType == TYP_I_IMPL);
+                    assert(parentType == TYP_BYREF);
                     parent->ChangeType(newType);
+
+                    // Propgate that upwards.
+                    //
                     ++parentIndex;
                     keepChecking = true;
                 }
                 break;
+            }
 
             case GT_COLON:
             {
