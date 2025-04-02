@@ -1859,7 +1859,7 @@ void CodeGen::genCodeForBswap(GenTree* tree)
         // TODO: we need to right-shift the byte-reversed register anyway. Remove the cast (in Lowering::LowerCast?)
         // wrapping GT_BSWAP16 and pass the exact destination type here, so that this codegen could leave the register
         // properly extended.
-        emit.emitIns_R_R_I(INS_srai, size, dest, dest, shiftAmount);
+        emit.emitIns_R_R_I(INS_srli, size, dest, dest, shiftAmount);
     }
 
     genProduceReg(tree);
