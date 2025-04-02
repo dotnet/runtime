@@ -106,6 +106,11 @@
               SubBlobFolder="workloads/" />
   </ItemGroup>
 
+  <!-- Include cross-arch apphost MSI packages. A bug in arcade means these aren't included by default. -->
+  <ItemGroup Condition="'$(EnableDefaultRidSpecificArtifacts)' == 'true'">
+    <Artifact Include="$(ArtifactsNonShippingPackagesDir)**/VS.Redist.Common.*.*_$(TargetArchitecture).*.nupkg" IsShipping="false" Kind="Package" />
+  </ItemGroup>
+
   <!--
     Filter out the RID-specific (Runtime) nupkgs for this RID.
     Every job will publish their RID-specific packages.
