@@ -235,16 +235,21 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 else if (binOp->OperIs(GT_AND, GT_OR)) // XOR is good after negation removal, (~a ^ ~b) == (a ^ b)
                 {
                     assert(isOp1Negated && isOp2Negated);
+                    LIR::Use use;
+                    if (BlockRange().TryGetUse(binOp, &use))
+                    {
+                        // (~a | ~b) == ~(a & b),  (~a & ~b) == ~(a | b)
+                        genTreeOps reverseOper = binOp->OperIs(GT_AND) ? GT_OR : GT_AND;
+                        binOp->ChangeOper(reverseOper);
 
-                    // (~a | ~b) == ~(a & b),  (~a & ~b) == ~(a | b)
-                    genTreeOps reverseOper = binOp->OperIs(GT_AND) ? GT_OR : GT_AND;
-                    binOp->ChangeOper(reverseOper);
-                    GenTreeUnOp* negation = comp->gtNewOperNode(GT_NOT, binOp->gtType, binOp);
-
-                    GenTree** use = nullptr;
-                    binOp->gtGetParent(&use);
-                    *use = negation;
-                    BlockRange().InsertAfter(binOp, negation);
+                        GenTreeUnOp* negation = comp->gtNewOperNode(GT_NOT, binOp->gtType, binOp);
+                        BlockRange().InsertAfter(binOp, negation);
+                        use.ReplaceWith(negation);
+                    }
+                    else
+                    {
+                        binOp->SetUnusedValue();
+                    }
                 }
             }
         }
