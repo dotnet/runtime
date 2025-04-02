@@ -60,7 +60,8 @@ namespace System.Net.Security.Tests
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(TestConfiguration.PassingTestTimeout);
 
-            (SslStream client, SslStream server) = TestHelper.GetConnectedStreams();
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams(leaveInnerStreamOpen: true);
             using (client)
             using (server)
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
@@ -148,7 +149,7 @@ namespace System.Net.Security.Tests
                 {
                     await task;
                 }
-                catch (InvalidOperationException ex) when (ex.StackTrace?.Contains("System.IO.StreamBuffer.WriteAsync"))
+                catch (InvalidOperationException ex) when (ex.StackTrace?.Contains("System.IO.StreamBuffer.WriteAsync") ?? true)
                 {
                     // Writing to a disposed ConnectedStream (test only, does not happen with NetworkStream)
                     return;
