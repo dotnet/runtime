@@ -7996,6 +7996,7 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
 {
     switch (intrinsicName)
     {
+
         case NI_System_Math_Abs:
         case NI_System_Math_Acos:
         case NI_System_Math_Acosh:
@@ -8046,9 +8047,6 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
 
         default:
         {
-            assert((intrinsicName < NI_SYSTEM_MATH_START) || (intrinsicName > NI_SYSTEM_MATH_END) ||
-                   (intrinsicName != NI_PRIMITIVE_LeadingZeroCount) ||
-                   (intrinsicName != NI_PRIMITIVE_TrailingZeroCount) || (intrinsicName != NI_PRIMITIVE_PopCount));
             return false;
         }
     }
