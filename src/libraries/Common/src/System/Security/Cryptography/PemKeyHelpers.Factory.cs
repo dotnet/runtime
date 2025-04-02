@@ -156,7 +156,7 @@ namespace System.Security.Cryptography
                 CryptoPool.Return(decodeBuffer, clearSize: bytesWritten);
             }
 #else
-            return importAction(Convert.FromBase64String(base64Contents.ToString()));
+            return importAction(password, Convert.FromBase64String(base64Contents.ToString()));
 #endif
         }
     }

@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests
+namespace System.Security.Cryptography.Tests
 {
     // Tests for Downlevel implementation of PemEncoding. This was originally taken from the .NET 5 implementation of
     // PemEncodingFindTests.
