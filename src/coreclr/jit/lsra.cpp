@@ -4957,13 +4957,25 @@ void LinearScan::allocateRegistersMinimal()
     clearAllNextIntervalRef();
     clearAllSpillCost();
 
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    /*for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
         updateNextFixedRefDispatch(physRegRecord, physRegRecord->firstRefPosition, killHead);
         assert(physRegRecord->assignedInterval == nullptr);
-    }
+    }*/
+   int first = REG_FIRST;
+   int last  = AVAILABLE_REG_COUNT - 1;
+    RegRecord* physRegRecord = &physRegs[first];
+    RegRecord* lastRegRecord = &physRegs[last];
+    do
+    {
+        assert(physRegRecord != nullptr);
+        physRegRecord->recentRefPosition = nullptr;
+        updateNextFixedRefDispatch(physRegRecord, physRegRecord->firstRefPosition, killHead);
+        assert(physRegRecord->assignedInterval == nullptr);
+        physRegRecord = physRegRecord->nextRegRecord;
+    } while (physRegRecord != lastRegRecord);
 
 #ifdef DEBUG
     if (VERBOSE)
@@ -4986,11 +4998,11 @@ void LinearScan::allocateRegistersMinimal()
     RefPosition* nextKill     = killHead;
 
     LsraLocation prevLocation            = MinLocation;
-    regMaskTP    regsToFree              = RBM_NONE;
+    /*regMaskTP    regsToFree              = RBM_NONE;
     regMaskTP    delayRegsToFree         = RBM_NONE;
     regMaskTP    regsToMakeInactive      = RBM_NONE;
     regMaskTP    delayRegsToMakeInactive = RBM_NONE;
-    regMaskTP    copyRegsToFree          = RBM_NONE;
+    regMaskTP    copyRegsToFree          = RBM_NONE;*/
 
     // regsFreeStruct *currentRegsFree = nullptr;
     regsFreeStruct regsFreeLow;
