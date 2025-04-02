@@ -7743,11 +7743,11 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
         assert(!"genSSE2BitwiseOp: unsupported oper");
     }
 
-    simd_t constValue = {};
+    simd16_t constValue;
     constValue.u64[0] = mask;
     constValue.u64[1] = mask;
 #if defined(FEATURE_SIMD)
-    maskFld = GetEmitter()->emitSimdConst(&constValue, EA_16BYTE);
+    maskFld = GetEmitter()->emitSimd16Const(constValue);
 #else
     maskFld = GetEmitter()->emitBlkConst(&constValue, 16, 16, treeNode->TypeGet());
 #endif

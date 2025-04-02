@@ -2585,9 +2585,11 @@ private:
 
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
 #if defined(FEATURE_SIMD)
-    CORINFO_FIELD_HANDLE emitSimdConst(simd_t* constValue, emitAttr attr);
+    CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue);
+    CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue);
 #if defined(TARGET_XARCH)
-    void emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, regNumber targetReg);
+    CORINFO_FIELD_HANDLE emitSimdConst(simd_t* constValue, emitAttr attr);
+    void                 emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, regNumber targetReg);
 #endif
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);

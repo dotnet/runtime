@@ -2482,7 +2482,19 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         {
                             // Get a temp integer register to compute long address.
                             regNumber            addrReg = internalRegisters.GetSingle(tree);
-                            CORINFO_FIELD_HANDLE hnd     = emit->emitSimdConst(&val, is8 ? EA_8BYTE : EA_16BYTE);
+                            CORINFO_FIELD_HANDLE hnd;
+                            if (is8)
+                            {
+                                simd8_t constValue;
+                                memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd8_t));
+                                hnd = emit->emitSimd8Const(constValue);
+                            }
+                            else
+                            {
+                                simd16_t constValue;
+                                memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd16_t));
+                                hnd = emit->emitSimd16Const(constValue);
+                            }
                             emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
                         }
                     }

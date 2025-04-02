@@ -1949,7 +1949,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                             else
                             {
                                 assert(targetReg != op1Reg);
-                                instGen_Set_Reg_To_Zero(attr, targetReg);
+                                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg, instOptions);
                                 emit->emitIns_Mov(INS_movss, attr, targetReg, op1Reg, /* canSkip */ false);
                             }
                         }

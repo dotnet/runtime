@@ -8118,6 +8118,53 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
 #if defined(FEATURE_SIMD)
 //------------------------------------------------------------------------
+// emitSimd8Const: Create a simd8 data section constant.
+//
+// Arguments:
+//    constValue - constant value
+//
+// Return Value:
+//    A field handle representing the data offset to access the constant.
+//
+// Note:
+// Access to inline data is 'abstracted' by a special type of static member
+// (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+// to constant data, not a real static field.
+//
+CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
+{
+    unsigned cnsSize  = 8;
+    unsigned cnsAlign = cnsSize;
+
+#ifdef TARGET_XARCH
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+#endif // TARGET_XARCH
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD8);
+    return emitComp->eeFindJitDataOffs(cnum);
+}
+
+CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
+{
+    unsigned cnsSize  = 16;
+    unsigned cnsAlign = cnsSize;
+
+#ifdef TARGET_XARCH
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+#endif // TARGET_XARCH
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD16);
+    return emitComp->eeFindJitDataOffs(cnum);
+}
+
+#ifdef TARGET_XARCH
+//------------------------------------------------------------------------
 // emitSimdConst: Create a simd data section constant.
 //
 // Arguments:
@@ -8149,7 +8196,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimdConst(simd_t* constValue, emitAttr attr)
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
-#ifdef TARGET_XARCH
 //------------------------------------------------------------------------
 // emitSimdConstCompressedLoad: Create a simd data section constant,
 //   compressing it if possible, and emit an appropiate instruction
