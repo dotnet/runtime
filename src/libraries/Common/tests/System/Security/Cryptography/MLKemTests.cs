@@ -522,6 +522,18 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Fact]
+        public static void ImportFromPem_PublicKey_Roundtrip()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] spki) in SubjectPublicKeyInfoTestData)
+            {
+                string pem = WritePem("PUBLIC KEY", spki);
+                using MLKem kem = MLKem.ImportFromPem(pem);
+                byte[] exportedSpki = kem.ExportSubjectPublicKeyInfo();
+                AssertExtensions.SequenceEqual(spki, exportedSpki);
+            }
+        }
+
         public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Seed)> Pkcs8PrivateKeySeedTestData
         {
             get
@@ -640,6 +652,22 @@ namespace System.Security.Cryptography.Tests
                     MLKemTestData.IetfMlKem1024PrivateKeyDecapsulationKey
                 );
             }
+        }
+
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] spki)> SubjectPublicKeyInfoTestData
+        {
+            get
+            {
+                yield return (MLKemAlgorithm.MLKem512, MLKemTestData.IetfMlKem512Spki);
+                yield return (MLKemAlgorithm.MLKem768, MLKemTestData.IetfMlKem768Spki);
+                yield return (MLKemAlgorithm.MLKem1024, MLKemTestData.IetfMlKem1024Spki);
+            }
+        }
+
+        private static string WritePem(string label, byte[] contents)
+        {
+            string base64 = Convert.ToBase64String(contents, Base64FormattingOptions.InsertLineBreaks);
+            return $"-----BEGIN {label}-----\n{base64}\n-----END {label}-----";
         }
 
         private static byte[] Pkcs8Encode(
