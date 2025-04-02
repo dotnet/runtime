@@ -8200,7 +8200,7 @@ void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, reg
 
             for (unsigned i = 1; i < (cnsSize / size); i++)
             {
-                memcpy((simd_t*)((byte*)&val + (i * size)), constValue, size);
+                memcpy((simd_t*)((uint8_t*)&val + (i * size)), constValue, size);
             }
 
             if (memcmp(&val, constValue, cnsSize) == 0)
