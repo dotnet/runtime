@@ -11,8 +11,6 @@
 
 #ifndef DACCESS_COMPILE
 
-INDEBUG(DWORD UnlockedLoaderHeap::s_dwNumInstancesOfLoaderHeaps = 0;)
-
 namespace
 {
 #if !defined(SELF_NO_HOST) // ETW available only in the runtime
@@ -28,44 +26,6 @@ namespace
 #endif // #ifndef DACCESS_COMPILE
 
 //=====================================================================================
-// These helpers encapsulate the actual layout of a block allocated by AllocMem
-// and UnlockedAllocMem():
-//
-// ==> Starting address is always pointer-aligned.
-//
-//   - x  bytes of user bytes        (where "x" is the actual dwSize passed into AllocMem)
-//
-//   - y  bytes of "EE" (DEBUG-ONLY) (where "y" == LOADER_HEAP_DEBUG_BOUNDARY (normally 0))
-//   - z  bytes of pad  (DEBUG-ONLY) (where "z" is just enough to pointer-align the following byte)
-//   - a  bytes of tag  (DEBUG-ONLY) (where "a" is sizeof(LoaderHeapValidationTag)
-//
-//   - b  bytes of pad               (where "b" is just enough to pointer-align the following byte)
-//
-// ==> Following address is always pointer-aligned
-//=====================================================================================
-
-// Convert the requested size into the total # of bytes we'll actually allocate (including padding)
-size_t UnlockedLoaderHeap::AllocMem_TotalSize(size_t dwRequestedSize)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    size_t dwSize = dwRequestedSize;
-
-    // Interleaved heap cannot ad any extra to the requested size
-#ifdef _DEBUG
-    dwSize += LOADER_HEAP_DEBUG_BOUNDARY;
-    dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
-#endif
-
-#ifdef _DEBUG
-    dwSize += sizeof(LoaderHeapValidationTag);
-#endif
-    dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
-
-    return dwSize;
-}
-
-//=====================================================================================
 // UnlockedLoaderHeap methods
 //=====================================================================================
 
@@ -76,7 +36,8 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
                                        const BYTE* dwReservedRegionAddress,
                                        SIZE_T dwReservedRegionSize,
                                        RangeList *pRangeList,
-                                       HeapKind kind)
+                                       LoaderHeapImplementationKind kind) : 
+    UnlockedLoaderHeapBase(kind)
 {
     CONTRACTL
     {
@@ -108,8 +69,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     m_pEventList                 = NULL;
     m_dwDebugFlags               = LoaderHeapSniffer::InitDebugFlags();
 #endif
-
-    m_kind = kind;
 
     m_pFirstFreeBlock            = NULL;
 
@@ -183,16 +142,6 @@ void UnlockedLoaderHeap::DebugGuardHeap()
     }
 }
 #endif
-
-size_t UnlockedLoaderHeap::GetBytesAvailCommittedRegion()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (m_pAllocPtr < m_pPtrToEndOfCommittedRegion)
-        return (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
-    else
-        return 0;
-}
 
 size_t UnlockedLoaderHeap::GetBytesAvailReservedRegion()
 {
@@ -880,11 +829,6 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
 
 }
 #endif // #ifndef DACCESS_COMPILE
-
-BOOL UnlockedLoaderHeap::IsExecutable()
-{
-    return (m_kind == HeapKind::Executable);
-}
 
 #ifdef DACCESS_COMPILE
 

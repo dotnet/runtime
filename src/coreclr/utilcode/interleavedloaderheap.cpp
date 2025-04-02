@@ -11,8 +11,6 @@
 
 #ifndef DACCESS_COMPILE
 
-INDEBUG(DWORD UnlockedInterleavedLoaderHeap::s_dwNumInstancesOfLoaderHeaps = 0;)
-
 namespace
 {
 #if !defined(SELF_NO_HOST) // ETW available only in the runtime
@@ -28,33 +26,6 @@ namespace
 #endif // #ifndef DACCESS_COMPILE
 
 //=====================================================================================
-// These helpers encapsulate the actual layout of a block allocated by AllocMem
-// and UnlockedAllocMem():
-//
-// ==> Starting address is always pointer-aligned.
-//
-//   - x  bytes of user bytes        (where "x" is the actual dwSize passed into AllocMem)
-//
-//   - y  bytes of "EE" (DEBUG-ONLY) (where "y" == LOADER_HEAP_DEBUG_BOUNDARY (normally 0))
-//   - z  bytes of pad  (DEBUG-ONLY) (where "z" is just enough to pointer-align the following byte)
-//   - a  bytes of tag  (DEBUG-ONLY) (where "a" is sizeof(LoaderHeapValidationTag)
-//
-//   - b  bytes of pad               (where "b" is just enough to pointer-align the following byte)
-//
-// ==> Following address is always pointer-aligned
-//=====================================================================================
-
-// Convert the requested size into the total # of bytes we'll actually allocate (including padding)
-size_t UnlockedInterleavedLoaderHeap::AllocMem_TotalSize(size_t dwRequestedSize)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    size_t dwSize = dwRequestedSize;
-
-    return dwSize;
-}
-
-//=====================================================================================
 // UnlockedInterleavedLoaderHeap methods
 //=====================================================================================
 
@@ -63,7 +34,8 @@ size_t UnlockedInterleavedLoaderHeap::AllocMem_TotalSize(size_t dwRequestedSize)
 UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
                                        RangeList *pRangeList,
                                        void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size),
-                                       DWORD dwGranularity)
+                                       DWORD dwGranularity) :
+    UnlockedLoaderHeapBase(LoaderHeapImplementationKind::Interleaved)
 {
     CONTRACTL
     {
@@ -159,16 +131,6 @@ void UnlockedInterleavedLoaderHeap::DebugGuardHeap()
     }
 }
 #endif
-
-size_t UnlockedInterleavedLoaderHeap::GetBytesAvailCommittedRegion()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (m_pAllocPtr < m_pPtrToEndOfCommittedRegion)
-        return (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
-    else
-        return 0;
-}
 
 size_t UnlockedInterleavedLoaderHeap::GetBytesAvailReservedRegion()
 {
@@ -620,16 +582,6 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequested
 
 }
 #endif // #ifndef DACCESS_COMPILE
-
-BOOL UnlockedInterleavedLoaderHeap::IsExecutable()
-{
-    return TRUE;
-}
-
-BOOL UnlockedInterleavedLoaderHeap::IsInterleaved()
-{
-    return TRUE;
-}
 
 #ifdef DACCESS_COMPILE
 

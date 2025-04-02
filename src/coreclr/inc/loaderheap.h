@@ -210,66 +210,79 @@ inline UINT32 GetStubCodePageSize()
 #endif
 }
 
+enum class LoaderHeapImplementationKind
+{
+    Data,
+    Executable,
+    Interleaved
+};
 
+class UnlockedLoaderHeapBaseTraversable
+{
+public:
+#ifdef DACCESS_COMPILE
+    UnlockedLoaderHeapBaseTraversable() {}
+#else
+    UnlockedLoaderHeapBaseTraversable(LoaderHeapImplementationKind kind) :
+        m_pFirstBlock(NULL),
+        m_kind(kind)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+#endif
 
+    // Linked list of ClrVirtualAlloc'd pages
+    PTR_LoaderHeapBlock m_pFirstBlock;
+#ifndef DACCESS_COMPILE
+    const 
+#endif
+    LoaderHeapImplementationKind m_kind;
+};
 
-//===============================================================================
-// This is the base class for LoaderHeap It's used as a simple
-// allocator that's semantically (but not perfwise!) equivalent to a blackbox
-// alloc/free heap. The ability to free is via a "backout" mechanism that is
-// not considered to have good performance.
-//
-//===============================================================================
-class UnlockedLoaderHeap
+class UnlockedLoaderHeapBase : protected UnlockedLoaderHeapBaseTraversable
 {
 #ifdef _DEBUG
     friend class LoaderHeapSniffer;
     friend struct LoaderHeapFreeBlock;
 #endif
-
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif
 
-public:
+protected:
+    size_t GetBytesAvailCommittedRegion();
 
-    enum class HeapKind
-    {
-        Data,
-        Executable
-    };
-
-private:
-    // Linked list of ClrVirtualAlloc'd pages
-    PTR_LoaderHeapBlock m_pFirstBlock;
+    size_t              m_dwTotalAlloc;
+    LoaderHeapFreeBlock *m_pFirstFreeBlock;
 
     // Allocation pointer in current block
     PTR_BYTE            m_pAllocPtr;
 
     // Points to the end of the committed region in the current block
     PTR_BYTE            m_pPtrToEndOfCommittedRegion;
-    PTR_BYTE            m_pEndReservedRegion;
+    
+public:
+#ifdef DACCESS_COMPILE
+    UnlockedLoaderHeapBase() {}
+#else
+    UnlockedLoaderHeapBase(LoaderHeapImplementationKind kind) : UnlockedLoaderHeapBaseTraversable(kind)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+#endif // DACCESS_COMPILE
 
-    // When we need to ClrVirtualAlloc() MEM_RESERVE a new set of pages, number of bytes to reserve
-    DWORD               m_dwReserveBlockSize;
+    BOOL IsExecutable() { return m_kind == LoaderHeapImplementationKind::Executable || m_kind == LoaderHeapImplementationKind::Interleaved; }
+    BOOL IsInterleaved() { return m_kind == LoaderHeapImplementationKind::Interleaved; }
 
-    // When we need to commit pages from our reserved list, number of bytes to commit at a time
-    DWORD               m_dwCommitBlockSize;
+#ifdef _DEBUG
+    size_t DebugGetWastedBytes()
+    {
+        WRAPPER_NO_CONTRACT;
+        return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
+    }
+#endif
 
-    // Range list to record memory ranges in
-    RangeList *         m_pRangeList;
-
-    size_t              m_dwTotalAlloc;
-
-    HeapKind            m_kind;
-
-    LoaderHeapFreeBlock *m_pFirstFreeBlock;
-
-    // This is used to hold on to a block of reserved memory provided to the
-    // constructor. We do this instead of adding it as the first block because
-    // that requires comitting the first page of the reserved block, and for
-    // startup working set reasons we want to delay that as long as possible.
-    LoaderHeapBlock      m_reservedBlock;
+    size_t AllocMem_TotalSize(size_t dwRequestedSize);
 
 public:
 
@@ -288,19 +301,48 @@ public:
 #endif
 
 
-
 #ifdef _DEBUG
     size_t              m_dwDebugWastedBytes;
     static DWORD        s_dwNumInstancesOfLoaderHeaps;
 #endif
+};
 
-#ifdef _DEBUG
-    size_t DebugGetWastedBytes()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
-    }
+//===============================================================================
+// This is the base class for LoaderHeap It's used as a simple
+// allocator that's semantically (but not perfwise!) equivalent to a blackbox
+// alloc/free heap. The ability to free is via a "backout" mechanism that is
+// not considered to have good performance.
+//
+//===============================================================================
+class UnlockedLoaderHeap : public UnlockedLoaderHeapBase
+{
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
 #endif
+
+public:
+
+private:
+    // Points to the end of the reserved region for the current block
+    PTR_BYTE            m_pEndReservedRegion;
+
+    // When we need to ClrVirtualAlloc() MEM_RESERVE a new set of pages, number of bytes to reserve
+    DWORD               m_dwReserveBlockSize;
+
+    // When we need to commit pages from our reserved list, number of bytes to commit at a time
+    DWORD               m_dwCommitBlockSize;
+
+    // Range list to record memory ranges in
+    RangeList *         m_pRangeList;
+
+    // This is used to hold on to a block of reserved memory provided to the
+    // constructor. We do this instead of adding it as the first block because
+    // that requires comitting the first page of the reserved block, and for
+    // startup working set reasons we want to delay that as long as possible.
+    LoaderHeapBlock      m_reservedBlock;
+
+public:
+
 
 public:
 #ifdef DACCESS_COMPILE
@@ -322,13 +364,12 @@ protected:
                        const BYTE* dwReservedRegionAddress,
                        SIZE_T dwReservedRegionSize,
                        RangeList *pRangeList = NULL,
-                       HeapKind kind = HeapKind::Data);
+                       LoaderHeapImplementationKind kind = LoaderHeapImplementationKind::Data);
 
     ~UnlockedLoaderHeap();
 #endif
 
 private:
-    size_t GetBytesAvailCommittedRegion();
     size_t GetBytesAvailReservedRegion();
 
 protected:
@@ -441,10 +482,6 @@ public:
         return m_dwTotalAlloc;
     }
 
-    BOOL IsExecutable();
-
-    size_t AllocMem_TotalSize(size_t dwRequestedSize);
-
 public:
 #ifdef _DEBUG
     void DumpFreeList();
@@ -466,7 +503,7 @@ public:
 // not considered to have good performance.
 //
 //===============================================================================
-class UnlockedInterleavedLoaderHeap
+class UnlockedInterleavedLoaderHeap : public UnlockedLoaderHeapBase
 {
 #ifdef _DEBUG
     friend class LoaderHeapSniffer;
@@ -480,14 +517,6 @@ class UnlockedInterleavedLoaderHeap
 public:
 
 private:
-    // Linked list of ClrVirtualAlloc'd pages
-    PTR_LoaderHeapBlock m_pFirstBlock;
-
-    // Allocation pointer in current block
-    PTR_BYTE            m_pAllocPtr;
-
-    // Points to the end of the committed region in the current block
-    PTR_BYTE            m_pPtrToEndOfCommittedRegion;
     PTR_BYTE            m_pEndReservedRegion;
 
     // For interleaved heap (RX pages interleaved with RW ones), this specifies the allocation granularity,
@@ -502,36 +531,6 @@ private:
     LoaderHeapFreeBlock *m_pFirstFreeBlock;
 
 public:
-
-#ifdef _DEBUG
-    enum
-    {
-        kCallTracing    = 0x00000001,   // Keep a permanent log of all callers
-
-        kEncounteredOOM = 0x80000000,   // One time flag to record that an OOM interrupted call tracing
-    }
-    LoaderHeapDebugFlags;
-
-    DWORD               m_dwDebugFlags;
-
-    LoaderHeapEvent    *m_pEventList;   // Linked list of events (in reverse time order)
-#endif
-
-
-
-#ifdef _DEBUG
-    size_t              m_dwDebugWastedBytes;
-    static DWORD        s_dwNumInstancesOfLoaderHeaps;
-#endif
-
-#ifdef _DEBUG
-    size_t DebugGetWastedBytes()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
-    }
-#endif
-
 public:
     void                (*m_codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
 
@@ -555,7 +554,6 @@ protected:
 #endif
 
 private:
-    size_t GetBytesAvailCommittedRegion();
     size_t GetBytesAvailReservedRegion();
 
 protected:
@@ -644,10 +642,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_dwTotalAlloc;
     }
-
-    BOOL IsExecutable();
-
-    size_t AllocMem_TotalSize(size_t dwRequestedSize);
 
 public:
 #ifdef _DEBUG
@@ -804,7 +798,7 @@ public:
     LoaderHeap(DWORD dwReserveBlockSize,
                DWORD dwCommitBlockSize,
                RangeList *pRangeList = NULL,
-               UnlockedLoaderHeap::HeapKind kind = UnlockedLoaderHeap::HeapKind::Data,
+               LoaderHeapImplementationKind kind = LoaderHeapImplementationKind::Data,
                BOOL fUnlocked = FALSE
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,
@@ -823,7 +817,7 @@ public:
                const BYTE* dwReservedRegionAddress,
                SIZE_T dwReservedRegionSize,
                RangeList *pRangeList = NULL,
-               UnlockedLoaderHeap::HeapKind kind = UnlockedLoaderHeap::HeapKind::Data,
+               LoaderHeapImplementationKind kind = LoaderHeapImplementationKind::Data,
                BOOL fUnlocked = FALSE
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,

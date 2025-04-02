@@ -77,7 +77,7 @@ class LoaderHeapSniffer
 {
     public:
         static DWORD InitDebugFlags();
-        static VOID RecordEvent(UnlockedLoaderHeap *pHeap,
+        static VOID RecordEvent(UnlockedLoaderHeapBase *pHeap,
                                 AllocationType allocationType,
                                 _In_ const char *szFile,
                                 int            lineNum,
@@ -87,13 +87,13 @@ class LoaderHeapSniffer
                                 size_t         dwRequestedSize,
                                 size_t         dwSize
                                 );
-        static VOID ClearEvents(UnlockedLoaderHeap *pHeap);
-        static VOID CompactEvents(UnlockedLoaderHeap *pHeap);
-        static VOID PrintEvents(UnlockedLoaderHeap *pHeap);
+        static VOID ClearEvents(UnlockedLoaderHeapBase *pHeap);
+        static VOID CompactEvents(UnlockedLoaderHeapBase *pHeap);
+        static VOID PrintEvents(UnlockedLoaderHeapBase *pHeap);
         static VOID PitchSniffer(SString *pSString);
-        static LoaderHeapEvent *FindEvent(UnlockedLoaderHeap *pHeap, void *pAddr);
-        static void ValidateFreeList(UnlockedLoaderHeap *pHeap);
-        static void WeGotAFaultNowWhat(UnlockedLoaderHeap *pHeap);
+        static LoaderHeapEvent *FindEvent(UnlockedLoaderHeapBase *pHeap, void *pAddr);
+        static void ValidateFreeList(UnlockedLoaderHeapBase *pHeap);
+        static void WeGotAFaultNowWhat(UnlockedLoaderHeapBase *pHeap);
 };
 
 LoaderHeapValidationTag *AllocMem_GetTag(LPVOID pBlock, size_t dwRequestedSize);
@@ -137,11 +137,11 @@ struct LoaderHeapFreeBlock
         void                  *m_pBlockAddress; // Virtual address of the block
 
 #ifndef DACCESS_COMPILE
-        static void InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap);
-        static void *AllocFromFreeList(LoaderHeapFreeBlock **ppHead, size_t dwSize, UnlockedLoaderHeap *pHeap);
+        static void InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeapBase *pHeap);
+        static void *AllocFromFreeList(LoaderHeapFreeBlock **ppHead, size_t dwSize, UnlockedLoaderHeapBase *pHeap);
     private:
         // Try to merge pFreeBlock with its immediate successor. Return TRUE if a merge happened. FALSE if no merge happened.
-        static BOOL MergeBlock(LoaderHeapFreeBlock *pFreeBlock, UnlockedLoaderHeap *pHeap);
+        static BOOL MergeBlock(LoaderHeapFreeBlock *pFreeBlock, UnlockedLoaderHeapBase *pHeap);
 #endif // DACCESS_COMPILE
 };
 

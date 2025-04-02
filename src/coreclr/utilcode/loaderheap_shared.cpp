@@ -9,6 +9,8 @@ RandomForLoaderHeap s_randomForLoaderHeap;
 #endif
 
 #ifndef DACCESS_COMPILE
+INDEBUG(DWORD UnlockedLoaderHeapBase::s_dwNumInstancesOfLoaderHeaps = 0;)
+
 void ReleaseReservedMemory(BYTE* value)
 {
     if (value)
@@ -125,7 +127,7 @@ BOOL LoaderHeapEvent::QuietValidate()
     return dwDebugFlags;
 }
 
-/*static*/ VOID LoaderHeapSniffer::RecordEvent(UnlockedLoaderHeap *pHeap,
+/*static*/ VOID LoaderHeapSniffer::RecordEvent(UnlockedLoaderHeapBase *pHeap,
                                                AllocationType allocationType,
                                                _In_ const char *szFile,
                                                int            lineNum,
@@ -175,7 +177,7 @@ BOOL LoaderHeapEvent::QuietValidate()
     }
 }
 
-/*static*/ VOID LoaderHeapSniffer::ClearEvents(UnlockedLoaderHeap *pHeap)
+/*static*/ VOID LoaderHeapSniffer::ClearEvents(UnlockedLoaderHeapBase *pHeap)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
@@ -190,7 +192,7 @@ BOOL LoaderHeapEvent::QuietValidate()
     pHeap->m_pEventList = NULL;
 }
 
-/*static*/ VOID LoaderHeapSniffer::CompactEvents(UnlockedLoaderHeap *pHeap)
+/*static*/ VOID LoaderHeapSniffer::CompactEvents(UnlockedLoaderHeapBase *pHeap)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
@@ -239,7 +241,7 @@ BOOL LoaderHeapEvent::QuietValidate()
     }
 }
 
-/*static*/ VOID LoaderHeapSniffer::PrintEvents(UnlockedLoaderHeap *pHeap)
+/*static*/ VOID LoaderHeapSniffer::PrintEvents(UnlockedLoaderHeapBase *pHeap)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
@@ -288,7 +290,7 @@ BOOL LoaderHeapEvent::QuietValidate()
                         "\n");
 }
 
-/*static*/ LoaderHeapEvent *LoaderHeapSniffer::FindEvent(UnlockedLoaderHeap *pHeap, void *pAddr)
+/*static*/ LoaderHeapEvent *LoaderHeapSniffer::FindEvent(UnlockedLoaderHeapBase *pHeap, void *pAddr)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -305,7 +307,7 @@ BOOL LoaderHeapEvent::QuietValidate()
 
 }
 /*static*/
-void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
+void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeapBase *pHeap)
 {
     CANNOT_HAVE_CONTRACT;
 
@@ -445,8 +447,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
         DbgAssertDialog(__FILE__, __LINE__, (char*) message.GetUTF8());
     }
 }
-
-/*static*/ void LoaderHeapSniffer::WeGotAFaultNowWhat(UnlockedLoaderHeap *pHeap)
+/*static*/ void LoaderHeapSniffer::WeGotAFaultNowWhat(UnlockedLoaderHeapBase *pHeap)
 {
     WRAPPER_NO_CONTRACT;
     ValidateFreeList(pHeap);
@@ -469,7 +470,7 @@ LoaderHeapValidationTag *AllocMem_GetTag(LPVOID pBlock, size_t dwRequestedSize)
 #endif // _DEBUG
 
 #ifndef DACCESS_COMPILE
-/*static*/ void LoaderHeapFreeBlock::InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap)
+/*static*/ void LoaderHeapFreeBlock::InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeapBase *pHeap)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -530,7 +531,7 @@ LoaderHeapValidationTag *AllocMem_GetTag(LPVOID pBlock, size_t dwRequestedSize)
     LOADER_HEAP_END_TRAP_FAULT
 }
 
-/*static*/ void *LoaderHeapFreeBlock::AllocFromFreeList(LoaderHeapFreeBlock **ppHead, size_t dwSize, UnlockedLoaderHeap *pHeap)
+/*static*/ void *LoaderHeapFreeBlock::AllocFromFreeList(LoaderHeapFreeBlock **ppHead, size_t dwSize, UnlockedLoaderHeapBase *pHeap)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -586,7 +587,7 @@ LoaderHeapValidationTag *AllocMem_GetTag(LPVOID pBlock, size_t dwRequestedSize)
 }
 
 // Try to merge pFreeBlock with its immediate successor. Return TRUE if a merge happened. FALSE if no merge happened.
-/*static*/ BOOL LoaderHeapFreeBlock::MergeBlock(LoaderHeapFreeBlock *pFreeBlock, UnlockedLoaderHeap *pHeap)
+/*static*/ BOOL LoaderHeapFreeBlock::MergeBlock(LoaderHeapFreeBlock *pFreeBlock, UnlockedLoaderHeapBase *pHeap)
 {
     STATIC_CONTRACT_NOTHROW;
 
@@ -619,8 +620,60 @@ LoaderHeapValidationTag *AllocMem_GetTag(LPVOID pBlock, size_t dwRequestedSize)
 
         result = TRUE;
     }
-
+    
     LOADER_HEAP_END_TRAP_FAULT
     return result;
 }
+
+size_t UnlockedLoaderHeapBase::GetBytesAvailCommittedRegion()
+{
+    LIMITED_METHOD_CONTRACT;
+    
+    if (m_pAllocPtr < m_pPtrToEndOfCommittedRegion)
+    return (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
+    else
+    return 0;
+}
 #endif // DACCESS_COMPILE
+
+//=====================================================================================
+// These helpers encapsulate the actual layout of a block allocated by AllocMem
+// and UnlockedAllocMem():
+//
+// ==> Starting address is always pointer-aligned.
+//
+//   - x  bytes of user bytes        (where "x" is the actual dwSize passed into AllocMem)
+//
+//   - y  bytes of "EE" (DEBUG-ONLY) (where "y" == LOADER_HEAP_DEBUG_BOUNDARY (normally 0))
+//   - z  bytes of pad  (DEBUG-ONLY) (where "z" is just enough to pointer-align the following byte)
+//   - a  bytes of tag  (DEBUG-ONLY) (where "a" is sizeof(LoaderHeapValidationTag)
+//
+//   - b  bytes of pad               (where "b" is just enough to pointer-align the following byte)
+//
+// ==> Following address is always pointer-aligned
+//=====================================================================================
+
+// Convert the requested size into the total # of bytes we'll actually allocate (including padding)
+size_t UnlockedLoaderHeapBase::AllocMem_TotalSize(size_t dwRequestedSize)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    size_t dwSize = dwRequestedSize;
+
+    // Interleaved heap cannot ad any extra to the requested size
+    if (!IsInterleaved())
+    {
+#ifdef _DEBUG
+        dwSize += LOADER_HEAP_DEBUG_BOUNDARY;
+        dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
+#endif
+
+#ifdef _DEBUG
+        dwSize += sizeof(LoaderHeapValidationTag);
+#endif
+        dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
+    }
+
+    return dwSize;
+}
+
