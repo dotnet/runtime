@@ -35,6 +35,8 @@ static double desired_sample_interval_ms;
 static MonoCallSpec callspec;
 static bool needs_balanced_events = true;
 
+MonoProfilerHandle mono_profiler_init_browser_stacks ();
+
 #ifdef HOST_BROWSER
 
 typedef struct _ProfilerStackFrame ProfilerStackFrame;
@@ -58,7 +60,6 @@ static int sample_skip_counter;
 
 double mono_wasm_profiler_now ();
 void mono_wasm_profiler_record (MonoMethod *method, double start);
-MonoProfilerHandle mono_profiler_init_browser_stacks ();
 
 static bool should_record_frame (double now)
 {
