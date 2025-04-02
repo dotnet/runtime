@@ -2590,7 +2590,7 @@ private:
 #if defined(TARGET_XARCH)
     CORINFO_FIELD_HANDLE emitSimdConst(simd_t* constValue, emitAttr attr);
     void                 emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, regNumber targetReg);
-#endif
+#endif // TARGET_XRACH
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
 #endif // FEATURE_MASKED_HW_INTRINSICS

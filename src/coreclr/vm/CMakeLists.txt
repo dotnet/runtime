@@ -378,6 +378,7 @@ set(VM_SOURCES_WKS
     threaddebugblockinginfo.cpp
     threadsuspend.cpp
     typeparse.cpp
+    unsafeaccessors.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}

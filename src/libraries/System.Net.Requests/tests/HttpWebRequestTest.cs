@@ -2115,6 +2115,15 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        public async Task SendHttpPostRequest_BufferingDisabledWithInvalidHost_ShouldThrow()
+        {
+            HttpWebRequest request = WebRequest.CreateHttp("http://anything-unusable-blabla");
+            request.Method = "POST";
+            request.AllowWriteStreamBuffering = false;
+            await Assert.ThrowsAnyAsync<WebException>(() => request.GetRequestStreamAsync());
+        }
+
+        [Fact]
         public async Task SendHttpPostRequest_BufferingDisabled_ConnectionShouldStartWithRequestStream()
         {
             await LoopbackServer.CreateClientAndServerAsync(

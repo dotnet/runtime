@@ -6515,7 +6515,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 
             // Only to the first block of the finally (which is properly marked)
             BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
-            assert(tgtBlk->HasFlag(BBF_FUNCLET_BEG));
+            assert(emitComp->bbIsFuncletBeg(tgtBlk));
 
             // And now we made it back to where we started
             assert(tgtIG == emitCodeGetCookie(tgtBlk));
@@ -8279,7 +8279,7 @@ void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, reg
     CORINFO_FIELD_HANDLE hnd = emitSimdConst(constValue, EA_ATTR(cnsSize));
     emitIns_R_C(ins, attr, targetReg, hnd, 0);
 }
-#endif
+#endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 CORINFO_FIELD_HANDLE emitter::emitSimdMaskConst(simdmask_t constValue)
