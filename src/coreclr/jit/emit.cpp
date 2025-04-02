@@ -8118,10 +8118,11 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
 #if defined(FEATURE_SIMD)
 //------------------------------------------------------------------------
-// emitSimd8Const: Create a simd8 data section constant.
+// emitSimdConst: Create a simd data section constant.
 //
 // Arguments:
 //    constValue - constant value
+//    attr       - The EA_SIZE for the constant type
 //
 // Return Value:
 //    A field handle representing the data offset to access the constant.
@@ -8131,10 +8132,11 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
 // to constant data, not a real static field.
 //
-CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
+CORINFO_FIELD_HANDLE emitter::emitSimdConst(simd_t* constValue, emitAttr attr)
 {
-    unsigned cnsSize  = 8;
-    unsigned cnsAlign = cnsSize;
+    unsigned  cnsSize  = EA_SIZE(attr);
+    unsigned  cnsAlign = cnsSize;
+    var_types dataType = (cnsSize >= 8) ? emitComp->getSIMDTypeForSize(cnsSize) : TYP_FLOAT;
 
 #ifdef TARGET_XARCH
     if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
@@ -8143,56 +8145,95 @@ CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
     }
 #endif // TARGET_XARCH
 
-    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD8);
+    UNATIVE_OFFSET cnum = emitDataConst(constValue, cnsSize, cnsAlign, dataType);
     return emitComp->eeFindJitDataOffs(cnum);
 }
-
-CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
-{
-    unsigned cnsSize  = 16;
-    unsigned cnsAlign = cnsSize;
 
 #ifdef TARGET_XARCH
-    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
-    {
-        cnsAlign = dataSection::MIN_DATA_ALIGN;
-    }
-#endif // TARGET_XARCH
-
-    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD16);
-    return emitComp->eeFindJitDataOffs(cnum);
-}
-
-#if defined(TARGET_XARCH)
-CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
+//------------------------------------------------------------------------
+// emitSimdConstCompressedLoad: Create a simd data section constant,
+//   compressing it if possible, and emit an appropiate instruction
+//   to load or broadcast the constant to a register.
+//
+// Arguments:
+//    constValue - constant value
+//    attr       - The EA_SIZE for the constant type
+//    targetReg  - The target register
+//
+void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, regNumber targetReg)
 {
-    unsigned cnsSize  = 32;
-    unsigned cnsAlign = cnsSize;
+    instruction ins     = INS_movups;
+    unsigned    cnsSize = EA_SIZE(attr);
 
-    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    for (unsigned size = 4; size < cnsSize; size *= 2)
     {
-        cnsAlign = dataSection::MIN_DATA_ALIGN;
+        // If the constant has zero upper elements/lanes, we can use a smaller load,
+        // because all scalar and vector loads from memory zero the upper.
+
+        simd_t val = {};
+        memcpy(&val, constValue, size);
+
+        if (memcmp(&val, constValue, cnsSize) == 0)
+        {
+            switch (size)
+            {
+                case 4:
+                    ins = INS_movss;
+                    break;
+                case 8:
+                    ins = INS_movsd_simd;
+                    break;
+                default:
+                    ins = INS_movups;
+                    break;
+            }
+
+            cnsSize = size;
+            attr    = EA_ATTR(size);
+            break;
+        }
+
+        if (((size == 8) && (cnsSize == 16) && emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE3)) ||
+            emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+        {
+            // If the value repeats, we can use an appropriate-sized broadcast instruction.
+
+            for (unsigned i = 1; i < (cnsSize / size); i++)
+            {
+                memcpy((simd_t*)((byte*)&val + (i * size)), constValue, size);
+            }
+
+            if (memcmp(&val, constValue, cnsSize) == 0)
+            {
+                switch (size)
+                {
+                    case 4:
+                        ins = INS_vbroadcastss;
+                        break;
+                    case 8:
+                        ins = (cnsSize == 16) ? INS_movddup : INS_vbroadcastsd;
+                        break;
+                    case 16:
+                        ins = INS_vbroadcastf128;
+                        break;
+                    case 32:
+                        assert(emitComp->IsBaselineVector512IsaSupportedDebugOnly());
+                        ins = INS_vbroadcastf32x8;
+                        break;
+                    default:
+                        unreached();
+                }
+
+                cnsSize = size;
+                break;
+            }
+        }
     }
 
-    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD32);
-    return emitComp->eeFindJitDataOffs(cnum);
+    CORINFO_FIELD_HANDLE hnd = emitSimdConst(constValue, EA_ATTR(cnsSize));
+    emitIns_R_C(ins, attr, targetReg, hnd, 0);
 }
-
-CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
-{
-    unsigned cnsSize  = 64;
-    unsigned cnsAlign = cnsSize;
-
-    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
-    {
-        cnsAlign = dataSection::MIN_DATA_ALIGN;
-    }
-
-    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD64);
-    return emitComp->eeFindJitDataOffs(cnum);
-}
-
-#endif // TARGET_XARCH
+#endif
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 CORINFO_FIELD_HANDLE emitter::emitSimdMaskConst(simdmask_t constValue)

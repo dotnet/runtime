@@ -536,12 +536,12 @@ void CodeGen::genSimd12UpperClear(regNumber tgtReg)
     else
     {
         // Preserve element 0, 1, and 2; Zero element 3
-        simd16_t constValue;
+        simd_t constValue                  = {};
         constValue.u32[0]                  = 0xFFFFFFFF;
         constValue.u32[1]                  = 0xFFFFFFFF;
         constValue.u32[2]                  = 0xFFFFFFFF;
         constValue.u32[3]                  = 0x00000000;
-        CORINFO_FIELD_HANDLE zroSimd12Elm3 = GetEmitter()->emitSimd16Const(constValue);
+        CORINFO_FIELD_HANDLE zroSimd12Elm3 = GetEmitter()->emitSimdConst(&constValue, EA_16BYTE);
         GetEmitter()->emitIns_SIMD_R_R_C(INS_andps, EA_16BYTE, tgtReg, tgtReg, zroSimd12Elm3, 0, INS_OPTS_NONE);
     }
 }

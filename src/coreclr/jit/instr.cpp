@@ -991,69 +991,25 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
             case GT_CNS_VEC:
             {
                 insTupleType tupleType = emit->insTupleTypeInfo(ins);
+                unsigned     cnsSize   = genTypeSize(op);
 
                 if ((tupleType == INS_TT_TUPLE1_SCALAR) || (tupleType == INS_TT_TUPLE1_FIXED))
                 {
                     // We have a vector const, but the instruction will only read a scalar from it,
                     // so don't waste space putting the entire vector to the data section.
 
-                    unsigned cnsSize = max(CodeGenInterface::instInputSize(ins), 4U);
+                    cnsSize = max(CodeGenInterface::instInputSize(ins), 4U);
                     assert(cnsSize <= genTypeSize(op));
-
-                    UNATIVE_OFFSET cnum = emit->emitDataConst(&op->AsVecCon()->gtSimdVal, cnsSize, cnsSize, TYP_UNDEF);
-                    return OperandDesc(compiler->eeFindJitDataOffs(cnum));
                 }
 
-                switch (op->TypeGet())
-                {
-                    case TYP_SIMD8:
-                    {
-                        simd8_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd8_t));
-                        return OperandDesc(emit->emitSimd8Const(constValue));
-                    }
-
-                    case TYP_SIMD12:
-                    {
-                        simd16_t constValue = {};
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd12_t));
-                        return OperandDesc(emit->emitSimd16Const(constValue));
-                    }
-                    case TYP_SIMD16:
-                    {
-                        simd16_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd16_t));
-                        return OperandDesc(emit->emitSimd16Const(constValue));
-                    }
-
-                    case TYP_SIMD32:
-                    {
-                        simd32_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd32_t));
-                        return OperandDesc(emit->emitSimd32Const(constValue));
-                    }
-
-                    case TYP_SIMD64:
-                    {
-                        simd64_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd64_t));
-                        return OperandDesc(emit->emitSimd64Const(constValue));
-                    }
-
-                    default:
-                    {
-                        unreached();
-                    }
-                }
+                return OperandDesc(emit->emitSimdConst(&op->AsVecCon()->gtSimdVal, EA_TYPE(cnsSize)));
             }
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
             case GT_CNS_MSK:
             {
-                simdmask_t constValue;
-                memcpy(&constValue, &op->AsMskCon()->gtSimdMaskVal, sizeof(simdmask_t));
-                return OperandDesc(emit->emitSimdMaskConst(constValue));
+                return OperandDesc(emit->emitSimdMaskConst(op->AsMskCon()->gtSimdMaskVal));
             }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 

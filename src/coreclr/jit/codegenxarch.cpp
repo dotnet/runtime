@@ -453,8 +453,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else
             {
-                CORINFO_FIELD_HANDLE hnd = emit->emitSimd8Const(val8);
-                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                emit->emitSimdConstCompressedLoad(val, attr, targetReg);
             }
             break;
         }
@@ -481,10 +480,9 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else
             {
-                simd16_t val16 = {};
+                simd_t val16 = {};
                 memcpy(&val16, &val12, sizeof(val12));
-                CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(val16);
-                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                emit->emitSimdConstCompressedLoad(val, EA_16BYTE, targetReg);
             }
             break;
         }
@@ -511,8 +509,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else
             {
-                CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(val16);
-                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                emit->emitSimdConstCompressedLoad(val, attr, targetReg);
             }
             break;
         }
@@ -539,8 +536,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else
             {
-                CORINFO_FIELD_HANDLE hnd = emit->emitSimd32Const(val32);
-                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                emit->emitSimdConstCompressedLoad(val, attr, targetReg);
             }
             break;
         }
@@ -565,8 +561,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else
             {
-                CORINFO_FIELD_HANDLE hnd = emit->emitSimd64Const(val64);
-                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                emit->emitSimdConstCompressedLoad(val, attr, targetReg);
             }
             break;
         }
@@ -7748,11 +7743,11 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
         assert(!"genSSE2BitwiseOp: unsupported oper");
     }
 
-    simd16_t constValue;
+    simd_t constValue = {};
     constValue.u64[0] = mask;
     constValue.u64[1] = mask;
 #if defined(FEATURE_SIMD)
-    maskFld = GetEmitter()->emitSimd16Const(constValue);
+    maskFld = GetEmitter()->emitSimdConst(&constValue, EA_16BYTE);
 #else
     maskFld = GetEmitter()->emitBlkConst(&constValue, 16, 16, treeNode->TypeGet());
 #endif
