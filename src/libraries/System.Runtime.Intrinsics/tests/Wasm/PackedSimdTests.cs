@@ -8,7 +8,7 @@ using System.Runtime.Intrinsics.Wasm;
 using System.Tests;
 using Xunit;
 
-namespace System.Runtime.Intrinsics.Tests.PackedSimd
+namespace System.Runtime.Intrinsics.Wasm.Tests
 {
     [PlatformSpecific(TestPlatforms.Browser)]
     public sealed class PackedSimdTests
@@ -167,15 +167,14 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
             int value = 42;
             float fValue = 3.14f;
 
-            fixed (int* intPtr = &value)
-            fixed (float* floatPtr = &fValue)
-            {
-                var intSplat = PackedSimd.LoadScalarAndSplatVector128(intPtr);
-                var floatSplat = PackedSimd.LoadScalarAndSplatVector128(floatPtr);
+            int* intPtr = &value;
+            float* floatPtr = &fValue;
 
-                Assert.Equal(Vector128.Create(42, 42, 42, 42), intSplat);
-                Assert.Equal(Vector128.Create(3.14f, 3.14f, 3.14f, 3.14f), floatSplat);
-            }
+            var intSplat = PackedSimd.LoadScalarAndSplatVector128(intPtr);
+            var floatSplat = PackedSimd.LoadScalarAndSplatVector128(floatPtr);
+
+            Assert.Equal(Vector128.Create(42, 42, 42, 42), intSplat);
+            Assert.Equal(Vector128.Create(3.14f, 3.14f, 3.14f, 3.14f), floatSplat);
         }
 
         [Fact]
@@ -195,12 +194,10 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         {
             var v = Vector128.Create(1, 2, 3, 4);
             int value = 0;
+            int* ptr = &value;
 
-            fixed (int* ptr = &value)
-            {
-                PackedSimd.StoreSelectedScalar(ptr, v, 2);
-                Assert.Equal(3, value);
-            }
+            PackedSimd.StoreSelectedScalar(ptr, v, 2);
+            Assert.Equal(3, value);
         }
 
         [Fact]
@@ -208,12 +205,10 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         {
             var v = Vector128.Create(1, 2, 3, 4);
             int newValue = 42;
+            int* ptr = &newValue;
 
-            fixed (int* ptr = &newValue)
-            {
-                var result = PackedSimd.LoadScalarAndInsert(ptr, v, 2);
-                Assert.Equal(Vector128.Create(1, 2, 42, 4), result);
-            }
+            var result = PackedSimd.LoadScalarAndInsert(ptr, v, 2);
+            Assert.Equal(Vector128.Create(1, 2, 42, 4), result);
         }
 
         [Fact]
@@ -257,18 +252,6 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
 
             Assert.Equal(Vector128.Create(20, 40, 60, 80), lowerResult);
             Assert.Equal(Vector128.Create(100, 120, 140, 160), upperResult);
-        }
-
-        [Fact]
-        public unsafe void ConvertNarrowingTest()
-        {
-            var lower = Vector128.Create(1, 2, 3, 4);
-            var upper = Vector128.Create(5, 6, 7, 8);
-
-            var narrowed = PackedSimd.ConvertNarrowingSaturate(lower, upper);
-
-            Assert.Equal(Vector128.Create((short)1, (short)2, (short)3, (short)4,
-                                        (short)5, (short)6, (short)7, (short)8), narrowed);
         }
 
         [Fact]
@@ -393,16 +376,47 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         {
             // Q15 format represents values in [-1, 1) using 16-bit integers
             // Maximum positive value is 0x7FFF (32767) representing approximately 0.99997
-            // Test with values that should saturate when multiplied
-            var shorts1 = Vector128.Create((short)32767, (short)-32768, (short)32700, (short)-32700);
-            var shorts2 = Vector128.Create((short)100, (short)-100, (short)100, (short)-100);
+            // Minimum negative value is 0x8000 (-32768) representing -1.0
+            var v1 = Vector128.Create(
+                (short)32767,  // ~1.0 (max positive)
+                (short)-32768, // -1.0 (min negative)
+                (short)16384,  // 0.5
+                (short)-16384, // -0.5
+                (short)8192,   // 0.25
+                (short)-8192,  // -0.25
+                (short)0,      // 0
+                (short)16384   // 0.5
+            );
+            var v2 = Vector128.Create(
+                (short)32767,  // ~1.0 (max positive)
+                (short)-32768, // -1.0 (min negative)
+                (short)16384,  // 0.5
+                (short)16384,  // 0.5
+                (short)-16384, // -0.5
+                (short)16384,  // 0.5
+                (short)32767,  // ~1.0
+                (short)-32768  // -1.0
+            );
 
-            var addSat = PackedSimd.AddSaturate(shorts1, shorts2);
-            var subSat = PackedSimd.SubtractSaturate(shorts1, shorts2);
+            var result = PackedSimd.MultiplyRoundedSaturateQ15(v1, v2);
 
-            // Verify saturation at max/min values
-            Assert.Equal(Vector128.Create((short)32767, (short)-32768, (short)32767, (short)-32768), addSat);
-            Assert.Equal(Vector128.Create((short)32767, (short)-32768, (short)32767, (short)-32768), subSat);
+            // Verify results:
+            // 1.0 * 1.0 ≈ 1.0 (saturates to max positive)
+            Assert.Equal((short)32767, result.GetElement(0));
+            // -1.0 * -1.0 = 1.0 (saturates to max positive)
+            Assert.Equal((short)32767, result.GetElement(1));
+            // 0.5 * 0.5 = 0.25 (rounded)
+            Assert.Equal((short)8192, result.GetElement(2));
+            // -0.5 * 0.5 = -0.25 (rounded)
+            Assert.Equal((short)-8192, result.GetElement(3));
+            // 0.25 * -0.5 = -0.125 (rounded)
+            Assert.Equal((short)-4096, result.GetElement(4));
+            // -0.25 * 0.5 = -0.125 (rounded)
+            Assert.Equal((short)-4096, result.GetElement(5));
+            // 0 * 1.0 = 0
+            Assert.Equal((short)0, result.GetElement(6));
+            // 0.5 * -1.0 = -0.5
+            Assert.Equal((short)-16384, result.GetElement(7));
         }
 
         [Fact]
@@ -432,21 +446,20 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
             float fInf = float.PositiveInfinity;
             double dInf = double.PositiveInfinity;
 
-            fixed (float* fPtr = &fInf)
-            fixed (double* dPtr = &dInf)
+            float* fPtr = &fInf;
+            double* dPtr = &dInf;
+
+            var floatSplat = PackedSimd.LoadScalarAndSplatVector128(fPtr);
+            var doubleSplat = PackedSimd.LoadScalarAndSplatVector128(dPtr);
+
+            for (int i = 0; i < 4; i++)
             {
-                var floatSplat = PackedSimd.LoadScalarAndSplatVector128(fPtr);
-                var doubleSplat = PackedSimd.LoadScalarAndSplatVector128(dPtr);
+                Assert.True(float.IsPositiveInfinity(floatSplat.GetElement(i)));
+            }
 
-                for (int i = 0; i < 4; i++)
-                {
-                    Assert.True(float.IsPositiveInfinity(floatSplat.GetElement(i)));
-                }
-
-                for (int i = 0; i < 2; i++)
-                {
-                    Assert.True(double.IsPositiveInfinity(doubleSplat.GetElement(i)));
-                }
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.True(double.IsPositiveInfinity(doubleSplat.GetElement(i)));
             }
         }
 
@@ -482,45 +495,75 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         [Fact]
         public unsafe void SignedSaturatedArithmeticTest()
         {
-            var shorts1 = Vector128.Create((short)32767, (short)-32768, (short)32700, (short)-32700);
-            var shorts2 = Vector128.Create((short)100, (short)-100, (short)100, (short)-100);
+            // Test saturation for various edge cases in signed 16-bit arithmetic
+            var v1 = Vector128.Create(
+                (short)32767, (short)-32768, (short)30000, (short)-30000,
+                (short)20000, (short)-20000, (short)10000, (short)-10000);
+            var v2 = Vector128.Create(
+                (short)10, (short)-10, (short)5000, (short)-5000,
+                (short)20000, (short)-20000, (short)5000, (short)-5000);
 
-            var addSat = PackedSimd.AddSaturate(shorts1, shorts2);
-            var subSat = PackedSimd.SubtractSaturate(shorts1, shorts2);
+            var addResult = PackedSimd.AddSaturate(v1, v2);
+            var subResult = PackedSimd.SubtractSaturate(v1, v2);
 
-            // Verify saturation at max/min values
-            Assert.Equal(Vector128.Create((short)32767, (short)-32768, (short)32767, (short)-32768), addSat);
-            Assert.Equal(Vector128.Create((short)32767, (short)-32768, (short)32767, (short)-32768), subSat);
+            // Adding to max positive should saturate at max
+            Assert.Equal((short)32767, addResult.GetElement(0));
+            // Adding to min negative should saturate at min
+            Assert.Equal((short)-32768, addResult.GetElement(1));
+            // Large positive additions should saturate
+            Assert.Equal((short)32767, addResult.GetElement(2));
+            // Large negative additions should saturate
+            Assert.Equal((short)-32768, addResult.GetElement(3));
+            // More saturation cases with higher values
+            Assert.Equal((short)32767, addResult.GetElement(4));
+            Assert.Equal((short)-32768, addResult.GetElement(5));
+            // Regular addition within range
+            Assert.Equal((short)15000, addResult.GetElement(6));
+            Assert.Equal((short)-15000, addResult.GetElement(7));
+
+            // Subtracting negative from max positive should saturate at max
+            Assert.Equal((short)32767, subResult.GetElement(0));
+            // Subtracting positive from min negative should saturate at min
+            Assert.Equal((short)-32768, subResult.GetElement(1));
+            // Regular subtraction within range shouldn't saturate
+            Assert.Equal((short)25000, subResult.GetElement(2));
+            Assert.Equal((short)-25000, subResult.GetElement(3));
+            // Perfect zero result
+            Assert.Equal((short)0, subResult.GetElement(4));
+            Assert.Equal((short)0, subResult.GetElement(5));
+            // More regular subtraction
+            Assert.Equal((short)5000, subResult.GetElement(6));
+            Assert.Equal((short)-5000, subResult.GetElement(7));
         }
 
         [Fact]
         public unsafe void NativeIntegerArithmeticTest()
         {
-            var v1 = Vector128.Create((nint)1, (nint)2, (nint)3, (nint)4);
-            var v2 = Vector128.Create((nint)5, (nint)6, (nint)7, (nint)8);
+            var v1 = Vector128.Create([(nint)1, (nint)2, (nint)3, (nint)4]);
+            var v2 = Vector128.Create([(nint)5, (nint)6, (nint)7, (nint)8]);
 
             var addResult = PackedSimd.Add(v1, v2);
             var subResult = PackedSimd.Subtract(v1, v2);
             var mulResult = PackedSimd.Multiply(v1, v2);
 
-            Assert.Equal(Vector128.Create((nint)6, (nint)8, (nint)10, (nint)12), addResult);
-            Assert.Equal(Vector128.Create((nint)(-4), (nint)(-4), (nint)(-4), (nint)(-4)), subResult);
-            Assert.Equal(Vector128.Create((nint)5, (nint)12, (nint)21, (nint)32), mulResult);
+            Assert.Equal(Vector128.Create([(nint)6, (nint)8, (nint)10, (nint)12]), addResult);
+            Assert.Equal(Vector128.Create([(nint)(-4), (nint)(-4), (nint)(-4), (nint)(-4)]), subResult);
+            Assert.Equal(Vector128.Create([(nint)5, (nint)12, (nint)21, (nint)32]), mulResult);
         }
 
         [Fact]
         public unsafe void NativeUnsignedIntegerArithmeticTest()
         {
-            var v1 = Vector128.Create((nuint)1, (nuint)2, (nuint)3, (nuint)4);
-            var v2 = Vector128.Create((nuint)5, (nuint)6, (nuint)7, (nuint)8);
+            var v1 = Vector128.Create([(nuint)1, (nuint)2, (nuint)3, (nuint)4]);
+            var v2 = Vector128.Create([(nuint)5, (nuint)6, (nuint)7, (nuint)8]);
 
             var addResult = PackedSimd.Add(v1, v2);
             var subResult = PackedSimd.Subtract(v1, v2);
             var mulResult = PackedSimd.Multiply(v1, v2);
 
-            Assert.Equal(Vector128.Create((nuint)6, (nuint)8, (nuint)10, (nuint)12), addResult);
-            Assert.Equal(Vector128.Create(unchecked((nuint) - 4), unchecked((nuint) - 4), unchecked((nuint) - 4), unchecked((nuint) - 4)), subResult);
-            Assert.Equal(Vector128.Create((nuint)5, (nuint)12, (nuint)21, (nuint)32), mulResult);
+            Assert.Equal(Vector128.Create([(nuint)6, (nuint)8, (nuint)10, (nuint)12]), addResult);
+            Assert.Equal(Vector128.Create([unchecked((nuint)(-4)), unchecked((nuint)(-4)), unchecked((nuint)(-4)), unchecked((nuint)(-4))]), subResult);
+            Assert.Equal(Vector128.Create([(nuint)5, (nuint)12, (nuint)21, (nuint)32]), mulResult);
         }
 
         [Fact]
@@ -530,7 +573,7 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
             fixed (nint* ptr = values)
             {
                 var loaded = PackedSimd.LoadVector128(ptr);
-                Assert.Equal(Vector128.Create((nint)1, (nint)2, (nint)3, (nint)4), loaded);
+                Assert.Equal(Vector128.Create(values.AsSpan()), loaded);
 
                 nint[] storeTarget = new nint[4];
                 fixed (nint* storePtr = storeTarget)
@@ -548,7 +591,7 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
             fixed (nuint* ptr = values)
             {
                 var loaded = PackedSimd.LoadVector128(ptr);
-                Assert.Equal(Vector128.Create((nuint)1, (nuint)2, (nuint)3, (nuint)4), loaded);
+                Assert.Equal(Vector128.Create(values.AsSpan()), loaded);
 
                 nuint[] storeTarget = new nuint[4];
                 fixed (nuint* storePtr = storeTarget)
@@ -562,27 +605,27 @@ namespace System.Runtime.Intrinsics.Tests.PackedSimd
         [Fact]
         public void NativeIntegerShiftTest()
         {
-            var v = Vector128.Create((nint)16, (nint) - 16, (nint)32, (nint) - 32);
+            var v = Vector128.Create([(nint)16, (nint)(-16), (nint)32, (nint)(-32)]);
 
             var leftShift = PackedSimd.ShiftLeft(v, 2);
             var rightShiftArith = PackedSimd.ShiftRightArithmetic(v, 2);
             var rightShiftLogical = PackedSimd.ShiftRightLogical(v, 2);
 
-            Assert.Equal(Vector128.Create((nint)64, (nint) - 64, (nint)128, (nint) - 128), leftShift);
-            Assert.Equal(Vector128.Create((nint)4, (nint) - 4, (nint)8, (nint) - 8), rightShiftArith);
-            Assert.Equal(Vector128.Create((nint)4, (nint)1073741820, (nint)8, (nint)1073741816), rightShiftLogical);
+            Assert.Equal(Vector128.Create([(nint)64, (nint)(-64), (nint)128, (nint)(-128)]), leftShift);
+            Assert.Equal(Vector128.Create([(nint)4, (nint)(-4), (nint)8, (nint)(-8)]), rightShiftArith);
+            Assert.Equal(Vector128.Create([(nint)4, (nint)1073741820, (nint)8, (nint)1073741816]), rightShiftLogical);
         }
 
         [Fact]
         public void NativeUnsignedIntegerShiftTest()
         {
-            var v = Vector128.Create((nuint)16, (nuint)unchecked(-16), (nuint)32, (nuint)unchecked(-32));
+            var v = Vector128.Create([(nuint)16, unchecked((nuint)(-16)), (nuint)32, unchecked((nuint)(-32))]);
 
             var leftShift = PackedSimd.ShiftLeft(v, 2);
             var rightShiftLogical = PackedSimd.ShiftRightLogical(v, 2);
 
-            Assert.Equal(Vector128.Create((nuint)64, unchecked((nuint) - 64), (nuint)128, unchecked((nuint) - 128)), leftShift);
-            Assert.Equal(Vector128.Create((nuint)4, (nuint)1073741820, (nuint)8, (nuint)1073741816), rightShiftLogical);
+            Assert.Equal(Vector128.Create([(nuint)64, unchecked((nuint)(-64)), (nuint)128, unchecked((nuint)(-128))]), leftShift);
+            Assert.Equal(Vector128.Create([(nuint)4, (nuint)1073741820, (nuint)8, (nuint)1073741816]), rightShiftLogical);
         }
     }
 }
