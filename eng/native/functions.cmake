@@ -1,3 +1,7 @@
+function(clr_unknown_arch)
+    message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
+endfunction()
+
 # C to MASM include file translator
 # This is replacement for the deprecated h2inc tool that used to be part of VS.
 function(h2inc filename output)
