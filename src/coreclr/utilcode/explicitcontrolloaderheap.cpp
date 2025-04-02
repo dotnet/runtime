@@ -47,7 +47,8 @@ size_t ExplicitControlLoaderHeap::AllocMem_TotalSize(size_t dwRequestedSize)
 //=====================================================================================
 
 #ifndef DACCESS_COMPILE
-ExplicitControlLoaderHeap::ExplicitControlLoaderHeap()
+ExplicitControlLoaderHeap::ExplicitControlLoaderHeap(bool fMakeExecutable) :
+    m_fExecutableHeap(fMakeExecutable)
 {
     CONTRACTL
     {
@@ -145,7 +146,7 @@ size_t ExplicitControlLoaderHeap::GetBytesAvailReservedRegion()
 BOOL ExplicitControlLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
 {
     // Commit first set of pages, since it will contain the LoaderHeapBlock
-    void *pTemp = ExecutableAllocator::Instance()->Commit(pData, dwSizeToCommitPart, TRUE);
+    void *pTemp = ExecutableAllocator::Instance()->Commit(pData, dwSizeToCommitPart, m_fExecutableHeap ? TRUE : FALSE);
     if (pTemp == NULL)
     {
         return FALSE;

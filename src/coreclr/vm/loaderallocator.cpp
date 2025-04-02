@@ -1205,10 +1205,8 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 
     initReservedMem += dwStubHeapReserveSize;
 
-    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
-                                                                           2 * GetStubCodePageSize(),
+    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) InterleavedLoaderHeap(
                                                                            &m_stubPrecodeRangeList,
-                                                                           UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                            false /* fUnlocked */,
                                                                            StubPrecode::GenerateCodePage,
                                                                            StubPrecode::CodeSize);
@@ -1218,19 +1216,14 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     {
         m_pDynamicHelpersStubHeap = m_pNewStubPrecodeHeap;
     }
-    m_pDynamicHelpersStubHeap = new (&m_DynamicHelpersHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
-                                                                               2 * GetStubCodePageSize(),
+    m_pDynamicHelpersStubHeap = new (&m_DynamicHelpersHeapInstance) InterleavedLoaderHeap(
                                                                                &m_dynamicHelpersRangeList,
-                                                                               UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                                false /* fUnlocked */,
                                                                                StubPrecode::GenerateCodePage,
                                                                                StubPrecode::CodeSize);
 #endif // defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
 
-    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
-                                                                       2 * GetStubCodePageSize(),
-                                                                       &m_fixupPrecodeRangeList,
-                                                                       UnlockedLoaderHeap::HeapKind::Interleaved,
+    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) InterleavedLoaderHeap(&m_fixupPrecodeRangeList,
                                                                        false /* fUnlocked */,
                                                                        FixupPrecode::GenerateCodePage,
                                                                        FixupPrecode::CodeSize);

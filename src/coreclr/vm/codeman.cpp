@@ -2231,8 +2231,7 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 //**************************************************************************
 
 LoaderCodeHeap::LoaderCodeHeap(bool fMakeExecutable)
-    : m_LoaderHeap(NULL,                    // RangeList *pRangeList
-                   fMakeExecutable),
+    : m_LoaderHeap(fMakeExecutable),
     m_cbMinNextPad(0)
 {
     WRAPPER_NO_CONTRACT;
