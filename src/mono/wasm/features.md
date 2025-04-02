@@ -408,6 +408,11 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
 You can enable integration with the profiler in browser dev tools via following elements in your .csproj
 ```xml
 <PropertyGroup>
-  <WasmProfilers>browser;</WasmProfilers>
+  <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
+  See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+  -->
+  <WasmProfilers>browser:callspec=N:Sample</WasmProfilers>
+  <!-- alternatively all methods -->
+  <WasmProfilers>browser:callspec=all</WasmProfilers>
 </PropertyGroup>
 ```
