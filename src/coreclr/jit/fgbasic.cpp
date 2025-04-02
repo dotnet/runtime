@@ -377,7 +377,7 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex)
         // If we removed all of the flow out of 'block', distribute flow among the remaining edges evenly.
         const weight_t currLikelihood = succTab[i]->getLikelihood();
         const weight_t newLikelihood =
-            currLikelihood / ((removedLikelihood == 1.0) ? newSuccCount : (1.0 - removedLikelihood));
+            (removedLikelihood == 1.0) ? (1.0 / newSuccCount) : (currLikelihood / (1.0 - removedLikelihood));
         succTab[i]->setLikelihood(min(1.0, newLikelihood));
     }
 
@@ -449,7 +449,7 @@ void Compiler::fgRemoveEhfSuccessor(FlowEdge* succEdge)
         // If we removed all of the flow out of 'block', distribute flow among the remaining edges evenly.
         const weight_t currLikelihood = succTab[i]->getLikelihood();
         const weight_t newLikelihood =
-            currLikelihood / ((removedLikelihood == 1.0) ? newSuccCount : (1.0 - removedLikelihood));
+            (removedLikelihood == 1.0) ? (1.0 / newSuccCount) : (currLikelihood / (1.0 - removedLikelihood));
         succTab[i]->setLikelihood(min(1.0, newLikelihood));
     }
 
