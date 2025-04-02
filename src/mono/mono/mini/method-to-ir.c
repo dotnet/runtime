@@ -3542,10 +3542,6 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 			return TRUE;
 	}
 
-	if (cfg->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT) {
-		return TRUE;
-	}
-
 	/*
 	 * Methods which do stack walks are marked with [System.Security.DynamicSecurityMethod] in the bcl.
 	 * This check won't work for StackCrawlMark.LookForMyCallersCaller, but thats not currently by the
@@ -7889,6 +7885,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 #endif
 			}
+#ifdef TARGET_WASM
+			if (cfg->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT) {
+				needs_stack_walk = TRUE;
+			}
+#endif
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT) && !gshared_static_virtual) {
 				if (!mono_class_is_interface (method->klass))
