@@ -559,8 +559,71 @@ int32_t InterpCompiler::ComputeCodeSize()
     return codeSize;
 }
 
+int32_t InterpCompiler::GetLiveStartOffset(int var)
+{
+    if (m_pVars[var].global)
+    {
+        return 0;
+    }
+    else
+    {
+        assert(m_pVars[var].liveStart != NULL);
+        return m_pVars[var].liveStart->nativeOffset;
+    }
+}
+
+int32_t InterpCompiler::GetLiveEndOffset(int var)
+{
+    if (m_pVars[var].global)
+    {
+        return m_methodCodeSize;
+    }
+    else
+    {
+        assert(m_pVars[var].liveEnd != NULL);
+        return m_pVars[var].liveEnd->nativeOffset + GetInsLength(m_pVars[var].liveEnd);
+    }
+}
+
+uint32_t InterpCompiler::ConvertOffset(int32_t offset)
+{
+    // FIXME Once the VM moved the InterpMethod* to code header, we don't need to add a pointer size to the offset
+    return offset * sizeof(int32_t) + sizeof(void*);
+}
+
 int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*> *relocs)
 {
+    ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
+
+    if (ins->ilOffset != -1)
+    {
+        assert(ins->ilOffset >= 0);
+        assert(ins->nativeOffset >= 0);
+        uint32_t ilOffset = ins->ilOffset;
+        uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
+        if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
+        {
+            //
+            // This code assumes IL offsets in the actual opcode stream with valid IL offsets is monotonically
+            // increasing, so the generated map contains strictly increasing IL offsets.
+            //
+            // Native offsets are obviously strictly increasing by construction here.
+            //
+            assert((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset < ilOffset));
+            assert((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].nativeOffset < nativeOffset));
+
+            //
+            // Since we can have at most one entry per IL offset,
+            // this map cannot possibly use more entries than the size of the IL code
+            //
+            assert(m_ILToNativeMapSize < m_ILCodeSize);
+
+            m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
+            m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
+            m_ILToNativeMapSize++;
+        }
+    }
+
     int32_t opcode = ins->opcode;
     int32_t *startIp = ip;
 
@@ -696,6 +759,10 @@ void InterpCompiler::EmitCode()
     int32_t codeSize = ComputeCodeSize();
     m_pMethodCode = (int32_t*)AllocMethodData(codeSize * sizeof(int32_t));
 
+    // These will eventually be freed by the VM, and they use the delete [] operator for the deletion.
+    m_pILToNativeMap = new ICorDebugInfo::OffsetMapping[m_ILCodeSize];
+    ICorDebugInfo::NativeVarInfo* eeVars = new ICorDebugInfo::NativeVarInfo[m_numILVars];
+
     int32_t *ip = m_pMethodCode;
     for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
     {
@@ -713,6 +780,22 @@ void InterpCompiler::EmitCode()
     m_methodCodeSize = (int32_t)(ip - m_pMethodCode);
 
     PatchRelocations(&relocs);
+
+    int j = 0;
+    for (int i = 0; i < m_numILVars; i++)
+    {
+        assert(m_pVars[i].ILGlobal);
+        eeVars[j].startOffset          = ConvertOffset(GetLiveStartOffset(i)); // This is where the variable mapping is start to become valid
+        eeVars[j].endOffset            = ConvertOffset(GetLiveEndOffset(i));   // This is where the variable mapping is cease to become valid
+        eeVars[j].varNumber            = j;                                    // This is the index of the variable in [arg] + [local]
+        eeVars[j].loc.vlType           = ICorDebugInfo::VLT_STK;               // This is a stack slot
+        eeVars[j].loc.vlStk.vlsBaseReg = ICorDebugInfo::REGNUM_FP;             // This specifies which register this offset is based off
+        eeVars[j].loc.vlStk.vlsOffset  = m_pVars[i].offset;                    // This specifies starting from the offset, how much offset is this from
+        j++;
+    }
+
+    m_compHnd->setVars(m_methodInfo->ftn, m_numILVars, eeVars);
+    m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
 }
 
 InterpMethod* InterpCompiler::CreateInterpMethod()
@@ -878,12 +961,12 @@ void InterpCompiler::CreateILVars()
     int32_t offset, size, align;
     int numArgs = hasThis + m_methodInfo->args.numArgs;
     int numILLocals = m_methodInfo->locals.numArgs;
-    int numILVars = numArgs + numILLocals;
+    m_numILVars = numArgs + numILLocals;
 
     // add some starting extra space for new vars
-    m_varsCapacity = numILVars + 64;
+    m_varsCapacity = m_numILVars + 64;
     m_pVars = (InterpVar*)AllocTemporary0(m_varsCapacity * sizeof (InterpVar));
-    m_varsSize = numILVars;
+    m_varsSize = m_numILVars;
 
     offset = 0;
 
@@ -2987,7 +3070,10 @@ void InterpCompiler::PrintBBCode(InterpBasicBlock *pBB)
 {
     printf("BB%d:\n", pBB->index);
     for (InterpInst *ins = pBB->pFirstIns; ins != NULL; ins = ins->pNext)
+    {
         PrintIns(ins);
+        printf("\n");
+    }
 }
 
 void InterpCompiler::PrintIns(InterpInst *ins)
@@ -3037,7 +3123,6 @@ void InterpCompiler::PrintIns(InterpInst *ins)
         printf(" %d", ins->sVars[0]);
     else
         PrintInsData(ins, ins->ilOffset, &ins->data[0], ins->opcode);
-    printf("\n");
 }
 
 void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int32_t *pData, int32_t opcode)
