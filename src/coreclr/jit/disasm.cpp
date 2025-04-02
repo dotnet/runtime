@@ -1704,6 +1704,10 @@ bool DisAssembler::InitCoredistoolsDisasm()
     coreDisTargetArchitecture = Target_X86;
 #elif defined(TARGET_AMD64)
     coreDisTargetArchitecture = Target_X64;
+#elif defined(TARGET_LOONGARCH64)
+    coreDisTargetArchitecture = Target_LoongArch64;
+#elif 0 && defined(TARGET_RISCV64) // TODO-RISCV64: enable this when coredistools is updated
+    coreDisTargetArchitecture = Target_RiscV64;
 #else
 #error Unsupported target for LATE_DISASM with USE_COREDISTOOLS
 #endif
