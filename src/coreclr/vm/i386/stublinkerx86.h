@@ -209,8 +209,6 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitCall(CodeLabel *target, int iArgBytes);
         VOID X86EmitReturn(WORD wArgBytes);
 
-        VOID X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet);
-
         VOID X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigned preservedRegSet);
 
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, int32_t ofs = 0);
@@ -338,64 +336,5 @@ inline TADDR rel32Decode(/*PTR_INT32*/ TADDR pRel32)
 
 void rel32SetInterlocked(/*PINT32*/ PVOID pRel32, /*PINT32*/ PVOID pRel32RW, TADDR target, MethodDesc* pMD);
 BOOL rel32SetInterlocked(/*PINT32*/ PVOID pRel32, /*PINT32*/ PVOID pRel32RW, TADDR target, TADDR expected, MethodDesc* pMD);
-
-//------------------------------------------------------------------------
-//
-// Precode definitions
-//
-//------------------------------------------------------------------------
-
-#include <pshpack1.h>
-
-#ifdef HAS_THISPTR_RETBUF_PRECODE
-
-// Precode to stuffle this and retbuf for closed delegates over static methods with return buffer
-struct ThisPtrRetBufPrecode {
-
-#ifdef HOST_64BIT
-    static const int Type = 0x90;
-#else
-    static const int Type = 0x89;
-#endif // HOST_64BIT
-
-    // mov regScratch,regArg0
-    // mov regArg0,regArg1
-    // mov regArg1,regScratch
-    // nop
-    // jmp EntryPoint
-    // dw pMethodDesc
-
-    IN_TARGET_64BIT(BYTE   m_nop1;)
-    IN_TARGET_64BIT(BYTE   m_prefix1;)
-    WORD            m_movScratchArg0;
-    IN_TARGET_64BIT(BYTE   m_prefix2;)
-    WORD            m_movArg0Arg1;
-    IN_TARGET_64BIT(BYTE   m_prefix3;)
-    WORD            m_movArg1Scratch;
-    BYTE            m_nop2;
-    BYTE            m_jmp;
-    INT32           m_rel32;
-    TADDR           m_pMethodDesc;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
-
-    TADDR GetMethodDesc()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-
-        return m_pMethodDesc;
-    }
-
-    PCODE GetTarget();
-
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected);
-};
-
-typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
-
-#endif // HAS_THISPTR_RETBUF_PRECODE
-
-#include <poppack.h>
 
 #endif  // STUBLINKERX86_H_

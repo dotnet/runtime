@@ -5,9 +5,8 @@
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">
+  <PropertyGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuild)' != 'true'">
     <PushToLocalStorage>true</PushToLocalStorage>
-    <PreserveRepoOrigin>true</PreserveRepoOrigin>
     <ArtifactsStagingDir>$(ArtifactsDir)staging/</ArtifactsStagingDir>
     <SourceBuiltPdbArtifactsDir>$(ArtifactsStagingDir)SymStore</SourceBuiltPdbArtifactsDir>
     <!-- Put blobs where we put packages so our regular globbing in our publish join job finds them. -->
@@ -22,19 +21,19 @@
 
   <!-- In the runtime official build, we only sign a subset of files. Add all of our blob artifacts here again for publishing -->
   <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true'">
-    <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
-                           $(ArtifactsPackagesDir)**\*.zip;
-                           $(ArtifactsPackagesDir)**\*.deb;
-                           $(ArtifactsPackagesDir)**\*.rpm;
-                           $(ArtifactsPackagesDir)**\*.pkg;
-                           $(ArtifactsPackagesDir)**\*.exe;
-                           $(ArtifactsPackagesDir)**\*.msi;"
-                  Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
-                  Kind="Blob"
-                  IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
+    <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
+                       $(ArtifactsPackagesDir)**\*.zip;
+                       $(ArtifactsPackagesDir)**\*.deb;
+                       $(ArtifactsPackagesDir)**\*.rpm;
+                       $(ArtifactsPackagesDir)**\*.pkg;
+                       $(ArtifactsPackagesDir)**\*.exe;
+                       $(ArtifactsPackagesDir)**\*.msi;"
+              Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
+              Kind="Blob"
+              IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
       <!-- Exclude wixpack.zip files from checksum generation -->
       <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
-    </BlobArtifact>
+    </Artifact>
   </ItemGroup>
 
   <!--
@@ -122,17 +121,17 @@
     </ItemGroup>
     <!-- In vertical dotnet/runtime legs outside of the VMR, set the "relative blob path" to shipping vs non-shipping to make our download/upload work. -->
     <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">
-      <Artifact Condition="'%(Artifact.IsVSSetup)' == 'true'"
-                RelativeBlobPath="VSSetup/%(Filename)%(Extension)" />
-
       <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' == 'true'"
                 RelativeBlobPath="packages/$(Configuration)/Shipping/%(Filename)%(Extension)" />
       <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' != 'true'"
                 RelativeBlobPath="packages/$(Configuration)/NonShipping/%(Filename)%(Extension)" />
-      <ItemsToPushToBlobFeed Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' == 'true'"
+      <ItemsToPushToBlobFeed Condition="'%(ItemsToPushToBlobFeed.Kind)' == 'Blob' and '%(ItemsToPushToBlobFeed.IsShipping)' == 'true'"
                              RelativeBlobPath="packages/$(Configuration)/Shipping/%(Filename)%(Extension)" />
-      <ItemsToPushToBlobFeed Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' != 'true'"
-                             RelativeBlobPath="packages/$(Configuration)/NonShipping/%(RecursiveDir)%(Filename)%(Extension)" />
+      <ItemsToPushToBlobFeed Condition="'%(ItemsToPushToBlobFeed.Kind)' == 'Blob' and '%(ItemsToPushToBlobFeed.IsShipping)' != 'true'"
+                             RelativeBlobPath="packages/$(Configuration)/NonShipping/%(Filename)%(Extension)" />
+
+      <Artifact Condition="'%(Artifact.IsVSSetup)' == 'true'"
+                RelativeBlobPath="VSSetup/%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 </Project>

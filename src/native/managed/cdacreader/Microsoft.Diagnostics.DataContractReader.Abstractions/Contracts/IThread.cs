@@ -45,9 +45,9 @@ public interface IThread : IContract
 {
     static string IContract.Name { get; } = nameof(Thread);
 
-    public virtual ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
-    public virtual ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
-    public virtual ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
+    ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
+    ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
+    ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
 }
 
 public readonly struct Thread : IThread

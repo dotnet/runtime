@@ -150,12 +150,6 @@ jobs:
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
-      - name: _buildDarwinFrameworksParameter
-        ${{ if in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
-          value: /p:BuildDarwinFrameworks=true
-        ${{ if notin(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
-          value: ''
-
       # Set no native sanitizers by default
       - name: _nativeSanitizersArg
         value: ''

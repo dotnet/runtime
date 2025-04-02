@@ -175,7 +175,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
     inline bool validFloatRegister(int) { return false; }
     inline bool validVectorRegister(int) { return false; }
 
-    inline static int  lastDwarfRegNum() { return 16; }
+    static constexpr int lastDwarfRegNum() { return 16; }
 
     inline bool validRegister(int regNum) const
     {
@@ -297,7 +297,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
     inline bool validFloatRegister(int) { return false; }
     inline bool validVectorRegister(int) { return false; }
 
-    inline static int  lastDwarfRegNum() { return 16; }
+    static constexpr int lastDwarfRegNum() { return 16; }
 
     inline bool validRegister(int regNum) const
     {
@@ -336,7 +336,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
 struct Registers_REGDISPLAY : REGDISPLAY
 {
     inline static int  getArch() { return libunwind::REGISTERS_ARM; }
-    inline static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM; }
+    static constexpr int lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM; }
 
     bool        validRegister(int num) const;
     bool        validFloatRegister(int num) const;
@@ -533,7 +533,7 @@ void Registers_REGDISPLAY::setFloatRegister(int num, double value)
 struct Registers_REGDISPLAY : REGDISPLAY
 {
     inline static int  getArch() { return libunwind::REGISTERS_ARM64; }
-    inline static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM64; }
+    static constexpr int lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM64; }
 
     bool        validRegister(int num) const;
     bool        validFloatRegister(int num) { return false; };
@@ -816,7 +816,7 @@ void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 struct Registers_REGDISPLAY : REGDISPLAY
 {
     inline static int  getArch() { return libunwind::REGISTERS_LOONGARCH; }
-    inline static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_LOONGARCH; }
+    static constexpr int lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_LOONGARCH; }
 
     bool        validRegister(int num) const;
     bool        validFloatRegister(int num) { return false; };
@@ -1096,7 +1096,7 @@ void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 struct Registers_REGDISPLAY : REGDISPLAY
 {
     inline static int  getArch() { return libunwind::REGISTERS_RISCV; }
-    inline static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_RISCV; }
+    static constexpr int lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_RISCV; }
 
     bool        validRegister(int num) const;
     bool        validFloatRegister(int num) { return false; };

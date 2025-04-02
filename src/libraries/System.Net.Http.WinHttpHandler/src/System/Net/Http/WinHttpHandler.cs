@@ -52,7 +52,6 @@ namespace System.Net.Http
 
         private readonly object _lockObject = new object();
         private bool _doManualDecompressionCheck;
-        private WinInetProxyHelper? _proxyHelper;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
@@ -814,29 +813,7 @@ namespace System.Net.Http
                             Interop.WinHttp.WINHTTP_NO_PROXY_NAME,
                             Interop.WinHttp.WINHTTP_NO_PROXY_BYPASS,
                             (int)Interop.WinHttp.WINHTTP_FLAG_ASYNC);
-
-                        if (sessionHandle.IsInvalid)
-                        {
-                            int lastError = Marshal.GetLastWin32Error();
-                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
-
-                            if (lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER)
-                            {
-                                ThrowOnInvalidHandle(sessionHandle, nameof(Interop.WinHttp.WinHttpOpen));
-                            }
-
-                            // We must be running on a platform earlier than Win8.1/Win2K12R2 which doesn't support
-                            // WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY.  So, we'll need to read the Wininet style proxy
-                            // settings ourself using our WinInetProxyHelper object.
-                            _proxyHelper = new WinInetProxyHelper();
-                            sessionHandle = Interop.WinHttp.WinHttpOpen(
-                                IntPtr.Zero,
-                                _proxyHelper.ManualSettingsOnly ? Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY : Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY,
-                                _proxyHelper.ManualSettingsOnly ? _proxyHelper.Proxy : Interop.WinHttp.WINHTTP_NO_PROXY_NAME,
-                                _proxyHelper.ManualSettingsOnly ? _proxyHelper.ProxyBypass : Interop.WinHttp.WINHTTP_NO_PROXY_BYPASS,
-                                (int)Interop.WinHttp.WINHTTP_FLAG_ASYNC);
-                            ThrowOnInvalidHandle(sessionHandle, nameof(Interop.WinHttp.WinHttpOpen));
-                        }
+                        ThrowOnInvalidHandle(sessionHandle, nameof(Interop.WinHttp.WinHttpOpen));
 
                         uint optionAssuredNonBlockingTrue = 1; // TRUE
 
@@ -1176,40 +1153,43 @@ namespace System.Net.Http
         {
             const SslProtocols Tls13 = (SslProtocols)12288; // enum is missing in .NET Standard
             uint optionData = 0;
-            SslProtocols sslProtocols =
-                (_sslProtocols == SslProtocols.None) ? SecurityProtocol.DefaultSecurityProtocols : _sslProtocols;
+
+            if (_sslProtocols == SslProtocols.None)
+            {
+                return;
+            }
 
 #pragma warning disable 0618 // SSL2/SSL3 are deprecated
-            if ((sslProtocols & SslProtocols.Ssl2) != 0)
+            if ((_sslProtocols & SslProtocols.Ssl2) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL2;
             }
 
-            if ((sslProtocols & SslProtocols.Ssl3) != 0)
+            if ((_sslProtocols & SslProtocols.Ssl3) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL3;
             }
 #pragma warning restore 0618
 
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
-            if ((sslProtocols & SslProtocols.Tls) != 0)
+            if ((_sslProtocols & SslProtocols.Tls) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1;
             }
 
-            if ((sslProtocols & SslProtocols.Tls11) != 0)
+            if ((_sslProtocols & SslProtocols.Tls11) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1;
             }
 #pragma warning restore SYSLIB0039
 
-            if ((sslProtocols & SslProtocols.Tls12) != 0)
+            if ((_sslProtocols & SslProtocols.Tls12) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
             }
 
             // Set this only if supported by WinHttp version.
-            if (s_supportsTls13.Value && (sslProtocols & Tls13) != 0)
+            if (s_supportsTls13.Value && (_sslProtocols & Tls13) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
             }
@@ -1279,17 +1259,15 @@ namespace System.Net.Http
             SetRequestHandleHttp2Options(state.RequestHandle, state.RequestMessage.Version);
         }
 
-        private void SetRequestHandleProxyOptions(WinHttpRequestState state)
+        private static void SetRequestHandleProxyOptions(WinHttpRequestState state)
         {
             Debug.Assert(state.RequestMessage != null);
             Debug.Assert(state.RequestMessage.RequestUri != null);
             Debug.Assert(state.RequestHandle != null);
 
-            // We've already set the proxy on the session handle if we're using no proxy or default proxy settings.
-            // We only need to change it on the request handle if we have a specific IWebProxy or need to manually
-            // implement Wininet-style auto proxy detection.
-            if (state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy ||
-                state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseWinInetProxy)
+            // We've already set the proxy on the session handle if we're using no proxy or default/auto proxy settings.
+            // We only need to change it on the request handle if we have a specific custom IWebProxy.
+            if (state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy)
             {
                 Interop.WinHttp.WINHTTP_PROXY_INFO proxyInfo = default;
                 bool updateProxySettings = false;
@@ -1299,7 +1277,6 @@ namespace System.Net.Http
                 {
                     if (state.Proxy != null)
                     {
-                        Debug.Assert(state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy);
                         updateProxySettings = true;
 
                         Uri? proxyUri = state.Proxy.IsBypassed(uri) ? null : state.Proxy.GetProxy(uri);
@@ -1312,13 +1289,6 @@ namespace System.Net.Http
                             proxyInfo.AccessType = Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY;
                             string proxyString = proxyUri.Scheme + "://" + proxyUri.Authority;
                             proxyInfo.Proxy = Marshal.StringToHGlobalUni(proxyString);
-                        }
-                    }
-                    else if (_proxyHelper != null && _proxyHelper.AutoSettingsUsed)
-                    {
-                        if (_proxyHelper.GetProxyForUrl(_sessionHandle, uri, out proxyInfo))
-                        {
-                            updateProxySettings = true;
                         }
                     }
 
