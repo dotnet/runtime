@@ -959,7 +959,7 @@ BOOL Thread::ReadyForAsyncException()
     }
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && IsAbortPrevented())
+    if (IsAbortPrevented())
     {
         return FALSE;
     }
@@ -2309,15 +2309,10 @@ void Thread::HandleThreadAbort ()
         }
 
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled)
-        {
-            DispatchManagedException(exceptObj);
-        }
-        else
+        DispatchManagedException(exceptObj);
+#else // FEATURE_EH_FUNCLETS
+        RaiseTheExceptionInternalOnly(exceptObj, FALSE);
 #endif // FEATURE_EH_FUNCLETS
-        {
-            RaiseTheExceptionInternalOnly(exceptObj, FALSE);
-        }
     }
 
     ::SetLastError(lastError);
@@ -3785,27 +3780,23 @@ ThrowControlForThread(
     STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread Aborting\n");
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        GCX_COOP();
 
-        EXCEPTION_RECORD exceptionRecord = {0};
-        exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation);
-        exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
-        exceptionRecord.ExceptionFlags = 0;
+    GCX_COOP();
 
-        OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
-        pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
-        DispatchManagedException(throwable, pfef->GetExceptionContext());
-    }
-    else
-#endif // FEATURE_EH_FUNCLETS
-    {
-        // Here we raise an exception.
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER
-        RaiseComPlusException();
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-    }
+    EXCEPTION_RECORD exceptionRecord = {0};
+    exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation);
+    exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
+    exceptionRecord.ExceptionFlags = 0;
+
+    OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
+    pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    DispatchManagedException(throwable, pfef->GetExceptionContext());
+#else // FEATURE_EH_FUNCLETS
+    // Here we raise an exception.
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER
+    RaiseComPlusException();
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+#endif // FEATURE_EH_FUNCLETS    
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -4781,7 +4772,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
 #endif
                         }
-#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+#elif defined(TARGET_X86)
+                        // peel off the next frame to expose the return address on the stack
+                        pES->m_FirstPass = FALSE;
+                        action = SWA_CONTINUE;
+#elif defined(TARGET_AMD64)
                         pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
 #else // TARGET_X86 || TARGET_AMD64
                         PORTABILITY_ASSERT("Platform NYI");
@@ -4820,7 +4815,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     }
     else
     {
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
+#ifdef TARGET_X86
         // Second pass, looking for the address of the return address so we can
         // hijack:
 
