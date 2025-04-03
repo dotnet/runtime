@@ -188,14 +188,22 @@ namespace System.Reflection.Metadata
             if (allowFullyQualifiedName && !TryParseAssemblyName(ref assemblyName))
             {
 #if SYSTEM_PRIVATE_CORELIB
-                // backward compat: throw FileLoadException for non-empty invalid strings
-                if (_throwOnError || !_inputString.TrimStart().StartsWith(","))
+                // Backward compatibility: throw for non-empty invalid assembly names.
+                if (!_inputString.TrimStart().StartsWith(","))
                 {
-                    throw new IO.FileLoadException(SR.InvalidAssemblyName, _inputString.ToString());
+                    // No matter what throwOnError is set to, if top level assembly was not provided, CLR throws FileLoadException for invalid assembly names.
+                    if (!_parseOptions.TopLevelAssemblyWasProvided)
+                    {
+                        throw new IO.FileLoadException(SR.InvalidAssemblyName, _inputString.ToString());
+                    }
+                    // If top level was provided and user has requested for error, we throw ArgumentException.
+                    else if (_throwOnError)
+                    {
+                        throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
+                    }
                 }
-#else
-                return null;
 #endif
+                return null;
             }
 
             // No matter what was parsed, the full name string is allocated only once.

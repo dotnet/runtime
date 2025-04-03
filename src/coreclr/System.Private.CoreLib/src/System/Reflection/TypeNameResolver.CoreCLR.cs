@@ -80,7 +80,7 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
-            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError);
+            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError, new() { TopLevelAssemblyWasProvided = topLevelAssembly is not null });
 
             if (parsed is null)
             {
