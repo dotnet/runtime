@@ -73,7 +73,7 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
 //
 bool ObjectAllocator::IsTrackedType(var_types type)
 {
-    const bool isTrackableScalar = (type == TYP_REF) || (genActualType(type) == TYP_I_IMPL) || (type == TYP_BYREF);
+    const bool isTrackableScalar = (type == TYP_REF) || (type == TYP_BYREF);
     const bool isTrackableStruct = (type == TYP_STRUCT) && m_trackFields;
 
     return isTrackableScalar || isTrackableStruct;
@@ -1608,13 +1608,19 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
         switch (parent->OperGet())
         {
-            // Update the connection graph if we are storing to a local.
-            //
             case GT_STORE_LCL_VAR:
             {
-                // Add an edge to the connection graph, if destination is a local we're tracking
-                // (i.e. a local var or a field of a local var).
                 const unsigned int dstLclNum = parent->AsLclVar()->GetLclNum();
+
+                // If we're not tracking stores to this local, the value
+                // does not escape.
+                if (!IsTrackedLocal(dstLclNum))
+                {
+                    canLclVarEscapeViaParentStack = false;
+                    break;
+                }
+
+                // Add an edge to the connection graph.
                 const unsigned int srcLclNum = lclNum;
 
                 AddConnGraphEdge(dstLclNum, srcLclNum);
@@ -1958,13 +1964,31 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 break;
 
             case GT_SUB:
-                if (parent->TypeGet() != newType)
+            {
+                // Parent type can be TYP_I_IMPL, TYP_BYREF.
+                // But not TYP_REF.
+                //
+                var_types parentType = parent->TypeGet();
+                assert(parentType != TYP_REF);
+
+                // New type can be TYP_I_IMPL, TYP_BYREF.
+                // But TYP_BYREF only if parent is also
+                //
+                if (parentType != newType)
                 {
+                    // We must be retyping TYP_BYREF to TYP_I_IMPL.
+                    //
+                    assert(newType == TYP_I_IMPL);
+                    assert(parentType == TYP_BYREF);
                     parent->ChangeType(newType);
+
+                    // Propgate that upwards.
+                    //
                     ++parentIndex;
                     keepChecking = true;
                 }
                 break;
+            }
 
             case GT_COLON:
             {
