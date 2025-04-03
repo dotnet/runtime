@@ -3719,17 +3719,17 @@ void emitter::emitDispInsName(
                     return;
                 case 0x5: // SRLIW & SRAIW
                 {
-                    unsigned funct6 = (imm12 >> 5) & 0x7f;
+                    unsigned funct7 = (imm12 >> 5) & 0x7f;
                     imm12 &= 0x1f; // 5BITS for SHAMT in RISCV64
-                    switch (funct6)
+                    switch (funct7)
                     {
-                        case 0b000000:
+                        case 0b0000000:
                             printf("srliw          %s, %s, %d\n", rd, rs1, imm12);
                             return;
-                        case 0b010000:
+                        case 0b0100000:
                             printf("sraiw          %s, %s, %d\n", rd, rs1, imm12);
                             return;
-                        case 0b011000:
+                        case 0b0110000:
                             printf("roriw          %s, %s, %d\n", rd, rs1, imm12);
                             return;
                         default:
@@ -3788,8 +3788,8 @@ void emitter::emitDispInsName(
                         case 0x0: // SUB
                             printf("sub            %s, %s, %s\n", rd, rs1, rs2);
                             return;
-                        case 0x4: // XORN
-                            printf("xorn           %s, %s, %s\n", rd, rs1, rs2);
+                        case 0x4: // XNOR
+                            printf("xnor           %s, %s, %s\n", rd, rs1, rs2);
                             return;
                         case 0x5: // SRA
                             printf("sra            %s, %s, %s\n", rd, rs1, rs2);
@@ -3842,7 +3842,7 @@ void emitter::emitDispInsName(
                             printf("rol            %s, %s, %s\n", rd, rs1, rs2);
                             return;
                         case 0b101:
-                            printf("ror           %s, %s, %s\n", rd, rs1, rs2);
+                            printf("ror            %s, %s, %s\n", rd, rs1, rs2);
                             return;
                         default:
                             return emitDispIllegalInstruction(code);
