@@ -26362,6 +26362,12 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
     return gtNewSimdToScalarNode(type, op1, simdBaseJitType, simdSize);
 
 #elif defined(TARGET_ARM64)
+    if (simdSize > 16)
+    {
+        tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_Sve_AddAcross, simdBaseJitType, simdSize);
+        return gtNewSimdToScalarNode(type, tmp, simdBaseJitType, 16);
+    }
+
     switch (simdBaseType)
     {
         case TYP_BYTE:
