@@ -485,6 +485,7 @@ class Thread
     friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger);
     friend BOOL CheckActivationSafePoint(SIZE_T ip);
 #endif // FEATURE_THREAD_ACTIVATION
+
 #endif // FEATURE_HIJACK
 
     friend void         InitThreadManager();
