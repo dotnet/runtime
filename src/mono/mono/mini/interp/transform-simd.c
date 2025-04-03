@@ -169,11 +169,25 @@ static guint16 packed_simd_alias_methods [] = {
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
+	SN_Shuffle,
 	SN_Subtract,
 	SN_Truncate,
 	SN_WidenLower,
 	SN_WidenUpper,
 	SN_Xor,
+// operators
+	SN_op_Addition,
+	SN_op_BitwiseAnd,
+	SN_op_BitwiseOr,
+	SN_op_Division,
+	SN_op_ExclusiveOr,
+	SN_op_LeftShift,
+	SN_op_Multiply,
+	SN_op_OnesComplement,
+	SN_op_RightShift,
+	SN_op_Subtraction,
+	SN_op_UnaryNegation,
+	SN_op_UnsignedRightShift,
 };
 
 static MonoTypeEnum 
@@ -270,10 +284,13 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_OR;
 			break;
 		case SN_op_Equality:
-			if (atype != MONO_TYPE_R4 && atype != MONO_TYPE_R8) {
-				*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			if (atype == MONO_TYPE_R4)
+				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_FLOAT_EQUALITY;
+			else if (atype == MONO_TYPE_R8)
+				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_R8_FLOAT_EQUALITY;
+			else
 				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_EQUALITY;
-			}
 			break;
 		case SN_EqualsFloatingPoint:
 			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
@@ -713,6 +730,11 @@ emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 		}
 	}
 
+#ifdef HOST_BROWSER
+	if (emit_sri_packedsimd (td, cmethod, csignature))
+		return TRUE;
+#endif
+
 	int id = lookup_intrins (sri_vector128_t_methods, sizeof (sri_vector128_t_methods), cmethod->name);
 	if (id == -1) {
 		if (explicitly_implemented) {
@@ -761,6 +783,12 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 		cmethod_name += 67;
 		explicitly_implemented = true;
 	}
+
+
+#ifdef HOST_BROWSER
+	if (emit_sri_packedsimd (td, cmethod, csignature))
+		return TRUE;
+#endif
 
 	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod_name);
 	if (id == -1) {
@@ -1115,31 +1143,47 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		id = lookup_intrins (packed_simd_alias_methods, sizeof (packed_simd_alias_methods), cmethod_name);
 		gboolean is_unsigned = (atype == MONO_TYPE_U1 || atype == MONO_TYPE_U2 || atype == MONO_TYPE_U4 || atype == MONO_TYPE_U8 || atype == MONO_TYPE_U);
 		
-		// cmethod_name = must be a packed simd intrinsic, so we can just use the name directly
+		// cmethod_name must match a packed simd intrinsic name, so use an alias when needed
+		// if a match with the aliased name and matching arguments is found, we use it,
+		// so be careful not to overmatch if the implementations differ (e.g. Dot)
 		switch (id) {
 			case SN_LessThan:
+			case SN_op_LessThan:
 				cmethod_name = "CompareLessThan";
 				break;
 			case SN_LessThanOrEqual:
+			case SN_op_LessThanOrEqual:
 				cmethod_name = "CompareLessThanOrEqual";
 				break;
 			case SN_GreaterThan:
+			case SN_op_GreaterThan:
 				cmethod_name = "CompareGreaterThan";
 				break;
 			case SN_GreaterThanOrEqual:
+			case SN_op_GreaterThanOrEqual:
 				cmethod_name = "CompareGreaterThanOrEqual";
 				break;
 			case SN_Equals:
 				cmethod_name = "CompareEqual";
 				break;
 			case SN_BitwiseAnd:
+			case SN_op_BitwiseAnd:
 				cmethod_name = "And";
 				break;
 			case SN_BitwiseOr:
+			case SN_op_BitwiseOr:
 				cmethod_name = "Or";
 				break;
 			case SN_OnesComplement:
+			case SN_op_OnesComplement:
 				cmethod_name = "Not";
+				break;
+			case SN_Load:
+			case SN_LoadUnsafe:
+				cmethod_name = "LoadVector128";
+				break;
+			case SN_Shuffle:
+				cmethod_name = "Swizzle";
 				break;
 			case SN_WidenLower:
 				cmethod_name = is_unsigned ? "ZeroExtendWideningLower" : "SignExtendWideningLower";
@@ -1147,9 +1191,32 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_WidenUpper:
 				cmethod_name = is_unsigned ? "ZeroExtendWideningUpper" : "SignExtendWideningUpper";
 				break;
-			case SN_Load:
-			case SN_LoadUnsafe:
-				cmethod_name = "LoadVector128";
+			case SN_op_Addition:
+				cmethod_name = "Add";
+				break;
+			case SN_op_Division:
+				cmethod_name = "Divide";
+				break;
+			case SN_op_ExclusiveOr:
+				cmethod_name = "Xor";
+				break;
+			case SN_op_LeftShift:
+				cmethod_name = "ShiftLeft";
+				break;
+			case SN_op_Multiply:
+				cmethod_name = "Multiply";
+				break;
+			case SN_op_RightShift:
+				cmethod_name = is_unsigned ? "ShiftRightLogical" : "ShiftRightArithmetic";
+				break;
+			case SN_op_Subtraction:
+				cmethod_name = "Subtract";
+				break;
+			case SN_op_UnaryNegation:
+				cmethod_name = "Negate";
+				break;
+			case SN_op_UnsignedRightShift:
+				cmethod_name = "ShiftRightLogical";
 				break;
 			case SN_Add:
 			case SN_AndNot:
