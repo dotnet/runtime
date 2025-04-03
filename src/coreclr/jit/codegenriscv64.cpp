@@ -4722,7 +4722,44 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 //
 void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
-    NYI_RISCV64("genIntrinsic-----unimplemented/unused on RISCV64 yet----");
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTree* op2 = treeNode->gtGetOp2IfPresent();
+
+    emitAttr size = emitActualTypeSize(treeNode);
+    bool     is4  = (size == 4);
+
+    instruction instr = INS_invalid;
+    switch (treeNode->gtIntrinsicName)
+    {
+        case NI_System_Math_Abs:
+            instr = is4 ? INS_fsgnjx_s : INS_fsgnjx_d;
+            op2   = op1; // "fabs rd, rs" is a pseudo-instruction for "fsgnjx rd, rs, rs"
+            break;
+        case NI_System_Math_Sqrt:
+            instr = is4 ? INS_fsqrt_s : INS_fsqrt_d;
+            break;
+        case NI_System_Math_MinNumber:
+            instr = is4 ? INS_fmin_s : INS_fmin_d;
+            break;
+        case NI_System_Math_MaxNumber:
+            instr = is4 ? INS_fmax_s : INS_fmax_d;
+            break;
+        default:
+            NO_WAY("Unknown intrinsic");
+    }
+
+    genConsumeOperands(treeNode->AsOp());
+    regNumber dest = treeNode->GetRegNum();
+    regNumber src1 = op1->GetRegNum();
+    if (op2 == nullptr)
+    {
+        GetEmitter()->emitIns_R_R(instr, size, dest, src1);
+    }
+    else
+    {
+        GetEmitter()->emitIns_R_R_R(instr, size, dest, src1, op2->GetRegNum());
+    }
+    genProduceReg(treeNode);
 }
 
 //---------------------------------------------------------------------

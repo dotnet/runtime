@@ -94,6 +94,7 @@ struct InterpInst
 
     int32_t opcode;
     int32_t ilOffset;
+    int32_t nativeOffset;
     uint32_t flags;
     int32_t dVar;
     int32_t sVars[3]; // Currently all instructions have at most 3 sregs
@@ -179,8 +180,8 @@ struct InterpVar
     int offset;
     int size;
     // live_start and live_end are used by the offset allocator
-    int liveStart;
-    int liveEnd;
+    InterpInst* liveStart;
+    InterpInst* liveEnd;
     // index of first basic block where this var is used
     int bbIndex;
     // If var is callArgs, this is the call instruction using it.
@@ -199,7 +200,7 @@ struct InterpVar
         this->clsHnd = clsHnd;
         this->size = size;
         offset = -1;
-        liveStart = -1;
+        liveStart = NULL;
         bbIndex = -1;
         indirects = 0;
 
@@ -300,7 +301,7 @@ private:
 
     // Instructions
     InterpBasicBlock *m_pCBB, *m_pEntryBB;
-    InterpInst* m_pLastIns;
+    InterpInst* m_pLastNewIns;
 
     int32_t     GetInsLength(InterpInst *pIns);
     bool        InsIsNop(InterpInst *pIns);
@@ -321,6 +322,9 @@ private:
     int m_BBCount = 0;
     InterpBasicBlock**  m_ppOffsetToBB;
 
+    ICorDebugInfo::OffsetMapping* m_pILToNativeMap = NULL;
+    int32_t m_ILToNativeMapSize = 0;
+
     InterpBasicBlock*   AllocBB(int32_t ilOffset);
     InterpBasicBlock*   GetBB(int32_t ilOffset);
     void                LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to);
@@ -338,6 +342,7 @@ private:
     InterpVar *m_pVars = NULL;
     int32_t m_varsSize = 0;
     int32_t m_varsCapacity = 0;
+    int32_t m_numILVars = 0;
 
     int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
@@ -346,6 +351,8 @@ private:
     int32_t m_ILLocalsOffset, m_ILLocalsSize;
     void    AllocVarOffsetCB(int *pVar, void *pData);
     int32_t AllocVarOffset(int var, int32_t *pPos);
+    int32_t GetLiveStartOffset(int var);
+    int32_t GetLiveEndOffset(int var);
 
     int32_t GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign);
     void    CreateILVars();
@@ -384,7 +391,7 @@ private:
     TSList<InterpInst*> *m_pDeferredCalls;
 
     int32_t AllocGlobalVarOffset(int var);
-    void    SetVarLiveRange(int32_t var, int insIndex);
+    void    SetVarLiveRange(int32_t var, InterpInst* ins);
     void    SetVarLiveRangeCB(int32_t *pVar, void *pData);
     void    InitializeGlobalVar(int32_t var, int bbIndex);
     void    InitializeGlobalVarCB(int32_t *pVar, void *pData);
@@ -398,6 +405,7 @@ private:
 
     void AllocOffsets();
     int32_t ComputeCodeSize();
+    uint32_t ConvertOffset(int32_t offset);
     void EmitCode();
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*> *relocs);
     void PatchRelocations(TArray<Reloc*> *relocs);

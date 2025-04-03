@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "interpreter.h"
 
+#include <inttypes.h>
+
 static const StackType g_stackTypeFromInterpType[] =
 {
     StackTypeI4, // I1
@@ -110,7 +112,7 @@ InterpInst* InterpCompiler::NewIns(int opcode, int dataLen)
     memset(ins, 0, insSize);
     ins->opcode = opcode;
     ins->ilOffset = m_currentILOffset;
-    m_pLastIns = ins;
+    m_pLastNewIns = ins;
     return ins;
 }
 
@@ -408,13 +410,13 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
             int32_t movOp = InterpGetMovForType(interpType, false);
 
             AddIns(movOp);
-            m_pLastIns->SetSVar(m_pStackPointer[i].var);
-            m_pLastIns->SetDVar(pTargetBB->pStackState[i].var);
+            m_pLastNewIns->SetSVar(m_pStackPointer[i].var);
+            m_pLastNewIns->SetDVar(pTargetBB->pStackState[i].var);
 
             if (interpType == InterpTypeVT)
             {
                 assert(m_pVars[sVar].size == m_pVars[dVar].size);
-                m_pLastIns->data[0] = m_pVars[sVar].size;
+                m_pLastNewIns->data[0] = m_pVars[sVar].size;
             }
         }
     }
@@ -559,8 +561,71 @@ int32_t InterpCompiler::ComputeCodeSize()
     return codeSize;
 }
 
+int32_t InterpCompiler::GetLiveStartOffset(int var)
+{
+    if (m_pVars[var].global)
+    {
+        return 0;
+    }
+    else
+    {
+        assert(m_pVars[var].liveStart != NULL);
+        return m_pVars[var].liveStart->nativeOffset;
+    }
+}
+
+int32_t InterpCompiler::GetLiveEndOffset(int var)
+{
+    if (m_pVars[var].global)
+    {
+        return m_methodCodeSize;
+    }
+    else
+    {
+        assert(m_pVars[var].liveEnd != NULL);
+        return m_pVars[var].liveEnd->nativeOffset + GetInsLength(m_pVars[var].liveEnd);
+    }
+}
+
+uint32_t InterpCompiler::ConvertOffset(int32_t offset)
+{
+    // FIXME Once the VM moved the InterpMethod* to code header, we don't need to add a pointer size to the offset
+    return offset * sizeof(int32_t) + sizeof(void*);
+}
+
 int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*> *relocs)
 {
+    ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
+
+    if (ins->ilOffset != -1)
+    {
+        assert(ins->ilOffset >= 0);
+        assert(ins->nativeOffset >= 0);
+        uint32_t ilOffset = ins->ilOffset;
+        uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
+        if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
+        {
+            //
+            // This code assumes IL offsets in the actual opcode stream with valid IL offsets is monotonically
+            // increasing, so the generated map contains strictly increasing IL offsets.
+            //
+            // Native offsets are obviously strictly increasing by construction here.
+            //
+            assert((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset < ilOffset));
+            assert((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].nativeOffset < nativeOffset));
+
+            //
+            // Since we can have at most one entry per IL offset,
+            // this map cannot possibly use more entries than the size of the IL code
+            //
+            assert(m_ILToNativeMapSize < m_ILCodeSize);
+
+            m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
+            m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
+            m_ILToNativeMapSize++;
+        }
+    }
+
     int32_t opcode = ins->opcode;
     int32_t *startIp = ip;
 
@@ -696,6 +761,14 @@ void InterpCompiler::EmitCode()
     int32_t codeSize = ComputeCodeSize();
     m_pMethodCode = (int32_t*)AllocMethodData(codeSize * sizeof(int32_t));
 
+    // These will eventually be freed by the VM, and they use the delete [] operator for the deletion.
+    m_pILToNativeMap = new ICorDebugInfo::OffsetMapping[m_ILCodeSize];
+    ICorDebugInfo::NativeVarInfo* eeVars = NULL;
+    if (m_numILVars > 0)
+    {
+        eeVars = new ICorDebugInfo::NativeVarInfo[m_numILVars];
+    }
+
     int32_t *ip = m_pMethodCode;
     for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
     {
@@ -713,6 +786,25 @@ void InterpCompiler::EmitCode()
     m_methodCodeSize = (int32_t)(ip - m_pMethodCode);
 
     PatchRelocations(&relocs);
+
+    int j = 0;
+    for (int i = 0; i < m_numILVars; i++)
+    {
+        assert(m_pVars[i].ILGlobal);
+        eeVars[j].startOffset          = ConvertOffset(GetLiveStartOffset(i)); // This is where the variable mapping is start to become valid
+        eeVars[j].endOffset            = ConvertOffset(GetLiveEndOffset(i));   // This is where the variable mapping is cease to become valid
+        eeVars[j].varNumber            = j;                                    // This is the index of the variable in [arg] + [local]
+        eeVars[j].loc.vlType           = ICorDebugInfo::VLT_STK;               // This is a stack slot
+        eeVars[j].loc.vlStk.vlsBaseReg = ICorDebugInfo::REGNUM_FP;             // This specifies which register this offset is based off
+        eeVars[j].loc.vlStk.vlsOffset  = m_pVars[i].offset;                    // This specifies starting from the offset, how much offset is this from
+        j++;
+    }
+
+    if (m_numILVars > 0)
+    {
+        m_compHnd->setVars(m_methodInfo->ftn, m_numILVars, eeVars);
+    }
+    m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
 }
 
 InterpMethod* InterpCompiler::CreateInterpMethod()
@@ -878,12 +970,12 @@ void InterpCompiler::CreateILVars()
     int32_t offset, size, align;
     int numArgs = hasThis + m_methodInfo->args.numArgs;
     int numILLocals = m_methodInfo->locals.numArgs;
-    int numILVars = numArgs + numILLocals;
+    m_numILVars = numArgs + numILLocals;
 
     // add some starting extra space for new vars
-    m_varsCapacity = numILVars + 64;
+    m_varsCapacity = m_numILVars + 64;
     m_pVars = (InterpVar*)AllocTemporary0(m_varsCapacity * sizeof (InterpVar));
-    m_varsSize = numILVars;
+    m_varsSize = m_numILVars;
 
     offset = 0;
 
@@ -1079,7 +1171,7 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     InitBBStackState(pTargetBB);
 
     AddIns(opcode);
-    m_pLastIns->info.pTargetBB = pTargetBB;
+    m_pLastNewIns->info.pTargetBB = pTargetBB;
 }
 
 void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
@@ -1092,7 +1184,7 @@ void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     if (ilOffset)
     {
         EmitBranch(opcodeArgType, ilOffset + insSize);
-        m_pLastIns->SetSVar(m_pStackPointer[0].var);
+        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
     }
     else
     {
@@ -1110,21 +1202,21 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     // emitting the conditional branch
     if (argType1 == StackTypeI4 && argType2 == StackTypeI8)
     {
-        EmitConv(m_pStackPointer - 1, m_pLastIns, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 1, m_pLastNewIns, StackTypeI8, INTOP_CONV_I8_I4);
         argType1 = StackTypeI8;
     }
     else if (argType1 == StackTypeI8 && argType2 == StackTypeI4)
     {
-        EmitConv(m_pStackPointer - 2, m_pLastIns, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 2, m_pLastNewIns, StackTypeI8, INTOP_CONV_I8_I4);
     }
     else if (argType1 == StackTypeR4 && argType2 == StackTypeR8)
     {
-        EmitConv(m_pStackPointer - 1, m_pLastIns, StackTypeR8, INTOP_CONV_R8_R4);
+        EmitConv(m_pStackPointer - 1, m_pLastNewIns, StackTypeR8, INTOP_CONV_R8_R4);
         argType1 = StackTypeR8;
     }
     else if (argType1 == StackTypeR8 && argType2 == StackTypeR4)
     {
-        EmitConv(m_pStackPointer - 2, m_pLastIns, StackTypeR8, INTOP_CONV_R8_R4);
+        EmitConv(m_pStackPointer - 2, m_pLastNewIns, StackTypeR8, INTOP_CONV_R8_R4);
     }
     else if (argType1 != argType2)
     {
@@ -1139,7 +1231,7 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     if (ilOffset)
     {
         EmitBranch(opcodeArgType, ilOffset + insSize);
-        m_pLastIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+        m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
     }
     else
     {
@@ -1160,10 +1252,10 @@ void InterpCompiler::EmitLoadVar(int32_t var)
         PushInterpType(interpType, clsHnd);
 
     AddIns(InterpGetMovForType(interpType, true));
-    m_pLastIns->SetSVar(var);
-    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+    m_pLastNewIns->SetSVar(var);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
     if (interpType == InterpTypeVT)
-        m_pLastIns->data[0] = size;
+        m_pLastNewIns->data[0] = size;
 }
 
 void InterpCompiler::EmitStoreVar(int32_t var)
@@ -1183,10 +1275,10 @@ void InterpCompiler::EmitStoreVar(int32_t var)
 
     m_pStackPointer--;
     AddIns(InterpGetMovForType(interpType, false));
-    m_pLastIns->SetSVar(m_pStackPointer[0].var);
-    m_pLastIns->SetDVar(var);
+    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+    m_pLastNewIns->SetDVar(var);
     if (interpType == InterpTypeVT)
-        m_pLastIns->data[0] = m_pVars[var].size;
+        m_pLastNewIns->data[0] = m_pVars[var].size;
 }
 
 void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
@@ -1301,9 +1393,9 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 
     m_pStackPointer -= 2;
     AddIns(finalOpcode);
-    m_pLastIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
     PushStackType(typeRes, NULL);
-    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
 void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
@@ -1319,9 +1411,9 @@ void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
 
     m_pStackPointer--;
     AddIns(finalOpcode);
-    m_pLastIns->SetSVar(m_pStackPointer[0].var);
+    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
     PushStackType(stackType, NULL);
-    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
 void InterpCompiler::EmitShiftOp(int32_t opBase)
@@ -1338,9 +1430,9 @@ void InterpCompiler::EmitShiftOp(int32_t opBase)
 
     m_pStackPointer -= 2;
     AddIns(finalOpcode);
-    m_pLastIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
     PushStackType(stackType, NULL);
-    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
 void InterpCompiler::EmitCompareOp(int32_t opBase)
@@ -1359,9 +1451,9 @@ void InterpCompiler::EmitCompareOp(int32_t opBase)
         AddIns(opBase + m_pStackPointer[-1].type - StackTypeI4);
     }
     m_pStackPointer -= 2;
-    m_pLastIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
     PushStackType(StackTypeI4, NULL);
-    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
 int32_t InterpCompiler::GetDataItemIndex(void *data)
@@ -1488,13 +1580,13 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
 
     // Emit call instruction
     AddIns(INTOP_CALL);
-    m_pLastIns->SetDVar(dVar);
-    m_pLastIns->SetSVar(CALL_ARGS_SVAR);
-    m_pLastIns->data[0] = GetMethodDataItemIndex(targetMethod);
+    m_pLastNewIns->SetDVar(dVar);
+    m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
+    m_pLastNewIns->data[0] = GetMethodDataItemIndex(targetMethod);
 
-    m_pLastIns->flags |= INTERP_INST_FLAG_CALL;
-    m_pLastIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
-    m_pLastIns->info.pCallInfo->pCallArgs = callArgs;
+    m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+    m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
+    m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
     m_ip += 5;
 }
@@ -1545,19 +1637,19 @@ void InterpCompiler::EmitLdind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     m_pStackPointer--;
     int32_t opcode = GetLdindForType(interpType);
     AddIns(opcode);
-    m_pLastIns->SetSVar(m_pStackPointer[0].var);
-    m_pLastIns->data[0] = offset;
+    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+    m_pLastNewIns->data[0] = offset;
     if (interpType == InterpTypeVT)
     {
         int size = m_compHnd->getClassSize(clsHnd);
-        m_pLastIns->data[1] = size;
+        m_pLastNewIns->data[1] = size;
         PushTypeVT(clsHnd, size);
     }
     else
     {
         PushInterpType(interpType, NULL);
     }
-    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
 void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder)
@@ -1569,12 +1661,12 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
         if (m_compHnd->getClassAttribs(clsHnd) & CORINFO_FLG_CONTAINS_GC_PTR)
         {
             AddIns(INTOP_STIND_VT);
-            m_pLastIns->data[1] = GetDataItemIndex(clsHnd);
+            m_pLastNewIns->data[1] = GetDataItemIndex(clsHnd);
         }
         else
         {
             AddIns(INTOP_STIND_VT_NOREF);
-            m_pLastIns->data[1] = m_compHnd->getClassSize(clsHnd);
+            m_pLastNewIns->data[1] = m_compHnd->getClassSize(clsHnd);
         }
     }
     else
@@ -1582,13 +1674,13 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
         AddIns(GetStindForType(interpType));
     }
 
-    m_pLastIns->data[0] = offset;
+    m_pLastNewIns->data[0] = offset;
 
     m_pStackPointer -= 2;
     if (reverseSVarOrder)
-        m_pLastIns->SetSVars2(m_pStackPointer[1].var, m_pStackPointer[0].var);
+        m_pLastNewIns->SetSVars2(m_pStackPointer[1].var, m_pStackPointer[0].var);
     else
-        m_pLastIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+        m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
 
 }
 
@@ -1603,8 +1695,8 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
             AddIns(INTOP_LDPTR);
             PushInterpType(InterpTypeByRef, NULL);
-            m_pLastIns->SetDVar(m_pStackPointer[-1].var);
-            m_pLastIns->data[0] = GetDataItemIndex(pFieldInfo->fieldLookup.addr);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            m_pLastNewIns->data[0] = GetDataItemIndex(pFieldInfo->fieldLookup.addr);
             break;
         }
         case CORINFO_FIELD_STATIC_TLS_MANAGED:
@@ -1636,19 +1728,19 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             void *helperFtn = m_compHnd->getHelperFtn(pFieldInfo->helper, &helperFtnSlot);
             // Call helper to obtain thread static base address
             AddIns(INTOP_CALL_HELPER_PP);
-            m_pLastIns->data[0] = GetDataItemIndex(helperFtn);
-            m_pLastIns->data[1] = GetDataItemIndex(helperFtnSlot);
-            m_pLastIns->data[2] = GetDataItemIndex(helperArg);
+            m_pLastNewIns->data[0] = GetDataItemIndex(helperFtn);
+            m_pLastNewIns->data[1] = GetDataItemIndex(helperFtnSlot);
+            m_pLastNewIns->data[2] = GetDataItemIndex(helperArg);
             PushInterpType(InterpTypeByRef, NULL);
-            m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 
             // Add field offset
             m_pStackPointer--;
             AddIns(INTOP_ADD_P_IMM);
-            m_pLastIns->data[0] = (int32_t)pFieldInfo->offset;
-            m_pLastIns->SetSVar(m_pStackPointer[0].var);
+            m_pLastNewIns->data[0] = (int32_t)pFieldInfo->offset;
+            m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
             PushInterpType(InterpTypeByRef, NULL);
-            m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
         }
         default:
@@ -1670,10 +1762,10 @@ void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_F
 void InterpCompiler::EmitLdLocA(int32_t var)
 {
     AddIns(INTOP_LDLOCA);
-    m_pLastIns->SetSVar(var);
+    m_pLastNewIns->SetSVar(var);
     m_pVars[var].indirects++;
     PushInterpType(InterpTypeByRef, NULL);
-    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
 int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
@@ -1704,9 +1796,10 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     if ((methodInfo->options & CORINFO_OPT_INIT_LOCALS) && m_ILLocalsSize > 0)
     {
+        m_currentILOffset = 0;
         AddIns(INTOP_INITLOCALS);
-        m_pLastIns->data[0] = m_ILLocalsOffset;
-        m_pLastIns->data[1] = m_ILLocalsSize;
+        m_pLastNewIns->data[0] = m_ILLocalsOffset;
+        m_pLastNewIns->data[1] = m_ILLocalsSize;
     }
 
     codeEnd = m_ip + m_ILCodeSize;
@@ -1852,32 +1945,77 @@ retry_emit:
             case CEE_LDC_I4_7:
             case CEE_LDC_I4_8:
                 AddIns(INTOP_LDC_I4);
-                m_pLastIns->data[0] = opcode - CEE_LDC_I4_0;
+                m_pLastNewIns->data[0] = opcode - CEE_LDC_I4_0;
                 PushStackType(StackTypeI4, NULL);
-                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip++;
                 break;
             case CEE_LDC_I4_S:
                 AddIns(INTOP_LDC_I4);
-                m_pLastIns->data[0] = (int8_t)m_ip[1];
+                m_pLastNewIns->data[0] = (int8_t)m_ip[1];
                 PushStackType(StackTypeI4, NULL);
-                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip += 2;
                 break;
             case CEE_LDC_I4:
                 AddIns(INTOP_LDC_I4);
-                m_pLastIns->data[0] = getI4LittleEndian(m_ip + 1);
+                m_pLastNewIns->data[0] = getI4LittleEndian(m_ip + 1);
                 PushStackType(StackTypeI4, NULL);
-                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip += 5;
                 break;
+            case CEE_LDC_I8:
+            {
+                int64_t val = getI8LittleEndian(m_ip + 1);
+                AddIns(INTOP_LDC_I8);
+                PushInterpType(InterpTypeI8, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = (int32_t)val;
+                m_pLastNewIns->data[1] = (int32_t)(val >> 32);
+                m_ip += 9;
+                break;
+            }
+            case CEE_LDC_R4:
+            {
+                int32_t val = getI4LittleEndian(m_ip + 1);
+                AddIns(INTOP_LDC_R4);
+                PushInterpType(InterpTypeR4, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = val;
+                m_ip += 5;
+                break;
+            }
+            case CEE_LDC_R8:
+            {
+                int64_t val = getI8LittleEndian(m_ip + 1);
+                AddIns(INTOP_LDC_R8);
+                PushInterpType(InterpTypeR8, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = (int32_t)val;
+                m_pLastNewIns->data[1] = (int32_t)(val >> 32);
+                m_ip += 9;
+                break;
+            }
             case CEE_LDNULL:
                 AddIns(INTOP_LDNULL);
                 PushStackType(StackTypeO, NULL);
-                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip++;
                 break;
-
+            case CEE_LDSTR:
+            {
+                int32_t token = getI4LittleEndian(m_ip + 1);
+                void *str;
+                InfoAccessType accessType = m_compHnd->constructStringLiteral(m_compScopeHnd, token, &str);
+                assert(accessType == IAT_VALUE);
+                // str should be forever pinned, so we can include its ref inside interpreter code
+                AddIns(INTOP_LDPTR);
+                PushInterpType(InterpTypeO, m_compHnd->getBuiltinClass(CLASSID_STRING));
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = GetDataItemIndex(str);
+                m_ip += 5;
+                break;
+            }
             case CEE_LDARG_S:
                 EmitLoadVar(m_ip[1]);
                 m_ip += 2;
@@ -1939,15 +2077,15 @@ retry_emit:
                     AddIns(INTOP_RET_VT);
                     m_pStackPointer--;
                     int32_t retVar = m_pStackPointer[0].var;
-                    m_pLastIns->SetSVar(retVar);
-                    m_pLastIns->data[0] = m_pVars[retVar].size;
+                    m_pLastNewIns->SetSVar(retVar);
+                    m_pLastNewIns->data[0] = m_pVars[retVar].size;
                 }
                 else
                 {
                     CHECK_STACK(1);
                     AddIns(INTOP_RET);
                     m_pStackPointer--;
-                    m_pLastIns->SetSVar(m_pStackPointer[0].var);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
                 }
                 m_ip++;
                 break;
@@ -2276,11 +2414,11 @@ retry_emit:
                 uint32_t n = getU4LittleEndian(m_ip);
                 // Format of switch instruction is opcode + srcVal + n + T1 + T2 + ... + Tn
                 AddInsExplicit(INTOP_SWITCH, n + 3);
-                m_pLastIns->data[0] = n;
+                m_pLastNewIns->data[0] = n;
                 m_ip += 4;
                 const uint8_t *nextIp = m_ip + n * 4;
                 m_pStackPointer--;
-                m_pLastIns->SetSVar(m_pStackPointer->var);
+                m_pLastNewIns->SetSVar(m_pStackPointer->var);
                 InterpBasicBlock **targetBBTable = (InterpBasicBlock**)AllocMemPool(sizeof (InterpBasicBlock*) * n);
 
                 for (uint32_t i = 0; i < n; i++)
@@ -2295,7 +2433,7 @@ retry_emit:
                     LinkBBs(m_pCBB, targetBB);
                     m_ip += 4;
                 }
-                m_pLastIns->info.ppTargetBBTable = targetBBTable;
+                m_pLastNewIns->info.ppTargetBBTable = targetBBTable;
                 break;
             }
             case CEE_BR:
@@ -2507,26 +2645,26 @@ retry_emit:
                 int32_t thisVar = m_pStackPointer[-1].var;
                 // Consider this arg as being defined, although newobj defines it
                 AddIns(INTOP_DEF);
-                m_pLastIns->SetDVar(thisVar);
+                m_pLastNewIns->SetDVar(thisVar);
                 callArgs[0] = thisVar;
 
                 if (retType == InterpTypeVT)
                 {
                     AddIns(INTOP_NEWOBJ_VT);
-                    m_pLastIns->data[1] = (int32_t)ALIGN_UP_TO(vtsize, INTERP_STACK_SLOT_SIZE);
+                    m_pLastNewIns->data[1] = (int32_t)ALIGN_UP_TO(vtsize, INTERP_STACK_SLOT_SIZE);
                 }
                 else
                 {
                     AddIns(INTOP_NEWOBJ);
-                    m_pLastIns->data[1] = GetDataItemIndex(ctorClass);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(ctorClass);
                 }
-                m_pLastIns->data[0] = GetMethodDataItemIndex(ctorMethod);
-                m_pLastIns->SetSVar(CALL_ARGS_SVAR);
-                m_pLastIns->SetDVar(dVar);
+                m_pLastNewIns->data[0] = GetMethodDataItemIndex(ctorMethod);
+                m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
+                m_pLastNewIns->SetDVar(dVar);
 
-                m_pLastIns->flags |= INTERP_INST_FLAG_CALL;
-                m_pLastIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof(InterpCallInfo));
-                m_pLastIns->info.pCallInfo->pCallArgs = callArgs;
+                m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+                m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof(InterpCallInfo));
+                m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
                 // Pop this, the result of the newobj still remains on the stack
                 m_pStackPointer--;
@@ -2559,10 +2697,10 @@ retry_emit:
                     assert(fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE);
                     m_pStackPointer--;
                     AddIns(INTOP_LDFLDA);
-                    m_pLastIns->data[0] = (int32_t)fieldInfo.offset;
-                    m_pLastIns->SetSVar(m_pStackPointer[0].var);
+                    m_pLastNewIns->data[0] = (int32_t)fieldInfo.offset;
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
                     PushInterpType(InterpTypeByRef, NULL);
-                    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 }
 
                 m_ip += 5;
@@ -2596,27 +2734,27 @@ retry_emit:
                     {
                         sizeDataIndexOffset = 1;
                         AddIns(INTOP_MOV_SRC_OFF);
-                        m_pLastIns->data[1] = interpFieldType;
+                        m_pLastNewIns->data[1] = interpFieldType;
                     }
                     else
                     {
                         int32_t opcode = GetLdindForType(interpFieldType);
                         AddIns(opcode);
                     }
-                    m_pLastIns->SetSVar(m_pStackPointer[0].var);
-                    m_pLastIns->data[0] = (int32_t)fieldInfo.offset;
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                    m_pLastNewIns->data[0] = (int32_t)fieldInfo.offset;
                     if (interpFieldType == InterpTypeVT)
                     {
                         CORINFO_CLASS_HANDLE fieldClass = fieldInfo.structType;
                         int size = m_compHnd->getClassSize(fieldClass);
-                        m_pLastIns->data[1 + sizeDataIndexOffset] = size;
+                        m_pLastNewIns->data[1 + sizeDataIndexOffset] = size;
                         PushTypeVT(fieldClass, size);
                     }
                     else
                     {
                         PushInterpType(interpFieldType, NULL);
                     }
-                    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 }
 
                 m_ip += 5;
@@ -2987,7 +3125,10 @@ void InterpCompiler::PrintBBCode(InterpBasicBlock *pBB)
 {
     printf("BB%d:\n", pBB->index);
     for (InterpInst *ins = pBB->pFirstIns; ins != NULL; ins = ins->pNext)
+    {
         PrintIns(ins);
+        printf("\n");
+    }
 }
 
 void InterpCompiler::PrintIns(InterpInst *ins)
@@ -3037,7 +3178,6 @@ void InterpCompiler::PrintIns(InterpInst *ins)
         printf(" %d", ins->sVars[0]);
     else
         PrintInsData(ins, ins->ilOffset, &ins->data[0], ins->opcode);
-    printf("\n");
 }
 
 void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int32_t *pData, int32_t opcode)
@@ -3048,6 +3188,23 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
         case InterpOpInt:
             printf(" %d", *pData);
             break;
+        case InterpOpLongInt:
+        {
+            int64_t i64 = (int64_t)pData[0] + ((int64_t)pData[1] << 32);
+            printf(" %" PRId64, i64);
+            break;
+        }
+        case InterpOpFloat:
+        {
+            printf(" %g", *(float*)pData);
+            break;
+        }
+        case InterpOpDouble:
+        {
+            int64_t i64 = (int64_t)pData[0] + ((int64_t)pData[1] << 32);
+            printf(" %g", *(double*)&i64);
+            break;
+        }
         case InterpOpTwoInts:
             printf(" %d,%d", *pData, *(pData + 1));
             break;
