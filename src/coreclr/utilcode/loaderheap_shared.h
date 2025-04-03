@@ -92,21 +92,11 @@ class LoaderHeapSniffer
         static VOID PrintEvents(UnlockedLoaderHeapBase *pHeap);
         static VOID PitchSniffer(SString *pSString);
         static LoaderHeapEvent *FindEvent(UnlockedLoaderHeapBase *pHeap, void *pAddr);
-        static void ValidateFreeList(UnlockedLoaderHeap *pHeap);
-        static void WeGotAFaultNowWhat(UnlockedLoaderHeap *pHeap);
 };
 
 LoaderHeapValidationTag *AllocMem_GetTag(LPVOID pBlock, size_t dwRequestedSize);
 
 #endif // _DEBUG
-
-#ifdef _DEBUG
-#define LOADER_HEAP_BEGIN_TRAP_FAULT BOOL __faulted = FALSE; EX_TRY {
-#define LOADER_HEAP_END_TRAP_FAULT   } EX_CATCH {__faulted = TRUE; } EX_END_CATCH(SwallowAllExceptions) if (__faulted) LoaderHeapSniffer::WeGotAFaultNowWhat(pHeap);
-#else
-#define LOADER_HEAP_BEGIN_TRAP_FAULT
-#define LOADER_HEAP_END_TRAP_FAULT
-#endif
 
 //=====================================================================================
 // This freelist implementation is a first cut and probably needs to be tuned.

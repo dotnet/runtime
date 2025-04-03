@@ -35,7 +35,8 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
                                        RangeList *pRangeList,
                                        void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size),
                                        DWORD dwGranularity) :
-    UnlockedLoaderHeapBase(LoaderHeapImplementationKind::Interleaved)
+    UnlockedLoaderHeapBase(LoaderHeapImplementationKind::Interleaved),
+    m_pFreeListHead(NULL)
 {
     CONTRACTL
     {
@@ -54,8 +55,6 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
 
     _ASSERTE(codePageGenerator != NULL);
     m_codePageGenerator = codePageGenerator;
-
-    m_pFirstFreeBlock            = NULL;
 }
 
 // ~LoaderHeap is not synchronised (obviously)
@@ -284,18 +283,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
             return FALSE;
         }
 
-        // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
-        // block list.
-        // Otherwise the remaining bytes that are available will be wasted.
-        if (unusedRemainder >= GetStubCodePageSize())
-        {
-            // TODO! Add free block logic for interleaved heaps
-//            LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
-        }
-        else
-        {
-            INDEBUG(m_dwDebugWastedBytes += unusedRemainder;)
-        }
+        INDEBUG(m_dwDebugWastedBytes += unusedRemainder;)
 
         // For interleaved heaps, further allocations will start from the newly committed page as they cannot
         // cross page boundary.
@@ -307,20 +295,8 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         return TRUE;
     }
 
-    // Need to allocate a new set of reserved pages that will be located likely at a nonconsecutive virtual address.
-    // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
-    // block list.
-    // Otherwise the remaining bytes that are available will be wasted.
-    size_t unusedRemainder = (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
-    if (unusedRemainder >= AllocMem_TotalSize(GetStubCodePageSize()))
-    {
-            // TODO! Add free block logic for interleaved heaps
-//            LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
-    }
-    else
-    {
-        INDEBUG(m_dwDebugWastedBytes += (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);)
-    }
+    // Keep track of the unused memory in the current reserved region.
+    INDEBUG(m_dwDebugWastedBytes += (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);)
 
     // Note, there are unused reserved pages at end of current region -can't do much about that
     // Provide dwMinSize here since UnlockedReservePages will round up the commit size again
@@ -380,22 +356,23 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
 
     size_t dwSize = m_dwGranularity;
 
+    // Clear the RW page
+    memset((BYTE*)pMem + GetStubCodePageSize(), 0x00, dwSize); // Fill freed region with 0
+
     if (m_pAllocPtr == ( ((BYTE*)pMem) + dwSize ))
     {
-        // Clear the RW page
-        memset((BYTE*)pMem + GetStubCodePageSize(), 0x00, dwSize); // Fill freed region with 0
         m_pAllocPtr = (BYTE*)pMem;
     }
     else
     {
-        // TODO: Build free list scheme for interleaved heap
+        InterleavedStubFreeListNode* newFreeNode = (InterleavedStubFreeListNode*)((BYTE*)pMem + GetStubCodePageSize());
+        newFreeNode->m_pNext = m_pFreeListHead;
+        m_pFreeListHead = newFreeNode;
     }
 }
 
 
-// Allocates memory aligned on power-of-2 boundary.
-//
-// The return value is a pointer that's guaranteed to be aligned.
+// Allocates memory for a single stub
 //
 // FREEING THIS BLOCK: Underneath, the actual block allocated may
 // be larger and start at an address prior to the one you got back.
@@ -404,10 +381,8 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
 //
 // Here is how to properly backout the memory:
 //
-//   size_t dwExtra;
-//   void *pMem = UnlockedAllocAlignedMem(dwRequestedSize, alignment, &dwExtra);
-//   _ASSERTE( 0 == (pMem & (alignment - 1)) );
-//   UnlockedBackoutMem( ((BYTE*)pMem) - dExtra, dwRequestedSize + dwExtra );
+//   void *pMem = UnlockedAllocStub(d);
+//   UnlockedBackoutStub(pMem);
 //
 // If you use the AllocMemHolder or AllocMemTracker, all this is taken care of
 // behind the scenes.
@@ -438,40 +413,39 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
-    // We don't know how much "extra" we need to satisfy the alignment until we know
-    // which address will be handed out which in turn we don't know because we don't
-    // know whether the allocation will fit within the current reserved range.
-    //
-    // Thus, we'll request as much heap growth as is needed for the worst case (extra == alignment)
-    size_t dwRoomSize = AllocMem_TotalSize(dwRequestedSize + alignment);
-    if (dwRoomSize > GetBytesAvailCommittedRegion())
+    _ASSERTE(m_dwGranularity >= sizeof(InterleavedStubFreeListNode));
+
+    if (m_pFreeListHead != NULL)
     {
-        if (!GetMoreCommittedPages(dwRoomSize))
+        // We have a free stub - use it
+        InterleavedStubFreeListNode* pFreeStubData = m_pFreeListHead;
+        m_pFreeListHead = pFreeStubData->m_pNext;
+        pFreeStubData->m_pNext = NULL;
+        pResult = ((BYTE*)pFreeStubData) - GetStubCodePageSize();
+    }
+    else
+    {
+        if (dwRequestedSize > GetBytesAvailCommittedRegion())
         {
-            RETURN NULL;
+            if (!GetMoreCommittedPages(dwRequestedSize))
+            {
+                RETURN NULL;
+            }
         }
+
+        pResult = m_pAllocPtr;
+
+        m_pAllocPtr += dwRequestedSize;
     }
-
-    pResult = m_pAllocPtr;
-
-    size_t extra = alignment - ((size_t)pResult & ((size_t)alignment - 1));
-
-    _ASSERTE(alignment == 1);
-    extra = 0;
-
-    S_SIZE_T cbAllocSize = S_SIZE_T( dwRequestedSize ) + S_SIZE_T( extra );
-    if( cbAllocSize.IsOverflow() )
-    {
-        RETURN NULL;
-    }
-
-    size_t dwSize = AllocMem_TotalSize( cbAllocSize.Value());
-    m_pAllocPtr += dwSize;
-
-
-    ((BYTE*&)pResult) += extra;
 
 #ifdef _DEBUG
+    // Check to ensure that the RW region of the allocated stub is zeroed out
+    BYTE *pAllocatedRWBytes = (BYTE*)pResult + GetStubCodePageSize();
+    for (size_t i = 0; i < dwRequestedSize; i++)
+    {
+        _ASSERTE_MSG(pAllocatedRWBytes[i] == 0, "LoaderHeap must return zero-initialized memory");
+    }
+
     if (m_dwDebugFlags & kCallTracing)
     {
         LoaderHeapSniffer::RecordEvent(this,
@@ -480,13 +454,13 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
                                        lineNum,
                                        szFile,
                                        lineNum,
-                                       ((BYTE*)pResult) - extra,
-                                       dwRequestedSize + extra,
-                                       dwSize
+                                       pResult,
+                                       dwRequestedSize,
+                                       dwRequestedSize
                                        );
     }
 
-    EtwAllocRequest(this, pResult, dwSize);
+    EtwAllocRequest(this, pResult, dwRequestedSize);
 #endif //_DEBUG
 
     RETURN pResult;

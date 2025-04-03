@@ -258,9 +258,6 @@ public:
     void UnlockedPrintEvents();     //Print event list
 #endif
 
-    size_t AllocMem_TotalSize(size_t dwRequestedSize);
-
-    
 public:
 
 #ifdef _DEBUG
@@ -299,6 +296,7 @@ class UnlockedLoaderHeap : public UnlockedLoaderHeapBase
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif
+    friend struct LoaderHeapFreeBlock;
 
 public:
 
@@ -447,10 +445,14 @@ public:
         return m_dwTotalAlloc;
     }
 
+    size_t AllocMem_TotalSize(size_t dwRequestedSize);
 public:
 #ifdef _DEBUG
     void DumpFreeList();
 #endif
+private:
+    static void ValidateFreeList(UnlockedLoaderHeap *pHeap);
+    static void WeGotAFaultNowWhat(UnlockedLoaderHeap *pHeap);
 };
 
 //===============================================================================
@@ -483,7 +485,12 @@ private:
     // Range list to record memory ranges in
     RangeList *         m_pRangeList;
 
-    LoaderHeapFreeBlock *m_pFirstFreeBlock;
+    struct InterleavedStubFreeListNode
+    {
+        InterleavedStubFreeListNode *m_pNext;
+    };
+
+    InterleavedStubFreeListNode  *m_pFreeListHead;
 
 public:
 public:
@@ -1364,14 +1371,11 @@ class AllocMemTracker
             AllocMemTrackerNode      m_Node[kAllocMemTrackerBlockSize];
         };
 
-
         AllocMemTrackerBlock        *m_pFirstBlock;
         AllocMemTrackerBlock        m_FirstBlock; // Stack-allocate the first block - "new" the rest.
 
     protected:
         BOOL                        m_fReleased;
-
 };
 
 #endif // __LoaderHeap_h__
-
