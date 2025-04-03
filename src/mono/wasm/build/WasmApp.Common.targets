@@ -268,21 +268,9 @@
     <_MonoComponent Include="diagnostics_tracing" />
   </ItemGroup>
   <ItemGroup >
-    <_MonoRuntimeComponentLink Include="libmono-profiler-aot.a" Condition="'$(WasmProfilers.Contains(&quot;aot&quot;))' == 'true'" >
-      <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
-      <IsStub>false</IsStub>
-      <ComponentName>libmono-profiler-aot</ComponentName>
-    </_MonoRuntimeComponentLink>
-    <_MonoRuntimeComponentLink Include="libmono-profiler-browser.a" Condition="'$(WasmProfilers.Contains(&quot;browser&quot;))' == 'true' or '$(WasmPerfTracing)' == 'true'" >
-      <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
-      <IsStub>false</IsStub>
-      <ComponentName>libmono-profiler-browser</ComponentName>
-    </_MonoRuntimeComponentLink>
-    <_MonoRuntimeComponentLink Include="libmono-profiler-log.a" Condition="'$(WasmProfilers.Contains(&quot;log&quot;))' == 'true'" >
-      <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
-      <IsStub>false</IsStub>
-      <ComponentName>libmono-profiler-log</ComponentName>
-    </_MonoRuntimeComponentLink>
+    <_WasmNativeFileForLinking Include="libmono-profiler-aot.a" Condition="$(WasmProfilers.Contains('aot'))" />
+    <_WasmNativeFileForLinking Include="libmono-profiler-browser.a" Condition="$(WasmProfilers.Contains('browser')) or '$(WasmPerfTracing)' == 'true'" />
+    <_WasmNativeFileForLinking Include="libmono-profiler-log.a" Condition="$(WasmProfilers.Contains('log'))" />
   </ItemGroup>
   <!-- PUBLISH -->
 
