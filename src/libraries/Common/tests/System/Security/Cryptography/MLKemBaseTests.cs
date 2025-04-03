@@ -461,12 +461,32 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void TryExportPkcs8PrivateKey_Roundtrip(MLKemAlgorithm algorithm)
+        public void TryExportPkcs8PrivateKey_Seed_Roundtrip(MLKemAlgorithm algorithm)
         {
-            using MLKem kem = GenerateKey(algorithm);
+            using MLKem kem = ImportPrivateSeed(algorithm, MLKemTestData.IncrementalSeed);
             byte[] pkcs8 = DoTryUntilDone(kem.TryExportPkcs8PrivateKey);
             using MLKem imported = MLKem.ImportPkcs8PrivateKey(pkcs8);
             Assert.Equal(algorithm, imported.Algorithm);
+            AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+        }
+
+        [Fact]
+        public void TryExportPkcs8PrivateKey_DecapsulationKey_Roundtrip()
+        {
+            using MLKem kem = ImportDecapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512DecapsulationKey);
+            byte[] pkcs8 = DoTryUntilDone(kem.TryExportPkcs8PrivateKey);
+            using MLKem imported = MLKem.ImportPkcs8PrivateKey(pkcs8);
+            Assert.Equal(MLKemAlgorithm.MLKem512, imported.Algorithm);
+
+            Assert.ThrowsAny<CryptographicException>(() => kem.ExportPrivateSeed());
+            AssertExtensions.SequenceEqual(MLKemTestData.MLKem512DecapsulationKey, kem.ExportDecapsulationKey());
+        }
+
+        [Fact]
+        public void TryExportPkcs8PrivateKey_EncapsulationKey_Fails()
+        {
+            using MLKem kem = ImportEncapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512EncapsulationKey);
+            Assert.Throws<CryptographicException>(() => DoTryUntilDone(kem.TryExportPkcs8PrivateKey));
         }
 
         private delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);

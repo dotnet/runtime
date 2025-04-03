@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Formats.Asn1;
-using System.Security.Cryptography.Asn1;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
@@ -101,60 +99,12 @@ namespace System.Security.Cryptography
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
-            string oid = Algorithm.Oid;
-            AlgorithmIdentifierAsn algorithmIdentifier = new()
-            {
-                Algorithm = oid,
-                Parameters = default(ReadOnlyMemory<byte>?),
-            };
-
-            MLKemPrivateKeyAsn privateKeyAsn = default;
-            byte[]? rented = null;
-            int written = 0;
-
-            try
-            {
-                if (_hasSeed)
-                {
-                    int seedSize = Algorithm.PrivateSeedSizeInBytes;
-                    rented = CryptoPool.Rent(seedSize);
-                    Memory<byte> buffer = rented.AsMemory(0, seedSize);
-                    ExportPrivateSeedCore(buffer.Span);
-                    written = buffer.Length;
-                    privateKeyAsn.Seed = buffer;
-                }
-                else if (_hasDecapsulationKey)
-                {
-                    int decapsulationKeySize = Algorithm.DecapsulationKeySizeInBytes;
-                    rented = CryptoPool.Rent(decapsulationKeySize);
-                    Memory<byte> buffer = rented.AsMemory(0, decapsulationKeySize);
-                    ExportDecapsulationKeyCore(buffer.Span);
-                    written = buffer.Length;
-                    privateKeyAsn.ExpandedKey = buffer;
-                }
-                else
-                {
-                    throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
-                }
-
-                AsnWriter algorithmWriter = new(AsnEncodingRules.DER);
-                algorithmIdentifier.Encode(algorithmWriter);
-                AsnWriter privateKeyWriter = new(AsnEncodingRules.DER);
-                privateKeyAsn.Encode(privateKeyWriter);
-                AsnWriter pkcs8Writer = KeyFormatHelper.WritePkcs8(algorithmWriter, privateKeyWriter);
-
-                bool result = pkcs8Writer.TryEncode(destination, out bytesWritten);
-                privateKeyWriter.Reset();
-                pkcs8Writer.Reset();
-                return result;
-            }
-            finally
-            {
-                if (rented is not null)
-                {
-                    CryptoPool.Return(rented, written);
-                }
-            }
+            return MLKemPkcs8.TryExportPkcs8PrivateKey(
+                this,
+                _hasSeed,
+                _hasDecapsulationKey,
+                destination,
+                out bytesWritten);
         }
 
         private static string MapAlgorithmToName(MLKemAlgorithm algorithm)
