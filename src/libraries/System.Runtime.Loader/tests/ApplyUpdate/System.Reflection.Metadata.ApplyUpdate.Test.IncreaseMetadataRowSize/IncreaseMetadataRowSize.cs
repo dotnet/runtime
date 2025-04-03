@@ -9,30 +9,10 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         {
             return 0;
         }
-
-        public static void Method2(int x2)
-        {
-            // Example body for Method2
-            // You can implement logic for x2 here if desired.
-        }
-
-        public static void Method3(int x3)
-        {
-            // Example body for Method3
-            // You can implement logic for x3 here if desired.
-        }
-
-        public static void Method4(int x4)
-        {
-            // Example body for Method4
-            // You can implement logic for x4 here if desired.
-        }
-
-        public static void Method5(int x5)
-        {
-            // Example body for Method5
-            // You can implement logic for x5 here if desired.
-        }
+        public static void Method2(int x2) {}
+        public static void Method3(int x3) {}
+        public static void Method4(int x4) {}
+        public static void Method5(int x5) {}
     }
 
 }
