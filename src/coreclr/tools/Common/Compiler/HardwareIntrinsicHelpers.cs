@@ -85,6 +85,8 @@ namespace ILCompiler
             public const int Vpclmulqdq = 0x200000;
             public const int Avx10v2 = 0x400000;
             public const int Gfni = 0x800000;
+            public const int AvxVnniInt8 = 0x1000000;
+            public const int AvxVnniInt16 = 0x2000000;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -154,6 +156,14 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("avx10v2");
                 if (((flags & Avx10v2) != 0) && ((flags & Avx512) != 0))
                     builder.AddSupportedInstructionSet("avx10v2_v512");
+                if ((flags & AvxVnniInt8) != 0)
+                    builder.AddSupportedInstructionSet("avxvnniint8");
+                if (((flags & AvxVnniInt8) != 0) && ((flags & Avx512) != 0))
+                    builder.AddSupportedInstructionSet("avxvnniint8_v512");
+                if ((flags & AvxVnniInt16) != 0)
+                    builder.AddSupportedInstructionSet("avxvnniint16");
+                if (((flags & AvxVnniInt16) != 0) && ((flags & Avx512) != 0))
+                    builder.AddSupportedInstructionSet("avxvnniint16_v512");
                 if ((flags & Gfni) != 0)
                 {
                     builder.AddSupportedInstructionSet("gfni");
@@ -235,6 +245,12 @@ namespace ILCompiler
                     InstructionSet.X64_GFNI_X64 => Gfni,
                     InstructionSet.X64_GFNI_V256 => (Gfni | Avx),
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
+                    InstructionSet.X64_AVXVNNIINT8 => AvxVnniInt8,
+                    InstructionSet.X64_AVXVNNIINT8_X64 => AvxVnniInt8,
+                    InstructionSet.X64_AVXVNNIINT8_V512 => (AvxVnniInt8 | Avx512),
+                    InstructionSet.X64_AVXVNNIINT16 => AvxVnniInt16,
+                    InstructionSet.X64_AVXVNNIINT16_X64 => AvxVnniInt16,
+                    InstructionSet.X64_AVXVNNIINT16_V512 => (AvxVnniInt16 | Avx512),
 
                     // Baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,

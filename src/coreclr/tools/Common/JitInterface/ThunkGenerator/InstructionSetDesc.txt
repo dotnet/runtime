@@ -73,6 +73,10 @@ instructionset     ,X86   ,Avx10v2_V512         ,        ,52 ,AVX10v2_V512      
 instructionset     ,X86   ,Gfni                 ,        ,53 ,GFNI                  ,gfni
 instructionset     ,X86   ,Gfni_V256            ,        ,54 ,GFNI_V256             ,gfni_v256
 instructionset     ,X86   ,Gfni_V512            ,        ,55 ,GFNI_V512             ,gfni_v512
+instructionset     ,X86   ,AvxVnniInt8          ,        ,59 ,AVXVNNIINT8           ,avxvnniint8
+instructionset     ,X86   ,AvxVnniInt8_V512     ,        ,60 ,AVXVNNIINT8_V512      ,avxvnniint8_v512
+instructionset     ,X86   ,AvxVnniInt16         ,        ,61 ,AVXVNNIINT16          ,avxvnniint16
+instructionset     ,X86   ,AvxVnniInt16_V512    ,        ,62 ,AVXVNNIINT16_V512     ,avxvnniint16_v512
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
@@ -102,6 +106,8 @@ instructionset64bit,X86   ,AVX10v1_V512
 instructionset64bit,X86   ,AVX10v2
 instructionset64bit,X86   ,AVX10v2_V512
 instructionset64bit,X86   ,GFNI
+instructionset64bit,X86   ,AVXVNNIINT8
+instructionset64bit,X86   ,AVXVNNIINT16
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
@@ -179,6 +185,10 @@ implication        ,X86   ,AVX10v1_V512         ,AVX512VBMI
 implication        ,X86   ,AVX10v1_V512         ,AVX512VBMI_VL
 implication        ,X86   ,AVX10v2              ,AVX10v1
 implication        ,X86   ,AVX10v2_V512         ,AVX10v1_V512
+implication        ,X86   ,AVX10v2              ,AVXVNNIINT8
+implication        ,X86   ,AVX10v2              ,AVXVNNIINT16
+implication        ,X86   ,AVX10v2_V512         ,AVXVNNIINT8_V512
+implication        ,X86   ,AVX10v2_V512         ,AVXVNNIINT16_V512
 
 ; These synthetic ISAs need to appear after the core ISAs
 ; as they depend on the other implications being correct first

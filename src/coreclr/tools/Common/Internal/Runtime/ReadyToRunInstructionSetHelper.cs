@@ -143,6 +143,12 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_GFNI_X64: return ReadyToRunInstructionSet.Gfni;
                             case InstructionSet.X64_GFNI_V256: return ReadyToRunInstructionSet.Gfni_V256;
                             case InstructionSet.X64_GFNI_V512: return ReadyToRunInstructionSet.Gfni_V512;
+                            case InstructionSet.X64_AVXVNNIINT8: return ReadyToRunInstructionSet.AvxVnniInt8;
+                            case InstructionSet.X64_AVXVNNIINT8_X64: return ReadyToRunInstructionSet.AvxVnniInt8;
+                            case InstructionSet.X64_AVXVNNIINT8_V512: return ReadyToRunInstructionSet.AvxVnniInt8_V512;
+                            case InstructionSet.X64_AVXVNNIINT16: return ReadyToRunInstructionSet.AvxVnniInt16;
+                            case InstructionSet.X64_AVXVNNIINT16_X64: return ReadyToRunInstructionSet.AvxVnniInt16;
+                            case InstructionSet.X64_AVXVNNIINT16_V512: return ReadyToRunInstructionSet.AvxVnniInt16_V512;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -226,6 +232,12 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_GFNI_X64: return null;
                             case InstructionSet.X86_GFNI_V256: return ReadyToRunInstructionSet.Gfni_V256;
                             case InstructionSet.X86_GFNI_V512: return ReadyToRunInstructionSet.Gfni_V512;
+                            case InstructionSet.X86_AVXVNNIINT8: return ReadyToRunInstructionSet.AvxVnniInt8;
+                            case InstructionSet.X86_AVXVNNIINT8_X64: return null;
+                            case InstructionSet.X86_AVXVNNIINT8_V512: return ReadyToRunInstructionSet.AvxVnniInt8_V512;
+                            case InstructionSet.X86_AVXVNNIINT16: return ReadyToRunInstructionSet.AvxVnniInt16;
+                            case InstructionSet.X86_AVXVNNIINT16_X64: return null;
+                            case InstructionSet.X86_AVXVNNIINT16_V512: return ReadyToRunInstructionSet.AvxVnniInt16_V512;
 
                             default: throw new Exception("Unknown instruction set");
                         }
