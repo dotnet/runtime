@@ -22,7 +22,7 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
 
     private IReadOnlyCollection<string> _contracts;
     private IDictionary<DataType, Target.TypeInfo> _types;
-    private IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? TypeName)> _globals;
+    private IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)> _globals;
     private IReadOnlyCollection<ulong> _indirectValues;
 
     public ContractDescriptorBuilder(TargetTestHelpers targetTestHelpers)
@@ -51,12 +51,23 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
             throw new InvalidOperationException("Context already created");
         if (_globals != null)
             throw new InvalidOperationException("Globals already set");
-        _globals = globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, g.TypeName)).ToArray();
+        _globals = globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, (string?)null, g.TypeName)).ToArray();
         _indirectValues = null;
         return this;
     }
 
-    public ContractDescriptorBuilder SetGlobals(IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? TypeName)> globals, IReadOnlyCollection<ulong> indirectValues)
+    public ContractDescriptorBuilder SetGlobals(IReadOnlyCollection<(string Name, ulong? Value, string? StringValue, string? TypeName)> globals)
+    {
+        if (_created)
+            throw new InvalidOperationException("Context already created");
+        if (_globals != null)
+            throw new InvalidOperationException("Globals already set");
+        _globals = globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, g.StringValue, g.TypeName)).ToArray();
+        _indirectValues = null;
+        return this;
+    }
+
+    public ContractDescriptorBuilder SetGlobals(IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)> globals, IReadOnlyCollection<ulong> indirectValues)
     {
         if (_created)
             throw new InvalidOperationException("Context already created");
@@ -104,7 +115,7 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
             "baseline": "empty",
             "contracts": { {{interpolatedContracts}} },
             "types": { {{metadataTypesJson}} },
-            "globals": { {{metadataGlobalsJson}} }
+            "globals": { {{metadataGlobalsJson}} },
         }
         """);
         MockMemorySpace.HeapFragment json = new()

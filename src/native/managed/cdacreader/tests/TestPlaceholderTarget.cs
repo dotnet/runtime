@@ -20,12 +20,13 @@ internal class TestPlaceholderTarget : Target
     private readonly Target.IDataCache _dataCache;
     private readonly Dictionary<DataType, Target.TypeInfo> _typeInfoCache;
     private readonly (string Name, ulong Value)[] _globals;
+    private readonly (string Name, string Value)[] _globalStrings;
 
     internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
 
     private readonly ReadFromTargetDelegate _dataReader;
 
-    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
@@ -34,6 +35,7 @@ internal class TestPlaceholderTarget : Target
         _typeInfoCache = types ?? [];
         _dataReader = reader;
         _globals = globals ?? [];
+        _globalStrings = globalStrings ?? [];
     }
 
     internal void SetContracts(ContractRegistry contracts)
@@ -128,6 +130,33 @@ internal class TestPlaceholderTarget : Target
         }
 
         throw new NotImplementedException();
+    }
+
+    public override string ReadStringGlobal(string name)
+    {
+        if (TryReadStringGlobal(name, out string? value))
+        {
+            return value;
+        }
+
+        throw new NotImplementedException();
+    }
+
+    public override bool TryReadStringGlobal(string name, [NotNullWhen(true)] out string? value)
+    {
+        value = null;
+
+        // first check global strings
+        foreach (var global in _globalStrings)
+        {
+            if (global.Name == name)
+            {
+                value = global.Value;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public override T Read<T>(ulong address) => DefaultRead<T>(address);
