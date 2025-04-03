@@ -430,7 +430,7 @@ public sealed partial class QuicStream
                     exception = Volatile.Read(ref _sendException);
                     if (exception is not null)
                     {
-                        _sendTcs.TrySetException(exception, final: true);
+                        _sendTcs.TrySetException(exception);
                     }
                 }
                 // SEND_COMPLETE expected, buffer and lock will be released then.
@@ -487,7 +487,7 @@ public sealed partial class QuicStream
 
         if (abortDirection.HasFlag(QuicAbortDirection.Read))
         {
-            _receiveTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_reading_aborted), final: true);
+            _receiveTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_reading_aborted));
         }
         if (abortDirection.HasFlag(QuicAbortDirection.Write))
         {
@@ -495,7 +495,7 @@ public sealed partial class QuicStream
             Interlocked.CompareExchange(ref _sendException, exception, null);
             if (Interlocked.CompareExchange(ref _sendLocked, 1, 0) == 0)
             {
-                _sendTcs.TrySetException(_sendException, final: true);
+                _sendTcs.TrySetException(_sendException);
                 Volatile.Write(ref _sendLocked, 0);
             }
         }
@@ -585,7 +585,7 @@ public sealed partial class QuicStream
         Exception? exception = Volatile.Read(ref _sendException);
         if (exception is not null)
         {
-            _sendTcs.TrySetException(exception, final: true);
+            _sendTcs.TrySetException(exception);
         }
         if (data.Canceled == 0)
         {
@@ -604,12 +604,12 @@ public sealed partial class QuicStream
     }
     private unsafe int HandleEventPeerSendAborted(ref PEER_SEND_ABORTED_DATA data)
     {
-        _receiveTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode), final: true);
+        _receiveTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode));
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventPeerReceiveAborted(ref PEER_RECEIVE_ABORTED_DATA data)
     {
-        _sendTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode), final: true);
+        _sendTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode));
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventSendShutdownComplete(ref SEND_SHUTDOWN_COMPLETE_DATA data)
@@ -639,8 +639,8 @@ public sealed partial class QuicStream
                 (shutdownByApp: false, closedRemotely: false) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus, (long)data.ConnectionErrorCode),
             };
             _startedTcs.TrySetException(exception);
-            _receiveTcs.TrySetException(exception, final: true);
-            _sendTcs.TrySetException(exception, final: true);
+            _receiveTcs.TrySetException(exception);
+            _sendTcs.TrySetException(exception);
         }
         _startedTcs.TrySetException(ThrowHelper.GetOperationAbortedException());
         _shutdownTcs.TrySetResult();
@@ -766,11 +766,11 @@ public sealed partial class QuicStream
             {
                 if (flags.HasFlag(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE) && !_receiveTcs.IsCompleted)
                 {
-                    _receiveTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_reading_aborted), final: true);
+                    _receiveTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_reading_aborted));
                 }
                 if (flags.HasFlag(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_SEND) && !_sendTcs.IsCompleted)
                 {
-                    _sendTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted), final: true);
+                    _sendTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted));
                 }
             }
         }
