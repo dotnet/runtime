@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "interpreter.h"
 
+#include <inttypes.h>
+
 static const StackType g_stackTypeFromInterpType[] =
 {
     StackTypeI4, // I1
@@ -1962,13 +1964,58 @@ retry_emit:
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip += 5;
                 break;
+            case CEE_LDC_I8:
+            {
+                int64_t val = getI8LittleEndian(m_ip + 1);
+                AddIns(INTOP_LDC_I8);
+                PushInterpType(InterpTypeI8, NULL);
+                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastIns->data[0] = (int32_t)val;
+                m_pLastIns->data[1] = (int32_t)(val >> 32);
+                m_ip += 9;
+                break;
+            }
+            case CEE_LDC_R4:
+            {
+                int32_t val = getI4LittleEndian(m_ip + 1);
+                AddIns(INTOP_LDC_R4);
+                PushInterpType(InterpTypeR4, NULL);
+                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastIns->data[0] = val;
+                m_ip += 5;
+                break;
+            }
+            case CEE_LDC_R8:
+            {
+                int64_t val = getI8LittleEndian(m_ip + 1);
+                AddIns(INTOP_LDC_R8);
+                PushInterpType(InterpTypeR8, NULL);
+                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastIns->data[0] = (int32_t)val;
+                m_pLastIns->data[1] = (int32_t)(val >> 32);
+                m_ip += 9;
+                break;
+            }
             case CEE_LDNULL:
                 AddIns(INTOP_LDNULL);
                 PushStackType(StackTypeO, NULL);
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip++;
                 break;
-
+            case CEE_LDSTR:
+            {
+                int32_t token = getI4LittleEndian(m_ip + 1);
+                void *str;
+                InfoAccessType accessType = m_compHnd->constructStringLiteral(m_compScopeHnd, token, &str);
+                assert(accessType == IAT_VALUE);
+                // str should be forever pinned, so we can include its ref inside interpreter code
+                AddIns(INTOP_LDPTR);
+                PushInterpType(InterpTypeO, m_compHnd->getBuiltinClass(CLASSID_STRING));
+                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastIns->data[0] = GetDataItemIndex(str);
+                m_ip += 5;
+                break;
+            }
             case CEE_LDARG_S:
                 EmitLoadVar(m_ip[1]);
                 m_ip += 2;
@@ -3141,6 +3188,23 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
         case InterpOpInt:
             printf(" %d", *pData);
             break;
+        case InterpOpLongInt:
+        {
+            int64_t i64 = (int64_t)pData[0] + ((int64_t)pData[1] << 32);
+            printf(" %" PRId64, i64);
+            break;
+        }
+        case InterpOpFloat:
+        {
+            printf(" %g", *(float*)pData);
+            break;
+        }
+        case InterpOpDouble:
+        {
+            int64_t i64 = (int64_t)pData[0] + ((int64_t)pData[1] << 32);
+            printf(" %g", *(double*)&i64);
+            break;
+        }
         case InterpOpTwoInts:
             printf(" %d,%d", *pData, *(pData + 1));
             break;
