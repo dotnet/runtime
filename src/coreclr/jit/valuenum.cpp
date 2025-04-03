@@ -9385,8 +9385,10 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                         unreached();
                 }
             }
-            else if (gtMathFN == NI_System_Math_Round)
+            else
             {
+                assert(gtMathFN == NI_System_Math_Round);
+
                 switch (TypeOfVN(arg0VN))
                 {
                     case TYP_DOUBLE:
@@ -9407,58 +9409,6 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                         unreached();
                 }
             }
-            else if (gtMathFN == NI_PRIMITIVE_LeadingZeroCount)
-            {
-                switch (TypeOfVN(arg0VN))
-                {
-                    case TYP_LONG:
-                        res = BitOperations::LeadingZeroCount((uint64_t)GetConstantInt64(arg0VN));
-                        break;
-
-                    case TYP_INT:
-                        res = BitOperations::LeadingZeroCount((uint32_t)GetConstantInt32(arg0VN));
-                        break;
-
-                    default:
-                        unreached();
-                }
-            }
-            else if (gtMathFN == NI_PRIMITIVE_TrailingZeroCount)
-            {
-                switch (TypeOfVN(arg0VN))
-                {
-                    case TYP_LONG:
-                        res = BitOperations::TrailingZeroCount((uint64_t)GetConstantInt64(arg0VN));
-                        break;
-
-                    case TYP_INT:
-                        res = BitOperations::TrailingZeroCount((uint32_t)GetConstantInt32(arg0VN));
-                        break;
-
-                    default:
-                        unreached();
-                }
-            }
-            else if (gtMathFN == NI_PRIMITIVE_PopCount)
-            {
-                switch (TypeOfVN(arg0VN))
-                {
-                    case TYP_LONG:
-                        res = BitOperations::PopCount((uint64_t)GetConstantInt64(arg0VN));
-                        break;
-
-                    case TYP_INT:
-                        res = BitOperations::PopCount((uint32_t)GetConstantInt32(arg0VN));
-                        break;
-
-                    default:
-                        unreached();
-                }
-            }
-            else
-            {
-                unreached();
-            }
 
             return VNForIntCon(res);
         }
@@ -9466,10 +9416,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
     else
     {
         assert((typ == TYP_DOUBLE) || (typ == TYP_FLOAT) ||
-               ((typ == TYP_INT) &&
-                ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round) ||
-                 (gtMathFN == NI_PRIMITIVE_LeadingZeroCount) || (gtMathFN == NI_PRIMITIVE_TrailingZeroCount) ||
-                 (gtMathFN == NI_PRIMITIVE_PopCount))));
+               ((typ == TYP_INT) && ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round))));
 
         VNFunc vnf = VNF_Boundary;
         switch (gtMathFN)
@@ -9560,15 +9507,6 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                 break;
             case NI_System_Math_Truncate:
                 vnf = VNF_Truncate;
-                break;
-            case NI_PRIMITIVE_LeadingZeroCount:
-                vnf = VNF_LeadingZeroCount;
-                break;
-            case NI_PRIMITIVE_TrailingZeroCount:
-                vnf = VNF_TrailingZeroCount;
-                break;
-            case NI_PRIMITIVE_PopCount:
-                vnf = VNF_PopCount;
                 break;
             default:
                 unreached(); // the above are the only math intrinsics at the time of this writing.

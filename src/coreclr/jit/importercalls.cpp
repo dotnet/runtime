@@ -5731,14 +5731,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // !TARGET_64BIT
 
-#ifdef TARGET_RISCV64
-            if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
-            {
-                impPopStack();
-                result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount,
-                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
-            }
-#elif defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
             if (compOpportunisticallyDependsOn(InstructionSet_LZCNT))
             {
@@ -5800,6 +5793,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
+
             break;
         }
 
@@ -5913,14 +5907,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // !TARGET_64BIT
 
-#ifdef TARGET_RISCV64
-            if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
-            {
-                impPopStack();
-                result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount,
-                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
-            }
-#elif defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
             if (compOpportunisticallyDependsOn(InstructionSet_POPCNT))
             {
@@ -6077,14 +6064,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // !TARGET_64BIT
 
-#ifdef TARGET_RISCV64
-            if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
-            {
-                impPopStack();
-                result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount,
-                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
-            }
-#elif defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
             if (compOpportunisticallyDependsOn(InstructionSet_BMI1))
             {
@@ -7945,11 +7925,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_ReciprocalSqrtEstimate:
             return true;
 
-        case NI_PRIMITIVE_LeadingZeroCount:
-        case NI_PRIMITIVE_TrailingZeroCount:
-        case NI_PRIMITIVE_PopCount:
-            return compOpportunisticallyDependsOn(InstructionSet_Zbb);
-
         default:
             return false;
     }
@@ -7996,7 +7971,6 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
 {
     switch (intrinsicName)
     {
-
         case NI_System_Math_Abs:
         case NI_System_Math_Acos:
         case NI_System_Math_Acosh:
@@ -8035,18 +8009,14 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Tan:
         case NI_System_Math_Tanh:
         case NI_System_Math_Truncate:
-        case NI_PRIMITIVE_LeadingZeroCount:
-        case NI_PRIMITIVE_TrailingZeroCount:
-        case NI_PRIMITIVE_PopCount:
         {
-            assert(((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END)) ||
-                   (intrinsicName == NI_PRIMITIVE_LeadingZeroCount) ||
-                   (intrinsicName == NI_PRIMITIVE_TrailingZeroCount) || (intrinsicName == NI_PRIMITIVE_PopCount));
+            assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END));
             return true;
         }
 
         default:
         {
+            assert((intrinsicName < NI_SYSTEM_MATH_START) || (intrinsicName > NI_SYSTEM_MATH_END));
             return false;
         }
     }
