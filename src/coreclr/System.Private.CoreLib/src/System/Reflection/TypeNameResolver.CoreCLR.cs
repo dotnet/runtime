@@ -131,7 +131,12 @@ namespace System.Reflection
             bool throwOnError, bool requireAssemblyQualifiedName)
         {
             ReadOnlySpan<char> typeName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTypeName);
+            return GetTypeHelper(typeName, requestingAssembly, throwOnError, requireAssemblyQualifiedName);
+        }
 
+        internal static unsafe RuntimeType? GetTypeHelper(ReadOnlySpan<char> typeName, RuntimeAssembly? requestingAssembly,
+            bool throwOnError, bool requireAssemblyQualifiedName)
+        {
             // Compat: Empty name throws TypeLoadException instead of
             // the natural ArgumentException
             if (typeName.Length == 0)
