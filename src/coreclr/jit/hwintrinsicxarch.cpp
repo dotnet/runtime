@@ -3569,6 +3569,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
                     break;
                 }
+
+                // If we're not doing late stage rewriting, just return null now as it won't become valid.
+                if (!validForShuffle)
+                {
+                    return nullptr;
+                }
             }
 
             if (sig->numArgs == 2)

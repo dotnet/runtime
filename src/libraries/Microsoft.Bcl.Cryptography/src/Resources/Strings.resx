@@ -135,6 +135,9 @@
   <data name="Cryptography_InvalidNonceLength" xml:space="preserve">
     <value>The specified nonce is not a valid size for this algorithm.</value>
   </data>
+  <data name="Cryptography_KemPkcs8KeyMismatch" xml:space="preserve">
+    <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
+  </data>
   <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
     <value>Key is not a valid public or private key.</value>
   </data>

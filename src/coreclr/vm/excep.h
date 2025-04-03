@@ -252,7 +252,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 //==========================================================================
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable);
-VOID DECLSPEC_NORETURN PropagateExceptionThroughNativeFrames(Object *exceptionObj);
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj);
 
 //==========================================================================
 // Throw an undecorated runtime exception.
@@ -756,10 +756,6 @@ LONG WatsonLastChance(
 
 bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord);
 
-#ifndef FEATURE_EH_FUNCLETS
-#define g_isNewExceptionHandlingEnabled false
-#endif
-
 inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 {
     SIZE_T cbReadOnlyPost = 0;
@@ -769,10 +765,7 @@ inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 
     memcpyNoGCRefs(pDest, pSrc, sizeof(T_CONTEXT) - cbReadOnlyPost);
 #ifdef TARGET_AMD64
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        pDest->ContextFlags = (pDest->ContextFlags & ~(CONTEXT_XSTATE | CONTEXT_FLOATING_POINT)) | CONTEXT_AMD64;
-    }
+    pDest->ContextFlags = (pDest->ContextFlags & ~(CONTEXT_XSTATE | CONTEXT_FLOATING_POINT)) | CONTEXT_AMD64;
 #endif // TARGET_AMD64
 }
 
@@ -840,8 +833,6 @@ public:
 
 #ifndef FEATURE_EH_FUNCLETS
 void ResetThreadAbortState(PTR_Thread pThread, void *pEstablisherFrame);
-#else
-void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCurrentStackFrame);
 #endif
 
 X86_ONLY(EXCEPTION_REGISTRATION_RECORD* GetNextCOMPlusSEHRecord(EXCEPTION_REGISTRATION_RECORD* pRec);)
