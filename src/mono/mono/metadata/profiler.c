@@ -163,7 +163,7 @@ mono_profiler_load (const char *desc)
 
 #if defined(TARGET_BROWSER) && defined(MONO_CROSS_COMPILE)
 	// this code could be running as part of mono-aot-cross.exe
-	// in case of WASM we staticaly link in the browser.c profiler plugin
+	// in case of WASM we statically link in the browser.c profiler plugin
 	if(strcmp (mname, "browser") == 0) {
 		mono_profiler_init_browser (desc);
 		goto done;

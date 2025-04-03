@@ -259,19 +259,11 @@
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == '' and '$(WasmBuildingForNestedPublish)' == 'true'">false</_WasmDebuggerSupport> <!-- publish -->
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == ''">true</_WasmDebuggerSupport>
+    <WasmPerfInstrumentation Condition="'$(WasmPerfInstrumentation)' == 'true'">all</WasmPerfInstrumentation>
+    <_WasmProfilers Condition="'$(WasmPerfInstrumentation)' != ''">browser:stacks,callspec=$(WasmPerfInstrumentation)</_WasmProfilers>
+    <_WasmProfilers Condition="'$(WasmProfilers)' != ''">$(_WasmProfilers);$(WasmProfilers)</_WasmProfilers>
   </PropertyGroup>
-  <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
-    <_MonoComponent Include="debugger" />
-    <_MonoComponent Include="hot_reload" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(WasmPerfTracing)' == 'true'">
-    <_MonoComponent Include="diagnostics_tracing" />
-  </ItemGroup>
-  <ItemGroup >
-    <_WasmNativeFileForLinking Include="libmono-profiler-aot.a" Condition="$(WasmProfilers.Contains('aot'))" />
-    <_WasmNativeFileForLinking Include="libmono-profiler-browser.a" Condition="$(WasmProfilers.Contains('browser')) or '$(WasmPerfTracing)' == 'true'" />
-    <_WasmNativeFileForLinking Include="libmono-profiler-log.a" Condition="$(WasmProfilers.Contains('log'))" />
-  </ItemGroup>
+
   <!-- PUBLISH -->
 
   <!-- public top-level target for Build -->
@@ -680,9 +672,6 @@
       <!--<AOTMode Condition="'$(AOTMode)' == '' and '$(AOTProfilePath)' != ''">LLVMOnlyInterp</AOTMode>-->
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnlyInterp</AOTMode>
       <_AOTCompilerCacheFile>$(_WasmIntermediateOutputPath)aot_compiler_cache.json</_AOTCompilerCacheFile>
-      <WasmPerfInstrumentation Condition="'$(WasmPerfInstrumentation)' == 'true'">all</WasmPerfInstrumentation>
-      <_WasmProfilers Condition="'$(WasmProfilers)' != ''">$(WasmProfilers)</_WasmProfilers>
-      <_WasmProfilers Condition="'$(WasmPerfInstrumentation)' != ''">browser:stacks,callspec=$(WasmPerfInstrumentation)</_WasmProfilers>
     </PropertyGroup>
 
     <!-- Dedup -->

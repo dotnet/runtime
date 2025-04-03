@@ -359,6 +359,8 @@ mono_profiler_init_browser (const char *desc)
 	// browser:
 	if (desc && desc [7] == ':') {
 		parse_args (desc + 8);
+	} else {
+		parse_args ("callspec=all");
 	}
 
 	MonoProfilerHandle handle = mono_profiler_create (&browser_profiler);

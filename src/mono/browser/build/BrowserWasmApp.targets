@@ -150,7 +150,6 @@
       <WasmExtraFilesToDeploy Include="$(WasmMainHTMLPath)" Condition="'$(WasmMainHTMLPath)' != ''" />
       <WasmExtraFilesToDeploy Include="$(WasmMainJSPath)" Condition="'$(WasmMainJSPath)' != ''" />
       <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
-      <WasmEnvironmentVariable Include="DOTNET_WasmPerfInstrumentation" Value="callspec=$(WasmPerfInstrumentation)" Condition="'$(WasmPerfInstrumentation)' != ''"/>
     </ItemGroup>
 
     <RemoveDir Directories="$(WasmAppDir)" />
@@ -170,6 +169,7 @@
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       ExtraConfig="@(WasmExtraConfig)"
       EnvVariables="@(WasmEnvironmentVariable)"
+      Profilers="$(_WasmProfilers)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
       IsPublish="$(_WasmIsPublishing)"
@@ -308,6 +308,19 @@
 
       <WasmClang>$(EmscriptenUpstreamEmscriptenPath)emcc</WasmClang>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
+      <_MonoComponent Include="debugger" />
+      <_MonoComponent Include="hot_reload" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmPerfTracing)' == 'true'">
+      <_MonoComponent Include="diagnostics_tracing" />
+    </ItemGroup>
+    <ItemGroup >
+      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-aot.a" Condition="$(_WasmProfilers.Contains('aot'))" />
+      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-browser.a" Condition="$(_WasmProfilers.Contains('browser'))" />
+      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-log.a" Condition="$(_WasmProfilers.Contains('log'))" />
+    </ItemGroup>
 
     <ItemGroup>
       <_WasmLinkDependencies Remove="@(_WasmLinkDependencies)" />
