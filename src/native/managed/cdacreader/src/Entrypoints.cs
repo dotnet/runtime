@@ -77,25 +77,41 @@ internal static class Entrypoints
         return 0;
     }
 
+    [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstanceWithFallback")]
+    private static unsafe int CLRDataCreateInstanceWithFallback(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
+    {
+        return CLRDataCreateInstanceImpl(pIID, pLegacyTarget, pLegacyImpl, iface);
+    }
+
+    // Same export name and signature as DAC CLRDataCreateInstance in daccess.cpp
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstance")]
     private static unsafe int CLRDataCreateInstance(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, void** iface)
     {
+        return CLRDataCreateInstanceImpl(pIID, pLegacyTarget, IntPtr.Zero, iface);
+    }
+
+    private static unsafe int CLRDataCreateInstanceImpl(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
+    {
         if (pLegacyTarget == IntPtr.Zero || iface == null)
             return HResults.E_INVALIDARG;
-
         *iface = null;
 
         ComWrappers cw = new StrategyBasedComWrappers();
-        object obj = cw.GetOrCreateObjectForComInstance(pLegacyTarget, CreateObjectFlags.None);
+        object legacyTarget = cw.GetOrCreateObjectForComInstance(pLegacyTarget, CreateObjectFlags.None);
+        object? legacyImpl = pLegacyImpl != IntPtr.Zero ?
+            cw.GetOrCreateObjectForComInstance(pLegacyImpl, CreateObjectFlags.None) : null;
 
-        ICLRDataTarget dataTarget = obj as ICLRDataTarget ?? throw new ArgumentException($"{nameof(pLegacyTarget)} does not implement {nameof(ICLRDataTarget)}", nameof(pLegacyTarget));
-        ICLRContractLocator contractLocator = obj as ICLRContractLocator ?? throw new ArgumentException($"{nameof(pLegacyTarget)} does not implement {nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
+        ICLRDataTarget dataTarget = legacyTarget as ICLRDataTarget ?? throw new ArgumentException(
+            $"{nameof(pLegacyTarget)} does not implement {nameof(ICLRDataTarget)}", nameof(pLegacyTarget));
+        ICLRContractLocator contractLocator = legacyTarget as ICLRContractLocator ?? throw new ArgumentException(
+            $"{nameof(pLegacyTarget)} does not implement {nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
 
         ulong contractAddress;
         int hr = contractLocator.GetContractDescriptor(&contractAddress);
         if (hr != 0)
         {
-            throw new InvalidOperationException($"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
+            throw new InvalidOperationException(
+                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
         }
 
         if (!ContractDescriptorTarget.TryCreate(
@@ -120,7 +136,7 @@ internal static class Entrypoints
             return -1;
         }
 
-        Legacy.SOSDacImpl impl = new(target, null);
+        Legacy.SOSDacImpl impl = new(target, legacyImpl);
         nint ccw = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         Marshal.QueryInterface(ccw, *pIID, out nint ptrToIface);
         *iface = (void*)ptrToIface;
