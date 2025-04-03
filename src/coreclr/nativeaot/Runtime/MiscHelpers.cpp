@@ -18,7 +18,6 @@
 #include "rhbinder.h"
 #include "RuntimeInstance.h"
 #include "regdisplay.h"
-#include "varint.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "event.h"
@@ -335,6 +334,7 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         int64_t distToTarget = ((int64_t)pCode[0] << 38) >> 36;
         return (uint8_t *)pCode + distToTarget;
     }
+
 #elif TARGET_LOONGARCH64
     uint32_t * pCode = (uint32_t *)pCodeOrg;
     // is this "addi.d $a0, $a0, 8"?
@@ -370,6 +370,45 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         distToTarget += ((((int64_t)pCode[1] & ~0x3ff) << 38) >> 46);
         return (uint8_t *)((int64_t)pCode + distToTarget);
     }
+
+#elif TARGET_RISCV64
+    uint32_t * pCode = (uint32_t *)pCodeOrg;
+    if (pCode[0] == 0x00850513)  // Encoding for `addi a0, a0, 8` in 32-bit instruction format
+    {
+        // unboxing sequence
+        unboxingStub = true;
+        pCode++;
+    }
+    // is this an indirect jump?
+    // lui t0, imm; jalr t0, t0, imm12
+    if ((pCode[0] & 0x7f) == 0x17 &&                 // auipc
+        (pCode[1] & 0x707f) == 0x3003 &&             // ld with funct3=011
+        (pCode[2] & 0x707f) == 0x0067)               // jr (jalr with x0 as rd and funct3=000)
+    {
+        // Compute the distance to the IAT cell
+        int64_t distToIatCell = (((int32_t)pCode[0]) >> 12) << 12;  // Extract imm20 from auipc
+        distToIatCell += ((int32_t)pCode[1]) >> 20;                    // Add imm12 from ld
+
+        uint8_t ** pIatCell = (uint8_t **)(((int64_t)pCode & ~0xfff) + distToIatCell);
+        return *pIatCell;
+    }
+
+    // Is this an unboxing stub followed by a relative jump?
+    // auipc t0, imm20; jalr ra, imm12(t0)
+    else if (unboxingStub &&
+            (pCode[0] & 0x7f) == 0x17 &&                 // auipc opcode
+            (pCode[1] & 0x707f) == 0x0067)              // jalr opcode with funct3=000
+    {
+        // Extract imm20 from auipc
+        int64_t distToTarget = (((int32_t)pCode[0]) >> 12) << 12;  // Extract imm20 (bits 31:12)
+
+        // Extract imm12 from jalr
+        distToTarget += ((int32_t)pCode[1]) >> 20;  // Extract imm12 (bits 31:20)
+
+        // Calculate the final target address relative to PC
+        return (uint8_t *)((int64_t)pCode + distToTarget);
+    }
+
 #else
     UNREFERENCED_PARAMETER(unboxingStub);
     PORTABILITY_ASSERT("RhGetCodeTarget");

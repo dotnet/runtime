@@ -277,15 +277,22 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
 
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX     \
         PAL_SEHException exCopy;                    \
         bool hasCaughtException = false;            \
         try {
 
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
+
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
         }                                           \
         catch (PAL_SEHException& ex)                \
         {                                           \
+            if (nativeRethrow)                      \
+            {                                       \
+                throw;                              \
+            }                                       \
             exCopy = std::move(ex);                 \
             hasCaughtException = true;              \
         }                                           \
@@ -293,6 +300,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         {                                           \
             DispatchManagedException(exCopy, false);\
         }
+
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(false)
 
 // Install trap that catches unhandled managed exception and dumps its stack
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                            \
@@ -315,7 +325,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #else // TARGET_UNIX
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
 
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 #define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
@@ -330,8 +342,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         bool       __fExceptionCaught = false;                                             \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
-            SCAN_EHMARKER_TRY();                                                            \
-            DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH)
+            SCAN_EHMARKER_TRY();
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER                                                 \
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX                                            \
@@ -346,11 +357,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         bool       __fExceptionCaught = false;                                             \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
-            SCAN_EHMARKER_TRY();                                                            \
-            DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH);
+            SCAN_EHMARKER_TRY();
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                      \
-            DEBUG_ASSURE_NO_RETURN_END(IUACH)                                               \
             SCAN_EHMARKER_END_TRY();                                                        \
         }                                                                                   \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
@@ -488,12 +497,12 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
   {                                                 \
     MAKE_CURRENT_THREAD_AVAILABLE();                \
     BEGIN_GCX_ASSERT_PREEMP;                        \
-    CoopTransitionHolder __CoopTransition(CURRENT_THREAD); \
-    DEBUG_ASSURE_NO_RETURN_BEGIN(COOP_TRANSITION)
+    {                                               \
+        CoopTransitionHolder __CoopTransition(CURRENT_THREAD);
 
 #define COOPERATIVE_TRANSITION_END()                \
-    DEBUG_ASSURE_NO_RETURN_END(COOP_TRANSITION)     \
-    __CoopTransition.SuppressRelease();             \
+        __CoopTransition.SuppressRelease();         \
+    }                                               \
     END_GCX_ASSERT_PREEMP;                          \
   }
 

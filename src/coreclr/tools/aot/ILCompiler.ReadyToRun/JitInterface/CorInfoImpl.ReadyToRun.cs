@@ -215,7 +215,7 @@ namespace Internal.JitInterface
                         {
                             derivesFromTypeDefinition = currentType.GetTypeDefinition() == tokenOnlyOwningType;
                             currentType = currentType.BaseType;
-                        } while(currentType != null && !derivesFromTypeDefinition);
+                        } while (currentType != null && !derivesFromTypeDefinition);
 
                         if (derivesFromTypeDefinition)
                         {
@@ -311,7 +311,7 @@ namespace Internal.JitInterface
 
         public override int GetHashCode()
         {
-            return Method.GetHashCode() ^ unchecked(17 * Token.GetHashCode()) ^ unchecked (39 * (ConstrainedType?.GetHashCode() ?? 0));
+            return Method.GetHashCode() ^ unchecked(17 * Token.GetHashCode()) ^ unchecked(39 * (ConstrainedType?.GetHashCode() ?? 0));
         }
 
         public bool Equals(MethodWithToken methodWithToken)
@@ -1299,10 +1299,12 @@ namespace Internal.JitInterface
                     return false;
                 }
 
-                // Do not tailcall from methods that are marked as noinline (people often use no-inline
+                // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
                 // to mean "I want to always see this method in stacktrace")
                 if (caller.IsNoInlining)
                 {
+                    // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
+                    // to emit fast tail calls if optimizations are disabled.
                     return false;
                 }
 
@@ -2111,7 +2113,7 @@ namespace Internal.JitInterface
                 // of shared generic code calling a shared generic implementation method, which should be rare.
                 //
                 // An alternative design would be to add a new generic dictionary entry kind to hold the MethodDesc
-                // of the constrained target instead, and use that in some circumstances; however, implementation of 
+                // of the constrained target instead, and use that in some circumstances; however, implementation of
                 // that design requires refactoring variuos parts of the JIT interface as well as
                 // TryResolveConstraintMethodApprox. In particular we would need to be abled to embed a constrained lookup
                 // via EmbedGenericHandle, as well as decide in TryResolveConstraintMethodApprox if the call can be made
@@ -3150,7 +3152,7 @@ namespace Internal.JitInterface
 
                         // Currently, the only place we are using a token here is for a COM-to-CLR exception-to-HRESULT
                         // mapping catch clause.  We want this catch clause to catch all exceptions, so we override the
-                        // token to be mdTypeRefNil, which used by the EH system to mean catch(...)
+                        // token to be mdTypeRefNil, which used by the EH system to mean catch (...)
                         Debug.Assert(clauseType.IsObject);
                         clause.ClassTokenOrOffset = 0;
                     }

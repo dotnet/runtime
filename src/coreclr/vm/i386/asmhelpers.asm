@@ -59,6 +59,18 @@ EXTERN @ProfileEnter@8:PROC
 EXTERN @ProfileLeave@8:PROC
 EXTERN @ProfileTailcall@8:PROC
 
+EXTERN _VSD_ResolveWorker@12:PROC
+EXTERN _BackPatchWorkerStaticStub@8:PROC
+ifdef CHAIN_LOOKUP
+g_chained_lookup_call_counter TEXTEQU <_g_chained_lookup_call_counter>
+g_chained_lookup_miss_counter TEXTEQU <_g_chained_lookup_miss_counter>
+g_dispatch_cache_chain_success_counter TEXTEQU <_g_dispatch_cache_chain_success_counter>
+EXTERN @VSD_PromoteChainEntry@4:PROC
+EXTERN g_chained_lookup_call_counter:DWORD
+EXTERN g_chained_lookup_miss_counter:DWORD
+EXTERN g_dispatch_cache_chain_success_counter:DWORD
+endif
+
 UNREFERENCED macro arg
     local unref
     unref equ size arg
@@ -1155,7 +1167,7 @@ _TheUMEntryPrestub@0 proc public
     push        ecx
     push        edx
 
-    push    eax     ; UMEntryThunk*
+    push    eax     ; UMEntryThunkData*
     call    _TheUMEntryPrestubWorker@4
 
     ; pop argument registers
@@ -1222,14 +1234,12 @@ _GenericComCallStub@0 proc public
     push        edi
 
     push        eax         ; UnmanagedToManagedFrame::m_pvDatum = ComCallMethodDesc*
-    sub         esp, (SIZEOF_GSCookie + OFFSETOF__UnmanagedToManagedFrame__m_pvDatum)
+    sub         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
 
-    lea         eax, [esp+SIZEOF_GSCookie]
-
-    push        eax
+    push        esp
     call        _COMToCLRWorker@4
 
-    add         esp, (SIZEOF_GSCookie + OFFSETOF__UnmanagedToManagedFrame__m_pvDatum)
+    add         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
 
     ; pop the ComCallMethodDesc*
     pop         ecx
@@ -1272,10 +1282,10 @@ _ComCallPreStub@0 proc public
     push        edi
 
     push        eax         ; ComCallMethodDesc*
-    sub         esp, 5*4    ; next, vtable, gscookie, 64-bit error return
+    sub         esp, 4*4    ; next, vtable, 64-bit error return
 
-    lea     edi, [esp]
-    lea     esi, [esp+3*4]
+    lea     edi, [esp]      ; Point at the 64-bit error return
+    lea     esi, [esp+2*4]  ; Leave space for the 64-bit error return
 
     push    edi                 ; pErrorReturn
     push    esi                 ; pFrame
@@ -1285,7 +1295,7 @@ _ComCallPreStub@0 proc public
     cmp eax, 0
     je nostub                   ; oops we could not create a stub
 
-    add     esp, 6*4
+    add     esp, 5*4            ; Pop off 64-bit error return, vtable, next and ComCallMethodDesc*
 
     ; pop CalleeSavedRegisters
     pop edi
@@ -1308,7 +1318,7 @@ nostub:
     mov     eax, [edi]
     mov     edx, [edi+4]
 
-    add     esp, 6*4
+    add     esp, 5*4            ; Pop off 64-bit error return, vtable, next and ComCallMethodDesc*
 
     ; pop CalleeSavedRegisters
     pop edi
@@ -1395,5 +1405,231 @@ _OnCallCountThresholdReachedStub@0 proc public
 _OnCallCountThresholdReachedStub@0 endp
 
 endif ; FEATURE_TIERED_COMPILATION
+
+; rcx -This pointer
+; rdx -ReturnBuffer
+_ThisPtrRetBufPrecodeWorker@0 proc public
+    mov  eax, [eax + ThisPtrRetBufPrecodeData__Target]
+    ; Use XOR swap technique to set avoid the need to spill to the stack
+    xor ecx, edx
+    xor edx, ecx
+    xor ecx, edx
+    jmp eax
+_ThisPtrRetBufPrecodeWorker@0 endp
+
+;==========================================================================
+; Call the resolver, it will return where we are supposed to go.
+; There is a little stack magic here, in that we are entered with one
+; of the arguments for the resolver (the token) on the stack already.
+; We just push the other arguments, <this> in the call frame and the call site pointer,
+; and call the resolver.
+;
+; On return we have the stack frame restored to the way it was when the ResolveStub
+; was called, i.e. as it was at the actual call site.  The return value from
+; the resolver is the address we need to transfer control to, simulating a direct
+; call from the original call site.  If we get passed back NULL, it means that the
+; resolution failed, an unimpelemented method is being called.
+;
+; Entry stack:
+;          dispatch token
+;          siteAddrForRegisterIndirect (used only if this is a RegisterIndirect dispatch call)
+;          return address of caller to stub
+;
+; Call stack:
+;          pointer to TransitionBlock
+;          call site
+;          dispatch token
+;          TransitionBlock
+;              ArgumentRegisters (ecx, edx)
+;              CalleeSavedRegisters (ebp, ebx, esi, edi)
+;          return address of caller to stub
+;==========================================================================
+_ResolveWorkerAsmStub@0 proc public
+    ;
+    ; The stub arguments are where we want to setup the TransitionBlock. We will
+    ; setup the TransitionBlock later once we can trash them
+    ;
+    ; push ebp-frame
+    ; push  ebp
+    ; mov   ebp,esp
+
+    ; save CalleeSavedRegisters
+    ; push  ebx
+
+    push    esi
+    push    edi
+
+    ; push ArgumentRegisters
+    push    ecx
+    push    edx
+
+    mov     esi, esp
+
+    push    [esi + 4*4]     ; dispatch token
+    push    [esi + 5*4]     ; siteAddrForRegisterIndirect
+    push    esi             ; pTransitionBlock
+
+    ; Setup up proper EBP frame now that the stub arguments can be trashed
+    mov     [esi + 4*4], ebx
+    mov     [esi + 5*4], ebp
+    lea     ebp, [esi + 5*4]
+
+    ; Make the call
+    call    _VSD_ResolveWorker@12
+
+    ; From here on, mustn't trash eax
+
+    STUB_EPILOG
+    jmp     eax
+
+    ; This will never be executed. It is just to help out stack-walking logic
+    ; which disassembles the epilog to unwind the stack.
+    ret
+_ResolveWorkerAsmStub@0 endp
+
+ifdef CHAIN_LOOKUP
+;==========================================================================
+; This will perform a chained lookup of the entry if the initial cache lookup fails
+;
+; Entry stack:
+;          dispatch token
+;          siteAddrForRegisterIndirect (used only if this is a RegisterIndirect dispatch call)
+;          return address of caller to stub
+; Also, EAX contains the pointer to the first ResolveCacheElem pointer for the calculated
+; bucket in the cache table.
+;==========================================================================
+_ResolveWorkerChainLookupAsmStub@0 proc public
+    ; this is the part of the stack that is present as we enter this function:
+    
+    ChainLookup__token equ                  00h
+    ChainLookup__indirect_addr equ          04h
+    ChainLookup__caller_ret_addr equ        08h
+    ChainLookup__ret_esp equ                0ch
+
+    ChainLookup_spilled_reg_size equ        8
+
+ifdef STUB_LOGGING
+    inc     g_chained_lookup_call_counter
+endif
+
+    ; spill regs
+    push    edx
+    push    ecx
+
+    ; move the token into edx
+    mov     edx, [esp + ChainLookup_spilled_reg_size + ChainLookup__token]
+
+    ; move the MT into ecx
+    mov     ecx, [ecx]
+
+main_loop:
+
+    ; get the next entry in the chain (don't bother checking the first entry again)
+    mov     eax, [eax + ResolveCacheElem__pNext]
+
+    ; test if we hit a terminating NULL
+    test    eax, eax
+    jz      fail
+
+    ; compare the MT of the ResolveCacheElem
+    cmp     ecx, [eax + ResolveCacheElem__pMT]
+    jne     main_loop
+
+    ; compare the token of the ResolveCacheElem
+    cmp     edx, [eax + ResolveCacheElem__token]
+    jne     main_loop
+
+    ; success
+    ; decrement success counter and move entry to start if necessary
+    sub     g_dispatch_cache_chain_success_counter, 1
+
+    ; @TODO: Perhaps this should be a jl for better branch prediction?
+    jge     nopromote
+
+    ; be quick to reset the counter so we don't get a bunch of contending threads
+    add     g_dispatch_cache_chain_success_counter, ASM__CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT
+
+    ; promote the entry to the beginning of the chain
+    mov     ecx, eax
+    call    @VSD_PromoteChainEntry@4
+
+nopromote:
+    pop     ecx
+    pop     edx
+    add     esp, (ChainLookup__caller_ret_addr - ChainLookup__token)
+    mov     eax, [eax + ResolveCacheElem__target]
+    jmp     eax
+
+fail:
+ifdef STUB_LOGGING
+    inc     g_chained_lookup_miss_counter
+endif
+
+    ; restore registers
+    pop     ecx
+    pop     edx
+    jmp     _ResolveWorkerAsmStub@0
+_ResolveWorkerChainLookupAsmStub@0 endp
+endif ; CHAIN_LOOKUP
+
+;==========================================================================
+; Call the callsite back patcher.  The fail stub piece of the resolver is being
+; call too often, i.e. dispatch stubs are failing the expect MT test too often.
+; In this stub wraps the call to the BackPatchWorker to take care of any stack magic
+; needed.
+;==========================================================================
+_BackPatchWorkerAsmStub@0 proc public
+    push    ebp
+    mov     ebp, esp
+
+    push    eax                 ; it may contain siteAddrForRegisterIndirect
+    push    ecx
+    push    edx
+
+    push    eax                 ; push any indirect call address as the second arg to BackPatchWorker
+    push    dword ptr [ebp + 8] ; and push return address as the first arg to BackPatchWorker
+    call    _BackPatchWorkerStaticStub@8
+
+    pop     edx
+    pop     ecx
+    pop     eax
+
+    mov     esp, ebp
+    pop     ebp
+    ret
+_BackPatchWorkerAsmStub@0 endp
+
+ifdef FEATURE_EH_FUNCLETS
+;==========================================================================
+; Capture a transition block with register values and call the IL_Throw
+; implementation written in C.
+;
+; Input state:
+;   ECX = Pointer to exception object
+;==========================================================================
+FASTCALL_FUNC IL_Throw, 4
+    STUB_PROLOG
+
+    mov     edx, esp
+    call    @IL_Throw_x86@8
+
+    STUB_EPILOG
+    ret     4
+FASTCALL_ENDFUNC IL_Throw
+
+;==========================================================================
+; Capture a transition block with register values and call the IL_Rethrow
+; implementation written in C.
+;==========================================================================
+FASTCALL_FUNC IL_Rethrow, 0
+    STUB_PROLOG
+
+    mov     ecx, esp
+    call    @IL_Rethrow_x86@4
+
+    STUB_EPILOG
+    ret     4
+FASTCALL_ENDFUNC IL_Rethrow
+endif ; FEATURE_EH_FUNCLETS
 
     end

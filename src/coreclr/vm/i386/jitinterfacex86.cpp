@@ -97,11 +97,6 @@ extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 #endif // _DEBUG
 
 /*********************************************************************/
-#ifndef UNIX_X86_ABI
-extern "C" void* g_TailCallFrameVptr;
-void* g_TailCallFrameVptr;
-#endif // !UNI_X86_ABI
-
 #ifdef FEATURE_HIJACK
 extern "C" void STDCALL JIT_TailCallHelper(Thread * pThread);
 void STDCALL JIT_TailCallHelper(Thread * pThread)
@@ -371,7 +366,7 @@ void *JIT_TrialAlloc::GenAllocSFast(Flags flags)
     // Jump to the framed helper
     sl.X86EmitNearJump(sl.NewExternalCodeLabel((LPVOID)JIT_New));
 
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap(), NEWSTUB_FL_NONE, "AllocSFast");
 
     return (void *)pStub->GetEntryPoint();
 }
@@ -503,7 +498,7 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
     // Jump to the slow version of JIT_Box
     sl.X86EmitNearJump(sl.NewExternalCodeLabel((LPVOID) JIT_Box));
 
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap(), NEWSTUB_FL_NONE, "Box");
 
     return (void *)pStub->GetEntryPoint();
 }
@@ -661,7 +656,7 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
     _ASSERTE(target->e.m_pExternalAddress);
     sl.X86EmitNearJump(target);
 
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap(), NEWSTUB_FL_NONE, "AllocArray");
 
     return (void *)pStub->GetEntryPoint();
 }
@@ -749,7 +744,7 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
     CodeLabel * target = sl.NewExternalCodeLabel((LPVOID)FramedAllocateString);
     sl.X86EmitNearJump(target);
 
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap(), NEWSTUB_FL_NONE, "AllocString");
 
     return (void *)pStub->GetEntryPoint();
 }
@@ -908,11 +903,6 @@ void InitJITHelpers1()
 #endif
 
     // Leave the patched region writable for StompWriteBarrierEphemeral(), StompWriteBarrierResize()
-
-#ifndef UNIX_X86_ABI
-    // Initialize g_TailCallFrameVptr for JIT_TailCall helper
-    g_TailCallFrameVptr = (void*)TailCallFrame::GetMethodFrameVPtr();
-#endif // !UNIX_X86_ABI
 }
 #pragma warning (default : 4731)
 

@@ -331,13 +331,19 @@
   </Target>
 
   <Target Name="DiscoverMergedTestWrappers">
+    <!-- Mobile tests use a run script that's generated into the bundle as the execution script -->
+    <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+      <_AppBundleRunScriptName>RunTests</_AppBundleRunScriptName>
+      <_AppBundleRunScriptName Condition="'$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true'">build-apple-app</_AppBundleRunScriptName>
+    </PropertyGroup>
+
     <ItemGroup>
       <!-- Exclude WASM support files. They can interfere with our discovery process and create extra work items that don't work. -->
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
 
       <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
         <TestExecutionScriptPath Condition="'$(TargetsMobile)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
-        <TestExecutionScriptPath Condition="'$(TargetsMobile)' == 'true'">%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsMobile)' == 'true'">%(RootDir)%(Directory)AppBundle/$(_AppBundleRunScriptName).$(TestScriptExtension)</TestExecutionScriptPath>
       </_MergedWrapperMarker>
 
       <!-- Exclude merged test wrappers without the test execution script for this target (skipped due to CLRTestTargetUnsupported et al) -->
@@ -385,8 +391,9 @@
 
     <ItemGroup Condition="'@(_MergedPayloadFiles)' != ''" >
       <!-- Remove the managed pdbs from our payloads.
-           This is for performance reasons to reduce our helix payload size  -->
-      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition=" '%(Extension)' != '.pdb' and '%(Extension)' != '.OutOfProcessTest'" />
+           This is for performance reasons to reduce our helix payload size
+           Note: for Native AOT the pdb is the native PDB. !analyze wouldn't work without it at all so we keep it -->
+      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition="('%(Extension)' != '.pdb' or '$(_NativeAotTest)' == 'true') and '%(Extension)' != '.OutOfProcessTest'" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -448,7 +455,7 @@
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="set_return %24result_exit_code" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
+    <Copy UseHardlinksIfPossible="true"  SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
   </Target>
 
@@ -536,7 +543,7 @@
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForAppleMobile"
-      Condition="'$(TargetsAppleMobile)' == 'true'"
+      Condition="'$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' != 'true'"
       Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
 
@@ -573,9 +580,45 @@
     <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
       Lines="@(FilteredTestExclusionList)"
       Condition="'@(_TestExclusionListPlaceholder)' != ''" />
-    </Target>
+  </Target>
 
-  <Target Name="PrepareMergedTestPayloadDirectory" DependsOnTargets="DiscoverMergedTestWrappers;PrepareMergedTestPayloadDirectoryForDesktop;PrepareMergedTestPayloadDirectoryForAndroid;PrepareMergedTestPayloadDirectoryForWasm;PrepareMergedTestPayloadDirectoryForAppleMobile" />
+  <Target Name="PrepareMergedTestPayloadDirectoryForAppleMobileBuildOnHelix"
+      Condition="'$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
+      DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
+
+    <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
+      <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
+      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/**" />
+      <_MergedPayloadFiles Update="@(_MergedPayloadFiles)" Condition="'@(_MergedPayloadFiles)' != ''" >
+        <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
+             MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle/', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+      </_MergedPayloadFiles>
+      <!-- Remove the placeholder test exclusion list here -->
+      <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
+      <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
+    <!-- Write the real test exclusion list instead of the placeholder. -->
+    <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
+      Lines="@(FilteredTestExclusionList)"
+      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
+  </Target>
+
+  <Target Name="PrepareMergedTestPayloadDirectory"
+          DependsOnTargets="DiscoverMergedTestWrappers;
+                            PrepareMergedTestPayloadDirectoryForDesktop;
+                            PrepareMergedTestPayloadDirectoryForAndroid;
+                            PrepareMergedTestPayloadDirectoryForWasm;
+                            PrepareMergedTestPayloadDirectoryForAppleMobile;
+                            PrepareMergedTestPayloadDirectoryForAppleMobileBuildOnHelix" />
 
   <Target Name="ZipLegacyPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
     <ItemGroup>
@@ -592,7 +635,9 @@
       DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
   </Target>
 
-  <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedTestPayloadDirectories" Condition="'$(TargetsBrowser)' == 'true'">
+  <Target Name="ZipMergedPayloadDirectory"
+          AfterTargets="PrepareMergedTestPayloadDirectories"
+          Condition="'$(TargetsBrowser)' == 'true' or ('$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true')">
     <ItemGroup>
       <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
       <MergedPayloads Update="@(MergedPayloads)">
@@ -860,6 +905,61 @@
         <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
         <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
       </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
+  <!--
+      When we're building the apple mobile apps on Helix instead of during the build, we need to add a lot of assets to the Helix jobs
+      and modify how we submit the items to Helix.
+      We also won't discover the payloads through the normal way (as we won't have .app bundles to discover).
+  -->
+  <Target Name="PrepareAppleMobileBuildOnHelixWorkItems" BeforeTargets="CoreTest" Condition="'$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true'">
+    <PropertyGroup>
+      <iOSLikeBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'apple', 'build'))</iOSLikeBuildTargetsDir>
+      <iOSLikeLibraryBuilderTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'common'))</iOSLikeLibraryBuilderTargetsDir>
+      <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.28.0-macos-universal.tar.gz</CMakeUrl>
+
+      <_XHarnessAppleCustomCommand>
+        source build-apple-app.sh
+      </_XHarnessAppleCustomCommand>
+      <_RuntimeComponentManifestDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'build'))</_RuntimeComponentManifestDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
+      <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
+      <HelixCorrelationPayload Include="$(LibraryBuilderDir)"                    Destination="build/LibraryBuilder" />
+      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Condition="'$(RuntimeFlavor)' == 'mono'"
+                                                                                Destination="build/MonoAOTCompiler" />
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())" />
+      <HelixCorrelationPayload Include="$(_RuntimeComponentManifestDir)"         Condition="'$(RuntimeFlavor)' == 'mono'"
+                                                                                Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())/runtimes/$(TargetOS)-$(TargetArchitecture.ToLower())/build" />
+      <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"               Destination="build/apple" />
+      <HelixCorrelationPayload Include="$(iOSLikeLibraryBuilderTargetsDir)"      Destination="build/common" />
+      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Condition="'$(RuntimeFlavor)' == 'mono'"
+                                                                                Destination="build/cross" />
+      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
+      <HelixCorrelationPayload Include="$(CoreCLRCrossILCompilerDir)"            Condition="'$(RuntimeFlavor)' == 'coreclr'"
+                                                                                Destination="build/ilc" />
+      <HelixCorrelationPayload Include="$(CoreCLRBuildIntegrationDir)"           Condition="'$(RuntimeFlavor)' == 'coreclr'"
+                                                                                Destination="build/BuildIntegration" />
+      <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Condition="'$(RuntimeFlavor)' == 'coreclr'"
+                                                                                Destination="build/aotsdk" />
+      <HelixCorrelationPayload Include="$(ToolsILLinkDir)"                       Destination="build" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!--
+        We're building on Helix, so pass the zip as the app bundle path (as the bundle doesn't exist yet).
+        The XHarness SDK renames zip app bundle files if they're specified as the AppBundle path,
+        but not if they're the identity of the item. Change the item metadata such that the zip is the identity
+        and no app bundle is provided. -->
+      <_XHarnessAppBundleZipWorkItems Include="@(XHarnessAppBundleToTest->'$(MergedPayloadsRootDirectory)%(PayloadGroup).zip')" RemoveMetadata="AppBundlePath">
+        <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
+      </_XHarnessAppBundleZipWorkItems>
+      <!-- Replace the items. -->
+      <XHarnessAppBundleToTest Remove="@(XHarnessAppBundleToTest)" />
+      <XHarnessAppBundleToTest Include="@(_XHarnessAppBundleZipWorkItems)" />
     </ItemGroup>
   </Target>
 

@@ -45,6 +45,15 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "https://github.com/dotnet/runtime/issues/111501")]
+        public void CurrentCulture_Default_Is_Specific()
+        {
+            // On OSX-like platforms, the current culture taken from default system culture should be specific.
+            Assert.False(CultureInfo.CurrentCulture.IsNeutralCulture);
+        }
+
+        [Fact]
         public void CurrentCulture_Set_Null_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentCulture = null);

@@ -157,30 +157,18 @@ namespace System.Threading
         }
 
 #if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
-        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => true;
-        internal static bool IsInternalThreadStartSupported => true;
-#elif FEATURE_WASM_PERFTRACING
-        [UnsupportedOSPlatformGuard("wasi")]
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => false;
-        internal static bool IsInternalThreadStartSupported => true;
 #else
-        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => false;
-        internal static bool IsInternalThreadStartSupported => false;
 #endif
 
-        internal static void ThrowIfNoThreadStart(bool internalThread = false)
+        internal static void ThrowIfNoThreadStart()
         {
             if (IsThreadStartSupported)
-                return;
-            if (IsInternalThreadStartSupported && internalThread)
                 return;
             throw new PlatformNotSupportedException();
         }
@@ -209,12 +197,12 @@ namespace System.Threading
 #endif
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
-        private void Start(object? parameter, bool captureContext, bool internalThread = false)
+        private void Start(object? parameter, bool captureContext)
         {
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
-            ThrowIfNoThreadStart(internalThread);
+            ThrowIfNoThreadStart();
 
             StartHelper? startHelper = _startHelper;
 
@@ -255,11 +243,9 @@ namespace System.Threading
 #endif
         public void UnsafeStart() => Start(captureContext: false);
 
-        internal void InternalUnsafeStart() => Start(captureContext: false, internalThread: true);
-
-        private void Start(bool captureContext, bool internalThread = false)
+        private void Start(bool captureContext)
         {
-            ThrowIfNoThreadStart(internalThread);
+            ThrowIfNoThreadStart();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
@@ -386,6 +372,11 @@ namespace System.Threading
 #if !NATIVEAOT
         /// <summary>Returns the operating system identifier for the current thread.</summary>
         internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
+#endif
+
+#if !MONO
+        [Intrinsic]
+        internal static void FastPollGC() => FastPollGC();
 #endif
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();

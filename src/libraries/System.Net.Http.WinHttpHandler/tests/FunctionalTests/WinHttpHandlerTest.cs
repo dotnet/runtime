@@ -46,6 +46,29 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
+        [OuterLoop("Uses external server.")]
+        [Fact]
+        public async Task GetAsync_ConcurrentRead_ThrowsInvalidOperationException()
+        {
+            using var client = new HttpClient(new WinHttpHandler());
+            using var response = await client.GetAsync("https://httpbin.org/stream-bytes/4096", HttpCompletionOption.ResponseHeadersRead);
+            using var stream = await response.Content.ReadAsStreamAsync();
+            var tasks = new Task[1_000];
+            for (int i = 0; i < tasks.Length; ++i)
+            {
+                tasks[i] = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await stream.ReadAsync(new byte[5]);
+                    }
+                    catch (InvalidOperationException ioe) when (ioe.Message.Contains("concurrent I/O")) // Expected exception for concurrent IO
+                    { }
+                });
+            }
+            await Task.WhenAll(tasks);
+        }
+
         [OuterLoop]
         [Theory]
         [InlineData(CookieUsePolicy.UseInternalCookieStoreOnly, "cookieName1", "cookieValue1")]

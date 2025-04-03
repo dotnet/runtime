@@ -85,7 +85,7 @@ namespace System
         internal const ulong BiasedExponentMask = 0x7FF0_0000_0000_0000;
         internal const int BiasedExponentShift = 52;
         internal const int BiasedExponentLength = 11;
-        internal const ushort ShiftedExponentMask = (ushort)(BiasedExponentMask >> BiasedExponentShift);
+        internal const ushort ShiftedBiasedExponentMask = (ushort)(BiasedExponentMask >> BiasedExponentShift);
 
         internal const ulong TrailingSignificandMask = 0x000F_FFFF_FFFF_FFFF;
 
@@ -154,7 +154,7 @@ namespace System
 
         internal static ushort ExtractBiasedExponentFromBits(ulong bits)
         {
-            return (ushort)((bits >> BiasedExponentShift) & ShiftedExponentMask);
+            return (ushort)((bits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
         }
 
         internal static ulong ExtractTrailingSignificandFromBits(ulong bits)
@@ -177,8 +177,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInfinity(double d)
         {
-            ulong bits = BitConverter.DoubleToUInt64Bits(d);
-            return (bits & ~SignMask) == PositiveInfinityBits;
+            ulong bits = BitConverter.DoubleToUInt64Bits(Abs(d));
+            return bits == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is NaN.</summary>
@@ -224,8 +224,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNormal(double d)
         {
-            ulong bits = BitConverter.DoubleToUInt64Bits(d);
-            return ((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
+            ulong bits = BitConverter.DoubleToUInt64Bits(Abs(d));
+            return (bits - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
@@ -242,8 +242,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsSubnormal(double d)
         {
-            ulong bits = BitConverter.DoubleToUInt64Bits(d);
-            return ((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+            ulong bits = BitConverter.DoubleToUInt64Bits(Abs(d));
+            return (bits - 1) < MaxTrailingSignificand;
         }
 
         [NonVersionable]
@@ -665,15 +665,12 @@ namespace System
         public static TInteger ConvertToIntegerNative<TInteger>(double value)
             where TInteger : IBinaryInteger<TInteger>
         {
-#if !MONO
             if (typeof(TInteger).IsPrimitive)
             {
                 // We need this to be recursive so indirect calls (delegates
                 // for example) produce the same result as direct invocation
                 return ConvertToIntegerNative<TInteger>(value);
             }
-#endif
-
             return TInteger.CreateSaturating(value);
         }
 
@@ -941,7 +938,24 @@ namespace System
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        public static double Clamp(double value, double min, double max) => Math.Clamp(value, min, max);
+        public static double Clamp(double value, double min, double max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return Min(Max(value, min), max);
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
+        public static double ClampNative(double value, double min, double max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return MinNative(MaxNative(value, min), max);
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static double CopySign(double value, double sign) => Math.CopySign(value, sign);
@@ -949,6 +963,10 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         [Intrinsic]
         public static double Max(double x, double y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
+        [Intrinsic]
+        public static double MaxNative(double x, double y) => (x > y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -976,6 +994,10 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         [Intrinsic]
         public static double Min(double x, double y) => Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
+        [Intrinsic]
+        public static double MinNative(double x, double y) => (x < y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1204,6 +1226,7 @@ namespace System
             return TryConvertFrom(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFrom<TOther>(TOther value, out double result)
             where TOther : INumberBase<TOther>
         {
@@ -1353,6 +1376,7 @@ namespace System
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(double value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
@@ -1489,8 +1513,8 @@ namespace System
                     ulong xBits = BitConverter.DoubleToUInt64Bits(ax);
                     ulong yBits = BitConverter.DoubleToUInt64Bits(ay);
 
-                    uint xExp = (uint)((xBits >> BiasedExponentShift) & ShiftedExponentMask);
-                    uint yExp = (uint)((yBits >> BiasedExponentShift) & ShiftedExponentMask);
+                    uint xExp = (uint)((xBits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
+                    uint yExp = (uint)((yBits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
 
                     int expDiff = (int)(xExp - yExp);
                     double expFix = 1.0;
