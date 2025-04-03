@@ -25,15 +25,9 @@
 #define USE_CURRENT_CONTEXT_IN_FILTER
 #endif // TARGET_X86
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-// ARM/ARM64 uses Caller-SP to locate PSPSym in the funclet frame.
-#define USE_CALLER_SP_IN_FUNCLET
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ADJUST_PC_UNWOUND_TO_CALL
 #define STACK_RANGE_BOUNDS_ARE_CALLER_SP
-#define USE_FUNCLET_CALL_HELPER
 // For ARM/ARM64, EstablisherFrame is Caller-SP (SP just before executing call instruction).
 // This has been confirmed by AaronGi from the kernel team for Windows.
 //
@@ -710,56 +704,6 @@ BOOL NotifyDebuggerOfStub(Thread* pThread, Frame* pCurrentFrame)
 #undef OPTIONAL_SO_CLEANUP_UNWIND
 
 #define OPTIONAL_SO_CLEANUP_UNWIND(pThread, pFrame)  if (pThread->GetFrame() < pFrame) { UnwindFrameChain(pThread, pFrame); }
-
-typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
-
-#ifdef USE_FUNCLET_CALL_HELPER
-// This is an assembly helper that enables us to call into EH funclets.
-EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
-
-// This is an assembly helper that enables us to call into EH filter funclets.
-EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR CallerSP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
-
-static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
-{
-#ifdef TARGET_ARM
-    return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
-#else
-    return (UINT_PTR)pfnHandler;
-#endif
-}
-
-static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextRecord)
-{
-#if defined(TARGET_ARM)
-    return (UINT_PTR*)&(pContextRecord->R4);
-#elif defined(TARGET_ARM64)
-    return (UINT_PTR*)&(pContextRecord->X19);
-#elif defined(TARGET_LOONGARCH64)
-    return (UINT_PTR*)&(pContextRecord->S0);
-#elif defined(TARGET_X86)
-    return (UINT_PTR*)&(pContextRecord->Edi);
-#elif defined(TARGET_RISCV64)
-    return (UINT_PTR*)&(pContextRecord->Fp);
-#else
-    PORTABILITY_ASSERT("GetFirstNonVolatileRegisterAddress");
-    return NULL;
-#endif
-}
-
-static inline TADDR GetFrameRestoreBase(PCONTEXT pContextRecord)
-{
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    return GetSP(pContextRecord);
-#elif defined(TARGET_X86)
-    return pContextRecord->Ebp;
-#else
-    PORTABILITY_ASSERT("GetFrameRestoreBase");
-    return NULL;
-#endif
-}
-
-#endif // USE_FUNCLET_CALL_HELPER
 
 #undef OPTIONAL_SO_CLEANUP_UNWIND
 #define OPTIONAL_SO_CLEANUP_UNWIND(pThread, pFrame)

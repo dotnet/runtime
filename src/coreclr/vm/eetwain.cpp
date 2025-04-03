@@ -39,6 +39,8 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
 
 #include "argdestination.h"
 
+#include "exceptionhandling.h"
+
 #ifndef DACCESS_COMPILE
 #ifndef FEATURE_EH_FUNCLETS
 
@@ -2128,6 +2130,56 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 }
 #else // !FEATURE_EH_FUNCLETS
 
+#ifdef USE_FUNCLET_CALL_HELPER
+// This is an assembly helper that enables us to call into EH funclets.
+EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
+
+// This is an assembly helper that enables us to call into EH filter funclets.
+EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR CallerSP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
+
+typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
+
+static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
+{
+#ifdef TARGET_ARM
+    return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
+#else
+    return (UINT_PTR)pfnHandler;
+#endif
+}
+
+static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextRecord)
+{
+#if defined(TARGET_ARM)
+    return (UINT_PTR*)&(pContextRecord->R4);
+#elif defined(TARGET_ARM64)
+    return (UINT_PTR*)&(pContextRecord->X19);
+#elif defined(TARGET_LOONGARCH64)
+    return (UINT_PTR*)&(pContextRecord->S0);
+#elif defined(TARGET_X86)
+    return (UINT_PTR*)&(pContextRecord->Edi);
+#elif defined(TARGET_RISCV64)
+    return (UINT_PTR*)&(pContextRecord->Fp);
+#else
+    PORTABILITY_ASSERT("GetFirstNonVolatileRegisterAddress");
+    return NULL;
+#endif
+}
+
+static inline TADDR GetFrameRestoreBase(PCONTEXT pContextRecord)
+{
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    return GetSP(pContextRecord);
+#elif defined(TARGET_X86)
+    return pContextRecord->Ebp;
+#else
+    PORTABILITY_ASSERT("GetFrameRestoreBase");
+    return NULL;
+#endif
+}
+
+#endif // USE_FUNCLET_CALL_HELPER
+
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
@@ -2180,9 +2232,9 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
         // method.
         dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
 #ifdef USE_CURRENT_CONTEXT_IN_FILTER
-                                       GetFrameRestoreBase(pvRegDisplay->pCurrentContext),
+                                       GetFrameRestoreBase(pRD->pCurrentContext),
 #else
-                                       GetFrameRestoreBase(pvRegDisplay->pCallerContext),
+                                       GetFrameRestoreBase(pRD->pCallerContext),
 #endif
                                        CastHandlerFn(pfnHandler),
                                        pFuncletCallerSP);
