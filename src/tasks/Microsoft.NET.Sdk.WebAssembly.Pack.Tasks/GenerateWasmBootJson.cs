@@ -437,8 +437,8 @@ public class GenerateWasmBootJson : Task
         var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
         if (browserProfiler != null)
         {
-            bootConfig.environmentVariables ??= new();
-            bootConfig.environmentVariables["DOTNET_WasmPerfInstrumentation"] = browserProfiler.Substring("browser:".Length);
+            result.environmentVariables ??= new();
+            result.environmentVariables["DOTNET_WasmPerfInstrumentation"] = browserProfiler.Substring("browser:".Length);
         }
 
         helper.ComputeResourcesHash(result);
