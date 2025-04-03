@@ -4733,7 +4733,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     {
         case NI_System_Math_Abs:
             instr = is4 ? INS_fsgnjx_s : INS_fsgnjx_d;
-            op2   = op1; // "fsgnjx rd, rs, rs" is the "fabs rd, rs" pseudo
+            op2   = op1; // "fabs rd, rs" is a pseudo-instruction for "fsgnjx rd, rs, rs"
             break;
         case NI_System_Math_Sqrt:
             instr = is4 ? INS_fsqrt_s : INS_fsqrt_d;
