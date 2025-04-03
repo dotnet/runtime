@@ -1196,15 +1196,27 @@ namespace Mono.Linker.Steps
 
 		protected void MarkCustomAttributeProperty (CustomAttributeNamedArgument namedArgument, TypeDefinition attribute, ICustomAttribute ca, in DependencyInfo reason, MessageOrigin origin)
 		{
-			PropertyDefinition? property = GetProperty (attribute, namedArgument.Name);
-			if (property != null)
-				MarkMethod (property.SetMethod, reason, origin);
+			TypeDefinition? type = attribute;
+			MethodDefinition? method = null;
+			while (type is not null) {
+				PropertyDefinition? property = type.Properties.FirstOrDefault (p => p.Name == namedArgument.Name);
 
-			MarkCustomAttributeArgument (namedArgument.Argument, ca, origin);
+				if (property?.SetMethod is not null) {
+					method = property.SetMethod;
+					break;
+				}
 
-			if (property != null && Annotations.FlowAnnotations.RequiresDataFlowAnalysis (property.SetMethod)) {
-				var scanner = new AttributeDataFlow (Context, this, origin);
-				scanner.ProcessAttributeDataflow (property.SetMethod, new List<CustomAttributeArgument> { namedArgument.Argument });
+				type = Context.TryResolve (type.BaseType);
+			}
+
+			if (method is not null) {
+				MarkMethod (method, reason, origin);
+				MarkCustomAttributeArgument (namedArgument.Argument, ca, origin);
+
+				if (Annotations.FlowAnnotations.RequiresDataFlowAnalysis (method)) {
+					var scanner = new AttributeDataFlow (Context, this, origin);
+					scanner.ProcessAttributeDataflow (method, new List<CustomAttributeArgument> { namedArgument.Argument });
+				}
 			}
 		}
 
