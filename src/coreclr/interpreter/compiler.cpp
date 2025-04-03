@@ -1969,9 +1969,9 @@ retry_emit:
                 int64_t val = getI8LittleEndian(m_ip + 1);
                 AddIns(INTOP_LDC_I8);
                 PushInterpType(InterpTypeI8, NULL);
-                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
-                m_pLastIns->data[0] = (int32_t)val;
-                m_pLastIns->data[1] = (int32_t)(val >> 32);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = (int32_t)val;
+                m_pLastNewIns->data[1] = (int32_t)(val >> 32);
                 m_ip += 9;
                 break;
             }
@@ -1980,8 +1980,8 @@ retry_emit:
                 int32_t val = getI4LittleEndian(m_ip + 1);
                 AddIns(INTOP_LDC_R4);
                 PushInterpType(InterpTypeR4, NULL);
-                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
-                m_pLastIns->data[0] = val;
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = val;
                 m_ip += 5;
                 break;
             }
@@ -1990,9 +1990,9 @@ retry_emit:
                 int64_t val = getI8LittleEndian(m_ip + 1);
                 AddIns(INTOP_LDC_R8);
                 PushInterpType(InterpTypeR8, NULL);
-                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
-                m_pLastIns->data[0] = (int32_t)val;
-                m_pLastIns->data[1] = (int32_t)(val >> 32);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = (int32_t)val;
+                m_pLastNewIns->data[1] = (int32_t)(val >> 32);
                 m_ip += 9;
                 break;
             }
@@ -2011,8 +2011,8 @@ retry_emit:
                 // str should be forever pinned, so we can include its ref inside interpreter code
                 AddIns(INTOP_LDPTR);
                 PushInterpType(InterpTypeO, m_compHnd->getBuiltinClass(CLASSID_STRING));
-                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
-                m_pLastIns->data[0] = GetDataItemIndex(str);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = GetDataItemIndex(str);
                 m_ip += 5;
                 break;
             }
