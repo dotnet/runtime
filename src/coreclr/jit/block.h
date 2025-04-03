@@ -1177,12 +1177,14 @@ public:
     const char* dspToString(int blockNumPadding = 0) const;
 #endif // DEBUG
 
-#define BB_UNITY_WEIGHT          100.0 // how much a normal execute once block weighs
-#define BB_UNITY_WEIGHT_UNSIGNED 100   // how much a normal execute once block weighs
-#define BB_LOOP_WEIGHT_SCALE     8.0   // synthetic profile scale factor for loops
+#define BB_UNITY_WEIGHT          1.0 // how much a normal execute once block weighs
+#define BB_UNITY_WEIGHT_UNSIGNED 1   // how much a normal execute once block weighs
+#define BB_LOOP_WEIGHT_SCALE     8.0 // synthetic profile scale factor for loops
 #define BB_ZERO_WEIGHT           0.0
-#define BB_COLD_WEIGHT           0.01    // Upper bound for cold weights; used during block layout
-#define BB_MAX_WEIGHT            FLT_MAX // maximum finite weight  -- needs rethinking.
+
+// TODO-BB-UNITY-WEIGHT: Consider scaling up
+#define BB_COLD_WEIGHT 0.0001  // Upper bound for cold weights; used during block layout
+#define BB_MAX_WEIGHT  FLT_MAX // maximum finite weight  -- needs rethinking.
 
     weight_t bbWeight; // The dynamic execution weight of this block
 
