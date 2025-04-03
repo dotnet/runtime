@@ -112,7 +112,7 @@ namespace System.Reflection.Metadata.Tests.Metadata
             Assert.Equal("aA", assemblyNameInfo.CultureName);
             // When converting to AssemblyName, the culture name is lower-cased
             // by the CultureInfo ctor that calls CultureData.GetCultureData
-            // which lowers the name for caching purposes.
+            // which lowers the name for caching and normalization purposes.
             Assert.Equal("aa", assemblyNameInfo.ToAssemblyName().CultureName);
         }
 

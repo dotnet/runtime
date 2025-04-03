@@ -67,7 +67,7 @@ namespace DotnetFuzzing.Fuzzers
                 {
                     // When converting to AssemblyName, the culture name is lower-cased
                     // by the CultureInfo ctor that calls CultureData.GetCultureData
-                    // which lowers the name for caching purposes.
+                    // which lowers the name for caching and normalization purposes.
                     Assert.Equal(fromTryParse.CultureName.ToLower(), fromParse.ToAssemblyName().CultureName);
                 }
                 else
