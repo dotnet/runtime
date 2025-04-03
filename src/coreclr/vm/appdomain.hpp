@@ -1343,8 +1343,6 @@ private:
     friend class Assembly;
 
 private:
-    BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable);
-
     enum Stage {
         STAGE_CREATING,
         STAGE_READYFORMANAGEDCODE,
