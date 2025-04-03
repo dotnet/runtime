@@ -3297,21 +3297,18 @@ namespace System
             for (int i = 0; i < format.Length; i++)
             {
                 char ch = format[i];
-                
                 // Skip the next character if it's escaped
                 if (ch == '\\' || ch == '%')
                 {
                     i++;
                     continue;
                 }
-                
                 // Toggle quote state
                 if (ch == '\'' || ch == '"')
                 {
                     inQuote = !inQuote;
                     continue;
                 }
-                
                 // Only check for 'd' when not in quotes
                 if (!inQuote && ch == 'd')
                 {
@@ -3323,7 +3320,6 @@ namespace System
                         repeatCount++;
                         i++;
                     }
-                    
                     // Only day-of-month specifiers (d or dd) trigger genitive case
                     if (repeatCount <= 2)
                     {
@@ -3407,8 +3403,8 @@ namespace System
                 if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0 && useDaySpecifier)
                 {
                     int tempResult = str.MatchLongestWords(dtfi.InternalGetGenitiveMonthNames(abbreviated: true), ref maxMatchStrLen);
-
                     // We found a longer match in the genitive month name. Use this as the result.
+                    // tempResult + 1 should be the month value.
                     if (tempResult >= 0)
                     {
                         result = tempResult + 1;
@@ -3419,7 +3415,9 @@ namespace System
                 if ((dtfi.FormatFlags & DateTimeFormatFlags.UseLeapYearMonth) != 0)
                 {
                     int tempResult = str.MatchLongestWords(dtfi.InternalGetLeapYearMonthNames(), ref maxMatchStrLen);
-                    // We found a longer match in the leap year month name. Use this as the result.
+                    // We found a longer match in the leap year month name.  Use this as the result.
+                    // The result from MatchLongestWords is 0 ~ length of word array.
+                    // So we increment the result by one to become the month value.
                     if (tempResult >= 0)
                     {
                         result = tempResult + 1;
