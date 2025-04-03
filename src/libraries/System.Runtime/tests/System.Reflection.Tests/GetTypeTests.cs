@@ -276,6 +276,8 @@ namespace System.Reflection.Tests
         {
             Assert.Equal(typeof(int), Type.GetType("System.Int32", throwOnError: true));
             Assert.Equal(typeof(int), Type.GetType("system.int32", throwOnError: true, ignoreCase: true));
+            Assert.Null(typeof(int).Assembly.GetType("a,b", throwOnError: false, ignoreCase: false));
+            Assert.Null(typeof(int).Assembly.GetType("a,b,c", throwOnError: false, ignoreCase: false));
         }
 
         [Fact]
