@@ -1209,6 +1209,12 @@ void interceptor_ICJI::reportFatalError(
     original_ICorJitInfo->reportFatalError(result);
 }
 
+void interceptor_ICJI::setInterpMethod(
+          void* pMethod)
+{
+    original_ICorJitInfo->setInterpMethod(pMethod);
+}
+
 JITINTERFACE_HRESULT interceptor_ICJI::getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
           ICorJitInfo::PgoInstrumentationSchema** pSchema,

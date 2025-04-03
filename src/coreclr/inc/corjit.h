@@ -250,6 +250,9 @@ public:
 
     virtual void reportFatalError(CorJitResult result) = 0;
 
+    // Set the InterpMethod pointer, only for the interpreter use
+    virtual void setInterpMethod(void *pMethod) = 0;
+
     struct BlockCounts  // Also defined by:  CORBBTPROF_BLOCK_DATA
     {
         uint32_t ILOffset;

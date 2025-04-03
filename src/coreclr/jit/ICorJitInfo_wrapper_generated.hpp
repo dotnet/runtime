@@ -1671,6 +1671,14 @@ void WrapICorJitInfo::reportFatalError(
     API_LEAVE(reportFatalError);
 }
 
+void WrapICorJitInfo::setInterpMethod(
+          void* pMethod)
+{
+    API_ENTER(setInterpMethod);
+    wrapHnd->setInterpMethod(pMethod);
+    API_LEAVE(setInterpMethod);
+}
+
 JITINTERFACE_HRESULT WrapICorJitInfo::getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
           ICorJitInfo::PgoInstrumentationSchema** pSchema,

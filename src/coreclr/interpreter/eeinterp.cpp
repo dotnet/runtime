@@ -84,11 +84,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     int32_t IRCodeSize;
     int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
  
-    // FIXME this shouldn't be here
-    compHnd->setMethodAttribs(methodInfo->ftn, CORINFO_FLG_INTERPRETER);
-
-    uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
-    uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    uint32_t sizeOfCode = IRCodeSize * sizeof(int32_t);
 
     AllocMemArgs args {};
     args.hotCodeSize = sizeOfCode;
@@ -98,9 +94,18 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
     compHnd->allocMem(&args);
 
-    // We store first the InterpMethod pointer as the code header, followed by the actual code
-    *(InterpMethod**)args.hotCodeBlockRW = pMethod;
-    memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
+    // How to set the pMethod pointer
+    // * Let this code understand the code header and write it directly there - nope
+    // * Cast compHnd to the interpreter specific one and call a method to set it
+    // * Add a new method to the ICorJitInfo interface to set the pMethod pointer, but what to do with the JITted info? Maybe name the method as SetAuxiliaryInfo
+    //   This would actually not be that bad as we already have the allocUnwindInfo that is JIT specific
+    // * Add an extra slot to the AllocMemArgs that would the CInterpreterJitInfo::allocMem set on the header
+    // * Add new interface IInterpreterJitInfo that would have an extra method to set the pMethod pointer.
+    //   Then it would make sense to have a new interface for the JIT too that would have the reserveUnwindInfo and allocUnwindInfo methods.
+
+    // We store the InterpMethod pointer into the code header
+    compHnd->setInterpMethod(pMethod);
+    memcpy ((uint8_t*)args.hotCodeBlockRW, pIRCode, IRCodeSize * sizeof(int32_t));
 
     *entryAddress = (uint8_t*)args.hotCodeBlock;
     *nativeSizeOfCode = sizeOfCode;

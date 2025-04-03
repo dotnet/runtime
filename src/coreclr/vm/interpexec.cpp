@@ -37,9 +37,10 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     const int32_t *ip;
     int8_t *stack;
 
-    InterpMethod *pMethod = *(InterpMethod**)pFrame->startIp;
+    InterpreterCodeHeader *pCodeHeader = InterpreterJitManager::GetCodeHeaderFromStartAddress((TADDR)pFrame->startIp);
+    InterpMethod *pMethod = pCodeHeader->GetInterpMethod();
     pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
-    ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
+    ip = pFrame->startIp;
     stack = pFrame->pStack;
 
     int32_t returnOffset, callArgsOffset;
@@ -747,9 +748,10 @@ MAIN_LOOP:
                 assert (((size_t)pFrame->pStack % INTERP_STACK_ALIGNMENT) == 0);
 
                 // Set execution state for the new frame
-                pMethod = *(InterpMethod**)pFrame->startIp;
+                pCodeHeader = InterpreterJitManager::GetCodeHeaderFromStartAddress((TADDR)pFrame->startIp);
+                pMethod = pCodeHeader->GetInterpMethod();
                 stack = pFrame->pStack;
-                ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
+                ip = pFrame->startIp;
                 pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                 break;
             }
@@ -770,7 +772,8 @@ EXIT_FRAME:
         pFrame = pFrame->pParent;
         ip = pFrame->ip;
         stack = pFrame->pStack;
-        pMethod = *(InterpMethod**)pFrame->startIp;
+        pCodeHeader = InterpreterJitManager::GetCodeHeaderFromStartAddress((TADDR)pFrame->startIp);
+        pMethod = pCodeHeader->GetInterpMethod();
         pFrame->ip = NULL;
 
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;

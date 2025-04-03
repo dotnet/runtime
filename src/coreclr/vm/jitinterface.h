@@ -1025,6 +1025,8 @@ public:
 
     void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
+
+    void setInterpMethod(void *pMethod) override;
 };
 #endif // FEATURE_INTERPRETER
 

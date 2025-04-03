@@ -146,6 +146,8 @@ public:
 // if we're using the indirect codeheaders then all enumeration is done by the code header
 };
 
+typedef DPTR(struct InterpMethod) PTR_InterpMethod;
+
 struct InterpreterRealCodeHeader
 {
 public:
@@ -156,6 +158,7 @@ public:
     PTR_EE_ILEXCEPTION  phdrJitEHInfo;
     PTR_BYTE            phdrJitGCInfo;
     PTR_MethodDesc      phdrMDesc;
+    PTR_InterpMethod    phdrInterpMethod;
 };
 
 struct CodeHeader
@@ -327,6 +330,16 @@ public:
     BOOL IsStubCodeBlock()
     {
         return FALSE;
+    }
+
+    void SetInterpMethod(PTR_InterpMethod pInterpMethod)
+    {
+        pRealCodeHeader->phdrInterpMethod = pInterpMethod;
+    }
+
+    PTR_InterpMethod GetInterpMethod()
+    {
+        return pRealCodeHeader->phdrInterpMethod;
     }
 
 #ifdef DACCESS_COMPILE

@@ -3868,6 +3868,14 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
+        private void setInterpMethod(void* pMethod)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // This method will never be called by the JIT, it is on the ICorJitInfo just for interpreter usage
+            throw new NotImplementedException("setInterpMethod");
+        }
+
+#pragma warning disable CA1822 // Mark members as static
         private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
 #pragma warning restore CA1822 // Mark members as static
         {
