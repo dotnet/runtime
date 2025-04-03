@@ -830,48 +830,6 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
 }
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef DACCESS_COMPILE
-
-void UnlockedLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    WRAPPER_NO_CONTRACT;
-
-    PTR_LoaderHeapBlock block = m_pFirstBlock;
-    while (block.IsValid())
-    {
-        // All we know is the virtual size of this block.  We don't have any way to tell how
-        // much of this space was actually comitted, so don't expect that this will always
-        // succeed.
-        // @dbgtodo : Ideally we'd reduce the risk of corruption causing problems here.
-        //   We could extend LoaderHeapBlock to track a commit size,
-        //   but it seems wasteful (eg. makes each AppDomain objects 32 bytes larger on x64).
-        TADDR addr = dac_cast<TADDR>(block->pVirtualAddress);
-        TSIZE_T size = block->dwVirtualSize;
-        EMEM_OUT(("MEM: UnlockedLoaderHeap %p - %p\n", addr, addr + size));
-        DacEnumMemoryRegion(addr, size, false);
-
-        block = block->pNext;
-    }
-}
-
-#endif // #ifdef DACCESS_COMPILE
-
-
-void UnlockedLoaderHeap::EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs)
-{
-    WRAPPER_NO_CONTRACT;
-
-    PTR_LoaderHeapBlock block = m_pFirstBlock;
-    while (block)
-    {
-        if ((*pCallback)(pvArgs, block->pVirtualAddress, block->dwVirtualSize))
-        {
-            break;
-        }
-
-        block = block->pNext;
-    }
-}
 
 #ifdef _DEBUG
 
@@ -919,24 +877,161 @@ void UnlockedLoaderHeap::DumpFreeList()
     }
 }
 
-
-void UnlockedLoaderHeap::UnlockedClearEvents()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapSniffer::ClearEvents(this);
-}
-
-void UnlockedLoaderHeap::UnlockedCompactEvents()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapSniffer::CompactEvents(this);
-}
-
-void UnlockedLoaderHeap::UnlockedPrintEvents()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapSniffer::PrintEvents(this);
-}
-
-
 #endif //_DEBUG
+
+#ifndef DACCESS_COMPILE
+/*static*/ void LoaderHeapFreeBlock::InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    // The new "nothrow" below failure is handled in a non-fault way, so
+    // make sure that callers with FORBID_FAULT can call this method without
+    // firing the contract violation assert.
+    PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
+
+    LOADER_HEAP_BEGIN_TRAP_FAULT
+
+    // It's illegal to insert a free block that's smaller than the minimum sized allocation -
+    // it may stay stranded on the freelist forever.
+#ifdef _DEBUG
+    if (!(dwTotalSize >= pHeap->AllocMem_TotalSize(1)))
+    {
+        LoaderHeapSniffer::ValidateFreeList(pHeap);
+        _ASSERTE(dwTotalSize >= pHeap->AllocMem_TotalSize(1));
+    }
+
+    if (!(0 == (dwTotalSize & ALLOC_ALIGN_CONSTANT)))
+    {
+        LoaderHeapSniffer::ValidateFreeList(pHeap);
+        _ASSERTE(0 == (dwTotalSize & ALLOC_ALIGN_CONSTANT));
+    }
+#endif
+
+#ifdef DEBUG
+    if (!pHeap->IsInterleaved())
+    {
+        void* pMemRW = pMem;
+        ExecutableWriterHolderNoLog<void> memWriterHolder;
+        if (pHeap->IsExecutable())
+        {
+            memWriterHolder.AssignExecutableWriterHolder(pMem, dwTotalSize);
+            pMemRW = memWriterHolder.GetRW();
+        }
+
+        memset(pMemRW, 0xcc, dwTotalSize);
+    }
+    else
+    {
+        memset((BYTE*)pMem + GetStubCodePageSize(), 0xcc, dwTotalSize);
+    }
+#endif // DEBUG
+
+    LoaderHeapFreeBlock *pNewBlock = new (nothrow) LoaderHeapFreeBlock;
+    // If we fail allocating the LoaderHeapFreeBlock, ignore the failure and don't insert the free block at all.
+    if (pNewBlock != NULL)
+    {
+        pNewBlock->m_pNext  = *ppHead;
+        pNewBlock->m_dwSize = dwTotalSize;
+        pNewBlock->m_pBlockAddress = pMem;
+        *ppHead = pNewBlock;
+        MergeBlock(pNewBlock, pHeap);
+    }
+
+    LOADER_HEAP_END_TRAP_FAULT
+}
+
+/*static*/ void *LoaderHeapFreeBlock::AllocFromFreeList(LoaderHeapFreeBlock **ppHead, size_t dwSize, UnlockedLoaderHeap *pHeap)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    INCONTRACT(_ASSERTE_IMPL(!ARE_FAULTS_FORBIDDEN()));
+
+    void *pResult = NULL;
+    LOADER_HEAP_BEGIN_TRAP_FAULT
+
+    LoaderHeapFreeBlock **ppWalk = ppHead;
+    while (*ppWalk)
+    {
+        LoaderHeapFreeBlock *pCur = *ppWalk;
+        size_t dwCurSize = pCur->m_dwSize;
+        if (dwCurSize == dwSize)
+        {
+            pResult = pCur->m_pBlockAddress;
+            // Exact match. Hooray!
+            *ppWalk = pCur->m_pNext;
+            delete pCur;
+            break;
+        }
+        else if (dwCurSize > dwSize && (dwCurSize - dwSize) >= pHeap->AllocMem_TotalSize(1))
+        {
+            // Partial match. Ok...
+            pResult = pCur->m_pBlockAddress;
+            *ppWalk = pCur->m_pNext;
+            InsertFreeBlock(ppWalk, ((BYTE*)pCur->m_pBlockAddress) + dwSize, dwCurSize - dwSize, pHeap );
+            delete pCur;
+            break;
+        }
+
+        // Either block is too small or splitting the block would leave a remainder that's smaller than
+        // the minimum block size. Onto next one.
+
+        ppWalk = &( pCur->m_pNext );
+    }
+
+    if (pResult)
+    {
+        void *pResultRW = pResult;
+        ExecutableWriterHolderNoLog<void> resultWriterHolder;
+        if (pHeap->IsExecutable())
+        {
+            resultWriterHolder.AssignExecutableWriterHolder(pResult, dwSize);
+            pResultRW = resultWriterHolder.GetRW();
+        }
+        // Callers of loaderheap assume allocated memory is zero-inited so we must preserve this invariant!
+        memset(pResultRW, 0, dwSize);
+    }
+    LOADER_HEAP_END_TRAP_FAULT
+    return pResult;
+}
+
+// Try to merge pFreeBlock with its immediate successor. Return TRUE if a merge happened. FALSE if no merge happened.
+/*static*/ BOOL LoaderHeapFreeBlock::MergeBlock(LoaderHeapFreeBlock *pFreeBlock, UnlockedLoaderHeap *pHeap)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    BOOL result = FALSE;
+
+    LOADER_HEAP_BEGIN_TRAP_FAULT
+
+    LoaderHeapFreeBlock *pNextBlock = pFreeBlock->m_pNext;
+    size_t               dwSize     = pFreeBlock->m_dwSize;
+
+    if (pNextBlock == NULL || ((BYTE*)pNextBlock->m_pBlockAddress) != (((BYTE*)pFreeBlock->m_pBlockAddress) + dwSize))
+    {
+        result = FALSE;
+    }
+    else
+    {
+        size_t dwCombinedSize = dwSize + pNextBlock->m_dwSize;
+        LoaderHeapFreeBlock *pNextNextBlock = pNextBlock->m_pNext;
+        void *pMemRW = pFreeBlock->m_pBlockAddress;
+        ExecutableWriterHolderNoLog<void> memWriterHolder;
+        if (pHeap->IsExecutable())
+        {
+            memWriterHolder.AssignExecutableWriterHolder(pFreeBlock->m_pBlockAddress, dwCombinedSize);
+            pMemRW = memWriterHolder.GetRW();
+        }
+        INDEBUG(memset(pMemRW, 0xcc, dwCombinedSize);)
+        pFreeBlock->m_pNext  = pNextNextBlock;
+        pFreeBlock->m_dwSize = dwCombinedSize;
+        delete pNextBlock;
+
+        result = TRUE;
+    }
+    
+    LOADER_HEAP_END_TRAP_FAULT
+    return result;
+}
+#endif // !DACCESS_COMPILE

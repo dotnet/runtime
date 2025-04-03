@@ -176,31 +176,36 @@ enum class LoaderHeapImplementationKind
 
 class UnlockedLoaderHeapBaseTraversable
 {
-public:
+protected:
 #ifdef DACCESS_COMPILE
     UnlockedLoaderHeapBaseTraversable() {}
 #else
-    UnlockedLoaderHeapBaseTraversable(LoaderHeapImplementationKind kind) :
-        m_pFirstBlock(NULL),
-        m_kind(kind)
+    UnlockedLoaderHeapBaseTraversable() :
+        m_pFirstBlock(NULL)
     {
         LIMITED_METHOD_CONTRACT;
     }
 #endif
 
+public:
+#ifdef DACCESS_COMPILE
+public:
+    void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
+    
+typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved);
+    void EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs);
+#endif
+    
+protected:
     // Linked list of ClrVirtualAlloc'd pages
     PTR_LoaderHeapBlock m_pFirstBlock;
-#ifndef DACCESS_COMPILE
-    const 
-#endif
-    LoaderHeapImplementationKind m_kind;
 };
 
-class UnlockedLoaderHeapBase : protected UnlockedLoaderHeapBaseTraversable
+typedef DPTR(class UnlockedLoaderHeapBase) PTR_UnlockedLoaderHeapBase;
+class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable, public ILoaderHeapBackout
 {
 #ifdef _DEBUG
     friend class LoaderHeapSniffer;
-    friend struct LoaderHeapFreeBlock;
 #endif
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
@@ -209,8 +214,12 @@ class UnlockedLoaderHeapBase : protected UnlockedLoaderHeapBaseTraversable
 protected:
     size_t GetBytesAvailCommittedRegion();
 
+#ifndef DACCESS_COMPILE
+    const 
+#endif
+    LoaderHeapImplementationKind m_kind;
+
     size_t              m_dwTotalAlloc;
-    LoaderHeapFreeBlock *m_pFirstFreeBlock;
 
     // Allocation pointer in current block
     PTR_BYTE            m_pAllocPtr;
@@ -222,7 +231,7 @@ public:
 #ifdef DACCESS_COMPILE
     UnlockedLoaderHeapBase() {}
 #else
-    UnlockedLoaderHeapBase(LoaderHeapImplementationKind kind) : UnlockedLoaderHeapBaseTraversable(kind)
+    UnlockedLoaderHeapBase(LoaderHeapImplementationKind kind) : m_kind(kind)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -237,10 +246,18 @@ public:
         WRAPPER_NO_CONTRACT;
         return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
     }
+
+    void DumpFreeList();
+
+// Extra CallTracing support
+    void UnlockedClearEvents();     //Discard saved events
+    void UnlockedCompactEvents();   //Discard matching alloc/free events
+    void UnlockedPrintEvents();     //Print event list
 #endif
 
     size_t AllocMem_TotalSize(size_t dwRequestedSize);
 
+    
 public:
 
 #ifdef _DEBUG
@@ -273,6 +290,9 @@ public:
 //===============================================================================
 class UnlockedLoaderHeap : public UnlockedLoaderHeapBase
 {
+#ifdef _DEBUG
+    friend class LoaderHeapSniffer;
+#endif
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif
@@ -298,18 +318,7 @@ private:
     // startup working set reasons we want to delay that as long as possible.
     LoaderHeapBlock      m_reservedBlock;
 
-public:
-
-
-public:
-#ifdef DACCESS_COMPILE
-public:
-    void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
-#endif
-
-public:
-    typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved);
-    void EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs);
+    LoaderHeapFreeBlock *m_pFirstFreeBlock;
 
 #ifndef DACCESS_COMPILE
 protected:
@@ -323,7 +332,7 @@ protected:
                        RangeList *pRangeList = NULL,
                        LoaderHeapImplementationKind kind = LoaderHeapImplementationKind::Data);
 
-    ~UnlockedLoaderHeap();
+    virtual ~UnlockedLoaderHeap();
 #endif
 
 private:
@@ -443,14 +452,6 @@ public:
 #ifdef _DEBUG
     void DumpFreeList();
 #endif
-
-public:
-// Extra CallTracing support
-#ifdef _DEBUG
-    void UnlockedClearEvents();     //Discard saved events
-    void UnlockedCompactEvents();   //Discard matching alloc/free events
-    void UnlockedPrintEvents();     //Print event list
-#endif
 };
 
 //===============================================================================
@@ -491,15 +492,6 @@ public:
 public:
     void                (*m_codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
 
-#ifdef DACCESS_COMPILE
-public:
-    void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
-#endif
-
-public:
-    typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved);
-    void EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs);
-
 #ifndef DACCESS_COMPILE
 protected:
     UnlockedInterleavedLoaderHeap(
@@ -507,7 +499,7 @@ protected:
         void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size),
         DWORD dwGranularity);
 
-    ~UnlockedInterleavedLoaderHeap();
+    virtual ~UnlockedInterleavedLoaderHeap();
 #endif
 
 private:
@@ -599,19 +591,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_dwTotalAlloc;
     }
-
-public:
-#ifdef _DEBUG
-    void DumpFreeList();
-#endif
-
-public:
-// Extra CallTracing support
-#ifdef _DEBUG
-    void UnlockedClearEvents();     //Discard saved events
-    void UnlockedCompactEvents();   //Discard matching alloc/free events
-    void UnlockedPrintEvents();     //Print event list
-#endif
 };
 
 //===============================================================================
@@ -624,7 +603,7 @@ public:
 // not multithread safe.
 //===============================================================================
 typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
-class ExplicitControlLoaderHeap
+class ExplicitControlLoaderHeap : public UnlockedLoaderHeapBaseTraversable
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
@@ -669,15 +648,6 @@ public:
         return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
     }
 #endif
-
-#ifdef DACCESS_COMPILE
-public:
-    void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
-#endif
-
-public:
-    typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved);
-    void EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs);
 
 #ifndef DACCESS_COMPILE
 public:
@@ -745,7 +715,7 @@ inline CRITSEC_COOKIE CreateLoaderHeapLock()
 // of the advanced features that let you control address ranges.
 //===============================================================================
 typedef DPTR(class LoaderHeap) PTR_LoaderHeap;
-class LoaderHeap : public UnlockedLoaderHeap, public ILoaderHeapBackout
+class LoaderHeap : public UnlockedLoaderHeap
 {
 private:
     CRITSEC_COOKIE    m_CriticalSection;
@@ -1069,7 +1039,7 @@ public:
 // of the advanced features that let you control address ranges.
 //===============================================================================
 typedef DPTR(class InterleavedLoaderHeap) PTR_InterleavedLoaderHeap;
-class InterleavedLoaderHeap : public UnlockedInterleavedLoaderHeap, public ILoaderHeapBackout
+class InterleavedLoaderHeap : public UnlockedInterleavedLoaderHeap
 {
 private:
     CRITSEC_COOKIE    m_CriticalSection;

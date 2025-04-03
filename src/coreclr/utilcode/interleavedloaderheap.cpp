@@ -110,27 +110,6 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
 
 #endif // #ifndef DACCESS_COMPILE
 
-#if 0
-// Disables access to all pages in the heap - useful when trying to determine if someone is
-// accessing something in the low frequency heap
-void UnlockedInterleavedLoaderHeap::DebugGuardHeap()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapBlock *pSearch, *pNext;
-
-    for (pSearch = m_pFirstBlock; pSearch; pSearch = pNext)
-    {
-        void *  pResult;
-        void *  pVirtualAddress;
-
-        pVirtualAddress = pSearch->pVirtualAddress;
-        pNext = pSearch->pNext;
-
-        pResult = ClrVirtualAlloc(pVirtualAddress, pSearch->dwVirtualSize, MEM_COMMIT, PAGE_NOACCESS);
-        _ASSERTE(pResult != NULL);
-    }
-}
-#endif
 
 size_t UnlockedInterleavedLoaderHeap::GetBytesAvailReservedRegion()
 {
@@ -328,7 +307,8 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         // Otherwise the remaining bytes that are available will be wasted.
         if (unusedRemainder >= GetStubCodePageSize())
         {
-            LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
+            // TODO! Add free block logic for interleaved heaps
+//            LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
         }
         else
         {
@@ -352,7 +332,8 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     size_t unusedRemainder = (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
     if (unusedRemainder >= AllocMem_TotalSize(GetStubCodePageSize()))
     {
-        LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
+            // TODO! Add free block logic for interleaved heaps
+//            LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
     }
     else
     {
@@ -426,7 +407,7 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutMem(void *pMem,
     }
     else
     {
-        LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, pMem, dwSize, this);
+        // TODO: Build free list scheme for interleaved heap
     }
 }
 
@@ -583,111 +564,3 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequested
 }
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef DACCESS_COMPILE
-
-void UnlockedInterleavedLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    WRAPPER_NO_CONTRACT;
-
-    PTR_LoaderHeapBlock block = m_pFirstBlock;
-    while (block.IsValid())
-    {
-        // All we know is the virtual size of this block.  We don't have any way to tell how
-        // much of this space was actually comitted, so don't expect that this will always
-        // succeed.
-        // @dbgtodo : Ideally we'd reduce the risk of corruption causing problems here.
-        //   We could extend LoaderHeapBlock to track a commit size,
-        //   but it seems wasteful (eg. makes each AppDomain objects 32 bytes larger on x64).
-        TADDR addr = dac_cast<TADDR>(block->pVirtualAddress);
-        TSIZE_T size = block->dwVirtualSize;
-        EMEM_OUT(("MEM: UnlockedInterleavedLoaderHeap %p - %p\n", addr, addr + size));
-        DacEnumMemoryRegion(addr, size, false);
-
-        block = block->pNext;
-    }
-}
-
-#endif // #ifdef DACCESS_COMPILE
-
-
-void UnlockedInterleavedLoaderHeap::EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs)
-{
-    WRAPPER_NO_CONTRACT;
-
-    PTR_LoaderHeapBlock block = m_pFirstBlock;
-    while (block)
-    {
-        if ((*pCallback)(pvArgs, block->pVirtualAddress, block->dwVirtualSize))
-        {
-            break;
-        }
-
-        block = block->pNext;
-    }
-}
-
-#ifdef _DEBUG
-
-void UnlockedInterleavedLoaderHeap::DumpFreeList()
-{
-    LIMITED_METHOD_CONTRACT;
-    if (m_pFirstFreeBlock == NULL)
-    {
-        minipal_log_print_info("FREEDUMP: FreeList is empty\n");
-    }
-    else
-    {
-        InlineSString<128> buf;
-        LoaderHeapFreeBlock *pBlock = m_pFirstFreeBlock;
-        while (pBlock != NULL)
-        {
-            size_t dwsize = pBlock->m_dwSize;
-            BOOL ccbad = FALSE;
-            BOOL sizeunaligned = FALSE;
-
-            if ( 0 != (dwsize & ALLOC_ALIGN_CONSTANT) )
-            {
-                sizeunaligned = TRUE;
-            }
-
-            for (size_t i = sizeof(LoaderHeapFreeBlock); i < dwsize; i++)
-            {
-                if ( ((BYTE*)pBlock)[i] != 0xcc )
-                {
-                    ccbad = TRUE;
-                    break;
-                }
-            }
-
-            buf.Printf("Addr = %pxh, Size = %xh", pBlock, ((ULONG)dwsize));
-            if (ccbad) buf.AppendUTF8(" *** ERROR: NOT CC'd ***");
-            if (sizeunaligned) buf.AppendUTF8(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
-            buf.AppendUTF8("\n");
-
-            minipal_log_print_info(buf.GetUTF8());
-            buf.Clear();
-
-            pBlock = pBlock->m_pNext;
-        }
-    }
-}
-
-void UnlockedInterleavedLoaderHeap::UnlockedClearEvents()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapSniffer::ClearEvents(this);
-}
-
-void UnlockedInterleavedLoaderHeap::UnlockedCompactEvents()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapSniffer::CompactEvents(this);
-}
-
-void UnlockedInterleavedLoaderHeap::UnlockedPrintEvents()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapSniffer::PrintEvents(this);
-}
-
-#endif //_DEBUG
