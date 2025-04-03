@@ -1393,19 +1393,9 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     reportScratchSlots = (flags & ActiveStackFrame) != 0;
 
 
-    GcInfoDecoderFlags decoderFlags;
-    if (flags & NoGcDecoderValidation)
-    {
-        decoderFlags = GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG | DECODE_NO_VALIDATION);
-    }
-    else
-    {
-        decoderFlags = GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG);
-    }
-
     GcInfoDecoder gcInfoDecoder(
                         gcInfoToken,
-                        decoderFlags,
+                        GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
                         curOffs
                         );
 

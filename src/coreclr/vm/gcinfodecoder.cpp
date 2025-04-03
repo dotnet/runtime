@@ -57,7 +57,7 @@
 
 #ifndef LOG_PIPTR
 #define LOG_PIPTR(pObjRef, gcFlags, hCallBack)                                                                                                  \
-    if (!(m_Flags & DECODE_NO_VALIDATION)) {                                                                                                                                           \
+    {                                                                                                                                           \
         GCCONTEXT* pGCCtx = (GCCONTEXT*)(hCallBack);                                                                                            \
         if (pGCCtx->sc->promotion)                                                                                                              \
         {                                                                                                                                       \
