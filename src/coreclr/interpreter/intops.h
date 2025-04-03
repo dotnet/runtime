@@ -13,6 +13,9 @@ typedef enum
 {
     InterpOpNoArgs,
     InterpOpInt,
+    InterpOpLongInt,
+    InterpOpFloat,
+    InterpOpDouble,
     InterpOpTwoInts,
     InterpOpThreeInts,
     InterpOpBranch,

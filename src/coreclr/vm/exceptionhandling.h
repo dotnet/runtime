@@ -219,98 +219,25 @@ public:
 typedef DPTR(class ExceptionTracker) PTR_ExceptionTracker;
 class ExceptionTracker : public ExceptionTrackerBase
 {
-    friend class TrackerAllocator;
     friend class ThreadExceptionState;
     friend class ClrDataExceptionState;
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif // DACCESS_COMPILE
 
-    friend void FreeTrackerMemory(ExceptionTracker* pTracker, TrackerMemoryType mem);
+    ExceptionTracker() :
+        ExceptionTrackerBase(PTR_NULL, PTR_NULL, PTR_NULL)
+    {
+        UNREACHABLE();
+    }    
 
 public:
-
-   ExceptionTracker() :
-        ExceptionTrackerBase(PTR_NULL, PTR_NULL, PTR_NULL),
-        m_pThread(NULL)
-    {
-        m_sfFirstPassTopmostFrame.Clear();
-
-        m_dwIndexClauseForCatch = 0;
-        m_sfEstablisherOfActualHandlerFrame.Clear();
-        m_sfCallerOfActualHandlerFrame.Clear();
-
-        m_fFixupCallerSPForGCReporting = false;
-
-        m_fResetEnclosingClauseSPForCatchFunclet = FALSE;
-
-        m_sfCurrentEstablisherFrame.Clear();
-        m_sfLastUnwoundEstablisherFrame.Clear();
-        m_pInitialExplicitFrame = NULL;
-        m_pLimitFrame = NULL;
-        m_csfEHClauseOfCollapsedTracker.Clear();
-
-#ifdef TARGET_UNIX
-        m_fOwnsExceptionPointers = FALSE;
-#endif
-    }
-
-    ExceptionTracker(DWORD_PTR             dwExceptionPc,
-                     PTR_EXCEPTION_RECORD  pExceptionRecord,
-                     PTR_CONTEXT           pContextRecord) :
-        ExceptionTrackerBase(pExceptionRecord, pContextRecord, PTR_NULL),
-        m_pThread(GetThread()),
-        m_uCatchToCallPC{},
-        m_pSkipToParentFunctionMD(NULL),
-// these members were added for resume frame processing
-        m_pClauseForCatchToken(NULL)
-// end resume frame members
-    {
-        m_pLimitFrame = NULL;
-
-        if (IsInstanceTaggedSEHCode(pExceptionRecord->ExceptionCode) && ::WasThrownByUs(pExceptionRecord, pExceptionRecord->ExceptionCode))
-        {
-            m_ExceptionFlags.SetWasThrownByUs();
-        }
-
-        m_dwIndexClauseForCatch = 0;
-        m_sfEstablisherOfActualHandlerFrame.Clear();
-        m_sfCallerOfActualHandlerFrame.Clear();
-
-        m_sfFirstPassTopmostFrame.Clear();
-
-        m_fFixupCallerSPForGCReporting = false;
-
-        m_fResetEnclosingClauseSPForCatchFunclet = FALSE;
-
-        m_sfCurrentEstablisherFrame.Clear();
-        m_sfLastUnwoundEstablisherFrame.Clear();
-        m_pInitialExplicitFrame = NULL;
-        m_csfEHClauseOfCollapsedTracker.Clear();
-
-#ifdef TARGET_UNIX
-        m_fOwnsExceptionPointers = FALSE;
-#endif
-    }
-
-    ~ExceptionTracker()
-    {
-        ReleaseResources();
-    }
-
-    enum StackTraceState
-    {
-        STS_Append,
-        STS_FirstRethrowFrame,
-        STS_NewException,
-    };
 
     static OBJECTREF CreateThrowable(
         PEXCEPTION_RECORD pExceptionRecord,
         BOOL bAsynchronousThreadStop
         );
 
-    INDEBUG(inline  bool    IsValid());
     INDEBUG(static UINT_PTR DebugComputeNestingLevel());
 
     // Return a StackFrame of the current frame for parent frame checking purposes.
@@ -322,39 +249,6 @@ public:
     static bool IsInStackRegionUnwoundByCurrentException(CrawlFrame * pCF);
 
     static bool HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF);
-
-    void SetLastUnwoundEstablisherFrame(StackFrame sfEstablisher)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_sfLastUnwoundEstablisherFrame = sfEstablisher;
-    }
-
-    StackFrame GetLastUnwoundEstablisherFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_sfLastUnwoundEstablisherFrame;
-    }
-
-    PTR_Frame GetInitialExplicitFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pInitialExplicitFrame;
-    }
-
-#ifdef TARGET_UNIX
-    // Reset the range of explicit frames, the limit frame and the scanned
-    // stack range before unwinding a sequence of native frames. These frames
-    // will be in the unwound part of the stack.
-    void CleanupBeforeNativeFramesUnwind()
-    {
-        m_pInitialExplicitFrame = NULL;
-        m_pLimitFrame = NULL;
-        m_ScannedStackRange.Reset();
-    }
-#endif // TARGET_UNIX
 
     // Determines if we have unwound to the specified parent method frame.
     // Currently this is only used for funclet skipping.
@@ -400,15 +294,7 @@ public:
     static void
         PopTrackers(void* pvStackPointer);
 
-#if defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
-    void TakeExceptionPointersOwnership(PAL_SEHException* ex)
-    {
-        _ASSERTE(ex->GetExceptionRecord() == m_ptrs.ExceptionRecord);
-        _ASSERTE(ex->GetContextRecord() == m_ptrs.ContextRecord);
-        ex->Clear();
-        m_fOwnsExceptionPointers = TRUE;
-    }
-#endif // TARGET_UNIX && !CROSS_COMPILE
+    static void UpdateNonvolatileRegisters(T_CONTEXT* pContextRecord, REGDISPLAY *pRegDisplay, bool fAborting);
 
 private:
     // private helpers
@@ -423,224 +309,9 @@ private:
                                                DWORD*      pParentOffset);
 
     static StackWalkAction RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID pData);
-
-    struct DAC_EXCEPTION_POINTERS
-    {
-        PTR_EXCEPTION_RECORD    ExceptionRecord;
-        PTR_CONTEXT             ContextRecord;
-    };
-
-public:
-
-    static void UpdateNonvolatileRegisters(T_CONTEXT* pContextRecord, REGDISPLAY *pRegDisplay, bool fAborting);
-
-    PTR_Frame GetLimitFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLimitFrame;
-    }
-
-    UINT_PTR GetCatchToCallPC()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_uCatchToCallPC;
-    }
-
-    EE_ILEXCEPTION_CLAUSE GetEHClauseForCatch()
-    {
-        return m_ClauseForCatch;
-    }
-
-    // Returns the topmost frame seen during the first pass.
-    StackFrame GetTopmostStackFrameFromFirstPass()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_sfFirstPassTopmostFrame;
-    }
-
-#ifdef _DEBUG
-    StackFrame GetResumeStackFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_sfResumeStackFrame;
-    }
-
-    PTR_EXCEPTION_CLAUSE_TOKEN GetCatchHandlerExceptionClauseToken()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pClauseForCatchToken;
-    }
-#endif // _DEBUG
-
-    DWORD GetCatchHandlerExceptionClauseIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_dwIndexClauseForCatch;
-    }
-
-    StackFrame GetEstablisherOfActualHandlingFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_sfEstablisherOfActualHandlerFrame;
-    }
-
-    StackFrame GetCallerOfActualHandlingFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_sfCallerOfActualHandlerFrame;
-    }
-
-    StackFrame GetCallerOfEnclosingClause()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_EnclosingClauseInfoForGCReporting.GetEnclosingClauseCallerSP();
-    }
-
-    StackFrame GetCallerOfCollapsedEnclosingClause()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_EnclosingClauseInfoOfCollapsedTracker.GetEnclosingClauseCallerSP();
-    }
-
-public:
-
-    // Returns the throwble associated with the tracker as handle
-    inline OBJECTHANDLE GetThrowableAsHandle()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_hThrowable;
-    }
-
-    EHClauseInfo* GetEHClauseInfo()
-    {
-        return &m_EHClauseInfo;
-    }
-
-private: ;
-
-    void ReleaseResources();
-
-    struct EnclosingClauseInfo
-    {
-    public:
-        EnclosingClauseInfo();
-        EnclosingClauseInfo(bool fEnclosingClauseIsFunclet, DWORD dwEnclosingClauseOffset, UINT_PTR uEnclosingClauseCallerSP);
-
-        bool     EnclosingClauseIsFunclet();
-        DWORD    GetEnclosingClauseOffset();
-        UINT_PTR GetEnclosingClauseCallerSP();
-        void     SetEnclosingClauseCallerSP(UINT_PTR callerSP);
-
-        bool operator==(const EnclosingClauseInfo & rhs);
-
-    private:
-        UINT_PTR m_uEnclosingClauseCallerSP;
-        DWORD    m_dwEnclosingClauseOffset;
-        bool     m_fEnclosingClauseIsFunclet;
-    };
-
-    Thread*                 m_pThread;          // this is used as an IsValid/IsFree field -- if it's NULL, the allocator can
-                                                // reuse its memory, if it's non-NULL, it better be a valid thread pointer
-
-#ifdef TARGET_UNIX
-    BOOL                    m_fOwnsExceptionPointers;
-#endif
-    UINT_PTR                m_uCatchToCallPC;
-    BOOL           m_fResetEnclosingClauseSPForCatchFunclet;
-
-    union
-    {
-        MethodDesc*         m_pSkipToParentFunctionMD;      // SKIPTOPARENT
-        MethodDesc*         m_pMethodDescOfCatcher;
-    };
-
-    StackFrame              m_sfResumeStackFrame;           // RESUMEFRAME
-    StackFrame              m_sfFirstPassTopmostFrame;      // Topmost frame seen during first pass
-    PTR_EXCEPTION_CLAUSE_TOKEN m_pClauseForCatchToken;              // RESUMEFRAME
-    EE_ILEXCEPTION_CLAUSE   m_ClauseForCatch;
-    // Index of EH clause that will catch the exception
-    DWORD                   m_dwIndexClauseForCatch;
-
-    // Establisher frame of the managed frame that contains
-    // the handler for the exception (corresponding
-    // to the EH index we save off in m_dwIndexClauseForCatch)
-    StackFrame              m_sfEstablisherOfActualHandlerFrame;
-    StackFrame              m_sfCallerOfActualHandlerFrame;
-
-    PTR_Frame               m_pLimitFrame;
-
-    // This flag indicates whether the SP we pass to a funclet is for an enclosing funclet.
-    EnclosingClauseInfo     m_EnclosingClauseInfo;
-
-    // This stores the actual callerSP of the frame that is about to execute the funclet.
-    // It differs from "m_EnclosingClauseInfo" where upon detecting a nested exception,
-    // the latter can contain the callerSP of the original funclet instead of that of the
-    // current frame.
-    EnclosingClauseInfo     m_EnclosingClauseInfoForGCReporting;
-    bool                    m_fFixupCallerSPForGCReporting;
-
-    StackFrame              m_sfCurrentEstablisherFrame;
-    StackFrame              m_sfLastUnwoundEstablisherFrame;
-    PTR_Frame               m_pInitialExplicitFrame;
-    CallerStackFrame        m_csfEHClauseOfCollapsedTracker;
-    EnclosingClauseInfo     m_EnclosingClauseInfoOfCollapsedTracker;
 };
 
-PTR_ExceptionTracker GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable, PTR_ExceptionTracker pStartingEHTracker);
-
-class TrackerAllocator
-{
-public:
-    void                Init();
-    void                Terminate();
-    ExceptionTracker*   GetTrackerMemory();
-    void                FreeTrackerMemory(ExceptionTracker* pTracker);
-
-private:
-
-    struct Page;
-
-    struct PageHeader
-    {
-        Page*               m_pNext;
-        LONG                m_idxFirstFree;
-    };
-
-    enum
-    {
-        //
-        // Due to the unexpected growth of the ExceptionTracker struct,
-        // GetOsPageSize() does not seem appropriate anymore on x64, and
-        // we should behave the same on x64 as on ia64 regardless of
-        // the difference between the page sizes on the platforms.
-        //
-        TRACKER_ALLOCATOR_PAGE_SIZE         = 8*1024,
-        TRACKER_ALLOCATOR_MAX_OOM_SPINS     = 20,
-        TRACKER_ALLOCATOR_OOM_SPIN_DELAY    = 100,
-        NUM_TRACKERS_PER_PAGE               = ((TRACKER_ALLOCATOR_PAGE_SIZE - sizeof(PageHeader)) / sizeof(ExceptionTracker)),
-    };
-
-    struct Page
-    {
-        PageHeader          m_header;
-        ExceptionTracker    m_rgTrackers[NUM_TRACKERS_PER_PAGE];
-    };
-
-    static_assert_no_msg(sizeof(Page) <= TRACKER_ALLOCATOR_PAGE_SIZE);
-
-    Page* m_pFirstPage;
-    Crst* m_pCrst;
-};
+PTR_ExceptionTrackerBase GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable, PTR_ExceptionTrackerBase pStartingEHTracker);
 
 #endif // FEATURE_EH_FUNCLETS
 
