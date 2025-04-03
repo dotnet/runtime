@@ -549,20 +549,16 @@ protected:
     // behind the scenes.
     //
     //
-    void *UnlockedAllocAlignedMem(size_t  dwRequestedSize
-                                 ,size_t  dwAlignment
-                                 ,size_t *pdwExtra
+    void *UnlockedAllocStub(
 #ifdef _DEBUG
-                                 ,_In_ _In_z_ const char *szFile
+                                 _In_ _In_z_ const char *szFile
                                  ,int  lineNum
 #endif
                                  );
 
-    void *UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSize
-                                         ,size_t  dwAlignment
-                                         ,size_t *pdwExtra
+    void *UnlockedAllocStub_NoThrow(
 #ifdef _DEBUG
-                                         ,_In_ _In_z_ const char *szFile
+                                         _In_ _In_z_ const char *szFile
                                          ,int  lineNum
 #endif
                                  );
@@ -571,8 +567,7 @@ protected:
     // This frees memory allocated by UnlockAllocMem. It's given this horrible name to emphasize
     // that it's purpose is for error path leak prevention purposes. You shouldn't
     // use LoaderHeap's as general-purpose alloc-free heaps.
-    void UnlockedBackoutMem(void *pMem
-                          , size_t dwSize
+    void UnlockedBackoutStub(void *pMem
 #ifdef _DEBUG
                           , _In_ _In_z_ const char *szFile
                           , int lineNum
@@ -1020,6 +1015,13 @@ public:
 
 };
 
+
+#ifdef _DEBUG
+#define AllocStub()                RealAllocStub(__FILE__, __LINE__)
+#else
+#define AllocStub()                RealAllocStub()
+#endif
+
 //===============================================================================
 // The LoaderHeap is the black-box heap and has a Backout() method but none
 // of the advanced features that let you control address ranges.
@@ -1061,10 +1063,9 @@ public:
     }
 
 public:
-    TaggedMemAllocPtr RealAllocAlignedMem(size_t  dwRequestedSize
-                                         ,size_t  dwAlignment
+    TaggedMemAllocPtr RealAllocStub(
 #ifdef _DEBUG
-                                         ,_In_ _In_z_ const char *szFile
+                                         _In_ _In_z_ const char *szFile
                                          ,int  lineNum
 #endif
                                          )
@@ -1076,62 +1077,18 @@ public:
 
         TaggedMemAllocPtr tmap;
         void *pResult;
-        size_t dwExtra;
 
-        pResult = UnlockedAllocAlignedMem(dwRequestedSize
-                                         ,dwAlignment
-                                         ,&dwExtra
+        pResult = UnlockedAllocStub(
 #ifdef _DEBUG
-                                         ,szFile
+                                         szFile
                                          ,lineNum
 #endif
                                      );
 
-        tmap.m_pMem             = (void*)(((BYTE*)pResult) - dwExtra);
-        tmap.m_dwRequestedSize  = dwRequestedSize + dwExtra;
+        tmap.m_pMem             = pResult;
+        tmap.m_dwRequestedSize  = 1;
         tmap.m_pHeap            = this;
-        tmap.m_dwExtra          = dwExtra;
-#ifdef _DEBUG
-        tmap.m_szFile           = szFile;
-        tmap.m_lineNum          = lineNum;
-#endif
-
-        return tmap;
-    }
-
-
-    TaggedMemAllocPtr RealAllocAlignedMem_NoThrow(size_t  dwRequestedSize
-                                                 ,size_t  dwAlignment
-#ifdef _DEBUG
-                                                 ,_In_ _In_z_ const char *szFile
-                                                 ,int  lineNum
-#endif
-                                                 )
-    {
-        WRAPPER_NO_CONTRACT;
-
-        CRITSEC_Holder csh(m_CriticalSection);
-
-
-        TaggedMemAllocPtr tmap;
-        void *pResult;
-        size_t dwExtra;
-
-        pResult = UnlockedAllocAlignedMem_NoThrow(dwRequestedSize
-                                                 ,dwAlignment
-                                                 ,&dwExtra
-#ifdef _DEBUG
-                                                 ,szFile
-                                                 ,lineNum
-#endif
-                                            );
-
-        _ASSERTE(!(pResult == NULL && dwExtra != 0));
-
-        tmap.m_pMem             = (void*)(((BYTE*)pResult) - dwExtra);
-        tmap.m_dwRequestedSize  = dwRequestedSize + dwExtra;
-        tmap.m_pHeap            = this;
-        tmap.m_dwExtra          = dwExtra;
+        tmap.m_dwExtra          = 0;
 #ifdef _DEBUG
         tmap.m_szFile           = szFile;
         tmap.m_lineNum          = lineNum;
@@ -1157,8 +1114,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         CRITSEC_Holder csh(m_CriticalSection);
-        UnlockedBackoutMem(pMem
-                           , dwSize
+        UnlockedBackoutStub(pMem
 #ifdef _DEBUG
                            , szFile
                            , lineNum

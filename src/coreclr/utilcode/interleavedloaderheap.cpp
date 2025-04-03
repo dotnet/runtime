@@ -357,8 +357,7 @@ static DWORD ShouldInjectFault()
 
 #endif
 
-void UnlockedInterleavedLoaderHeap::UnlockedBackoutMem(void *pMem,
-                                            size_t dwRequestedSize
+void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
                                             COMMA_INDEBUG(_In_ const char *szFile)
                                             COMMA_INDEBUG(int  lineNum)
                                             COMMA_INDEBUG(_In_ const char *szAllocFile)
@@ -379,7 +378,7 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutMem(void *pMem,
         return;
     }
 
-    size_t dwSize = AllocMem_TotalSize(dwRequestedSize);
+    size_t dwSize = m_dwGranularity;
 
     if (m_pAllocPtr == ( ((BYTE*)pMem) + dwSize ))
     {
@@ -414,10 +413,8 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutMem(void *pMem,
 // behind the scenes.
 //
 //
-void *UnlockedInterleavedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSize,
-                                                          size_t  alignment,
-                                                          size_t *pdwExtra
-                                                          COMMA_INDEBUG(_In_ const char *szFile)
+void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
+                                                          INDEBUG(_In_ const char *szFile)
                                                           COMMA_INDEBUG(int  lineNum))
 {
     CONTRACT(void*)
@@ -427,35 +424,19 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwR
         // Macro syntax can't handle this INJECT_FAULT expression - we'll use a precondition instead
         //INJECT_FAULT( do{ if (*pdwExtra) {*pdwExtra = 0} RETURN NULL; } while(0) );
 
-        PRECONDITION( alignment != 0 );
-        PRECONDITION(0 == (alignment & (alignment - 1))); // require power of 2
-        PRECONDITION((dwRequestedSize % m_dwGranularity) == 0);
-        POSTCONDITION( (RETVAL) ?
-                       (0 == ( ((UINT_PTR)(RETVAL)) & (alignment - 1))) : // If non-null, pointer must be aligned
-                       (pdwExtra == NULL || 0 == *pdwExtra)    //   or else *pdwExtra must be set to 0
-                     );
     }
     CONTRACT_END
 
-    STATIC_CONTRACT_FAULT;
+    size_t dwRequestedSize = m_dwGranularity;
+    size_t alignment = 1;
 
-    // Set default value
-            if (pdwExtra)
-            {
-                *pdwExtra = 0;
-            }
+    STATIC_CONTRACT_FAULT;
 
     SHOULD_INJECT_FAULT(RETURN NULL);
 
     void *pResult;
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
-
-    // Check for overflow if we align the allocation
-    if (dwRequestedSize + alignment < dwRequestedSize)
-    {
-        RETURN NULL;
-    }
 
     // We don't know how much "extra" we need to satisfy the alignment until we know
     // which address will be handed out which in turn we don't know because we don't
@@ -508,18 +489,11 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwR
     EtwAllocRequest(this, pResult, dwSize);
 #endif //_DEBUG
 
-    if (pdwExtra)
-    {
-        *pdwExtra = extra;
-    }
-
     RETURN pResult;
 }
 
-void *UnlockedInterleavedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
-                                                  size_t  dwAlignment,
-                                                  size_t *pdwExtra
-                                                  COMMA_INDEBUG(_In_ const char *szFile)
+void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
+                                                  INDEBUG(_In_ const char *szFile)
                                                   COMMA_INDEBUG(int  lineNum))
 {
     CONTRACTL
@@ -529,11 +503,8 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequested
     }
     CONTRACTL_END
 
-    void *pResult = UnlockedAllocAlignedMem_NoThrow(dwRequestedSize,
-                                                    dwAlignment,
-                                                    pdwExtra
-                                                    COMMA_INDEBUG(szFile)
-                                                    COMMA_INDEBUG(lineNum));
+    void *pResult = UnlockedAllocStub_NoThrow(INDEBUG(szFile)
+                                              COMMA_INDEBUG(lineNum));
 
     if (!pResult)
     {
@@ -541,8 +512,6 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequested
     }
 
     return pResult;
-
-
 }
 #endif // #ifndef DACCESS_COMPILE
 

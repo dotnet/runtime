@@ -242,13 +242,13 @@ UMEntryThunk* UMEntryThunk::CreateUMEntryThunk()
 
     if (p == NULL)
     {
-        SIZE_T size = sizeof(UMEntryThunk);
+        static_assert_no_msg(sizeof(UMEntryThunk) == sizeof(StubPrecode));
         LoaderAllocator *pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         AllocMemTracker amTracker;
         AllocMemTracker *pamTracker = &amTracker;
        
         UMEntryThunkData *pData = (UMEntryThunkData *)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
-        p = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(size, 1));
+        p = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
         pData->m_pUMEntryThunk = p;
         p->Init(p, dac_cast<TADDR>(pData), NULL, dac_cast<TADDR>(PRECODE_UMENTRY_THUNK));
         pamTracker->SuppressRelease();

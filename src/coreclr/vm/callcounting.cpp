@@ -258,8 +258,7 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
         heap = AllocateHeap();
     }
 
-    SIZE_T sizeInBytes = sizeof(CallCountingStub);
-    AllocMemHolder<void> allocationAddressHolder(heap->AllocAlignedMem(sizeInBytes, 1));
+    AllocMemHolder<void> allocationAddressHolder(heap->AllocStub());
     CallCountingStub *stub = (CallCountingStub*)(void*)allocationAddressHolder;
     allocationAddressHolder.SuppressRelease();
     stub->Initialize(targetForMethod, remainingCallCountCell);
