@@ -48,6 +48,8 @@ size_t ExplicitControlLoaderHeap::AllocMem_TotalSize(size_t dwRequestedSize)
 
 #ifndef DACCESS_COMPILE
 ExplicitControlLoaderHeap::ExplicitControlLoaderHeap(bool fMakeExecutable) :
+    m_pAllocPtr(NULL),
+    m_dwTotalAlloc(0),
     m_fExecutableHeap(fMakeExecutable)
 {
     CONTRACTL
@@ -58,15 +60,11 @@ ExplicitControlLoaderHeap::ExplicitControlLoaderHeap(bool fMakeExecutable) :
     }
     CONTRACTL_END;
 
-    m_pFirstBlock                = NULL;
     m_pPtrToEndOfCommittedRegion = NULL;
     m_pEndReservedRegion         = NULL;
     m_pAllocPtr                  = NULL;
 
     m_dwCommitBlockSize          = GetOsPageSize();
-
-    // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
-    m_dwTotalAlloc               = 0;
 
 #ifdef _DEBUG
     m_dwDebugWastedBytes         = 0;

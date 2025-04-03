@@ -47,28 +47,12 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     }
     CONTRACTL_END;
 
-    m_pFirstBlock                = NULL;
-
     m_dwReserveBlockSize         = dwReserveBlockSize;
     m_dwCommitBlockSize          = dwCommitBlockSize;
 
-    m_pPtrToEndOfCommittedRegion = NULL;
     m_pEndReservedRegion         = NULL;
-    m_pAllocPtr                  = NULL;
 
     m_pRangeList                 = pRangeList;
-
-    // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
-    m_dwTotalAlloc               = 0;
-
-    _ASSERTE((GetStubCodePageSize() % GetOsPageSize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
-
-#ifdef _DEBUG
-    m_dwDebugWastedBytes         = 0;
-    s_dwNumInstancesOfLoaderHeaps++;
-    m_pEventList                 = NULL;
-    m_dwDebugFlags               = LoaderHeapSniffer::InitDebugFlags();
-#endif
 
     m_pFirstFreeBlock            = NULL;
 
@@ -115,8 +99,6 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
     {
         ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress);
     }
-
-    INDEBUG(s_dwNumInstancesOfLoaderHeaps --;)
 }
 
 #endif // #ifndef DACCESS_COMPILE

@@ -11,6 +11,38 @@ RandomForLoaderHeap s_randomForLoaderHeap;
 #ifndef DACCESS_COMPILE
 INDEBUG(DWORD UnlockedLoaderHeapBase::s_dwNumInstancesOfLoaderHeaps = 0;)
 
+UnlockedLoaderHeapBase::UnlockedLoaderHeapBase(LoaderHeapImplementationKind kind) : 
+    m_kind(kind),
+    m_dwTotalAlloc(0),
+    m_pAllocPtr(NULL),
+    m_pPtrToEndOfCommittedRegion(NULL)
+#ifdef _DEBUG
+    ,
+    m_dwDebugFlags(LoaderHeapSniffer::InitDebugFlags()),
+    m_pEventList(NULL),
+    m_dwDebugWastedBytes(0)
+#endif // _DEBUG
+{
+    LIMITED_METHOD_CONTRACT;
+#ifdef _DEBUG
+    s_dwNumInstancesOfLoaderHeaps++;
+#endif
+}
+
+UnlockedLoaderHeapBase::~UnlockedLoaderHeapBase()
+{
+    CONTRACTL
+    {
+        DESTRUCTOR_CHECK;
+        NOTHROW;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END
+
+    INDEBUG(s_dwNumInstancesOfLoaderHeaps --;)
+}
+
+
 void ReleaseReservedMemory(BYTE* value)
 {
     if (value)

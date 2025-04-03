@@ -201,6 +201,11 @@ protected:
     PTR_LoaderHeapBlock m_pFirstBlock;
 };
 
+//===============================================================================
+// This is the base class for LoaderHeap and InterleavedLoaderHeap. It holds the
+// common handling for LoaderHeap events, and the data structures used for bump
+// pointer allocation (although not the actual allocation routines).
+//===============================================================================
 typedef DPTR(class UnlockedLoaderHeapBase) PTR_UnlockedLoaderHeapBase;
 class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable, public ILoaderHeapBackout
 {
@@ -231,10 +236,8 @@ public:
 #ifdef DACCESS_COMPILE
     UnlockedLoaderHeapBase() {}
 #else
-    UnlockedLoaderHeapBase(LoaderHeapImplementationKind kind) : m_kind(kind)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
+    UnlockedLoaderHeapBase(LoaderHeapImplementationKind kind);
+    virtual ~UnlockedLoaderHeapBase();
 #endif // DACCESS_COMPILE
 
     BOOL IsExecutable() { return m_kind == LoaderHeapImplementationKind::Executable || m_kind == LoaderHeapImplementationKind::Interleaved; }
@@ -383,10 +386,6 @@ protected:
 #endif
                                    );
 
-
-
-
-
 protected:
     // Allocates memory aligned on power-of-2 boundary.
     //
@@ -483,8 +482,6 @@ private:
 
     // Range list to record memory ranges in
     RangeList *         m_pRangeList;
-
-    size_t              m_dwTotalAlloc;
 
     LoaderHeapFreeBlock *m_pFirstFreeBlock;
 
@@ -583,14 +580,6 @@ protected:
                           , int AllocLineNum
 #endif
                           );
-
-public:
-    // Perf Counter reports the size of the heap
-    size_t GetSize ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwTotalAlloc;
-    }
 };
 
 //===============================================================================
@@ -610,9 +599,6 @@ class ExplicitControlLoaderHeap : public UnlockedLoaderHeapBaseTraversable
 #endif
 
 private:
-    // Linked list of ClrVirtualAlloc'd pages
-    PTR_LoaderHeapBlock m_pFirstBlock;
-
     // Allocation pointer in current block
     PTR_BYTE            m_pAllocPtr;
 

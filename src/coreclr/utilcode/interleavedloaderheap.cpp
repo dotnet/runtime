@@ -45,26 +45,12 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
     }
     CONTRACTL_END;
 
-    m_pFirstBlock                = NULL;
-
-    m_pPtrToEndOfCommittedRegion = NULL;
     m_pEndReservedRegion         = NULL;
-    m_pAllocPtr                  = NULL;
 
     m_pRangeList                 = pRangeList;
 
-    // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
-    m_dwTotalAlloc               = 0;
-
     _ASSERTE((GetStubCodePageSize() % GetOsPageSize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
     m_dwGranularity = dwGranularity;
-
-#ifdef _DEBUG
-    m_dwDebugWastedBytes         = 0;
-    s_dwNumInstancesOfLoaderHeaps++;
-    m_pEventList                 = NULL;
-    m_dwDebugFlags               = LoaderHeapSniffer::InitDebugFlags();
-#endif
 
     _ASSERTE(codePageGenerator != NULL);
     m_codePageGenerator = codePageGenerator;
@@ -104,12 +90,8 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
 
         delete pSearch;
     }
-
-    INDEBUG(s_dwNumInstancesOfLoaderHeaps --;)
 }
-
 #endif // #ifndef DACCESS_COMPILE
-
 
 size_t UnlockedInterleavedLoaderHeap::GetBytesAvailReservedRegion()
 {
