@@ -43,14 +43,7 @@ namespace System.Runtime.ExceptionServices
         {
             ArgumentNullException.ThrowIfNull(exception);
 
-            try
-            {
-                AppContext.OnUnhandledException(exception);
-            }
-            catch
-            {
-                // Ignore any exceptions thrown by the handlers.
-            }
+            AppContext.OnUnhandledExceptionWorker(exception);
         }
     }
 }
