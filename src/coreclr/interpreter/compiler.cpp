@@ -761,7 +761,11 @@ void InterpCompiler::EmitCode()
 
     // These will eventually be freed by the VM, and they use the delete [] operator for the deletion.
     m_pILToNativeMap = new ICorDebugInfo::OffsetMapping[m_ILCodeSize];
-    ICorDebugInfo::NativeVarInfo* eeVars = new ICorDebugInfo::NativeVarInfo[m_numILVars];
+    ICorDebugInfo::NativeVarInfo* eeVars = NULL;
+    if (m_numILVars > 0)
+    {
+        eeVars = new ICorDebugInfo::NativeVarInfo[m_numILVars];
+    }
 
     int32_t *ip = m_pMethodCode;
     for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
@@ -794,7 +798,10 @@ void InterpCompiler::EmitCode()
         j++;
     }
 
-    m_compHnd->setVars(m_methodInfo->ftn, m_numILVars, eeVars);
+    if (m_numILVars > 0)
+    {
+        m_compHnd->setVars(m_methodInfo->ftn, m_numILVars, eeVars);
+    }
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
 }
 
@@ -1787,6 +1794,7 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     if ((methodInfo->options & CORINFO_OPT_INIT_LOCALS) && m_ILLocalsSize > 0)
     {
+        m_currentILOffset = 0;
         AddIns(INTOP_INITLOCALS);
         m_pLastNewIns->data[0] = m_ILLocalsOffset;
         m_pLastNewIns->data[1] = m_ILLocalsSize;
