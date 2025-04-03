@@ -219,10 +219,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // <NICE> Factor this into getCallInfo </NICE>
         bool isSpecialIntrinsic = false;
 
-        if (isIntrinsic || !info.compMatchedVM)
+        if (isIntrinsic || (!info.compMatchedVM && !RunningSuperPmiReplay()))
         {
             // For mismatched VM (AltJit) we want to check all methods as intrinsic to ensure
-            // we get more accurate codegen. This particularly applies to HWIntrinsic usage
+            // we get more accurate codegen. This particularly applies to HWIntrinsic usage.
+            // But don't do this under SuperPMI replay, because it's unlikely we'll have
+            // the right data in the MethodContext in that case.
 
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
