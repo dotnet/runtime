@@ -4425,6 +4425,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
             }
+            case NI_Sve_ShiftRightArithmeticImm:
+            case NI_Sve_ShiftRightLogicalImm:
+            {
+                assert(!hasImmediateOperand);
+                if (intrin.op2->IsCnsIntOrI() && emitter::isValidVectorShiftAmount(intrin.op2->AsIntCon()->IconValue(), emitTypeSize(intrin.baseType), true))
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+            }
 
             default:
                 unreached();

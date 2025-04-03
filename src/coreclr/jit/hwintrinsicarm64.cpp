@@ -2303,6 +2303,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_ShiftRightLogical:
+        case NI_Vector_op_RightShift:
+        {
+            assert(sig->numArgs == 2);
+            genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdBinOpNode(op, retType, op1, op2, simdBaseJitType, simdSize);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(simdBaseJitType);
+            break;
+        }
+
         case NI_Vector64_op_RightShift:
         case NI_Vector128_op_RightShift:
         {

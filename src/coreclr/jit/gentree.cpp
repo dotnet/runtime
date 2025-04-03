@@ -29056,10 +29056,17 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
                 sveId = NI_Sve_RoundToZero;
                 break;
             case NI_AdvSimd_ShiftLogical:
+            case NI_AdvSimd_ShiftArithmetic:
                 sveId = NI_Sve_ShiftLeftLogical;
                 break;
             case NI_AdvSimd_ShiftLeftLogical:
                 sveId = NI_Sve_ShiftLeftLogicalImm;
+                break;
+            case NI_AdvSimd_ShiftRightArithmetic:
+                sveId = NI_Sve_ShiftRightArithmeticImm;
+                break;
+            case NI_AdvSimd_ShiftRightLogical:
+                sveId = NI_Sve_ShiftRightLogicalImm;
                 break;
             case NI_AdvSimd_SignExtendWideningLower:
                 sveId = NI_Sve_SignExtendWideningLower;
