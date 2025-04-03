@@ -584,7 +584,7 @@ arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
 
 if [[ "$bootstrap" == "1" ]]; then
   "$scriptroot/common/build.sh" $arguments /p:Subset=bootstrap -bl:$scriptroot/artifacts/log/bootstrap.binlog
-  $arguments="$arguments /p:UseBootstrap=true"
+  arguments="$arguments /p:UseBootstrap=true"
 fi
 
 "$scriptroot/common/build.sh" $arguments

@@ -9,6 +9,7 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <AotOrSingleFile>true</AotOrSingleFile>
     <UseLocalTargetingRuntimePack Condition="'$(UseBootstrap)' == 'true'">true</UseLocalTargetingRuntimePack>
+    <UseLocalAppHostPack Condition="'$(UseBootstrap)' == 'true'">true</UseLocalAppHostPack>
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />
