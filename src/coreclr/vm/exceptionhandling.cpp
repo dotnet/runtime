@@ -3396,7 +3396,6 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         OBJECTREF throwable = exceptionObj.Get();
         throwable = PossiblyUnwrapThrowable(throwable, exInfo->m_frameIter.m_crawl.GetAssembly());
 
-        exInfo->m_csfEHClause = CallerStackFrame((UINT_PTR)GetCurrentSP());
         exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
 
         MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
@@ -3676,7 +3675,6 @@ extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvReg
 
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsFuncletCall(pFrame);
-    exInfo->m_csfEHClause = CallerStackFrame((UINT_PTR)GetCurrentSP());
     exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
     exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
 
@@ -3712,7 +3710,6 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
     OBJECTREF throwable = exceptionObj.Get();
     throwable = PossiblyUnwrapThrowable(throwable, pExInfo->m_frameIter.m_crawl.GetAssembly());
 
-    pExInfo->m_csfEHClause = CallerStackFrame((UINT_PTR)GetCurrentSP());
     pExInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
     MethodDesc *pMD = pExInfo->m_frameIter.m_crawl.GetFunction();
     // Profiler, debugger and ETW events

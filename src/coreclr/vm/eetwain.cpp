@@ -2165,6 +2165,8 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     DWORD_PTR dwResult;
     HandlerFn* pfnHandler = (HandlerFn*)pHandler;
 
+    pExInfo->m_csfEHClause = CallerStackFrame((UINT_PTR)GetCurrentSP());
+
 #ifdef USE_FUNCLET_CALL_HELPER
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
