@@ -279,7 +279,7 @@ export type EmscriptenBuildOptions = {
     wasmEnableSIMD: boolean,
     wasmEnableEH: boolean,
     enableAotProfiler: boolean,
-    enableBrowserProfiler: boolean,
+    enableDevToolsProfiler: boolean,
     enableLogProfiler: boolean,
     enablePerfTracing: boolean,
     runAOTCompilation: boolean,

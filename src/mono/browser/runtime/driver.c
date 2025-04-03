@@ -432,14 +432,14 @@ mono_wasm_profiler_init_aot (const char *desc)
 
 #endif
 
-#ifdef ENABLE_BROWSER_PROFILER
+#ifdef ENABLE_DEVTOOLS_PROFILER
 
-void mono_profiler_init_browser (const char *desc);
+void mono_profiler_init_browser_devtools (const char *desc);
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_profiler_init_browser (const char *desc)
+mono_wasm_profiler_init_browser_devtools (const char *desc)
 {
-	mono_profiler_init_browser (desc);
+	mono_profiler_init_browser_devtools (desc);
 }
 
 #endif

@@ -1353,7 +1353,6 @@ sample_current_thread_stack_trace ()
 	MonoThreadInfo *thread_info = mono_thread_info_current ();
 	SampleProfileStackWalkData stack_walk_data;
 	SampleProfileStackWalkData *data= &stack_walk_data;
-	THREAD_INFO_TYPE adapter = { { 0 } };
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, sample_current_thread_stack_trace);
 
 	data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
@@ -1380,9 +1379,8 @@ sample_current_thread_stack_trace ()
 			for (uint32_t frame_count = 0; frame_count < data->stack_contents.next_available_frame; ++frame_count)
 				mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [frame_count], TRUE, FALSE);
 		}
-		mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
 		uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
-		ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
+		ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, NULL, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 	}
 }
 
@@ -1393,7 +1391,6 @@ ep_write_empty_profile_event ()
 	MonoThreadInfo *thread_info = mono_thread_info_current ();
 	SampleProfileStackWalkData stack_walk_data;
 	SampleProfileStackWalkData *data= &stack_walk_data;
-	THREAD_INFO_TYPE adapter = { { 0 } };
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, sample_current_thread_stack_trace);
 
 	data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
@@ -1408,9 +1405,8 @@ ep_write_empty_profile_event ()
 
 	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
 
-	mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
 	uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
-	ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
+	ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, NULL, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 }
 
 static double desired_sample_interval_ms;
@@ -1482,7 +1478,8 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 	sample_current_thread_stack_trace ();
 }
 
-MonoProfilerHandle mono_profiler_init_browser_stacks (void);
+MonoProfilerHandle mono_profiler_init_browser_eventpipe (void);
+void mono_profiler_fini_browser_eventpipe (void);
 
 
 void
@@ -1491,14 +1488,14 @@ ep_rt_mono_sampling_provider_component_init (void)
 	// in single-threaded mode, we install instrumentation callbacks on the mono profiler, instead of stop-the-world
 	// this has negative performance impact even when the EP client is not connected!
 	// but it has to be enabled before managed code starts running, because the instrumentation needs to be in place
-	_ep_rt_mono_sampling_profiler_provider = mono_profiler_init_browser_stacks ();
+	_ep_rt_mono_sampling_profiler_provider = mono_profiler_init_browser_eventpipe ();
 }
 
 void
 ep_rt_mono_sampling_provider_component_fini (void)
 {
 	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
-	mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+	mono_profiler_fini_browser_eventpipe ();
 }
 
 void
