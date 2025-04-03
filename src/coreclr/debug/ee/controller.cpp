@@ -4472,6 +4472,10 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
     if (pCurThread->m_State & Thread::TS_SSToExitApcCall)
     {
+        if (!CheckActivationSafePoint(GetIP(pContext)))
+        {
+            return FALSE;
+        }
         pCurThread->SetThreadState(Thread::TS_SSToExitApcCallDone);
         pCurThread->ResetThreadState(Thread::TS_SSToExitApcCall);        
         DebuggerController::UnapplyTraceFlag(pCurThread);
