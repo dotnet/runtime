@@ -758,29 +758,31 @@ CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
 
-// RuntimeInfo OperatingSystem
-#ifdef TARGET_UNIX
-CDAC_GLOBAL(OperatingSystem, uint32, 2) // RuntimeInfoOperatingSystem.Unix
-#else // !TARGET_UNIX
-CDAC_GLOBAL(OperatingSystem, uint32, 1) // RuntimeInfoOperatingSystem.Windows
-#endif // !TARGET_UNIX
-
-// RuntimeInfo Architecture
-#if defined(TARGET_X86)
-CDAC_GLOBAL(Architecture, uint32, 1) // RuntimeInfoArchitecture.X86
-#elif defined(TARGET_AMD64)
-CDAC_GLOBAL(Architecture, uint32, 3) // RuntimeInfoArchitecture.Amd64
-#elif defined(TARGET_ARM)
-CDAC_GLOBAL(Architecture, uint32, 2) // RuntimeInfoArchitecture.Arm32
-#elif defined(TARGET_ARM64)
-CDAC_GLOBAL(Architecture, uint32, 4) // RuntimeInfoArchitecture.Arm64
-#elif defined(TARGET_LOONGARCH64)
-CDAC_GLOBAL(Architecture, uint32, 5) // RuntimeInfoArchitecture.LoongArch64
-#elif defined(TARGET_RISCV64)
-CDAC_GLOBAL(Architecture, uint32, 6) // RuntimeInfoArchitecture.RISCV
+#if defined(TARGET_UNIX)
+CDAC_GLOBAL_STRING(OperatingSystem, unix)
+#elif defined(TARGET_WINDOWS)
+CDAC_GLOBAL_STRING(OperatingSystem, win)
 #else
-#error Unknown Processor.
+#error Unknown OperatingSystem.
 #endif
+
+#if defined(TARGET_X86)
+CDAC_GLOBAL_STRING(Architecture, x86)
+#elif defined(TARGET_AMD64)
+CDAC_GLOBAL_STRING(Architecture, x64)
+#elif defined(TARGET_ARM)
+CDAC_GLOBAL_STRING(Architecture, arm)
+#elif defined(TARGET_ARM64)
+CDAC_GLOBAL_STRING(Architecture, arm64)
+#elif defined(TARGET_LOONGARCH64)
+CDAC_GLOBAL_STRING(Architecture, loongarch64)
+#elif defined(TARGET_RISCV64)
+CDAC_GLOBAL_STRING(Architecture, riscv64)
+#else
+#error Unknown Architecture.
+#endif
+
+CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
