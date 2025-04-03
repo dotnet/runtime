@@ -4294,7 +4294,7 @@ static void CreateNDirectStubAccessMetadata(
             SString namespaceOrClassName;
             SString methodName;
             pMD->GetMethodInfoNoSig(namespaceOrClassName, methodName);
-            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_NAMED_UNSUPPORTED_SIG,
+            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_UNMANAGEDCALLERSONLY,
                 namespaceOrClassName.GetUnicode(), methodName.GetUnicode());
         }
 
