@@ -40,20 +40,33 @@ const emitJumpKind emitReverseJumpKinds[] = {
 #include "emitjmps.h"
 };
 
-/*****************************************************************************
- * Look up the instruction for a jump kind
- */
-
+//------------------------------------------------------------------------
+// emitJumpKindToIns: convert jump kind to instruction
+//
+// Arguments:
+//    jumpKind - jump kind to convert
+//
+// Return Value:
+//    instruction - a jump instruction
+//
 /*static*/ instruction emitter::emitJumpKindToIns(emitJumpKind jumpKind)
 {
     assert((unsigned)jumpKind < ArrLen(emitJumpKindInstructions));
     return emitJumpKindInstructions[jumpKind];
 }
 
-/*****************************************************************************
- * Look up the (conditional) jump kind for an instruction.
- */
-
+//------------------------------------------------------------------------
+// emitInsToJumpKind: convert conditional jump instruction to jump kind
+//
+// Arguments:
+//    ins - conditional jump instruction
+//
+// Assumptions:
+//    Instruction is defined in emitJumpKindInstructions
+//
+// Return Value:
+//    emitJumpKind - jump kind
+//
 /*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
 {
     assert(emitter::isCondJumpInstruction(ins));
@@ -70,20 +83,30 @@ const emitJumpKind emitReverseJumpKinds[] = {
     unreached();
 }
 
-/*****************************************************************************
- * Reverse the conditional jump
- */
-
+//------------------------------------------------------------------------
+// emitReverseJumpKind: reverse the jump kind
+//
+// Arguments:
+//    jumpKind - jump kind to reverse
+//
+// Return Value:
+//    emitJumpKind - an opposite jump kind
+//
 /*static*/ emitJumpKind emitter::emitReverseJumpKind(emitJumpKind jumpKind)
 {
     assert(jumpKind < EJ_COUNT);
     return emitReverseJumpKinds[jumpKind];
 }
 
-/*****************************************************************************
- * Reverse the conditional jump instruction
- */
-
+//------------------------------------------------------------------------
+// emitReverseJumpIns: reverse the conditional jump instruction
+//
+// Arguments:
+//    ins - conditional jump instruction to reverse
+//
+// Return Value:
+//    instruction - an opposite conditional jump instruction
+//
 /*static*/ instruction emitter::emitReverseJumpIns(instruction ins)
 {
     assert(emitter::isCondJumpInstruction(ins));
