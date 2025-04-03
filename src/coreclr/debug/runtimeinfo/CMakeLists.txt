@@ -42,8 +42,8 @@ install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)
 
 # cDAC contract descriptor
 
-if("${CLI_CMAKE_RID}" STREQUAL "")
-  message(FATAL_ERROR "CLI_CMAKE_RID is not set. Please set it to the RID of the target platform.")
+if("${CLR_DOTNET_RID}" STREQUAL "")
+  message(FATAL_ERROR "CLR_DOTNET_RID is not set. Please set it to the RID of the target platform.")
 endif()
 configure_file(configure.h.in ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
