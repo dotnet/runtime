@@ -88,6 +88,14 @@ struct GlobalPointerSpec
     uint32_t Name;
     uint32_t PointerDataIndex;
 };
+
+// A string global value.
+// We record the name and the value, both as a string.
+struct GlobalStringSpec
+{
+    uint32_t Name;
+    uint32_t valueIndex;
+}
 ```
 
 The main data we want to emit to the object file is an instance of the following structure:
@@ -108,6 +116,7 @@ struct BinaryBlobDataDescriptor
         uint32_t GlobalLiteralValuesStart;
 
         uint32_t GlobalPointersStart;
+        uint32_t GlobalStringValuesStart;
         uint32_t NamesStart;
 
         uint32_t TypeCount;
@@ -115,6 +124,7 @@ struct BinaryBlobDataDescriptor
 
         uint32_t GlobalLiteralValuesCount;
         uint32_t GlobalPointerValuesCount;
+        uint32_t GlobalStringValuesCount;
 
         uint32_t NamesPoolCount;
 
@@ -122,6 +132,7 @@ struct BinaryBlobDataDescriptor
         uint8_t FieldSpecSize;
         uint8_t GlobalLiteralSpecSize;
         uint8_t GlobalPointerSpecSize;
+        uint8_t GlobalStringSpecSize;
     } Directory;
     // Platform flags (primarily pointer size)
     uint32_t PlatformFlags;
@@ -136,6 +147,8 @@ struct BinaryBlobDataDescriptor
     struct GlobalLiteralSpec GlobalLiteralValues[CDacBlobGlobalLiteralsCount];
     // an array of pointer globals
     struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount];
+    // an array of string globals
+    struct GlobalStringSpec GlobalStringValues[CDacBlobGlobalStringsCount];
     // all of the names that might be referenced from elsewhere in BinaryBlobDataDescriptor,
     // delimited by "\0"
     uint8_t NamesPool[sizeof(struct CDacStringPoolSizes)];
@@ -178,11 +191,14 @@ in a contiguous subsequence and are terminated by a marker `FieldSpec` with a `N
 For each field there is a name that gives an offset in the name pool and an offset indicating the
 field's offset.
 
-The global constants are given as a sequence of `GlobalLiteralSpec` elements.  Each global has a
+The numeric global constants are given as a sequence of `GlobalLiteralSpec` elements.  Each global has a
 name, type and a value.  Globals that are the addresses in target memory, are in `GlobalPointerSpec`
 elements. Each pointer element has a name and an index in a separately compiled pointer structure
 that is linked into runtime .  See
 [contract-descriptor.md](/docs/design/datacontracts/contract-descriptor.md)
+
+Strings can be passed as `GlobalStringSpec` elements.  Each string global has a name and value which
+are passed as offsets into the `NamesPool`.
 
 The `NamesPool` is a single sequence of utf-8 bytes comprising the concatenation of all the type
 field and global names including a terminating nul byte for each name.  The same name may occur

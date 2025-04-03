@@ -24,7 +24,7 @@ public class DataDescriptorModel
     public uint PlatformFlags { get; }
     // The number of indirect globals plus 1 for the placeholder at index 0
     [JsonIgnore]
-    public int PointerDataCount => 1 + Globals.Values.Count(g => g.Value.Indirect);
+    public int PointerDataCount => 1 + Globals.Values.Count(g => g.Value.Kind == GlobalValue.KindEnum.Indirect);
 
     private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, int> contracts, uint platformFlags)
     {
@@ -36,6 +36,7 @@ public class DataDescriptorModel
     }
 
     public const string PointerTypeName = "pointer";
+    public const string StringTypeName = "string";
 
     internal void DumpModel()
     {
@@ -274,6 +275,7 @@ public class DataDescriptorModel
             }
         }
     }
+
     internal sealed class FieldBuilder
     {
         private string _type = string.Empty;
@@ -331,19 +333,38 @@ public class DataDescriptorModel
     [JsonConverter(typeof(GlobalValueJsonConverter))]
     public readonly struct GlobalValue : IEquatable<GlobalValue>
     {
-        public bool Indirect { get; private init; }
-        public ulong Value { get; }
-        public static GlobalValue MakeDirect(ulong value) => new GlobalValue(value);
-        public static GlobalValue MakeIndirect(uint auxDataIdx) => new GlobalValue((ulong)auxDataIdx) { Indirect = true };
-        private GlobalValue(ulong value) { Value = value; }
+        public enum KindEnum
+        {
+            Direct,
+            Indirect,
+            String
+        }
 
-        public static bool operator ==(GlobalValue left, GlobalValue right) => left.Value == right.Value && left.Indirect == right.Indirect;
+        public KindEnum Kind { get; private init; }
+        public ulong NumericValue { get; }
+        public string StringValue { get; }
+        public static GlobalValue MakeDirect(ulong value) => new GlobalValue(value) { Kind = KindEnum.Direct };
+        public static GlobalValue MakeIndirect(uint auxDataIdx) => new GlobalValue((ulong)auxDataIdx) { Kind = KindEnum.Indirect };
+        public static GlobalValue MakeString(string value) => new GlobalValue(value) { Kind = KindEnum.String };
+        private GlobalValue(ulong value) { NumericValue = value; StringValue = string.Empty;}
+        private GlobalValue(string value) { StringValue = value; }
+
+        public static bool operator ==(GlobalValue left, GlobalValue right) => left.Equals(right);
         public static bool operator !=(GlobalValue left, GlobalValue right) => !(left == right);
 
-        public bool Equals(GlobalValue other) => this == other;
-        public override bool Equals(object? obj) => obj is GlobalValue value && this == value;
-        public override int GetHashCode() => HashCode.Combine(Value, Indirect);
-        public override string ToString() => Indirect ? $"Indirect({Value})" : $"0x{Value:x}";
+        public bool Equals(GlobalValue other) => other.Kind == Kind && other.NumericValue == NumericValue && other.StringValue == StringValue;
+        public override bool Equals(object? obj) => obj is GlobalValue value && Equals(value);
+        public override int GetHashCode() => HashCode.Combine(Kind, NumericValue, StringValue);
+        public override string ToString()
+        {
+            return Kind switch
+            {
+                KindEnum.Direct => $"0x{NumericValue:x}",
+                KindEnum.Indirect => $"Indirect({NumericValue})",
+                KindEnum.String => $"'{StringValue}'",
+                _ => throw new InvalidOperationException("Unknown GlobalValue type")
+            };
+        }
     }
 
     [JsonConverter(typeof(GlobalModelJsonConverter))]
