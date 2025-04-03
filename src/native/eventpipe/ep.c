@@ -984,7 +984,7 @@ ep_enable (
 	EventPipeSessionID sessionId = 0;
 
 	EventPipeSessionOptions options;
-	ep_session_options_init(
+	ep_session_options_init (
 		&options,
 		output_path,
 		circular_buffer_size_in_mb,
@@ -998,9 +998,9 @@ ep_enable (
 		sync_callback,
 		callback_additional_data);
 
-	sessionId = ep_enable_3(&options);
+	sessionId = ep_enable_3 (&options);
 
-	ep_session_options_fini(&options);
+	ep_session_options_fini (&options);
 
 	return sessionId;
 }

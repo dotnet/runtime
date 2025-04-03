@@ -547,7 +547,7 @@ eventpipe_protocol_helper_collect_tracing (
 
 	EventPipeSessionID session_id = 0;
 	bool result = false;
-	session_id = ep_enable_3(&options);
+	session_id = ep_enable_3 (&options);
 
 	if (session_id == 0) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_FAIL);
