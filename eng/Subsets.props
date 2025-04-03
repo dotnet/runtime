@@ -154,7 +154,8 @@
     <BootstrapSubsets>host.native+libs.sfx+libs.oob+libs.pretest</BootstrapSubsets>
     <BootstrapSubsets Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(BootstrapSubsets)+clr.corelib</BootstrapSubsets>
     <BootstrapSubsets Condition="'$(RuntimeFlavor)' == 'Mono'">$(BootstrapSubsets)+mono.corelib</BootstrapSubsets>
-    <BootstrapSubsets Condition="'$(UseNativeAotForComponents)' == 'true'">$(BootstrapSubsets)+clr.nativeaotlibs+clr.nativeaotruntime</BootstrapSubsets>
+    <BootstrapSubsets Condition="'$(UseNativeAotForComponents)' != 'true'">$(BootstrapSubsets)+clr.runtime</BootstrapSubsets>
+    <BootstrapSubsets Condition="'$(UseNativeAotForComponents)' == 'true'">$(BootstrapSubsets)+clr.nativeaotlibs+clr.nativeaotruntime+libs.native</BootstrapSubsets>
 
     <SwapNativeForIL Condition="$(_subset.Contains('+bootstrap+')) and '$(RuntimeFlavor)' == 'CoreCLR'">true</SwapNativeForIL>
   </PropertyGroup>
@@ -450,22 +451,21 @@
                              $(CoreClrProjectRoot)tools\PdbChecker\PdbChecker.csproj;
                              $(CoreClrProjectRoot)tools\AssemblyChecker\AssemblyChecker.csproj;
                              $(ToolsProjectRoot)StressLogAnalyzer\src\StressLogAnalyzer.csproj" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
-    <!-- skip the architectures that don't have LKG runtime packs -->
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" Condition="'$(SdkToolsSupported)' == 'true'" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Category="clr" Condition="'$(SdkToolsSupported)' == 'true'" />
+    <!--
+      Always build the in-build variants of these tools. They run on the host machine, which we always have LKG packs for.
+    -->
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_inbuild.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_inbuild.csproj" Category="clr" />
+
     <!-- We may use these targets with the in-build ILCompiler or with the shipping ILCompiler. Produce them whenever we may use them. -->
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(SdkToolsSupported)' == 'true' or '$(NativeAotSupported)' == 'true'" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" Condition="'$(SdkToolsSupported)' == 'true' or '$(NativeAotSupported)' == 'true'" />
+    <!-- skip the architectures that don't have LKG runtime packs -->
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr"  />
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
-
-    <!--
-      Always build the in-build variants of these tools. They run on the host machine, which we always have LKG packs for.
-      For bootstrapped builds, don't build them when using the bootstrap as they'll already have been built.
-    -->
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_inbuild.csproj" Category="clr" Condition="'$(UseBootstrap)' != 'true'" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_inbuild.csproj" Category="clr" Condition="'$(UseBootstrap)' != 'true'" />
 
     <ProjectToBuild Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')) or '$(TargetOS)' == 'osx'" Include="$(CoreClrProjectRoot)tools\SuperFileCheck\SuperFileCheck.csproj" Category="clr" />
 

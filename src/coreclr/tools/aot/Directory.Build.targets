@@ -3,4 +3,6 @@
   <PropertyGroup>
     <IsTrimmable Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</IsTrimmable>
   </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseLocalTargetingRuntimePack)' == 'true'" />
 </Project>
