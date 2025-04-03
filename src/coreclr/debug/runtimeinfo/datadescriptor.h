@@ -98,6 +98,9 @@
 #ifndef CDAC_GLOBAL_POINTER
 #define CDAC_GLOBAL_POINTER(globalname,addr)
 #endif
+#ifndef CDAC_GLOBAL_STRING
+#define CDAC_GLOBAL_STRING(globalname,stringval)
+#endif
 #ifndef CDAC_GLOBALS_END
 #define CDAC_GLOBALS_END()
 #endif
@@ -858,4 +861,5 @@ CDAC_GLOBALS_END()
 #undef CDAC_GLOBALS_BEGIN
 #undef CDAC_GLOBAL
 #undef CDAC_GLOBAL_POINTER
+#undef CDAC_GLOBAL_STRING
 #undef CDAC_GLOBALS_END

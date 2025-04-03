@@ -212,11 +212,11 @@ The global values will be in an array, with each value described by a dictionary
 
 * `"name": "global value name"` the name of the global value
 * `"type": "type name"` the type of the global value
-* optional `"value": VALUE | [ int ] | "unknown"` the value of the global value, or an offset in an auxiliary array containing the value or "unknown".
+* optional `"value": VALUE | [ int ] ` the value of the global value, or an offset in an auxiliary array containing the value.
 
-The `VALUE` may be a JSON numeric constant integer or a string containing a signed or unsigned
-decimal or hex (with prefix `0x` or `0X`) integer constant.  The constant must be within the range
-of the type of the global value.
+The `VALUE` may be either a number of string. JSON numeric constants are always parsed as numbers. JSON strings are always parsed as strings and may additionally parse as a hex (with prefix `0x` or `0X`) or decimal number.
+Numeric constants must be within the range of the type of the global value.
+
 
 **Compact format**:
 
@@ -225,7 +225,8 @@ The global values will be in a dictionary, with each key being the name of a glo
 * `[VALUE | [int], "type name"]` the type and value of a global
 * `VALUE | [int]` just the value of a global
 
-As in the regular format, `VALUE` is a numeric constant or a string containing an integer constant.
+`VALUE` may be either a number of string. JSON numeric constants are always parsed as numbers. JSON strings are always parsed as strings and may additionally parse as a hex (with prefix `0x` or `0X`) or decimal number.
+Numeric constants must be within the range of the type of the global value.
 
 Note that a two element array is unambiguously "type and value", whereas a one-element array is
 unambiguously "indirect value".
@@ -288,7 +289,7 @@ The baseline is given in the "regular" format.
   ],
   "globals": [
     { "name": "FEATURE_EH_FUNCLETS", "type": "uint8", "value": "0" }, // baseline defaults value to 0
-    { "name": "FEATURE_COMINTEROP", "type", "uint8", "value": "1"},
+    { "name": "FEATURE_COMINTEROP", "type": "uint8", "value": "1"},
     { "name": "s_pThreadStore", "type": "pointer" } // no baseline value
   ]
 }
@@ -308,7 +309,8 @@ The following is an example of an in-memory descriptor that references the above
   "globals":
   {
     "FEATURE_COMINTEROP": 0,
-    "s_pThreadStore": [ 0 ] // indirect from aux data offset 0
+    "s_pThreadStore": [ 0 ], // indirect from aux data offset 0
+    "RuntimeID": "windows-x64"
   }
 }
 ```
@@ -332,6 +334,7 @@ And the globals will be:
 | FEATURE_COMINTEROP  | uint8   | 0          |
 | FEATURE_EH_FUNCLETS | uint8   | 0          |
 | s_pThreadStore      | pointer | 0x0100ffe0 |
+| RuntimeID           | string  |"windows-x64"|
 
 The `FEATURE_EH_FUNCLETS` global's value comes from the baseline - not the in-memory data
 descriptor.  By contrast, `FEATURE_COMINTEROP` comes from the in-memory data descriptor - with the
