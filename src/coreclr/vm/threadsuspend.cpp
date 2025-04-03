@@ -5779,11 +5779,6 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
 //       type of the method) which will then handle preparing the thread for GC.
 //
 
-void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
-{
-    HandleSuspensionForInterruptedThread(interruptedContext, false);
-}
-
 void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger)
 {
     struct AutoClearPendingThreadActivation
@@ -5904,6 +5899,11 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
         // Hijack the return address to point to the appropriate routine based on the method's return type.
         pThread->HijackThread(&executionState X86_ARG(returnKind));
     }
+}
+
+void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
+{
+    HandleSuspensionForInterruptedThread(interruptedContext, false);
 }
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
