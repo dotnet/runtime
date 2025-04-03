@@ -1638,6 +1638,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_ToScalar:
+        {
+            if (simdSize > 16)
+            {
+                op1 = impSIMDPopStack();
+
+                // Even for SVE, to scalar always would fetch 0th element from the overlapping SIMD register.
+                retNode = gtNewSimdToScalarNode(genActualType(simdBaseType), op1, simdBaseJitType, 16);
+            }
+            break;
+        }
+
         case NI_Vector_get_AllBitsSet:
         case NI_Vector64_get_AllBitsSet:
         case NI_Vector128_get_AllBitsSet:

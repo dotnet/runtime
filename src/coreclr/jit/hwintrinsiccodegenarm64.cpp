@@ -1858,7 +1858,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            //case NI_Vector_ToScalar:
             case NI_Vector64_ToScalar:
             case NI_Vector128_ToScalar:
             {
