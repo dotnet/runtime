@@ -1,11 +1,11 @@
 <Project>
   <PropertyGroup>
     <!-- The .NET product branding version -->
-    <ProductVersion>9.0.4</ProductVersion>
+    <ProductVersion>9.0.5</ProductVersion>
     <!-- File version numbers -->
     <MajorVersion>9</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>4</PatchVersion>
+    <PatchVersion>5</PatchVersion>
     <SdkBandVersion>9.0.100</SdkBandVersion>
     <PackageVersionNet8>8.0.$([MSBuild]::Add($(PatchVersion),11))</PackageVersionNet8>
     <PackageVersionNet7>7.0.20</PackageVersionNet7>
@@ -243,8 +243,8 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>9.0.4-servicing.25177.1</MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100Version>9.0.4</MicrosoftNETWorkloadEmscriptenCurrentManifest90100Version>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>9.0.5-servicing.25203.2</MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100Version>9.0.5</MicrosoftNETWorkloadEmscriptenCurrentManifest90100Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest90100Version)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
