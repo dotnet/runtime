@@ -1911,6 +1911,20 @@ retry_emit:
                 m_pLastIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip++;
                 break;
+            case CEE_LDSTR:
+            {
+                int32_t token = getI4LittleEndian(m_ip + 1);
+                void *str;
+                InfoAccessType accessType = m_compHnd->constructStringLiteral(m_compScopeHnd, token, &str);
+                assert(accessType == IAT_VALUE);
+                // str should be forever pinned, so we can include its ref inside interpreter code
+                AddIns(INTOP_LDPTR);
+                PushInterpType(InterpTypeO, m_compHnd->getBuiltinClass(CLASSID_STRING));
+                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastIns->data[0] = GetDataItemIndex(str);
+                m_ip += 5;
+                break;
+            }
             case CEE_LDARG_S:
                 EmitLoadVar(m_ip[1]);
                 m_ip += 2;
