@@ -80,7 +80,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 {
                     while (state._listener.IsListening)
                     {
-                        state.HandleRequest();
+                        // fire and forget
+                        _ = state.HandleRequestAsync();
                     }
                 },
                 this,
