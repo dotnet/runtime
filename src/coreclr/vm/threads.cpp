@@ -48,6 +48,10 @@
 #include <versionhelpers.h>
 #endif
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
@@ -1037,6 +1041,22 @@ static void SetIlsIndex(DWORD tlsIndex)
 #pragma optimize("", on)
 #endif
 
+void InitThreadManagerPerfMapData()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+#ifdef FEATURE_PERFMAP
+    if (IsWriteBarrierCopyEnabled())
+    {
+        size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
+        PerfMap::LogStubs(__FUNCTION__, "JIT_CopiedWriteBarriers", (PCODE)s_barrierCopy, writeBarrierSize, PerfMapStubType::Individual);
+    }
+#endif
+}
+
 //---------------------------------------------------------------------------
 // One-time initialization. Called during Dll initialization. So
 // be careful what you do in here!
@@ -1069,6 +1089,9 @@ void InitThreadManager()
             ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
             memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
         }
+#ifdef FEATURE_PERFMAP
+        // We would log the to the perfmap here, but its not yet initialized
+#endif
 
         // Store the JIT_WriteBarrier copy location to a global variable so that helpers
         // can jump to it.
@@ -5482,11 +5505,11 @@ Retry:
     {       // If count is off, try again, to account for multiple threads.
         if (iRetry < 4)
         {
-            //              printf("Retry %d.  cntReturn:%d, gReturn:%d\n", iRetry, cntReturn, g_TrapReturningThreads);
+            //              minipal_log_print_info("Retry %d.  cntReturn:%d, gReturn:%d\n", iRetry, cntReturn, g_TrapReturningThreads);
             ++iRetry;
             goto Retry;
         }
-        printf("cnt:%d, Un:%d, Back:%d, Dead:%d, cntReturn:%d, TrapReturn:%d, eeShutdown:%d, threadShutdown:%d\n",
+        minipal_log_print_info("cnt:%d, Un:%d, Back:%d, Dead:%d, cntReturn:%d, TrapReturn:%d, eeShutdown:%d, threadShutdown:%d\n",
                cnt,cntUnstart,cntBack,cntDead,cntReturn,g_TrapReturningThreads, g_fEEShutDown, Thread::IsAtProcessExit());
         LOG((LF_CORDB, LL_INFO1000,
              "SUSPEND: cnt:%d, Un:%d, Back:%d, Dead:%d, cntReturn:%d, TrapReturn:%d, eeShutdown:%d, threadShutdown:%d\n",
@@ -5496,7 +5519,7 @@ Retry:
     }
     if (iRetry > 0 && iRetry < 4)
     {
-        printf("%d retries to re-sync counted TrapReturn with global TrapReturn.\n", iRetry);
+        minipal_log_print_info("%d retries to re-sync counted TrapReturn with global TrapReturn.\n", iRetry);
     }
 #endif // g_TrapReturningThreads debug code.
 

@@ -42,10 +42,8 @@ NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, 
              !"Don't throw kExecutionEngineException from here. Go to EEPolicy directly, or throw something better.");
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        DispatchManagedException(reKind);
-    }
+    DispatchManagedException(reKind);
+
 #endif // FEATURE_EH_FUNCLETS
 
     if (resID == 0)

@@ -320,8 +320,64 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     ContainCheckBinary(binOp);
 
+#ifdef TARGET_AMD64
+    if (JitConfig.EnableApxConditionalChaining())
+    {
+        if (binOp->OperIs(GT_AND, GT_OR))
+        {
+            GenTree* next;
+            if (TryLowerAndOrToCCMP(binOp, &next))
+            {
+                return next;
+            }
+        }
+    }
+#endif // TARGET_AMD64
+
     return binOp->gtNext;
 }
+
+#ifdef TARGET_AMD64
+//------------------------------------------------------------------------
+// TruthifyingFlags: Get a flags immediate that will make a specified condition true.
+//
+// Arguments:
+//    condition - the condition.
+//
+// Returns:
+//    A flags immediate that, if those flags were set, would cause the specified condition to be true.
+//    (NOTE: This just has to make the condition be true, i.e., if the condition calls for (SF ^ OF), then
+//    returning one will suffice
+insCflags Lowering::TruthifyingFlags(GenCondition condition)
+{
+    switch (condition.GetCode())
+    {
+        case GenCondition::EQ:
+            return INS_FLAGS_ZF;
+        case GenCondition::NE:
+            return INS_FLAGS_NONE;
+        case GenCondition::SGE: // !(SF ^ OF)
+            return INS_FLAGS_NONE;
+        case GenCondition::SGT: // !(SF ^ OF) && !ZF
+            return INS_FLAGS_NONE;
+        case GenCondition::SLE: // !(SF ^ OF) || ZF
+            return INS_FLAGS_ZF;
+        case GenCondition::SLT: // (SF ^ OF)
+            return INS_FLAGS_SF;
+        case GenCondition::UGE: // !CF
+            return INS_FLAGS_NONE;
+        case GenCondition::UGT: // !CF && !ZF
+            return INS_FLAGS_NONE;
+        case GenCondition::ULE: // CF || ZF
+            return INS_FLAGS_ZF;
+        case GenCondition::ULT: // CF
+            return INS_FLAGS_CF;
+        default:
+            NO_WAY("unexpected condition type");
+            return INS_FLAGS_NONE;
+    }
+}
+#endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
 // LowerBlockStore: Lower a block store node
@@ -9127,7 +9183,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
             if (IsInvariantInRange(op1, parentNode, hwintrinsic))
             {
-                if (op1->isContained())
+                if (op1->isContained() && !op1->OperIsLong())
                 {
                     // We have CreateScalarUnsafe where the underlying scalar is contained
                     // As such, we can contain the CreateScalarUnsafe and consume the value
@@ -9207,10 +9263,12 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 if (broadcastOperand->OperIsHWIntrinsic())
                 {
                     GenTreeHWIntrinsic* hwintrinsicOperand = broadcastOperand->AsHWIntrinsic();
+                    NamedIntrinsic      operandIntrinsicId = hwintrinsicOperand->GetHWIntrinsicId();
 
-                    if (HWIntrinsicInfo::IsVectorCreateScalarUnsafe(hwintrinsicOperand->GetHWIntrinsicId()))
+                    if (HWIntrinsicInfo::IsVectorCreateScalar(operandIntrinsicId) ||
+                        HWIntrinsicInfo::IsVectorCreateScalarUnsafe(operandIntrinsicId))
                     {
-                        // CreateScalarUnsafe can contain non-memory operands such as enregistered
+                        // CreateScalar/Unsafe can contain non-memory operands such as enregistered
                         // locals, so we want to check if its operand is containable instead. This
                         // will result in such enregistered locals returning `false`.
                         broadcastOperand = hwintrinsicOperand->Op(1);

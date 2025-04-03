@@ -2494,7 +2494,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
-VOID DECLSPEC_NORETURN PropagateExceptionThroughNativeFrames(Object *exceptionObj)
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj)
 {
     CONTRACTL
     {
@@ -4808,9 +4808,9 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
 
                 if (IsException(throwable->GetMethodTable()))
                 {
-                    if (!message.IsEmpty())
+                    if (!exceptionMessage.IsEmpty())
                     {
-                        reporter.AddDescription(message);
+                        reporter.AddDescription(exceptionMessage);
                     }
                     reporter.Report();
                 }
@@ -6245,7 +6245,7 @@ static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
+void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -6278,34 +6278,6 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     CALL_MANAGED_METHOD_NORET(args)
 
     GCPROTECT_END();
-}
-
-void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Ok.  Now we have a brand new fault in jitted code.
-    FaultingExceptionFrame fef;
-    FaultingExceptionFrame *frame = &fef;
-    frame->InitAndLink(pContext);
-
-    HandleManagedFaultFilterParam param;
-    param.fFilterExecuted = FALSE;
-    param.pOriginalExceptionRecord = pExceptionRecord;
-
-    PAL_TRY(HandleManagedFaultFilterParam *, pParam, &param)
-    {
-        GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-
-        EXCEPTION_RECORD *pRecord = pParam->pOriginalExceptionRecord;
-
-        RaiseException(pRecord->ExceptionCode, 0,
-            pRecord->NumberParameters, pRecord->ExceptionInformation);
-    }
-    PAL_EXCEPT_FILTER(HandleManagedFaultFilter)
-    {
-    }
-    PAL_ENDTRY
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -6542,10 +6514,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         // Not an Out-of-memory situation, so no need for a forbid fault region here
         //
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled)
-        {
-            EEPolicy::HandleStackOverflow();
-        }
+        EEPolicy::HandleStackOverflow();
 #endif // FEATURE_EH_FUNCLETS
         return VEH_CONTINUE_SEARCH;
     }
@@ -7240,14 +7209,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 //
                 // HandleManagedFault may never return, so we cannot use a forbid fault region around it.
                 //
-                if (g_isNewExceptionHandlingEnabled)
-                {
-                    HandleManagedFaultNew(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
-                else
-                {
-                    HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
+                HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
 #endif // FEATURE_EH_FUNCLETS
@@ -7457,7 +7419,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     Exception::Delete(pException);
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && !nativeRethrow)
+    if (!nativeRethrow)
     {
         Thread *pThread = GetThread();
         ThreadExceptionState* pExState = pThread->GetExceptionState();
@@ -10609,9 +10571,6 @@ StackWalkAction TAResetStateCallback(CrawlFrame* pCf, void* data)
 // Note: This function should be invoked ONLY during unwind.
 #ifndef FEATURE_EH_FUNCLETS
 void ResetThreadAbortState(PTR_Thread pThread, void *pEstablisherFrame)
-#else
-void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCurrentStackFrame)
-#endif
 {
     CONTRACTL
     {
@@ -10619,77 +10578,19 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pThread != NULL);
-#ifndef FEATURE_EH_FUNCLETS
         PRECONDITION(pEstablisherFrame != NULL);
-#else
-        PRECONDITION(pCf != NULL);
-        PRECONDITION(!sfCurrentStackFrame.IsNull());
-#endif
     }
     CONTRACTL_END;
 
     if (pThread->IsAbortRequested())
     {
-#ifndef FEATURE_EH_FUNCLETS
         if (GetNextCOMPlusSEHRecord(static_cast<EXCEPTION_REGISTRATION_RECORD *>(pEstablisherFrame)) == EXCEPTION_CHAIN_END)
         {
             _ASSERTE(!"Topmost handler and abort requested.");
         }
-#else // !FEATURE_EH_FUNCLETS
-        // Get the active exception tracker
-        PTR_ExceptionTracker pCurEHTracker = (PTR_ExceptionTracker)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-        _ASSERTE(pCurEHTracker != NULL);
-
-        // We will check if thread abort state needs to be reset only for the case of exception caught in
-        // native code. This will happen when:
-        //
-        // 1) an unwind is triggered and
-        // 2) current frame is the topmost frame we saw in the first pass and
-        // 3) a thread abort is requested and
-        // 4) we dont have address of the exception handler to be invoked.
-        //
-        // (1), (2) and (4) above are checked for in ExceptionTracker::ProcessOSExceptionNotification from where we call this
-        // function.
-
-        // Current frame should be the topmost frame we saw in the first pass
-        _ASSERTE(pCurEHTracker->GetTopmostStackFrameFromFirstPass() == sfCurrentStackFrame);
-
-        // If the exception has been caught in native code, then alongwith not having address of the handler to be
-        // invoked, we also wont have the IL clause for the catch block and resume stack frame will be NULL as well.
-        _ASSERTE((pCurEHTracker->GetCatchToCallPC() == 0) &&
-            (pCurEHTracker->GetCatchHandlerExceptionClauseToken() == NULL) &&
-                 (pCurEHTracker->GetResumeStackFrame().IsNull()));
-
-        // Walk the frame chain to see if there is any more managed code on the stack. If not, then this is the last managed frame
-        // on the stack and we can reset the thread abort state.
-        //
-        // Get the frame from which to start the stack walk from
-        Frame*  pFrame = pCurEHTracker->GetLimitFrame();
-
-        // At this point, we are at the topmost frame we saw during the first pass
-        // before the unwind began. Walk the stack using the specified crawlframe and the topmost
-        // explicit frame to determine if we have more managed code up the stack. If none is found,
-        // we can reset the thread abort state.
-
-        // Setup the data structure to be passed to the callback
-        TAResetStateCallbackData dataCallback;
-        dataCallback.fDoWeHaveMoreManagedCodeOnStack = FALSE;
-
-        // At this point, the StackFrame in CrawlFrame should represent the current frame we have been called for.
-        // _ASSERTE(sfCurrentStackFrame == StackFrame::FromRegDisplay(pCf->GetRegisterSet()));
-
-        // Reference to the StackFrame beyond which we are looking for managed code.
-        dataCallback.sfSeedCrawlFrame = sfCurrentStackFrame;
-
-        pThread->StackWalkFramesEx(pCf->GetRegisterSet(), TAResetStateCallback, &dataCallback, QUICKUNWIND, pFrame);
-
-        if (!dataCallback.fDoWeHaveMoreManagedCodeOnStack)
-        {
-            _ASSERTE(!"There is no more managed code on the stack, and thread abort is requested.");
-        }
-#endif // !FEATURE_EH_FUNCLETS
     }
 }
+#endif // !FEATURE_EH_FUNCLETS
 #endif // !DACCESS_COMPILE
 
 
@@ -11547,6 +11448,30 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 }
 
 #ifndef DACCESS_COMPILE
+#ifdef TARGET_X86
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.Ecx = pTransitionBlock->m_argumentRegisters.ECX;
+    m_Context.Edx = pTransitionBlock->m_argumentRegisters.EDX;
+    m_ContextPointers.Ecx = &m_Context.Ecx;
+    m_ContextPointers.Edx = &m_Context.Edx;
+
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg; \
+    m_ContextPointers.reg = &m_Context.reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    m_Context.Esp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Eip = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#endif // TARGET_X86
+
 //
 // Init a new frame
 //
@@ -11554,6 +11479,9 @@ void SoftwareExceptionFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
 
+    // On x86 we initialize the context state from transition block in
+    // UpdateContextFromTransitionBlock method.
+#ifndef TARGET_X86
 #define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -11576,6 +11504,7 @@ void SoftwareExceptionFrame::Init()
     _ASSERTE(ExecutionManager::IsManagedCode(::GetIP(&m_Context)));
 
     m_ReturnAddress = ::GetIP(&m_Context);
+#endif // !TARGET_X86
 }
 
 //
