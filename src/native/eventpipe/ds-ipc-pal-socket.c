@@ -552,9 +552,9 @@ ipc_socket_accept (
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	do {
 #if HAVE_ACCEPT4 && defined(SOCK_CLOEXEC)
-    	client_socket = accept4 (s, address, address_len, SOCK_CLOEXEC);
+		client_socket = accept4 (s, address, address_len, SOCK_CLOEXEC);
 #else
-    	client_socket = accept (s, address, address_len);
+		client_socket = accept (s, address, address_len);
 #endif
 	} while (ipc_retry_syscall (client_socket));
 
