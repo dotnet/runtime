@@ -14,26 +14,26 @@ internal struct RuntimeInfo_1 : IRuntimeInfo
         _target = target;
     }
 
-    RuntimeInfoArchitecture IRuntimeInfo.GetTargetArchitecture()
+    readonly RuntimeInfoArchitecture IRuntimeInfo.GetTargetArchitecture()
     {
-        if (_target.TryReadGlobal(Constants.Globals.Architecture, out uint? arch))
+        if (_target.TryReadGlobalString(Constants.Globals.Architecture, out string? arch))
         {
-            if (Enum.IsDefined(typeof(RuntimeInfoArchitecture), arch))
+            if (Enum.TryParse(arch, ignoreCase: true, out RuntimeInfoArchitecture parsedArch))
             {
-                return (RuntimeInfoArchitecture)arch;
+                return parsedArch;
             }
         }
 
         return RuntimeInfoArchitecture.Unknown;
     }
 
-    RuntimeInfoOperatingSystem IRuntimeInfo.GetTargetOperatingSystem()
+    readonly RuntimeInfoOperatingSystem IRuntimeInfo.GetTargetOperatingSystem()
     {
-        if (_target.TryReadGlobal(Constants.Globals.OperatingSystem, out uint? os))
+        if (_target.TryReadGlobalString(Constants.Globals.OperatingSystem, out string? os))
         {
-            if (Enum.IsDefined(typeof(RuntimeInfoOperatingSystem), os))
+            if (Enum.TryParse(os, ignoreCase: true, out RuntimeInfoOperatingSystem parsedOS))
             {
-                return (RuntimeInfoOperatingSystem)os;
+                return parsedOS;
             }
         }
 

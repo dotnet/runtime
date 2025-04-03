@@ -10,7 +10,7 @@ public enum RuntimeInfoArchitecture : uint
     Unknown = 0,
     X86,
     Arm32,
-    Amd64,
+    X64,
     Arm64,
     LoongArch64,
     RISCV,
@@ -19,7 +19,7 @@ public enum RuntimeInfoArchitecture : uint
 public enum RuntimeInfoOperatingSystem : uint
 {
     Unknown = 0,
-    Windows,
+    Win,
     Unix,
 }
 
@@ -32,6 +32,5 @@ public interface IRuntimeInfo : IContract
 
 public readonly struct RuntimeInfo : IRuntimeInfo
 {
-    RuntimeInfoArchitecture IRuntimeInfo.GetTargetArchitecture() => RuntimeInfoArchitecture.Unknown;
-    RuntimeInfoOperatingSystem IRuntimeInfo.GetTargetOperatingSystem() => RuntimeInfoOperatingSystem.Unknown;
+
 }
