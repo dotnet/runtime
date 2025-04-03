@@ -159,6 +159,8 @@ static guint16 packed_simd_alias_methods [] = {
 	SN_GreaterThanOrEqual,
 	SN_LessThan,
 	SN_LessThanOrEqual,
+	SN_Load,
+	SN_LoadUnsafe,
 	SN_Max,
 	SN_Min,
 	SN_Multiply,
