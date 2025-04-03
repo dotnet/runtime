@@ -12,8 +12,6 @@ namespace System.Net.Http
     {
         private static readonly ActivitySource s_connectionsActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionsNamespace);
 
-        public static bool HasListeners() => s_connectionsActivitySource.HasListeners();
-
         public static Activity? StartConnectionSetupActivity(bool isSecure, HttpAuthority authority)
         {
             Activity? activity = null;

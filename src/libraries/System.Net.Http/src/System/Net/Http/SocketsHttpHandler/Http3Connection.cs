@@ -246,7 +246,7 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, WaitForHttp3ConnectionActivity waitForConnectionActivity, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, WaitForHttp3ConnectionActivity waitForConnectionActivity, bool streamReserved, CancellationToken cancellationToken)
         {
             // Allocate an active request
             QuicStream? quicStream = null;
@@ -260,17 +260,11 @@ namespace System.Net.Http
                     QuicConnection? conn = _connection;
                     if (conn != null)
                     {
-                        if (!waitForConnectionActivity.Started && waitForConnectionActivity.AnyTelemetryEnabled())
+                        // We found a connection in the pool, but couldn't reserve a stream.
+                        // OpenOutboundStreamAsync is expected to wait for an available stream.
+                        if (!waitForConnectionActivity.Started && !streamReserved)
                         {
-                            lock (SyncObj)
-                            {
-                                if (_availableRequestStreamsCount == 0)
-                                {
-                                    // There are no available QUIC streams therefore OpenOutboundStreamAsync() is expected to wait for a stream.
-                                    // This period should be included in the telemetry.
-                                    waitForConnectionActivity.Start();
-                                }
-                            }
+                            waitForConnectionActivity.Start();
                         }
 
                         quicStream = await conn.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, cancellationToken).ConfigureAwait(false);
@@ -949,8 +943,6 @@ namespace System.Net.Http
         }
 
         public bool Started { get; private set; }
-
-        public bool AnyTelemetryEnabled() => HttpTelemetry.Log.IsEnabled() || _metrics!.RequestsQueueDuration.Enabled || ConnectionSetupDistributedTracing.HasListeners();
 
         public void Start()
         {
