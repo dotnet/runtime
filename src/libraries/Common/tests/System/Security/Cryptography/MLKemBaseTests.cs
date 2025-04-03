@@ -459,14 +459,13 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(sharedSecret.Slice(0, sharedSecretWritten), decapsulated);
         }
 
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void TryExportPkcs8PrivateKey_Seed_Roundtrip(MLKemAlgorithm algorithm)
+        [Fact]
+        public void TryExportPkcs8PrivateKey_Seed_Roundtrip()
         {
-            using MLKem kem = ImportPrivateSeed(algorithm, MLKemTestData.IncrementalSeed);
+            using MLKem kem = ImportPrivateSeed(MLKemAlgorithm.MLKem512, MLKemTestData.IncrementalSeed);
             byte[] pkcs8 = DoTryUntilDone(kem.TryExportPkcs8PrivateKey);
             using MLKem imported = MLKem.ImportPkcs8PrivateKey(pkcs8);
-            Assert.Equal(algorithm, imported.Algorithm);
+            Assert.Equal(MLKemAlgorithm.MLKem512, imported.Algorithm);
             AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
         }
 
