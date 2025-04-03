@@ -10,7 +10,7 @@ public enum RuntimeInfoArchitecture : uint
     Unknown = 0,
     X86,
     Arm32,
-    Amd64,
+    X64,
     Arm64,
     LoongArch64,
     RISCV,
@@ -19,7 +19,7 @@ public enum RuntimeInfoArchitecture : uint
 public enum RuntimeInfoOperatingSystem : uint
 {
     Unknown = 0,
-    Windows,
+    Win,
     Unix,
 }
 ```
@@ -37,7 +37,7 @@ RuntimeInfoOperatingSystem GetTargetOperatingSystem();
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| Architecture | `RuntimeInfoArchitecture` enum value (`uint32`) | Target architecture |
-| OperatingSystem | `RuntimeInfoOperatingSystem` enum value (`uint32`) | Target operating system |
+| Architecture | string | Target architecture |
+| OperatingSystem | string | Target operating system |
 
-The contract implementation simply returns the contract descriptor global values. If these globals are not available, the contract returns Unknown.
+The contract implementation simply returns the contract descriptor global values parsed as the respective enum case-insensitively. If these globals are not available, the contract returns Unknown.
