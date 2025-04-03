@@ -1,0 +1,18 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  targetRid: ''
+  creator: ''
+  helixQueues: ''
+
+steps:
+  - template: /eng/common/core-templates/steps/send-to-helix.yml
+    parameters:
+      DisplayNamePrefix: Send to Helix
+      HelixProjectPath: src/installer/tests/helixpublish.proj
+      HelixProjectArguments: /p:Configuration=${{ parameters.buildConfig }} /p:TargetArchitecture=${{ parameters.archType }} /p:TargetRuntimeIdentifier=${{ parameters.targetRid }} /p:TargetOS=${{ parameters.osGroup }}
+      HelixTargetQueues: ${{ join(';', parameters.helixQueues) }}
+      Creator: ${{ parameters.creator }}
+      ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        HelixAccessToken: $(HelixApiAccessToken)
