@@ -21,9 +21,7 @@ public:
 
     static GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
-    virtual HRESULT STDMETHODCALLTYPE InitializeForAttach(IUnknown* pICorProfilerInfoUnk, void* pvClientData, UINT cbClientData);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
-    virtual HRESULT STDMETHODCALLTYPE LoadAsNotificationOnly(BOOL *pbNotificationOnly);
 
     virtual HRESULT STDMETHODCALLTYPE ClassLoadStarted(ClassID classId);
     virtual HRESULT STDMETHODCALLTYPE ClassLoadFinished(ClassID classId, HRESULT hrStatus);
@@ -36,6 +34,4 @@ private:
     std::atomic<int> _classUnloadStartedCount;
     std::atomic<int> _classUnloadFinishedCount;
     std::atomic<int> _failures;
-
-    HRESULT InitializeCommon(IUnknown* pCorProfilerInfoUnk);
 };

@@ -31,6 +31,8 @@ namespace Profiler.Tests
         static int RunTest()
         {
             LoadCollectibleAssembly();
+
+            // Force a garbage collection to ensure the assembly is unloaded
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
@@ -49,7 +51,6 @@ namespace Profiler.Tests
             object instance = Activator.CreateInstance(testType);
 
             Console.WriteLine(instance.GetHashCode());
-            GC.Collect();
             collectibleContext.Unload();
         }
     }

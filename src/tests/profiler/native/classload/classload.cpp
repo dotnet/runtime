@@ -10,7 +10,7 @@ GUID ClassLoad::GetClsid()
     return clsid;
 }
 
-HRESULT ClassLoad::InitializeCommon(IUnknown* pICorProfilerInfoUnk)
+HRESULT ClassLoad::Initialize(IUnknown* pICorProfilerInfoUnk)
 {
     Profiler::Initialize(pICorProfilerInfoUnk);
 
@@ -23,22 +23,6 @@ HRESULT ClassLoad::InitializeCommon(IUnknown* pICorProfilerInfoUnk)
         return hr;
     }
 
-    return S_OK;
-}
-
-HRESULT ClassLoad::Initialize(IUnknown* pICorProfilerInfoUnk)
-{
-    return InitializeCommon(pICorProfilerInfoUnk);
-}
-
-HRESULT ClassLoad::InitializeForAttach(IUnknown* pICorProfilerInfoUnk, void* pvClientData, UINT cbClientData)
-{
-    return InitializeCommon(pICorProfilerInfoUnk);
-}
-
-HRESULT ClassLoad::LoadAsNotificationOnly(BOOL *pbNotificationOnly)
-{
-    *pbNotificationOnly = TRUE;
     return S_OK;
 }
 
@@ -76,7 +60,14 @@ HRESULT ClassLoad::Shutdown()
     if(_failures == 0 
         && (_classLoadStartedCount != 0)
         // Expect unloading of UnloadLibrary.TestClass and
-        // List<UnloadLibrary.TestClass> with all its base classes with everything used in List constructor.
+        // List<UnloadLibrary.TestClass> with all its base classes with everything used in List constructor:
+        // - UnloadLibrary.TestClass
+        // - System.Collections.Generic.IEnumerable`1<UnloadLibrary.TestClass>
+        // - System.Collections.Generic.IList`1<UnloadLibrary.TestClass>
+        // - System.Collections.Generic.IReadOnlyCollection`1<UnloadLibrary.TestClass>
+        // - System.Collections.Generic.IReadOnlyList`1<UnloadLibrary.TestClass>
+        // - System.Collections.Generic.List`1<UnloadLibrary.TestClass>
+        // - System.Collections.Generic.ICollection`1<UnloadLibrary.TestClass>        
         && (_classUnloadStartedCount == 7)
         && (_classLoadStartedCount == _classLoadFinishedCount)
         && (_classUnloadStartedCount == _classUnloadFinishedCount))
