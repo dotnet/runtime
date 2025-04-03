@@ -837,23 +837,31 @@ namespace System.Security.Cryptography
             // Decapsulation keys are always larger than the seed, so if we end up with a seed export it should
             // fit in the initial buffer.
             int size = Algorithm.DecapsulationKeySizeInBytes + 32;
-            byte[] buffer = CryptoPool.Rent(size);
-            int written = 0;
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(size); // Released to callers, do not use CryptoPool.
+            int written;
 
-            try
+            while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
             {
-                while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
-                {
-                    CryptoPool.Return(buffer, written);
-                    size = checked(size * 2);
-                    buffer = CryptoPool.Rent(size);
-                }
-
-                return buffer.AsSpan(0, written).ToArray();
+                ClearAndReturnToPool(buffer, written);
+                size = checked(size * 2);
+                buffer = ArrayPool<byte>.Shared.Rent(size);
             }
-            finally
+
+            if (written > buffer.Length)
             {
-                CryptoPool.Return(buffer, written);
+                // We got a nonsense value written back. Clear the buffer, but don't put it back in the pool.
+                CryptographicOperations.ZeroMemory(buffer);
+                throw new CryptographicException();
+            }
+
+            byte[] result = buffer.AsSpan(0, written).ToArray();
+            ClearAndReturnToPool(buffer, written);
+            return result;
+
+            static void ClearAndReturnToPool(byte[] buffer, int clearSize)
+            {
+                CryptographicOperations.ZeroMemory(buffer.AsSpan(0, clearSize));
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
 
