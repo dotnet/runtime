@@ -1697,11 +1697,8 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     GetThread()->GetExceptionState()->SetRaisingForeignException();
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        DispatchManagedException(oref);
-        UNREACHABLE();
-    }
+    DispatchManagedException(oref);
+    UNREACHABLE();
 #endif
 
     RaiseTheExceptionInternalOnly(oref, FALSE);
