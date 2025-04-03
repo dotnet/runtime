@@ -361,7 +361,7 @@ namespace System.Runtime.CompilerServices
 
             if (!mt->IsValueType)
             {
-                return Unsafe.As<byte, object>(ref target);
+                return Unsafe.ReadUnaligned<object>(ref target);
             }
 
             if (mt->IsByRefLike)

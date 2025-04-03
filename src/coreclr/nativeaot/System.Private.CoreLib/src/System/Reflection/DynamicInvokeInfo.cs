@@ -755,7 +755,7 @@ namespace System.Reflection
                     {
                         Type type = Type.GetTypeFromMethodTable(argumentInfo.Type);
                         Debug.Assert(type.IsPointer);
-                        obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
+                        obj = Pointer.Box((void*)Unsafe.ReadUnaligned<IntPtr>(ref obj.GetRawData()), type);
                     }
                     else
                     {
@@ -790,7 +790,7 @@ namespace System.Reflection
                     {
                         Type type = Type.GetTypeFromMethodTable(argumentInfo.Type);
                         Debug.Assert(type.IsPointer);
-                        obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
+                        obj = Pointer.Box((void*)Unsafe.ReadUnaligned<IntPtr>(ref obj.GetRawData()), type);
                     }
                     else
                     {
@@ -820,7 +820,7 @@ namespace System.Reflection
             {
                 Type type = Type.GetTypeFromMethodTable(_returnType);
                 Debug.Assert(type.IsPointer);
-                obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref byref), type);
+                obj = Pointer.Box((void*)Unsafe.ReadUnaligned<IntPtr>(ref byref), type);
             }
             else if ((_returnTransform & Transform.FunctionPointer) != 0)
             {
@@ -830,7 +830,7 @@ namespace System.Reflection
             else if ((_returnTransform & Transform.Reference) != 0)
             {
                 Debug.Assert((_returnTransform & Transform.ByRef) != 0);
-                obj = Unsafe.As<byte, object>(ref byref);
+                obj = Unsafe.ReadUnaligned<object>(ref byref);
             }
             else
             {
