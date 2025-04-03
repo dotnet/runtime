@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.DotNet.Helix.Sdk">
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
   <PropertyGroup>
     <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
@@ -58,6 +58,7 @@
         <PayloadDirectory>%(HostTestProject.PayloadDirectory)</PayloadDirectory>
         <Command>%(HostTestProject.Command)</Command>
         <PreCommands>@(_HelixPreCommands)</PreCommands>
+        <Timeout>00:30:00</Timeout>
       </HelixWorkItem>
     </ItemGroup>
   </Target>
