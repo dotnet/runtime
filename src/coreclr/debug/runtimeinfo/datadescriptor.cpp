@@ -13,6 +13,8 @@
 #include "methodtable.h"
 #include "threads.h"
 
+#include "configure.h"
+
 #include "../debug/ee/debugger.h"
 
 #ifdef HAVE_GCCOVER
@@ -59,6 +61,9 @@ struct GlobalPointerSpec
 #define MAKE_FIELDTYPELEN_NAME(tyname,membername) CONCAT4(cdac_string_pool_membertypename__, tyname, __, membername)
 #define MAKE_GLOBALLEN_NAME(globalname) CONCAT(cdac_string_pool_globalname__, globalname)
 #define MAKE_GLOBALTYPELEN_NAME(globalname) CONCAT(cdac_string_pool_globaltypename__, globalname)
+
+// used to stringify the result of a macros expansion
+#define STRINGIFY(x) #x
 
 // define a struct where the size of each field is the length of some string.  we will use offsetof to get
 // the offset of each struct element, which will be equal to the offset of the beginning of that string in the

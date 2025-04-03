@@ -47,6 +47,7 @@
       <_CoreClrBuildArg Condition="'$(EnableNativeSanitizers)' != ''" Include="-fsanitize $(EnableNativeSanitizers)" />
       <_CoreClrBuildArg Condition="'$(HostCrossOS)' != ''" Include="-hostos $(HostCrossOS)" />
       <_CoreClrBuildArg Include="-outputrid $(OutputRID)" />
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLI_CMAKE_RID=$(OutputRID)&quot;" />
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
