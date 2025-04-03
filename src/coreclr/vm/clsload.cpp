@@ -1757,6 +1757,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
                                                        const Substitution *pSubst,
                                                        MethodTable *pMTInterfaceMapOwner)
 {
+    INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefOrSpecThrowing");
+
     CONTRACT(TypeHandle)
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -1773,6 +1775,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
 
     if (TypeFromToken(typeDefOrRefOrSpec) == mdtTypeSpec)
     {
+        INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefOrSpecThrowing / mdTypeSpec");
+        
         ULONG cSig;
         PCCOR_SIGNATURE pSig;
 
@@ -1799,6 +1803,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
     }
     else
     {
+        INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefOrSpecThrowing / LoadTypeDefOrRefThrowing");
+
         RETURN (LoadTypeDefOrRefThrowing(pModule, typeDefOrRefOrSpec,
                                          fNotFoundAction,
                                          fUninstantiated,
@@ -2003,6 +2009,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                                                  mdToken tokenNotToLoad,
                                                  ClassLoadLevel level)
 {
+    INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefThrowing");
 
     CONTRACT(TypeHandle)
     {
@@ -2071,6 +2078,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
 
         else if (tokType == mdtTypeRef)
         {
+            INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefThrowing / TypeRef");
+
             BOOL fNoResolutionScope;
             Module *pFoundModule = Assembly::FindModuleByTypeRef(pModule, typeDefOrRef,
                                                                  tokenNotToLoad==tdAllTypes ?
@@ -2097,6 +2106,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                 {
                     if (fNoResolutionScope && pFoundModule->IsFullModule())
                     {
+                        INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefThrowing / LoadTypeByNameThrowing");
+
                         // Everett C++ compiler can generate a TypeRef with RS=0
                         // without respective TypeDef for unmanaged valuetypes,
                         // referenced only by pointers to them,
@@ -2116,6 +2127,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                     }
                     else
                     {
+                        INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefThrowing / LoadTypeHandleThrowIfFailed");
+                        
                         NameHandle nameHandle(pModule, typeDefOrRef);
                         nameHandle.SetName(pszNameSpace, pszClassName);
                         nameHandle.SetTokenNotToLoad(tokenNotToLoad);
@@ -2561,6 +2574,8 @@ ClassLoader::LoadApproxParentThrowing(
 /*static*/
 TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle typeHnd, ClassLoadLevel currentLevel)
 {
+    INSTRUMENTED_METHOD("ClassLoader::DoIncrementalLoad");
+    
     CONTRACTL
     {
         STANDARD_VM_CHECK;
@@ -2587,6 +2602,8 @@ TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle ty
         // Attain at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
         case CLASS_LOAD_BEGIN :
             {
+                INSTRUMENTED_METHOD("ClassLoader::DoIncrementalLoad / CLASS_LOAD_BEGIN");
+
                 AllocMemTracker amTracker;
                 typeHnd = CreateTypeHandleForTypeKey(pTypeKey, &amTracker);
                 CONSISTENCY_CHECK(!typeHnd.IsNull());
@@ -2601,6 +2618,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle ty
         case CLASS_LOAD_APPROXPARENTS :
             if (!typeHnd.IsTypeDesc())
             {
+                INSTRUMENTED_METHOD("ClassLoader::DoIncrementalLoad / CLASS_LOAD_APPROXPARENTS");
                 LoadExactParents(typeHnd.AsMethodTable());
             }
             break;
@@ -2614,6 +2632,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle ty
 
     if (typeHnd.GetLoadLevel() >= CLASS_LOAD_EXACTPARENTS)
     {
+        INSTRUMENTED_METHOD("ClassLoader::DoIncrementalLoad / Notify");
         Notify(typeHnd);
     }
 
@@ -2948,6 +2967,9 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
     }
 }
 
+void RecordTypeLoadTime(const TypeHandle& type, int64_t inclusiveTicks, int64_t subtreeTicks);
+
+thread_local int64_t *PendingTypeLoad = nullptr;
 
 //
 TypeHandle ClassLoader::LoadTypeHandleForTypeKey(const TypeKey *pTypeKey,
@@ -2955,7 +2977,12 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(const TypeKey *pTypeKey,
                                                  ClassLoadLevel targetLevel/*=CLASS_LOADED*/,
                                                  const InstantiationContext *pInstContext/*=NULL*/)
 {
-
+    INSTRUMENTED_METHOD("ClassLoader::LoadTypeHandleForTypeKey");
+    int64_t startTicks = GetPreciseTickCount();
+    int64_t *parentTypeLoad = PendingTypeLoad;
+    int64_t subtreeTypeLoadTicks = 0;
+    PendingTypeLoad = &subtreeTypeLoadTicks;
+    
     CONTRACTL
     {
         INSTANCE_CHECK;
@@ -3001,6 +3028,16 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(const TypeKey *pTypeKey,
         ETW::TypeSystemLog::TypeLoadEnd(typeLoad, typeHnd, (UINT16)targetLevel);
     }
 #endif
+
+    int64_t inclusiveTicks = GetPreciseTickCount() - startTicks;
+    RecordTypeLoadTime(typeHnd, inclusiveTicks, subtreeTypeLoadTicks);
+
+    if (parentTypeLoad != nullptr)
+    {
+        *parentTypeLoad += inclusiveTicks;
+    }
+
+    PendingTypeLoad = parentTypeLoad;
 
     return typeHnd;
 }
@@ -3096,6 +3133,8 @@ ClassLoader::LoadTypeHandleForTypeKey_Body(
     TypeHandle                        typeHnd,
     ClassLoadLevel                    targetLevel)
 {
+    INSTRUMENTED_METHOD("ClassLoader::LoadTypeHandleForTypeKey_Body");
+    
     CONTRACT(TypeHandle)
     {
         STANDARD_VM_CHECK;
@@ -3249,6 +3288,8 @@ retry:
 
     EX_TRY
     {
+        INSTRUMENTED_METHOD("ClassLoader::LoadTypeHandleForTypeKey_Body / DoIncrementalLoad");
+
         PendingTypeLoadHolder ptlh(pLoadingEntry);
 
         TRIGGERS_TYPELOAD();
