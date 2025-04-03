@@ -58,6 +58,7 @@ lookup_intrins (guint16 *intrinsics, int size, const char *cmethod_name)
 // i.e. all 'get_' and 'op_' need to come after regular title-case names
 static guint16 sri_vector128_methods [] = {
 	SN_Abs,
+	SN_Add,
 	SN_AndNot,
 	SN_As,
 	SN_AsByte,
@@ -98,10 +99,13 @@ static guint16 sri_vector128_methods [] = {
 	SN_Negate,
 	SN_Max,
 	SN_Min,
+	SN_Multiply,
+	SN_OnesComplement,
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
 	SN_Shuffle,
+	SN_Subtract,
 	SN_Truncate,
 	SN_WidenLower,
 	SN_WidenUpper,
@@ -158,10 +162,29 @@ static guint16 sri_packedsimd_methods [] = {
 	SN_get_IsSupported,
 };
 
+static MonoTypeEnum 
+resolve_native_size (MonoTypeEnum type)
+{
+	if (type == MONO_TYPE_I)
+#if TARGET_SIZEOF_VOID_P == 4
+		return MONO_TYPE_I4;
+#else
+		return MONO_TYPE_I8;
+#endif
+	else if (type == MONO_TYPE_U)
+#if TARGET_SIZEOF_VOID_P == 4
+		return MONO_TYPE_U4;
+#else
+		return MONO_TYPE_U8;
+#endif
+	return type;
+
+}
 // Returns if opcode was added
 static gboolean
 emit_common_simd_operations (TransformData *td, int id, int atype, int vector_size, int arg_size, int scalar_arg, gint16 *simd_opcode, gint16 *simd_intrins)
 {
+	atype = resolve_native_size (atype);
 	switch (id) {
 		case SN_get_AllBitsSet: {
 			interp_add_ins (td, MINT_SIMD_V128_LDC);
@@ -559,6 +582,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_CREATE_SCALAR;
 			break;
 		case SN_Equals:
+			atype = resolve_native_size (atype);
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_EQUALS;
 			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_EQUALS;
@@ -567,6 +591,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (atype == MONO_TYPE_R4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_EQUALS;
 			break;
 		case SN_EqualsAny:
+			atype = resolve_native_size (atype);
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_EQUALS_ANY;
 			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_EQUALS_ANY;
@@ -617,6 +642,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			break;
 		case SN_ShiftRightArithmetic:
 			g_assert (scalar_arg == 1);
+			atype = resolve_native_size (atype);
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_I1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_RIGHT_SHIFT;
 			else if (atype == MONO_TYPE_I2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_RIGHT_SHIFT;
@@ -841,6 +867,8 @@ opcode_added:
 static gboolean
 packedsimd_type_matches (MonoTypeEnum type, int expected_type)
 {
+	type = resolve_native_size (type);
+
 	if (expected_type == PSIMD_ARGTYPE_ANY)
 		return TRUE;
 	else if (type == expected_type)
@@ -1030,7 +1058,12 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 
 	bool is_packedsimd = strcmp (m_class_get_name (cmethod->klass), "PackedSimd") == 0;
 	if (is_packedsimd) {
-		vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+		if (csignature->ret->type == MONO_TYPE_VOID && csignature->param_count > 1 && mono_type_is_pointer (csignature->params [0])) {
+			// The Store* methods have a more complicated signature
+			vector_klass = mono_class_from_mono_type_internal (csignature->params [1]);
+		} else {
+			vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+		}
 	} else {
 		if (csignature->ret->type == MONO_TYPE_GENERICINST) {
 			vector_klass = mono_class_from_mono_type_internal (csignature->ret);
@@ -1047,7 +1080,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	// NOTE: Linker substitutions (used in AOT) will prevent this from running.
 	if ((id == SN_get_IsSupported) || (id == SN_get_IsHardwareAccelerated)) {
 		if (!is_packedsimd) {
-			// We don't want to emit the IsSupported or IsHardwareAccelerated methods for Vector(128)? here
+			// We don't want to emit the IsSupported or IsHardwareAccelerated methods for Vector* here
 			return FALSE;
 		}
 #if HOST_BROWSER
@@ -1066,7 +1099,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		// transform the method name from the Vector(128|) name to the packed simd name
 		// FIXME: This is a hack, but it works for now.
 		id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod_name);
-
+		gboolean is_unsigned = (atype == MONO_TYPE_U1 || atype == MONO_TYPE_U2 || atype == MONO_TYPE_U4 || atype == MONO_TYPE_U8 || atype == MONO_TYPE_U);
 		switch (id) {
 			case SN_LessThan:
 				cmethod_name = "CompareLessThan";
@@ -1088,6 +1121,15 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_BitwiseOr:
 				cmethod_name = "Or";
+				break;
+			case SN_OnesComplement:
+				cmethod_name = "Not";
+				break;
+			case SN_WidenLower:
+				cmethod_name = is_unsigned ? "ZeroExtendWideningLower" : "SignExtendWideningLower";
+				break;
+			case SN_WidenUpper:
+				cmethod_name = is_unsigned ? "ZeroExtendWideningUpper" : "SignExtendWideningUpper";
 				break;
 			case SN_Add:
 			case SN_AndNot:
@@ -1128,9 +1170,8 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		if (!is_packedsimd) {
 			// We didn't find a match, but that is expected for Vector(128)?
 			return FALSE;
-		} else {
-			g_warning ("MONO interpreter: Unimplemented method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
 		}
+		g_warning ("MONO interpreter: Unimplemented method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
 
 		// If we're missing a packedsimd method but the packedsimd method was AOT'd, we can
 		//  just let the interpreter generate a native call to the AOT method instead of

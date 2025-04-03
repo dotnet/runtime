@@ -2614,7 +2614,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle ty
 
     if (typeHnd.GetLoadLevel() >= CLASS_LOAD_EXACTPARENTS)
     {
-        Notify(typeHnd);
+        NotifyLoad(typeHnd);
     }
 
     return typeHnd;
@@ -2828,7 +2828,7 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
 // Notify profiler and debugger that a type load has completed
 // Also adjust perf counters
 /*static*/
-void ClassLoader::Notify(TypeHandle typeHnd)
+void ClassLoader::NotifyLoad(TypeHandle typeHnd)
 {
     CONTRACTL
     {
@@ -2896,6 +2896,66 @@ void ClassLoader::Notify(TypeHandle typeHnd)
     }
 }
 
+// Notify profiler that a MethodTable is being unloaded
+/*static*/
+void ClassLoader::NotifyUnload(MethodTable* pMT, bool unloadStarted)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        FORBID_FAULT;
+        PRECONDITION(pMT != NULL);
+    }
+    CONTRACTL_END
+
+#ifdef PROFILING_SUPPORTED
+    // If profiling, then notify the class is getting unloaded.
+    {
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
+        {
+            if (pMT->ContainsGenericVariables() || pMT->IsArray())
+            {
+                // Don't notify the profiler about types with unbound variables or arrays.
+                // See ClassLoadStarted callback for more details.
+                return;
+            }
+        
+            // Calls to the profiler callback may throw, or otherwise fail, if
+            // the profiler AVs/throws an unhandled exception/etc. We don't want
+            // those failures to affect the runtime, so we'll ignore them.
+            //
+            // Note that the profiler callback may turn around and make calls into
+            // the profiling runtime that may throw. This try/catch block doesn't
+            // protect the profiler against such failures. To protect the profiler
+            // against that, we will need try/catch blocks around all calls into the
+            // profiling API.
+            //
+
+            FAULT_NOT_FATAL();
+
+            EX_TRY
+            {
+                GCX_PREEMP();
+
+                if (unloadStarted)
+                    (&g_profControlBlock)->ClassUnloadStarted((ClassID) pMT);
+                else
+                    (&g_profControlBlock)->ClassUnloadFinished((ClassID) pMT, S_OK);
+            }
+            EX_CATCH
+            {
+                // The exception here came from the profiler itself. We'll just
+                // swallow the exception, since we don't want the profiler to bring
+                // down the runtime.
+            }
+            EX_END_CATCH(RethrowTerminalExceptions);
+        }
+        END_PROFILER_CALLBACK();
+    }
+#endif // PROFILING_SUPPORTED
+}
 
 //-----------------------------------------------------------------------------
 // Common helper for LoadTypeHandleForTypeKey and LoadTypeHandleForTypeKeyNoLock.

@@ -927,7 +927,14 @@ InlineContext* InlineStrategy::GetRootContext()
         // Set the initial budget for inlining. Note this is
         // deliberately set very high and is intended to catch
         // only pathological runaway inline cases.
-        m_InitialTimeBudget = BUDGET * m_InitialTimeEstimate;
+        const unsigned budget = JitConfig.JitInlineBudget();
+
+        if (budget != DEFAULT_INLINE_BUDGET)
+        {
+            JITDUMP("Using non-default inline budget %u\n", budget);
+        }
+
+        m_InitialTimeBudget = budget * m_InitialTimeEstimate;
         m_CurrentTimeBudget = m_InitialTimeBudget;
 
         // Estimate the code size  if there's no inlining

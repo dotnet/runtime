@@ -4176,7 +4176,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 }
 
 // clang-format off
-const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
+const GenConditionDesc GenConditionDesc::map[32]
 {
     { },       // NONE
     { },       // 1
