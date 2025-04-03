@@ -162,10 +162,29 @@ static guint16 sri_packedsimd_methods [] = {
 	SN_get_IsSupported,
 };
 
+static MonoTypeEnum 
+resolve_native_size (MonoTypeEnum type)
+{
+	if (type == MONO_TYPE_I)
+#if TARGET_SIZEOF_VOID_P == 4
+		return MONO_TYPE_I4;
+#else
+		return MONO_TYPE_I8;
+#endif
+	else if (type == MONO_TYPE_U)
+#if TARGET_SIZEOF_VOID_P == 4
+		return MONO_TYPE_U4;
+#else
+		return MONO_TYPE_U8;
+#endif
+	return type;
+
+}
 // Returns if opcode was added
 static gboolean
 emit_common_simd_operations (TransformData *td, int id, int atype, int vector_size, int arg_size, int scalar_arg, gint16 *simd_opcode, gint16 *simd_intrins)
 {
+	atype = resolve_native_size (atype);
 	switch (id) {
 		case SN_get_AllBitsSet: {
 			interp_add_ins (td, MINT_SIMD_V128_LDC);
@@ -563,6 +582,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_CREATE_SCALAR;
 			break;
 		case SN_Equals:
+			atype = resolve_native_size (atype);
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_EQUALS;
 			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_EQUALS;
@@ -571,6 +591,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (atype == MONO_TYPE_R4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_EQUALS;
 			break;
 		case SN_EqualsAny:
+			atype = resolve_native_size (atype);
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_EQUALS_ANY;
 			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_EQUALS_ANY;
@@ -621,6 +642,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			break;
 		case SN_ShiftRightArithmetic:
 			g_assert (scalar_arg == 1);
+			atype = resolve_native_size (atype);
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_I1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_RIGHT_SHIFT;
 			else if (atype == MONO_TYPE_I2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_RIGHT_SHIFT;
@@ -845,6 +867,8 @@ opcode_added:
 static gboolean
 packedsimd_type_matches (MonoTypeEnum type, int expected_type)
 {
+	type = resolve_native_size (type);
+
 	if (expected_type == PSIMD_ARGTYPE_ANY)
 		return TRUE;
 	else if (type == expected_type)
@@ -1034,7 +1058,12 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 
 	bool is_packedsimd = strcmp (m_class_get_name (cmethod->klass), "PackedSimd") == 0;
 	if (is_packedsimd) {
-		vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+		if (csignature->ret->type == MONO_TYPE_VOID && csignature->param_count > 1 && mono_type_is_pointer (csignature->params [0])) {
+			// The Store* methods have a more complicated signature
+			vector_klass = mono_class_from_mono_type_internal (csignature->params [1]);
+		} else {
+			vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+		}
 	} else {
 		if (csignature->ret->type == MONO_TYPE_GENERICINST) {
 			vector_klass = mono_class_from_mono_type_internal (csignature->ret);
