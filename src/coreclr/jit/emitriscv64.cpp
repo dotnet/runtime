@@ -247,7 +247,7 @@ bool emitter::emitInsIsLoadOrStore(instruction ins)
  *  Returns the specific encoding of the given CPU instruction.
  */
 
-inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/) const
+inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/)
 {
     code_t code = BAD_CODE;
 
@@ -688,7 +688,7 @@ void emitter::emitIns_R_R(
         if (INS_fcvt_d_w != ins && INS_fcvt_d_wu != ins) // fcvt.d.w[u] always produces an exact result
             code |= 0x7 << 12;                           // round according to frm status register
     }
-    else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins)
+    else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins || INS_fsqrt_s == ins || INS_fsqrt_d == ins)
     {
         assert(isFloatReg(reg1));
         assert(isFloatReg(reg2));
@@ -865,7 +865,6 @@ void emitter::emitIns_R_R_R(
             case INS_fsub_s:
             case INS_fmul_s:
             case INS_fdiv_s:
-            case INS_fsqrt_s:
             case INS_fsgnj_s:
             case INS_fsgnjn_s:
             case INS_fsgnjx_s:
@@ -880,7 +879,6 @@ void emitter::emitIns_R_R_R(
             case INS_fsub_d:
             case INS_fmul_d:
             case INS_fdiv_d:
-            case INS_fsqrt_d:
             case INS_fsgnj_d:
             case INS_fsgnjn_d:
             case INS_fsgnjx_d:
@@ -925,7 +923,7 @@ void emitter::emitIns_R_R_R(
         code |= ((reg1 & 0x1f) << 7);
         code |= ((reg2 & 0x1f) << 15);
         code |= ((reg3 & 0x1f) << 20);
-        if ((INS_fadd_s <= ins && INS_fsqrt_s >= ins) || (INS_fadd_d <= ins && INS_fsqrt_d >= ins))
+        if ((INS_fadd_s <= ins && INS_fdiv_s >= ins) || (INS_fadd_d <= ins && INS_fdiv_d >= ins))
         {
             code |= 0x7 << 12;
         }
@@ -4319,22 +4317,17 @@ void emitter::emitDispInsName(
                 case 0x2C: // FSQRT.S
                     printf("fsqrt.s        %s, %s\n", fd, fs1);
                     return;
-                case 0x10:            // FSGNJ.S & FSGNJN.S & FSGNJX.S
-                    if (opcode4 == 0) // FSGNJ.S
+                case 0x10: // FSGNJ.S & FSGNJN.S & FSGNJX.S
+                    NYI_IF(opcode4 >= 3, "RISC-V illegal fsgnj.s variant");
+                    if (fs1 != fs2)
                     {
-                        printf("fsgnj.s        %s, %s, %s\n", fd, fs1, fs2);
+                        const char* variants[3] = {".s ", "n.s", "x.s"};
+                        printf("fsgnj%s        %s, %s, %s\n", variants[opcode4], fd, fs1, fs2);
                     }
-                    else if (opcode4 == 1) // FSGNJN.S
+                    else // pseudos
                     {
-                        printf("fsgnjn.s       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else if (opcode4 == 2) // FSGNJX.S
-                    {
-                        printf("fsgnjx.s       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
+                        const char* names[3] = {"fmv.s ", "fneg.s", "fabs.s"};
+                        printf("%s         %s, %s\n", names[opcode4], fd, fs1);
                     }
                     return;
                 case 0x14:            // FMIN.S & FMAX.S
@@ -4422,7 +4415,6 @@ void emitter::emitDispInsName(
                     {
                         printf("fcvt.s.lu      %s, %s\n", fd, xs1);
                     }
-
                     else
                     {
                         NYI_RISCV64("illegal ins within emitDisInsName!");
@@ -4446,22 +4438,17 @@ void emitter::emitDispInsName(
                 case 0x2d: // FSQRT.D
                     printf("fsqrt.d        %s, %s\n", fd, fs1);
                     return;
-                case 0x11:            // FSGNJ.D & FSGNJN.D & FSGNJX.D
-                    if (opcode4 == 0) // FSGNJ.D
+                case 0x11: // FSGNJ.D & FSGNJN.D & FSGNJX.D
+                    NYI_IF(opcode4 >= 3, "RISC-V illegal fsgnj.d variant");
+                    if (fs1 != fs2)
                     {
-                        printf("fsgnj.d        %s, %s, %s\n", fd, fs1, fs2);
+                        const char* variants[3] = {".d ", "n.d", "x.d"};
+                        printf("fsgnj%s        %s, %s, %s\n", variants[opcode4], fd, fs1, fs2);
                     }
-                    else if (opcode4 == 1) // FSGNJN.D
+                    else // pseudos
                     {
-                        printf("fsgnjn.d       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else if (opcode4 == 2) // FSGNJX.D
-                    {
-                        printf("fsgnjx.d       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
+                        const char* names[3] = {"fmv.d ", "fneg.d", "fabs.d"};
+                        printf("%s         %s, %s\n", names[opcode4], fd, fs1);
                     }
                     return;
                 case 0x15:            // FMIN.D & FMAX.D

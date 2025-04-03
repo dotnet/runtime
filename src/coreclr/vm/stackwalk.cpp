@@ -2876,6 +2876,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     PREGDISPLAY pRD = m_crawl.GetRegisterSet();
                     SetIP(pRD->pCurrentContext, (TADDR)pTOSInterpMethodContextFrame->ip);
                     SetSP(pRD->pCurrentContext, dac_cast<TADDR>(pTOSInterpMethodContextFrame));
+                    SetFP(pRD->pCurrentContext, (TADDR)pTOSInterpMethodContextFrame->pStack);
                     pRD->pCurrentContext->ContextFlags = CONTEXT_CONTROL;
                     SyncRegDisplayToCurrentContext(pRD);
                     ProcessIp(GetControlPC(pRD));
