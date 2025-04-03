@@ -99,14 +99,14 @@ public abstract class Target
     /// <param name="name">The name of the global</param>
     /// <param name="value">The value of the global if found</param>
     /// <returns>True if a global is found, false otherwise</returns>
-    public abstract bool TryReadStringGlobal(string name, [NotNullWhen(true)] out string? value);
+    public abstract bool TryReadGlobalString(string name, [NotNullWhen(true)] out string? value);
 
     /// <summary>
     /// Read a well known global from the target process as a string
     /// </summary>
     /// <param name="name">The name of the global</param>
     /// <returns>A string value</returns>
-    public abstract string ReadStringGlobal(string name);
+    public abstract string ReadGlobalString(string name);
 
     /// <summary>
     /// Read a well known global from the target process as a number in the target endianness

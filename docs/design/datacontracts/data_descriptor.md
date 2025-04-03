@@ -214,7 +214,7 @@ The global values will be in an array, with each value described by a dictionary
 * `"type": "type name"` the type of the global value
 * optional `"value": VALUE | [ int ] ` the value of the global value, or an offset in an auxiliary array containing the value.
 
-The `VALUE` may be either a number of string. JSON numeric constants are always parsed as numbers. JSON strings are always parsed as strings and may additionally parse as a hex (with prefix `0x` or `0X`) or decimal number.
+The `VALUE` may be either a number or a string. JSON numeric constants are always parsed as numbers. JSON strings are always parsed as strings and may additionally parse as a hex (with prefix `0x` or `0X`) or decimal number.
 Numeric constants must be within the range of the type of the global value.
 
 
@@ -225,7 +225,7 @@ The global values will be in a dictionary, with each key being the name of a glo
 * `[VALUE | [int], "type name"]` the type and value of a global
 * `VALUE | [int]` just the value of a global
 
-`VALUE` may be either a number of string. JSON numeric constants are always parsed as numbers. JSON strings are always parsed as strings and may additionally parse as a hex (with prefix `0x` or `0X`) or decimal number.
+`VALUE` may be either a number or a string. JSON numeric constants are always parsed as numbers. JSON strings are always parsed as strings and may additionally parse as a hex (with prefix `0x` or `0X`) or decimal number.
 Numeric constants must be within the range of the type of the global value.
 
 Note that a two element array is unambiguously "type and value", whereas a one-element array is

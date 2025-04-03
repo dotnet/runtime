@@ -297,10 +297,10 @@ public unsafe class TargetTests
         {
             string actualString;
 
-            Assert.True(target.TryReadStringGlobal(name, out actualString));
+            Assert.True(target.TryReadGlobalString(name, out actualString));
             AssertEqualsWithCallerInfo(value, actualString);
 
-            actualString = target.ReadStringGlobal(name);
+            actualString = target.ReadGlobalString(name);
             AssertEqualsWithCallerInfo(value, actualString);
 
             if (numericValue != null)

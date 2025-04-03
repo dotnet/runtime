@@ -132,9 +132,9 @@ internal class TestPlaceholderTarget : Target
         throw new NotImplementedException();
     }
 
-    public override string ReadStringGlobal(string name)
+    public override string ReadGlobalString(string name)
     {
-        if (TryReadStringGlobal(name, out string? value))
+        if (TryReadGlobalString(name, out string? value))
         {
             return value;
         }
@@ -142,7 +142,7 @@ internal class TestPlaceholderTarget : Target
         throw new NotImplementedException();
     }
 
-    public override bool TryReadStringGlobal(string name, [NotNullWhen(true)] out string? value)
+    public override bool TryReadGlobalString(string name, [NotNullWhen(true)] out string? value)
     {
         value = null;
 

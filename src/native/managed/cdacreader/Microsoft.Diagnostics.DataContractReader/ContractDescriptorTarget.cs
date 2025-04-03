@@ -555,7 +555,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return value.Value;
     }
 
-    public override string ReadStringGlobal(string name)
+    public override string ReadGlobalString(string name)
         => ReadStringGlobal(name, out _);
 
     public string ReadStringGlobal(string name, out string? type)
@@ -566,7 +566,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return value;
     }
 
-    public override bool TryReadStringGlobal(string name, [NotNullWhen(true)] out string? value)
+    public override bool TryReadGlobalString(string name, [NotNullWhen(true)] out string? value)
         => TryReadStringGlobal(name, out value, out _);
 
     public bool TryReadStringGlobal(string name, [NotNullWhen(true)] out string? value, out string? type)
