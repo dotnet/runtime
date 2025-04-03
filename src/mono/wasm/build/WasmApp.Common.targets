@@ -263,7 +263,13 @@
     <_WasmProfilers Condition="'$(WasmPerfInstrumentation)' != ''">browser:stacks,callspec=$(WasmPerfInstrumentation)</_WasmProfilers>
     <_WasmProfilers Condition="'$(WasmProfilers)' != ''">$(_WasmProfilers);$(WasmProfilers)</_WasmProfilers>
   </PropertyGroup>
-
+  <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
+    <_MonoComponent Include="debugger" />
+    <_MonoComponent Include="hot_reload" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(WasmPerfTracing)' == 'true'">
+    <_MonoComponent Include="diagnostics_tracing" />
+  </ItemGroup>
   <!-- PUBLISH -->
 
   <!-- public top-level target for Build -->

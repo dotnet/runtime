@@ -309,13 +309,6 @@
       <WasmClang>$(EmscriptenUpstreamEmscriptenPath)emcc</WasmClang>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
-      <_MonoComponent Include="debugger" />
-      <_MonoComponent Include="hot_reload" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(WasmPerfTracing)' == 'true'">
-      <_MonoComponent Include="diagnostics_tracing" />
-    </ItemGroup>
     <ItemGroup >
       <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-aot.a" Condition="$(_WasmProfilers.Contains('aot'))" />
       <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-browser.a" Condition="$(_WasmProfilers.Contains('browser'))" />
