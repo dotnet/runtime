@@ -650,11 +650,22 @@ void ConfigDWORD::init(const CLRConfig::ConfigDWORDInfo & info)
     }
     CONTRACTL_END;
 
-    // make sure that the memory was zero initialized
-    _ASSERTE(m_inited == 0 || m_inited == 1);
-
     m_value = CLRConfig::GetConfigValue(info);
-    m_inited = 1;
+    m_inited = true;
+}
+
+/**************************************************************************/
+void ConfigString::init(const CLRConfig::ConfigStringInfo & info)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+    }
+    CONTRACTL_END;
+
+    // Note: m_value will be leaking
+    m_value = CLRConfig::GetConfigValue(info);
+    m_inited = true;
 }
 
 //---------------------------------------------------------------------------------------

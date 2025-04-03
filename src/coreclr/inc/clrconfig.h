@@ -36,6 +36,9 @@ public:
         // The configuration should be parsed using a 10 radix as opposed to the
         // default of 16.
         ParseIntegerAsBase10 = 0x4,
+
+        // The configuration value is valid for the DAC.
+        ValidForDacBuild = 0x8,
     };
 
     // Struct used to store information about where/how to find a Config DWORD.

@@ -2941,18 +2941,14 @@ public:
 /* simple wrappers around the CLRConfig and MethodNameList routines that make
    the lookup lazy */
 
-/* to be used as static variable - no constructor/destructor, assumes zero
-   initialized memory */
-
-class ConfigDWORD
+class ConfigDWORD final
 {
 public:
-    inline DWORD val(const CLRConfig::ConfigDWORDInfo & info)
+    ConfigDWORD() : m_value{ 0 }, m_inited{ false } { WRAPPER_NO_CONTRACT; }
+
+    DWORD val(const CLRConfig::ConfigDWORDInfo & info)
     {
         WRAPPER_NO_CONTRACT;
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
         if (!m_inited) init(info);
         return m_value;
     }
@@ -2962,19 +2958,18 @@ private:
 
 private:
     DWORD  m_value;
-    BYTE m_inited;
+    bool m_inited;
 };
 
 /**************************************************************************/
-class ConfigString
+class ConfigString final
 {
 public:
-    inline LPWSTR val(const CLRConfig::ConfigStringInfo & info)
+    ConfigString() : m_value{ NULL }, m_inited{ false } { WRAPPER_NO_CONTRACT; }
+
+    LPWSTR val(const CLRConfig::ConfigStringInfo & info)
     {
         WRAPPER_NO_CONTRACT;
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
         if (!m_inited) init(info);
         return m_value;
     }
@@ -2982,11 +2977,7 @@ public:
     bool isInitialized()
     {
         WRAPPER_NO_CONTRACT;
-
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        return m_inited == 1;
+        return m_inited;
     }
 
 private:
@@ -2994,39 +2985,7 @@ private:
 
 private:
     LPWSTR m_value;
-    BYTE m_inited;
-};
-
-/**************************************************************************/
-class ConfigMethodSet
-{
-public:
-    bool isEmpty()
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(m_inited == 1);
-        return m_list.IsEmpty();
-    }
-
-    bool contains(LPCUTF8 methodName, LPCUTF8 className, int argCount = -1);
-    bool contains(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
-
-    inline void ensureInit(const CLRConfig::ConfigStringInfo & info)
-    {
-        WRAPPER_NO_CONTRACT;
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        if (!m_inited) init(info);
-    }
-
-private:
-    void init(const CLRConfig::ConfigStringInfo & info);
-
-private:
-    MethodNamesListBase m_list;
-
-    BYTE m_inited;
+    bool m_inited;
 };
 
 //*****************************************************************************

@@ -240,7 +240,14 @@ namespace
         }
         CONTRACTL_END;
 
-        SUPPORTS_DAC_HOST_ONLY;
+#ifdef DACCESS_COMPILE
+        if (!CheckLookupOption(options, LookupOptions::ValidForDacBuild))
+        {
+            LOG((LF_CORDB, LL_ALWAYS, "ConfigDWORD, '%s', is not valid for DAC. Mark it with LookupOptions::ValidForDacBuild to enable.\n", name));
+            *result = defValue;
+            return S_OK;
+        }
+#endif // DACCESS_COMPILE
 
         FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
@@ -277,6 +284,14 @@ namespace
             FORBID_FAULT;
         }
         CONTRACTL_END;
+
+#ifdef DACCESS_COMPILE
+        if (!CheckLookupOption(options, LookupOptions::ValidForDacBuild))
+        {
+            LOG((LF_CORDB, LL_ALWAYS, "ConfigString, '%s', is not valid for DAC. Mark it with LookupOptions::ValidForDacBuild to enable.\n", name));
+            return NULL;
+        }
+#endif // DACCESS_COMPILE
 
         NewArrayHolder<WCHAR> ret(NULL);
 
