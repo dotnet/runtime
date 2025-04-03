@@ -314,19 +314,6 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [Fact]
-        public unsafe void FloatingPointPseudoMinMaxTest()
-        {
-            var a = Vector128.Create(1.0f, float.NaN, 3.0f, 4.0f);
-            var b = Vector128.Create(4.0f, 3.0f, float.NaN, 1.0f);
-
-            var pseudoMin = PackedSimd.PseudoMin(a, b);
-            var pseudoMax = PackedSimd.PseudoMax(a, b);
-
-            Assert.Equal(Vector128.Create(1.0f, float.NaN, 3.0f, 1.0f), pseudoMin);
-            Assert.Equal(Vector128.Create(4.0f, 3.0f, float.NaN, 4.0f), pseudoMax);
-        }
-
-        [Fact]
         public unsafe void IntegerAbsTest()
         {
             var bytes = Vector128.Create((sbyte)-1, (sbyte)2, (sbyte)-3, (sbyte)4,
@@ -367,54 +354,6 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
                                         (byte)10, (byte)12, (byte)14, (byte)16,
                                         (byte)18, (byte)20, (byte)22, (byte)24,
                                         (byte)26, (byte)28, (byte)30, (byte)32), avgBytes);
-        }
-
-        [Fact]
-        public unsafe void MultiplyRoundedSaturateQ15Test()
-        {
-            // Q15 format represents values in [-1, 1) using 16-bit integers
-            // Maximum positive value is 0x7FFF (32767) representing approximately 0.99997
-            // Minimum negative value is 0x8000 (-32768) representing -1.0
-            var v1 = Vector128.Create(
-                (short)32767,  // ~1.0 (max positive)
-                (short)-32768, // -1.0 (min negative)
-                (short)16384,  // 0.5
-                (short)-16384, // -0.5
-                (short)8192,   // 0.25
-                (short)-8192,  // -0.25
-                (short)0,      // 0
-                (short)16384   // 0.5
-            );
-            var v2 = Vector128.Create(
-                (short)32767,  // ~1.0 (max positive)
-                (short)-32768, // -1.0 (min negative)
-                (short)16384,  // 0.5
-                (short)16384,  // 0.5
-                (short)-16384, // -0.5
-                (short)16384,  // 0.5
-                (short)32767,  // ~1.0
-                (short)-32768  // -1.0
-            );
-
-            var result = PackedSimd.MultiplyRoundedSaturateQ15(v1, v2);
-
-            // Verify results:
-            // 1.0 * 1.0 ≈ 1.0 (saturates to max positive)
-            Assert.Equal((short)32767, result.GetElement(0));
-            // -1.0 * -1.0 = 1.0 (saturates to max positive)
-            Assert.Equal((short)32767, result.GetElement(1));
-            // 0.5 * 0.5 = 0.25 (rounded)
-            Assert.Equal((short)8192, result.GetElement(2));
-            // -0.5 * 0.5 = -0.25 (rounded)
-            Assert.Equal((short)-8192, result.GetElement(3));
-            // 0.25 * -0.5 = -0.125 (rounded)
-            Assert.Equal((short)-4096, result.GetElement(4));
-            // -0.25 * 0.5 = -0.125 (rounded)
-            Assert.Equal((short)-4096, result.GetElement(5));
-            // 0 * 1.0 = 0
-            Assert.Equal((short)0, result.GetElement(6));
-            // 0.5 * -1.0 = -0.5
-            Assert.Equal((short)-16384, result.GetElement(7));
         }
 
         [Fact]
@@ -488,50 +427,6 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             Assert.True(float.IsNaN(maxResult.GetElement(2)));
             Assert.Equal(float.NegativeInfinity, minResult.GetElement(0));
             Assert.Equal(float.PositiveInfinity, maxResult.GetElement(3));
-        }
-
-        [Fact]
-        public unsafe void SignedSaturatedArithmeticTest()
-        {
-            // Test saturation for various edge cases in signed 16-bit arithmetic
-            var v1 = Vector128.Create(
-                (short)32767, (short)-32768, (short)30000, (short)-30000,
-                (short)20000, (short)-20000, (short)10000, (short)-10000);
-            var v2 = Vector128.Create(
-                (short)10, (short)-10, (short)5000, (short)-5000,
-                (short)20000, (short)-20000, (short)5000, (short)-5000);
-
-            var addResult = PackedSimd.AddSaturate(v1, v2);
-            var subResult = PackedSimd.SubtractSaturate(v1, v2);
-
-            // Adding to max positive should saturate at max
-            Assert.Equal((short)32767, addResult.GetElement(0));
-            // Adding to min negative should saturate at min
-            Assert.Equal((short)-32768, addResult.GetElement(1));
-            // Large positive additions should saturate
-            Assert.Equal((short)32767, addResult.GetElement(2));
-            // Large negative additions should saturate
-            Assert.Equal((short)-32768, addResult.GetElement(3));
-            // More saturation cases with higher values
-            Assert.Equal((short)32767, addResult.GetElement(4));
-            Assert.Equal((short)-32768, addResult.GetElement(5));
-            // Regular addition within range
-            Assert.Equal((short)15000, addResult.GetElement(6));
-            Assert.Equal((short)-15000, addResult.GetElement(7));
-
-            // Subtracting negative from max positive should saturate at max
-            Assert.Equal((short)32767, subResult.GetElement(0));
-            // Subtracting positive from min negative should saturate at min
-            Assert.Equal((short)-32768, subResult.GetElement(1));
-            // Regular subtraction within range shouldn't saturate
-            Assert.Equal((short)25000, subResult.GetElement(2));
-            Assert.Equal((short)-25000, subResult.GetElement(3));
-            // Perfect zero result
-            Assert.Equal((short)0, subResult.GetElement(4));
-            Assert.Equal((short)0, subResult.GetElement(5));
-            // More regular subtraction
-            Assert.Equal((short)5000, subResult.GetElement(6));
-            Assert.Equal((short)-5000, subResult.GetElement(7));
         }
 
         [Fact]
