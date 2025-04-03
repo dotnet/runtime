@@ -648,7 +648,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
     }
 
 #ifndef HOST_UNIX
-    // First pass (filtering)
+    // First pass (searching)
     if (!(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
     {
         // If the exception is a breakpoint, let it go. The managed exception handling
@@ -676,7 +676,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
 #endif
     }
 
-    // Second pass (handling)
+    // Second pass (unwinding)
     GCX_COOP();
     ThreadExceptionState* pExState = pThread->GetExceptionState();
     ExInfo *pPrevExInfo = (ExInfo*)pExState->GetCurrentExceptionTracker();
