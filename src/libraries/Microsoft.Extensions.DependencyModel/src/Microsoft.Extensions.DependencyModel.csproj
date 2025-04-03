@@ -30,7 +30,7 @@ By default, the dependency manifest contains information about the application's
     <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(ToolsetTargetFramework)'))">
     <PackageReference Include="System.Text.Encodings.Web" Version="$(SystemTextEncodingsWebToolsetVersion)" />
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
   </ItemGroup>
