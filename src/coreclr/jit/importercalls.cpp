@@ -10227,14 +10227,18 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
 #ifdef TARGET_RISCV64
-    op2 = impPopStack().val;
-    op1 = impPopStack().val;
-
     GenTree *op1Clone = nullptr, *op2Clone = nullptr;
+
+    op2 = impPopStack().val;
     if (!isNumber)
     {
-        op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_NONE, nullptr DEBUGARG("Clone op1 for Math.Min/Max non-Number"));
-        op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_NONE, nullptr DEBUGARG("Clone op2 for Math.Min/Max non-Number"));
+        op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op2 for Math.Min/Max non-Number"));
+    }
+
+    op1 = impPopStack().val;
+    if (!isNumber)
+    {
+        op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op1 for Math.Min/Max non-Number"));
     }
 
     static const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
