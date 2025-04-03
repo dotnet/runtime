@@ -2,7 +2,6 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
-  targetRid: ''
   creator: ''
   helixQueues: ''
 
@@ -11,7 +10,7 @@ steps:
     parameters:
       DisplayNamePrefix: Send to Helix
       HelixProjectPath: src/installer/tests/helixpublish.proj
-      HelixProjectArguments: /p:Configuration=${{ parameters.buildConfig }} /p:TargetArchitecture=${{ parameters.archType }} /p:TargetRuntimeIdentifier=${{ parameters.targetRid }} /p:TargetOS=${{ parameters.osGroup }}
+      HelixProjectArguments: /p:Configuration=${{ parameters.buildConfig }} /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }}
       HelixTargetQueues: ${{ join(';', parameters.helixQueues) }}
       Creator: ${{ parameters.creator }}
       ${{ if eq(variables['System.TeamProject'], 'internal') }}:
