@@ -177,6 +177,37 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.RunOnce().Distinct(new AnagramEqualityComparer()), new AnagramEqualityComparer());
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public void HashSetIsNoop(bool withDefaultHashSetComparer, bool withDefaultDistinctComparer)
+        {
+            HashSet<string> source = new(["Bob", "Tim", "bBo", "miT", "Robert", "iTm"], withDefaultHashSetComparer ? EqualityComparer<string>.Default : null);
+
+            Assert.Same(source, source.Distinct(withDefaultDistinctComparer ? EqualityComparer<string>.Default : null));
+        }
+
+        [Fact]
+        public void HashSetWithMatchingComparersIsNoop()
+        {
+            HashSet<string> source = new(["Bob", "Tim", "bBo", "miT", "Robert", "iTm"], StringComparer.OrdinalIgnoreCase);
+
+            Assert.Same(source, source.Distinct(StringComparer.OrdinalIgnoreCase));
+        }
+
+        [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public void HashSetWithDifferentComparersIsNotNoop(bool withHashSetComparer, bool withDistinctComparer)
+        {
+            HashSet<string> source = new(["Bob", "Tim", "bBo", "miT", "Robert", "iTm"], withHashSetComparer ? StringComparer.InvariantCultureIgnoreCase : null);
+
+            Assert.NotSame(source, source.Distinct(withDistinctComparer ? StringComparer.InvariantCulture : null));
+        }
+
         [Theory, MemberData(nameof(SequencesWithDuplicates))]
         public void FindDistinctAndValidate<T>(IEnumerable<T> original)
         {
