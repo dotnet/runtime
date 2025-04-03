@@ -340,6 +340,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 
     switch (intrinsicId)
     {
+#ifdef FEATURE_SIMD
         case NI_Vector128_Shuffle:
         case NI_Vector128_ShuffleNative:
         case NI_Vector128_ShuffleNativeFallback:
@@ -435,6 +436,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             }
             break;
         }
+#endif // FEATURE_SIMD
 
         default:
         {

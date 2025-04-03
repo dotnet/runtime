@@ -1215,9 +1215,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector64_CreateScalar:
                             case NI_Vector64_CreateScalarUnsafe:
 #endif // TARGET_ARM64
+#if defined(FEATURE_SIMD)
                             case NI_Vector128_Create:
                             case NI_Vector128_CreateScalar:
                             case NI_Vector128_CreateScalarUnsafe:
+#endif // FEATURE_SIMD
 #if defined(TARGET_XARCH)
                             case NI_BMI1_TrailingZeroCount:
                             case NI_BMI1_X64_TrailingZeroCount:
@@ -1457,6 +1459,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector64_AsUInt64:
                             case NI_Vector64_op_UnaryPlus:
 #endif // TARGET_XARCH
+#if defined(FEATURE_SIMD)
                             case NI_Vector128_As:
                             case NI_Vector128_AsByte:
                             case NI_Vector128_AsDouble:
@@ -1472,6 +1475,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_AsUInt64:
                             case NI_Vector128_AsVector4:
                             case NI_Vector128_op_UnaryPlus:
+#endif // FEATURE_SIMD
 #if defined(TARGET_XARCH)
                             case NI_Vector256_As:
                             case NI_Vector256_AsByte:
@@ -1517,7 +1521,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
                             }
 
-#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
 #if defined(TARGET_ARM64)
                             case NI_Vector64_get_AllBitsSet:
                             case NI_Vector64_get_One:
@@ -1534,7 +1538,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector512_get_One:
                             case NI_Vector512_get_Zero:
 #endif // TARGET_XARCH
-#endif // FEATURE_HW_INTRINSICS
                             {
                                 // These always produce a vector constant
 
@@ -1547,6 +1550,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                                 break;
                             }
+#endif // FEATURE_SIMD
 
                             case NI_SRCS_UNSAFE_NullRef:
                             case NI_SRCS_UNSAFE_SizeOf:

@@ -176,7 +176,7 @@ ValueNumFuncDef(ADD_UN_OVF, 2, true, false, false)  // unsigned overflow checkin
 ValueNumFuncDef(SUB_UN_OVF, 2, false, false, false)
 ValueNumFuncDef(MUL_UN_OVF, 2, true, false, false)
 
-#ifdef FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
 ValueNumFuncDef(SimdType, 2, false, false, false)  // A value number function to compose a SIMD type
 #endif
 
@@ -201,8 +201,10 @@ ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((
     //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
 
 #elif defined (TARGET_RISCV64)
-    //TODO-RISCV64-CQ: add RISCV64's Hardware Intrinsics Instructions if supported.
-
+#define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((flag) & HW_Flag_Commutative) >> 0, false, false)   // All of the HARDWARE_INTRINSICS for riscv64
+#include "hwintrinsiclistriscv64.h"
+#define VNF_HWI_FIRST FIRST_NI_RiscV64Base
 #else
 #error Unsupported platform
 #endif
