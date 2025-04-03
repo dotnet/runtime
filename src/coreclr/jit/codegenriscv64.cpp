@@ -883,10 +883,6 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     if (uRegSlots >= 12)
     {
-        // we make sure that the loop will have an even number of slots,
-        // if there is an odd number of slots, the last one will be handled later
-        ssize_t uLoopBytes = (uRegSlots & ~1) * REGSIZE_BYTES;
-
         regNumber rEndAddr;
         noway_assert(availMask != RBM_NONE);
         regMask  = genFindLowestBit(availMask);
@@ -896,15 +892,39 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         // rEndAddr is not a live incoming argument reg
         assert((genRegMask(rEndAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
 
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rEndAddr, rAddr, uLoopBytes);
+        // we make sure that the loop will have an even number of slots,
+        // if there is an odd number of slots, the last one will be handled later
 
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0);
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, REGSIZE_BYTES);
+        ssize_t uLoopBytes = (uRegSlots & ~3) * REGSIZE_BYTES;
 
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES);
-        GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rEndAddr, -3 << 2);
+        if (uLoopBytes > 0)
+        {
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rEndAddr, rAddr, uLoopBytes);
 
-        uLclBytes %= REGSIZE_BYTES * 2;
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, REGSIZE_BYTES);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 2 * REGSIZE_BYTES);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 3 * REGSIZE_BYTES);
+
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES);
+            GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rEndAddr, -5 << 2);
+
+            GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rAddr, rEndAddr, REG_ZERO);
+
+            uLclBytes -= uLoopBytes;
+        }
+
+        uLoopBytes = (uRegSlots & ~1) * REGSIZE_BYTES - uLoopBytes;
+
+        if (uLoopBytes > 0)
+        {
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, REGSIZE_BYTES);
+
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, uLoopBytes);
+
+            uLclBytes -= uLoopBytes;
+        }
     }
     else
     {
