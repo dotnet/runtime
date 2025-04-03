@@ -351,7 +351,7 @@ INTERP_WASM_SIMD_INTRINSIC_V_V  (ConvertToSingle, U4, wasm_f32x4_convert_u32x4, 
 INTERP_WASM_SIMD_INTRINSIC_V_V  (ConvertToSingle, R8, wasm_f32x4_demote_f64x2_zero, 0x5e)
 INTERP_WASM_SIMD_INTRINSIC_V_V  (ConvertToDoubleLower, I4, wasm_f64x2_convert_low_i32x4, 0xfe)
 INTERP_WASM_SIMD_INTRINSIC_V_V  (ConvertToDoubleLower, U4, wasm_f64x2_convert_low_u32x4, 0xff)
-INTERP_WASM_SIMD_INTRINSIC_V_V  (ConvertToDoubleLower, R8, wasm_f64x2_promote_low_f32x4, 0x5f)
+INTERP_WASM_SIMD_INTRINSIC_V_V  (ConvertToDoubleLower, R4, wasm_f64x2_promote_low_f32x4, 0x5f)
 INTERP_WASM_SIMD_INTRINSIC_V_V  (ConvertToInt32Saturate, R4, wasm_i32x4_trunc_sat_f32x4, 0xf8)
 INTERP_WASM_SIMD_INTRINSIC_V_V  (ConvertToUInt32Saturate, R4, wasm_u32x4_trunc_sat_f32x4, 0xf9)
 INTERP_WASM_SIMD_INTRINSIC_V_V  (ConvertToInt32Saturate, R8, wasm_i32x4_trunc_sat_f64x2_zero, 0xfc)

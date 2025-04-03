@@ -127,7 +127,6 @@ static void DoEHLog(DWORD lvl, _In_z_ const char *fmt, ...);
 #define EH_LOG(expr)
 #endif
 
-TrackerAllocator    g_theTrackerAllocator;
 uint32_t            g_exceptionCount;
 
 void FixContext(PCONTEXT pContextRecord)
@@ -154,40 +153,6 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 BOOL HandleHardwareException(PAL_SEHException* ex);
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
 #endif // TARGET_UNIX
-
-static ExceptionTracker* GetTrackerMemory()
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        NOTHROW;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return g_theTrackerAllocator.GetTrackerMemory();
-}
-
-void FreeTrackerMemory(ExceptionTracker* pTracker, TrackerMemoryType mem)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (mem & memManaged)
-    {
-        pTracker->ReleaseResources();
-    }
-
-    if (mem & memUnmanaged)
-    {
-        g_theTrackerAllocator.FreeTrackerMemory(pTracker);
-    }
-}
 
 static inline void UpdatePerformanceMetrics(CrawlFrame *pcfThisFrame, BOOL bIsRethrownException, BOOL bIsNewException)
 {
@@ -221,8 +186,6 @@ void InitializeExceptionHandling()
     EH_LOG((LL_INFO100, "InitializeExceptionHandling(): ExceptionTracker size: 0x%x bytes\n", sizeof(ExceptionTracker)));
 
     CLRAddVectoredHandlers();
-
-    g_theTrackerAllocator.Init();
 
 #ifdef TARGET_UNIX
     // Register handler of hardware exceptions like null reference in PAL
@@ -907,31 +870,6 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef _DEBUG
-inline bool ExceptionTracker::IsValid()
-{
-    bool fRetVal = false;
-
-    EX_TRY
-    {
-        Thread* pThisThread = GetThreadNULLOk();
-        if (m_pThread == pThisThread)
-        {
-            fRetVal = true;
-        }
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    if (!fRetVal)
-    {
-        EH_LOG((LL_ERROR, "ExceptionTracker::IsValid() failed!  this = 0x%p\n", this));
-    }
-
-    return fRetVal;
-}
-
 //
 // static
 UINT_PTR ExceptionTracker::DebugComputeNestingLevel()
@@ -1784,136 +1722,6 @@ void ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord, UINT_PTR ReturnValue, UINT_
     UNREACHABLE();
 }
 #endif // !TARGET_UNIX
-
-void TrackerAllocator::Init()
-{
-    void* pvFirstPage = (void*)new BYTE[TRACKER_ALLOCATOR_PAGE_SIZE];
-
-    ZeroMemory(pvFirstPage, TRACKER_ALLOCATOR_PAGE_SIZE);
-
-    m_pFirstPage = (Page*)pvFirstPage;
-
-    _ASSERTE(NULL == m_pFirstPage->m_header.m_pNext);
-    _ASSERTE(0    == m_pFirstPage->m_header.m_idxFirstFree);
-
-    m_pCrst = new Crst(CrstException, CRST_UNSAFE_ANYMODE);
-
-    EH_LOG((LL_INFO100, "TrackerAllocator::Init() succeeded..\n"));
-}
-
-void TrackerAllocator::Terminate()
-{
-    Page* pPage = m_pFirstPage;
-
-    while (pPage)
-    {
-        Page* pDeleteMe = pPage;
-        pPage = pPage->m_header.m_pNext;
-        delete [] pDeleteMe;
-    }
-    delete m_pCrst;
-}
-
-ExceptionTracker* TrackerAllocator::GetTrackerMemory()
-{
-    CONTRACT(ExceptionTracker*)
-    {
-        GC_TRIGGERS;
-        NOTHROW;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    _ASSERTE(NULL != m_pFirstPage);
-
-    Page* pPage = m_pFirstPage;
-
-    ExceptionTracker* pTracker = NULL;
-
-    for (int i = 0; i < TRACKER_ALLOCATOR_MAX_OOM_SPINS; i++)
-    {
-        { // open lock scope
-            CrstHolder  ch(m_pCrst);
-
-            while (pPage)
-            {
-                int idx;
-                for (idx = 0; idx < NUM_TRACKERS_PER_PAGE; idx++)
-                {
-                    pTracker = &(pPage->m_rgTrackers[idx]);
-                    if (pTracker->m_pThread == NULL)
-                    {
-                        break;
-                    }
-                }
-
-                if (idx < NUM_TRACKERS_PER_PAGE)
-                {
-                    break;
-                }
-                else
-                {
-                    if (NULL == pPage->m_header.m_pNext)
-                    {
-                        Page* pNewPage = (Page*) new (nothrow) BYTE[TRACKER_ALLOCATOR_PAGE_SIZE];
-
-                        if (pNewPage)
-                        {
-                            STRESS_LOG0(LF_EH, LL_INFO10, "TrackerAllocator:  allocated page\n");
-                            pPage->m_header.m_pNext = pNewPage;
-                            ZeroMemory(pPage->m_header.m_pNext, TRACKER_ALLOCATOR_PAGE_SIZE);
-                        }
-                        else
-                        {
-                            STRESS_LOG0(LF_EH, LL_WARNING, "TrackerAllocator:  failed to allocate a page\n");
-                            pTracker = NULL;
-                        }
-                    }
-
-                    pPage = pPage->m_header.m_pNext;
-                }
-            }
-
-            if (pTracker)
-            {
-                Thread* pThread  = GetThread();
-                _ASSERTE(NULL != pPage);
-                ZeroMemory(pTracker, sizeof(*pTracker));
-                pTracker->m_pThread = pThread;
-                EH_LOG((LL_INFO100, "TrackerAllocator: allocating tracker 0x%p, thread = 0x%p\n", pTracker, pTracker->m_pThread));
-                break;
-            }
-        } // end lock scope
-
-        //
-        // We could not allocate a new page of memory.  This is a fatal error if it happens twice (nested)
-        // on the same thread because we have only one m_OOMTracker.  We will spin hoping for another thread
-        // to give back to the pool or for the allocation to succeed.
-        //
-
-        ClrSleepEx(TRACKER_ALLOCATOR_OOM_SPIN_DELAY, FALSE);
-        STRESS_LOG1(LF_EH, LL_WARNING, "TrackerAllocator:  retry #%d\n", i);
-    }
-
-    RETURN pTracker;
-}
-
-void TrackerAllocator::FreeTrackerMemory(ExceptionTracker* pTracker)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // mark this entry as free
-    EH_LOG((LL_INFO100, "TrackerAllocator: freeing tracker 0x%p, thread = 0x%p\n", pTracker, pTracker->m_pThread));
-    CONSISTENCY_CHECK(pTracker->IsValid());
-    InterlockedExchangeT(&(pTracker->m_pThread), NULL);
-}
 
 #ifdef TARGET_WINDOWS
 // This is Windows specific implementation as it is based upon the notion of collided unwind that is specific
@@ -3156,86 +2964,6 @@ ExceptionTrackerBase::StackRange::StackRange()
     Reset();
 #endif // DACCESS_COMPILE
 }
-
-ExceptionTracker::EnclosingClauseInfo::EnclosingClauseInfo()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_fEnclosingClauseIsFunclet = false;
-    m_dwEnclosingClauseOffset   = 0;
-    m_uEnclosingClauseCallerSP  = 0;
-}
-
-ExceptionTracker::EnclosingClauseInfo::EnclosingClauseInfo(bool     fEnclosingClauseIsFunclet,
-                                                           DWORD    dwEnclosingClauseOffset,
-                                                    UINT_PTR uEnclosingClauseCallerSP)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_fEnclosingClauseIsFunclet = fEnclosingClauseIsFunclet;
-    m_dwEnclosingClauseOffset   = dwEnclosingClauseOffset;
-    m_uEnclosingClauseCallerSP  = uEnclosingClauseCallerSP;
-}
-
-bool ExceptionTracker::EnclosingClauseInfo::EnclosingClauseIsFunclet()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fEnclosingClauseIsFunclet;
-}
-
-DWORD ExceptionTracker::EnclosingClauseInfo::GetEnclosingClauseOffset()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_dwEnclosingClauseOffset;
-}
-
-UINT_PTR ExceptionTracker::EnclosingClauseInfo::GetEnclosingClauseCallerSP()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_uEnclosingClauseCallerSP;
-}
-
-void ExceptionTracker::EnclosingClauseInfo::SetEnclosingClauseCallerSP(UINT_PTR callerSP)
-{
-    LIMITED_METHOD_CONTRACT;
-    m_uEnclosingClauseCallerSP = callerSP;
-}
-
-bool ExceptionTracker::EnclosingClauseInfo::operator==(const EnclosingClauseInfo & rhs)
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-
-    return ((this->m_fEnclosingClauseIsFunclet == rhs.m_fEnclosingClauseIsFunclet) &&
-            (this->m_dwEnclosingClauseOffset   == rhs.m_dwEnclosingClauseOffset) &&
-            (this->m_uEnclosingClauseCallerSP  == rhs.m_uEnclosingClauseCallerSP));
-}
-
-void ExceptionTracker::ReleaseResources()
-{
-#ifndef DACCESS_COMPILE
-    if (m_hThrowable)
-    {
-        if (!CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
-        {
-            DestroyHandle(m_hThrowable);
-        }
-        m_hThrowable = NULL;
-    }
-
-#ifndef TARGET_UNIX
-    // Clear any held Watson Bucketing details
-    GetWatsonBucketTracker()->ClearWatsonBucketDetails();
-#else // !TARGET_UNIX
-    if (m_fOwnsExceptionPointers)
-    {
-        PAL_FreeExceptionRecords(m_ptrs.ExceptionRecord, m_ptrs.ContextRecord);
-        m_fOwnsExceptionPointers = FALSE;
-    }
-#endif // !TARGET_UNIX
-#endif // DACCESS_COMPILE
-}
-
 
 #ifdef DACCESS_COMPILE
 void ExceptionTrackerBase::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)

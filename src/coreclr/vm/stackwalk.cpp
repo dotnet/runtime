@@ -1628,7 +1628,6 @@ StackWalkAction StackFrameIterator::Filter(void)
         fSkippingFunclet = false;
 
 #if defined(FEATURE_EH_FUNCLETS)
-        ExceptionTracker* pTracker = NULL;
         ExInfo* pExInfo = NULL;
 
         pExInfo = (PTR_ExInfo)m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
@@ -1746,70 +1745,6 @@ ProcessFuncletsForGCReporting:
                     // Check if we are in the mode of enumerating GC references (or not)
                     if (m_flags & GC_FUNCLET_REFERENCE_REPORTING)
                     {
-#ifdef TARGET_UNIX
-                        // For interleaved exception handling on non-windows systems, we need to find out if the current frame
-                        // was a caller of an already executed exception handler based on the previous exception trackers.
-                        // The handler funclet frames are already gone from the stack, so the exception trackers are the
-                        // only source of evidence about it.
-                        // This is different from Windows where the full stack is preserved until an exception is fully handled
-                        // and so we can detect it just from walking the stack.
-                        // The filter funclet frames are different, they behave the same way on Windows and Unix. They can be present
-                        // on the stack when we reach their parent frame if the filter hasn't finished running yet or they can be
-                        // gone if the filter completed running, either successfully or with unhandled exception.
-                        // So the special handling below ignores trackers belonging to filter clauses.
-                        bool fProcessingFilterFunclet = !m_sfFuncletParent.IsNull() && !(m_fProcessNonFilterFunclet || m_fProcessIntermediaryNonFilterFunclet);
-                        if (!fRecheckCurrentFrame && !fSkippingFunclet && (pTracker != NULL) && !fProcessingFilterFunclet)
-                        {
-                            // The stack walker is not skipping frames now, which means it didn't find a funclet frame that
-                            // would require skipping the current frame. If we find a tracker with caller of actual handling
-                            // frame matching the current frame, it means that the funclet stack frame was reclaimed.
-                            StackFrame sfFuncletParent;
-                            ExceptionTracker* pCurrTracker = pTracker;
-
-                            bool hasFuncletStarted = pTracker->GetEHClauseInfo()->IsManagedCodeEntered();
-
-                            while (pCurrTracker != NULL)
-                            {
-                                // Ignore exception trackers for filter clauses, since their frames are handled the same way as on Windows
-                                if (pCurrTracker->GetEHClauseInfo()->GetClauseType() != COR_PRF_CLAUSE_FILTER)
-                                {
-                                    if (hasFuncletStarted)
-                                    {
-                                        sfFuncletParent = pCurrTracker->GetCallerOfEnclosingClause();
-                                        if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
-                                        {
-                                            break;
-                                        }
-                                    }
-
-                                    sfFuncletParent = pCurrTracker->GetCallerOfCollapsedEnclosingClause();
-                                    if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
-                                    {
-                                        break;
-                                    }
-                                }
-
-                                // Funclets handling exception for trackers older than the current one were always started,
-                                // since the current tracker was created due to an exception in the funclet belonging to
-                                // the previous tracker.
-                                hasFuncletStarted = true;
-                                pCurrTracker = (PTR_ExceptionTracker)pCurrTracker->GetPreviousExceptionTracker();
-                            }
-
-                            if (pCurrTracker != NULL)
-                            {
-                                // The current frame is a parent of a funclet that was already unwound and removed from the stack
-                                // Set the members the same way we would set them on Windows when we
-                                // would detect this just from stack walking.
-                                m_sfParent = sfFuncletParent;
-                                m_sfFuncletParent = sfFuncletParent;
-                                m_fProcessNonFilterFunclet = true;
-                                m_fDidFuncletReportGCReferences = false;
-                                fSkippingFunclet = true;
-                            }
-                        }
-#endif // TARGET_UNIX
-
                         fRecheckCurrentFrame = false;
                         // Do we already have a reference to a funclet parent?
                         if (!m_sfFuncletParent.IsNull())
@@ -2095,9 +2030,8 @@ ProcessFuncletsForGCReporting:
                                         STRESS_LOG2(LF_GCROOTS, LL_INFO100,
                                             "STACKWALK: Reached parent of funclet which didn't report GC roots, since funclet is already unwound, pExInfo->m_sfCallerOfActualHandlerFrame=%p, m_sfFuncletParent=%p\n", (void*)pExInfo->m_sfCallerOfActualHandlerFrame.SP, (void*)m_sfFuncletParent.SP);
 
-                                        _ASSERT(pExInfo != NULL || pTracker != NULL);
-                                        if ((pExInfo && pExInfo->m_sfCallerOfActualHandlerFrame == m_sfFuncletParent) ||
-                                            (pTracker && pTracker->GetCallerOfActualHandlingFrame() == m_sfFuncletParent))
+                                        _ASSERT(pExInfo != NULL);
+                                        if (pExInfo && pExInfo->m_sfCallerOfActualHandlerFrame == m_sfFuncletParent)
                                         {
                                             // we should not skip reporting for this parent frame
                                             shouldSkipReporting = false;
@@ -2942,6 +2876,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     PREGDISPLAY pRD = m_crawl.GetRegisterSet();
                     SetIP(pRD->pCurrentContext, (TADDR)pTOSInterpMethodContextFrame->ip);
                     SetSP(pRD->pCurrentContext, dac_cast<TADDR>(pTOSInterpMethodContextFrame));
+                    SetFP(pRD->pCurrentContext, (TADDR)pTOSInterpMethodContextFrame->pStack);
                     pRD->pCurrentContext->ContextFlags = CONTEXT_CONTROL;
                     SyncRegDisplayToCurrentContext(pRD);
                     ProcessIp(GetControlPC(pRD));
