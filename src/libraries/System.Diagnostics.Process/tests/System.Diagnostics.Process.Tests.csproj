@@ -50,6 +50,10 @@
          Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs"
+             Link="Common\src\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs"
+             Link="Common\src\libraries\Common\src\Interop\Windows\Kernel32\Interop.FileTypes.cs" />
     <!-- Helpers -->
     <Compile Include="$(CommonTestPath)TestUtilities\System\WindowsTestFileShare.cs" Link="Common\TestUtilities\System\WindowsTestFileShare.cs" />
   </ItemGroup>
