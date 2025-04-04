@@ -19,34 +19,20 @@ namespace System
         static abstract TSignificand Power10(int exponent);
         static abstract int NumberBitsEncoding { get; }
         static abstract TValue G0G1Mask { get; }
-        static abstract TValue MostSignificantBitOfSignificandMask { get; }
-        static abstract TValue SignMask { get; }
-        static abstract int NumberBitsCombinationField { get; }
-        static abstract int NumberBitsExponent { get; }
-        static abstract TValue PositiveInfinityBits { get; }
-        static abstract TValue NegativeInfinityBits { get; }
-        static abstract TValue Zero { get; }
-        static abstract string OverflowMessage { get; }
-    }
-
-    internal interface IDecimalIeee754UnpackInfo<TSelf, TSignificand, TValue>
-        where TSelf : unmanaged, IDecimalIeee754UnpackInfo<TSelf, TSignificand, TValue>
-        where TSignificand : IBinaryInteger<TSignificand>
-        where TValue : IBinaryInteger<TValue>
-    {
-        static abstract TValue SignMask { get; }
-        static abstract TValue G0G1Mask { get; }
         static abstract TValue G0ToGwPlus1ExponentMask { get; } //G0 to G(w+1)
         static abstract TValue G2ToGwPlus3ExponentMask { get; } //G2 to G(w+3)
         static abstract TValue GwPlus2ToGwPlus4SignificandMask { get; } //G(w+2) to G(w+4)
         static abstract TValue GwPlus4SignificandMask { get; } //G(w+4)
-        static abstract int NumberBitsSignificand { get; }
-        static abstract int Precision { get; }
-        static abstract int ExponentBias { get; }
         static abstract TValue MostSignificantBitOfSignificandMask { get; }
+        static abstract TValue SignMask { get; }
+        static abstract int NumberBitsCombinationField { get; }
+        static abstract int NumberBitsExponent { get; }
+        static abstract int NumberBitsSignificand { get; }
+        static abstract TValue PositiveInfinityBits { get; }
+        static abstract TValue NegativeInfinityBits { get; }
+        static abstract TValue Zero { get; }
         static abstract int ConvertToExponent(TValue value);
         static abstract TSignificand ConvertToSignificand(TValue value);
-        static abstract TSignificand Power10(int exponent);
     }
 
     internal static partial class Number
@@ -171,7 +157,7 @@ namespace System
         }
 
         internal static DecimalIeee754<TSignificand> UnpackDecimalIeee754<TDecimal, TSignificand, TValue>(TValue value)
-            where TDecimal : unmanaged, IDecimalIeee754UnpackInfo<TDecimal, TSignificand, TValue>
+            where TDecimal : unmanaged, IDecimalIeee754ConstructorInfo<TDecimal, TSignificand, TValue>
             where TSignificand : IBinaryInteger<TSignificand>
             where TValue : IBinaryInteger<TValue>
         {
@@ -194,7 +180,7 @@ namespace System
         }
 
         internal static int CompareDecimalIeee754<TDecimal, TSignificand, TValue>(TValue currentValue, TValue otherValue)
-            where TDecimal : unmanaged, IDecimalIeee754UnpackInfo<TDecimal, TSignificand, TValue>
+            where TDecimal : unmanaged, IDecimalIeee754ConstructorInfo<TDecimal, TSignificand, TValue>
             where TSignificand : IBinaryInteger<TSignificand>
             where TValue : IBinaryInteger<TValue>
         {

@@ -14,7 +14,6 @@ namespace System.Numerics
           ISpanParsable<Decimal64>,
           IDecimalIeee754ParseAndFormatInfo<Decimal64>,
           IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>,
-          IDecimalIeee754UnpackInfo<Decimal64, long, ulong>,
           IDecimalIeee754TryParseInfo<Decimal64, long>
     {
         internal readonly ulong _value;
@@ -199,33 +198,19 @@ namespace System.Numerics
 
         static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.SignMask => SignMask;
 
-        static string IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.OverflowMessage => SR.Overflow_Decimal64;
+        static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.ConvertToExponent(ulong value) => (int)value;
 
-        static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.ConvertToExponent(ulong value) => (int)value;
+        static long IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.ConvertToSignificand(ulong value) => (long)value;
 
-        static long IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.ConvertToSignificand(ulong value) => (long)value;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.G0ToGwPlus1ExponentMask => 0x7FE0_0000_0000_0000;
 
-        static long IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.Power10(int exponent) => Int64Powers10[exponent];
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.G2ToGwPlus3ExponentMask => 0x1FF8_0000_0000_0000;
 
-        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.SignMask => SignMask;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.GwPlus2ToGwPlus4SignificandMask => 0x001F_FFFF_FFFF_FFFF;
 
-        static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.ExponentBias => Bias;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.GwPlus4SignificandMask => 0x0007_FFFF_FFFF_FFFF;
 
-        static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.Precision => NumberDigitsPrecision;
-
-        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.G0G1Mask => G0G1Mask;
-
-        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.G0ToGwPlus1ExponentMask => 0x7FE0_0000_0000_0000;
-
-        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.G2ToGwPlus3ExponentMask => 0x1FF8_0000_0000_0000;
-
-        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.GwPlus2ToGwPlus4SignificandMask => 0x001F_FFFF_FFFF_FFFF;
-
-        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.GwPlus4SignificandMask => 0x0007_FFFF_FFFF_FFFF;
-
-        static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.NumberBitsSignificand => 50;
-
-        static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
+        static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.NumberBitsSignificand => 50;
 
         static int IDecimalIeee754TryParseInfo<Decimal64, long>.DecimalNumberBufferLength => Number.Decimal64NumberBufferLength;
 

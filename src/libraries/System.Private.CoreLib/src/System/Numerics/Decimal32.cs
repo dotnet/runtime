@@ -16,7 +16,6 @@ namespace System.Numerics
           ISpanParsable<Decimal32>,
           IDecimalIeee754ParseAndFormatInfo<Decimal32>,
           IDecimalIeee754ConstructorInfo<Decimal32, int, uint>,
-          IDecimalIeee754UnpackInfo<Decimal32, int, uint>,
           IDecimalIeee754TryParseInfo<Decimal32, int>
     {
         internal readonly uint _value;
@@ -189,33 +188,19 @@ namespace System.Numerics
 
         static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.SignMask => SignMask;
 
-        static string IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.OverflowMessage => SR.Overflow_Decimal32;
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.ConvertToExponent(uint value) => (int)value;
 
-        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.SignMask => SignMask;
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.ConvertToSignificand(uint value) => (int)value;
 
-        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.ExponentBias => Bias;
+        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.G0ToGwPlus1ExponentMask => 0x7F80_0000;
 
-        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.Precision => NumberDigitsPrecision;
+        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.G2ToGwPlus3ExponentMask => 0x1FE0_0000;
 
-        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.ConvertToExponent(uint value) => (int)value;
+        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.GwPlus2ToGwPlus4SignificandMask => 0x007F_FFFF;
 
-        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.ConvertToSignificand(uint value) => (int)value;
+        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.GwPlus4SignificandMask => 0x001F_FFFF;
 
-        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.Power10(int exponent) => Int32Powers10[exponent];
-
-        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.G0G1Mask => G0G1Mask;
-
-        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.G0ToGwPlus1ExponentMask => 0x7F80_0000;
-
-        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.G2ToGwPlus3ExponentMask => 0x1FE0_0000;
-
-        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.GwPlus2ToGwPlus4SignificandMask => 0x007F_FFFF;
-
-        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.GwPlus4SignificandMask => 0x001F_FFFF;
-
-        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.NumberBitsSignificand => 20;
-
-        static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NumberBitsSignificand => 20;
 
         static int IDecimalIeee754TryParseInfo<Decimal32, int>.DecimalNumberBufferLength => Number.Decimal32NumberBufferLength;
 

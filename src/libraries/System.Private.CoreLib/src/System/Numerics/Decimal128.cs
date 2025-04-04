@@ -17,7 +17,6 @@ namespace System.Numerics
           ISpanParsable<Decimal128>,
           IDecimalIeee754ParseAndFormatInfo<Decimal128>,
           IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>,
-          IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>,
           IDecimalIeee754TryParseInfo<Decimal128, Int128>
     {
 #if BIGENDIAN
@@ -191,33 +190,19 @@ namespace System.Numerics
 
         static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.SignMask => SignMask;
 
-        static string IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.OverflowMessage => SR.Overflow_Decimal128;
+        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.ConvertToExponent(UInt128 value) => (int)value;
 
-        static int IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.ConvertToExponent(UInt128 value) => (int)value;
+        static Int128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.ConvertToSignificand(UInt128 value) => (Int128)value;
 
-        static Int128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.ConvertToSignificand(UInt128 value) => (Int128)value;
+        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.G0ToGwPlus1ExponentMask => new UInt128(0x7FFE_0000_0000_0000, 0);
 
-        static Int128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.Power10(int exponent) => Int128Powers10[exponent];
+        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.G2ToGwPlus3ExponentMask => new UInt128(0x1FFF_8000_0000_0000, 0);
 
-        static UInt128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.SignMask => SignMask;
+        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.GwPlus2ToGwPlus4SignificandMask => new UInt128(0x0001_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
 
-        static int IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.ExponentBias => Bias;
+        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.GwPlus4SignificandMask => new UInt128(0x0000_7FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
 
-        static int IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.Precision => NumberDigitsPrecision;
-
-        static UInt128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.G0G1Mask => G0G1Mask;
-
-        static UInt128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.G0ToGwPlus1ExponentMask => new UInt128(0x7FFE_0000_0000_0000, 0);
-
-        static UInt128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.G2ToGwPlus3ExponentMask => new UInt128(0x1FFF_8000_0000_0000, 0);
-
-        static UInt128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.GwPlus2ToGwPlus4SignificandMask => new UInt128(0x0001_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
-
-        static UInt128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.GwPlus4SignificandMask => new UInt128(0x0000_7FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
-
-        static UInt128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
-
-        static int IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.NumberBitsSignificand => 110;
+        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.NumberBitsSignificand => 110;
 
         private static Int128[] Int128Powers10 =>
             [
