@@ -244,5 +244,35 @@ namespace System
         {
             throw new ArithmeticException(SR.Arithmetic_NaN);
         }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentNullException(string? argument)
+        {
+            throw new ArgumentNullException(argument);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowNotSupportedDimensionCollectionException()
+        {
+            throw new NotSupportedException(SR.NotSupported_DimensionCollectionSet);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArg_RankMultiDimNotSupported()
+        {
+            throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArg_NonZeroLowerBound()
+        {
+            throw new ArgumentException(SR.Arg_NonZeroLowerBound);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_NonEmptyTensor()
+        {
+            throw new ArgumentException(SR.ThrowArgument_NonEmptyTensor);
+        }
     }
 }

@@ -1135,6 +1135,117 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static void TensorSpanDimensionsTest()
+        {
+            scoped Span<int> values = [1, 2, 3, 4, 5, 6];
+            scoped Span<int> ints = new int[3];
+            var tensor = new TensorSpan<int>(new int[] { 1, 2, 3, 4, 5, 6 }, new nint[] { 2, 3 }, default);
+
+            // Make sure Dimensions returns the right values with the basic foreach
+            int index = 0;
+            foreach (var item in tensor.Dimensions)
+            {
+                Assert.Equal(2, item.Rank);
+                item.FlattenTo(ints);
+                Assert.Equal(values.Slice(index, 3), ints);
+                index += 3;
+            }
+
+            // Get an enum for dimension 1
+            var enumerator = tensor.Dimensions.GetEnumerator(1);
+            index = 0;
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(values[index++], enumerator.Current[0]);
+            }
+
+            // Make sure Dimensions.Count returns the right value
+            Assert.Equal(2, tensor.Dimensions.Count);
+
+            // Make sure Dimensions Enumerator ToArray returns the right values
+            var slices = tensor.Dimensions.GetEnumerator();
+            ints = new int[3];
+            slices.MoveNext();
+            Assert.Equal(2, tensor.Dimensions.Count);
+            slices.Current.FlattenTo(ints);
+            Assert.Equal(new int[] { 1, 2, 3 }, ints);
+            slices.MoveNext();
+            slices.Current.FlattenTo(ints);
+            Assert.Equal(new int[] { 4, 5, 6 }, ints);
+
+            // Now try a 3d tensor
+            values = [1, 2, 3, 4, 5, 6, 7, 8];
+            ints = new int[4];
+            tensor = new TensorSpan<int>(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 }, default);
+
+            index = 0;
+            foreach (var item in tensor.Dimensions)
+            {
+                Assert.Equal(3, item.Rank);
+                item.FlattenTo(ints);
+                Assert.Equal(values.Slice(index, 4), ints);
+                index += 4;
+            }
+
+            // Get an enum for dimension 1
+            enumerator = tensor.Dimensions.GetEnumerator(1);
+            index = 0;
+            ints = new int[2];
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(2, enumerator.Current.Rank);
+                enumerator.Current.FlattenTo(ints);
+                Assert.Equal(values.Slice(index, 2), ints);
+                index += 2;
+            }
+
+            // Get an enum for dimension 2
+            enumerator = tensor.Dimensions.GetEnumerator(2);
+            index = 0;
+            ints = new int[1];
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(1, enumerator.Current.Rank);
+                enumerator.Current.FlattenTo(ints);
+                Assert.Equal(values.Slice(index, 1), ints);
+                index += 1;
+            }
+
+            // Make sure reset works
+            enumerator.Reset();
+            index = 0;
+            ints = new int[1];
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(1, enumerator.Current.Rank);
+                enumerator.Current.FlattenTo(ints);
+                Assert.Equal(values.Slice(index, 1), ints);
+                index += 1;
+            }
+
+            // Make sure you can't add dimensions
+            Assert.Throws<NotSupportedException>(() =>
+            {
+                TensorSpan<int> tensor = new TensorSpan<int>(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 }, default);
+                tensor.Dimensions.Add(tensor);
+            });
+
+            // Make sure you can't clear
+            Assert.Throws<NotSupportedException>(() =>
+            {
+                TensorSpan<int> tensor = new TensorSpan<int>(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 }, default);
+                tensor.Dimensions.Clear();
+            });
+
+            // Make sure you can't remove dimensions
+            Assert.Throws<NotSupportedException>(() =>
+            {
+                TensorSpan<int> tensor = new TensorSpan<int>(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 }, default);
+                tensor.Dimensions.Remove(tensor);
+            });
+        }
+
+        [Fact]
         public static unsafe void TensorSpanPointerConstructorTests()
         {
             // Make sure basic T[] constructor works

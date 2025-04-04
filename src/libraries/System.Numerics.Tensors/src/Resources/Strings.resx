@@ -240,4 +240,16 @@
   <data name="Arithmetic_NaN" xml:space="preserve">
     <value>Function does not accept floating point Not-a-Number values.</value>
   </data>
+  <data name="NotSupported_DimensionCollectionSet" xml:space="preserve">
+    <value>Mutating a dimension collection derived from a tensor is not allowed.</value>
+  </data>
+  <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
+    <value>Only single dimensional arrays are supported for the requested action.</value>
+  </data>
+  <data name="Arg_NonZeroLowerBound" xml:space="preserve">
+    <value>The lower bound of target array must be zero.</value>
+  </data>
+  <data name="ThrowArgument_NonEmptyTensor" xml:space="preserve">
+    <value>The Tensor must not be empty.</value>
+  </data>
 </root>
