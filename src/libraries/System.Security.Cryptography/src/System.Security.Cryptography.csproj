@@ -412,6 +412,8 @@
              Link="Common\System\Security\Cryptography\PbeParameters.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
              Link="Common\System\Security\Cryptography\PemLabels.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PemKeyHelpers.Factory.cs"
+             Link="Common\System\Security\Cryptography\PemKeyHelpers.Factory.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
              Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.cs"
