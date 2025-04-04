@@ -1147,9 +1147,11 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		id = lookup_intrins (packed_simd_alias_methods, sizeof (packed_simd_alias_methods), cmethod_name);
 		gboolean is_unsigned = (atype == MONO_TYPE_U1 || atype == MONO_TYPE_U2 || atype == MONO_TYPE_U4 || atype == MONO_TYPE_U8 || atype == MONO_TYPE_U);
 		
-		// cmethod_name must match a packed simd intrinsic name, so use an alias when needed
-		// if a match with the aliased name and matching arguments is found, we use it,
-		// so be careful not to overmatch if the implementations differ (e.g. Dot)
+		// cmethod_name must match a packed simd intrinsic name, so use an alias when needed.
+		// If a match with the aliased name and matching arguments is found, we use it,
+		// so be careful not to overmatch if the implementations differ (e.g. Dot.)
+		// Failing to find a match is expected in some cases for specific types of T, we simply
+		// fall back to the regular intrinsics, then to managed looking for an implementation.
 		switch (id) {
 			case SN_LessThan:
 			case SN_op_LessThan:
