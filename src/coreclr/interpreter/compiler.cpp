@@ -402,7 +402,7 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
 
     for (int i = 0; i < pTargetBB->stackHeight; i++)
     {
-        int sVar = m_pStackPointer[i].var;
+        int sVar = m_pStackBase[i].var;
         int dVar = pTargetBB->pStackState[i].var;
         if (sVar != dVar)
         {
@@ -410,8 +410,8 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
             int32_t movOp = InterpGetMovForType(interpType, false);
 
             AddIns(movOp);
-            m_pLastNewIns->SetSVar(m_pStackPointer[i].var);
-            m_pLastNewIns->SetDVar(pTargetBB->pStackState[i].var);
+            m_pLastNewIns->SetSVar(sVar);
+            m_pLastNewIns->SetDVar(dVar);
 
             if (interpType == InterpTypeVT)
             {
