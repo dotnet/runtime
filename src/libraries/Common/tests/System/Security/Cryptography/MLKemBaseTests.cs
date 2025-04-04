@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
@@ -497,9 +498,39 @@ namespace System.Security.Cryptography.Tests
 
         private static void AssertExportPkcs8PrivateKey(MLKem kem, Action<byte[]> callback)
         {
-            byte[] pkcs8 = DoTryUntilDone(kem.TryExportPkcs8PrivateKey);
-            callback(pkcs8);
+            callback(DoTryUntilDone(kem.TryExportPkcs8PrivateKey));
             callback(kem.ExportPkcs8PrivateKey());
+        }
+
+        private static void AssertEncryptedExportPkcs8PrivateKey(
+            MLKem kem,
+            string password,
+            PbeParameters pbeParameters,
+            Action<byte[]> callback)
+        {
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+
+            callback(DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+            {
+                return kem.TryExportEncryptedPkcs8PrivateKey(
+                    password.AsSpan(),
+                    pbeParameters,
+                    destination,
+                    out bytesWritten);
+            }));
+
+            callback(DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+            {
+                return kem.TryExportEncryptedPkcs8PrivateKey(
+                    new ReadOnlySpan<byte>(passwordBytes),
+                    pbeParameters,
+                    destination,
+                    out bytesWritten);
+            }));
+
+            callback(kem.ExportEncryptedPkcs8PrivateKey(password, pbeParameters));
+            callback(kem.ExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters));
+            callback(kem.ExportEncryptedPkcs8PrivateKey(new ReadOnlySpan<byte>(passwordBytes), pbeParameters));
         }
 
         private delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
