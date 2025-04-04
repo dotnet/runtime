@@ -201,10 +201,11 @@
     </When>
   </Choose>
 
-  <ItemGroup Condition="'$(IncludeIndexRangeTypes)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+  <ItemGroup Condition="'$(IncludeIndexRangeTypes)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <Compile Include="$(CoreLibSharedDir)System\Index.cs" Link="System\Index.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Range.cs" Link="System\Range.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing.cs" Link="System\Numerics\Hashing.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
+             Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
 
   <PropertyGroup>
