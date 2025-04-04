@@ -8,6 +8,7 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Claims;
@@ -24,6 +25,17 @@ using TestUtilities;
 namespace System.Net.Quic.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
+
+    class AbortBeforeTimeout
+    {
+         [ModuleInitializer]
+         public static void Initialize()
+         {
+             Thread t = new Thread(() => { Thread.Sleep(10 * 60 * 1000); Environment.FailFast("Early Timeout"); });
+             t.IsBackground = true;
+             t.Start();
+         }
+    }
 
     public class CertificateSetup : IDisposable
     {
