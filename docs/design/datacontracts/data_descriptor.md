@@ -243,7 +243,10 @@ unambiguously "indirect value".
 <value> ::= <json_string> | <number_value>
 <number_value> ::=  <json_number> | <decimal_string> | <hex_string>
 
-<hex_string> is identified by a "0x" or "0X" prefix
+<json_string> is any JSON string element
+<json_number> is any JSON number element
+<hex_string> is a <json_string> which can be parsed as a hexadecimal number prefixed with "0x" or "0X"
+<decimal_string> is a <json_string> which can be parsed as a decimal number.
 ```
 
 #### Parsing Rules
