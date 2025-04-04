@@ -78,12 +78,12 @@ namespace System.Threading
                     // However, on OS X and NativeAOT (across all OSes), only the thread itself can set its name.
                     // Therefore, by this point the native thread is still unnamed as it has not started yet.
                     // See https://github.com/dotnet/runtime/issues/106464.
-                    Thread thread = Thread.CurrentThread;
-                    if (!string.IsNullOrEmpty(thread.Name))
-                    {
-                        // Name the underlying native thread to match the managed thread name.
-                        // thread.ThreadNameChanged(thread.Name);
-                    }
+                    // Thread thread = Thread.CurrentThread;
+                    // if (!string.IsNullOrEmpty(thread.Name))
+                    // {
+                    //     // Name the underlying native thread to match the managed thread name.
+                    //     thread.ThreadNameChanged(thread.Name);
+                    // }
 #endif
                     if (start is ThreadStart threadStart)
                     {
