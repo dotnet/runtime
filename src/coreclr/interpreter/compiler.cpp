@@ -864,6 +864,8 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     InterpreterGcInfoEncoder* gcInfoEncoder = new InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
     assert(gcInfoEncoder);
 
+    gcInfoEncoder->SetCodeLength(m_methodCodeSize);
+
     // TODO: Request slot IDs for all our locals before finalizing
 
     gcInfoEncoder->FinalizeSlotIds();
