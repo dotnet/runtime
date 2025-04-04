@@ -125,7 +125,7 @@ extends:
           - browser_wasm
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s mono.emsdk+clr.runtime -rc Release -c Release -lc $(_BuildConfig)
+            buildArgs: -s clr.runtime -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
             condition: >-
               or(
