@@ -42,15 +42,15 @@ jobs:
       runtimeVariant: minijit
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 480
-      ${{ if eq(variables['isRollingBuild'], true) }}:
+      # ${{ if eq(variables['isRollingBuild'], true) }}:
         # extra steps, run tests
-        postBuildSteps:
-          - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-            parameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraVariablesTemplates:
-          - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
 #
 # Build the whole product using CoreCLR for Android and run runtime tests with Android devices
@@ -82,15 +82,15 @@ jobs:
       runtimeVariant: minijit
       buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
       timeoutInMinutes: 480
-      ${{ if eq(variables['isRollingBuild'], true) }}:
+      # ${{ if eq(variables['isRollingBuild'], true) }}:
         # extra steps, run tests
-        postBuildSteps:
-          - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-            parameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraVariablesTemplates:
-          - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
 #
 # Android devices
