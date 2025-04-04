@@ -2620,7 +2620,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 #if defined(TARGET_WASM)
 				if (!strcmp (klass_name, "WasmBase")) {
 					if (!strcmp (tm, "get_IsSupported")) {
-						// overide the value set above
+						// override the value set above
 						*op = MINT_LDC_I4_1;
 					} else if (!strcmp (tm, "LeadingZeroCount")) {
 						if (csignature->params [0]->type == MONO_TYPE_U4 || csignature->params [0]->type == MONO_TYPE_I4)
