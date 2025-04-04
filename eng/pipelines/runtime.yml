@@ -1279,7 +1279,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
             - windows_x86
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
             nameSuffix: Installer_Build_And_Test
             buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release
@@ -1315,7 +1315,7 @@ extends:
             - windows_x64
             - osx_x64
             - linux_x64
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
             nameSuffix: Installer_Build_And_Test
             buildArgs: -s host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} -rc Release

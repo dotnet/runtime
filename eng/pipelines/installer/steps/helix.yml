@@ -6,12 +6,14 @@ parameters:
   helixQueues: ''
 
 steps:
-  - template: /eng/common/core-templates/steps/send-to-helix.yml
+  - template: /eng/common/templates/steps/send-to-helix.yml
     parameters:
       DisplayNamePrefix: Send to Helix
       HelixProjectPath: src/installer/tests/helixpublish.proj
       HelixProjectArguments: /p:Configuration=${{ parameters.buildConfig }} /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }}
-      HelixTargetQueues: ${{ join(';', parameters.helixQueues) }}
       Creator: ${{ parameters.creator }}
       ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         HelixAccessToken: $(HelixApiAccessToken)
+        HelixTargetQueues: ${{ replace(lower(join('+', parameters.helixQueues)), '.open', '') }}
+      ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        HelixTargetQueues: ${{ join('+', parameters.helixQueues) }}
