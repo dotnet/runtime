@@ -7016,7 +7016,7 @@ public:
     PhaseStatus optOptimizeBools();
     PhaseStatus optRecognizeAndOptimizeSwitchJumps();
     bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest);
-    bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
+    bool optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion = false);
 
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
@@ -11422,7 +11422,7 @@ public:
 
 #define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
 
-#define DEFAULT_INLINE_BUDGET 10 // Maximum estimated compile time increase via inlining
+#define DEFAULT_INLINE_BUDGET 20 // Maximum estimated compile time increase via inlining
 
 #define DEFAULT_MAX_FORCE_INLINE_DEPTH 1 // Methods at more than this level deep will not be force inlined
 
