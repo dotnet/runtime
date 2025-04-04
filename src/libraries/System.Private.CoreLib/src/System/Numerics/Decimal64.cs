@@ -30,30 +30,6 @@ namespace System.Numerics
         private const ulong G0G1Mask = 0x6000_0000_0000_0000;
         private const ulong SignMask = 0x8000_0000_0000_0000;
         private const ulong MostSignificantBitOfSignificandMask = 0x0020_0000_0000_0000;
-
-        public Decimal64(long significand, int exponent)
-        {
-            _value = Number.CalculateDecimalIeee754<Decimal64, long, ulong>(significand, exponent);
-        }
-
-        internal Decimal64(ulong value)
-        {
-            _value = value;
-        }
-
-        public static Decimal64 Parse(string s) => Parse(s, NumberStyles.Number, provider: null);
-
-        public static Decimal64 Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
-
-        public static Decimal64 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
-
-        public static Decimal64 Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
-
-        public static Decimal64 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
-        {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.ParseDecimal64(s, style, NumberFormatInfo.GetInstance(provider));
-        }
         private static ReadOnlySpan<long> Int64Powers10 =>
             [
                 1,
@@ -74,6 +50,67 @@ namespace System.Numerics
                 1000000000000000,
             ];
 
+        public Decimal64(long significand, int exponent)
+        {
+            _value = Number.CalculateDecimalIeee754<Decimal64, long, ulong>(significand, exponent);
+        }
+
+        internal Decimal64(ulong value)
+        {
+            _value = value;
+        }
+
+        /// <summary>
+        /// Parses a <see cref="Decimal64"/> from a <see cref="string"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <returns>The equivalent <see cref="Decimal64"/> value representing the input string. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
+        public static Decimal64 Parse(string s) => Parse(s, NumberStyles.Number, provider: null);
+
+        /// <summary>
+        /// Parses a <see cref="Decimal64"/> from a <see cref="string"/> in the given <see cref="NumberStyles"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <returns>The equivalent <see cref="Decimal64"/> value representing the input string. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
+        public static Decimal64 Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
+
+        /// <summary>
+        /// Parses a <see cref="Decimal64"/> from a <see cref="ReadOnlySpan{Char}"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="provider">A format provider.</param>
+        /// <returns>The equivalent <see cref="Decimal64"/> value representing the input string. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
+        public static Decimal64 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
+
+        /// <summary>
+        /// Parses a <see cref="Decimal64"/> from a <see cref="string"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="provider">A format provider.</param>
+        /// <returns>The equivalent <see cref="Decimal64"/> value representing the input string. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
+        public static Decimal64 Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
+
+        /// <summary>
+        /// Parses a <see cref="Decimal64"/> from a <see cref="ReadOnlySpan{Char}"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider. </param>
+        /// <returns>The equivalent <see cref="Decimal64"/> value representing the input string. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
+        public static Decimal64 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.ParseDecimal64(s, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <summary>
+        /// Parses a <see cref="Decimal64"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider.</param>
+        /// <returns>The equivalent <see cref="Decimal64"/> value representing the input string. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
         public static Decimal64 Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             if (s is null)
@@ -83,15 +120,62 @@ namespace System.Numerics
             return Parse(s.AsSpan(), style, provider);
         }
 
+        /// <summary>
+        /// Tries to parse a <see cref="Decimal64"/> from a <see cref="string"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="result">The equivalent <see cref="Decimal64"/> value representing the input string if the parse was successful. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal64"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse([NotNullWhen(true)] string? s, out Decimal64 result) => TryParse(s, NumberStyles.Number, provider: null, out result);
+
+        /// <summary>
+        /// Tries to parse a <see cref="Decimal64"/> from a <see cref="ReadOnlySpan{Char}"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="result">The equivalent <see cref="Decimal64"/> value representing the input string if the parse was successful. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal64"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, out Decimal64 result) => TryParse(s, NumberStyles.Number, provider: null, out result);
+
+        /// <summary>
+        /// Tries to parse a <see cref="Decimal64"/> from a <see cref="ReadOnlySpan{Char}"/> with the given <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="provider">A format provider. </param>
+        /// <param name="result">The equivalent <see cref="Decimal64"/> value representing the input string if the parse was successful. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal64"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal64 result) => TryParse(s, NumberStyles.Number, provider, out result);
+
+        /// <summary>
+        /// Tries to parse a <see cref="Decimal64"/> from a <see cref="string"/> with the given <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="provider">A format provider. </param>
+        /// <param name="result">The equivalent <see cref="Decimal64"/> value representing the input string if the parse was successful. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal64"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal64 result) => TryParse(s, NumberStyles.Number, provider, out result);
+
+        /// <summary>
+        /// Tries to parse a <see cref="Decimal64"/> from a <see cref="ReadOnlySpan{Char}"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider. </param>
+        /// <param name="result">The equivalent <see cref="Decimal64"/> value representing the input string if the parse was successful. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal64"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal64 result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.TryParseDecimalIeee754<Decimal64, long, char>(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
+
+        /// <summary>
+        /// Tries to parse a <see cref="Decimal64"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider. </param>
+        /// <param name="result">The equivalent <see cref="Decimal64"/> value representing the input string if the parse was successful. If the input exceeds Decimal64's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal64"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal64 result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
