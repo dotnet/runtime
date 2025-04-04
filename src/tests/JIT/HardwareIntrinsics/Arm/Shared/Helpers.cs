@@ -7687,7 +7687,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((BitConverter.SingleToInt32Bits(op1[i]) == 1 && BitConverter.SingleToInt32Bits(op2[i]) == 1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1) && (op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7697,7 +7697,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((BitConverter.DoubleToInt64Bits(op1[i]) == 1 && BitConverter.DoubleToInt64Bits(op2[i]) == 1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1) && (op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
