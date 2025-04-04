@@ -191,16 +191,18 @@ namespace System.Reflection.Metadata
                 // Backward compatibility: throw for non-empty invalid assembly names.
                 if (!_inputString.TrimStart().StartsWith(","))
                 {
-                    // No matter what throwOnError is set to, if top level assembly was not provided, CLR throws FileLoadException for invalid assembly names.
-                    if (!_parseOptions.TopLevelAssemblyWasProvided)
+                    // Reject attempt to provide top-level assembly name to Assembly.GetType
+                    if (_parseOptions.IsAssemblyGetType)
                     {
-                        throw new IO.FileLoadException(SR.InvalidAssemblyName, _inputString.ToString());
+                        if (_throwOnError)
+                        {
+                            throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
+                        }
+                        return null;
                     }
-                    // If top level was provided and user has requested for error, we throw ArgumentException.
-                    else if (_throwOnError)
-                    {
-                        throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
-                    }
+
+                    // Otherwise, no matter what throwOnError is set to, we throw FileLoadException for invalid assembly names.
+                    throw new IO.FileLoadException(SR.InvalidAssemblyName, _inputString.ToString());
                 }
 #endif
                 return null;
