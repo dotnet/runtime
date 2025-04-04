@@ -43,7 +43,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override DataCache ProcessedData { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
-    public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill);
+    public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
 
     /// <summary>
     /// Create a new target instance from a contract descriptor embedded in the target memory.
@@ -280,7 +280,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer)
     {
         // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
-        int hr = _reader.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, (uint)buffer.Length, buffer);
+        int hr = _reader.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, buffer);
         return hr == 0;
     }
 
@@ -669,9 +669,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
             => readFromTarget(address, new Span<byte>(buffer, checked((int)bytesToRead)));
 
-        public int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> buffer)
+        public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
         {
-            return getThreadContext(threadId, contextFlags, contextSize, buffer);
+            return getThreadContext(threadId, contextFlags, buffer);
         }
     }
 }

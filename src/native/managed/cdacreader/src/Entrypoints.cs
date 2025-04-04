@@ -30,11 +30,11 @@ internal static class Entrypoints
                     return readFromTarget(address, bufferPtr, (uint)buffer.Length, readContext);
                 }
             },
-            (threadId, contextFlags, contextSize, buffer) =>
+            (threadId, contextFlags, buffer) =>
             {
                 fixed (byte* bufferPtr = buffer)
                 {
-                    return readThreadContext(threadId, contextFlags, contextSize, bufferPtr, readContext);
+                    return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, readContext);
                 }
             },
             out ContractDescriptorTarget? target))
@@ -124,11 +124,11 @@ internal static class Entrypoints
                     return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
                 }
             },
-            (threadId, contextFlags, contextSize, bufferToFill) =>
+            (threadId, contextFlags, bufferToFill) =>
             {
                 fixed (byte* bufferPtr = bufferToFill)
                 {
-                    return dataTarget.GetThreadContext(threadId, contextFlags, contextSize, bufferPtr);
+                    return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
                 }
             },
             out ContractDescriptorTarget? target))
