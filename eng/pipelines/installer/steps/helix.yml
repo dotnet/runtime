@@ -9,7 +9,11 @@ steps:
     parameters:
       DisplayNamePrefix: Send to Helix
       HelixProjectPath: src/installer/tests/helixpublish.proj
-      HelixProjectArguments: -ci /p:Configuration=$(_BuildConfig) /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }}
+      HelixProjectArguments: >
+        /p:Configuration=$(_BuildConfig)
+        /p:TargetArchitecture=${{ parameters.archType }}
+        /p:TargetOS=${{ parameters.osGroup }}
+        /p:ContinuousIntegrationBuild=true
       Creator: ${{ parameters.creator }}
       ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         HelixAccessToken: $(HelixApiAccessToken)
