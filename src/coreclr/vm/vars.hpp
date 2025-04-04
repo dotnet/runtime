@@ -6,7 +6,6 @@
 // Global variables
 //
 
-
 #ifndef _VARS_HPP
 #define _VARS_HPP
 
