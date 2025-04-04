@@ -7890,6 +7890,68 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         }
     }
 
+    // If the root level caller and callee modules do not have the same runtime
+    // wrapped exception behavior, and the callee has EH, we cannot inline.
+    _ASSERTE(!pCallee->IsDynamicMethod());
+    {
+        Module* pCalleeModule = pCallee->GetModule();
+        Module* pRootModule = pOrigCaller->GetModule();
+
+        if (pRootModule->IsRuntimeWrapExceptions() != pCalleeModule->IsRuntimeWrapExceptions())
+        {
+            if (pCallee->HasILHeader())
+            {
+                COR_ILMETHOD_DECODER header(pCallee->GetILHeader(), pCallee->GetMDImport(), NULL);
+                if (header.EHCount() > 0)
+                {
+                    result = INLINE_FAIL;
+                    szFailReason = "Inlinee and root method have different wrapped exception behavior";
+                    goto exit;
+                }
+            }
+            else if (pCallee->IsIL() && pCallee->GetRVA() == 0)
+            {
+                MethodInfoHelperContext cxt{ pCallee };
+                // We will either find or create transient method details.
+                _ASSERTE(!cxt.HasTransientMethodDetails());
+
+                // IL methods with no RVA indicate there is no implementation defined in metadata.
+                // Check if we previously generated details/implementation for this method.
+                TransientMethodDetails* detailsMaybe = NULL;
+                if (FindTransientMethodDetails(pCallee, &detailsMaybe))
+                    cxt.UpdateWith(*detailsMaybe);
+
+                CORINFO_METHOD_INFO methodInfo;
+                getMethodInfoHelper(cxt, &methodInfo);
+
+                if (cxt.Header->EHCount() > 0)
+                {
+                    result = INLINE_FAIL;
+                    szFailReason = "Inlinee and root method have different wrapped exception behavior";
+                }
+
+                // If we have transient method details we need to handle
+                // the lifetime of the details.
+                if (cxt.HasTransientMethodDetails())
+                {
+                    // If we didn't find transient details, but we have them
+                    // after getting method info, store them for cleanup.
+                    if (detailsMaybe == NULL)
+                        AddTransientMethodDetails(cxt.CreateTransientMethodDetails());
+
+                    // Reset the context because ownership has either been
+                    // transferred or was found in this instance.
+                    cxt.UpdateWith({});
+                }
+
+                if (result != INLINE_PASS)
+                {
+                    goto exit;
+                }
+            }
+        }
+    }
+
 #ifdef PROFILING_SUPPORTED
     if (pOrigCallerModule->IsInliningDisabledByProfiler())
     {
