@@ -30,7 +30,7 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects): void {
         return 0;
     };
 
-    diagnosticHelpers. ds_rt_websocket_close = (client_socket :number):number => {
+    diagnosticHelpers.ds_rt_websocket_close = (client_socket :number):number => {
         // Not implemented yet
         return 0;
     };

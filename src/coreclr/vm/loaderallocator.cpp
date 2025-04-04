@@ -73,7 +73,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 #ifdef FEATURE_INTERPRETER
     m_pLastUsedInterpreterCodeHeap = NULL;
     m_pLastUsedInterpreterDynamicCodeHeap = NULL;
-#endif // FEATURE_INTERPRETER    
+#endif // FEATURE_INTERPRETER
     m_pJumpStubCache = NULL;
     m_IsCollectible = collectible;
 
@@ -374,12 +374,12 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 LoaderAllocator * pLoaderAllocator = pAssembly->GetLoaderAllocator();
                 if (pLoaderAllocator->IsCollectible())
                 {
-                    printf("LA %p ReferencesTo %d\n", pLoaderAllocator, pLoaderAllocator->m_cReferences);
+                    minipal_log_print_info("LA %p ReferencesTo %d\n", pLoaderAllocator, pLoaderAllocator->m_cReferences);
                     LoaderAllocatorSet::Iterator iter = pLoaderAllocator->m_LoaderAllocatorReferences.Begin();
                     while (iter != pLoaderAllocator->m_LoaderAllocatorReferences.End())
                     {
                         LoaderAllocator * pAllocator = *iter;
-                        printf("LARefTo: %p\n", pAllocator);
+                        minipal_log_print_info("LARefTo: %p\n", pAllocator);
                         iter++;
                     }
                 }
