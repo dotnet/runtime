@@ -212,7 +212,7 @@ resolve_native_size (MonoTypeEnum type)
 	return type;
 }
 
-static char *
+static const char *
 strip_explicit_ismid_prefix (const char *cmethod_name)
 {
 	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.", 45) == 0) {
@@ -232,7 +232,7 @@ strip_explicit_ismid_prefix (const char *cmethod_name)
 			cmethod_name += 67;
 		}
 	}
-	return cmethod_name
+	return cmethod_name;
 }
 
 // Returns if opcode was added
