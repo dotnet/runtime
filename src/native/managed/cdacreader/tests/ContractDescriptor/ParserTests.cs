@@ -134,6 +134,7 @@ public class ParserTests
                 "globalTypedNegative": [-5, "int32"],
                 "globalString": "Hello",
                 "globalTypedString": ["World", "string"],
+                "globalStringSpecialChars" : "\"Hello World\"",
                 "globalIntLarge": 18446744073709551615,
                 "globalIntLargeNegative": -9223372036854775808,
                 "globalStringyInt": "17",
@@ -152,7 +153,7 @@ public class ParserTests
         Assert.Empty(descriptor.Contracts);
         Assert.Empty(descriptor.Types);
 
-        Assert.Equal(18, descriptor.Globals.Count);
+        Assert.Equal(19, descriptor.Globals.Count);
 
         Assert.Equal((ulong)1, descriptor.Globals["globalInt"].NumericValue);
         Assert.Null(descriptor.Globals["globalInt"].StringValue);
@@ -191,6 +192,9 @@ public class ParserTests
         Assert.Equal("World", descriptor.Globals["globalTypedString"].StringValue);
         AssertDirect(descriptor.Globals["globalTypedString"]);
         Assert.Equal("string", descriptor.Globals["globalTypedString"].Type);
+
+        Assert.Equal("\"Hello World\"", descriptor.Globals["globalStringSpecialChars"].StringValue);
+        AssertDirect(descriptor.Globals["globalStringSpecialChars"]);
 
         Assert.Equal(ulong.MaxValue, descriptor.Globals["globalIntLarge"].NumericValue);
         Assert.Null(descriptor.Globals["globalIntLarge"].StringValue);
