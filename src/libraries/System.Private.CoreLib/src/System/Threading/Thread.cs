@@ -82,7 +82,7 @@ namespace System.Threading
                     if (!string.IsNullOrEmpty(thread.Name))
                     {
                         // Name the underlying native thread to match the managed thread name.
-                        thread.ThreadNameChanged(thread.Name);
+                        // thread.ThreadNameChanged(thread.Name);
                     }
 #endif
                     if (start is ThreadStart threadStart)
