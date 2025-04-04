@@ -552,7 +552,7 @@ namespace System
                                     // Grow the list by exactly one element in this case to avoid null entries at the end.
                                     //
 
-                                    // TODO: runtime-async we need to rationalize how async2 thunks eork in reflection.
+                                    // TODO: runtime-async we need to rationalize how async2 thunks work in reflection.
                                     //       possibly they should not be exposed as they are runtime-provided implementation
                                     //       details, that in theory may change.
                                     //
@@ -771,8 +771,7 @@ namespace System
                         if ((methodAttributes & MethodAttributes.RTSpecialName) == 0)
                             continue;
 
-                        if (!RuntimeMethodHandle.GetName(methodHandle).Equals(".ctor") &&
-                            !RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"))
+                        if (RuntimeMethodHandle.GetName(methodHandle) is not ".ctor" and not ".cctor")
                             continue;
 
                         // Constructors should not be virtual or abstract
