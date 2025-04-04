@@ -1,5 +1,4 @@
 parameters:
-  buildConfig: ''
   archType: ''
   osGroup: ''
   creator: ''
@@ -10,7 +9,7 @@ steps:
     parameters:
       DisplayNamePrefix: Send to Helix
       HelixProjectPath: src/installer/tests/helixpublish.proj
-      HelixProjectArguments: /p:Configuration=${{ parameters.buildConfig }} /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }}
+      HelixProjectArguments: -ci /p:Configuration=$(_BuildConfig) /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }}
       Creator: ${{ parameters.creator }}
       ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         HelixAccessToken: $(HelixApiAccessToken)
