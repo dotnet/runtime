@@ -10394,6 +10394,10 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             {
                 code |= insEncodeReg_V<20, 16>(id->idReg3()); // mmmmm
             }
+            else
+            {
+                code |= insEncodeReg_V<20, 16>(id->idReg2()); // mmmmm
+            }
             dst += emitOutput_Instr(dst, code);
             break;
 

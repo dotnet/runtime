@@ -1068,6 +1068,9 @@ BOOL UnlockedLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
     return TRUE;
 }
 
+#ifdef FEATURE_PERFMAP
+bool PerfMapLowGranularityStubs();
+#endif // FEATURE_PERFMAP
 BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 {
     CONTRACTL
@@ -1109,8 +1112,13 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         // Figure out how much to reserve
         dwSizeToReserve = max<size_t>(dwSizeToCommit, m_dwReserveBlockSize);
 
-        // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
-        dwSizeToReserve = ALIGN_UP(dwSizeToReserve, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
+#ifdef FEATURE_PERFMAP // Perfmap requires that the memory assigned to stub generated regions be allocated only via fully commited memory
+        if (!IsInterleaved() || !PerfMapLowGranularityStubs())
+#endif // FEATURE_PERFMAP
+        {
+            // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
+            dwSizeToReserve = ALIGN_UP(dwSizeToReserve, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
+        }
 
         _ASSERTE(dwSizeToCommit <= dwSizeToReserve);
 

@@ -3582,7 +3582,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		 * In AOT mode and embedding scenarios, it is possible that the icall is not registered in the runtime doing the AOT compilation.
 		 * Emit a wrapper that throws a NotSupportedException.
 		 */
-		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method canot be marked with both DllImportAttribute and UnmanagedCallersOnlyAttribute");
+		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method cannot be marked with both DllImportAttribute and UnmanagedCallersOnlyAttribute");
 		goto emit_exception_for_error;
 	} else if (!pinvoke && !piinfo->addr && !aot) {
 		/* if there's no code but the error isn't set, just use a fairly generic exception. */

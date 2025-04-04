@@ -17,6 +17,10 @@
 #include "wellknownattributes.h"
 #include "nativeimage.h"
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 #ifndef DACCESS_COMPILE
 extern "C" PCODE g_pMethodWithSlotAndModule;
 extern "C" PCODE g_pClassWithSlotAndModule;
@@ -362,7 +366,7 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
     }
     CONTRACTL_END;
 
-#if defined(TARGET_AMD64) || (defined(TARGET_X86) && defined(TARGET_UNIX))
+#if defined(TARGET_AMD64) || (defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS))
     // A normal method entry point is always 8 byte aligned, but a funclet can start at an odd address.
     // Since PtrHashMap can't handle odd pointers, check for this case and return NULL.
     if ((entryPoint & 0x1) != 0)
@@ -1995,6 +1999,11 @@ PCODE CreateDynamicHelperPrecode(LoaderAllocator *pAllocator, AllocMemTracker *p
     size_t size = sizeof(StubPrecode);
     StubPrecode *pPrecode = (StubPrecode *)pamTracker->Track(pAllocator->GetDynamicHelpersStubHeap()->AllocAlignedMem(size, 1));
     pPrecode->Init(pPrecode, DynamicHelperArg, pAllocator, PRECODE_DYNAMIC_HELPERS, DynamicHelper);
+
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pPrecode, size, PerfMapStubType::IndividualWithinBlock);
+#endif
+
     return ((Precode*)pPrecode)->GetEntryPoint();
 }
 

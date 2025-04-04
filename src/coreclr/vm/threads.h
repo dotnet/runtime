@@ -349,7 +349,7 @@ DWORD GetRuntimeId();
 // One-time initialization. Called during Dll initialization.
 //---------------------------------------------------------------------------
 void InitThreadManager();
-
+void InitThreadManagerPerfMapData();
 
 // When we want to take control of a thread at a safe point, the thread will
 // eventually come back to us in one of the following trip functions:
