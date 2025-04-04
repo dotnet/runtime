@@ -481,6 +481,7 @@ class Thread
     friend void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #ifdef FEATURE_THREAD_ACTIVATION
     friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext);
+    friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger);
     friend BOOL CheckActivationSafePoint(SIZE_T ip);
 #endif // FEATURE_THREAD_ACTIVATION
 
@@ -549,7 +550,7 @@ public:
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
 #endif // FEATURE_HIJACK
 
-        // unused                 = 0x00000100,
+        TS_SSToExitApcCall        = 0x00000100,    // Enable SS and resume the thread to exit an APC Call and keep the thread in suspend state
         TS_Background             = 0x00000200,    // Thread is a background thread
         TS_Unstarted              = 0x00000400,    // Thread has never been started
         TS_Dead                   = 0x00000800,    // Thread is dead
@@ -566,7 +567,7 @@ public:
         TS_ReportDead             = 0x00010000,    // in WaitForOtherThreads()
         TS_FullyInitialized       = 0x00020000,    // Thread is fully initialized and we are ready to broadcast its existence to external clients
 
-        // unused                 = 0x00040000,
+        TS_SSToExitApcCallDone    = 0x00040000,    // The thread exited an APC Call and it is already resumed and paused on SS
 
         TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
         TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
@@ -2570,7 +2571,9 @@ private:
     //-------------------------------------------------------------
     // Waiting & Synchronization
     //-------------------------------------------------------------
-
+friend class DebuggerController;
+protected:
+    void MarkForSuspensionAndWait(ULONG bit);
     // For suspends.  The thread waits on this event.  A client sets the event to cause
     // the thread to resume.
     void    WaitSuspendEvents();
