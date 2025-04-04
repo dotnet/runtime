@@ -220,8 +220,8 @@ public class BridgeTest
         tail.Link = tail;
     }
 
-    const int L0_COUNT = 50000;
-    const int L1_COUNT = 50000;
+    const int L0_COUNT = 100000;
+    const int L1_COUNT = 100000;
     const int EXTRA_LEVELS = 4;
 
     // Set a complex graph from one bridge to a couple.
@@ -405,7 +405,7 @@ public class BridgeTest
 
     public static int Main(string[] args)
     {
-//        TestLinkedList(); // Crashes, but only in this multithreaded variant
+//        TestLinkedList(); // Crashes, but only in this multithreaded variant, also only on osx for me
         RunGraphTest(SetupFragmentation<Bridge14, NonBridge14>); // This passes but the following crashes ??
 //        RunGraphTest(SetupFragmentation<Bridge, NonBridge>);
         RunGraphTest(SetupLinks);
