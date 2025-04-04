@@ -4329,7 +4329,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     }
 
     if ((level == CLASS_LOADED) && 
-        CORDisableJITOptimizations(this->GetModule()->GetDebuggerInfoBits()) &&
+        this->GetModule()->AreJITOptimizationsDisabled() &&
         !HasInstantiation() &&
         !GetModule()->GetAssembly()->IsLoading()) // Do not do this during the vtable fixup stage of C++/CLI assembly loading. See https://github.com/dotnet/runtime/issues/110365
     {

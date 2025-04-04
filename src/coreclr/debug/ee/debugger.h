@@ -481,8 +481,6 @@ class DebuggerModule
     PTR_Module     m_pRuntimeModule;
     PTR_DomainAssembly m_pRuntimeDomainAssembly;
 
-    bool m_fHasOptimizedCode;
-
     // Can we change jit flags on the module?
     // This is true during the Module creation
     bool           m_fCanChangeJitFlags;
@@ -3063,6 +3061,9 @@ public:
     // Used by Debugger::FirstChanceNativeException to update the context from out of process
     void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL);
     BOOL IsOutOfProcessSetContextEnabled();
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    void SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext);
+#endif // FEATURE_SPECIAL_USER_MODE_APC        
 };
 
 
@@ -3994,7 +3995,7 @@ HANDLE OpenWin32EventOrThrow(
 // Returns true if the specified IL offset has a special meaning (eg. prolog, etc.)
 bool DbgIsSpecialILOffset(DWORD offset);
 
-#if defined(TARGET_WINDOWS)
+#if defined(TARGET_WINDOWS) && !defined(TARGET_X86)
 void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
 #endif
 
