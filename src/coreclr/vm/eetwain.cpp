@@ -2130,6 +2130,8 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 }
 #else // !FEATURE_EH_FUNCLETS
 
+#ifndef TARGET_WASM
+
 #ifdef USE_FUNCLET_CALL_HELPER
 // This is an assembly helper that enables us to call into EH funclets.
 EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
@@ -2207,6 +2209,8 @@ static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 #endif
 }
 
+#endif // TARGET_WASM
+
 // Call catch, finally or filter funclet.
 // Return value:
 // * Catch funclet: address to resume at after the catch returns
@@ -2214,7 +2218,10 @@ static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 // * Filter funclet: result of the filter funclet (EXCEPTION_CONTINUE_SEARCH (0) or EXCEPTION_EXECUTE_HANDLER (1))
 DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
 {
-    DWORD_PTR dwResult;
+    DWORD_PTR dwResult = 0;
+#ifdef TARGET_WASM
+    _ASSERTE(!"CallFunclet for WASM not implemented yet");
+#else
     HandlerFn* pfnHandler = (HandlerFn*)pHandler;
 
     pExInfo->m_csfEHClause = CallerStackFrame((UINT_PTR)GetCurrentSP());
@@ -2251,6 +2258,7 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     dwResult = pfnHandler(establisherFrame, OBJECTREFToObject(throwable));
 #endif
 
+#endif // TARGET_WASM
     return dwResult;
 }
 
