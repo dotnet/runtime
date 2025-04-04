@@ -22,8 +22,8 @@ namespace System.Numerics
 
         private const int MaxDecimalExponent = 90;
         private const int MinDecimalExponent = -101;
-        private const int NumberDigitsPrecision = 7;
-        private const int Bias = 101;
+        private const int Precision = 7;
+        private const int ExponentBias = 101;
         private const int NumberBitsExponent = 8;
         private const uint PositiveInfinityValue = 0x7800_0000;
         private const uint NegativeInfinityValue = 0xF800_0000;
@@ -242,52 +242,52 @@ namespace System.Numerics
             return Number.FormatDecimal32(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.Precision => NumberDigitsPrecision;
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.Precision => Precision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.MaxScale => 97;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.CountDigits(int number) => FormattingHelpers.CountDigits((uint)number);
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Power10(int exponent) => Int32Powers10[exponent];
 
-        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MaxSignificand => MaxSignificand;
+        int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MaxSignificand => MaxSignificand;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MaxDecimalExponent => MaxDecimalExponent;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MinDecimalExponent => MinDecimalExponent;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Precision => NumberDigitsPrecision;
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Precision => Precision;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.ExponentBias => Bias;
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.ExponentBias => ExponentBias;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NumberBitsEncoding => 32;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NumberBitsCombinationField => 11;
 
-        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.PositiveInfinityBits => PositiveInfinityValue;
+        uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.PositiveInfinityBits => PositiveInfinityValue;
 
-        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NegativeInfinityBits => NegativeInfinityValue;
+        uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NegativeInfinityBits => NegativeInfinityValue;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NumberBitsExponent => NumberBitsExponent;
 
-        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Zero => ZeroValue;
+        uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Zero => ZeroValue;
 
-        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.G0G1Mask => G0G1Mask;
+        uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.G0G1Mask => G0G1Mask;
 
-        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
+        uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
-        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.SignMask => SignMask;
+        uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.SignMask => SignMask;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.ConvertToExponent(uint value) => (int)value;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.ConvertToSignificand(uint value) => (int)value;
 
-        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.G0ToGwPlus1ExponentMask => 0x7F80_0000;
+        uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.G0ToGwPlus1ExponentMask => 0x7F80_0000;
 
-        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.G2ToGwPlus3ExponentMask => 0x1FE0_0000;
+        uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.G2ToGwPlus3ExponentMask => 0x1FE0_0000;
 
-        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.GwPlus2ToGwPlus4SignificandMask => 0x007F_FFFF;
+        uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.GwPlus2ToGwPlus4SignificandMask => 0x007F_FFFF;
 
-        static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.GwPlus4SignificandMask => 0x001F_FFFF;
+        uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.GwPlus4SignificandMask => 0x001F_FFFF;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NumberBitsSignificand => 20;
 
