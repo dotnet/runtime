@@ -212,9 +212,9 @@ The global values will be in an array, with each value described by a dictionary
 
 * `"name": "global value name"` the name of the global value
 * `"type": "type name"` the type of the global value
-* optional `"value": VALUE | [ int ] ` the value of the global value, or an offset in an auxiliary array containing the value.
+* optional `"value": <global_value>` where `<global_value>` is defined below
 
-The `VALUE` may be either a number or a string. JSON numeric constants are always parsed as numbers. JSON strings are always parsed as strings and may additionally parse as a hex (with prefix `0x` or `0X`) or decimal number.
+
 Numeric constants must be within the range of the type of the global value.
 
 
@@ -222,16 +222,45 @@ Numeric constants must be within the range of the type of the global value.
 
 The global values will be in a dictionary, with each key being the name of a global and the values being one of:
 
-* `[VALUE | [int], "type name"]` the type and value of a global
-* `VALUE | [int]` just the value of a global
+* `[<global_value>, "type name"]` the type and value of a global
+* `<global_value>` just the value of a global
 
-`VALUE` may be either a number or a string. JSON numeric constants are always parsed as numbers. JSON strings are always parsed as strings and may additionally parse as a hex (with prefix `0x` or `0X`) or decimal number.
+Where `<global_value>` is defined as below.
+
 Numeric constants must be within the range of the type of the global value.
 
 Note that a two element array is unambiguously "type and value", whereas a one-element array is
 unambiguously "indirect value".
 
+
 **Both formats**
+
+#### Specification Appendix
+
+```
+<global_value> ::= <value> | [ <number_value> ]
+<value> ::= <json_string> | <number_value>
+<number_value> ::=  <json_number> | <decimal_string> | <hex_string>
+
+<hex_string> is identified by a "0x" or "0X" prefix
+```
+
+#### Parsing Rules
+`<json_number>` is parsed as a numeric value.
+`<hex_string>` and `<decimal_string>` can be parsed as either a string or numeric value.
+`<json_string>` (that does not form a valid hex or decimal number) is parsed as a string.
+
+Example using compact format:
+```json
+{
+    "int" : 1234, // Can only be parsed as numeric constant 1234
+    "stringyInt" : "1234", // Can be parsed as 1234 or "1234"
+    "stringyHex" : "0x1234", // Can be parsed as 4660 (0x1234 in decimal) or "0x1234"
+    "stringValue" : "Hello World" // Can only be parsed as "Hello World"
+}
+```
+
+#### Typing
 
 For pointer and nuint globals, the value may be assumed to fit in a 64-bit unsigned integer.  For
 nint globals, the value may be assumed to fit in a 64-bit signed integer.
@@ -239,6 +268,8 @@ nint globals, the value may be assumed to fit in a 64-bit signed integer.
 Note that the logical descriptor does not contain "unknown" values: it is expected that the
 in-memory data descriptor will augment the baseline with a known offset for all fields in the
 baseline.
+
+#### Indirect Types
 
 If the value is given as a single-element array `[ int ]` then the value is stored in an auxiliary
 array that is part of the data contract descriptor.  Only in-memory data descriptors may have
@@ -250,7 +281,6 @@ array of pointers and the offset written into the constant JSON string.
 
 The indirection array is not part of the data descriptor spec.  It is part of the [contract
 descriptor](./contract_descriptor.md#Contract_descriptor).
-
 
 
 ## Example
