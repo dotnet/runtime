@@ -6571,9 +6571,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
 
-#ifdef TARGET_ARM64
     static NamedIntrinsic GetScalableHWIntrinsicId(unsigned simdSize, NamedIntrinsic id);
-#endif
 
     static NamedIntrinsic GetHWIntrinsicIdForUnOp(
         Compiler* comp, genTreeOps oper, GenTree* op1, var_types simdBaseType, unsigned simdSize, bool isScalar);
