@@ -115,7 +115,7 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
             "baseline": "empty",
             "contracts": { {{interpolatedContracts}} },
             "types": { {{metadataTypesJson}} },
-            "globals": { {{metadataGlobalsJson}} },
+            "globals": { {{metadataGlobalsJson}} }
         }
         """);
         MockMemorySpace.HeapFragment json = new()
