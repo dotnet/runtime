@@ -6,6 +6,7 @@
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
     <HelixConfiguration>$(Configuration)</HelixConfiguration>
     <HelixType>test/host</HelixType>
+    <TestRunNamePrefix>host-$(TargetOS)-$(TargetArchitecture)-$(Configuration) @ </TestRunNamePrefix>
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
