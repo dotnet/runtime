@@ -10,6 +10,7 @@ namespace System
         where TSignificand : IBinaryInteger<TSignificand>
         where TValue : IBinaryInteger<TValue>
     {
+        static abstract TSignificand MaxSignificand { get; }
         static abstract int MaxDecimalExponent { get; }
         static abstract int MinDecimalExponent { get; }
         static abstract int Precision { get; }
@@ -17,22 +18,21 @@ namespace System
         static abstract int CountDigits(TSignificand number);
         static abstract TSignificand Power10(int exponent);
         static abstract int NumberBitsEncoding { get; }
-        static abstract int ConvertToExponent(TValue value);
-        static abstract TSignificand ConvertToSignificand(TValue value);
+        static abstract TValue G0G1Mask { get; }
+        static abstract TValue G0ToGwPlus1ExponentMask { get; } //G0 to G(w+1)
+        static abstract TValue G2ToGwPlus3ExponentMask { get; } //G2 to G(w+3)
+        static abstract TValue GwPlus2ToGwPlus4SignificandMask { get; } //G(w+2) to G(w+4)
+        static abstract TValue GwPlus4SignificandMask { get; } //G(w+4)
+        static abstract TValue MostSignificantBitOfSignificandMask { get; }
+        static abstract TValue SignMask { get; }
         static abstract int NumberBitsCombinationField { get; }
         static abstract int NumberBitsExponent { get; }
         static abstract int NumberBitsSignificand { get; }
-        abstract TSignificand MaxSignificand { get; }
-        abstract TValue G0G1Mask { get; }
-        abstract TValue G0ToGwPlus1ExponentMask { get; } //G0 to G(w+1)
-        abstract TValue G2ToGwPlus3ExponentMask { get; } //G2 to G(w+3)
-        abstract TValue GwPlus2ToGwPlus4SignificandMask { get; } //G(w+2) to G(w+4)
-        abstract TValue GwPlus4SignificandMask { get; } //G(w+4)
-        abstract TValue MostSignificantBitOfSignificandMask { get; }
-        abstract TValue SignMask { get; }
-        abstract TValue PositiveInfinityBits { get; }
-        abstract TValue NegativeInfinityBits { get; }
-        abstract TValue Zero { get; }
+        static abstract TValue PositiveInfinityBits { get; }
+        static abstract TValue NegativeInfinityBits { get; }
+        static abstract TValue Zero { get; }
+        static abstract int ConvertToExponent(TValue value);
+        static abstract TSignificand ConvertToSignificand(TValue value);
     }
 
     internal static partial class Number
@@ -75,7 +75,7 @@ namespace System
 
                 if (exponent + numberDigitsRemoving > TDecimal.MaxDecimalExponent)
                 {
-                    return TDecimal.PositiveInfinityBits;
+                    throw new OverflowException(TDecimal.OverflowMessage);
                 }
 
                 exponent += numberDigitsRemoving;
@@ -105,7 +105,7 @@ namespace System
 
                 if (numberSignificandDigits + numberZeroDigits > TDecimal.Precision)
                 {
-                    return TDecimal.PositiveInfinityBits;
+                    throw new OverflowException(TDecimal.OverflowMessage);
                 }
                 unsignedSignificand *= TDecimal.Power10(numberZeroDigits);
                 exponent -= numberZeroDigits;

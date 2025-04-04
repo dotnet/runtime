@@ -20,8 +20,8 @@ namespace System.Numerics
 
         private const int MaxDecimalExponent = 369;
         private const int MinDecimalExponent = -398;
-        private const int Precision = 16;
-        private const int ExponentBias = 398;
+        private const int NumberDigitsPrecision = 16;
+        private const int Bias = 398;
         private const int NumberBitsExponent = 10;
         private const ulong PositiveInfinityValue = 0x7800_0000_0000_0000;
         private const ulong NegativeInfinityValue = 0xF800_0000_0000_0000;
@@ -253,7 +253,7 @@ namespace System.Numerics
             return Number.FormatDecimal64(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal64>.Precision => Precision;
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal64>.Precision => NumberDigitsPrecision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64>.MaxScale => 385;
 
@@ -261,15 +261,15 @@ namespace System.Numerics
 
         static long IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.Power10(int exponent) => Int64Powers10[exponent];
 
-        long IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.MaxSignificand => MaxSignificand;
+        static long IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.MaxSignificand => MaxSignificand;
 
         static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.MaxDecimalExponent => MaxDecimalExponent;
 
         static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.MinDecimalExponent => MinDecimalExponent;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.Precision => Precision;
+        static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.Precision => NumberDigitsPrecision;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.ExponentBias => ExponentBias;
+        static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.ExponentBias => Bias;
 
         static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.NumberBitsEncoding => 64;
 
@@ -277,29 +277,29 @@ namespace System.Numerics
 
         static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.NumberBitsExponent => NumberBitsExponent;
 
-        ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.PositiveInfinityBits => PositiveInfinityValue;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.PositiveInfinityBits => PositiveInfinityValue;
 
-        ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.NegativeInfinityBits => NegativeInfinityValue;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.NegativeInfinityBits => NegativeInfinityValue;
 
-        ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.Zero => ZeroValue;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.Zero => ZeroValue;
 
-        ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.G0G1Mask => G0G1Mask;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.G0G1Mask => G0G1Mask;
 
-        ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
-        ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.SignMask => SignMask;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.SignMask => SignMask;
 
         static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.ConvertToExponent(ulong value) => (int)value;
 
         static long IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.ConvertToSignificand(ulong value) => (long)value;
 
-        ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.G0ToGwPlus1ExponentMask => 0x7FE0_0000_0000_0000;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.G0ToGwPlus1ExponentMask => 0x7FE0_0000_0000_0000;
 
-        ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.G2ToGwPlus3ExponentMask => 0x1FF8_0000_0000_0000;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.G2ToGwPlus3ExponentMask => 0x1FF8_0000_0000_0000;
 
-        ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.GwPlus2ToGwPlus4SignificandMask => 0x001F_FFFF_FFFF_FFFF;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.GwPlus2ToGwPlus4SignificandMask => 0x001F_FFFF_FFFF_FFFF;
 
-        ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.GwPlus4SignificandMask => 0x0007_FFFF_FFFF_FFFF;
+        static ulong IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.GwPlus4SignificandMask => 0x0007_FFFF_FFFF_FFFF;
 
         static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.NumberBitsSignificand => 50;
 
