@@ -997,9 +997,9 @@ namespace System.Reflection.Metadata
 
                 var r = ApplyUpdate.Test.IncreaseMetadataRowSize.Method1();
                 Assert.Equal(50000, r);
-                MethodInfo mi = typeof(ApplyUpdate.Test.IncreaseMetadataRowSize).GetMethod("Method49999");
+                MethodInfo mi = typeof(ApplyUpdate.Test.IncreaseMetadataRowSize).GetMethod("VeryLooooooooooooooooooooooooooooooooongMethodNameToPushTheStringBlobOver64k_800");
                 ParameterInfo[] pars = mi.GetParameters();
-                Assert.Equal("x49999", pars[0].Name);
+                Assert.Equal("x800", pars[0].Name);
             });
         }
     }       
