@@ -30,7 +30,7 @@ namespace System.Threading
             // However, on OS X, only the thread itself can set its name.
             // The thread reference here allows the native thread to set its name before the actual work starts.
             // See https://github.com/dotnet/runtime/issues/106464.
-            internal Thread? _thread;
+            internal Thread _thread;
 #endif
             internal int _maxStackSize;
             internal Delegate _start;
@@ -39,10 +39,18 @@ namespace System.Threading
             internal CultureInfo? _uiCulture;
             internal ExecutionContext? _executionContext;
 
+#if !TARGET_OSX
             internal StartHelper(Delegate start)
             {
                 _start = start;
             }
+#else
+            internal StartHelper(Thread thread, Delegate start)
+            {
+                _thread = thread;
+                _start = start;
+            }
+#endif
 
             internal static readonly ContextCallback s_threadStartContextCallback = new ContextCallback(Callback);
 
@@ -81,7 +89,7 @@ namespace System.Threading
                 try
                 {
 #if TARGET_OSX
-                    if (_thread != null && !string.IsNullOrEmpty(_thread.Name))
+                    if (!string.IsNullOrEmpty(_thread.Name))
                     {
                         // Name the underlying native thread to match the managed thread name.
                         _thread.ThreadNameChanged(_thread.Name);
@@ -135,9 +143,10 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(start);
 
+#if !TARGET_OSX
             _startHelper = new StartHelper(start);
-#if TARGET_OSX
-            _startHelper._thread = this;
+#else
+            _startHelper = new StartHelper(this, start);
 #endif
 
             Initialize();
@@ -149,9 +158,10 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
-            _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
-#if TARGET_OSX
-            _startHelper._thread = this;
+#if !TARGET_OSX
+            _startHelper = new StartHelper(start);
+#else
+            _startHelper = new StartHelper(this, start);
 #endif
 
             Initialize();
@@ -161,9 +171,10 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(start);
 
+#if !TARGET_OSX
             _startHelper = new StartHelper(start);
-#if TARGET_OSX
-            _startHelper._thread = this;
+#else
+            _startHelper = new StartHelper(this, start);
 #endif
 
             Initialize();
@@ -175,9 +186,10 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
-            _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
-#if TARGET_OSX
-            _startHelper._thread = this;
+#if !TARGET_OSX
+            _startHelper = new StartHelper(start);
+#else
+            _startHelper = new StartHelper(this, start);
 #endif
 
             Initialize();
