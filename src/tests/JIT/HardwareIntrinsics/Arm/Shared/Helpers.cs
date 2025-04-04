@@ -7744,12 +7744,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float getMaskSingle()
         {
-            return (float)(TestLibrary.Generator.GetInt32()%(int)2);
+            return (float)(TestLibrary.Generator.GetUInt32()%(int)2);
         }
 
         public static double getMaskDouble()
         {
-            return (double)(TestLibrary.Generator.GetInt64()%(long)2);
+            return (double)(TestLibrary.Generator.GetUInt64()%(long)2);
         }
 
         public static int MaskNumberOfElementsVector(int elems, SveMaskPattern pattern)
