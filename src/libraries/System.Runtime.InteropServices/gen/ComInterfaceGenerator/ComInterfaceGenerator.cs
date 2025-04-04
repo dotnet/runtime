@@ -53,7 +53,7 @@ namespace Microsoft.Interop
             var externalInterfaceSymbols = attributedInterfaces.SelectMany(static (data, ct) =>
             {
                 return ComInterfaceInfo.CreateInterfaceInfoForBaseInterfacesInOtherCompilations(data.Symbol);
-            });
+            }).Collect().SelectMany(static (data, ct) => data.Distinct(ComInterfaceInfo.EqualityComparerForExternalIfaces.Instance));
 
             var interfaceSymbolsWithoutDiagnostics = interfaceSymbolsToGenerateWithoutDiagnostics.Concat(externalInterfaceSymbols);
 
@@ -541,7 +541,9 @@ namespace Microsoft.Interop
                                 BinaryExpression(
                                     SyntaxKind.MultiplyExpression,
                                     SizeOfExpression(TypeSyntaxes.VoidStar),
-                                    IntLiteral(3 + interfaceMethods.Methods.Length))))));
+                                    IntLiteral(1 + (interfaceMethods.Methods.Length == 0 ?
+                                        2 :
+                                        interfaceMethods.Methods.Max(m => m.GenerationContext.VtableIndexData.Index))))))));
 
             BlockSyntax fillBaseInterfaceSlots;
 
