@@ -3415,7 +3415,6 @@ BOOL NDirect::MarshalingRequired(
     return FALSE;
 }
 
-
 // factorization of CreateNDirectStubWorker
 static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                                                      mdParamDef*        params,
@@ -4291,7 +4290,13 @@ static void CreateNDirectStubAccessMetadata(
         // P/Invoke marked with UnmanagedCallersOnlyAttribute is not
         // presently supported.
         if (pMD->HasUnmanagedCallersOnlyAttribute())
-            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
+        {
+            SString namespaceOrClassName;
+            SString methodName;
+            pMD->GetMethodInfoNoSig(namespaceOrClassName, methodName);
+            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_UNMANAGEDCALLERSONLY,
+                namespaceOrClassName.GetUnicode(), methodName.GetUnicode());
+        }
 
         // Check to see if we need to do LCID conversion.
         lcidArg = GetLCIDParameterIndex(pMD);

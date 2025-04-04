@@ -146,21 +146,12 @@ inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
-    return stackPointer < ((LPVOID)(display->SP));
-#else
     return (TADDR)stackPointer < display->PCTAddr;
-#endif
 }
 inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
-    _ASSERTE(GetRegdisplaySP(display) == GetSP(display->pCurrentContext));
-    return GetRegdisplaySP(display);
-#else
     return display->PCTAddr;
-#endif
 }
 
 #elif defined(TARGET_64BIT)
@@ -531,6 +522,10 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
 
     // This will setup the PC and SP
     SyncRegDisplayToCurrentContext(pRD);
+
+#ifdef TARGET_X86
+    pRD->PCTAddr = (UINT_PTR)&(pctx->Eip);
+#endif
 
 #if !defined(DACCESS_COMPILE)
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)

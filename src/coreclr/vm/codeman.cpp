@@ -2156,6 +2156,7 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
         if (dwSize < SMALL_BLOCK_THRESHOLD)
             dwSize = 4 * SMALL_BLOCK_THRESHOLD;
         pMem = ExecutionManager::GetEEJitManager()->allocCodeFragmentBlock(dwSize, dwAlignment, m_pAllocator, m_kind);
+        ReportStubBlock(pMem, dwSize, m_kind);
     }
 
     SIZE_T dwExtra = (BYTE *)ALIGN_UP(pMem, dwAlignment) - (BYTE *)pMem;
@@ -3290,6 +3291,8 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         _ASSERTE(IS_ALIGNED(blockWriterHolder.GetRW(), CODE_SIZE_ALIGN));
     }
 
+    ReportStubBlock((void*)mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB);
+
     blockWriterHolder.GetRW()->m_next            = NULL;
     blockWriterHolder.GetRW()->m_used            = 0;
     blockWriterHolder.GetRW()->m_allocated       = numJumps;
@@ -4097,6 +4100,16 @@ BOOL InterpreterJitManager::GetBoundariesAndVars(
 
     PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
 
+    // Interpreter-TODO: This is a temporary workaround until the interpreter produces the debug info
+    if (pDebugInfo == NULL)
+    {
+        if (pcMap) *pcMap = 0;
+        if (ppMap) *ppMap = NULL;
+        if (pcVars) *pcVars = 0;
+        if (ppVars) *ppVars = NULL;
+        return TRUE;
+    }
+
     return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
 }
 
@@ -4321,6 +4334,28 @@ BOOL InterpreterJitManager::JitCodeToMethodInfo(
 
     return JitCodeToMethodInfoWorker<InterpreterCodeHeader>(pRangeSection, currentPC, ppMethodDesc, pCodeInfo);
 }
+
+TADDR InterpreterJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
+{
+    // Interpreter-TODO: Verify that this is correct
+    return pCodeInfo->GetCodeAddress() - pCodeInfo->GetRelOffset();
+}
+
+void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+        PRECONDITION(methodRegionInfo != NULL);
+    } CONTRACTL_END;
+
+    methodRegionInfo->hotStartAddress  = JitTokenToStartAddress(MethodToken);
+    methodRegionInfo->hotSize          = GetCodeManager()->GetFunctionSize(GetGCInfoToken(MethodToken));
+    methodRegionInfo->coldStartAddress = 0;
+    methodRegionInfo->coldSize         = 0;
+}
+
 #endif // FEATURE_INTERPRETER
 
 StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)
@@ -5657,7 +5692,7 @@ DONE:
     emitBackToBackJump(jumpStub, jumpStubRW, (void*) target);
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
+    PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE, PerfMapStubType::IndividualWithinBlock);
 #endif
 
     // We always add the new jumpstub to the jumpStubCache
@@ -6527,6 +6562,11 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     if (!pCodeInfo->IsFunclet())
         return FALSE;
 
+#ifdef TARGET_X86
+    // x86 doesn't use personality routines in unwind data, so we have to fallback to
+    // the slow implementation
+    return IJitManager::IsFilterFunclet(pCodeInfo);
+#else
     // Get address of the personality routine for the function being queried.
     SIZE_T size;
     PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &size);
@@ -6551,6 +6591,7 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     _ASSERTE(fRet == IJitManager::IsFilterFunclet(pCodeInfo));
 
     return fRet;
+#endif
 }
 
 #endif  // FEATURE_EH_FUNCLETS
