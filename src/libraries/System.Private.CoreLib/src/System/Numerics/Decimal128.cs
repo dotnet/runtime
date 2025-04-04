@@ -62,12 +62,7 @@ namespace System.Numerics
         /// <returns>The equivalent <see cref="Decimal128"/> value representing the input string. If the input exceeds Decimal128's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
         public static Decimal128 Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        /// <summary>
-        /// Parses a <see cref="Decimal128"/> from a <see cref="ReadOnlySpan{Char}"/> and <see cref="IFormatProvider"/>.
-        /// </summary>
-        /// <param name="s">The input to be parsed.</param>
-        /// <param name="provider">A format provider.</param>
-        /// <returns>The equivalent <see cref="Decimal128"/> value representing the input string. If the input exceeds Decimal128's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
+        /// <inheritdoc cref="ISpanParsable{T}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static Decimal128 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
 
         /// <summary>
@@ -123,13 +118,7 @@ namespace System.Numerics
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, out Decimal128 result) => TryParse(s, NumberStyles.Number, provider: null, out result);
 
-        /// <summary>
-        /// Tries to parse a <see cref="Decimal128"/> from a <see cref="ReadOnlySpan{Char}"/> with the given <see cref="IFormatProvider"/>.
-        /// </summary>
-        /// <param name="s">The input to be parsed.</param>
-        /// <param name="provider">A format provider. </param>
-        /// <param name="result">The equivalent <see cref="Decimal128"/> value representing the input string if the parse was successful. If the input exceeds Decimal128's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal128"/> value is returned.</param>
-        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
+        /// <inheritdoc cref="ISpanParsable{T}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out T)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result) => TryParse(s, NumberStyles.Number, provider, out result);
 
         /// <summary>
@@ -175,12 +164,7 @@ namespace System.Numerics
             return Number.TryParseDecimalIeee754<Decimal128, Int128, char>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
-        // Compares this object to another object, returning an integer that
-        // indicates the relationship.
-        // Returns a value less than zero if this  object
-        // null is considered to be less than any instance.
-        // If object is not of type Decimal128, this method throws an ArgumentException.
-        //
+        /// <inheritdoc cref="IComparable.CompareTo(object?)" />
         public int CompareTo(object? value)
         {
             if (value == null)
@@ -199,6 +183,7 @@ namespace System.Numerics
             return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(current, other);
         }
 
+        /// <inheritdoc cref="IComparable{T}.CompareTo(T)" />
         public int CompareTo(Decimal128 other)
         {
             var current = new UInt128(_upper, _lower);
@@ -206,6 +191,7 @@ namespace System.Numerics
             return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(current, another);
         }
 
+        /// <inheritdoc cref="IEquatable{T}.Equals(T)" />
         public bool Equals(Decimal128 other)
         {
             var current = new UInt128(_upper, _lower);
@@ -213,28 +199,49 @@ namespace System.Numerics
             return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(current, another) == 0;
         }
 
+        /// <summary>
+        /// Returns a value that indicates whether this instance is equal to a specified <paramref name="obj"/>.
+        /// </summary>
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is Decimal128 && Equals((Decimal128)obj);
         }
 
+        /// <summary>
+        /// Serves as the default hash function.
+        /// </summary>
         public override int GetHashCode()
         {
             return new UInt128(_upper, _lower).GetHashCode();
         }
 
+        /// <summary>
+        /// Returns a string representation of the current value.
+        /// </summary>
         public override string ToString()
         {
             return Number.FormatDecimal128(this, null, NumberFormatInfo.CurrentInfo);
         }
+
+        /// <summary>
+        /// Returns a string representation of the current value using the specified <paramref name="format"/>.
+        /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatDecimal128(this, format, NumberFormatInfo.CurrentInfo);
         }
+
+        /// <summary>
+        /// Returns a string representation of the current value with the specified <paramref name="provider"/>.
+        /// </summary>
         public string ToString(IFormatProvider? provider)
         {
             return Number.FormatDecimal128(this, null, NumberFormatInfo.GetInstance(provider));
         }
+
+        /// <summary>
+        /// Returns a string representation of the current value using the specified <paramref name="format"/> and <paramref name="provider"/>.
+        /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatDecimal128(this, format, NumberFormatInfo.GetInstance(provider));

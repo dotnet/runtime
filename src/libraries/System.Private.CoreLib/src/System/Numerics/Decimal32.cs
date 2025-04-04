@@ -33,6 +33,17 @@ namespace System.Numerics
         private const uint SignMask = 0x8000_0000;
         private const uint MostSignificantBitOfSignificandMask = 0x0080_0000;
 
+        private static ReadOnlySpan<int> Int32Powers10 =>
+            [
+                1,
+                10,
+                100,
+                1000,
+                10000,
+                100000,
+                1000000,
+            ];
+
         public Decimal32(int significand, int exponent)
         {
             _value = Number.CalculateDecimalIeee754<Decimal32, int, uint>(significand, exponent);
@@ -53,12 +64,7 @@ namespace System.Numerics
         /// <returns>The equivalent <see cref="Decimal32"/> value representing the input string. If the input exceeds Decimal32's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
         public static Decimal32 Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        /// <summary>
-        /// Parses a <see cref="Decimal32"/> from a <see cref="ReadOnlySpan{Char}"/> and <see cref="IFormatProvider"/>.
-        /// </summary>
-        /// <param name="s">The input to be parsed.</param>
-        /// <param name="provider">A format provider.</param>
-        /// <returns>The equivalent <see cref="Decimal32"/> value representing the input string. If the input exceeds Decimal32's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
+        /// <inheritdoc cref="ISpanParsable{T}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static Decimal32 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
 
         /// <summary>
@@ -114,13 +120,7 @@ namespace System.Numerics
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, out Decimal32 result) => TryParse(s, NumberStyles.Number, provider: null, out result);
 
-        /// <summary>
-        /// Tries to parse a <see cref="Decimal32"/> from a <see cref="ReadOnlySpan{Char}"/> with the given <see cref="IFormatProvider"/>.
-        /// </summary>
-        /// <param name="s">The input to be parsed.</param>
-        /// <param name="provider">A format provider. </param>
-        /// <param name="result">The equivalent <see cref="Decimal32"/> value representing the input string if the parse was successful. If the input exceeds Decimal32's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal32"/> value is returned.</param>
-        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
+        /// <inheritdoc cref="ISpanParsable{T}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out T)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => TryParse(s, NumberStyles.Number, provider, out result);
 
         /// <summary>
@@ -166,26 +166,7 @@ namespace System.Numerics
             return Number.TryParseDecimalIeee754<Decimal32, int, char>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
-        private static ReadOnlySpan<int> Int32Powers10 =>
-            [
-                1,
-                10,
-                100,
-                1000,
-                10000,
-                100000,
-                1000000,
-            ];
-
-        // Compares this object to another object, returning an integer that
-        // indicates the relationship.
-        // Returns :
-        // 0 if the values are equal
-        // Negative number if _value is less than value
-        // Positive number if _value is more than value
-        // null is considered to be less than any instance, hence returns positive number
-        // If object is not of type Decimal32, this method throws an ArgumentException.
-        //
+        /// <inheritdoc cref="IComparable.CompareTo(object?)" />
         public int CompareTo(object? value)
         {
             if (value == null)
@@ -201,38 +182,61 @@ namespace System.Numerics
             return Number.CompareDecimalIeee754<Decimal32, int, uint>(_value, i._value);
         }
 
+        /// <inheritdoc cref="IComparable{T}.CompareTo(T)" />
         public int CompareTo(Decimal32 other)
         {
             return Number.CompareDecimalIeee754<Decimal32, int, uint>(_value, other._value);
         }
 
+        /// <inheritdoc cref="IEquatable{T}.Equals(T)" />
         public bool Equals(Decimal32 other)
         {
             return Number.CompareDecimalIeee754<Decimal32, int, uint>(_value, other._value) == 0;
         }
 
+        /// <summary>
+        /// Returns a value that indicates whether this instance is equal to a specified <paramref name="obj"/>.
+        /// </summary>
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is Decimal32 && Equals((Decimal32)obj);
         }
 
+        /// <summary>
+        /// Serves as the default hash function.
+        /// </summary>
         public override int GetHashCode()
         {
             return _value.GetHashCode();
         }
 
+        /// <summary>
+        /// Returns a string representation of the current value.
+        /// </summary>
         public override string ToString()
         {
             return Number.FormatDecimal32(this, null, NumberFormatInfo.CurrentInfo);
         }
+
+        /// <summary>
+        /// Returns a string representation of the current value using the specified <paramref name="format"/>.
+        /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatDecimal32(this, format, NumberFormatInfo.CurrentInfo);
         }
+
+        /// <summary>
+        /// Returns a string representation of the current value with the specified <paramref name="provider"/>.
+        /// </summary>
         public string ToString(IFormatProvider? provider)
         {
             return Number.FormatDecimal32(this, null, NumberFormatInfo.GetInstance(provider));
         }
+
+        /// <summary>
+        /// Returns a string representation of the current value using the specified <paramref name="format"/> and <paramref name="provider"/>.
+        /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatDecimal32(this, format, NumberFormatInfo.GetInstance(provider));
