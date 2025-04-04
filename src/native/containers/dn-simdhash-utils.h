@@ -176,6 +176,35 @@ MurmurHash3_32_streaming (const uint8_t *key, uint32_t seed)
 	return h1;
 }
 
+static inline uint32_t
+MurmurHash3_32 (const uint8_t *key, uint32_t key_length, uint32_t seed)
+{
+	uint32_t h1 = seed;
+
+	while (key_length >= sizeof(uint32_t)) {
+		uint32_t block = *(uint32_t *)key;
+		MURMUR3_HASH_BLOCK(block);
+		key += sizeof(uint32_t);
+		key_length -= sizeof(uint32_t);
+	}
+
+	if (key_length) {
+		uint32_t last_block = 0;
+		// This is incorrect but easier to write
+		while (key_length > 0) {
+			last_block |= *key;
+			last_block <<= 8;
+			key++;
+		}
+		MURMUR3_HASH_BLOCK(last_block);
+	}
+
+	// finalize. note this is not the same as 32_streaming
+	h1 ^= key_length;
+	h1 = murmur3_fmix32(h1);
+	return h1;
+}
+
 // end of reformulated murmur3-32
 
 void
