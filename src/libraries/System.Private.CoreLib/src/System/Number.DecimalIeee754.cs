@@ -75,7 +75,7 @@ namespace System
 
                 if (exponent + numberDigitsRemoving > TDecimal.MaxDecimalExponent)
                 {
-                    throw new OverflowException(TDecimal.OverflowMessage);
+                    return TDecimal.PositiveInfinityBits;
                 }
 
                 exponent += numberDigitsRemoving;
@@ -105,7 +105,7 @@ namespace System
 
                 if (numberSignificandDigits + numberZeroDigits > TDecimal.Precision)
                 {
-                    throw new OverflowException(TDecimal.OverflowMessage);
+                    return TDecimal.PositiveInfinityBits;
                 }
                 unsignedSignificand *= TDecimal.Power10(numberZeroDigits);
                 exponent -= numberZeroDigits;
@@ -203,43 +203,35 @@ namespace System
                 return 1;
             }
 
-            if (current.Exponent > other.Exponent)
+            if (current.Signed)
             {
-                return current.Signed ? -InternalUnsignedCompare(current, other) : InternalUnsignedCompare(current, other);
+                (current, other) = (other, current);
             }
 
-            if (current.Exponent < other.Exponent)
-            {
-                return current.Signed ? InternalUnsignedCompare(other, current) : -InternalUnsignedCompare(current, other);
-            }
+            return InternalUnsignedCompare(current, other);
 
-            if (current.Significand == other.Significand)
+            static int InternalUnsignedCompare(DecimalIeee754<TSignificand> current, DecimalIeee754<TSignificand> other)
             {
-                return 0;
-            }
+                if (current.Exponent == other.Exponent && current.Significand == other.Significand)
+                {
+                    return 0;
+                }
 
-            if (current.Significand > other.Significand)
-            {
-                return current.Signed ? -1 : 1;
-            }
-            else
-            {
-                return current.Signed ? 1 : -1;
-            }
+                if (current.Exponent < other.Exponent)
+                {
+                    return -InternalUnsignedCompare(other, current);
+                }
 
-            static int InternalUnsignedCompare(DecimalIeee754<TSignificand> biggerExp, DecimalIeee754<TSignificand> smallerExp)
-            {
-                if (biggerExp.Significand >= smallerExp.Significand)
+                if (current.Significand >= other.Significand)
                 {
                     return 1;
                 }
 
-                int diffExponent = biggerExp.Exponent - smallerExp.Exponent;
+                int diffExponent = current.Exponent - other.Exponent;
                 if (diffExponent < TDecimal.Precision)
                 {
                     TSignificand factor = TDecimal.Power10(diffExponent);
-                    TSignificand quotient = smallerExp.Significand / biggerExp.Significand;
-                    TSignificand remainder = smallerExp.Significand % biggerExp.Significand;
+                    (TSignificand quotient, TSignificand remainder) = TSignificand.DivRem(other.Significand, current.Significand);
 
                     if (quotient < factor)
                     {
