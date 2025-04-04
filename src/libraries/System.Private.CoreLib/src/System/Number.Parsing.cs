@@ -102,7 +102,7 @@ namespace System
     internal interface IDecimalIeee754ParseAndFormatInfo<TSelf>
         where TSelf : unmanaged, IDecimalIeee754ParseAndFormatInfo<TSelf>
     {
-        static abstract int NumberDigitsPrecision { get; }
+        static abstract int Precision { get; }
         static abstract int MaxScale { get; }
     }
 
@@ -762,7 +762,6 @@ namespace System
                 {
                     ThrowFormatException(value);
                 }
-                ThrowOverflowException(SR.Overflow_Decimal32);
             }
 
             return result;
@@ -778,7 +777,6 @@ namespace System
                 {
                     ThrowFormatException(value);
                 }
-                ThrowOverflowException(SR.Overflow_Decimal64);
             }
 
             return result;
@@ -794,7 +792,6 @@ namespace System
                 {
                     ThrowFormatException(value);
                 }
-                ThrowOverflowException(SR.Overflow_Decimal128);
             }
 
             return result;
@@ -943,7 +940,7 @@ namespace System
 
             int digitIndex = 0;
 
-            while (digitIndex < TDecimal.NumberDigitsPrecision && c != 0)
+            while (digitIndex < TDecimal.Precision && c != 0)
             {
                 digitIndex++;
                 significand *= TSignificand.CreateTruncating(10);

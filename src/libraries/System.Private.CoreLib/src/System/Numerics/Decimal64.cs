@@ -34,7 +34,7 @@ namespace System.Numerics
 
         public Decimal64(long significand, int exponent)
         {
-            _value = Number.CalDecimalIeee754<Decimal64, long, ulong>(significand, exponent);
+            _value = Number.CalculateDecimalIeee754<Decimal64, long, ulong>(significand, exponent);
         }
 
         internal Decimal64(ulong value)
@@ -163,7 +163,7 @@ namespace System.Numerics
             return Number.FormatDecimal64(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal64>.NumberDigitsPrecision => NumberDigitsPrecision;
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal64>.Precision => NumberDigitsPrecision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64>.MaxScale => 385;
 
@@ -177,9 +177,9 @@ namespace System.Numerics
 
         static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.MinDecimalExponent => MinDecimalExponent;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.NumberDigitsPrecision => NumberDigitsPrecision;
+        static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.Precision => NumberDigitsPrecision;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.Bias => Bias;
+        static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.ExponentBias => Bias;
 
         static int IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>.NumberBitsEncoding => 64;
 
@@ -209,9 +209,9 @@ namespace System.Numerics
 
         static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.SignMask => SignMask;
 
-        static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.Bias => Bias;
+        static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.ExponentBias => Bias;
 
-        static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.NumberDigitsPrecision => NumberDigitsPrecision;
+        static int IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.Precision => NumberDigitsPrecision;
 
         static ulong IDecimalIeee754UnpackInfo<Decimal64, long, ulong>.G0G1Mask => G0G1Mask;
 

@@ -13,8 +13,8 @@ namespace System
         static abstract TSignificand MaxSignificand { get; }
         static abstract int MaxDecimalExponent { get; }
         static abstract int MinDecimalExponent { get; }
-        static abstract int NumberDigitsPrecision { get; }
-        static abstract int Bias { get; }
+        static abstract int Precision { get; }
+        static abstract int ExponentBias { get; }
         static abstract int CountDigits(TSignificand number);
         static abstract TSignificand Power10(int exponent);
         static abstract int NumberBitsEncoding { get; }
@@ -41,8 +41,8 @@ namespace System
         static abstract TValue GwPlus2ToGwPlus4SignificandMask { get; } //G(w+2) to G(w+4)
         static abstract TValue GwPlus4SignificandMask { get; } //G(w+4)
         static abstract int NumberBitsSignificand { get; }
-        static abstract int NumberDigitsPrecision { get; }
-        static abstract int Bias { get; }
+        static abstract int Precision { get; }
+        static abstract int ExponentBias { get; }
         static abstract TValue MostSignificantBitOfSignificandMask { get; }
         static abstract int ConvertToExponent(TValue value);
         static abstract TSignificand ConvertToSignificand(TValue value);
@@ -51,33 +51,33 @@ namespace System
 
     internal static partial class Number
     {
-        internal static TValue CalDecimalIeee754<TDecimal, TSignificand, TValue>(TSignificand significand, int exponent)
+        internal static TValue CalculateDecimalIeee754<TDecimal, TSignificand, TValue>(TSignificand significand, int exponent)
             where TDecimal : unmanaged, IDecimalIeee754ConstructorInfo<TDecimal, TSignificand, TValue>
             where TSignificand : IBinaryInteger<TSignificand>
             where TValue : IBinaryInteger<TValue>
         {
-            if (significand == TSignificand.Zero)
+            if (TSignificand.IsZero(significand))
             {
                 return TValue.Zero;
             }
 
-            TSignificand unsignedSignificand = significand > TSignificand.Zero ? significand : -significand;
+            TSignificand unsignedSignificand = TSignificand.Abs(significand);
 
             if ((unsignedSignificand > TDecimal.MaxSignificand && exponent >= TDecimal.MaxDecimalExponent)
                 || (unsignedSignificand == TDecimal.MaxSignificand && exponent > TDecimal.MaxDecimalExponent))
             {
-                return significand > TSignificand.Zero ? TDecimal.PositiveInfinityBits : TDecimal.NegativeInfinityBits;
+                return TSignificand.IsPositive(significand) ? TDecimal.PositiveInfinityBits : TDecimal.NegativeInfinityBits;
             }
 
-            TSignificand ten = TSignificand.CreateTruncating(10);
             if (exponent < TDecimal.MinDecimalExponent)
             {
+                TSignificand ten = TSignificand.CreateTruncating(10);
                 while (unsignedSignificand > TSignificand.Zero && exponent < TDecimal.MinDecimalExponent)
                 {
                     unsignedSignificand /= ten;
                     ++exponent;
                 }
-                if (unsignedSignificand == TSignificand.Zero)
+                if (TSignificand.IsZero(unsignedSignificand))
                 {
                     return TDecimal.Zero;
                 }
@@ -85,7 +85,7 @@ namespace System
 
             if (unsignedSignificand > TDecimal.MaxSignificand)
             {
-                int numberDigitsRemoving = TDecimal.CountDigits(unsignedSignificand) - TDecimal.NumberDigitsPrecision;
+                int numberDigitsRemoving = TDecimal.CountDigits(unsignedSignificand) - TDecimal.Precision;
 
                 if (exponent + numberDigitsRemoving > TDecimal.MaxDecimalExponent)
                 {
@@ -94,14 +94,13 @@ namespace System
 
                 exponent += numberDigitsRemoving;
                 TSignificand divisor = TDecimal.Power10(numberDigitsRemoving);
-                TSignificand quotient = unsignedSignificand / divisor;
-                TSignificand remainder = unsignedSignificand % divisor;
+                (TSignificand quotient, TSignificand remainder) = TSignificand.DivRem(unsignedSignificand, divisor);
                 TSignificand midPoint = divisor >> 1;
                 bool needRounding = remainder > midPoint || (remainder == midPoint && (quotient & TSignificand.One) == TSignificand.One);
 
                 if (needRounding && quotient == TDecimal.MaxSignificand && exponent < TDecimal.MaxDecimalExponent)
                 {
-                    unsignedSignificand = TDecimal.Power10(TDecimal.NumberDigitsPrecision - 1);
+                    unsignedSignificand = TDecimal.Power10(TDecimal.Precision - 1);
                     exponent++;
                 }
                 else if (needRounding && quotient < TDecimal.MaxSignificand)
@@ -118,7 +117,7 @@ namespace System
                 int numberZeroDigits = exponent - TDecimal.MaxDecimalExponent;
                 int numberSignificandDigits = TDecimal.CountDigits(unsignedSignificand);
 
-                if (numberSignificandDigits + numberZeroDigits > TDecimal.NumberDigitsPrecision)
+                if (numberSignificandDigits + numberZeroDigits > TDecimal.Precision)
                 {
                     throw new OverflowException(TDecimal.OverflowMessage);
                 }
@@ -126,7 +125,7 @@ namespace System
                 exponent -= numberZeroDigits;
             }
 
-            exponent += TDecimal.Bias;
+            exponent += TDecimal.ExponentBias;
 
             TValue value = TValue.Zero;
             TValue exponentVal = TValue.CreateTruncating(exponent);
@@ -191,7 +190,7 @@ namespace System
                 significand = TDecimal.ConvertToSignificand(value & TDecimal.GwPlus2ToGwPlus4SignificandMask);
             }
 
-            return new DecimalIeee754<TSignificand>(signed, exponent - TDecimal.Bias, significand);
+            return new DecimalIeee754<TSignificand>(signed, exponent - TDecimal.ExponentBias, significand);
         }
 
         internal static int CompareDecimalIeee754<TDecimal, TSignificand, TValue>(TValue currentValue, TValue otherValue)
@@ -206,9 +205,17 @@ namespace System
             DecimalIeee754<TSignificand> current = UnpackDecimalIeee754<TDecimal, TSignificand, TValue>(currentValue);
             DecimalIeee754<TSignificand> other = UnpackDecimalIeee754<TDecimal, TSignificand, TValue>(otherValue);
 
-            if (current.Signed && !other.Signed) return -1;
-
-            if (!current.Signed && other.Signed) return 1;
+            if (current.Signed)
+            {
+                if (!other.Signed)
+                {
+                    return -1;
+                }
+            }
+            else if (other.Signed)
+            {
+                return 1;
+            }
 
             if (current.Exponent > other.Exponent)
             {
@@ -220,7 +227,10 @@ namespace System
                 return current.Signed ? InternalUnsignedCompare(other, current) : -InternalUnsignedCompare(current, other);
             }
 
-            if (current.Significand == other.Significand) return 0;
+            if (current.Significand == other.Significand)
+            {
+                return 0;
+            }
 
             if (current.Significand > other.Significand)
             {
@@ -233,18 +243,30 @@ namespace System
 
             static int InternalUnsignedCompare(DecimalIeee754<TSignificand> biggerExp, DecimalIeee754<TSignificand> smallerExp)
             {
-                if (biggerExp.Significand >= smallerExp.Significand) return 1;
+                if (biggerExp.Significand >= smallerExp.Significand)
+                {
+                    return 1;
+                }
 
                 int diffExponent = biggerExp.Exponent - smallerExp.Exponent;
-                if (diffExponent < TDecimal.NumberDigitsPrecision)
+                if (diffExponent < TDecimal.Precision)
                 {
                     TSignificand factor = TDecimal.Power10(diffExponent);
                     TSignificand quotient = smallerExp.Significand / biggerExp.Significand;
                     TSignificand remainder = smallerExp.Significand % biggerExp.Significand;
 
-                    if (quotient < factor) return 1;
-                    if (quotient > factor) return -1;
-                    if (remainder > TSignificand.Zero) return -1;
+                    if (quotient < factor)
+                    {
+                        return 1;
+                    }
+                    if (quotient > factor)
+                    {
+                        return -1;
+                    }
+                    if (remainder > TSignificand.Zero)
+                    {
+                        return -1;
+                    }
                     return 0;
                 }
 

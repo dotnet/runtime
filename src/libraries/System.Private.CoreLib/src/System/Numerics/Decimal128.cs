@@ -43,7 +43,7 @@ namespace System.Numerics
 
         public Decimal128(Int128 significand, int exponent)
         {
-            UInt128 value = Number.CalDecimalIeee754<Decimal128, Int128, UInt128>(significand, exponent);
+            UInt128 value = Number.CalculateDecimalIeee754<Decimal128, Int128, UInt128>(significand, exponent);
             _lower = value.Lower;
             _upper = value.Upper;
         }
@@ -155,7 +155,7 @@ namespace System.Numerics
             return Number.FormatDecimal128(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal128>.NumberDigitsPrecision => NumberDigitsPrecision;
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128>.Precision => NumberDigitsPrecision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128>.MaxScale => 6145;
 
@@ -169,9 +169,9 @@ namespace System.Numerics
 
         static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.MinDecimalExponent => MinDecimalExponent;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.NumberDigitsPrecision => NumberDigitsPrecision;
+        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.Precision => NumberDigitsPrecision;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.Bias => Bias;
+        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.ExponentBias => Bias;
 
         static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.NumberBitsEncoding => 128;
 
@@ -201,9 +201,9 @@ namespace System.Numerics
 
         static UInt128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.SignMask => SignMask;
 
-        static int IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.Bias => Bias;
+        static int IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.ExponentBias => Bias;
 
-        static int IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.NumberDigitsPrecision => NumberDigitsPrecision;
+        static int IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.Precision => NumberDigitsPrecision;
 
         static UInt128 IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>.G0G1Mask => G0G1Mask;
 

@@ -36,7 +36,7 @@ namespace System.Numerics
 
         public Decimal32(int significand, int exponent)
         {
-            _value = Number.CalDecimalIeee754<Decimal32, int, uint>(significand, exponent);
+            _value = Number.CalculateDecimalIeee754<Decimal32, int, uint>(significand, exponent);
         }
 
         public static Decimal32 Parse(string s) => Parse(s, NumberStyles.Number, provider: null);
@@ -154,7 +154,7 @@ namespace System.Numerics
             return Number.FormatDecimal32(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.NumberDigitsPrecision => NumberDigitsPrecision;
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.Precision => NumberDigitsPrecision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.MaxScale => 97;
 
@@ -167,9 +167,9 @@ namespace System.Numerics
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MinDecimalExponent => MinDecimalExponent;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NumberDigitsPrecision => NumberDigitsPrecision;
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Precision => NumberDigitsPrecision;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Bias => Bias;
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.ExponentBias => Bias;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NumberBitsEncoding => 32;
 
@@ -193,9 +193,9 @@ namespace System.Numerics
 
         static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.SignMask => SignMask;
 
-        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.Bias => Bias;
+        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.ExponentBias => Bias;
 
-        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.NumberDigitsPrecision => NumberDigitsPrecision;
+        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.Precision => NumberDigitsPrecision;
 
         static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.ConvertToExponent(uint value) => (int)value;
 
