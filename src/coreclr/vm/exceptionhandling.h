@@ -16,7 +16,7 @@
 // Accessing it will result in AV.
 #define INVALID_RESUME_ADDRESS 0x000000000000bad0
 
-EXTERN_C EXCEPTION_DISPOSITION
+EXTERN_C EXCEPTION_DISPOSITION __cdecl
 ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord,
                     IN     PVOID                 pEstablisherFrame,
                     IN OUT PT_CONTEXT            pContextRecord,
