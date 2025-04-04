@@ -14,13 +14,16 @@ using Xunit.Abstractions;
 
 class AbortBeforeTimeout
 {
-     [ModuleInitializer]
-     public static void Initialize()
-     {
-         Thread t = new Thread(() => { Thread.Sleep(10 * 60 * 1000); Environment.FailFast("Early Timeout"); });
-         t.IsBackground = true;
-         t.Start();
-     }
+    [ModuleInitializer]
+    public static void Initialize()
+    {
+        if (OperatingSystem.IsBrowser())
+            return;
+
+        Thread t = new Thread(() => { Thread.Sleep(10 * 60 * 1000); Environment.FailFast("Early Timeout"); });
+        t.IsBackground = true;
+        t.Start();
+    }
 }
 
 namespace System.Net.WebSockets.Client.Tests
