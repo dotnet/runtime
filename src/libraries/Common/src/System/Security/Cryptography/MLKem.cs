@@ -979,6 +979,206 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///  Imports an ML-KEM key from an RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The text of the PEM key to import.
+        /// </param>
+        /// <returns>
+        ///   The imported ML-KEM key.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains multiple PEM-encoded ML-KEM keys.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains no PEM-encoded ML-KEM keys.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///   are found, an exception is raised to prevent importing a key when the key is ambiguous.
+        ///   </para>
+        ///   <para>
+        ///   This method supports the following PEM labels:
+        ///   <list type="bullet">
+        ///     <item><description>PUBLIC KEY</description></item>
+        ///     <item><description>PRIVATE KEY</description></item>
+        ///   </list>
+        ///   </para>
+        /// </remarks>
+        public static MLKem ImportFromPem(ReadOnlySpan<char> source)
+        {
+            ThrowIfNotSupported();
+
+            return PemKeyHelpers.ImportFactoryPem<MLKem>(source, label =>
+                label switch
+                {
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    _ => null,
+                });
+        }
+
+        /// <inheritdoc cref="ImportFromPem(ReadOnlySpan{char})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />
+        /// </exception>
+        public static MLKem ImportFromPem(string source)
+        {
+            ThrowIfNull(source);
+            return ImportFromPem(source.AsSpan());
+        }
+
+        /// <summary>
+        ///   Imports an ML-KEM key from an encrypted RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The PEM text of the encrypted key to import.</param>
+        /// <param name="password">
+        ///   The password to use for decrypting the key material.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        /// <para>
+        ///   <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
+        ///   <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
+        /// </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///   The password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   indicate the key is for an algorithm other than the algorithm
+        ///   represented by this instance.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   represent the key in a format that is not supported.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     An error occurred while importing the key.
+        ///   </para>
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     When the base-64 decoded contents of <paramref name="source" /> indicate an algorithm that uses PBKDF1
+        ///     (Password-Based Key Derivation Function 1) or PBKDF2 (Password-Based Key Derivation Function 2),
+        ///     the password is converted to bytes via the UTF-8 encoding.
+        ///   </para>
+        ///   <para>
+        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///     are found, an exception is thrown to prevent importing a key when
+        ///     the key is ambiguous.
+        ///   </para>
+        ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
+        /// </remarks>
+        public static MLKem ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<char> password)
+        {
+            return PemKeyHelpers.ImportEncryptedFactoryPem<MLKem, char>(
+                source,
+                password,
+                ImportEncryptedPkcs8PrivateKey);
+        }
+
+        /// <summary>
+        ///   Imports an ML-KEM key from an encrypted RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The PEM text of the encrypted key to import.</param>
+        /// <param name="passwordBytes">
+        ///   The password to use for decrypting the key material.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        /// <para>
+        ///   <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
+        ///   <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
+        /// </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///   The password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   indicate the key is for an algorithm other than the algorithm
+        ///   represented by this instance.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   represent the key in a format that is not supported.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     An error occurred while importing the key.
+        ///   </para>
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///     are found, an exception is thrown to prevent importing a key when
+        ///     the key is ambiguous.
+        ///   </para>
+        ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
+        /// </remarks>
+        public static MLKem ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<byte> passwordBytes)
+        {
+            return PemKeyHelpers.ImportEncryptedFactoryPem<MLKem, byte>(
+                source,
+                passwordBytes,
+                ImportEncryptedPkcs8PrivateKey);
+        }
+
+        /// <inheritdoc cref="ImportFromEncryptedPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> or <paramref name="password" /> is <see langword="null" />
+        /// </exception>
+        public static MLKem ImportFromEncryptedPem(string source, string password)
+        {
+            ThrowIfNull(source);
+            ThrowIfNull(password);
+
+            return ImportFromEncryptedPem(source.AsSpan(), password.AsSpan());
+        }
+
+        /// <inheritdoc cref="ImportFromEncryptedPem(ReadOnlySpan{char}, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> or <paramref name="passwordBytes" /> is <see langword="null" />
+        /// </exception>
+        public static MLKem ImportFromEncryptedPem(string source, byte[] passwordBytes)
+        {
+            ThrowIfNull(source);
+            ThrowIfNull(passwordBytes);
+
+            return ImportFromEncryptedPem(source.AsSpan(), new ReadOnlySpan<byte>(passwordBytes));
+        }
+
+        /// <summary>
         ///  Releases all resources used by the <see cref="MLKem"/> class.
         /// </summary>
         public void Dispose()

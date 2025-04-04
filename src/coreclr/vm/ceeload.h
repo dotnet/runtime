@@ -627,6 +627,8 @@ private:
         IS_ETW_NOTIFIED             = 0x00000020,
 
         IS_REFLECTION_EMIT          = 0x00000040,
+        PROF_DISABLE_OPTIMIZATIONS  = 0x00000080,   // indicates if Profiler disabled JIT optimization event mask was set when loaded
+        PROF_DISABLE_INLINING       = 0x00000100,   // indicates if Profiler disabled JIT Inlining event mask was set when loaded
 
         //
         // Note: The values below must match the ones defined in
@@ -913,6 +915,39 @@ protected:
         SUPPORTS_DAC;
         _ASSERTE((m_dwTransientFlags & IS_EDIT_AND_CONTINUE) == 0 || IsEditAndContinueCapable());
         return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
+    }
+
+    BOOL IsInliningDisabledByProfiler() const
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return (m_dwTransientFlags & PROF_DISABLE_INLINING) != 0;
+    }
+
+    BOOL AreJITOptimizationsDisabled() const
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+#ifdef DEBUGGING_SUPPORTED
+        // check if debugger has disallowed JIT optimizations
+        auto dwDebuggerBits = GetDebuggerInfoBits();
+        if (!CORDebuggerAllowJITOpts(dwDebuggerBits))
+        {
+            return TRUE;
+        }
+#endif // DEBUGGING_SUPPORTED
+
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+        // check if profiler had disabled JIT optimizations when module was loaded
+        if (m_dwTransientFlags & PROF_DISABLE_OPTIMIZATIONS)
+        {
+            return TRUE;
+        }
+#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+
+        return FALSE;
     }
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -1339,7 +1374,7 @@ public:
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);
 
-    DebuggerAssemblyControlFlags GetDebuggerInfoBits(void)
+    DebuggerAssemblyControlFlags GetDebuggerInfoBits(void) const
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;

@@ -2929,10 +2929,15 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
         JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk  : (UMEntryThunk*)NULL);
     }
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else    
+    frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
+    INSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -2962,10 +2967,15 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
         JIT_ReversePInvokeEnterRare(frame, _ReturnAddress());
     }
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else    
+    frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
+    INSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -2980,8 +2990,12 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
     // to make this exit faster.
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else
+    UNINSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 
 #ifdef PROFILING_SUPPORTED
@@ -3003,8 +3017,12 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     // to make this exit faster.
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else
+    UNINSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 }
 HCIMPLEND_RAW
