@@ -764,7 +764,7 @@ CDAC_GLOBALS_BEGIN()
 #if defined(TARGET_UNIX)
 CDAC_GLOBAL_STRING(OperatingSystem, unix)
 #elif defined(TARGET_WINDOWS)
-CDAC_GLOBAL_STRING(OperatingSystem, win)
+CDAC_GLOBAL_STRING(OperatingSystem, windows)
 #else
 #error Unknown OperatingSystem.
 #endif

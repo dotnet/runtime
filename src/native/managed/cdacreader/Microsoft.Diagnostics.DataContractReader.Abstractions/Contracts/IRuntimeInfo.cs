@@ -5,21 +5,26 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+// Values are similar to System.Runtime.InteropServices.Architecture
 public enum RuntimeInfoArchitecture : uint
 {
     Unknown = 0,
     X86,
-    Arm32,
     X64,
+    Arm,
     Arm64,
+    Wasm,
+    S390x,
     LoongArch64,
-    RISCV,
+    Armv6,
+    Ppc64le,
+    RiscV64,
 }
 
 public enum RuntimeInfoOperatingSystem : uint
 {
     Unknown = 0,
-    Win,
+    Windows,
     Unix,
 }
 
