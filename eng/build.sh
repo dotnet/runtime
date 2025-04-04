@@ -583,7 +583,16 @@ arguments="$arguments /p:TargetArchitecture=$arch /p:BuildArchitecture=$hostArch
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
 
 if [[ "$bootstrap" == "1" ]]; then
-  "$scriptroot/common/build.sh" $arguments /p:Subset=bootstrap -bl:$scriptroot/artifacts/log/bootstrap.binlog
+  # Strip build actions other than -restore and -build from the arguments for the bootstrap build.
+  bootstrapArguments="${arguments//-sign/}"
+  bootstrapArguments="${bootstrapArguments//-publish/}"
+  bootstrapArguments="${bootstrapArguments//-pack/}"
+  bootstrapArguments="${bootstrapArguments//-test/}"
+  "$scriptroot/common/build.sh" $bootstrapArguments /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/bootstrap.binlog
+
+  # Remove artifacts from the bootstrap build so the product build is a "clean" build.
+  echo "Cleaning up artifacts from bootstrap build..."
+  rm -r "$scriptroot/../artifacts/obj" "$scriptroot/../artifacts/bin"
   arguments="$arguments /p:UseBootstrap=true"
 fi
 
