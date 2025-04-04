@@ -22068,7 +22068,12 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps        op,
     if (intrinsic != NI_Illegal)
     {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-        if (wrapInCvtm && (lookupType != type))
+
+        bool wrapCallInConvertVectorToMask = (lookupType != type);
+#if defined(TARGET_ARM64)
+        wrapCallInConvertVectorToMask &= wrapInCvtm;
+#endif
+        if (wrapCallInConvertVectorToMask)
         {
             assert(varTypeIsMask(lookupType));
             GenTree* retNode = gtNewSimdHWIntrinsicNode(lookupType, op1, op2, intrinsic, simdBaseJitType, simdSize);
@@ -28956,6 +28961,8 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
     }
 }
 
+#ifdef TARGET_ARM64
+
 //------------------------------------------------------------------------------
 // GetScalableHWIntrinsicId: Returns SVE equivalent of given intrinsic ID, if applicable
 //
@@ -29107,6 +29114,8 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
     assert((simdSize <= 16) || (sveId < FIRST_NI_AdvSimd) || (sveId > LAST_NI_AdvSimd));
     return sveId;
 }
+
+#endif
 
 //------------------------------------------------------------------------------
 // GetHWIntrinsicIdForUnOp: Returns intrinsic ID based on the oper, base type, and simd size
@@ -30051,7 +30060,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 #endif // !TARGET_ARM64
     else
     {
-        assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == Compiler::compVectorTLength));
+        bool validSimdSize = (simdSize == 8) || (simdSize == 12) || (simdSize == 16);
+#if defined(TARGET_ARM64)
+        validSimdSize |= (simdSize == Compiler::compVectorTLength);
+#endif
+        assert(validSimdSize);
 
 #if defined(TARGET_ARM64)
         assert(!isScalar || (simdSize == 8));
