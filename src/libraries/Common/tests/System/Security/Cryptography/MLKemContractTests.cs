@@ -840,7 +840,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ExportPkcs8PrivateKey_DoublesAndRetry()
+        public static void ExportPkcs8PrivateKey_ExpandAndRetry()
         {
             const int TargetSize = 4567;
             MLKemContract kem = new(MLKemAlgorithm.MLKem512)
@@ -887,6 +887,15 @@ namespace System.Security.Cryptography.Tests
             };
 
             Assert.Throws<CryptographicException>(() => kem.ExportPkcs8PrivateKey());
+        }
+
+        [Fact]
+        public static void ExportPkcs8PrivateKey_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportPkcs8PrivateKey());
+            Assert.Throws<ObjectDisposedException>(() => kem.TryExportPkcs8PrivateKey(new byte[512], out _));
         }
 
         private static string MapAlgorithmOid(MLKemAlgorithm algorithm)
