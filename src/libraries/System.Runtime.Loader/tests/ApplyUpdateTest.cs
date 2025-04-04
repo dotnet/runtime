@@ -995,7 +995,7 @@ namespace System.Reflection.Metadata
                 ApplyUpdateUtil.ApplyUpdate(assm);
                 ApplyUpdateUtil.ClearAllReflectionCaches();
 
-                var r = ApplyUpdate.Test.IncreaseMetadataRowSize.Method1();
+                var r = ApplyUpdate.Test.IncreaseMetadataRowSize.VeryLooooooooooooooooooooooooooooooooongMethodNameToPushTheStringBlobOver64k_1();
                 Assert.Equal(50000, r);
                 MethodInfo mi = typeof(ApplyUpdate.Test.IncreaseMetadataRowSize).GetMethod("VeryLooooooooooooooooooooooooooooooooongMethodNameToPushTheStringBlobOver64k_800");
                 ParameterInfo[] pars = mi.GetParameters();
