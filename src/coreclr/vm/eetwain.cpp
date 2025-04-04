@@ -2220,11 +2220,15 @@ static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 // NOTE: This function must be prevented from calling the actual funclet via a tail call to ensure
 // that the m_csfEHClause is really set to what is a SP of the caller frame of the funclet. The
 // StackFrameIterator relies on this.
+#ifndef USE_FUNCLET_CALL_HELPER
 #ifdef _MSC_VER
 #pragma optimize("", off)
-#else
-__attribute__((disable_tail_calls))
+#elif defined(__clang__)
+[[clang::disable_tail_calls]]
+#elif defined(__GNUC__)
+[[gnu::optimize("O0")]]
 #endif
+#endif // USE_FUNCLET_CALL_HELPER
 DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
 {
     DWORD_PTR dwResult = 0;
@@ -2270,9 +2274,11 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
 #endif // TARGET_WASM
     return dwResult;
 }
+#ifndef USE_FUNCLET_CALL_HELPER
 #ifdef _MSC_VER
 #pragma optimize("", on)
 #endif
+#endif // USE_FUNCLET_CALL_HELPER
 
 #ifdef FEATURE_INTERPRETER
 DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
