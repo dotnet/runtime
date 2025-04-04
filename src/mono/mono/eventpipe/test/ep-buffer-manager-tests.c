@@ -279,7 +279,7 @@ test_buffer_manager_write_event (void)
 	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1, NULL) == true);
 
 	EP_LOCK_ENTER (section1)
-		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
+		ep_buffer_manager_suspend_write_event (buffer_manager);
 	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
@@ -318,7 +318,7 @@ test_buffer_manager_read_event (void)
 	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1, NULL) == true);
 
 	EP_LOCK_ENTER (section1)
-		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
+		ep_buffer_manager_suspend_write_event (buffer_manager);
 	EP_LOCK_EXIT (section1)
 
 	ep_event_instance = ep_buffer_manager_get_next_event (buffer_manager);
@@ -371,7 +371,7 @@ test_buffer_manager_deallocate_buffers (void)
 	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1, NULL) == true);
 
 	EP_LOCK_ENTER (section1)
-		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
+		ep_buffer_manager_suspend_write_event (buffer_manager);
 	EP_LOCK_EXIT (section1)
 
 	ep_buffer_manager_deallocate_buffers (buffer_manager);
@@ -472,7 +472,7 @@ test_buffer_manager_oom (void)
 	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1000 * 1000, NULL) == false);
 
 	EP_LOCK_ENTER (section1)
-		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
+		ep_buffer_manager_suspend_write_event (buffer_manager);
 	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
@@ -543,7 +543,7 @@ test_buffer_manager_perf (void)
 	}
 
 	EP_LOCK_ENTER (section1)
-		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
+		ep_buffer_manager_suspend_write_event (buffer_manager);
 	EP_LOCK_EXIT (section1)
 
 	test_location = 4;
