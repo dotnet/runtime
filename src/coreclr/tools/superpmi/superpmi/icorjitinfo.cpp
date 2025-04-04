@@ -1544,16 +1544,7 @@ void MyICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
 uint32_t MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
 {
     jitInstance->mc->cr->AddCall("getJitFlags");
-    uint32_t ret = jitInstance->mc->repGetJitFlags(jitFlags, sizeInBytes);
-    if (jitInstance->forceClearAltJitFlag)
-    {
-        jitFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
-    }
-    else if (jitInstance->forceSetAltJitFlag)
-    {
-        jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
-    }
-    return ret;
+    return jitInstance->getJitFlags(jitFlags, sizeInBytes);
 }
 
 // Runs the given function with the given parameter under an error trap

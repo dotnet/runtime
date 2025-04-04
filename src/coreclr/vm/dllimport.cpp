@@ -3415,7 +3415,6 @@ BOOL NDirect::MarshalingRequired(
     return FALSE;
 }
 
-
 // factorization of CreateNDirectStubWorker
 static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                                                      mdParamDef*        params,
@@ -4291,7 +4290,13 @@ static void CreateNDirectStubAccessMetadata(
         // P/Invoke marked with UnmanagedCallersOnlyAttribute is not
         // presently supported.
         if (pMD->HasUnmanagedCallersOnlyAttribute())
-            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
+        {
+            SString namespaceOrClassName;
+            SString methodName;
+            pMD->GetMethodInfoNoSig(namespaceOrClassName, methodName);
+            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_UNMANAGEDCALLERSONLY,
+                namespaceOrClassName.GetUnicode(), methodName.GetUnicode());
+        }
 
         // Check to see if we need to do LCID conversion.
         lcidArg = GetLCIDParameterIndex(pMD);
@@ -5828,7 +5833,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 {
     LPVOID ret = NULL;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     CONTRACTL
     {
@@ -5879,8 +5884,6 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
-    END_PRESERVE_LAST_ERROR;
-
     return ret;
 }
 
@@ -5891,7 +5894,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 
 EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock, VASigCookie *pVASigCookie, MethodDesc *pMD)
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5915,13 +5918,11 @@ EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock
     GetILStubForCalli(pVASigCookie, pMD);
 
     pFrame->Pop(CURRENT_THREAD);
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget)
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5944,8 +5945,6 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     GetILStubForCalli(pVASigCookie, NULL);
 
     pFrame->Pop(CURRENT_THREAD);
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)

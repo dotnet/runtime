@@ -1389,7 +1389,9 @@ void Module::FreeClassTables()
         MethodTable * pMT = typeDefIter.GetElement();
         if (pMT != NULL)
         {
-            pMT->GetClass()->Destruct(pMT);
+            ClassLoader::NotifyUnload(pMT, true);
+            pMT->GetClass()->Destruct();
+            ClassLoader::NotifyUnload(pMT, false);
         }
     }
 
@@ -1405,14 +1407,20 @@ void Module::FreeClassTables()
             {
                 TypeHandle th = pEntry->GetTypeHandle();
 
+                // Array EEClass doesn't need notification and there is no work for Destruct()
+                if (th.IsTypeDesc())
+                    continue;
+
+                MethodTable * pMT = th.AsMethodTable();
+                ClassLoader::NotifyUnload(pMT, true);
+
                 // We need to call destruct on instances of EEClass whose "canonical" dependent lives in this table
-                // There is nothing interesting to destruct on array EEClass
-                if (!th.IsTypeDesc())
+                if (pMT->IsCanonicalMethodTable())
                 {
-                    MethodTable * pMT = th.AsMethodTable();
-                    if (pMT->IsCanonicalMethodTable())
-                        pMT->GetClass()->Destruct(pMT);
+                    pMT->GetClass()->Destruct();
                 }
+
+                ClassLoader::NotifyUnload(pMT, false);
             }
         }
     }
@@ -2191,21 +2199,18 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
 }
 
 
-OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
+STRINGREF* ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(TypeFromToken(token) == mdtString);
     }
     CONTRACTL_END;
 
     EEStringData strData;
-    OBJECTHANDLE string = NULL;
 
 #if !BIGENDIAN
     InitializeStringData(token, &strData, NULL);
@@ -2215,14 +2220,8 @@ OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
 #endif // !!BIGENDIAN
 
     GCX_COOP();
-
-    LoaderAllocator *pLoaderAllocator;
-
-    pLoaderAllocator = this->GetLoaderAllocator();
-
-    string = (OBJECTHANDLE)pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData, ppPinnedString);
-
-    return string;
+    LoaderAllocator* pLoaderAllocator = this->GetLoaderAllocator();
+    return pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData, ppPinnedString);
 }
 
 mdToken Module::GetEntryPointToken()

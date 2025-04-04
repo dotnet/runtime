@@ -735,6 +735,7 @@ void EEStartupHelper()
 
 #ifdef FEATURE_PERFMAP
         PerfMap::Initialize();
+        InitThreadManagerPerfMapData();
 #endif
 
 #ifdef FEATURE_PGO
@@ -779,7 +780,7 @@ void EEStartupHelper()
             Disassembler::StaticInitialize();
             if (!Disassembler::IsAvailable())
             {
-                fprintf(stderr, "External disassembler is not available.\n");
+                minipal_log_print_error("External disassembler is not available.\n");
                 IfFailGo(E_FAIL);
             }
         }
@@ -887,7 +888,6 @@ void EEStartupHelper()
         // Before setting up the execution manager initialize the first part
         // of the JIT helpers.
         InitJITHelpers1();
-        InitJITHelpers2();
 
         SyncBlockCache::Attach();
 

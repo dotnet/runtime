@@ -111,6 +111,7 @@
 #ifndef __threads_h__
 #define __threads_h__
 
+#include <exception>
 #include "vars.hpp"
 #include "util.hpp"
 #include "eventstore.hpp"
@@ -348,7 +349,7 @@ DWORD GetRuntimeId();
 // One-time initialization. Called during Dll initialization.
 //---------------------------------------------------------------------------
 void InitThreadManager();
-
+void InitThreadManagerPerfMapData();
 
 // When we want to take control of a thread at a safe point, the thread will
 // eventually come back to us in one of the following trip functions:
@@ -369,9 +370,9 @@ void SetupTLSForThread();
 // When we resume a thread at a new location, to get an exception thrown, we have to
 // pretend the exception originated elsewhere.
 EXTERN_C void ThrowControlForThread(
-#ifdef FEATURE_EH_FUNCLETS
+#if !defined(TARGET_X86)
         FaultingExceptionFrame *pfef
-#endif // FEATURE_EH_FUNCLETS
+#endif // !TARGET_X86
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
         , TADDR ssp
 #endif // TARGET_AMD64 && TARGET_WINDOWS
@@ -654,7 +655,7 @@ public:
                                                       // effort.
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-        // unused                       = 0x02000000,
+        TSNC_UnhandledException2ndPass  = 0x02000000, // The unhandled exception propagation is in the 2nd pass
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
@@ -5233,7 +5234,8 @@ public:
     ~CoopTransitionHolder()
     {
         WRAPPER_NO_CONTRACT;
-        if (m_pFrame != NULL)
+        _ASSERTE_MSG(m_pFrame == nullptr || std::uncaught_exception(), "Early return from JIT/EE interface method");
+        if (m_pFrame != nullptr)
             COMPlusCooperativeTransitionHandler(m_pFrame);
     }
 
@@ -5242,7 +5244,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         // FRAME_TOP and NULL must be distinct values.
         // static_assert_no_msg(FRAME_TOP_VALUE != NULL);
-        m_pFrame = NULL;
+        m_pFrame = nullptr;
     }
 };
 

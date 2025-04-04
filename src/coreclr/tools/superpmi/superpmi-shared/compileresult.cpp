@@ -911,11 +911,6 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
             }
         }
 
-        if (targetArch == SPMI_TARGET_ARCHITECTURE_LOONGARCH64)
-        {
-            Assert(!"FIXME: Not Implements on loongarch64");
-        }
-
         if (IsSpmiTarget64Bit())
         {
             if (!wasRelocHandled && (relocType == IMAGE_REL_BASED_DIR64))
