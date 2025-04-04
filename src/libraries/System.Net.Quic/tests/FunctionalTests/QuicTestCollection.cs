@@ -41,7 +41,7 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
                 Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
             }
 
-            using (Process p = Process.Start(new ProcessStartInfo("tdnf", "history list all") { RedirectStandardOutput = true }))
+            using (Process p = Process.Start(new ProcessStartInfo("sudo", "tdnf history list all") { RedirectStandardOutput = true }))
             {
                 Console.WriteLine(p.StandardOutput.ReadToEnd());
             }
