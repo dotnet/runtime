@@ -548,7 +548,7 @@ export async function start_runtime () {
         } else if (runtimeHelpers.emscriptenBuildOptions.enableAotProfiler) {
             mono_wasm_init_aot_profiler(runtimeHelpers.config.aotProfilerOptions || {});
         } else if (runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
-            mono_wasm_init_browser_profiler();
+            mono_wasm_init_devtools_profiler();
         } else if (runtimeHelpers.emscriptenBuildOptions.enableLogProfiler) {
             mono_wasm_init_log_profiler(runtimeHelpers.config.logProfilerOptions || {});
         }
