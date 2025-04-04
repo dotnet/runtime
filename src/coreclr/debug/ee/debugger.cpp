@@ -15015,7 +15015,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
     if (pThread->m_hasPendingActivation)
     {
-        //It should never get here
+        _ASSERTE(!"Should never get here with a pending activation. (Debugger::FuncEvalSetup)");
         return CORDBG_E_ILLEGAL_IN_NATIVE_CODE;
     }
 #endif    
