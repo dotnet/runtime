@@ -11,6 +11,8 @@ namespace System.Security.Cryptography.Tests
 {
     public abstract class MLKemBaseTests
     {
+        private static readonly PbeParameters s_aes128Pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 2);
+
         public abstract MLKem GenerateKey(MLKemAlgorithm algorithm);
         public abstract MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> seed);
         public abstract MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source);
@@ -494,6 +496,40 @@ namespace System.Security.Cryptography.Tests
             using MLKem kem = ImportEncapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512EncapsulationKey);
             Assert.Throws<CryptographicException>(() => DoTryUntilDone(kem.TryExportPkcs8PrivateKey));
             Assert.Throws<CryptographicException>(() => kem.ExportPkcs8PrivateKey());
+        }
+
+        [Fact]
+        public void ExportEncryptedPkcs8PrivateKey_DecapsulationKey_Roundtrip()
+        {
+            using MLKem kem = ImportDecapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512DecapsulationKey);
+            AssertEncryptedExportPkcs8PrivateKey(kem, MLKemTestData.EncryptedPrivateKeyPassword, s_aes128Pbe, pkcs8 =>
+            {
+                using MLKem imported = MLKem.ImportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword,
+                    pkcs8);
+
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.MLKem512DecapsulationKey,
+                    imported.ExportDecapsulationKey());
+                Assert.Throws<CryptographicException>(() => imported.ExportPrivateSeed());
+            });
+        }
+
+        [Fact]
+        public void ExportEncryptedPkcs8PrivateKey_Seed_Roundtrip()
+        {
+            using MLKem kem = ImportPrivateSeed(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512PrivateSeed);
+            AssertEncryptedExportPkcs8PrivateKey(kem, MLKemTestData.EncryptedPrivateKeyPassword, s_aes128Pbe, pkcs8 =>
+            {
+                using MLKem imported = MLKem.ImportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword,
+                    pkcs8);
+
+                AssertExtensions.SequenceEqual(MLKemTestData.MLKem512PrivateSeed, imported.ExportPrivateSeed());
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.MLKem512DecapsulationKey,
+                    imported.ExportDecapsulationKey());
+            });
         }
 
         private static void AssertExportPkcs8PrivateKey(MLKem kem, Action<byte[]> callback)
