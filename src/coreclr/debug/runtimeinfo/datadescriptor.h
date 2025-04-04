@@ -766,7 +766,7 @@ CDAC_GLOBAL_STRING(OperatingSystem, unix)
 #elif defined(TARGET_WINDOWS)
 CDAC_GLOBAL_STRING(OperatingSystem, windows)
 #else
-#error Unknown OperatingSystem.
+#error TARGET_{OS} define is not recognized by the cDAC. Update this define switch and enum values in IRuntimeInfo.cs
 #endif
 
 #if defined(TARGET_X86)
@@ -782,7 +782,7 @@ CDAC_GLOBAL_STRING(Architecture, loongarch64)
 #elif defined(TARGET_RISCV64)
 CDAC_GLOBAL_STRING(Architecture, riscv64)
 #else
-#error Unknown Architecture.
+#error TARGET_{ARCH} define is not recognized by the cDAC. Update this define switch and enum values in IRuntimeInfo.cs
 #endif
 
 CDAC_GLOBAL_STRING(RID, RID_STRING)
