@@ -7709,12 +7709,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte getMaskSByte()
         {
-            return (sbyte)(TestLibrary.Generator.GetSByte() % 2);
+            return (sbyte)(TestLibrary.Generator.GetByte() % 2);
         }
 
         public static short getMaskInt16()
         {
-            return (short)(TestLibrary.Generator.GetInt16() % 2);
+            return (short)(TestLibrary.Generator.GetUInt16() % 2);
         }
 
         public static ushort getMaskUInt16()
@@ -7724,7 +7724,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int getMaskInt32()
         {
-            return (int)(TestLibrary.Generator.GetInt32() % 2);
+            return (int)(TestLibrary.Generator.GetUInt32() % 2);
         }
 
         public static uint getMaskUInt32()
@@ -7734,7 +7734,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long getMaskInt64()
         {
-            return (long)(TestLibrary.Generator.GetInt64() % 2);
+            return (long)(TestLibrary.Generator.GetUInt64() % 2);
         }
 
         public static ulong getMaskUInt64()
