@@ -23,50 +23,39 @@ namespace System.Tests
             culture.DateTimeFormat.MonthGenitiveNames = new[] { "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember", "" };
             culture.DateTimeFormat.DayNames = new[] { "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag" };
             culture.DateTimeFormat.DateSeparator = ".";
-            
             // Regular month names (non-genitive)
             culture.DateTimeFormat.AbbreviatedMonthNames = new[] { "Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez", "" };
             culture.DateTimeFormat.MonthNames = new[] { "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember", "" };
-            
             // Test cases for abbreviated month names (MMM)
-            
             // Case 1: Format without day specifier - should use regular month name
             DateTime result;
             bool success = DateTime.TryParseExact("Dez.20", "MMM.yy", culture, DateTimeStyles.None, out result);
             Assert.True(success);
             Assert.Equal(12, result.Month);
             Assert.Equal(2020, result.Year);
-            
             // Case 2: Format with day-of-month specifier - should use genitive month name
             success = DateTime.TryParseExact("Dez.20 01", "MMM.yy dd", culture, DateTimeStyles.None, out result);
             Assert.False(success);
-            
             // Case 3: Format with day-of-month specifier before month - should use genitive month name
             success = DateTime.TryParseExact("01 Dez.20", "d MMM.yy", culture, DateTimeStyles.None, out result);
             Assert.False(success);
-            
             // Case 4: Format with day-of-week specifier - should use regular month name
             success = DateTime.TryParseExact("Dienstag Dez.20", "dddd MMM.yy", culture, DateTimeStyles.None, out result);
             Assert.True(success);
             Assert.Equal(12, result.Month);
             Assert.Equal(2020, result.Year);
-            
             // Test cases for full month names (MMMM)
-            
             // Case 5: Format without day specifier - should use regular month name
             success = DateTime.TryParseExact("Dezember.20", "MMMM.yy", culture, DateTimeStyles.None, out result);
             Assert.True(success);
             Assert.Equal(12, result.Month);
             Assert.Equal(2020, result.Year);
-            
             // Case 6: Format with day-of-month specifier - should use genitive month name
             success = DateTime.TryParseExact("Dezember.20 01", "MMMM.yy dd", culture, DateTimeStyles.None, out result);
             Assert.False(success);
-            
             // Case 7: Format with day-of-month specifier before month - should use genitive month name
             success = DateTime.TryParseExact("01 Dezember.20", "d MMMM.yy", culture, DateTimeStyles.None, out result);
             Assert.False(success);
-            
             // Case 8: Format with day-of-week specifier - should use regular month name
             success = DateTime.TryParseExact("Dienstag Dezember.20", "dddd MMMM.yy", culture, DateTimeStyles.None, out result);
             Assert.True(success);
