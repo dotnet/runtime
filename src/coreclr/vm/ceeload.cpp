@@ -480,10 +480,12 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_dwCustomAttributeCount = 0;
 #ifdef PROFILING_SUPPORTED
     // set profiler related JIT flags
-    if (CORProfilerDisableInlining()){
+    if (CORProfilerDisableInlining())
+    {
         m_dwTransientFlags |= PROF_DISABLE_INLINING;
     }
-    if (CORProfilerDisableOptimizations()){
+    if (CORProfilerDisableOptimizations())
+    {
         m_dwTransientFlags |= PROF_DISABLE_OPTIMIZATIONS;
     }
 
