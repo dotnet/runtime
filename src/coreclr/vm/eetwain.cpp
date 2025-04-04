@@ -2216,11 +2216,10 @@ static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 // * Catch funclet: address to resume at after the catch returns
 // * Finally funclet: unused
 // * Filter funclet: result of the filter funclet (EXCEPTION_CONTINUE_SEARCH (0) or EXCEPTION_EXECUTE_HANDLER (1))
-//
+#ifndef USE_FUNCLET_CALL_HELPER
 // NOTE: This function must be prevented from calling the actual funclet via a tail call to ensure
 // that the m_csfEHClause is really set to what is a SP of the caller frame of the funclet. The
 // StackFrameIterator relies on this.
-#ifndef USE_FUNCLET_CALL_HELPER
 #ifdef _MSC_VER
 #pragma optimize("", off)
 #elif defined(__clang__)
