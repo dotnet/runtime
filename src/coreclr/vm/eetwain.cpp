@@ -2224,7 +2224,7 @@ static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 #pragma optimize("", off)
 #elif defined(__clang__)
 [[clang::disable_tail_calls]]
-#elif defined(__GNUC__)
+#else
 [[gnu::optimize("O0")]]
 #endif
 #endif // USE_FUNCLET_CALL_HELPER
@@ -2241,8 +2241,7 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
 #ifdef USE_FUNCLET_CALL_HELPER
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
-    CallerStackFrame* pCallerStackFrame = &pExInfo->m_csfEHClause;
-    UINT_PTR *pFuncletCallerSP = &(pCallerStackFrame->SP);
+    UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
 
     if (isFilterFunclet)
     {
