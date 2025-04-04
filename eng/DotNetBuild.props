@@ -46,7 +46,7 @@
            It's used to add OutputRID in the graph if the parent can't be detected. -->
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
       <!-- Source-build will use non-portable RIDs. TO build for these non-portable RID scenarios, we must do a boostrapped build. -->
-      <InnerBuildArgs Condition="'$(DotNetBuildSourceOnly)">$(InnerBuildArgs) --bootstrap</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildSourceOnly) == 'true' and '$(DotNetBuildUseMonoRuntime)' != 'true'">$(InnerBuildArgs) --bootstrap</InnerBuildArgs>
       <!-- Pass through special build modes controlled by properties -->
       <InnerBuildArgs Condition="'$(DotNetBuildRuntimeWasmEnableThreads)' == 'true'">$(InnerBuildArgs) /p:WasmEnableThreads=true</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoEnableLLVM=$(DotNetBuildMonoEnableLLVM)</InnerBuildArgs>
