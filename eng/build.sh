@@ -14,6 +14,21 @@ while [[ -h "$source" ]]; do
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
+/tmp/docker exec -t -u root sample tdnf install -y sudo
+
+sudo tdnf install -y procps-ng
+sudo tdnf install -y gawk
+sudo tdnf install -y coreutils
+
+export MSBUILD_TELEMETRY_SAMPLE_RATE=1.0
+export MSBUILDFLUSHNODESTELEMETRYINTOCONSOLE=1
+export MSBUILDOUTPUTNODESTELEMETRY=1
+export DOTNET_CLI_TELEMETRY_OPTOUT=0
+
+statscmd="$scriptroot/stats.sh"
+
+$statscmd &
+
 usage()
 {
   echo "Common settings:"
