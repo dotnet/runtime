@@ -21,7 +21,7 @@ namespace System.Reflection.Metadata
         }
 #pragma warning restore CA1822
 
-        internal bool TopLevelAssemblyWasProvided { get; set; }
+        internal bool IsAssemblyGetType { get; set; }
     }
 }
 
