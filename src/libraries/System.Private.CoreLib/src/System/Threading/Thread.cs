@@ -24,14 +24,6 @@ namespace System.Threading
         // State associated with starting new thread
         private sealed class StartHelper
         {
-#if TARGET_OSX
-            // On other platforms, when the underlying native thread is created,
-            // the thread name is set to the name of the managed thread by another thread.
-            // However, on OS X, only the thread itself can set its name.
-            // The thread reference here allows the native thread to set its name before the actual work starts.
-            // See https://github.com/dotnet/runtime/issues/106464.
-            internal Thread _thread;
-#endif
             internal int _maxStackSize;
             internal Delegate _start;
             internal object? _startArg;
@@ -39,18 +31,10 @@ namespace System.Threading
             internal CultureInfo? _uiCulture;
             internal ExecutionContext? _executionContext;
 
-#if !TARGET_OSX
             internal StartHelper(Delegate start)
             {
                 _start = start;
             }
-#else
-            internal StartHelper(Thread thread, Delegate start)
-            {
-                _thread = thread;
-                _start = start;
-            }
-#endif
 
             internal static readonly ContextCallback s_threadStartContextCallback = new ContextCallback(Callback);
 
@@ -88,11 +72,17 @@ namespace System.Threading
 
                 try
                 {
-#if TARGET_OSX
-                    if (!string.IsNullOrEmpty(_thread.Name))
+#if TARGET_OSX || NATIVEAOT
+                    // On other platforms, when the underlying native thread is created,
+                    // the thread name is set to the name of the managed thread by another thread.
+                    // However, on OS X and NativeAOT (across all OSes), only the thread itself can set its name.
+                    // Therefore, by this point the native thread is still unnamed as it has not started yet.
+                    // See https://github.com/dotnet/runtime/issues/106464.
+                    Thread thread = Thread.CurrentThread;
+                    if (!string.IsNullOrEmpty(thread.Name))
                     {
                         // Name the underlying native thread to match the managed thread name.
-                        _thread.ThreadNameChanged(_thread.Name);
+                        thread.ThreadNameChanged(thread.Name);
                     }
 #endif
                     if (start is ThreadStart threadStart)
@@ -143,11 +133,7 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(start);
 
-#if !TARGET_OSX
             _startHelper = new StartHelper(start);
-#else
-            _startHelper = new StartHelper(this, start);
-#endif
 
             Initialize();
         }
@@ -158,11 +144,7 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
-#if !TARGET_OSX
-            _startHelper = new StartHelper(start);
-#else
-            _startHelper = new StartHelper(this, start);
-#endif
+            _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
 
             Initialize();
         }
@@ -171,11 +153,7 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(start);
 
-#if !TARGET_OSX
             _startHelper = new StartHelper(start);
-#else
-            _startHelper = new StartHelper(this, start);
-#endif
 
             Initialize();
         }
@@ -186,11 +164,7 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
-#if !TARGET_OSX
-            _startHelper = new StartHelper(start);
-#else
-            _startHelper = new StartHelper(this, start);
-#endif
+            _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
 
             Initialize();
         }
