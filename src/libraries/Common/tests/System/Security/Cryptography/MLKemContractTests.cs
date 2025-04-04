@@ -801,8 +801,14 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void TryExportPkcs8PrivateKey()
         {
-            int bufferSize = RandomNumberGenerator.GetInt32(87, 1024);
-            int writtenSize = RandomNumberGenerator.GetInt32(86, bufferSize);
+            Random random;
+#if NET
+            random = Random.Shared;
+#else
+            random = new Random();
+#endif
+            int bufferSize = random.Next(87, 1024);
+            int writtenSize = random.Next(86, bufferSize);
             bool success = (writtenSize & 1) == 1;
             byte[] buffer = new byte[bufferSize];
             MLKemContract kem = new(MLKemAlgorithm.MLKem512)

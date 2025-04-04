@@ -514,7 +514,7 @@ namespace System.Security.Cryptography.Tests
                 Array.Resize(ref buffer, buffer.Length * 2);
             }
 
-            return buffer[0..written];
+            return buffer.AsSpan(0, written).ToArray();
         }
 
 
