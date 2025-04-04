@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+start_time=$(date +%s)
+triggered="false"
+
+while true; do
+  echo "--------vm stats-----"
+  echo " for $(date)"
+  echo "--------disk---------"
+  df -h
+  echo "--------memory-------"
+  free -h
+  echo "--------processes----"
+  ps -aux
+  echo "--------done---------"
+  /__w/1/s/.dotnet/dotnet msbuild -version
+  sleep 5
+
+  current_time=$(date +%s)
+  elapsed_time=$(($current_time - $start_time))
+  echo "-------- elapsed_time $elapsed_time ---------"
+
+  # if [ $elapsed_time -ge 600 ] && [ "$triggered" == "false" ]; then
+  #   triggered="true"
+  #   echo "--------installing---------"
+  #   sudo /__w/1/s/.dotnet/dotnet tool install --global dotnet-trace
+  #   export pid=$(ps aux | grep "noautoresponse" | sort -nrk 4 | awk 'NR==1{print $2}')
+  #   echo "--------collecting $pid  ---------"
+  #   sudo mkdir -p /__w/1/s/artifacts/log/
+  #   echo /__w/1/s/artifacts/log/
+  #   sudo ls -la /__w/1/s/artifacts/log/
+  #   timestamp=$(date +%s)
+  #   sudo /root/.dotnet/tools/dotnet-trace collect --profile gc-collect -p "$pid" --duration 00:30:00 --output /__w/1/s/artifacts/log/trace.$timestamp.nettrace
+  #   sudo chmod a+r /__w/1/s/artifacts/log/trace.$timestamp.nettrace
+  #   echo /__w/1/s/artifacts/log/
+  #   sudo ls -la /__w/1/s/artifacts/log/
+  #   echo /__w/1/s/artifacts/log/
+  #   sudo ls -la /__w/1/s/artifacts/log/
+  #   echo "--------end collecting---------"
+  # fi
+done
