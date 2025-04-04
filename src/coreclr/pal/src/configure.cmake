@@ -942,7 +942,7 @@ elseif(CLR_CMAKE_TARGET_BROWSER)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 else() # Anything else is Linux
   # LTTNG is not available on Android, so don't error out
-  if(NOT HAVE_LTTNG_TRACEPOINT_H AND NOT CLR_CMAKE_TARGET_ANDROID AND FEATURE_EVENT_TRACE)
+  if(FEATURE_EVENTSOURCE_XPLAT AND NOT HAVE_LTTNG_TRACEPOINT_H)
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)
     message(FATAL_ERROR "Cannot find liblttng-ust-dev. Try installing liblttng-ust-dev  (or the appropriate packages for your platform)")
   endif()
