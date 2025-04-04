@@ -481,8 +481,6 @@ class DebuggerModule
     PTR_Module     m_pRuntimeModule;
     PTR_DomainAssembly m_pRuntimeDomainAssembly;
 
-    bool m_fHasOptimizedCode;
-
     // Can we change jit flags on the module?
     // This is true during the Module creation
     bool           m_fCanChangeJitFlags;

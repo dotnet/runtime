@@ -3301,7 +3301,7 @@ void Debugger::getBoundaries(MethodDesc * md,
     // lives in, then don't grab specific boundaries from the symbol
     // store since any boundaries we give the JIT will be pretty much
     // ignored anyway.
-    if (!CORDisableJITOptimizations(md->GetModule()->GetDebuggerInfoBits()))
+    if (!md->GetModule()->AreJITOptimizationsDisabled())
     {
         *implicitBoundaries  = ICorDebugInfo::BoundaryTypes(ICorDebugInfo::STACK_EMPTY_BOUNDARIES |
                                          ICorDebugInfo::CALL_SITE_BOUNDARIES);
@@ -3379,13 +3379,10 @@ void Debugger::getVars(MethodDesc * md, ULONG32 *cVars, ICorDebugInfo::ILVarInfo
     // free to ignore *extendOthers
     *extendOthers = true;
 
-    DWORD bits = md->GetModule()->GetDebuggerInfoBits();
-
     if (CORDBUnrecoverableError(this))
         goto Exit;
 
-    if (CORDisableJITOptimizations(bits))
-//    if (!CORDebuggerAllowJITOpts(bits))
+    if (md->GetModule()->AreJITOptimizationsDisabled())
     {
         //
         // @TODO: Do we really need this code since *extendOthers==true?
