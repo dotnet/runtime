@@ -3470,6 +3470,37 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
             blendVariableId = NI_EVEX_BlendVariableMask;
             op1             = maskNode;
         }
+        else if (op2->IsVectorZero() || op3->IsVectorZero())
+        {
+            // If either of the value operands is const zero, we can optimize down to AND or AND_NOT.
+            GenTree* binOp = nullptr;
+
+            if (op3->IsVectorZero())
+            {
+                binOp = comp->gtNewSimdBinOpNode(GT_AND, simdType, op1, op2, simdBaseJitType, simdSize);
+                BlockRange().Remove(op3);
+            }
+            else
+            {
+                binOp = comp->gtNewSimdBinOpNode(GT_AND_NOT, simdType, op3, op1, simdBaseJitType, simdSize);
+                BlockRange().Remove(op2);
+            }
+
+            BlockRange().InsertAfter(node, binOp);
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                use.ReplaceWith(binOp);
+            }
+            else
+            {
+                binOp->SetUnusedValue();
+            }
+
+            BlockRange().Remove(node);
+            return LowerNode(binOp);
+        }
         else if (simdSize == 32)
         {
             // For Vector256 (simdSize == 32), BlendVariable for floats/doubles
