@@ -2216,6 +2216,15 @@ static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 // * Catch funclet: address to resume at after the catch returns
 // * Finally funclet: unused
 // * Filter funclet: result of the filter funclet (EXCEPTION_CONTINUE_SEARCH (0) or EXCEPTION_EXECUTE_HANDLER (1))
+//
+// NOTE: This function must be prevented from calling the actual funclet via a tail call to ensure
+// that the m_csfEHClause is really set to what is a SP of the caller frame of the funclet. The
+// StackFrameIterator relies on this.
+#ifdef _MSC_VER
+#pragma optimize("", off)
+#else
+__attribute__((disable_tail_calls))
+#endif
 DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
 {
     DWORD_PTR dwResult = 0;
@@ -2261,6 +2270,9 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
 #endif // TARGET_WASM
     return dwResult;
 }
+#ifdef _MSC_VER
+#pragma optimize("", on)
+#endif
 
 #ifdef FEATURE_INTERPRETER
 DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
