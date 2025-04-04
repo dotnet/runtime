@@ -27,7 +27,7 @@ export function mono_wasm_init_aot_profiler (options: AOTProfilerOptions): void 
     cwraps.mono_wasm_profiler_init_aot(arg);
 }
 
-export function mono_wasm_init_browser_profiler (): void {
+export function mono_wasm_init_devtools_profiler (): void {
     mono_assert(runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser:callspec=N:Sample</WasmProfilers> in your project file.");
     enablePerfMeasure = globalThis.performance && typeof globalThis.performance.measure === "function";
     const desc = `${runtimeHelpers.config.environmentVariables!["DOTNET_WasmPerfInstrumentation"] || "callspec=all"}`;
