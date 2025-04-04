@@ -1595,7 +1595,10 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
      pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + sizeof(struct HijackArgs);
 
      pRD->pCurrentContext->R0 = m_Args->R0;
+     pRD->pCurrentContext->R2 = m_Args->R2;
+
      pRD->volatileCurrContextPointers.R0 = &m_Args->R0;
+     pRD->volatileCurrContextPointers.R2 = &m_Args->R2;
 
      pRD->pCurrentContext->R4 = m_Args->R4;
      pRD->pCurrentContext->R5 = m_Args->R5;
