@@ -70,6 +70,7 @@ extern void ep_rt_mono_init_providers_and_events (void);
 extern bool ep_rt_mono_providers_validate_all_disabled (void);
 extern bool ep_rt_mono_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event);
 extern void ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event);
+extern void ep_rt_mono_sample_profiler_session_enabled (void);
 extern void ep_rt_mono_sample_profiler_disabled (void);
 extern void ep_rt_mono_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
 extern int64_t ep_rt_mono_perf_counter_query (void);
@@ -650,6 +651,14 @@ ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
 static
 inline
 void
+ep_rt_sample_profiler_session_enabled (void)
+{
+	ep_rt_mono_sample_profiler_session_enabled ();
+}
+
+static
+inline
+void
 ep_rt_sample_profiler_disabled (void)
 {
 	ep_rt_mono_sample_profiler_disabled ();
@@ -983,6 +992,7 @@ ep_rt_queue_job (
 	void *job_func,
 	void *params)
 {
+#ifdef HOST_BROWSER
 	// in single-threaded, it will run the callback inline and re-schedule itself if necessary
 	// it's called from browser event loop
 	ds_job_cb cb = (ds_job_cb)job_func;
@@ -997,6 +1007,10 @@ ep_rt_queue_job (
 	}
 
 	return true;
+#else
+	// not implemented
+	return false;
+#endif
 }
 
 #endif // PERFTRACING_DISABLE_THREADS
