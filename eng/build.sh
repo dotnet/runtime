@@ -23,6 +23,7 @@ sudo tdnf install -y coreutils
 export MSBUILD_TELEMETRY_SAMPLE_RATE=1.0
 export MSBUILDFLUSHNODESTELEMETRYINTOCONSOLE=1
 export MSBUILDOUTPUTNODESTELEMETRY=1
+export DOTNET_CLI_TELEMETRY_OPTOUT=0
 
 statscmd="$scriptroot/stats.sh"
 
