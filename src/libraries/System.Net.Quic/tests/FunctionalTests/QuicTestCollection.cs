@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using Xunit;
 
 using static Microsoft.Quic.MsQuic;
+using System.Diagnostics;
 
 namespace System.Net.Quic.Tests;
 
@@ -38,6 +39,11 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
             if (StatusFailed(GetApiTable()->SetParam(null, QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
             {
                 Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
+            }
+
+            using (Process p = Process.Start(new ProcessStartInfo("tdnf", "history list all") { RedirectStandardOutput = true }))
+            {
+                Console.WriteLine(p.StandardOutput.ReadToEnd());
             }
         }
 
