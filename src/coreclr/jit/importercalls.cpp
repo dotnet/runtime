@@ -7909,7 +7909,28 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         default:
             return false;
     }
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64)
+    switch (intrinsicName)
+    {
+        case NI_System_Math_Abs:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_MinNumber:
+        case NI_System_Math_MinMagnitudeNumber:
+        case NI_System_Math_MaxNumber:
+        case NI_System_Math_MaxMagnitudeNumber:
+        case NI_System_Math_Min:
+        case NI_System_Math_MinMagnitude:
+        case NI_System_Math_Max:
+        case NI_System_Math_MaxMagnitude:
+        case NI_System_Math_MultiplyAddEstimate:
+        case NI_System_Math_ReciprocalEstimate:
+        case NI_System_Math_ReciprocalSqrtEstimate:
+            return true;
+
+        default:
+            return false;
+    }
+#elif defined(TARGET_LOONGARCH64)
     switch (intrinsicName)
     {
         case NI_System_Math_Abs:
@@ -7917,8 +7938,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_ReciprocalSqrtEstimate:
         {
             // TODO-LoongArch64: support these standard intrinsics
-            // TODO-RISCV64: support these standard intrinsics
-
             return false;
         }
 
@@ -10178,6 +10197,48 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
         return gtNewSimdToScalarNode(genActualType(callType), tmp, callJitType, 16);
     }
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
+
+#ifdef TARGET_RISCV64
+    GenTree *op1Clone = nullptr, *op2Clone = nullptr;
+
+    op2 = impPopStack().val;
+    if (!isNumber)
+    {
+        op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op2 for Math.Min/Max non-Number"));
+    }
+
+    op1 = impPopStack().val;
+    if (!isNumber)
+    {
+        op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op1 for Math.Min/Max non-Number"));
+    }
+
+    static const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
+    if (isMagnitude)
+    {
+        op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op1, NI_System_Math_Abs, nullptr R2RARG(nullEntry));
+        op2 = new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op2, NI_System_Math_Abs, nullptr R2RARG(nullEntry));
+    }
+    NamedIntrinsic name = isMax ? NI_System_Math_MaxNumber : NI_System_Math_MinNumber;
+    GenTree* minMax = new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op1, op2, name, nullptr R2RARG(nullEntry));
+
+    if (!isNumber)
+    {
+        GenTreeOp* isOp1Number   = gtNewOperNode(GT_EQ, TYP_INT, op1Clone, gtCloneExpr(op1Clone));
+        GenTreeOp* isOp2Number   = gtNewOperNode(GT_EQ, TYP_INT, op2Clone, gtCloneExpr(op2Clone));
+        GenTreeOp* isOkForMinMax = gtNewOperNode(GT_EQ, TYP_INT, isOp1Number, isOp2Number);
+
+        GenTreeOp* nanPropagator = gtNewOperNode(GT_ADD, callType, gtCloneExpr(op1Clone), gtCloneExpr(op2Clone));
+
+        GenTreeQmark* qmark = gtNewQmarkNode(callType, isOkForMinMax, gtNewColonNode(callType, minMax, nanPropagator));
+        // QMARK has to be a root node
+        unsigned tmp = lvaGrabTemp(true DEBUGARG("Temp for Qmark in Math.Min/Max non-Number"));
+        impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+        minMax = gtNewLclvNode(tmp, callType);
+    }
+
+    return minMax;
+#endif // TARGET_RISCV64
 
     // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
     // return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall, isSpecial);
