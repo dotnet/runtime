@@ -225,7 +225,7 @@ InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
     InterpreterPrecode* pPrecode = (InterpreterPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
     pPrecode->Init(pPrecode, byteCode);
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)pPrecode, size, PerfMapStubType::IndividualWithinBlock);
+    PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)pPrecode, sizeof(InterpreterPrecode), PerfMapStubType::IndividualWithinBlock);
 #endif
     return pPrecode;
 }

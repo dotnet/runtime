@@ -253,7 +253,7 @@ UMEntryThunk* UMEntryThunk::CreateUMEntryThunk()
         UMEntryThunkData *pData = (UMEntryThunkData *)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
         p = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
 #ifdef FEATURE_PERFMAP
-        PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)p, size, PerfMapStubType::IndividualWithinBlock);
+        PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)p, sizeof(UMEntryThunk), PerfMapStubType::IndividualWithinBlock);
 #endif
         pData->m_pUMEntryThunk = p;
         p->Init(p, dac_cast<TADDR>(pData), NULL, dac_cast<TADDR>(PRECODE_UMENTRY_THUNK));

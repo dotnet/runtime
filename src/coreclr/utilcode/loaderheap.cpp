@@ -1067,6 +1067,7 @@ size_t UnlockedLoaderHeap::AllocMem_TotalSize(size_t dwRequestedSize)
     return dwSize;
 }
 
+#ifdef _DEBUG
 /*static*/
 void UnlockedLoaderHeap::ValidateFreeList(UnlockedLoaderHeap *pHeap)
 {
@@ -1215,3 +1216,4 @@ void UnlockedLoaderHeap::ValidateFreeList(UnlockedLoaderHeap *pHeap)
     _ASSERTE(!("Unexpected AV inside LoaderHeap. The usual reason is that someone overwrote the end of a block or wrote into a freed block.\n"));
 
 }
+#endif // _DEBUG

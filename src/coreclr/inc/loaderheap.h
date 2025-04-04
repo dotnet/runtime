@@ -639,7 +639,7 @@ public:
 
 #ifndef DACCESS_COMPILE
 public:
-    ExplicitControlLoaderHeap(bool fMakeExecutable);
+    ExplicitControlLoaderHeap(bool fMakeExecutable = false);
 
     ~ExplicitControlLoaderHeap();
 #endif
