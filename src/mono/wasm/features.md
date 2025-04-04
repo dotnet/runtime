@@ -409,8 +409,7 @@ Then you can trigger collection of a trace from browser dev tools
 globalThis.getDotnetRuntime(0).collectGcDump()
 ```
 
-The .nettrace file could be coverted for VS via `dotnet-gcdump convert` or opened in `PerfView.exe` as is.
-
+The .nettrace file could be converted for VS via `dotnet-gcdump convert` or opened in `PerfView.exe` as is.
 ```js
 globalThis.getDotnetRuntime(0).collectPerfCounters({durationSeconds: 60})
 ```
