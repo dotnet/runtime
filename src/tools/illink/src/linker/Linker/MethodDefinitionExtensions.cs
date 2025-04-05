@@ -35,6 +35,21 @@ namespace Mono.Linker
 			return false;
 		}
 
+		public static bool AssemblyHasDisableRuntimeMarshalling (this MethodDefinition method)
+		{
+			var assembly = method.Module.Assembly;
+			if (!assembly.HasCustomAttributes)
+				return false;
+
+			foreach (var ca in assembly.CustomAttributes) {
+				var caType = ca.AttributeType;
+				if (caType.Name == "DisableRuntimeMarshallingAttribute" && caType.Namespace == "System.Runtime.CompilerServices")
+					return true;
+			}
+
+			return false;
+		}
+
 		public static bool IsPropertyMethod (this MethodDefinition md)
 		{
 			return (md.SemanticsAttributes & MethodSemanticsAttributes.Getter) != 0 ||

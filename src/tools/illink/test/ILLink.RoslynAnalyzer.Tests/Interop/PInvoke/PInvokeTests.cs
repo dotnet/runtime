@@ -46,5 +46,11 @@ namespace ILLink.RoslynAnalyzer.Tests.Interop
 		{
 			return RunTest ();
 		}
+
+		[Fact]
+		public Task RespectsDisableRuntimeMarshalling ()
+		{
+			return RunTest ();
+		}
 	}
 }

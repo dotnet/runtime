@@ -3362,6 +3362,9 @@ namespace Mono.Linker.Steps
 				}
 			}
 
+			if (method.AssemblyHasDisableRuntimeMarshalling ())
+				return;
+
 			TypeDefinition? returnTypeDefinition = Context.TryResolve (method.ReturnType);
 
 			const bool includeStaticFields = false;
