@@ -933,20 +933,11 @@ namespace System.Security.Cryptography
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
-            AsnWriter? writer = null;
-
-            try
-            {
-                writer = TryExportEncryptedPkcs8PrivateKeyCore<char>(
-                    password,
-                    pbeParameters,
-                    KeyFormatHelper.WriteEncryptedPkcs8);
-                return writer.TryEncode(destination, out bytesWritten);
-            }
-            finally
-            {
-                writer?.Reset();
-            }
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore<char>(
+                password,
+                pbeParameters,
+                KeyFormatHelper.WriteEncryptedPkcs8);
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         /// <summary>
@@ -995,20 +986,11 @@ namespace System.Security.Cryptography
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
-            AsnWriter? writer = null;
-
-            try
-            {
-                writer = TryExportEncryptedPkcs8PrivateKeyCore<byte>(
-                    passwordBytes,
-                    pbeParameters,
-                    KeyFormatHelper.WriteEncryptedPkcs8);
-                return writer.TryEncode(destination, out bytesWritten);
-            }
-            finally
-            {
-                writer?.Reset();
-            }
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore<byte>(
+                passwordBytes,
+                pbeParameters,
+                KeyFormatHelper.WriteEncryptedPkcs8);
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         /// <summary>
@@ -1044,20 +1026,11 @@ namespace System.Security.Cryptography
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
-            AsnWriter? writer = null;
-
-            try
-            {
-                writer = TryExportEncryptedPkcs8PrivateKeyCore<byte>(
-                    passwordBytes,
-                    pbeParameters,
-                    KeyFormatHelper.WriteEncryptedPkcs8);
-                return writer.Encode();
-            }
-            finally
-            {
-                writer?.Reset();
-            }
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore<byte>(
+                passwordBytes,
+                pbeParameters,
+                KeyFormatHelper.WriteEncryptedPkcs8);
+            return writer.Encode();
         }
 
         /// <summary>
@@ -1093,20 +1066,11 @@ namespace System.Security.Cryptography
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
-            AsnWriter? writer = null;
-
-            try
-            {
-                writer = TryExportEncryptedPkcs8PrivateKeyCore<char>(
-                    password,
-                    pbeParameters,
-                    KeyFormatHelper.WriteEncryptedPkcs8);
-                return writer.Encode();
-            }
-            finally
-            {
-                writer?.Reset();
-            }
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore<char>(
+                password,
+                pbeParameters,
+                KeyFormatHelper.WriteEncryptedPkcs8);
+            return writer.Encode();
         }
 
         /// <summary>
@@ -1708,7 +1672,7 @@ namespace System.Security.Cryptography
 #endif
         }
 
-        private AsnWriter TryExportEncryptedPkcs8PrivateKeyCore<TChar>(
+        private AsnWriter ExportEncryptedPkcs8PrivateKeyCore<TChar>(
             ReadOnlySpan<TChar> password,
             PbeParameters pbeParameters,
             WriteEncryptedPkcs8Func<TChar> encryptor)
