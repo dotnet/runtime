@@ -1131,6 +1131,9 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	if (!is_packedsimd) {
 		// transform the method name from the Vector(128|) name to the packed simd name
 		// FIXME: This is a hack, but it works for now.
+		if (csignature->hasthis) {
+			return FALSE;
+		}
 		cmethod_name = strip_explicit_ismid_prefix (cmethod_name);
 		id = lookup_intrins (packedsimd_alias_methods, sizeof (packedsimd_alias_methods), cmethod_name);
 		gboolean is_unsigned = (atype == MONO_TYPE_U1 || atype == MONO_TYPE_U2 || atype == MONO_TYPE_U4 || atype == MONO_TYPE_U8 || atype == MONO_TYPE_U);
