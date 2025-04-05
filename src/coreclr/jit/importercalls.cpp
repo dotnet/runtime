@@ -940,7 +940,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (varArgsCookie != nullptr)
             {
-                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(varArgsCookie, TYP_REF)
+                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(varArgsCookie)
                                                           .WellKnown(WellKnownArg::VarArgsCookie));
             }
         }
