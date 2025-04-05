@@ -15,54 +15,6 @@
 #include "ecall.h"
 #include "eeconfig.h"
 
-NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, LPCWSTR arg1, LPCWSTR arg2, LPCWSTR arg3)
-{
-    STATIC_CONTRACT_THROWS;
-    // This isn't strictly true... But the guarantee that we make here is
-    // that we won't trigger without having setup a frame.
-    // STATIC_CONTRACT_TRIGGER
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    // side effect the compiler can't remove
-    if (FC_NO_TAILCALL != 1)
-        return (LPVOID)(SIZE_T)(FC_NO_TAILCALL + 1);
-
-    FC_CAN_TRIGGER_GC();
-    INCONTRACT(FCallCheck __fCallCheck(__FILE__, __LINE__));
-    FC_GC_POLL_NOT_NEEDED();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_NOPOLL(Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-    // Now, we can construct & throw.
-
-    // In V1, throwing an ExecutionEngineException actually never really threw anything... its was the same as a
-    // fatal error in the runtime, and we will most probably would have ripped the process down. Starting in
-    // Whidbey, this behavior has changed a lot. Its not really legal to try to throw an
-    // ExecutionEngineException with this function.
-    _ASSERTE((reKind != kExecutionEngineException) ||
-             !"Don't throw kExecutionEngineException from here. Go to EEPolicy directly, or throw something better.");
-
-#ifdef FEATURE_EH_FUNCLETS
-    DispatchManagedException(reKind);
-
-#endif // FEATURE_EH_FUNCLETS
-
-    if (resID == 0)
-    {
-        // If we have an string to add use NonLocalized otherwise just throw the exception.
-        if (arg1)
-            COMPlusThrowNonLocalized(reKind, arg1); //COMPlusThrow(reKind,arg1);
-        else
-            COMPlusThrow(reKind);
-    }
-    else
-        COMPlusThrow(reKind, resID, arg1, arg2, arg3);
-
-    HELPER_METHOD_FRAME_END();
-    FC_CAN_TRIGGER_GC_END();
-    _ASSERTE(!"Throw returned");
-    return NULL;
-}
-
 #ifdef ENABLE_CONTRACTS
 
 /**************************************************************************************/
