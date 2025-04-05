@@ -122,9 +122,42 @@ public unsafe class TargetTests
 
         ValidateGlobals(target, expected);
 
-        static (string Name, ulong? Value, uint? IndirectIndex, string? Type) MakeGlobalToIndirect((string Name, ulong Value, string? Type) global, int index)
+        static (string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? Type) MakeGlobalToIndirect((string Name, ulong Value, string? Type) global, int index)
         {
-            return (global.Name, null, (uint?)index, global.Type);
+            return (global.Name, null, (uint?)index, null, global.Type);
+        }
+    }
+
+    private static readonly (string Name, string Value, ulong? NumericValue)[] GlobalStringyValues =
+    [
+        ("value", "testString", null),
+        ("emptyString", "", null),
+        ("specialChars", "string with spaces & special chars ✓", null),
+        ("longString", new string('a', 1024), null),
+        ("hexString", "0x1234", 0x1234),
+        ("decimalString", "123456", 123456),
+        ("negativeString", "-1234", unchecked((ulong)-1234)),
+        ("negativeHexString", "-0x1234", unchecked((ulong)-0x1234)),
+    ];
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadGlobalStringyValues(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        builder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
+            .SetContracts([])
+            .SetGlobals(GlobalStringyValues.Select(MakeGlobalsToStrings).ToArray());
+
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
+
+        ValidateGlobalStrings(target, GlobalStringyValues);
+
+        static (string Name, ulong? Value, string? StringValue, string? Type) MakeGlobalsToStrings((string Name, string Value, ulong? NumericValue) global)
+        {
+            return (global.Name, null, global.Value, "string");
         }
     }
 
@@ -252,4 +285,56 @@ public unsafe class TargetTests
             Assert.True((expected is null && actual is null) || expected.Equals(actual), $"Expected: {expected}. Actual: {actual}. [test case: {caller} in {filePath}:{lineNumber}]");
         }
     }
+
+    private static void ValidateGlobalStrings(
+        ContractDescriptorTarget target,
+        (string Name, string Value, ulong? NumericValue)[] globals,
+        [CallerMemberName] string caller = "",
+        [CallerFilePath] string filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        foreach (var (name, value, numericValue) in globals)
+        {
+            string actualString;
+
+            Assert.True(target.TryReadGlobalString(name, out actualString));
+            AssertEqualsWithCallerInfo(value, actualString);
+
+            actualString = target.ReadGlobalString(name);
+            AssertEqualsWithCallerInfo(value, actualString);
+
+            if (numericValue != null)
+            {
+                ulong? actualNumericValue;
+
+                Assert.True(target.TryReadGlobal(name, out actualNumericValue));
+                AssertEqualsWithCallerInfo(numericValue.Value, actualNumericValue.Value);
+
+                actualNumericValue = target.ReadGlobal<ulong>(name);
+                AssertEqualsWithCallerInfo(numericValue.Value, actualNumericValue.Value);
+
+                TargetPointer? actualPointer;
+
+                Assert.True(target.TryReadGlobalPointer(name, out actualPointer));
+                AssertEqualsWithCallerInfo(numericValue.Value, actualPointer.Value.Value);
+
+                actualPointer = target.ReadGlobalPointer(name);
+                AssertEqualsWithCallerInfo(numericValue.Value, actualPointer.Value.Value);
+            }
+            else
+            {
+                // if there is no numeric value, assert that reading as numeric fails
+                Assert.False(target.TryReadGlobal(name, out ulong? _));
+                Assert.ThrowsAny<Exception>(() => target.ReadGlobal<ulong>(name));
+                Assert.False(target.TryReadGlobalPointer(name, out TargetPointer? _));
+                Assert.ThrowsAny<Exception>(() => target.ReadGlobalPointer(name));
+            }
+        }
+
+        void AssertEqualsWithCallerInfo<T>(T expected, T actual)
+        {
+            Assert.True((expected is null && actual is null) || expected.Equals(actual), $"Expected: {expected}. Actual: {actual}. [test case: {caller} in {filePath}:{lineNumber}]");
+        }
+    }
+
 }

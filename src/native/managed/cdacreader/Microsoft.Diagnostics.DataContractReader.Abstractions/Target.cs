@@ -19,27 +19,6 @@ namespace Microsoft.Diagnostics.DataContractReader;
 public abstract class Target
 {
     /// <summary>
-    /// CorDebugPlatform represents the platform of the target.
-    /// </summary>
-    public enum CorDebugPlatform : int
-    {
-        CORDB_PLATFORM_WINDOWS_X86 = 0,
-        CORDB_PLATFORM_WINDOWS_AMD64 = 1,
-        CORDB_PLATFORM_WINDOWS_IA64 = 2,
-        CORDB_PLATFORM_MAC_PPC = 3,
-        CORDB_PLATFORM_MAC_X86 = 4,
-        CORDB_PLATFORM_WINDOWS_ARM = 5,
-        CORDB_PLATFORM_MAC_AMD64 = 6,
-        CORDB_PLATFORM_WINDOWS_ARM64 = 7,
-        CORDB_PLATFORM_POSIX_AMD64 = 8,
-        CORDB_PLATFORM_POSIX_X86 = 9,
-        CORDB_PLATFORM_POSIX_ARM = 10,
-        CORDB_PLATFORM_POSIX_ARM64 = 11,
-        CORDB_PLATFORM_POSIX_LOONGARCH64 = 12,
-        CORDB_PLATFORM_POSIX_RISCV64 = 13,
-    }
-
-    /// <summary>
     /// Pointer size of the target
     /// </summary>
     public abstract int PointerSize { get; }
@@ -47,11 +26,6 @@ public abstract class Target
     ///  Endianness of the target
     /// </summary>
     public abstract bool IsLittleEndian { get; }
-
-    /// <summary>
-    /// Platform of the target
-    /// </summary>
-    public abstract CorDebugPlatform Platform { get; }
 
     /// <summary>
     /// Fills a buffer with the context of the given thread
@@ -118,6 +92,21 @@ public abstract class Target
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
     public abstract TargetNUInt ReadNUInt(ulong address);
+
+    /// <summary>
+    /// Read a well known global from the target process as a string
+    /// </summary>
+    /// <param name="name">The name of the global</param>
+    /// <param name="value">The value of the global if found</param>
+    /// <returns>True if a global is found, false otherwise</returns>
+    public abstract bool TryReadGlobalString(string name, [NotNullWhen(true)] out string? value);
+
+    /// <summary>
+    /// Read a well known global from the target process as a string
+    /// </summary>
+    /// <param name="name">The name of the global</param>
+    /// <returns>A string value</returns>
+    public abstract string ReadGlobalString(string name);
 
     /// <summary>
     /// Read a well known global from the target process as a number in the target endianness
