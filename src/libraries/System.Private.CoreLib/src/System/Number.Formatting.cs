@@ -295,6 +295,34 @@ namespace System
                                         "80818283848586878889"u8 +
                                         "90919293949596979899"u8;
 
+        public static unsafe string FormatDecimalIeee754<TDecimal, TSignificand, TValue>(TDecimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TSignificand, TValue>
+            where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+            where TValue : IBinaryInteger<TValue>
+        {
+            char fmt = ParseFormatSpecifier(format, out int digits);
+            byte* pDigits = stackalloc byte[TDecimal.BufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, TDecimal.BufferLength);
+
+            DecimalIeee754ToNumber<TDecimal, TSignificand, TValue>(value, ref number);
+
+            char* stackPtr = stackalloc char[CharStackBufferSize];
+            var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
+
+            if (fmt != 0)
+            {
+                NumberToString(ref vlb, ref number, fmt, digits, info);
+            }
+            else
+            {
+                NumberToStringFormat(ref vlb, ref number, format, info);
+            }
+
+            string result = vlb.AsSpan().ToString();
+            vlb.Dispose();
+            return result;
+        }
+
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
@@ -347,6 +375,51 @@ namespace System
             bool success = vlb.TryCopyTo(destination, out charsWritten);
             vlb.Dispose();
             return success;
+        }
+
+        internal static unsafe void DecimalIeee754ToNumber<TDecimal, TSignificand, TValue>(TDecimal value, ref NumberBuffer number)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TSignificand, TValue>
+            where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+            where TValue : IBinaryInteger<TValue>
+        {
+            byte* buffer = number.DigitsPtr;
+            DecimalIeee754<TSignificand> unpackDecimal = value.Unpack();
+            number.IsNegative = unpackDecimal.Signed;
+
+            byte* p = buffer + TDecimal.Precision;
+            p = TDecimal.ToDecChars(p, unpackDecimal.Significand);
+            int numberDigitsSignificand = (int)((buffer + TDecimal.Precision) - p);
+
+            byte* dst = number.DigitsPtr;
+            int i = numberDigitsSignificand;
+            while (--i >= 0)
+            {
+                *dst++ = *p++;
+            }
+
+            number.Scale = TSignificand.IsZero(unpackDecimal.Significand) ? 0 : numberDigitsSignificand + unpackDecimal.Exponent;
+
+            if (unpackDecimal.Exponent >= 0)
+            {
+                number.DigitsCount = numberDigitsSignificand + unpackDecimal.Exponent;
+
+                if (unpackDecimal.Exponent > 0)
+                {
+                    i = unpackDecimal.Exponent;
+                    while (--i >= 0)
+                    {
+                        *dst++ = (byte)'0';
+                    }
+                }
+            }
+            else
+            {
+                number.DigitsCount = numberDigitsSignificand;
+            }
+
+            *dst = (byte)'\0';
+
+            number.CheckConsistency();
         }
 
         internal static unsafe void DecimalToNumber(scoped ref decimal d, ref NumberBuffer number)

@@ -99,6 +99,27 @@ namespace System
         static abstract int MaxPrecisionCustomFormat { get; }
     }
 
+    internal interface IDecimalIeee754ParseAndFormatInfo<TSelf, TSignificand, TValue>
+        where TSelf : unmanaged, IDecimalIeee754ParseAndFormatInfo<TSelf, TSignificand, TValue>
+        where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+        where TValue : IBinaryInteger<TValue>
+    {
+        static abstract int Precision { get; }
+        static abstract int MaxScale { get; }
+        static abstract int BufferLength { get; }
+        static abstract unsafe byte* ToDecChars(byte* p, TSignificand significand);
+        Number.DecimalIeee754<TSignificand> Unpack();
+    }
+
+    internal interface IDecimalIeee754TryParseInfo<TSelf, TSignificand>
+        where TSelf : unmanaged, IDecimalIeee754TryParseInfo<TSelf, TSignificand>
+        where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+    {
+        static abstract int DecimalNumberBufferLength { get; }
+        static abstract bool TryNumberToDecimalIeee754(ref Number.NumberBuffer number, out TSignificand significand, out int exponent);
+        static abstract TSelf Construct(TSignificand significand, int exponent);
+    }
+
     internal static partial class Number
     {
         private const int Int32Precision = 10;
@@ -733,6 +754,51 @@ namespace System
             return result;
         }
 
+        internal static Decimal32 ParseDecimal32<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            ParsingStatus status = TryParseDecimalIeee754<Decimal32, int, TChar>(value, styles, info, out Decimal32 result);
+            if (status != ParsingStatus.OK)
+            {
+                if (status == ParsingStatus.Failed)
+                {
+                    ThrowFormatException(value);
+                }
+            }
+
+            return result;
+        }
+
+        internal static Decimal64 ParseDecimal64<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            ParsingStatus status = TryParseDecimalIeee754<Decimal64, long, TChar>(value, styles, info, out Decimal64 result);
+            if (status != ParsingStatus.OK)
+            {
+                if (status == ParsingStatus.Failed)
+                {
+                    ThrowFormatException(value);
+                }
+            }
+
+            return result;
+        }
+
+        internal static Decimal128 ParseDecimal128<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            ParsingStatus status = TryParseDecimalIeee754<Decimal128, Int128, TChar>(value, styles, info, out Decimal128 result);
+            if (status != ParsingStatus.OK)
+            {
+                if (status == ParsingStatus.Failed)
+                {
+                    ThrowFormatException(value);
+                }
+            }
+
+            return result;
+        }
+
         internal static unsafe bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
         {
             number.CheckConsistency();
@@ -853,6 +919,71 @@ namespace System
             return true;
         }
 
+        internal static unsafe bool TryNumberToDecimalIeee754<TDecimal, TSignificand, TValue>(ref NumberBuffer number, out TSignificand significand, out int exponent)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TSignificand, TValue>
+            where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            number.CheckConsistency();
+
+            byte* p = number.DigitsPtr;
+            int c = *p;
+            significand = TSignificand.Zero;
+            exponent = 0;
+
+            if (c == 0)
+            {
+                return true;
+            }
+
+            if (number.Scale > TDecimal.MaxScale)
+            {
+                return false;
+            }
+
+            int digitIndex = 0;
+
+            while (digitIndex < TDecimal.Precision && c != 0)
+            {
+                digitIndex++;
+                significand *= TSignificand.CreateTruncating(10);
+                significand += TSignificand.CreateTruncating(c - '0');
+                c = *++p;
+            }
+
+            exponent = number.Scale - digitIndex;
+
+            if (digitIndex < number.DigitsCount)
+            {
+                if (c == '5')
+                {
+                    int lastDigitSignificand = *(p - 1);
+                    c = *++p;
+                    bool tiedToEvenRounding = true;
+                    while (digitIndex < number.DigitsCount && c != 0)
+                    {
+                        if (c != '0')
+                        {
+                            significand += TSignificand.One;
+                            tiedToEvenRounding = false;
+                            break;
+                        }
+                        c = *++p;
+                    }
+                    if (tiedToEvenRounding && lastDigitSignificand % 2 == 1)
+                    {
+                        significand += TSignificand.One;
+                    }
+                }
+                else if (c > '5')
+                {
+                    significand += TSignificand.One;
+                }
+            }
+
+            return true;
+        }
+
         internal static TFloat ParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
@@ -880,6 +1011,29 @@ namespace System
             {
                 return ParsingStatus.Overflow;
             }
+
+            return ParsingStatus.OK;
+        }
+
+        internal static ParsingStatus TryParseDecimalIeee754<TDecimal, TSignificand, TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TDecimal result)
+            where TChar : unmanaged, IUtfChar<TChar>
+            where TDecimal : unmanaged, IDecimalIeee754TryParseInfo<TDecimal, TSignificand>
+            where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+        {
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[TDecimal.DecimalNumberBufferLength]);
+            result = default;
+
+            if (!TryStringToNumber(value, styles, ref number, info))
+            {
+                return ParsingStatus.Failed;
+            }
+
+            if (!TDecimal.TryNumberToDecimalIeee754(ref number, out TSignificand significand, out int exponent))
+            {
+                return ParsingStatus.Overflow;
+            }
+
+            result = TDecimal.Construct(number.IsNegative ? -significand : significand, exponent);
 
             return ParsingStatus.OK;
         }
