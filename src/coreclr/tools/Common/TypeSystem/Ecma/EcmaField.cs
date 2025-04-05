@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 
 namespace Internal.TypeSystem.Ecma
@@ -322,20 +323,41 @@ namespace Internal.TypeSystem.Ecma
         /// <summary>
         /// Retrieves the data associated with an RVA mapped field from the PE module.
         /// </summary>
-        public static byte[] GetFieldRvaData(this EcmaField field)
+        public static bool TryGetFieldRvaData(this EcmaField field, out byte[] data)
         {
             Debug.Assert(field.HasRva);
             int addr = field.MetadataReader.GetFieldDefinition(field.Handle).GetRelativeVirtualAddress();
-            var memBlock = field.Module.PEReader.GetSectionData(addr).GetContent();
-
             int size = field.FieldType.GetElementSize().AsInt;
+
+            // If this data blob has fixups, we shouldn't return the bytes.
+            DirectoryEntry vtableFixups = field.Module.PEReader.PEHeaders.CorHeader.VtableFixupsDirectory;
+            if (vtableFixups.Size > 0)
+            {
+                TypeSystemContext context = field.Context;
+                BlobReader reader = field.Module.PEReader.GetSectionData(vtableFixups.RelativeVirtualAddress).GetReader(0, vtableFixups.Size);
+                while (reader.Offset < reader.Length)
+                {
+                    int fixupAddr = reader.ReadInt32();
+                    int numFixups = reader.ReadInt16();
+                    reader.ReadInt16(); // fixup type
+
+                    int fixupSize = numFixups * context.Target.PointerSize;
+                    if (addr >= fixupAddr + fixupSize || addr + size <= fixupAddr)
+                        continue;
+
+                    data = null;
+                    return false;
+                }
+            }
+
+            var memBlock = field.Module.PEReader.GetSectionData(addr).GetContent();
             if (size > memBlock.Length)
                 throw new BadImageFormatException();
 
-            byte[] result = new byte[size];
-            memBlock.CopyTo(0, result, 0, size);
+            data = new byte[size];
+            memBlock.CopyTo(0, data, 0, size);
 
-            return result;
+            return true;
         }
     }
 }
