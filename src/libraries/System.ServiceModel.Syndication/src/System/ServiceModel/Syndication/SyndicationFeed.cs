@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Xml;
@@ -10,6 +11,7 @@ using System.Xml;
 namespace System.ServiceModel.Syndication
 {
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public class SyndicationFeed : IExtensibleSyndicationObject
     {
         private static readonly HashSet<string> s_acceptedDays = new HashSet<string>(
