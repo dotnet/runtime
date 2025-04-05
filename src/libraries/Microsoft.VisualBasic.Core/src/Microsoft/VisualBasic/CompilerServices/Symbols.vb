@@ -931,7 +931,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ' For a WinRT object, we want to treat members of it's collection interfaces as members of the object
             ' itself. So GetMembers calls here to find the member in all the collection interfaces that this object
             ' implements.
-            <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+            <SuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
                 Justification:="_type is annotated with .All, so it's Interfaces will be annotated as well and it is safe to call GetMember on the Interfaces.
                     We should be able to remove once https://github.com/mono/linker/issues/1731 is fixed.")>
             Friend Function LookupWinRTCollectionInterfaceMembers(ByVal memberName As String) As List(Of MemberInfo)
