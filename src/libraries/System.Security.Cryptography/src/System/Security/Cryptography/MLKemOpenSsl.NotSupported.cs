@@ -7,14 +7,11 @@ namespace System.Security.Cryptography
 {
     public sealed partial class MLKemOpenSsl : MLKem
     {
-#pragma warning disable CA1822 // Member does not access instance data and can be marked static
-        private partial void Initialize(SafeEvpPKeyHandle upRefHandle)
-#pragma warning restore CA1822
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        private static partial MLKemAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle)
+        private static partial MLKemAlgorithm AlgorithmFromHandle(
+            SafeEvpPKeyHandle pkeyHandle,
+            out SafeEvpPKeyHandle upRefHandle,
+            out bool hasSeed,
+            out bool hasDecapsulationKey)
         {
             throw new PlatformNotSupportedException();
         }
@@ -56,6 +53,12 @@ namespace System.Security.Cryptography
         }
 
         protected override void ExportEncapsulationKeyCore(Span<byte> destination)
+        {
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();

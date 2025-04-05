@@ -3301,7 +3301,7 @@ void Debugger::getBoundaries(MethodDesc * md,
     // lives in, then don't grab specific boundaries from the symbol
     // store since any boundaries we give the JIT will be pretty much
     // ignored anyway.
-    if (!CORDisableJITOptimizations(md->GetModule()->GetDebuggerInfoBits()))
+    if (!md->GetModule()->AreJITOptimizationsDisabled())
     {
         *implicitBoundaries  = ICorDebugInfo::BoundaryTypes(ICorDebugInfo::STACK_EMPTY_BOUNDARIES |
                                          ICorDebugInfo::CALL_SITE_BOUNDARIES);
@@ -3379,13 +3379,10 @@ void Debugger::getVars(MethodDesc * md, ULONG32 *cVars, ICorDebugInfo::ILVarInfo
     // free to ignore *extendOthers
     *extendOthers = true;
 
-    DWORD bits = md->GetModule()->GetDebuggerInfoBits();
-
     if (CORDBUnrecoverableError(this))
         goto Exit;
 
-    if (CORDisableJITOptimizations(bits))
-//    if (!CORDebuggerAllowJITOpts(bits))
+    if (md->GetModule()->AreJITOptimizationsDisabled())
     {
         //
         // @TODO: Do we really need this code since *extendOthers==true?
@@ -15012,6 +15009,14 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_ILLEGAL_IN_STACK_OVERFLOW;
     }
 
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    if (pThread->m_hasPendingActivation)
+    {
+        _ASSERTE(!"Should never get here with a pending activation. (Debugger::FuncEvalSetup)");
+        return CORDBG_E_ILLEGAL_IN_NATIVE_CODE;
+    }
+#endif    
+
     bool fInException = pEvalInfo->evalDuringException;
 
     // The thread has to be at a GC safe place for now, just in case the func eval causes a collection. Processing an
@@ -16783,6 +16788,15 @@ void Debugger::ExternalMethodFixupNextStep(PCODE address)
 {
     DebuggerController::DispatchExternalMethodFixup(address);
 }
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+void Debugger::SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext)
+{
+    pThread->SetThreadState(Thread::TS_SSToExitApcCall);
+    g_pEEInterface->SetThreadFilterContext(pThread, interruptedContext);
+    DebuggerController::EnableSingleStep(pThread);
+    g_pEEInterface->SetThreadFilterContext(pThread, NULL);
+}
+#endif //FEATURE_SPECIAL_USER_MODE_APC
 #endif //DACCESS_COMPILE
 
 unsigned FuncEvalFrame::GetFrameAttribs_Impl(void)

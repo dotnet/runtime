@@ -6562,6 +6562,11 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     if (!pCodeInfo->IsFunclet())
         return FALSE;
 
+#ifdef TARGET_X86
+    // x86 doesn't use personality routines in unwind data, so we have to fallback to
+    // the slow implementation
+    return IJitManager::IsFilterFunclet(pCodeInfo);
+#else
     // Get address of the personality routine for the function being queried.
     SIZE_T size;
     PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &size);
@@ -6586,6 +6591,7 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     _ASSERTE(fRet == IJitManager::IsFilterFunclet(pCodeInfo));
 
     return fRet;
+#endif
 }
 
 #endif  // FEATURE_EH_FUNCLETS

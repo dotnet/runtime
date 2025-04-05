@@ -1007,6 +1007,12 @@ extern "C" PCODE g_pGetNonGCStaticBase;
 PCODE g_pGetNonGCStaticBase;
 extern "C" PCODE g_pPollGC;
 PCODE g_pPollGC;
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+extern "C" PCODE g_pThrowOverflowException;
+PCODE g_pThrowOverflowException;
+extern "C" PCODE g_pThrowDivideByZeroException;
+PCODE g_pThrowDivideByZeroException;
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 void SystemDomain::LoadBaseSystemClasses()
 {
@@ -1142,6 +1148,10 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pGetGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_GC_STATIC)->GetMultiCallableAddrOfCode();
         g_pGetNonGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_NONGC_STATIC)->GetMultiCallableAddrOfCode();
         g_pPollGC = CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC)->GetMultiCallableAddrOfCode();
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+        g_pThrowOverflowException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWOVERFLOWEXCEPTION)->GetMultiCallableAddrOfCode();
+        g_pThrowDivideByZeroException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWDIVIDEBYZEROEXCEPTION)->GetMultiCallableAddrOfCode();
+#endif // TARGET_32BIT
 
     #ifdef PROFILING_SUPPORTED
         // Note that g_profControlBlock.fBaseSystemClassesLoaded must be set to TRUE only after

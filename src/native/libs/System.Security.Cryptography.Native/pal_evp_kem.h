@@ -14,7 +14,10 @@ typedef enum
 } PalKemId;
 
 PALEXPORT int32_t CryptoNative_EvpKemAvailable(const char* algorithm);
-PALEXPORT int32_t CryptoNative_EvpKemGetPalId(const EVP_PKEY* pKey, int32_t* kemId);
+PALEXPORT int32_t CryptoNative_EvpKemGetPalId(const EVP_PKEY* pKey,
+                                              int32_t* kemId,
+                                              int32_t* hasSeed,
+                                              int32_t* hasDecapsulationKey);
 PALEXPORT EVP_PKEY* CryptoNative_EvpKemGeneratePkey(const char* kemName, uint8_t* seed, int32_t seedLength);
 PALEXPORT int32_t CryptoNative_EvpKemExportPrivateSeed(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength);
 PALEXPORT int32_t CryptoNative_EvpKemExportDecapsulationKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength);

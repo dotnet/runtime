@@ -400,6 +400,8 @@
             Link="Common\System\Security\Cryptography\MLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemAlgorithm.cs"
             Link="Common\System\Security\Cryptography\MLKemAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemPkcs8.cs"
+            Link="Common\System\Security\Cryptography\MLKemPkcs8.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
              Link="Common\System\Security\Cryptography\Oids.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.Shared.cs"
@@ -412,6 +414,8 @@
              Link="Common\System\Security\Cryptography\PbeParameters.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
              Link="Common\System\Security\Cryptography\PemLabels.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PemKeyHelpers.Factory.cs"
+             Link="Common\System\Security\Cryptography\PemKeyHelpers.Factory.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
              Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.cs"

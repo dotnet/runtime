@@ -828,6 +828,35 @@ done:
     return NULL;
 }
 
+int32_t EvpPKeyHasKeyOctetStringParam(const EVP_PKEY* pKey, const char* name)
+{
+    assert(pKey);
+    assert(name);
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_get_octet_string_param))
+    {
+        ERR_clear_error();
+        size_t outLength = 0;
+
+        int ret = EVP_PKEY_get_octet_string_param(pKey, name, NULL, 0, &outLength);
+
+        if (ret == 1)
+        {
+            return outLength > 0 ? 1 : 0;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+#endif
+
+    (void)pKey;
+    (void)name;
+    return 0;
+}
+
 int32_t EvpPKeyGetKeyOctetStringParam(const EVP_PKEY* pKey,
                                       const char* name,
                                       uint8_t* destination,

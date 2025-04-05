@@ -62,16 +62,6 @@
     <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
   </ItemGroup>
 
-  <!--
-    Ensure that we sign the AZL3 RPM with the LinuxSignMariner key.
-    This package name has the version in it, so we need to use a wildcard to discover the right name.
-  -->
-  <ItemGroup>
-    <AzureLinuxRPM Include="$(ArtifactsPackagesDir)**/*-azl.*-*.rpm" />
-    <AzureLinuxRPM Include="$(ArtifactsPackagesDir)**/*-azl-*.rpm" />
-    <FileSignInfo Include="@(AzureLinuxRPM->'%(Filename)%(Extension)')" CertificateName="LinuxSignMariner" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true'">
     <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
                            $(ArtifactsPackagesDir)**\*.zip;

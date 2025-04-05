@@ -789,6 +789,121 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => kem.ExportSubjectPublicKeyInfo());
         }
 
+        [Fact]
+        public static void TryExportPkcs8PrivateKey_EarlyExitForSmallBuffer()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512);
+            byte[] destination = new byte[85];
+            AssertExtensions.FalseExpression(kem.TryExportPkcs8PrivateKey(destination, out int written));
+            Assert.Equal(0, written);
+        }
+
+        [Fact]
+        public static void TryExportPkcs8PrivateKey()
+        {
+            Random random;
+#if NET
+            random = Random.Shared;
+#else
+            random = new Random();
+#endif
+            int bufferSize = random.Next(87, 1024);
+            int writtenSize = random.Next(86, bufferSize);
+            bool success = (writtenSize & 1) == 1;
+            byte[] buffer = new byte[bufferSize];
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512)
+            {
+                OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    AssertSameBuffer(buffer, destination);
+                    bytesWritten = writtenSize;
+                    return success;
+                }
+            };
+
+            AssertExtensions.TrueExpression(success == kem.TryExportPkcs8PrivateKey(buffer, out int written));
+            Assert.Equal(writtenSize, written);
+        }
+
+        [Fact]
+        public static void ExportPkcs8PrivateKey_OneExportCall()
+        {
+            int size = -1;
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512)
+            {
+                OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    destination.Fill(0x88);
+                    bytesWritten = destination.Length;
+                    size = destination.Length;
+                    return true;
+                }
+            };
+
+            byte[] exported = kem.ExportPkcs8PrivateKey();
+            AssertExtensions.FilledWith<byte>(0x88, exported);
+            Assert.Equal(size, exported.Length);
+        }
+
+        [Fact]
+        public static void ExportPkcs8PrivateKey_ExpandAndRetry()
+        {
+            const int TargetSize = 4567;
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512)
+            {
+                OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    if (destination.Length < TargetSize)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    destination.Fill(0x88);
+                    bytesWritten = TargetSize;
+                    return true;
+                }
+            };
+
+            byte[] exported = kem.ExportPkcs8PrivateKey();
+            AssertExtensions.FilledWith<byte>(0x88, exported);
+            Assert.Equal(TargetSize, exported.Length);
+
+            // The exact number of calls that made varies depending on the behavior of how the ArrayPool
+            // behaves. Though the algorithm is to double the buffer size, the pool may rent more than requested from
+            // the doubling. However we know it should be more than one.
+            AssertExtensions.GreaterThan(kem.TryExportPkcs8PrivateKeyCoreCount, 1);
+
+            // If the implementation follows a doubling scheme exactly, the ML-KEM 512 decapsulation key size
+            // should take no more than 3 calls to reach 4567. The initial size is 1,664 bytes.
+            AssertExtensions.LessThan(kem.TryExportPkcs8PrivateKeyCoreCount, 4);
+        }
+
+        [Fact]
+        public static void ExportPkcs8PrivateKey_MisbehavingBytesWritten()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512)
+            {
+                OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    // This is not possible and indiciates a derived type is misimplemented.
+                    bytesWritten = destination.Length + 1;
+                    return true;
+                }
+            };
+
+            Assert.Throws<CryptographicException>(() => kem.ExportPkcs8PrivateKey());
+        }
+
+        [Fact]
+        public static void ExportPkcs8PrivateKey_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportPkcs8PrivateKey());
+            Assert.Throws<ObjectDisposedException>(() => kem.TryExportPkcs8PrivateKey(new byte[512], out _));
+        }
+
         private static string MapAlgorithmOid(MLKemAlgorithm algorithm)
         {
             if (algorithm == MLKemAlgorithm.MLKem512)
@@ -860,13 +975,15 @@ namespace System.Security.Cryptography.Tests
         internal ExportKeyCoreCallback OnExportPrivateSeedCore { get; set; }
         internal ExportKeyCoreCallback OnExportEncapsulationKeyCore { get; set; }
         internal ExportKeyCoreCallback OnExportDecapsulationKeyCore { get; set; }
+        internal TryExportPkcs8PrivateKeyCoreCallback OnTryExportPkcs8PrivateKeyCore { get; set; }
         internal Action<bool> OnDispose { get; set; } = (bool disposing) => { };
 
-        private int DecapsulateCoreCount { get; set; }
-        private int EncapsulateCoreCount { get; set; }
-        private int ExportPrivateSeedCoreCount { get; set; }
-        private int ExportEncapsulationKeyCoreCount { get; set; }
-        private int ExportDecapsulationKeyCoreCount { get; set; }
+        internal int DecapsulateCoreCount { get; set; }
+        internal int EncapsulateCoreCount { get; set; }
+        internal int ExportPrivateSeedCoreCount { get; set; }
+        internal int ExportEncapsulationKeyCoreCount { get; set; }
+        internal int ExportDecapsulationKeyCoreCount { get; set; }
+        internal int TryExportPkcs8PrivateKeyCoreCount { get; set; }
 
         private bool _disposed;
 
@@ -904,6 +1021,12 @@ namespace System.Security.Cryptography.Tests
             GetCallback(OnExportEncapsulationKeyCore)(destination);
         }
 
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            TryExportPkcs8PrivateKeyCoreCount++;
+            return GetCallback(OnTryExportPkcs8PrivateKeyCore)(destination, out bytesWritten);
+        }
+
         protected override void Dispose(bool disposing)
         {
             GetCallback(OnDispose)(disposing);
@@ -933,11 +1056,16 @@ namespace System.Security.Cryptography.Tests
             {
                 Assert.Fail($"Expected call to {nameof(ExportEncapsulationKeyCore)}.");
             }
+            if (OnTryExportPkcs8PrivateKeyCore is not null && TryExportPkcs8PrivateKeyCoreCount == 0)
+            {
+                Assert.Fail($"Expected call to {nameof(TryExportPkcs8PrivateKeyCore)}.");
+            }
         }
 
         internal delegate void DecapsulateCoreCallback(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret);
         internal delegate void EncapsulateCoreCallback(Span<byte> ciphertext, Span<byte> sharedSecret);
         internal delegate void ExportKeyCoreCallback(Span<byte> destination);
+        internal delegate bool TryExportPkcs8PrivateKeyCoreCallback(Span<byte> destination, out int bytesWritten);
 
         private T GetCallback<T>(T callback, [CallerMemberNameAttribute]string caller = null) where T : Delegate
         {

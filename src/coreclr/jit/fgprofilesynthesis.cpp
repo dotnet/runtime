@@ -30,26 +30,6 @@
 //
 void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
-    if (m_dfsTree == nullptr)
-    {
-        m_dfsTree             = m_comp->fgComputeDfs();
-        m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
-        m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
-    }
-    else
-    {
-        assert(m_loops != nullptr);
-    }
-
-    if (m_loops->NumLoops() > 0)
-    {
-        m_cyclicProbabilities = new (m_comp, CMK_Pgo) weight_t[m_loops->NumLoops()];
-    }
-
-    // Profile synthesis can be run before or after morph, so tolerate (non-)canonical method entries
-    //
-    m_entryBlock = (m_comp->opts.IsOSR() && (m_comp->fgEntryBB != nullptr)) ? m_comp->fgEntryBB : m_comp->fgFirstBB;
-
     // Retain or compute edge likelihood information
     //
     switch (option)

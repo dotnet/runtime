@@ -29,24 +29,34 @@
 #define DYNAMICJITHELPER_NOINDIRECT(code,fn,binderId) DYNAMICJITHELPER(code,fn,binderId)
 #endif
 
+#if defined(TARGET_32BIT) && defined (TARGET_ARM)
+#define FEATURE_USE_HELPERS_FOR_32BIT_INT_DIV
+#endif
+
 // pfnHelper is set to NULL if it is a stubbed helper.
 // It will be set in InitJITHelpers1
 
     JITHELPER(CORINFO_HELP_UNDEF,               NULL,               METHOD__NIL)
 
     // Arithmetic
-    JITHELPER(CORINFO_HELP_DIV,                 JIT_Div,            METHOD__NIL)
-    JITHELPER(CORINFO_HELP_MOD,                 JIT_Mod,            METHOD__NIL)
-    JITHELPER(CORINFO_HELP_UDIV,                JIT_UDiv,           METHOD__NIL)
-    JITHELPER(CORINFO_HELP_UMOD,                JIT_UMod,           METHOD__NIL)
+#ifdef FEATURE_USE_HELPERS_FOR_32BIT_INT_DIV
+    DYNAMICJITHELPER(CORINFO_HELP_DIV,          NULL,               METHOD__MATH__DIV_INT32)
+    DYNAMICJITHELPER(CORINFO_HELP_MOD,          NULL,               METHOD__MATH__MOD_INT32)
+    DYNAMICJITHELPER(CORINFO_HELP_UDIV,         NULL,               METHOD__MATH__DIV_UINT32)
+    DYNAMICJITHELPER(CORINFO_HELP_UMOD,         NULL,               METHOD__MATH__MOD_UINT32)
+#else
+    JITHELPER(CORINFO_HELP_DIV,          NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_MOD,          NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_UDIV,         NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_UMOD,         NULL,               METHOD__NIL)
+#endif
 
-    // CORINFO_HELP_DBL2INT, CORINFO_HELP_DBL2UINT, and CORINFO_HELP_DBL2LONG get
-    // patched for CPUs that support SSE2 (P4 and above).
-#ifndef TARGET_64BIT
+#ifdef TARGET_32BIT
     JITHELPER(CORINFO_HELP_LLSH,                JIT_LLsh,           METHOD__NIL)
     JITHELPER(CORINFO_HELP_LRSH,                JIT_LRsh,           METHOD__NIL)
     JITHELPER(CORINFO_HELP_LRSZ,                JIT_LRsz,           METHOD__NIL)
-#else // !TARGET_64BIT
+#else // TARGET_32BIT
+
     JITHELPER(CORINFO_HELP_LLSH,                NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_LRSH,                NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_LRSZ,                NULL,               METHOD__NIL)
@@ -55,14 +65,25 @@
 #ifndef TARGET_64BIT
     DYNAMICJITHELPER(CORINFO_HELP_LMUL_OVF,     NULL,               METHOD__MATH__MULTIPLY_CHECKED_INT64)
     DYNAMICJITHELPER(CORINFO_HELP_ULMUL_OVF,    NULL,               METHOD__MATH__MULTIPLY_CHECKED_UINT64)
-#else
-    DYNAMICJITHELPER(CORINFO_HELP_LMUL_OVF,     NULL,               METHOD__NIL)
-    DYNAMICJITHELPER(CORINFO_HELP_ULMUL_OVF,    NULL,               METHOD__NIL)
-#endif // TARGET_64BIT
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
     JITHELPER(CORINFO_HELP_LDIV,                JIT_LDiv,           METHOD__NIL)
     JITHELPER(CORINFO_HELP_LMOD,                JIT_LMod,           METHOD__NIL)
     JITHELPER(CORINFO_HELP_ULDIV,               JIT_ULDiv,          METHOD__NIL)
     JITHELPER(CORINFO_HELP_ULMOD,               JIT_ULMod,          METHOD__NIL)
+#else
+    DYNAMICJITHELPER(CORINFO_HELP_LDIV,         NULL,               METHOD__MATH__DIV_INT64)
+    DYNAMICJITHELPER(CORINFO_HELP_LMOD,         NULL,               METHOD__MATH__MOD_INT64)
+    DYNAMICJITHELPER(CORINFO_HELP_ULDIV,        NULL,               METHOD__MATH__DIV_UINT64)
+    DYNAMICJITHELPER(CORINFO_HELP_ULMOD,        NULL,               METHOD__MATH__MOD_UINT64)
+#endif // TARGET_X86 && TARGET_WINDOWS
+#else // TARGET_64BIT
+    JITHELPER(CORINFO_HELP_LMUL_OVF,            NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_ULMUL_OVF,           NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_LDIV,                NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_LMOD,                NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_ULDIV,               NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_ULMOD,               NULL,               METHOD__NIL)
+#endif // TARGET_64BIT
     JITHELPER(CORINFO_HELP_LNG2DBL,             JIT_Lng2Dbl,        METHOD__NIL)
     JITHELPER(CORINFO_HELP_ULNG2DBL,            JIT_ULng2Dbl,       METHOD__NIL)
     JITHELPER(CORINFO_HELP_DBL2INT,             JIT_Dbl2Int,        METHOD__NIL)

@@ -34,7 +34,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGetPalId")]
         private static partial int CryptoNative_EvpKemGetPalId(
             SafeEvpPKeyHandle kem,
-            out PalKemAlgorithmId kemId);
+            out PalKemAlgorithmId kemId,
+            out int hasSeed,
+            out int hasDecapsulationKey);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGeneratePkey", StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_EvpKemGeneratePkey(
@@ -103,23 +105,31 @@ internal static partial class Interop
             return handle;
         }
 
-        internal static PalKemAlgorithmId EvpKemGetKemIdentifier(SafeEvpPKeyHandle key)
+        internal static PalKemAlgorithmId EvpKemGetKemIdentifier(
+            SafeEvpPKeyHandle key,
+            out bool hasSeed,
+            out bool hasDecapsulationKey)
         {
             const int Success = 1;
+            const int Yes = 1;
             const int Fail = 0;
-            int result = CryptoNative_EvpKemGetPalId(key, out PalKemAlgorithmId kemId);
+            int result = CryptoNative_EvpKemGetPalId(
+                key,
+                out PalKemAlgorithmId kemId,
+                out int pKeyHasSeed,
+                out int pKeyHasDecapsulationKey);
 
-            return result switch
+            switch (result)
             {
-                Success => kemId,
-                Fail => throw CreateOpenSslCryptographicException(),
-                int other => throw FailThrow(other),
-            };
-
-            static Exception FailThrow(int result)
-            {
-                Debug.Fail($"Unexpected return value {result} from {nameof(CryptoNative_EvpKemGetPalId)}.");
-                return new CryptographicException();
+                case Success:
+                    hasSeed = pKeyHasSeed == Yes;
+                    hasDecapsulationKey = pKeyHasDecapsulationKey == Yes;
+                    return kemId;
+                case Fail:
+                    throw CreateOpenSslCryptographicException();
+                default:
+                    Debug.Fail($"Unexpected return value {result} from {nameof(CryptoNative_EvpKemGetPalId)}.");
+                    throw new CryptographicException();
             }
         }
 

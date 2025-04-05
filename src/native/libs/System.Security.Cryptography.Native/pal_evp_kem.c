@@ -30,10 +30,10 @@ int32_t CryptoNative_EvpKemAvailable(const char* algorithm)
     return 0;
 }
 
-int32_t CryptoNative_EvpKemGetPalId(const EVP_PKEY* pKey, int32_t* kemId)
+int32_t CryptoNative_EvpKemGetPalId(const EVP_PKEY* pKey, int32_t* kemId, int32_t* hasSeed, int32_t* hasDecapsulationKey)
 {
 #ifdef NEED_OPENSSL_3_0
-    assert(pKey && kemId);
+    assert(pKey && kemId && hasSeed && hasDecapsulationKey);
 
     if (API_EXISTS(EVP_PKEY_is_a))
     {
@@ -54,14 +54,20 @@ int32_t CryptoNative_EvpKemGetPalId(const EVP_PKEY* pKey, int32_t* kemId)
         else
         {
             *kemId = PalKemId_Unknown;
+            *hasSeed = 0;
+            *hasDecapsulationKey = 0;
+            return 1;
         }
 
+        *hasSeed = EvpPKeyHasKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_ML_KEM_SEED);
+        *hasDecapsulationKey = EvpPKeyHasKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_PRIV_KEY);
         return 1;
     }
 #endif
-
     (void)pKey;
     *kemId = PalKemId_Unknown;
+    *hasSeed = 0;
+    *hasDecapsulationKey = 0;
     return 0;
 }
 

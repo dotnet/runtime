@@ -13,7 +13,6 @@
 #endif
 #include "gcdump.h"
 
-
 /*****************************************************************************/
 
 #define castto(var,typ) (*(typ *)&var)
@@ -323,11 +322,7 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
 
         gcPrintf("%s%s pointer\n",
                     (lowBits & byref_OFFSET_FLAG) ? "byref " : "",
-#ifndef FEATURE_EH_FUNCLETS
-                    (lowBits & this_OFFSET_FLAG)  ? "this"   : ""
-#else
                     (lowBits & pinned_OFFSET_FLAG)  ? "pinned"   : ""
-#endif
            );
 
         _ASSERTE(endOffs <= methodSize);
@@ -456,10 +451,6 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
                     /* non-ptr arg push */
 
                     curOffs += (val & 0x07);
-#ifndef FEATURE_EH_FUNCLETS
-                    // For funclets, non-ptr arg pushes can be reported even for EBP frames
-                    _ASSERTE(!header.ebpFrame);
-#endif // FEATURE_EH_FUNCLETS
                     argCnt++;
 
                     DumpEncoding(bp, table-bp); bp = table;
@@ -681,9 +672,6 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
                 {
                     argTab += decodeUnsigned(argTab, &val);
 
-#ifndef FEATURE_EH_FUNCLETS
-                    assert((val & this_OFFSET_FLAG) == 0);
-#endif
                     unsigned  stkOffs = val & ~byref_OFFSET_FLAG;
                     unsigned  lowBit  = val &  byref_OFFSET_FLAG;
 

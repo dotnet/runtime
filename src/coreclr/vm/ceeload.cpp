@@ -478,14 +478,25 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
+#ifdef PROFILING_SUPPORTED
+    // set profiler related JIT flags
+    if (CORProfilerDisableInlining())
+    {
+        m_dwTransientFlags |= PROF_DISABLE_INLINING;
+    }
+    if (CORProfilerDisableOptimizations())
+    {
+        m_dwTransientFlags |= PROF_DISABLE_OPTIMIZATIONS;
+    }
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
     {
         m_pJitInlinerTrackingMap = new JITInlineTrackingMap(GetLoaderAllocator());
     }
-#endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
+#endif // PROFILING_SUPPORTED
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%s\".\n", GetDebugName()));
 }
@@ -507,7 +518,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 #ifdef DEBUGGING_SUPPORTED
     if (IsEditAndContinueCapable())
     {
-        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && CORDisableJITOptimizations(GetDebuggerInfoBits()));
+        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && AreJITOptimizationsDisabled());
         if (setEnC)
         {
             EnableEditAndContinue();

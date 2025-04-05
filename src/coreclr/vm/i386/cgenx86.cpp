@@ -555,11 +555,17 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     DWORD stackArgSize = 0;
 
 #if !defined(UNIX_X86_ABI)
-    stackArgSize = (DWORD) dac_cast<TADDR>(m_Datum);
+    TADDR datum = dac_cast<TADDR>(m_Datum);
+
+#ifdef FEATURE_EH_FUNCLETS
+    datum &= ~(TADDR)InlinedCallFrameMarker::Mask;
+#endif
+
+    stackArgSize = (DWORD)datum;
 
     if (stackArgSize & ~0xFFFF)
     {
-        NDirectMethodDesc * pMD = PTR_NDirectMethodDesc(m_Datum);
+        NDirectMethodDesc * pMD = PTR_NDirectMethodDesc(datum);
 
         /* if this is not an NDirect frame, something is really wrong */
 

@@ -209,6 +209,8 @@ sample_profiler_enable (void)
 
 		sample_profiler_set_time_granularity ();
 	}
+
+	ep_rt_sample_profiler_session_enabled ();
 }
 
 void

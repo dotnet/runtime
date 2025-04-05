@@ -57,8 +57,6 @@ lookup_intrins (guint16 *intrinsics, int size, const char *cmethod_name)
 // These items need to be in ASCII order, which means alphabetical order where lowercase is after uppercase
 // i.e. all 'get_' and 'op_' need to come after regular title-case names
 static guint16 sri_vector128_methods [] = {
-	SN_Abs,
-	SN_Add,
 	SN_AndNot,
 	SN_As,
 	SN_AsByte,
@@ -78,38 +76,23 @@ static guint16 sri_vector128_methods [] = {
 	SN_AsVector,
 	SN_AsVector4,
 	SN_AsVector128,
-	SN_BitwiseAnd,
-	SN_BitwiseOr,
-	SN_Ceiling,
 	SN_ConditionalSelect,
 	SN_Create,
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
-	SN_Divide,
-	SN_Dot,
 	SN_Equals,
 	SN_EqualsAny,
 	SN_ExtractMostSignificantBits,
-	SN_Floor,
 	SN_GreaterThan,
-	SN_GreaterThanOrEqual,
 	SN_LessThan,
 	SN_LessThanOrEqual,
 	SN_Narrow,
-	SN_Negate,
-	SN_Max,
-	SN_Min,
-	SN_Multiply,
-	SN_OnesComplement,
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
 	SN_Shuffle,
-	SN_Subtract,
-	SN_Truncate,
 	SN_WidenLower,
 	SN_WidenUpper,
-	SN_Xor,
 	SN_get_IsHardwareAccelerated,
 };
 
@@ -160,6 +143,37 @@ static guint16 sn_vector_t_methods [] = {
 static guint16 sri_packedsimd_methods [] = {
 	SN_get_IsHardwareAccelerated,
 	SN_get_IsSupported,
+};
+
+static guint16 packed_simd_alias_methods [] = {
+	SN_Abs,
+	SN_Add,
+	SN_AndNot,
+	SN_BitwiseAnd,
+	SN_BitwiseOr,
+	SN_Ceiling,
+	SN_Divide,
+	SN_Equals,
+	SN_Floor,
+	SN_GreaterThan,
+	SN_GreaterThanOrEqual,
+	SN_LessThan,
+	SN_LessThanOrEqual,
+	SN_Load,
+	SN_LoadUnsafe,
+	SN_Max,
+	SN_Min,
+	SN_Multiply,
+	SN_Negate,
+	SN_OnesComplement,
+	SN_ShiftLeft,
+	SN_ShiftRightArithmetic,
+	SN_ShiftRightLogical,
+	SN_Subtract,
+	SN_Truncate,
+	SN_WidenLower,
+	SN_WidenUpper,
+	SN_Xor,
 };
 
 static MonoTypeEnum 
@@ -1098,8 +1112,10 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	if (!is_packedsimd) {
 		// transform the method name from the Vector(128|) name to the packed simd name
 		// FIXME: This is a hack, but it works for now.
-		id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod_name);
+		id = lookup_intrins (packed_simd_alias_methods, sizeof (packed_simd_alias_methods), cmethod_name);
 		gboolean is_unsigned = (atype == MONO_TYPE_U1 || atype == MONO_TYPE_U2 || atype == MONO_TYPE_U4 || atype == MONO_TYPE_U8 || atype == MONO_TYPE_U);
+		
+		// cmethod_name = must be a packed simd intrinsic, so we can just use the name directly
 		switch (id) {
 			case SN_LessThan:
 				cmethod_name = "CompareLessThan";
@@ -1131,6 +1147,10 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_WidenUpper:
 				cmethod_name = is_unsigned ? "ZeroExtendWideningUpper" : "SignExtendWideningUpper";
 				break;
+			case SN_Load:
+			case SN_LoadUnsafe:
+				cmethod_name = "LoadVector128";
+				break;
 			case SN_Add:
 			case SN_AndNot:
 			case SN_Subtract:
@@ -1149,9 +1169,6 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Truncate:
 				cmethod_name = cmethod->name;
 				break;
-			case SN_get_IsHardwareAccelerated:
-			case SN_get_IsSupported:
-			case SN_Dot: // wasm simd opcode is different from the C# intrinsic
 			default:
 				// Only transform the name if we expect it to work
 				return FALSE;

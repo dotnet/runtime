@@ -9,7 +9,7 @@ import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, cr
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
-import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler, mono_wasm_init_log_profiler } from "./profiler";
+import { mono_wasm_init_aot_profiler, mono_wasm_init_devtools_profiler, mono_wasm_init_log_profiler } from "./profiler";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { init_polyfills_async } from "./polyfills";
@@ -547,8 +547,8 @@ export async function start_runtime () {
             }
         } else if (runtimeHelpers.emscriptenBuildOptions.enableAotProfiler) {
             mono_wasm_init_aot_profiler(runtimeHelpers.config.aotProfilerOptions || {});
-        } else if (runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler) {
-            mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions || {});
+        } else if (runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
+            mono_wasm_init_devtools_profiler();
         } else if (runtimeHelpers.emscriptenBuildOptions.enableLogProfiler) {
             mono_wasm_init_log_profiler(runtimeHelpers.config.logProfilerOptions || {});
         }

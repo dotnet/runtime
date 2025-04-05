@@ -86,11 +86,6 @@
 //      COMPlusThrow(execpt);
 //      HELPER_METHOD_FRAME_END()
 
-// It is more efficient (in space) to use convenience macro FCTHROW that does
-// this for you (sets up a frame, and does the throw).
-
-//      FCTHROW(except)
-
 // Since FCALLS have to conform to the EE calling conventions and not to C
 // calling conventions, FCALLS, need to be declared using special macros (FCIMPL*)
 // that implement the correct calling conventions.  There are variants of these
@@ -123,16 +118,6 @@
 //    For similar reasons, use Object* rather than OBJECTREF as a return type.
 //    Consider either using ObjectToOBJECTREF or calling VALIDATEOBJECTREF
 //    to make sure your Object* is valid.
-//
-//  - FCThrow() must be called directly from your FCall impl function: it
-//    cannot be called from a subfunction. Calling from a subfunction breaks
-//    the VC code parsing workaround that lets us recover the callee saved registers.
-//    Fortunately, you'll get a compile error complaining about an
-//    unknown variable "__me".
-//
-//  - If your FCall returns VOID, you must use FCThrowVoid() rather than
-//    FCThrow(). This is because FCThrow() has to generate an unexecuted
-//    "return" statement for the code parser.
 //
 //  - On x86, if first and/or second argument of your FCall cannot be passed
 //    in either of the __fastcall registers (ECX/EDX), you must use "V" versions
@@ -172,43 +157,6 @@
 //   An FCall target uses __fastcall or some other calling convention to
 //   match the IL calling convention exactly. Thus, a call to FCall is a direct
 //   call to the target w/ no intervening stub or frame.
-//
-//   The tricky part is when FCThrow is called. FCThrow must generate
-//   a proper method frame before allocating and throwing the exception.
-//   To do this, it must recover several things:
-//
-//      - The location of the FCIMPL's return address (since that's
-//        where the frame will be based.)
-//
-//      - The on-entry values of the callee-saved regs; which must
-//        be recorded in the frame so that GC can update them.
-//        Depending on how VC compiles your FCIMPL, those values are still
-//        in the original registers or saved on the stack.
-//
-//        To figure out which, FCThrow() generates the code:
-//
-//              while (NULL == __FCThrow(__me, ...)) {};
-//              return 0;
-//
-//        The "return" statement will never execute; but its presence guarantees
-//        that VC will follow the __FCThrow() call with a VC epilog
-//        that restores the callee-saved registers using a pretty small
-//        and predictable set of Intel opcodes. __FCThrow() parses this
-//        epilog and simulates its execution to recover the callee saved
-//        registers.
-//
-//        The while loop is to prevent the compiler from doing tail call optimizations.
-//        The helper frame interpreter needs the frame to be present.
-//
-//      - The MethodDesc* that this FCall implements. This MethodDesc*
-//        is part of the frame and ensures that the FCall will appear
-//        in the exception's stack trace. To get this, FCDECL declares
-//        a static local __me, initialized to point to the FC target itself.
-//        This address is exactly what's stored in the ECall lookup tables;
-//        so __FCThrow() simply does a reverse lookup on that table to recover
-//        the MethodDesc*.
-//
-
 
 #ifndef __FCall_h__
 #define __FCall_h__
@@ -356,12 +304,6 @@ private:
 #define CHECK_HELPER_METHOD_FRAME_PERMITTED()
 
 #endif // unsupported processor
-
-//==============================================================================================
-// This is where FCThrow ultimately ends up. Never call this directly.
-// Use the FCThrow() macro.
-//==============================================================================================
-LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWSTR arg1, LPCWSTR arg2, LPCWSTR arg3);
 
 //==============================================================================================
 // FDECLn: A set of macros for generating header declarations for FC targets.
@@ -908,8 +850,7 @@ extern RAW_KEYWORD(volatile) int FC_NO_TAILCALL;
 // implementation (use FDECLN for header protos.)
 //
 // The hidden "__me" variable lets us recover the original MethodDesc*
-// so any thrown exceptions will have the correct stack trace. FCThrow()
-// passes this along to __FCThrowInternal().
+// so any thrown exceptions will have the correct stack trace.
 //==============================================================================================
 
 #define GetEEFuncEntryPointMacro(func)  ((LPVOID)(func))
@@ -1118,11 +1059,13 @@ public:
 #define HCCALL1(funcname, a1)           funcname(0, 0, a1)
 #define HCCALL1_V(funcname, a1)         funcname(0, 0, 0, a1)
 #define HCCALL2(funcname, a1, a2)       funcname(0, a2, a1)
+#define HCCALL2_VV(funcname, a1, a2)    funcname(0, 0, 0, a2, a1)
 #define HCCALL3(funcname, a1, a2, a3)   funcname(0, a2, a1, a3)
 #define HCCALL4(funcname, a1, a2, a3, a4)       funcname(0, a2, a1, a4, a3)
 #define HCCALL5(funcname, a1, a2, a3, a4, a5)   funcname(0, a2, a1, a5, a4, a3)
 #define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * funcptr)(int /* EAX */, int /* EDX */, a1)
 #define HCCALL2_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * funcptr)(int /* EAX */, a2, a1)
+#define HCCALL2_VV_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * funcptr)(int /* EAX */, int /* EDX */, int /* ECX */, a2, a1)
 #else // SWIZZLE_REGARG_ORDER
 
 #define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname)
@@ -1142,11 +1085,13 @@ public:
 #define HCCALL1(funcname, a1)           funcname(a1)
 #define HCCALL1_V(funcname, a1)         funcname(a1)
 #define HCCALL2(funcname, a1, a2)       funcname(a1, a2)
+#define HCCALL2_VV(funcname, a1, a2)    funcname(a1, a2)
 #define HCCALL3(funcname, a1, a2, a3)   funcname(a1, a2, a3)
 #define HCCALL4(funcname, a1, a2, a3, a4)       funcname(a1, a2, a4, a3)
 #define HCCALL5(funcname, a1, a2, a3, a4, a5)   funcname(a1, a2, a5, a4, a3)
 #define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * (funcptr))(a1)
 #define HCCALL2_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * (funcptr))(a1, a2)
+#define HCCALL2_VV_PTR(rettype, funcptr, a1, a2) rettype (F_CALL_CONV * (funcptr))(a1, a2)
 #endif // !SWIZZLE_REGARG_ORDER
 #else // SWIZZLE_STKARG_ORDER
 
@@ -1167,28 +1112,19 @@ public:
 #define HCCALL1(funcname, a1)           funcname(a1)
 #define HCCALL1_V(funcname, a1)         funcname(a1)
 #define HCCALL2(funcname, a1, a2)       funcname(a1, a2)
+#define HCCALL2_VV(funcname, a1, a2)    funcname(a1, a2)
 #define HCCALL3(funcname, a1, a2, a3)   funcname(a1, a2, a3)
 #define HCCALL4(funcname, a1, a2, a3, a4)       funcname(a1, a2, a3, a4)
 #define HCCALL5(funcname, a1, a2, a3, a4, a5)   funcname(a1, a2, a3, a4, a5)
 #define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * (funcptr))(a1)
 #define HCCALL2_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * (funcptr))(a1, a2)
+#define HCCALL2_VV_PTR(rettype, funcptr, a1, a2) rettype (F_CALL_CONV * (funcptr))(a1, a2)
 
 #endif // !SWIZZLE_STKARG_ORDER
 
 #define HCIMPLEND_RAW   }
 #define HCIMPLEND       FCALL_TRANSITION_END(); }
 
-
-//==============================================================================================
-// Throws an exception from an FCall. See rexcep.h for a list of valid
-// exception codes.
-//==============================================================================================
-#define FCThrow(reKind)                                         \
-    {                                                           \
-        while (NULL ==                                          \
-            __FCThrow(__me, reKind, 0, 0, 0, 0)) {};            \
-        return 0;                                               \
-    }
 
 // The managed calling convention expects returned small types (e.g. bool) to be
 // widened to 32-bit on return. The C/C++ calling convention does not guarantee returned

@@ -267,14 +267,23 @@ DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
-#ifndef TARGET_64BIT
-DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_INT64, MultiplyChecked,            SM_Long_Long_RetLong)
-DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_UINT64, MultiplyChecked,           SM_ULong_ULong_RetULong)
-#endif
-DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED, ConvertToInt32Checked,    NoSig)
-DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED, ConvertToUInt32Checked,  NoSig)
-DEFINE_METHOD(MATH,                 CONVERT_TO_INT64_CHECKED, ConvertToInt64Checked,    NoSig)
-DEFINE_METHOD(MATH,                 CONVERT_TO_UINT64_CHECKED, ConvertToUInt64Checked,  NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED,    ConvertToInt32Checked,    NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED,   ConvertToUInt32Checked,   NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_INT64_CHECKED,    ConvertToInt64Checked,    NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_UINT64_CHECKED,   ConvertToUInt64Checked,   NoSig)
+
+#ifdef TARGET_32BIT
+DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_INT64,      MultiplyChecked,          SM_Long_Long_RetLong)
+DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_UINT64,     MultiplyChecked,          SM_ULong_ULong_RetULong)
+DEFINE_METHOD(MATH,                 DIV_INT32,                   DivInt32,                 NoSig)
+DEFINE_METHOD(MATH,                 DIV_UINT32,                  DivUInt32,                NoSig)
+DEFINE_METHOD(MATH,                 DIV_INT64,                   DivInt64,                 NoSig)
+DEFINE_METHOD(MATH,                 DIV_UINT64,                  DivUInt64,                NoSig)
+DEFINE_METHOD(MATH,                 MOD_INT32,                   ModInt32,                 NoSig)
+DEFINE_METHOD(MATH,                 MOD_UINT32,                  ModUInt32,                NoSig)
+DEFINE_METHOD(MATH,                 MOD_INT64,                   ModInt64,                 NoSig)
+DEFINE_METHOD(MATH,                 MOD_UINT64,                  ModUInt64,                NoSig)
+#endif // TARGET_32BIT
 
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 

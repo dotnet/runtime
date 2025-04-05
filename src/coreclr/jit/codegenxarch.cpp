@@ -1576,6 +1576,46 @@ instruction CodeGen::JumpKindToCmov(emitJumpKind condition)
 }
 
 //------------------------------------------------------------------------
+// JumpKindToCcmp:
+//   Convert an emitJumpKind to the corresponding ccmp instruction.
+//
+// Arguments:
+//    condition - the condition
+//
+// Returns:
+//    A ccmp instruction.
+//
+instruction CodeGen::JumpKindToCcmp(emitJumpKind condition)
+{
+    static constexpr instruction s_table[EJ_COUNT] = {
+        INS_none,  INS_none,  INS_ccmpo,  INS_ccmpno, INS_ccmpb, INS_ccmpae, INS_ccmpe,  INS_ccmpne, INS_ccmpbe,
+        INS_ccmpa, INS_ccmps, INS_ccmpns, INS_none,   INS_none,  INS_ccmpl,  INS_ccmpge, INS_ccmple, INS_ccmpg,
+    };
+
+    static_assert_no_msg(s_table[EJ_NONE] == INS_none);
+    static_assert_no_msg(s_table[EJ_jmp] == INS_none);
+    static_assert_no_msg(s_table[EJ_jo] == INS_ccmpo);
+    static_assert_no_msg(s_table[EJ_jno] == INS_ccmpno);
+    static_assert_no_msg(s_table[EJ_jb] == INS_ccmpb);
+    static_assert_no_msg(s_table[EJ_jae] == INS_ccmpae);
+    static_assert_no_msg(s_table[EJ_je] == INS_ccmpe);
+    static_assert_no_msg(s_table[EJ_jne] == INS_ccmpne);
+    static_assert_no_msg(s_table[EJ_jbe] == INS_ccmpbe);
+    static_assert_no_msg(s_table[EJ_ja] == INS_ccmpa);
+    static_assert_no_msg(s_table[EJ_js] == INS_ccmps);
+    static_assert_no_msg(s_table[EJ_jns] == INS_ccmpns);
+    static_assert_no_msg(s_table[EJ_jp] == INS_none);
+    static_assert_no_msg(s_table[EJ_jnp] == INS_none);
+    static_assert_no_msg(s_table[EJ_jl] == INS_ccmpl);
+    static_assert_no_msg(s_table[EJ_jge] == INS_ccmpge);
+    static_assert_no_msg(s_table[EJ_jle] == INS_ccmple);
+    static_assert_no_msg(s_table[EJ_jg] == INS_ccmpg);
+
+    assert((condition >= EJ_NONE) && (condition < EJ_COUNT));
+    return s_table[condition];
+}
+
+//------------------------------------------------------------------------
 // genCodeForCompare: Produce code for a GT_SELECT/GT_SELECTCC node.
 //
 // Arguments:
@@ -1671,7 +1711,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
 }
 
 // clang-format off
-const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
+const GenConditionDesc GenConditionDesc::map[32]
 {
     { },        // NONE
     { },        // 1
@@ -2271,6 +2311,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_IL_OFFSET:
             // Do nothing; these nodes are simply markers for debug info.
             break;
+
+#if defined(TARGET_AMD64)
+        case GT_CCMP:
+            genCodeForCCMP(treeNode->AsCCMP());
+            break;
+#endif
 
         default:
         {
@@ -8927,6 +8973,84 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     regSet.verifyRegistersUsed(killMask);
 }
+
+//-----------------------------------------------------------------------------------------
+// OptsFromCFlags - Convert condition flags into approxpriate insOpts.
+//
+// Arguments:
+//    flags - The condition flags to be converted.
+//
+// Return Value:
+//    An insOpts value encoding the condition flags.
+//
+// Notes:
+//    This function maps the condition flags (e.g., CF, ZF, SF, OF) to the appropriate
+//    instruction options used for setting the default flag values in extneded EVEX
+//    encoding conditional instructions.
+//
+insOpts CodeGen::OptsFromCFlags(insCflags flags)
+{
+    unsigned opts = 0x0;
+    if (flags & INS_FLAGS_CF)
+        opts |= INS_OPTS_EVEX_dfv_cf;
+    if (flags & INS_FLAGS_ZF)
+        opts |= INS_OPTS_EVEX_dfv_zf;
+    if (flags & INS_FLAGS_SF)
+        opts |= INS_OPTS_EVEX_dfv_sf;
+    if (flags & INS_FLAGS_OF)
+        opts |= INS_OPTS_EVEX_dfv_of;
+    return (insOpts)opts;
+}
+
+#ifdef TARGET_AMD64
+
+//-----------------------------------------------------------------------------------------
+// genCodeForCCMP - Generate code for a conditional compare (CCMP) node.
+//
+// Arguments:
+//    ccmp - The GenTreeCCMP node representing the conditional compare.
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    This function generates code for a conditional compare operation. On X86,
+//    comparisons using the extended EVEX encoding and ccmp instruction.
+void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
+{
+    emitter* emit = GetEmitter();
+    assert(emit->UsePromotedEVEXEncoding());
+
+    genConsumeOperands(ccmp);
+    GenTree*  op1     = ccmp->gtGetOp1();
+    GenTree*  op2     = ccmp->gtGetOp2();
+    var_types op1Type = genActualType(op1->TypeGet());
+    var_types op2Type = genActualType(op2->TypeGet());
+    emitAttr  cmpSize = emitActualTypeSize(op1Type);
+    regNumber srcReg1 = op1->GetRegNum();
+
+    // No float support or swapping op1 and op2 to generate cmp reg, imm.
+    assert(!varTypeIsFloating(op2Type));
+    assert(!op1->isContainedIntOrIImmed());
+
+    // For the ccmp flags, invert the condition of the compare.
+    // For the condition, use the previous compare.
+    const GenConditionDesc& condDesc = GenConditionDesc::Get(ccmp->gtCondition);
+    instruction             ccmpIns  = JumpKindToCcmp(condDesc.jumpKind1);
+    insOpts                 opts     = OptsFromCFlags(ccmp->gtFlagsVal);
+
+    if (op2->isContainedIntOrIImmed())
+    {
+        GenTreeIntConCommon* intConst = op2->AsIntConCommon();
+        emit->emitIns_R_I(ccmpIns, cmpSize, srcReg1, (int)intConst->IconValue(), opts);
+    }
+    else
+    {
+        regNumber srcReg2 = op2->GetRegNum();
+        emit->emitIns_R_R(ccmpIns, cmpSize, srcReg1, srcReg2, opts);
+    }
+}
+#endif // TARGET_AMD64
 
 #if defined(DEBUG) && defined(TARGET_AMD64)
 

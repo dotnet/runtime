@@ -5,6 +5,7 @@ project(Profiler)
 set(SOURCES
     assemblyprofiler/assemblyprofiler.cpp
     classload/classload.cpp
+    dynamicjitoptimization/dynamicjitoptimization.cpp
     eltprofiler/slowpatheltprofiler.cpp
     enumthreadsprofiler/enumthreadsprofiler.cpp
     eventpipeprofiler/eventpipereadingprofiler.cpp
