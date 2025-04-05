@@ -2267,8 +2267,6 @@ void Thread::HandleThreadAbort ()
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
-    // @TODO: we should consider treating this function as an FCALL or HCALL and use FCThrow instead of COMPlusThrow
-
     // Sometimes we call this without any CLR SEH in place.  An example is UMThunkStubRareDisableWorker.
     // That's okay since COMPlusThrow will eventually erect SEH around the RaiseException. It prevents
     // us from stating CONTRACT here.
@@ -4215,6 +4213,18 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
         if ((thread->m_State & TS_DebugWillSync) == 0)
             continue;
 
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+        if (thread->m_State & Thread::TS_SSToExitApcCallDone)
+        {
+            thread->ResetThreadState(Thread::TS_SSToExitApcCallDone);
+            goto Label_MarkThreadAsSynced;
+        }
+        if (thread->m_State & Thread::TS_SSToExitApcCall)
+        {
+            continue;
+        }
+#endif
+
         if (!UseContextBasedThreadRedirection())
         {
             // On platforms that do not support safe thread suspension we either
@@ -5331,6 +5341,19 @@ BOOL Thread::HandledJITCase()
 #endif // FEATURE_HIJACK
 
 // Some simple helpers to keep track of the threads we are waiting for
+void Thread::MarkForSuspensionAndWait(ULONG bit)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+    m_DebugSuspendEvent.Reset();
+    InterlockedOr((LONG*)&m_State, bit);
+    ThreadStore::IncrementTrapReturningThreads();
+    m_DebugSuspendEvent.Wait(INFINITE,FALSE);
+}
+
 void Thread::MarkForSuspension(ULONG bit)
 {
     CONTRACTL {
@@ -5753,7 +5776,8 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
 //       address to take the thread to the appropriate stub (based on the return
 //       type of the method) which will then handle preparing the thread for GC.
 //
-void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
+
+void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger)
 {
     struct AutoClearPendingThreadActivation
     {
@@ -5788,6 +5812,18 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     EECodeInfo codeInfo(ip);
     if (!codeInfo.IsValid())
         return;
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    // It's not allowed to change the IP while paused in an APC Callback for security reasons if CET is turned on
+    // So we enable the single step in the thread that is running the APC Callback
+    // and then it will be paused using single step exception after exiting the APC callback
+    // this will allow the debugger to setIp to execute FuncEvalHijack.
+    if (suspendForDebugger)
+    {
+        g_pDebugInterface->SingleStepToExitApcCall(pThread, interruptedContext);
+        return;
+    }
+#endif        
 
     DWORD addrOffset = codeInfo.GetRelOffset();
 
@@ -5863,6 +5899,11 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     }
 }
 
+void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
+{
+    HandleSuspensionForInterruptedThread(interruptedContext, false);
+}
+
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 void Thread::ApcActivationCallback(ULONG_PTR Parameter)
 {
@@ -5889,10 +5930,10 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
 
     switch (reason)
     {
-        case ActivationReason::SuspendForGC:
         case ActivationReason::SuspendForDebugger:
+        case ActivationReason::SuspendForGC:
         case ActivationReason::ThreadAbort:
-            HandleSuspensionForInterruptedThread(pContext);
+            HandleSuspensionForInterruptedThread(pContext, reason == ActivationReason::SuspendForDebugger);
             break;
 
         default:

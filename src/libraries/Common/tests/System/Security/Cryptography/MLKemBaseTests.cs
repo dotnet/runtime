@@ -459,6 +459,65 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(sharedSecret.Slice(0, sharedSecretWritten), decapsulated);
         }
 
+        [Fact]
+        public void TryExportPkcs8PrivateKey_Seed_Roundtrip()
+        {
+            using MLKem kem = ImportPrivateSeed(MLKemAlgorithm.MLKem512, MLKemTestData.IncrementalSeed);
+
+            AssertExportPkcs8PrivateKey(kem, pkcs8 =>
+            {
+                using MLKem imported = MLKem.ImportPkcs8PrivateKey(pkcs8);
+                Assert.Equal(MLKemAlgorithm.MLKem512, imported.Algorithm);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+            });
+        }
+
+        [Fact]
+        public void ExportPkcs8PrivateKey_DecapsulationKey_Roundtrip()
+        {
+            using MLKem kem = ImportDecapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512DecapsulationKey);
+
+            AssertExportPkcs8PrivateKey(kem, pkcs8 =>
+            {
+                using MLKem imported = MLKem.ImportPkcs8PrivateKey(pkcs8);
+                Assert.Equal(MLKemAlgorithm.MLKem512, imported.Algorithm);
+
+                Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
+                AssertExtensions.SequenceEqual(MLKemTestData.MLKem512DecapsulationKey, kem.ExportDecapsulationKey());
+            });
+        }
+
+        [Fact]
+        public void TryExportPkcs8PrivateKey_EncapsulationKey_Fails()
+        {
+            using MLKem kem = ImportEncapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512EncapsulationKey);
+            Assert.Throws<CryptographicException>(() => DoTryUntilDone(kem.TryExportPkcs8PrivateKey));
+            Assert.Throws<CryptographicException>(() => kem.ExportPkcs8PrivateKey());
+        }
+
+        private static void AssertExportPkcs8PrivateKey(MLKem kem, Action<byte[]> callback)
+        {
+            byte[] pkcs8 = DoTryUntilDone(kem.TryExportPkcs8PrivateKey);
+            callback(pkcs8);
+            callback(kem.ExportPkcs8PrivateKey());
+        }
+
+        private delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
+
+        private static byte[] DoTryUntilDone(TryExportFunc func)
+        {
+            byte[] buffer = new byte[512];
+            int written;
+
+            while (!func(buffer, out written))
+            {
+                Array.Resize(ref buffer, buffer.Length * 2);
+            }
+
+            return buffer.AsSpan(0, written).ToArray();
+        }
+
+
         private static void Tamper(Span<byte> buffer)
         {
             buffer[buffer.Length - 1] ^= 0xFF;

@@ -532,6 +532,9 @@ inline bool CORDebuggerAttached()
     return (g_CORDebuggerControlFlags & DBCF_ATTACHED) && !IsAtProcessExit();
 }
 
+// This only check debugger bits. However JIT optimizations can be disabled by other ways on a module
+// In most cases Module::AreJITOptimizationsDisabled() should be the prefered for checking if JIT optimizations
+// are disabled for a module (it does check both debugger bits and profiler jit deoptimization flag)
 #define CORDebuggerAllowJITOpts(dwDebuggerBits)           \
     (((dwDebuggerBits) & DACF_ALLOW_JIT_OPTS)             \
      ||                                                   \
@@ -543,45 +546,6 @@ inline bool CORDebuggerAttached()
 
 #define CORDebuggerTraceCall() \
     (CORDebuggerAttached() && GetThread()->IsTraceCall())
-
-
-
-//
-// Define stuff for precedence between profiling and debugging
-// flags that can both be set.
-//
-
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-
-#ifdef DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits)        \
-         (CORProfilerDisableOptimizations() ||            \
-          !CORDebuggerAllowJITOpts(dwDebuggerBits))
-
-#else // !DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits)        \
-         CORProfilerDisableOptimizations()
-
-#endif// DEBUGGING_SUPPORTED
-
-#else // !defined(PROFILING_SUPPORTED) && !defined(PROFILING_SUPPORTED_DATA)
-
-#ifdef DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits)        \
-          !CORDebuggerAllowJITOpts(dwDebuggerBits)
-
-#else // DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits) FALSE
-
-#endif// DEBUGGING_SUPPORTED
-
-#endif// defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-
-
 
 #ifndef TARGET_UNIX
 GVAL_DECL(SIZE_T, g_runtimeLoadedBaseAddress);
