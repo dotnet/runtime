@@ -79,7 +79,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         return CORJIT_SKIPPED;
     }
 
-    InterpCompiler compiler(compHnd, methodInfo, false /* verbose */);
+    InterpCompiler compiler(compHnd, methodInfo);
     InterpMethod *pMethod = compiler.CompileMethod();
 
     int32_t IRCodeSize;
