@@ -10,6 +10,8 @@ namespace System.Security.Cryptography.Tests
 {
     public static class MLKemContractTests
     {
+        private static readonly PbeParameters s_aes128Pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 2);
+
         [Fact]
         public static void Constructor_ThrowsForNullAlgorithm()
         {
@@ -902,6 +904,133 @@ namespace System.Security.Cryptography.Tests
             kem.Dispose();
             Assert.Throws<ObjectDisposedException>(() => kem.ExportPkcs8PrivateKey());
             Assert.Throws<ObjectDisposedException>(() => kem.TryExportPkcs8PrivateKey(new byte[512], out _));
+        }
+
+        [Fact]
+        public static void ExportEncryptedPkcs8PrivateKey_Disposed()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512);
+            kem.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
+                    s_aes128Pbe,
+                    new byte[2048],
+                    out _));
+
+            Assert.Throws<ObjectDisposedException>(() =>  kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                    s_aes128Pbe,
+                    new byte[2048],
+                    out _));
+
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword,
+                s_aes128Pbe));
+
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
+                s_aes128Pbe));
+
+            Assert.Throws<ObjectDisposedException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                s_aes128Pbe));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void TryExportEncryptedPkcs8PrivateKey_ExportsPkcs8(bool useCharPassword)
+        {
+            using MLKemContract kem = new(MLKemAlgorithm.MLKem512)
+            {
+                OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    if (MLKemTestData.IetfMlKem512PrivateKeyExpandedKey.AsSpan().TryCopyTo(destination))
+                    {
+                        bytesWritten = MLKemTestData.IetfMlKem512PrivateKeyExpandedKey.Length;
+                        return true;
+                    }
+
+                    Assert.Fail("Initial buffer was not correctly sized.");
+                    bytesWritten = 0;
+                    return false;
+                }
+            };
+
+            byte[] buffer = new byte[2048];
+            bool success;
+            int written;
+
+            if (useCharPassword)
+            {
+                success = kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword,
+                    s_aes128Pbe,
+                    buffer,
+                    out written);
+            }
+            else
+            {
+                success = kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                    s_aes128Pbe,
+                    buffer,
+                    out written);
+            }
+
+            AssertExtensions.TrueExpression(success);
+            AssertExtensions.GreaterThan(written, 0);
+            Assert.Equal(1, kem.TryExportPkcs8PrivateKeyCoreCount);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void TryExportEncryptedPkcs8PrivateKey_InnerBuffer_LargePkcs8(bool useCharPassword)
+        {
+            using MLKemContract kem = new(MLKemAlgorithm.MLKem512);
+            kem.OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
+            {
+                if (kem.TryExportPkcs8PrivateKeyCoreCount < 2)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                if (MLKemTestData.IetfMlKem512PrivateKeyExpandedKey.AsSpan().TryCopyTo(destination))
+                {
+                    bytesWritten = MLKemTestData.IetfMlKem512PrivateKeyExpandedKey.Length;
+                    return true;
+                }
+
+                bytesWritten = 0;
+                return false;
+            };
+
+            byte[] buffer = new byte[2048];
+            bool success;
+            int written;
+
+            if (useCharPassword)
+            {
+                success = kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword,
+                    s_aes128Pbe,
+                    buffer,
+                    out written);
+            }
+            else
+            {
+                success = kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                    s_aes128Pbe,
+                    buffer,
+                    out written);
+            }
+
+            AssertExtensions.TrueExpression(success);
+            AssertExtensions.GreaterThan(written, 0);
+            Assert.Equal(2, kem.TryExportPkcs8PrivateKeyCoreCount);
         }
 
         private static string MapAlgorithmOid(MLKemAlgorithm algorithm)

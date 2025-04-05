@@ -532,6 +532,38 @@ namespace System.Security.Cryptography.Tests
             });
         }
 
+        [Fact]
+        public void ExportEncryptedPkcs8PrivateKey_EncapsulationKey_Fails()
+        {
+            using MLKem kem = ImportEncapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512EncapsulationKey);
+
+            Assert.Throws<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+                kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
+                    s_aes128Pbe,
+                    destination,
+                    out bytesWritten)));
+
+            Assert.Throws<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+                kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                    s_aes128Pbe,
+                    destination,
+                    out bytesWritten)));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword,
+                s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
+                s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                s_aes128Pbe));
+        }
+
         private static void AssertExportPkcs8PrivateKey(MLKem kem, Action<byte[]> callback)
         {
             callback(DoTryUntilDone(kem.TryExportPkcs8PrivateKey));
