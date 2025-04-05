@@ -919,6 +919,10 @@ struct HijackArgs
                                // this is only used by functions OnHijackWorker()
     };
 
+    // saving r1 as well, as it can have partial return value when return is > 32 bits
+    // also keeps the struct size 8-byte aligned.
+    DWORD R1;
+
     union
     {
         DWORD R2;
