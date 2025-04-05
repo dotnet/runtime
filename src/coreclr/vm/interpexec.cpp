@@ -31,6 +31,13 @@ InterpThreadContext* InterpGetThreadContext()
     }
 }
 
+#ifdef DEBUG
+static void InterpBreakpoint()
+{
+
+}
+#endif
+
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 // TODO once we have basic EH support
@@ -60,6 +67,12 @@ MAIN_LOOP:
 
         switch (*ip)
         {
+#ifdef DEBUG
+            case INTOP_BREAKPOINT:
+                InterpBreakpoint();
+                ip++;
+                break;
+#endif
             case INTOP_INITLOCALS:
                 memset(stack + ip[1], 0, ip[2]);
                 ip += 3;
