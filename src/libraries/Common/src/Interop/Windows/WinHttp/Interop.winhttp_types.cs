@@ -336,6 +336,14 @@ internal static partial class Interop
             public uint dwError;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        public unsafe struct WINHTTP_CONNECTION_INFO
+        {
+            public uint cbSize;
+            public uint __alignment;
+            public fixed byte LocalAddress[128];
+            public fixed byte RemoteAddress[128];
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         public struct tcp_keepalive
