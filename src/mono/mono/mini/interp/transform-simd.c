@@ -469,8 +469,9 @@ is_element_type_primitive (MonoType *vector_type)
 static void
 emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMethodSignature *csignature, int vector_size, gboolean allow_void)
 {
-	td->sp -= csignature->param_count;
-	for (int i = 0; i < csignature->param_count; i++)
+	guint16 param_count = csignature->param_count + !!csignature->hasthis;
+	td->sp -= param_count;
+	for (int i = 0; i < param_count; i++)
 		td->last_ins->sregs [i] = td->sp [i].var;
 
 	int ret_mt = mono_mint_type (csignature->ret);
