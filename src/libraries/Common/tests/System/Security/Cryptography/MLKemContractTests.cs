@@ -939,6 +939,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not support symmetric encryption")]
         public static void TryExportEncryptedPkcs8PrivateKey_ExportsPkcs8(bool useCharPassword)
         {
             using MLKemContract kem = new(MLKemAlgorithm.MLKem512)
@@ -986,6 +987,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not support symmetric encryption")]
         public static void TryExportEncryptedPkcs8PrivateKey_InnerBuffer_LargePkcs8(bool useCharPassword)
         {
             using MLKemContract kem = new(MLKemAlgorithm.MLKem512);
@@ -1036,6 +1038,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not support symmetric encryption")]
         public static void TryExportEncryptedPkcs8PrivateKey_DestinationTooSmall(bool useCharPassword)
         {
             byte[] buffer = new byte[3];
