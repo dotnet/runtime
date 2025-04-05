@@ -4160,6 +4160,14 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 cndSelNode->Op(2) = nestedCndSel->Op(2);
                 if (nestedOp3->IsMaskZero())
                 {
+                    if (nestedOp3->OperIsConvertMaskToVector())
+                    {
+                        GenTree*       zeroMask   = nestedOp3->AsHWIntrinsic()->Op(1);
+                        NamedIntrinsic zeroMaskId = zeroMask->AsHWIntrinsic()->GetHWIntrinsicId();
+                        assert((zeroMaskId >= NI_Sve_CreateFalseMaskByte) &&
+                               (zeroMaskId <= NI_Sve_CreateFalseMaskUInt64));
+                        BlockRange().Remove(zeroMask);
+                    }
                     BlockRange().Remove(nestedOp3);
                 }
                 else
@@ -4204,6 +4212,13 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 
             if (op3->IsMaskZero())
             {
+                if (op3->OperIsConvertMaskToVector())
+                {
+                    GenTree*       zeroMask   = op3->AsHWIntrinsic()->Op(1);
+                    NamedIntrinsic zeroMaskId = zeroMask->AsHWIntrinsic()->GetHWIntrinsicId();
+                    assert((zeroMaskId >= NI_Sve_CreateFalseMaskByte) && (zeroMaskId <= NI_Sve_CreateFalseMaskUInt64));
+                    BlockRange().Remove(zeroMask);
+                }
                 BlockRange().Remove(op3);
             }
             else
