@@ -786,6 +786,31 @@ void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHij
     HijackReturnAddressWorker(&frameIterator, pfnHijackFunction);
 }
 
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+static inline void* PacSignPtr(void* ptr)
+{
+
+    __asm__ volatile (".arch_extension pauth\n"
+                      "paciza %0"
+                      : "+r" (ptr)
+                      :
+                      : "memory"                // Memory is affected, prevent reordering
+                      );
+    return ptr;
+}
+
+static inline void* PacStripPtr(void* ptr)
+{
+    __asm__ volatile (".arch_extension pauth\n"
+                      "xpaci %0"
+                      : "+r" (ptr)
+                      :
+                      : "memory"                // Memory is affected, prevent reordering
+                      );
+    return ptr;
+}
+#endif // TARGET_ARM64 && __GNUC__
+
 void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction)
 {
     void** ppvRetAddrLocation;
@@ -805,6 +830,10 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         CrossThreadUnhijack();
 
         void* pvRetAddr = *ppvRetAddrLocation;
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+        pvRetAddr = PacStripPtr(pvRetAddr);
+#endif // TARGET_ARM64 && __GNUC__
+
         ASSERT(pvRetAddr != NULL);
         ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
 
@@ -817,6 +846,9 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 #endif
 
         *ppvRetAddrLocation = (void*)pfnHijackFunction;
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+        *ppvRetAddrLocation = PacSignPtr(*ppvRetAddrLocation);
+#endif // TARGET_ARM64 && __GNUC__
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
@@ -944,7 +976,11 @@ void Thread::UnhijackWorker()
 
     // Restore the original return address.
     ASSERT(m_ppvHijackedReturnAddressLocation != NULL);
+
     *m_ppvHijackedReturnAddressLocation = m_pvHijackedReturnAddress;
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+    *m_ppvHijackedReturnAddressLocation = PacSignPtr(*m_ppvHijackedReturnAddressLocation);
+#endif // TARGET_ARM64 && __GNUC__
 
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;
