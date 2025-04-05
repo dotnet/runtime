@@ -18,6 +18,50 @@ namespace System.Collections.Frozen
     {
         /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
         /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
+        /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+        /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
+        /// <remarks>
+        /// If the same key appears multiple times in the input, the latter one in the sequence takes precedence. This differs from
+        /// <see cref="M:System.Linq.Enumerable.ToDictionary"/>, with which multiple duplicate keys will result in an exception.
+        /// </remarks>
+        /// <returns>A <see cref="FrozenDictionary{TKey, TValue}"/> that contains the specified keys and values.</returns>
+        public static FrozenDictionary<TKey, TValue> Create<TKey, TValue>(params ReadOnlySpan<KeyValuePair<TKey, TValue>> source)
+            where TKey : notnull =>
+            Create(null, source);
+
+        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
+        /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
+        /// <param name="comparer">The comparer implementation to use to compare keys for equality. If <see langword="null"/>, <see cref="EqualityComparer{TKey}.Default"/> is used.</param>
+        /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+        /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
+        /// <remarks>
+        /// If the same key appears multiple times in the input, the latter one in the sequence takes precedence. This differs from
+        /// <see cref="M:System.Linq.Enumerable.ToDictionary"/>, with which multiple duplicate keys will result in an exception.
+        /// </remarks>
+        /// <returns>A <see cref="FrozenDictionary{TKey, TValue}"/> that contains the specified keys and values.</returns>
+        public static FrozenDictionary<TKey, TValue> Create<TKey, TValue>(IEqualityComparer<TKey>? comparer, params ReadOnlySpan<KeyValuePair<TKey, TValue>> source)
+            where TKey : notnull
+        {
+            comparer ??= EqualityComparer<TKey>.Default;
+
+            if (source.IsEmpty)
+            {
+                return ReferenceEquals(comparer, FrozenDictionary<TKey, TValue>.Empty.Comparer) ?
+                    FrozenDictionary<TKey, TValue>.Empty :
+                    new EmptyFrozenDictionary<TKey, TValue>(comparer);
+            }
+
+            Dictionary<TKey, TValue> d = new(source.Length, comparer);
+            foreach (KeyValuePair<TKey, TValue> pair in source)
+            {
+                d[pair.Key] = pair.Value;
+            }
+
+            return CreateFromDictionary(d);
+        }
+
+        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
+        /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
         /// <param name="comparer">The comparer implementation to use to compare keys for equality. If null, <see cref="EqualityComparer{TKey}.Default"/> is used.</param>
         /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
         /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
@@ -259,6 +303,7 @@ namespace System.Collections.Frozen
     /// the remainder of the life of the application. <see cref="FrozenDictionary{TKey, TValue}"/> should only be
     /// initialized with trusted keys, as the details of the keys impacts construction time.
     /// </remarks>
+    [CollectionBuilder(typeof(FrozenDictionary), nameof(FrozenDictionary.Create))]
     [DebuggerTypeProxy(typeof(ImmutableDictionaryDebuggerProxy<,>))]
     [DebuggerDisplay("Count = {Count}")]
     public abstract partial class FrozenDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary

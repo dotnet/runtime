@@ -20,6 +20,11 @@ include asmconstants.inc
         option  casemap:none
         .code
 
+g_pThrowDivideByZeroException    TEXTEQU <_g_pThrowDivideByZeroException>
+g_pThrowOverflowException        TEXTEQU <_g_pThrowOverflowException>
+EXTERN g_pThrowDivideByZeroException:DWORD
+EXTERN g_pThrowOverflowException:DWORD
+
 EXTERN __imp__RtlUnwind@16:DWORD
 ifdef _DEBUG
 EXTERN _HelperMethodFrameConfirmState@20:PROC
@@ -67,6 +72,11 @@ endif
 EXTERN @ProfileEnter@8:PROC
 EXTERN @ProfileLeave@8:PROC
 EXTERN @ProfileTailcall@8:PROC
+
+EXTERN __alldiv:PROC
+EXTERN __allrem:PROC
+EXTERN __aulldiv:PROC
+EXTERN __aullrem:PROC
 
 EXTERN _VSD_ResolveWorker@12:PROC
 EXTERN _BackPatchWorkerStaticStub@8:PROC
@@ -1509,6 +1519,203 @@ _OnCallCountThresholdReachedStub@0 proc public
 _OnCallCountThresholdReachedStub@0 endp
 
 endif ; FEATURE_TIERED_COMPILATION
+
+    DivisorLow32BitsOffset     equ 04h
+    DivisorHi32BitsOffset     equ 08h
+    DividendLow32BitsOffset     equ 0Ch
+    DividendHi32BitsOffset     equ 10h
+
+;; Stack on entry
+;; dividend (hi 32 bits)
+;; dividend (lo 32 bits)
+;; divisor (hi 32 bits)
+;; divisor (lo 32 bits)
+;; return address
+ALIGN 16
+FASTCALL_FUNC JIT_LDiv, 16
+    mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
+    cdq
+    cmp     edx,dword ptr [esp + DivisorHi32BitsOffset]
+    jne     JIT_LDiv_Call__alldiv ; We're going to call CRT Helper routine
+    test    eax, eax
+    je      JIT_ThrowDivideByZero_Long
+    cmp     eax,0FFFFFFFFh
+    jne     JIT_LDiv_DoDivideBy32BitDivisor
+    mov     eax,dword  ptr [esp + DividendLow32BitsOffset]
+    test    eax, eax
+    mov     edx,dword  ptr [esp + DividendHi32BitsOffset]
+    jne     JIT_LDiv_DoNegate
+    cmp     edx,80000000h
+    je      JIT_ThrowOverflow_Long
+JIT_LDiv_DoNegate:
+    neg     eax
+    adc     edx,0
+    neg     edx
+    ret     10h
+ALIGN 16
+JIT_LDiv_DoDivideBy32BitDivisor:
+    ; First check to see if dividend is also 32 bits
+    mov     ecx, eax ; Put divisor in ecx
+    mov     eax, dword ptr  [esp + DividendLow32BitsOffset]
+    cdq
+    cmp     edx, dword ptr [esp + DividendHi32BitsOffset]
+    jne     JIT_LDiv_Call__alldiv ; We're going to call CRT Helper routine
+    idiv    ecx
+    cdq
+    ret     10h
+ALIGN 16
+JIT_LDiv_Call__alldiv:
+    ; Swap the divisor and dividend in output
+    mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
+    mov     ecx,dword ptr [esp + DivisorHi32BitsOffset]
+    mov     edx,dword ptr [esp + DividendLow32BitsOffset]
+    mov     dword ptr [esp + DividendLow32BitsOffset], eax
+    mov     eax,dword ptr [esp + DividendHi32BitsOffset]
+    mov     dword ptr [esp + DividendHi32BitsOffset], ecx
+    mov     dword ptr [esp + DivisorLow32BitsOffset], edx
+    mov     dword ptr [esp + DivisorHi32BitsOffset], eax
+    jne     __alldiv ; Tail call the CRT Helper routine for 64 bit divide
+FASTCALL_ENDFUNC
+
+;; Stack on entry
+;; dividend (hi 32 bits)
+;; dividend (lo 32 bits)
+;; divisor (hi 32 bits)
+;; divisor (lo 32 bits)
+;; return address
+ALIGN 16
+FASTCALL_FUNC JIT_LMod, 16
+    mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
+    cdq
+    cmp     edx,dword ptr [esp + DivisorHi32BitsOffset]
+    jne     JIT_LMod_Call__allrem ; We're going to call CRT Helper routine
+    test    eax, eax
+    je      JIT_ThrowDivideByZero_Long
+    cmp     eax,0FFFFFFFFh
+    jne     JIT_LMod_DoDivideBy32BitDivisor
+    mov     eax,dword  ptr [esp + DividendLow32BitsOffset]
+    test    eax, eax
+    jne     JIT_LMod_ReturnZero
+    mov     edx,dword  ptr [esp + DividendHi32BitsOffset]
+    cmp     edx,80000000h
+    je      JIT_ThrowOverflow_Long
+JIT_LMod_ReturnZero:
+    xor     eax, eax
+    xor     edx, edx
+    ret     10h
+ALIGN 16
+JIT_LMod_DoDivideBy32BitDivisor:
+    ; First check to see if dividend is also 32 bits
+    mov     ecx, eax ; Put divisor in ecx
+    mov     eax, dword ptr [esp + DividendLow32BitsOffset]
+    cdq
+    cmp     edx, dword ptr [esp + DividendHi32BitsOffset]
+    jne     JIT_LMod_Call__allrem ; We're going to call CRT Helper routine
+    idiv    ecx
+    mov     eax,edx
+    cdq
+    ret     10h
+ALIGN 16
+JIT_LMod_Call__allrem:
+    ; Swap the divisor and dividend in output
+    mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
+    mov     ecx,dword ptr [esp + DivisorHi32BitsOffset]
+    mov     edx,dword ptr [esp + DividendLow32BitsOffset]
+    mov     dword ptr [esp + DividendLow32BitsOffset], eax
+    mov     eax,dword ptr [esp + DividendHi32BitsOffset]
+    mov     dword ptr [esp + DividendHi32BitsOffset], ecx
+    mov     dword ptr [esp + DivisorLow32BitsOffset], edx
+    mov     dword ptr [esp + DivisorHi32BitsOffset], eax
+    jne     __allrem ; Tail call the CRT Helper routine for 64 bit divide
+FASTCALL_ENDFUNC
+
+;; Stack on entry
+;; dividend (hi 32 bits)
+;; dividend (lo 32 bits)
+;; divisor (hi 32 bits)
+;; divisor (lo 32 bits)
+;; return address
+ALIGN 16
+FASTCALL_FUNC JIT_ULDiv, 16
+    mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
+    cmp     dword ptr [esp + DivisorHi32BitsOffset], 0
+    jne     JIT_ULDiv_Call__aulldiv ; We're going to call CRT Helper routine
+    test    eax, eax
+    je      JIT_ThrowDivideByZero_Long
+    ; First check to see if dividend is also 32 bits
+    mov     ecx, eax ; Put divisor in ecx
+    cmp     dword ptr [esp + DividendHi32BitsOffset], 0
+    jne     JIT_ULDiv_Call__aulldiv ; We're going to call CRT Helper routine
+    mov     eax, dword ptr [esp + DividendLow32BitsOffset]
+    xor     edx, edx
+    div     ecx
+    xor     edx, edx
+    ret     10h
+ALIGN 16
+JIT_ULDiv_Call__aulldiv:
+    ; Swap the divisor and dividend in output
+    mov     ecx,dword ptr [esp + DivisorHi32BitsOffset]
+    mov     edx,dword ptr [esp + DividendLow32BitsOffset]
+    mov     dword ptr [esp + DividendLow32BitsOffset], eax
+    mov     eax,dword ptr [esp + DividendHi32BitsOffset]
+    mov     dword ptr [esp + DividendHi32BitsOffset], ecx
+    mov     dword ptr [esp + DivisorLow32BitsOffset], edx
+    mov     dword ptr [esp + DivisorHi32BitsOffset], eax
+    jne    __aulldiv ; Tail call the CRT Helper routine for 64 bit unsigned divide
+FASTCALL_ENDFUNC
+
+;; Stack on entry
+;; dividend (hi 32 bits)
+;; dividend (lo 32 bits)
+;; divisor (hi 32 bits)
+;; divisor (lo 32 bits)
+;; return address
+ALIGN 16
+FASTCALL_FUNC JIT_ULMod, 16
+    mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
+    cdq
+    cmp     dword ptr [esp + DivisorHi32BitsOffset], 0
+    jne     JIT_LMod_Call__aullrem ; We're going to call CRT Helper routine
+    test    eax, eax
+    je      JIT_ThrowDivideByZero_Long
+    ; First check to see if dividend is also 32 bits
+    mov     ecx, eax ; Put divisor in ecx
+    cmp     dword ptr [esp + DividendHi32BitsOffset], 0
+    jne     JIT_LMod_Call__aullrem ; We're going to call CRT Helper routine
+    mov     eax, dword ptr [esp + DividendLow32BitsOffset]
+    xor     edx, edx
+    div     ecx
+    mov     eax, edx
+    xor     edx, edx
+    ret     10h
+ALIGN 16
+JIT_LMod_Call__aullrem:
+    ; Swap the divisor and dividend in output
+    mov     ecx,dword ptr [esp + DivisorHi32BitsOffset]
+    mov     edx,dword ptr [esp + DividendLow32BitsOffset]
+    mov     dword ptr [esp + DividendLow32BitsOffset], eax
+    mov     eax,dword ptr [esp + DividendHi32BitsOffset]
+    mov     dword ptr [esp + DividendHi32BitsOffset], ecx
+    mov     dword ptr [esp + DivisorLow32BitsOffset], edx
+    mov     dword ptr [esp + DivisorHi32BitsOffset], eax
+    jne     __aullrem ; Tail call the CRT Helper routine for 64 bit unsigned modulus
+FASTCALL_ENDFUNC
+
+JIT_ThrowDivideByZero_Long proc public
+    pop eax ; Pop return address into eax
+    add esp, 10h
+    push eax ; Fix return address
+    mov eax, g_pThrowDivideByZeroException
+    jmp eax
+JIT_ThrowDivideByZero_Long endp
+
+JIT_ThrowOverflow_Long proc public
+    pop eax ; Pop return address into eax
+    add esp, 10h
+    push eax ; Fix return address
+    mov eax, g_pThrowOverflowException
+    jmp eax
+JIT_ThrowOverflow_Long endp
 
 ; rcx -This pointer
 ; rdx -ReturnBuffer
