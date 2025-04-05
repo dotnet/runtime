@@ -45,10 +45,9 @@ void FinalizeWeakReference(Object* obj)
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
 }
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
 
-// static
-extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, INT64 wrapperId, QCall::ObjectHandleOnStack retRcw)
+extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, QCall::ObjectHandleOnStack retRcw)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -78,25 +77,9 @@ extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, 
         OBJECTREF rcwRef = NULL;
         GCPROTECT_BEGIN(rcwRef);
 
-        if (wrapperId != ComWrappersNative::InvalidWrapperId)
-        {
-            // Try the global COM wrappers
-            if (GlobalComWrappersForTrackerSupport::IsRegisteredInstance(wrapperId))
-            {
-                (void)GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(pTargetIdentity, &rcwRef);
-            }
-            else if (GlobalComWrappersForMarshalling::IsRegisteredInstance(wrapperId))
-            {
-                (void)GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(pTargetIdentity, ObjFromComIP::NONE, &rcwRef);
-            }
-        }
-#ifdef FEATURE_COMINTEROP
-        else
-        {
-            // If the original RCW was not created through ComWrappers, fall back to the built-in system.
-            GetObjectRefFromComIP(&rcwRef, pTargetIdentity);
-        }
-#endif // FEATURE_COMINTEROP
+        // If the original RCW was not created through ComWrappers, fall back to the built-in system.
+        GetObjectRefFromComIP(&rcwRef, pTargetIdentity);
+
         GCPROTECT_END();
         retRcw.Set(rcwRef);
     }
@@ -105,15 +88,13 @@ extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, 
     return;
 }
 
-// static
-extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnStack obj, INT64* pWrapperId)
+extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnStack obj)
 {
     QCALL_CONTRACT;
 
     IWeakReference* pWeakReference = nullptr;
     BEGIN_QCALL;
 
-    *pWrapperId = ComWrappersNative::InvalidWrapperId;
     SafeComHolder<IWeakReferenceSource> pWeakReferenceSource(nullptr);
     _ASSERTE(obj.m_ppObject != nullptr);
 
@@ -127,26 +108,11 @@ extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnSt
         // If the object is a managed type deriving from a COM type, then we also do not want to use a native COM
         // weak reference to it.  (Otherwise, we'll wind up resolving IWeakReference-s back into the CLR
         // when we don't want to have reentrancy).
-#ifdef FEATURE_COMINTEROP
         MethodTable* pMT = objRef->GetMethodTable();
         if (pMT->IsComObjectType()
             && (pMT == g_pBaseCOMObject || !pMT->IsExtensibleRCW()))
         {
             pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(GetComIPFromObjectRef(&objRef, IID_IWeakReferenceSource, false /* throwIfNoComIP */));
-        }
-        else
-#endif
-        {
-#ifdef FEATURE_COMWRAPPERS
-            bool isAggregated = false;
-            pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(ComWrappersNative::GetIdentityForObject(&objRef, IID_IWeakReferenceSource, pWrapperId, &isAggregated));
-            if (isAggregated)
-            {
-                // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown as the outer IUnknown wraps the managed object.
-                // In this case, don't create a weak reference backed by a COM weak reference.
-                pWeakReferenceSource = nullptr;
-            }
-#endif
         }
 
         GCPROTECT_END();
@@ -165,6 +131,9 @@ extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnSt
     END_QCALL;
     return pWeakReference;
 }
+#endif // FEATURE_COMINTEROP
+
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
 FCIMPL1(FC_BOOL_RET, ComAwareWeakReferenceNative::HasInteropInfo, Object* pObject)
 {

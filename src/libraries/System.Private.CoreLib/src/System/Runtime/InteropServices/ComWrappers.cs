@@ -130,6 +130,6 @@ namespace System.Runtime.InteropServices
         /// Called when a request is made for a collection of objects to be released outside of normal object or COM interface lifetime.
         /// </summary>
         /// <param name="objects">Collection of objects to release.</param>
-        protected abstract void ReleaseObjects(IEnumerable objects);
+        protected internal abstract void ReleaseObjects(IEnumerable objects);
     }
 }
