@@ -9248,7 +9248,7 @@ void Compiler::RecordStateAtEndOfInlining()
     BOOL          result = QueryPerformanceCounter(&lpCycles);
     if (result == TRUE)
     {
-        m_compCyclesAtEndOfInlining = (int64_t) lpCycles.QuadPart;
+        m_compCyclesAtEndOfInlining = (int64_t)lpCycles.QuadPart;
     }
 #endif // defined(DEBUG)
 }
