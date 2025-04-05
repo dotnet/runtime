@@ -1803,9 +1803,15 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         goto exit_bad_code;
     }
 
+    m_currentILOffset = -1;
+
+#if DEBUG
+    if (m_methodName && InterpConfig.InterpHalt() && !strcmp(m_methodName, InterpConfig.InterpHalt()))
+        AddIns(INTOP_BREAKPOINT);
+#endif
+
     if ((methodInfo->options & CORINFO_OPT_INIT_LOCALS) && m_ILLocalsSize > 0)
     {
-        m_currentILOffset = 0;
         AddIns(INTOP_INITLOCALS);
         m_pLastNewIns->data[0] = m_ILLocalsOffset;
         m_pLastNewIns->data[1] = m_ILLocalsSize;
