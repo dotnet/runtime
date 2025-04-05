@@ -1376,10 +1376,10 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         insCountLimit = absMaxInsCount;
     }
 
-    bool     utilizeSRLI = false;
-    int      srliShiftAmount;
-    uint64_t originalImm = imm;
-    bool     cond1       = (y - x) > 31;
+    bool     utilizeSRLI     = false;
+    int      srliShiftAmount = 0;
+    uint64_t originalImm     = imm;
+    bool     cond1           = (y - x) > 31;
     if ((((uint64_t)imm >> 63) & 0b1) == 0 && cond1)
     {
         srliShiftAmount  = BitOperations::LeadingZeroCount((uint64_t)imm);
@@ -1429,8 +1429,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
      * See the following discussion:
      * https://github.com/dotnet/runtime/pull/113250#discussion_r1987576070 */
 
-    uint32_t offset1        = imm & WordMask(x);
-    uint32_t offset2        = (~(offset1 - 1)) & WordMask(x);
+    uint32_t offset1        = imm & WordMask((uint8_t)x);
+    uint32_t offset2        = (~(offset1 - 1)) & WordMask((uint8_t)x);
     uint32_t offset         = offset1;
     bool     isSubtractMode = false;
 
@@ -1440,8 +1440,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
          * Since adding 1 to it will change the sign bit. Instead, shift x and y
          * to the left by one. */
         int      newX       = x + 1;
-        uint32_t newOffset1 = imm & WordMask(newX);
-        uint32_t newOffset2 = (~(newOffset1 - 1)) & WordMask(newX);
+        uint32_t newOffset1 = imm & WordMask((uint8_t)newX);
+        uint32_t newOffset2 = (~(newOffset1 - 1)) & WordMask((uint8_t)newX);
         if (newOffset2 < offset1)
         {
             x              = newX;
@@ -1493,7 +1493,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     int chunkLsbPos = (x < 11) ? 0 : (x - 11);
     int shift       = (x < 11) ? x : 11;
-    int chunkMask   = (x < 11) ? WordMask(x) : WordMask(11);
+    int chunkMask   = (x < 11) ? WordMask((uint8_t)x) : WordMask(11);
     while (true)
     {
         uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
@@ -1522,7 +1522,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             if (isSubtractMode)
             {
                 ins[numberOfInstructions - 1]    = INS_addi;
-                values[numberOfInstructions - 1] = -chunk;
+                values[numberOfInstructions - 1] = -(int32_t)chunk;
             }
             else
             {
