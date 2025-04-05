@@ -565,6 +565,18 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
                 MLKemTestData.EncryptedPrivateKeyPasswordBytes,
                 s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
+                MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
+                MLKemTestData.EncryptedPrivateKeyPassword,
+                s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
+                MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
+                s_aes128Pbe));
         }
 
         [Theory]
@@ -614,6 +626,8 @@ namespace System.Security.Cryptography.Tests
 
             callback(kem.ExportEncryptedPkcs8PrivateKey(password, pbeParameters));
             callback(kem.ExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters));
+            callback(DecodePem(kem.ExportEncryptedPkcs8PrivateKeyPem(password, pbeParameters)));
+            callback(DecodePem(kem.ExportEncryptedPkcs8PrivateKeyPem(password.AsSpan(), pbeParameters)));
 
             // PKCS12 PBE requires char-passwords, so don't run byte-password callbacks.
             if (pbeParameters.EncryptionAlgorithm != PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)
@@ -628,6 +642,16 @@ namespace System.Security.Cryptography.Tests
                 }));
 
                 callback(kem.ExportEncryptedPkcs8PrivateKey(new ReadOnlySpan<byte>(passwordBytes), pbeParameters));
+                callback(DecodePem(kem.ExportEncryptedPkcs8PrivateKeyPem(new ReadOnlySpan<byte>(passwordBytes), pbeParameters)));
+            }
+
+            static byte[] DecodePem(string pem)
+            {
+                PemFields fields = PemEncoding.Find(pem.AsSpan());
+                Assert.Equal(Index.FromStart(0), fields.Location.Start);
+                Assert.Equal(Index.FromStart(pem.Length), fields.Location.End);
+                Assert.Equal("ENCRYPTED PRIVATE KEY", pem.AsSpan()[fields.Label].ToString());
+                return Convert.FromBase64String(pem.AsSpan()[fields.Base64Data].ToString());
             }
         }
 
