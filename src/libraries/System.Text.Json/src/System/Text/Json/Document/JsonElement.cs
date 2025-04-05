@@ -1476,7 +1476,10 @@ namespace System.Text.Json
             if (TokenType == JsonTokenType.Null)
             {
                 // This is different than Length == 0, in that it tests true for null, but false for ""
-                return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(utf8Text));
+                // TODO: Refactor as it is considered a bad practice to rely on null-ness of a Span._reference field.
+#pragma warning disable CA2265
+                return utf8Text.Slice(0, 0) == default;
+#pragma warning restore CA2265
             }
 
             return TextEqualsHelper(utf8Text, isPropertyName: false, shouldUnescape: true);
@@ -1504,7 +1507,10 @@ namespace System.Text.Json
             if (TokenType == JsonTokenType.Null)
             {
                 // This is different than Length == 0, in that it tests true for null, but false for ""
-                return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(text));
+                // TODO: Refactor as it is considered a bad practice to rely on null-ness of a Span._reference field.
+#pragma warning disable CA2265
+                return text.Slice(0, 0) == default;
+#pragma warning restore CA2265
             }
 
             return TextEqualsHelper(text, isPropertyName: false);
