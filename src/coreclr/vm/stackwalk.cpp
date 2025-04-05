@@ -625,7 +625,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 {
     PCODE uControlPc;
 
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
+#if defined(_DEBUG) && defined(TARGET_WINDOWS) && !defined(TARGET_X86)
     UINT_PTR uImageBase;
 
     PT_RUNTIME_FUNCTION pFunctionEntry  = RtlLookupFunctionEntry((UINT_PTR)GetIP(pContext),
@@ -633,7 +633,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
                                                                 NULL);
 
     CONSISTENCY_CHECK(NULL == pFunctionEntry);
-#endif // _DEBUG && !TARGET_UNIX
+#endif // _DEBUG && TARGET_WINDOWS && !TARGET_X86
 
 #if defined(TARGET_AMD64)
 
@@ -2876,6 +2876,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     PREGDISPLAY pRD = m_crawl.GetRegisterSet();
                     SetIP(pRD->pCurrentContext, (TADDR)pTOSInterpMethodContextFrame->ip);
                     SetSP(pRD->pCurrentContext, dac_cast<TADDR>(pTOSInterpMethodContextFrame));
+                    SetFP(pRD->pCurrentContext, (TADDR)pTOSInterpMethodContextFrame->pStack);
                     pRD->pCurrentContext->ContextFlags = CONTEXT_CONTROL;
                     SyncRegDisplayToCurrentContext(pRD);
                     ProcessIp(GetControlPC(pRD));

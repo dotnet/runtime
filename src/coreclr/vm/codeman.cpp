@@ -1192,7 +1192,7 @@ EECodeGenManager::EECodeGenManager()
     m_cleanupList(NULL),
     // CRST_DEBUGGER_THREAD - We take this lock on debugger thread during EnC add method, among other things
     // CRST_TAKEN_DURING_SHUTDOWN - We take this lock during shutdown if ETW is on (to do rundown)
-    m_CodeHeapCritSec( CrstSingleUseLock, 
+    m_CodeHeapCritSec( CrstSingleUseLock,
                         CrstFlags(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD|CRST_TAKEN_DURING_SHUTDOWN)),
     m_storeRichDebugInfo(false)
 {
@@ -5142,11 +5142,11 @@ LPCWSTR ExecutionManager::GetJitName()
 {
     STANDARD_VM_CONTRACT;
 
-    LPCWSTR  pwzJitName = NULL;
-
     // Try to obtain a name for the jit library from the env. variable
-    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, const_cast<LPWSTR *>(&pwzJitName)));
+    LPWSTR pwzJitNameMaybe = NULL;
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, &pwzJitNameMaybe));
 
+    LPCWSTR  pwzJitName = pwzJitNameMaybe;
     if (NULL == pwzJitName)
     {
         pwzJitName = MAKEDLLNAME_W(W("clrjit"));
@@ -5165,11 +5165,11 @@ LPCWSTR ExecutionManager::GetInterpreterName()
 {
     STANDARD_VM_CONTRACT;
 
-    LPCWSTR  pwzInterpreterName = NULL;
-
     // Try to obtain a name for the jit library from the env. variable
-    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpreterName, const_cast<LPWSTR *>(&pwzInterpreterName)));
+    LPWSTR pwzInterpreterNameMaybe = NULL;
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpreterName, &pwzInterpreterNameMaybe));
 
+    LPCWSTR pwzInterpreterName = pwzInterpreterNameMaybe;
     if (NULL == pwzInterpreterName)
     {
         pwzInterpreterName = MAKEDLLNAME_W(W("clrinterpreter"));
@@ -6562,6 +6562,11 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     if (!pCodeInfo->IsFunclet())
         return FALSE;
 
+#ifdef TARGET_X86
+    // x86 doesn't use personality routines in unwind data, so we have to fallback to
+    // the slow implementation
+    return IJitManager::IsFilterFunclet(pCodeInfo);
+#else
     // Get address of the personality routine for the function being queried.
     SIZE_T size;
     PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &size);
@@ -6586,6 +6591,7 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     _ASSERTE(fRet == IJitManager::IsFilterFunclet(pCodeInfo));
 
     return fRet;
+#endif
 }
 
 #endif  // FEATURE_EH_FUNCLETS
