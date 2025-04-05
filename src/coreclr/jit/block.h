@@ -447,7 +447,7 @@ enum BasicBlockFlags : uint64_t
     BBF_COLD                           = MAKE_BBFLAG(23), // BB is cold
     BBF_PROF_WEIGHT                    = MAKE_BBFLAG(24), // BB weight is computed from profile data
     BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(25), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
-                                                          // as BBJ_ALWAYS. Used on x86 for the final step block out of a finally
+                                                          // as BBJ_ALWAYS. Used on x86 for the final step block out of a finally.
     BBF_HAS_CALL                       = MAKE_BBFLAG(26), // BB contains a call
     BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(27), // Block is dominated by exceptional entry.
     BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(28), // BB is surrounded by a backward jump/switch arc
