@@ -4,6 +4,8 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
 {
@@ -173,5 +175,228 @@ namespace System.Runtime.CompilerServices
         /// <returns>true if the given type is a reference type or a value type that contains references or by-refs; otherwise, false.</returns>
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct => IsReferenceOrContainsReferences<T>();
+
+#if !NATIVEAOT && !MONO
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation;
+            if (sentinelContinuation == null)
+                state.SentinelContinuation = sentinelContinuation = new Continuation();
+
+            state.Notifier = awaiter;
+            SuspendAsync2(sentinelContinuation);
+        }
+
+        // Marked intrinsic since for JIT state machines this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation;
+            if (sentinelContinuation == null)
+                state.SentinelContinuation = sentinelContinuation = new Continuation();
+
+            state.Notifier = awaiter;
+            SuspendAsync2(sentinelContinuation);
+        }
+
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(Task<T> task)
+        {
+            TaskAwaiter<T> awaiter = task.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            return awaiter.GetResult();
+        }
+
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(Task task)
+        {
+            TaskAwaiter awaiter = task.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            awaiter.GetResult();
+        }
+
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(ValueTask<T> task)
+        {
+            ValueTaskAwaiter<T> awaiter = task.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            return awaiter.GetResult();
+        }
+
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(ValueTask task)
+        {
+            ValueTaskAwaiter awaiter = task.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            awaiter.GetResult();
+        }
+
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
+        {
+            ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            awaiter.GetResult();
+        }
+
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(ConfiguredValueTaskAwaitable configuredAwaitable)
+        {
+            ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            awaiter.GetResult();
+        }
+
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(ConfiguredTaskAwaitable<T> configuredAwaitable)
+        {
+            ConfiguredTaskAwaitable<T>.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            return awaiter.GetResult();
+        }
+
+        // Marked intrinsic since this needs to be
+        // recognized as an async2 call.
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(ConfiguredValueTaskAwaitable<T> configuredAwaitable)
+        {
+            ConfiguredValueTaskAwaitable<T>.ConfiguredValueTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+            }
+
+            return awaiter.GetResult();
+        }
+#else
+        // TODO: PlatformSuppressions.xml does not seem to work on MONO.
+        //       Thus we have these as a workaround.
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(Task<T> task)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(Task task)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(ValueTask<T> task)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(ValueTask task)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static void Await(ConfiguredValueTaskAwaitable configuredAwaitable)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(ConfiguredTaskAwaitable<T> configuredAwaitable)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.Async)]
+        public static T Await<T>(ConfiguredValueTaskAwaitable<T> configuredAwaitable)
+        {
+            throw new PlatformNotSupportedException();
+        }
+#endif
     }
 }

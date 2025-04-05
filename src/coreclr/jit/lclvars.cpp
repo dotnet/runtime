@@ -36,19 +36,19 @@ void Compiler::lvaInitTypeRef()
 {
 
     /* x86 args look something like this:
-        [this ptr] [hidden return buffer] [declared arguments]* [generic context] [var arg cookie]
+        [this ptr] [hidden return buffer] [declared arguments]* [generic context] [async continuation] [var arg cookie]
 
        x64 is closer to the native ABI:
-        [this ptr] [hidden return buffer] [generic context] [var arg cookie] [declared arguments]*
+        [this ptr] [hidden return buffer] [generic context] [async continuation] [var arg cookie] [declared arguments]*
         (Note: prior to .NET Framework 4.5.1 for Windows 8.1 (but not .NET Framework 4.5.1 "downlevel"),
         the "hidden return buffer" came before the "this ptr". Now, the "this ptr" comes first. This
         is different from the C++ order, where the "hidden return buffer" always comes first.)
 
        ARM and ARM64 are the same as the current x64 convention:
-        [this ptr] [hidden return buffer] [generic context] [var arg cookie] [declared arguments]*
+        [this ptr] [hidden return buffer] [generic context] [async continuation] [var arg cookie] [declared arguments]*
 
        Key difference:
-           The var arg cookie and generic context are swapped with respect to the user arguments
+           The var arg cookie, generic context and async continuations are swapped with respect to the user arguments
     */
 
     /* Set compArgsCount and compLocalsCount */
@@ -159,6 +159,11 @@ void Compiler::lvaInitTypeRef()
     else
     {
         info.compTypeCtxtArg = BAD_VAR_NUM;
+    }
+
+    if (compIsAsync())
+    {
+        info.compArgsCount++;
     }
 
     lvaCount = info.compLocalsCount = info.compArgsCount + info.compMethodInfo->locals.numArgs;
@@ -371,6 +376,8 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     // and shared generic struct instance methods
     lvaInitGenericsCtxt(&varNum);
 
+    lvaInitAsyncContinuation(&varNum);
+
     /* If the method is varargs, process the varargs cookie */
     lvaInitVarArgsHandle(&varNum);
 #endif
@@ -383,6 +390,8 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     //@GENERICS: final instantiation-info argument for shared generic methods
     // and shared generic struct instance methods
     lvaInitGenericsCtxt(&varNum);
+
+    lvaInitAsyncContinuation(&varNum);
 
     /* If the method is varargs, process the varargs cookie */
     lvaInitVarArgsHandle(&varNum);
@@ -672,6 +681,33 @@ void Compiler::lvaInitGenericsCtxt(unsigned* curVarNum)
     varDsc->lvIsParam = 1;
     varDsc->lvType    = TYP_I_IMPL;
     varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
+
+    (*curVarNum)++;
+}
+
+//-----------------------------------------------------------------------------
+// lvaInitAsyncContinuation:
+//  Initialize the async continuation parameter.
+//
+// Type parameters:
+//   curVarNum - [in, out] The current local variable number for parameters
+//
+void Compiler::lvaInitAsyncContinuation(unsigned* curVarNum)
+{
+    if (!compIsAsync())
+    {
+        return;
+    }
+
+    lvaAsyncContinuationArg = *curVarNum;
+    LclVarDsc* varDsc       = lvaGetDesc(*curVarNum);
+    varDsc->lvType          = TYP_REF;
+    varDsc->lvIsParam       = true;
+
+    // The final home for this incoming register might be our local stack frame
+    varDsc->lvOnFrame = true;
+
+    INDEBUG(varDsc->lvReason = "Async continuation arg");
 
     (*curVarNum)++;
 }

@@ -1373,6 +1373,13 @@ void interceptor_ICJI::getEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     mc->recGetEEInfo(pEEInfoOut);
 }
 
+void interceptor_ICJI::getAsync2Info(CORINFO_ASYNC2_INFO* pAsync2Info)
+{
+    mc->cr->AddCall("getAsync2Info");
+    original_ICorJitInfo->getAsync2Info(pAsync2Info);
+    mc->recGetAsync2Info(pAsync2Info);
+}
+
 /*********************************************************************************/
 //
 // Diagnostic methods
@@ -1786,6 +1793,14 @@ bool interceptor_ICJI::getTailCallHelpers(
     else
         mc->recGetTailCallHelpers(callToken, sig, flags, nullptr);
     return result;
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+{
+    mc->cr->AddCall("getAsyncResumptionStub");
+    CORINFO_METHOD_HANDLE stub = original_ICorJitInfo->getAsyncResumptionStub();
+    mc->recGetAsyncResumptionStub(stub);
+    return stub;
 }
 
 void interceptor_ICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)

@@ -44,6 +44,8 @@ public:
         JIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
 
+        JIT_FLAG_RUNTIMEASYNCFUNCTION    = 31, // Generate code for use as an async2 function
+
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,
         // something needs to change.

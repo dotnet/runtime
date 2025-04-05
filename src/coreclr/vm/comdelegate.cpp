@@ -1963,7 +1963,7 @@ Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
 
         MetaSig sig(pMD);
 
-        BYTE callConv = sig.GetCallingConventionInfo();
+        unsigned callConv = sig.GetCallingConventionInfo();
         if (callConv != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
             COMPlusThrow(kInvalidProgramException);
 

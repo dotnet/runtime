@@ -16,6 +16,7 @@
 #define g_RuntimeNS         g_SystemNS ".Runtime"
 #define g_IONS              g_SystemNS ".IO"
 #define g_ThreadingNS       g_SystemNS ".Threading"
+#define g_TasksNS           g_ThreadingNS ".Tasks"
 #define g_CollectionsNS     g_SystemNS ".Collections"
 #define g_ResourcesNS       g_SystemNS ".Resources"
 #define g_GlobalizationNS   g_SystemNS ".Globalization"

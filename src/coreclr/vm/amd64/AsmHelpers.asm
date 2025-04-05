@@ -203,10 +203,11 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
         push                rax ; make room for the real return address (Rip)
         push                rdx
         PUSH_CALLEE_SAVED_REGISTERS
+        push_vol_reg        rcx
         push_vol_reg        rax
         mov                 rcx, rsp
 
-        alloc_stack         38h ; make extra room for xmm0, argument home slots and align the SP
+        alloc_stack         30h ; make extra room for xmm0 and argument home slots
         save_xmm128_postrsp xmm0, 20h
 
 
@@ -216,8 +217,9 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
 
         movdqa              xmm0, [rsp + 20h]
 
-        add                 rsp, 38h
+        add                 rsp, 30h
         pop                 rax
+        pop                 rcx
         POP_CALLEE_SAVED_REGISTERS
         pop                 rdx
         ret                 ; return to the correct place, adjusted by our caller
@@ -468,6 +470,18 @@ LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
         xor rcx, rcx
         jmp JIT_Patchpoint
 LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+
+extern JIT_ResumeOSRWorker:proc
+
+NESTED_ENTRY JIT_ResumeOSR, _TEXT
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea     rcx, [rsp + __PWTB_TransitionBlock] ; TransitionBlock *
+        call    JIT_ResumeOSRWorker
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+        TAILJMP_RAX
+NESTED_END JIT_ResumeOSR, _TEXT
 
 endif ; FEATURE_TIERED_COMPILATION
 
