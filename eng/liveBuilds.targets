@@ -56,9 +56,21 @@
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'armel' and '$(BuildArchitecture)' != 'armel' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <BootstrapRefPackDir>$(ArtifactsDir)bootstrap/microsoft.netcore.app/ref</BootstrapRefPackDir>
+    <BootstrapRuntimePackDir>$(ArtifactsDir)bootstrap/microsoft.netcore.app/lib</BootstrapRuntimePackDir>
+    <BootstrapAotSdkDir>$(ArtifactsDir)bootstrap/aotsdk</BootstrapAotSdkDir>
+    <BootstrapHostDir>$(ArtifactsDir)bootstrap/host</BootstrapHostDir>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(UseLocalAppHostPack)' == 'true'">
     <AppHostSourcePath>$([MSBuild]::NormalizePath('$(DotNetHostBinDir)', 'apphost$(ExeSuffix)'))</AppHostSourcePath>
     <SingleFileHostSourcePath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'corehost', 'singlefilehost$(ExeSuffix)'))</SingleFileHostSourcePath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseLocalAppHostPack)' == 'true' and '$(UseBootstrapLayout)' == 'true'">
+    <AppHostSourcePath>$(BootstrapHostDir)/apphost$(ExeSuffix)</AppHostSourcePath>
+    <SingleFileHostSourcePath>$(BootstrapHostDir)/singlefilehost$(ExeSuffix)</SingleFileHostSourcePath>
   </PropertyGroup>
 
   <Target Name="ResolveRuntimeFilesFromLocalBuild">

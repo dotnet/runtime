@@ -2,12 +2,15 @@
   <!-- This project is publishes a self-contained copy of crossgen2. -->
   <PropertyGroup>
     <_IsPublishing>true</_IsPublishing>
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)crossgen2-published/</PublishDir>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <AotOrSingleFile>true</AotOrSingleFile>
+    <UseLocalTargetingRuntimePack Condition="'$(UseBootstrap)' == 'true'">true</UseLocalTargetingRuntimePack>
+    <UseLocalAppHostPack Condition="'$(UseBootstrap)' == 'true'">true</UseLocalAppHostPack>
+    <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />
