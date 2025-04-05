@@ -213,7 +213,7 @@ resolve_native_size (MonoTypeEnum type)
 }
 
 static const char *
-strip_explicit_ismid_prefix (const char *cmethod_name)
+strip_explicit_isimd_prefix (const char *cmethod_name)
 {
 	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.", 45) == 0) {
 		if (strncmp (cmethod_name + 45, "Runtime.Intrinsics.Vector", 25) == 0) {
@@ -524,7 +524,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 	if (emit_sri_packedsimd (td, cmethod, csignature))
 		return TRUE;
 #endif
-	const char *cmethod_name = strip_explicit_ismid_prefix (cmethod->name);
+	const char *cmethod_name = strip_explicit_isimd_prefix (cmethod->name);
 
 	int id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod_name);
 	if (id == -1)
@@ -737,7 +737,7 @@ emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 	if (emit_sri_packedsimd (td, cmethod, csignature))
 		return TRUE;
 #endif
-	const char *cmethod_name = strip_explicit_ismid_prefix (cmethod->name);
+	const char *cmethod_name = strip_explicit_isimd_prefix (cmethod->name);
 	bool explicitly_implemented = cmethod_name != cmethod->name;
 
 	int id = lookup_intrins (sri_vector128_t_methods, sizeof (sri_vector128_t_methods), cmethod->name);
@@ -781,7 +781,7 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 	if (emit_sri_packedsimd (td, cmethod, csignature))
 		return TRUE;
 #endif
-	const char *cmethod_name = strip_explicit_ismid_prefix (cmethod->name);
+	const char *cmethod_name = strip_explicit_isimd_prefix (cmethod->name);
 	bool explicitly_implemented = cmethod_name != cmethod->name;
 
 	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod_name);
@@ -1137,7 +1137,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		if (csignature->hasthis) {
 			return FALSE;
 		}
-		cmethod_name = strip_explicit_ismid_prefix (cmethod_name);
+		cmethod_name = strip_explicit_isimd_prefix (cmethod_name);
 		id = lookup_intrins (packedsimd_alias_methods, sizeof (packedsimd_alias_methods), cmethod_name);
 		gboolean is_unsigned = (atype == MONO_TYPE_U1 || atype == MONO_TYPE_U2 || atype == MONO_TYPE_U4 || atype == MONO_TYPE_U8 || atype == MONO_TYPE_U);
 		
@@ -1165,7 +1165,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			//case SN_Equals:
 			//	cmethod_name = "CompareEqual";
-			//	break;
+			//simd	break;
 			case SN_BitwiseAnd:
 			case SN_op_BitwiseAnd:
 				cmethod_name = "And";
