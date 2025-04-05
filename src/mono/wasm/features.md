@@ -403,6 +403,26 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
 
 `Timing-Allow-Origin` HTTP header allows for more precise time measurements.
 
+Then you can trigger collection of a trace from browser dev tools
+
+```js
+globalThis.getDotnetRuntime(0).collectGcDump()
+```
+
+The .nettrace file could be converted for VS via `dotnet-gcdump convert` or opened in `PerfView.exe` as is.
+```js
+globalThis.getDotnetRuntime(0).collectPerfCounters({durationSeconds: 60})
+```
+
+The counters could be opened in VS, `PerfView.exe` tools or via `dotnet-trace report xxx.nettrace topN -n 10`
+
+```js
+globalThis.getDotnetRuntime(0).collectCpuSamples({durationSeconds: 60})
+```
+
+The counters could be opened in VS or in `PerfView.exe`
+
+
 ### Profiling in the browser dev tools
 
 You can enable integration with the profiler in browser dev tools via following elements in your .csproj

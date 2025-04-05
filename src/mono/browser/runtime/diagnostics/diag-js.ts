@@ -1,0 +1,148 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import { advert1, CommandSetId, dotnet_IPC_V1, ServerCommandId } from "./client-commands";
+import { DiagConnectionBase, downloadBlob, fnClientProvider, IDiagClient, IDiagConnection, IDiagSession, schedule_diagnostic_server_loop, SessionId } from "./common";
+import { PromiseAndController } from "../types/internal";
+import { loaderHelpers } from "./globals";
+import { mono_log_warn } from "./logging";
+import { collectCpuSamples } from "./dotnet-cpu-profiler";
+import { collectPerfCounters } from "./dotnet-counters";
+import { collectGcDump } from "./dotnet-gcdump";
+
+//let diagClient:IDiagClient|undefined = undefined as any;
+//let server:DiagServer = undefined as any;
+
+// configure your application
+// .withEnvironmentVariable("DOTNET_DiagnosticPorts", "download:gcdump")
+// or implement function globalThis.dotnetDiagnosticClient with IDiagClient interface
+
+let nextJsClient:PromiseAndController<IDiagClient>;
+let fromScenarioNameOnce = false;
+
+// Only the last which sent advert is receiving commands for all sessions
+export let serverSession:DiagSession|undefined = undefined;
+
+// singleton wrapping the protocol with the diagnostic server in the Mono VM
+// there could be multiple connection at the same time.
+// DS:advert         ->1
+//                     1<- DC1: command to start tracing session
+// DS:OK, session ID ->1
+// DS:advert         ->2
+// DS:events         ->1
+// DS:events         ->1
+// DS:events         ->1
+// DS:events         ->1
+//                     2<- DC1: command to stop tracing session
+// DS:close          ->1
+
+class DiagSession extends DiagConnectionBase implements IDiagConnection, IDiagSession {
+    public session_id: SessionId = undefined as any;
+    public diagClient?: IDiagClient;
+    public stopDelayedAfterLastMessage:number|undefined = undefined;
+    public resumedRuntime = false;
+
+    constructor (public client_socket:number) {
+        super(client_socket);
+    }
+
+    sendCommand (message: Uint8Array): void {
+        if (!serverSession) {
+            mono_log_warn("no server yet");
+            return;
+        }
+        serverSession.respond(message);
+    }
+
+    async connect_new_client () {
+        this.diagClient = await nextJsClient.promise;
+        cleanup_client();
+        const firstCommand = this.diagClient.commandOnAdvertise();
+        this.respond(firstCommand);
+    }
+
+    // this is message from the diagnostic server, which is Mono VM in this browser
+    send (message:Uint8Array):number {
+        schedule_diagnostic_server_loop();
+        if (advert1.every((v, i) => v === message[i])) {
+            // eslint-disable-next-line @typescript-eslint/no-this-alias
+            serverSession = this;
+            this.connect_new_client();
+        } else if (dotnet_IPC_V1.every((v, i) => v === message[i]) && message[16] == CommandSetId.Server) {
+            if (message[17] == ServerCommandId.OK) {
+                if (message.byteLength === 28) {
+                    const view = message.subarray(20, 28);
+                    const sessionIDLo = view[0] | (view[1] << 8) | (view[2] << 16) | (view[3] << 24);
+                    const sessionIDHi = view[4] | (view[5] << 8) | (view[6] << 16) | (view[7] << 24);
+                    const sessionId = [sessionIDHi, sessionIDLo] as SessionId;
+                    this.session_id = sessionId;
+                    if (this.diagClient?.onSessionStart) {
+                        this.diagClient.onSessionStart(this);
+                    }
+                }
+            } else {
+                if (this.diagClient?.onError) {
+                    this.diagClient.onError(this, message);
+                } else {
+                    mono_log_warn("Diagnostic session " + this.session_id + " error : " + message.toString());
+                }
+            }
+        } else {
+            if (this.diagClient?.onData)
+                this.diagClient.onData(this, message);
+            else {
+                this.store(message);
+            }
+        }
+
+        return message.length;
+    }
+
+    // this is message to the diagnostic server, which is Mono VM in this browser
+    respond (message:Uint8Array) : void {
+        this.messagesReceived.push(message);
+        schedule_diagnostic_server_loop();
+    }
+
+    close (): number {
+        if (this.diagClient?.onClose) {
+            this.diagClient.onClose(this.messagesToSend);
+        }
+        if (this.messagesToSend.length === 0) {
+            return 0;
+        }
+        if (this.diagClient && !this.diagClient.skipDownload) {
+            downloadBlob(this.messagesToSend);
+        }
+        this.messagesToSend = [];
+        return 0;
+    }
+}
+
+export function cleanup_client () {
+    nextJsClient = loaderHelpers.createPromiseController<IDiagClient>();
+}
+
+export function setup_js_client (client:IDiagClient) {
+    nextJsClient.promise_control.resolve(client);
+}
+
+export function createDiagConnectionJs (socket_handle:number, scenarioName:string):DiagSession {
+    if (!fromScenarioNameOnce) {
+        fromScenarioNameOnce = true;
+        if (scenarioName.startsWith("js://gcdump")) {
+            collectGcDump({});
+        }
+        if (scenarioName.startsWith("js://counters")) {
+            collectPerfCounters({});
+        }
+        if (scenarioName.startsWith("js://cpu-samples")) {
+            collectCpuSamples({});
+        }
+        const dotnetDiagnosticClient:fnClientProvider = (globalThis as any).dotnetDiagnosticClient;
+        if (typeof dotnetDiagnosticClient === "function" ) {
+            nextJsClient.promise_control.resolve(dotnetDiagnosticClient(scenarioName));
+        }
+    }
+    return new DiagSession(socket_handle);
+}

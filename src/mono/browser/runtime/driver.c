@@ -42,6 +42,7 @@ void bindings_initialize_internals ();
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 char *mono_method_get_full_name (MonoMethod *method);
+char *mono_method_full_name (MonoMethod *method, int32_t signature);
 
 #ifndef INVARIANT_TIMEZONE
 extern void mono_register_timezones_bundle (void);
