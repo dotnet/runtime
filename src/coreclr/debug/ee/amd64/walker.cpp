@@ -23,6 +23,8 @@
 //
 void NativeWalker::Decode()
 {
+    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: m_ip 0x%p\n", m_ip));
+
     const BYTE *ip = m_ip;
 
     m_type = WALK_UNKNOWN;
@@ -30,13 +32,13 @@ void NativeWalker::Decode()
     m_nextIP = NULL;
 
     BYTE rex = 0;
-
-    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: m_ip 0x%p\n", m_ip));
+    BYTE rex2_payload = 0;
+    bool has_rex2 = false;
 
     BYTE prefix = *ip;
     if (prefix == 0xcc)
     {
-        prefix = (BYTE)DebuggerController::GetPatchedOpcode(m_ip);
+        prefix = (BYTE)DebuggerController::GetPatchedOpcode(m_ip); // REVIEW: change `m_ip` to `ip`?
         LOG((LF_CORDB, LL_INFO100000, "NW:Decode 1st byte was patched, might have been prefix\n"));
     }
 
@@ -65,8 +67,13 @@ void NativeWalker::Decode()
         // String REP prefixes
         case 0xf2: // REPNE/REPNZ
         case 0xf3:
-            LOG((LF_CORDB, LL_INFO10000, "NW:Decode: prefix:%0.2x ", prefix));
+            LOG((LF_CORDB, LL_INFO10000, "NW:Decode: prefix:%02x ", prefix));
             ip++;
+            // REVIEW: it looks like a bug that we don't loop here looking for additional
+            // prefixes (the 'continue' branches to the 'while (0)' which exits the loop).
+            // Thus, we will only process a single prefix. For example, we won't process
+            // "66 40", which is an operand size prefix followed by a REX prefix, and is legal.
+            // REX and REX2 need to be the final prefixes, but even then, looping would be safe.
             continue;
 
         // REX register extension prefixes
@@ -86,10 +93,24 @@ void NativeWalker::Decode()
         case 0x4d:
         case 0x4e:
         case 0x4f:
-            LOG((LF_CORDB, LL_INFO10000, "NW:Decode: REX prefix:%0.2x ", prefix));
+            LOG((LF_CORDB, LL_INFO10000, "NW:Decode: REX prefix:%02x ", prefix));
             // make sure to set rex to prefix, not *ip because *ip still represents the
             // codestream which has a 0xcc in it.
             rex = prefix;
+            ip++;
+            continue;
+
+        // REX2 register extension prefix
+        case 0xd5:
+            LOG((LF_CORDB, LL_INFO10000, "NW:Decode: REX2 prefix:%02x ", prefix));
+            has_rex2 = true;
+            ip++;
+            rex2_payload = *ip; // Get the REX2 payload byte
+            if (rex2_payload == 0xcc)
+            {
+                rex2_payload = (BYTE)DebuggerController::GetPatchedOpcode(ip);
+                LOG((LF_CORDB, LL_INFO100000, "NW:Decode 2nd byte was patched, REX2 prefix payload byte\n"));
+            }
             ip++;
             continue;
 
@@ -101,18 +122,18 @@ void NativeWalker::Decode()
     // Read the opcode
     m_opcode = *ip++;
 
-    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: ip 0x%p, m_opcode:%0.2x\n", ip, m_opcode));
+    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: ip 0x%p, m_opcode:%02x\n", ip, m_opcode));
 
     // Don't remove this, when we did the check above for the prefix we didn't modify the codestream
     // and since m_opcode was just taken directly from the code stream it will be patched if we
     // didn't have a prefix
     if (m_opcode == 0xcc)
     {
-        m_opcode = (BYTE)DebuggerController::GetPatchedOpcode(m_ip);
-        LOG((LF_CORDB, LL_INFO100000, "NW:Decode after patch look up: m_opcode:%0.2x\n", m_opcode));
+        m_opcode = (BYTE)DebuggerController::GetPatchedOpcode(m_ip); // REVIEW: it looks like a bug that we use 'm_ip' instead of 'ip' here.
+        LOG((LF_CORDB, LL_INFO100000, "NW:Decode after patch look up: m_opcode:%02x\n", m_opcode));
     }
 
-    // Setup rex bits if needed
+    // Setup REX bits if needed
     BYTE rex_b = 0;
     BYTE rex_x = 0;
     BYTE rex_r = 0;
@@ -124,27 +145,50 @@ void NativeWalker::Decode()
         rex_r = (rex & 0x4) >> 2;  // high bit to modrm reg field
     }
 
+    // Setup REX2 bits if needed
+    BYTE rex2_b3 = 0;
+    BYTE rex2_b4 = 0;
+    BYTE rex2_x3 = 0;
+    BYTE rex2_x4 = 0;
+    BYTE rex2_r3 = 0;
+    BYTE rex2_r4 = 0;
+
+    // We could have a REX2 prefix with a zero payload byte, but that would leave these fields all zero, which is correct.
+    if (rex2_payload != 0)
+    {
+        rex2_b3 = rex2_payload & 0x1;
+        rex2_x3 = (rex2_payload >> 1) & 0x1;
+        rex2_r3 = (rex2_payload >> 2) & 0x1;
+        rex2_b4 = (rex2_payload >> 4) & 0x1;
+        rex2_x4 = (rex2_payload >> 5) & 0x1;
+        rex2_r4 = (rex2_payload >> 6) & 0x1;
+    }
+
     // Analyze what we can of the opcode
     switch (m_opcode)
     {
+        // Look for CALL, JMP with opcode 0xFF, modrm.reg=2,3,4,5
         case 0xff:
         {
             BYTE modrm = *ip++;
-
-            // Ignore "inc dword ptr [reg]" instructions
-            if (modrm == 0)
-                break;
 
             BYTE mod = (modrm & 0xC0) >> 6;
             BYTE reg = (modrm & 0x38) >> 3;
             BYTE rm  = (modrm & 0x07);
 
-            reg   |= (rex_r << 3);
-            rm    |= (rex_b << 3);
-
-            if ((reg < 2) || (reg > 5 && reg < 8) || (reg > 15)) {
-                // not a valid register for a CALL or BRANCH
+            if ((reg < 2) || (reg > 5)) {
+                // Not a CALL/JMP instruction (modrm.reg field is an opcode extension for opcode FF)
                 return;
+            }
+
+            BYTE rm_reg = rm;
+            if (rex != 0)
+            {
+                rm_reg |= (rex_b << 3);
+            }
+            else if (rex2_payload != 0)
+            {
+                rm_reg |= (rex2_b3 << 3) | (rex2_b4 << 4);
             }
 
             BYTE *result;
@@ -158,12 +202,12 @@ void NativeWalker::Decode()
             case 0:
             case 1:
             case 2:
-                if ((rm & 0x07) == 4) // we have an SIB byte following
+                if (rm == 4) // we have an SIB byte following
                 {
                     //
                     // Get values from the SIB byte
                     //
-                    BYTE sib   = *ip;
+                    BYTE sib = *ip;
 
                     _ASSERT(sib != 0);
 
@@ -171,21 +215,31 @@ void NativeWalker::Decode()
                     BYTE index = (sib & 0x38) >> 3;
                     BYTE base  = (sib & 0x07);
 
-                    index |= (rex_x << 3);
-                    base  |= (rex_b << 3);
+                    BYTE index_reg = index;
+                    BYTE base_reg  = base;
+                    if (rex != 0)
+                    {
+                        index_reg |= (rex_x << 3);
+                        base_reg  |= (rex_b << 3);
+                    }
+                    else if (rex2_payload != 0)
+                    {
+                        index_reg |= (rex2_x3 << 3) | (rex2_x4 << 4);
+                        base_reg  |= (rex2_b3 << 3) | (rex2_b4 << 4);
+                    }
 
                     ip++;
 
                     //
                     // Get starting value
                     //
-                    if ((mod == 0) && ((base & 0x07) == 5))
+                    if ((mod == 0) && (base == 5))
                     {
                         result = 0;
                     }
                     else
                     {
-                        result = (BYTE *)(size_t)GetRegisterValue(base);
+                        result = (BYTE *)(size_t)GetRegisterValue(base_reg);
                     }
 
                     //
@@ -193,7 +247,7 @@ void NativeWalker::Decode()
                     //
                     if (index != 0x4)
                     {
-                        result = result + (GetRegisterValue(index) << ss);
+                        result = result + (GetRegisterValue(index_reg) << ss);
                     }
 
                     //
@@ -201,7 +255,7 @@ void NativeWalker::Decode()
                     //
                     if (mod == 0)
                     {
-                        if ((base & 0x07) == 5)
+                        if (base == 5)
                         {
                             result = result + *((INT32*)ip);
                             displace = 7;
@@ -221,7 +275,6 @@ void NativeWalker::Decode()
                         result = result + *((INT32*)ip);
                         displace = 7;
                     }
-
                 }
                 else
                 {
@@ -230,28 +283,32 @@ void NativeWalker::Decode()
                     //
 
                     // Check for RIP-relative addressing mode.
-                    if ((mod == 0) && ((rm & 0x07) == 5))
+                    if ((mod == 0) && (rm == 5))
                     {
+                        // [RIP + disp32]
                         displace = 6;   // 1 byte opcode + 1 byte modrm + 4 byte displacement (signed)
                         result = const_cast<BYTE *>(m_ip) + displace + *(reinterpret_cast<const INT32*>(ip));
                     }
                     else
                     {
-                        result = (BYTE *)GetRegisterValue(rm);
+                        result = (BYTE *)GetRegisterValue(rm_reg);
 
                         if (mod == 0)
                         {
-                            displace = 2;
+                            // [modrm.rm]
+                            displace = 2; // 1 byte opcode + 1 byte modrm
                         }
                         else if (mod == 1)
                         {
+                            // [modrm.rm + disp8]
                             result = result + *((INT8*)ip);
-                            displace = 3;
+                            displace = 3; // 1 byte opcode + 1 byte modrm + 1 byte displacement
                         }
                         else // mod == 2
                         {
+                            // [modrm.rm + disp32]
                             result = result + *((INT32*)ip);
-                            displace = 6;
+                            displace = 6; // 1 byte opcode + 1 byte modrm + 4 byte displacement (signed)
                         }
                     }
                 }
@@ -266,9 +323,9 @@ void NativeWalker::Decode()
             case 3:
             default:
                 // The operand is stored in a register.
-                result = (BYTE *)GetRegisterValue(rm);
-                displace = 2;
-
+                // [modrm.rm]
+                result = (BYTE *)GetRegisterValue(rm_reg);
+                displace = 2; // 1 byte opcode + 1 byte modrm
                 break;
 
             }
@@ -278,6 +335,11 @@ void NativeWalker::Decode()
             if (rex != 0)
             {
                 displace++;
+            }
+
+            if (has_rex2) // Can't just check `rex2_payload` since that payload byte might be zero.
+            {
+                displace += 2; // adjust for the size of the REX2 prefix
             }
 
             // because we already checked register validity for CALL/BRANCH
@@ -344,52 +406,71 @@ UINT64 NativeWalker::GetRegisterValue(int registerNumber)
     {
         case 0:
             return m_registers->pCurrentContext->Rax;
-            break;
         case 1:
             return m_registers->pCurrentContext->Rcx;
-            break;
         case 2:
             return m_registers->pCurrentContext->Rdx;
-            break;
         case 3:
             return m_registers->pCurrentContext->Rbx;
-            break;
         case 4:
             return m_registers->pCurrentContext->Rsp;
-            break;
         case 5:
             return m_registers->pCurrentContext->Rbp;
-            break;
         case 6:
             return m_registers->pCurrentContext->Rsi;
-            break;
         case 7:
             return m_registers->pCurrentContext->Rdi;
-            break;
         case 8:
             return m_registers->pCurrentContext->R8;
-            break;
         case 9:
             return m_registers->pCurrentContext->R9;
-            break;
         case 10:
             return m_registers->pCurrentContext->R10;
-            break;
         case 11:
             return m_registers->pCurrentContext->R11;
-            break;
         case 12:
             return m_registers->pCurrentContext->R12;
-            break;
         case 13:
             return m_registers->pCurrentContext->R13;
-            break;
         case 14:
             return m_registers->pCurrentContext->R14;
-            break;
         case 15:
             return m_registers->pCurrentContext->R15;
-            break;
+#if 0
+        // TODO-XArch-APX: The Windows SDK doesn't define the APX eGPR registers yet.
+        case 16:
+            return m_registers->pCurrentContext->R16;
+        case 17:
+            return m_registers->pCurrentContext->R17;
+        case 18:
+            return m_registers->pCurrentContext->R18;
+        case 19:
+            return m_registers->pCurrentContext->R19;
+        case 20:
+            return m_registers->pCurrentContext->R21;
+        case 21:
+            return m_registers->pCurrentContext->R21;
+        case 22:
+            return m_registers->pCurrentContext->R22;
+        case 23:
+            return m_registers->pCurrentContext->R23;
+        case 24:
+            return m_registers->pCurrentContext->R24;
+        case 25:
+            return m_registers->pCurrentContext->R25;
+        case 26:
+            return m_registers->pCurrentContext->R26;
+        case 27:
+            return m_registers->pCurrentContext->R27;
+        case 28:
+            return m_registers->pCurrentContext->R28;
+        case 29:
+            return m_registers->pCurrentContext->R29;
+        case 30:
+            return m_registers->pCurrentContext->R30;
+        case 31:
+            return m_registers->pCurrentContext->R31;
+#endif
         default:
             _ASSERTE(!"Invalid register number!");
     }
@@ -431,8 +512,6 @@ static bool InstructionHasModRMByte(Amd64InstrDecode::InstrForm form, bool W)
         modrm = false;
         break;
     default:
-        if (form & Amd64InstrDecode::InstrForm::Extension)
-            modrm = true;
         break;
     }
     return modrm;
@@ -446,15 +525,15 @@ static bool InstructionIsWrite(Amd64InstrDecode::InstrForm form)
     // M1st cases (memory operand comes first)
     case Amd64InstrDecode::InstrForm::M1st_I1B_L_M16B_or_M8B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_LL_M8B_M16B_M32B:
+    case Amd64InstrDecode::InstrForm::M1st_I1B_W_M8B_or_M2B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::M1st_I4B_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_WP_M8B_or_M4B_or_M2B:
     case Amd64InstrDecode::InstrForm::M1st_L_M32B_or_M16B:
     case Amd64InstrDecode::InstrForm::M1st_LL_M16B_M32B_M64B:
     case Amd64InstrDecode::InstrForm::M1st_LL_M2B_M4B_M8B:
     case Amd64InstrDecode::InstrForm::M1st_LL_M4B_M8B_M16B:
     case Amd64InstrDecode::InstrForm::M1st_LL_M8B_M16B_M32B:
-    case Amd64InstrDecode::InstrForm::M1st_bLL_M4B_M16B_M32B_M64B:
-    case Amd64InstrDecode::InstrForm::M1st_bLL_M8B_M16B_M32B_M64B:
     case Amd64InstrDecode::InstrForm::M1st_M16B:
     case Amd64InstrDecode::InstrForm::M1st_M16B_I1B:
     case Amd64InstrDecode::InstrForm::M1st_M1B:
@@ -469,6 +548,7 @@ static bool InstructionIsWrite(Amd64InstrDecode::InstrForm form)
     case Amd64InstrDecode::InstrForm::M1st_W_M4B_or_M1B:
     case Amd64InstrDecode::InstrForm::M1st_W_M8B_or_M2B:
     case Amd64InstrDecode::InstrForm::M1st_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::M1st_W_M8B_I4B_or_M2B_I2B:
     case Amd64InstrDecode::InstrForm::M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B:
     case Amd64InstrDecode::InstrForm::M1st_WP_M8B_or_M4B_or_M2B:
 
@@ -482,6 +562,7 @@ static bool InstructionIsWrite(Amd64InstrDecode::InstrForm form)
     case Amd64InstrDecode::InstrForm::MOnly_P_M6B_or_M4B:
     case Amd64InstrDecode::InstrForm::MOnly_W_M16B_or_M8B:
     case Amd64InstrDecode::InstrForm::MOnly_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::MOnly_W_M8B_or_M2B:
     case Amd64InstrDecode::InstrForm::MOnly_WP_M8B_or_M4B_or_M2B:
     case Amd64InstrDecode::InstrForm::MOnly_WP_M8B_or_M8B_or_M2B:
         isWrite = true;
@@ -495,7 +576,7 @@ static bool InstructionIsWrite(Amd64InstrDecode::InstrForm form)
 static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool evex_b, int LL, bool fPrefix66)
 {
     uint8_t opSize = 0;
-    bool P = !((pp == 1) || fPrefix66);
+    const bool P = ((pp == 1) || fPrefix66);
     switch (form)
     {
     // M32B
@@ -545,6 +626,7 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
         break;
     // W_M8B_or_M4B
     case Amd64InstrDecode::InstrForm::M1st_I1B_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::M1st_I4B_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::M1st_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::MOnly_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::MOp_I1B_W_M8B_or_M4B:
@@ -553,7 +635,7 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
         break;
     // WP_M8B_or_M8B_or_M2B
     case Amd64InstrDecode::InstrForm::MOnly_WP_M8B_or_M8B_or_M2B:
-        opSize = W ? 8 : P ? 8 : 2;
+        opSize = W ? 8 : P ? 2 : 8;
         break;
     // WP_M8B_or_M4B_or_M2B
     case Amd64InstrDecode::InstrForm::M1st_I1B_WP_M8B_or_M4B_or_M2B:
@@ -563,11 +645,14 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
     case Amd64InstrDecode::InstrForm::MOp_I1B_WP_M8B_or_M4B_or_M2B:
     case Amd64InstrDecode::InstrForm::MOp_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B:
     case Amd64InstrDecode::InstrForm::MOp_WP_M8B_or_M4B_or_M2B:
-        opSize = W ? 8 : P ? 4 : 2;
+        opSize = W ? 8 : P ? 2 : 4;
         break;
     // W_M8B_or_M2B
+    case Amd64InstrDecode::InstrForm::M1st_I1B_W_M8B_or_M2B:
     case Amd64InstrDecode::InstrForm::M1st_W_M8B_or_M2B:
+    case Amd64InstrDecode::InstrForm::M1st_W_M8B_I4B_or_M2B_I2B:
     case Amd64InstrDecode::InstrForm::MOp_W_M8B_or_M2B:
+    case Amd64InstrDecode::InstrForm::MOnly_W_M8B_or_M2B:
         opSize = W ? 8 : 2;
         break;
     // M8B
@@ -581,7 +666,7 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
         break;
     // P_M6B_or_M4B
     case Amd64InstrDecode::InstrForm::MOnly_P_M6B_or_M4B:
-        opSize = P ? 6 : 4;
+        opSize = P ? 4 : 6;
         break;
     // M4B
     case Amd64InstrDecode::InstrForm::M1st_M4B:
@@ -660,7 +745,6 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
         break;
 
     // bLL_M4B_M16B_M32B_M64B
-    case Amd64InstrDecode::InstrForm::M1st_bLL_M4B_M16B_M32B_M64B:
     case Amd64InstrDecode::InstrForm::MOp_I1B_bLL_M4B_M16B_M32B_M64B:
     case Amd64InstrDecode::InstrForm::MOp_bLL_M4B_M16B_M32B_M64B:
         if (evex_b)
@@ -674,7 +758,6 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
         break;
 
     // bLL_M8B_M16B_M32B_M64B
-    case Amd64InstrDecode::InstrForm::M1st_bLL_M8B_M16B_M32B_M64B:
     case Amd64InstrDecode::InstrForm::MOp_I1B_bLL_M8B_M16B_M32B_M64B:
     case Amd64InstrDecode::InstrForm::MOp_bLL_M8B_M16B_M32B_M64B:
         if (evex_b)
@@ -779,7 +862,6 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
         }
         break;
 
-
     // MUnknown
     case Amd64InstrDecode::InstrForm::M1st_MUnknown:
     case Amd64InstrDecode::InstrForm::MOnly_MUnknown:
@@ -796,7 +878,7 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
 static int InstructionImmSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool fPrefix66)
 {
     int immSize = 0;
-    bool P = !((pp == 1) || fPrefix66);
+    const bool P = ((pp == 1) || fPrefix66);
     switch (form)
     {
     case Amd64InstrDecode::InstrForm::I1B:
@@ -833,6 +915,7 @@ static int InstructionImmSize(Amd64InstrDecode::InstrForm form, int pp, bool W, 
         immSize = 3;
         break;
     case Amd64InstrDecode::InstrForm::I4B:
+    case Amd64InstrDecode::InstrForm::M1st_I4B_W_M8B_or_M4B:
         immSize = 4;
         break;
     case Amd64InstrDecode::InstrForm::I8B:
@@ -841,10 +924,13 @@ static int InstructionImmSize(Amd64InstrDecode::InstrForm form, int pp, bool W, 
     case Amd64InstrDecode::InstrForm::M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B:
     case Amd64InstrDecode::InstrForm::MOp_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B:
     case Amd64InstrDecode::InstrForm::WP_I4B_or_I4B_or_I2B:
-        immSize = W ? 4 : P ? 4 : 2;
+        immSize = W ? 4 : P ? 2 : 4;
         break;
     case Amd64InstrDecode::InstrForm::WP_I8B_or_I4B_or_I2B:
-        immSize = W ? 8 : P ? 4 : 2;
+        immSize = W ? 8 : P ? 2 : 4;
+        break;
+    case Amd64InstrDecode::InstrForm::M1st_W_M8B_I4B_or_M2B_I2B:
+        immSize = W ? 4 : 2;
         break;
 
     default:
@@ -966,12 +1052,14 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
         VexMapC40F3A = 0xc403,
         EvexMap0F = 0x6201,
         EvexMap0F38 = 0x6202,
-        EvexMap0F3A = 0x6203
+        EvexMap0F3A = 0x6203,
+        EvexMap4 = 0x6204
     } opCodeMap;
 
     switch (*address)
     {
         case 0xf:
+        {
             switch (address[1])
             {
             case 0x38:
@@ -999,6 +1087,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
             else if (fPrefixF3)
                 pp = 0x2;
             break;
+        }
 
         case 0xc4: // Vex 3-byte
         {
@@ -1052,7 +1141,10 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
 
         case 0x62: // Evex
         {
-            BYTE evex_mmm = address[1] & 0x7;
+            BYTE evex_p0 = address[1];
+            BYTE evex_p1 = address[2];
+            BYTE evex_p2 = address[3];
+            BYTE evex_mmm = evex_p0 & 0x7;
             switch (evex_mmm)
             {
             case 0x1:
@@ -1067,26 +1159,61 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
                 LOG((LF_CORDB, LL_INFO10000, "map:Evex0F3A "));
                 opCodeMap = EvexMap0F3A;
                 break;
+            case 0x4:
+                LOG((LF_CORDB, LL_INFO10000, "map:Evex4 "));
+                opCodeMap = EvexMap4;
+                break;
             default:
                 _ASSERT(!"Unknown Evex 'mmm' bytes");
                 return;
             }
 
-            BYTE evex_w = address[2] & 0x80;
+            BYTE evex_w = evex_p1 & 0x80;
             if (evex_w != 0)
             {
                 W = true;
             }
 
-            if ((address[2] & 0x10) != 0)
+            if (evex_mmm != 4)
             {
-                evex_b = true;
+                if ((evex_p2 & 0x10) != 0)
+                {
+                    evex_b = true;
+                }
+
+                evex_LL = (evex_p2 >> 5) & 0x3;
             }
 
-            evex_LL = (address[2] >> 5) & 0x3;
-
-            pp = address[1] & 0x3;
+            pp = evex_p1 & 0x3;
             address += 4;
+            break;
+        }
+
+        case 0xD5: // REX2
+        {
+            BYTE rex2_byte1 = address[1];
+            address += 2;
+
+            BYTE rex2_w = rex2_byte1 & 0x08;
+            if (rex2_w != 0)
+            {
+                W = true;
+            }
+
+            if (fPrefix66)
+            {
+                pp = 0x1;
+            }
+
+            BYTE rex2_m0 = rex2_byte1 & 0x80;
+            if (rex2_m0 == 0)
+            {
+                opCodeMap = Primary;
+            }
+            else
+            {
+                opCodeMap = Secondary;
+            }
             break;
         }
 
@@ -1105,7 +1232,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
     switch (opCodeMap)
     {
     case Primary:
-        form = Amd64InstrDecode::instrFormPrimary[opCode];
+        form = Amd64InstrDecode::instrFormPrimary[opCode]; // NOTE: instrFormPrimary is the only map that uses 'opCode', not 'opCodeExt'.
         break;
     case Secondary:
         form = Amd64InstrDecode::instrFormSecondary[opCodeExt];
@@ -1133,6 +1260,9 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
         break;
     case EvexMap0F3A:
         form = Amd64InstrDecode::instrFormEvex_0F3A[opCodeExt];
+        break;
+    case EvexMap4:
+        form = Amd64InstrDecode::instrFormEvex_4[opCodeExt];
         break;
     default:
         _ASSERTE(false);
@@ -1227,4 +1357,3 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
 }
 
 #endif // TARGET_AMD64
-
