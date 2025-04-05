@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
+using System.Xml.Xsl.Runtime;
 using FunctionInfo = System.Xml.Xsl.XPath.XPathBuilder.FunctionInfo<System.Xml.Xsl.XPath.XPathBuilder.FuncId>;
 using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
@@ -791,8 +792,8 @@ namespace System.Xml.Xsl.XPath
             table.Add("last", new FunctionInfo(FuncId.Last, 0, 0, null));
             table.Add("position", new FunctionInfo(FuncId.Position, 0, 0, null));
             table.Add("name", new FunctionInfo(FuncId.Name, 0, 1, argNodeSet));
-            table.Add("namespace-uri", new FunctionInfo(FuncId.NamespaceUri, 0, 1, argNodeSet));
-            table.Add("local-name", new FunctionInfo(FuncId.LocalName, 0, 1, argNodeSet));
+            table.Add(XsltFunctionNames.NamespaceUri, new FunctionInfo(FuncId.NamespaceUri, 0, 1, argNodeSet));
+            table.Add(XsltFunctionNames.LocalName, new FunctionInfo(FuncId.LocalName, 0, 1, argNodeSet));
             table.Add("count", new FunctionInfo(FuncId.Count, 1, 1, argNodeSet));
             table.Add("id", new FunctionInfo(FuncId.Id, 1, 1, argAny));
             table.Add("string", new FunctionInfo(FuncId.String, 0, 1, argAny));
@@ -810,7 +811,7 @@ namespace System.Xml.Xsl.XPath
             table.Add("true", new FunctionInfo(FuncId.True, 0, 0, null));
             table.Add("false", new FunctionInfo(FuncId.False, 0, 0, null));
             table.Add("lang", new FunctionInfo(FuncId.Lang, 1, 1, argString));
-            table.Add("number", new FunctionInfo(FuncId.Number, 0, 1, argAny));
+            table.Add(XsltFunctionNames.Number, new FunctionInfo(FuncId.Number, 0, 1, argAny));
             table.Add("sum", new FunctionInfo(FuncId.Sum, 1, 1, argNodeSet));
             table.Add("floor", new FunctionInfo(FuncId.Floor, 1, 1, argDouble));
             table.Add("ceiling", new FunctionInfo(FuncId.Ceiling, 1, 1, argDouble));

@@ -1,20 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Text;
 using System.Xml.Schema;
+using System.Xml.Schema.DateAndTime;
+using System.Xml.Schema.DateAndTime.Specifications;
 using System.Xml.XPath;
-using System.Xml.Xsl.Xslt;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -270,7 +265,7 @@ namespace System.Xml.Xsl.Runtime
             if (value.Count != 1)
             {
                 XsltLibrary.CheckXsltValue(value);
-                return "node-set";
+                return XsltFunctionNames.NodeSet;
             }
 
             XPathItem item = value[0];
@@ -281,7 +276,7 @@ namespace System.Xml.Xsl.Runtime
             else if (item.IsNode)
             {
                 Debug.Assert(item is XPathNavigator);
-                return "node-set";
+                return XsltFunctionNames.NodeSet;
             }
 
             object o = item.TypedValue;
@@ -308,6 +303,54 @@ namespace System.Xml.Xsl.Runtime
         //------------------------------------------------
         // Msxml Extension Functions
         //------------------------------------------------
+
+        /// <summary>
+        /// Format xsd:date as a date string for a given language using a given format string.
+        /// </summary>
+        /// <param name="date">Lexical representation of xsd:date.</param>
+        /// <param name="format">Format string.</param>
+        /// <param name="lang">Specifies a culture used for formatting.</param>
+        /// <returns><paramref name="date"/> formatted as a date string.</returns>
+        public static string MSFormatDate(string date, string format, string lang)
+        {
+            try
+            {
+                if (!XsdDate.TryParse(date, out XsdDate xsdDate))
+                {
+                    return string.Empty;
+                }
+
+                return xsdDate.ToString(format.Length != 0 ? format : null, GetCultureInfo(lang));
+            }
+            catch (ArgumentException)
+            {
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Format xsd:time as a time string for a given language using a given format string.
+        /// </summary>
+        /// <param name="time">Lexical representation of xsd:time.</param>
+        /// <param name="format">Format string.</param>
+        /// <param name="lang">Specifies a culture used for formatting.</param>
+        /// <returns><paramref name="time"/> formatted as a time string.</returns>
+        public static string MSFormatTime(string time, string format, string lang)
+        {
+            try
+            {
+                if (!XsdTime.TryParse(time, out XsdTime xsdTime))
+                {
+                    return string.Empty;
+                }
+
+                return xsdTime.ToString(format.Length != 0 ? format : null, GetCultureInfo(lang));
+            }
+            catch (ArgumentException)
+            {
+                return string.Empty;
+            }
+        }
 
         public static double MSNumber(IList<XPathItem> value)
         {
@@ -351,7 +394,6 @@ namespace System.Xml.Xsl.Runtime
             return d;
         }
 
-        // string ms:format-date(string datetime[, string format[, string language]])
         // string ms:format-time(string datetime[, string format[, string language]])
         //
         // Format xsd:dateTime as a date/time string for a given language using a given format string.
@@ -369,7 +411,7 @@ namespace System.Xml.Xsl.Runtime
                 string locale = GetCultureInfo(lang).Name;
 
                 XsdDateTime xdt;
-                if (!XsdDateTime.TryParse(dateTime, XsdDateTimeFlags.AllXsd | XsdDateTimeFlags.XdrDateTime | XsdDateTimeFlags.XdrTimeNoTz, out xdt))
+                if (!XsdDateTime.TryParse(dateTime, XsdDateAndTimeFlags.AllXsd | XsdDateAndTimeFlags.XdrDateTime | XsdDateAndTimeFlags.XdrTimeNoTz, out xdt))
                 {
                     return string.Empty;
                 }
@@ -379,7 +421,7 @@ namespace System.Xml.Xsl.Runtime
                 return dt.ToString(format.Length != 0 ? format : null, new CultureInfo(locale));
             }
             catch (ArgumentException)
-            { // Operations with DateTime can throw this exception eventualy
+            { // Operations with DateTime can throw this exception eventually
                 return string.Empty;
             }
         }
@@ -429,7 +471,7 @@ namespace System.Xml.Xsl.Runtime
             DateTime dt;
             try
             {
-                if (!XsdDateTime.TryParse(dateTime, XsdDateTimeFlags.AllXsd | XsdDateTimeFlags.XdrDateTime | XsdDateTimeFlags.XdrTimeNoTz, out xdt))
+                if (!XsdDateTime.TryParse(dateTime, XsdDateAndTimeFlags.AllXsd | XsdDateAndTimeFlags.XdrDateTime | XsdDateAndTimeFlags.XdrTimeNoTz, out xdt))
                 {
                     return string.Empty;
                 }

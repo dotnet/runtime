@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
@@ -188,6 +187,16 @@ namespace System.Xml.Xsl.Xslt
             );
         }
 
+        public QilNode InvokeMSFormatDate(QilNode date, QilNode format, QilNode lang)
+        {
+            CheckString(date);
+            CheckString(format);
+            CheckString(lang);
+            return XsltInvokeEarlyBound(QName("ms:format-date"),
+                XsltMethods.MSFormatDate, T.StringX, new QilNode[] { date, format, lang }
+            );
+        }
+
         public QilNode InvokeMsFormatDateTime(QilNode datetime, QilNode format, QilNode lang, QilNode isDate)
         {
             CheckString(datetime);
@@ -196,6 +205,16 @@ namespace System.Xml.Xsl.Xslt
             CheckBool(isDate);
             return XsltInvokeEarlyBound(QName("ms:format-date-time"),
                 XsltMethods.MSFormatDateTime, T.StringX, new QilNode[] { datetime, format, lang, isDate }
+            );
+        }
+
+        public QilNode InvokeMSFormatTime(QilNode time, QilNode format, QilNode lang)
+        {
+            CheckString(time);
+            CheckString(format);
+            CheckString(lang);
+            return XsltInvokeEarlyBound(QName("ms:format-time"),
+                XsltMethods.MSFormatTime, T.StringX, new QilNode[] { time, format, lang }
             );
         }
 
