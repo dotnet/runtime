@@ -56,13 +56,21 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        private readonly CancellationTokenSource _timer;
+        private readonly CancellationTokenRegistration _registration;
         public QuicTestBase(ITestOutputHelper output)
         {
             _output = output;
+            _timer = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+            _registration = _timer.Token.UnsafeRegister(static (_) => {
+                Environment.FailFast("2 minutes timeout on a test expired ==> generate dump");
+            }, null);
         }
 
         public void Dispose()
         {
+            _registration.Dispose();
+            _timer.Dispose();
             ServerCertificate.Dispose();
             ClientCertificate.Dispose();
         }
