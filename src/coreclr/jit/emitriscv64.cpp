@@ -1376,10 +1376,10 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         insCountLimit = absMaxInsCount;
     }
 
-    bool     utilizeSRLI = false;
+    bool     utilizeSRLI     = false;
     int      srliShiftAmount = 0;
-    uint64_t originalImm = imm;
-    bool     cond1       = (y - x) > 31;
+    uint64_t originalImm     = imm;
+    bool     cond1           = (y - x) > 31;
     if ((((uint64_t)imm >> 63) & 0b1) == 0 && cond1)
     {
         srliShiftAmount  = BitOperations::LeadingZeroCount((uint64_t)imm);
