@@ -831,38 +831,26 @@ namespace System.Security.Cryptography
         public byte[] ExportPkcs8PrivateKey()
         {
             ThrowIfDisposed();
+            return ExportPkcs8PrivateKeyCallback(static pkcs8 => pkcs8.ToArray());
+        }
 
-            // A PKCS#8 ML-KEM-1024 ExpandedKey has an ASN.1 overhead of 28 bytes, assuming no attributes.
-            // Make it an even 32 and that should give a good starting point for a buffer size.
-            // Decapsulation keys are always larger than the seed, so if we end up with a seed export it should
-            // fit in the initial buffer.
-            int size = Algorithm.DecapsulationKeySizeInBytes + 32;
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(size); // Released to callers, do not use CryptoPool.
-            int written;
-
-            while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
-            {
-                ClearAndReturnToPool(buffer, written);
-                size = checked(size * 2);
-                buffer = ArrayPool<byte>.Shared.Rent(size);
-            }
-
-            if (written > buffer.Length)
-            {
-                // We got a nonsense value written back. Clear the buffer, but don't put it back in the pool.
-                CryptographicOperations.ZeroMemory(buffer);
-                throw new CryptographicException();
-            }
-
-            byte[] result = buffer.AsSpan(0, written).ToArray();
-            ClearAndReturnToPool(buffer, written);
-            return result;
-
-            static void ClearAndReturnToPool(byte[] buffer, int clearSize)
-            {
-                CryptographicOperations.ZeroMemory(buffer.AsSpan(0, clearSize));
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
+        /// <summary>
+        ///  Exports the current key in a PEM-encoded representation of the PKCS#8 PrivateKeyInfo format.
+        /// </summary>
+        /// <returns>
+        ///   A string containing the PEM-encoded representation of the PKCS#8 PrivateKeyInfo
+        ///   representation of the public-key portion of this key.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public string ExportPkcs8PrivateKeyPem()
+        {
+            ThrowIfDisposed();
+            return ExportPkcs8PrivateKeyCallback(static pkcs8 => PemEncoding.WriteString(PemLabels.Pkcs8PrivateKey, pkcs8));
         }
 
         /// <summary>
@@ -1702,6 +1690,43 @@ namespace System.Security.Cryptography
                 CryptoPool.Return(rented, written);
             }
         }
+
+        private TResult ExportPkcs8PrivateKeyCallback<TResult>(ExportPkcs8PrivateKeyFunc<TResult> func)
+        {
+            // A PKCS#8 ML-KEM-1024 ExpandedKey has an ASN.1 overhead of 28 bytes, assuming no attributes.
+            // Make it an even 32 and that should give a good starting point for a buffer size.
+            // Decapsulation keys are always larger than the seed, so if we end up with a seed export it should
+            // fit in the initial buffer.
+            int size = Algorithm.DecapsulationKeySizeInBytes + 32;
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(size); // Released to callers, do not use CryptoPool.
+            int written;
+
+            while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
+            {
+                ClearAndReturnToPool(buffer, written);
+                size = checked(size * 2);
+                buffer = ArrayPool<byte>.Shared.Rent(size);
+            }
+
+            if (written > buffer.Length)
+            {
+                // We got a nonsense value written back. Clear the buffer, but don't put it back in the pool.
+                CryptographicOperations.ZeroMemory(buffer);
+                throw new CryptographicException();
+            }
+
+            TResult result = func(buffer.AsSpan(0, written));
+            ClearAndReturnToPool(buffer, written);
+            return result;
+
+            static void ClearAndReturnToPool(byte[] buffer, int clearSize)
+            {
+                CryptographicOperations.ZeroMemory(buffer.AsSpan(0, clearSize));
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
 
         private delegate AsnWriter WriteEncryptedPkcs8Func<TChar>(
             ReadOnlySpan<TChar> password,

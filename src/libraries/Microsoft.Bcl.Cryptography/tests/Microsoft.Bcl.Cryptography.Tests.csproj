@@ -149,6 +149,7 @@
              Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Microsoft.Bcl.Cryptography\src\System\Security\Cryptography\PemEncoding.cs"
              Link="System\Security\Cryptography\PemEncoding.cs" />
+    <Compile Include="PemEncodingTests.cs" />
     <Compile Include="PemEncodingFindTests.cs" />
   </ItemGroup>
 
