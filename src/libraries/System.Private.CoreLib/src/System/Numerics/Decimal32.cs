@@ -14,16 +14,16 @@ namespace System.Numerics
           IComparable<Decimal32>,
           IEquatable<Decimal32>,
           ISpanParsable<Decimal32>,
-          IDecimalIeee754ParseAndFormatInfo<Decimal32>,
+          IDecimalIeee754ParseAndFormatInfo<Decimal32, int, uint>,
           IDecimalIeee754ConstructorInfo<Decimal32, int, uint>,
           IDecimalIeee754TryParseInfo<Decimal32, int>
     {
         internal readonly uint _value;
 
-        private const int MaxDecimalExponent = 90;
-        private const int MinDecimalExponent = -101;
-        private const int NumberDigitsPrecision = 7;
-        private const int Bias = 101;
+        private const int MaxExponent = 90;
+        private const int MinExponent = -101;
+        private const int Precision = 7;
+        private const int ExponentBias = 101;
         private const int NumberBitsExponent = 8;
         private const uint PositiveInfinityValue = 0x7800_0000;
         private const uint NegativeInfinityValue = 0xF800_0000;
@@ -215,7 +215,7 @@ namespace System.Numerics
         /// </summary>
         public override string ToString()
         {
-            return Number.FormatDecimal32(this, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatDecimalIeee754<Decimal32, int, uint>(this, null, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -223,7 +223,7 @@ namespace System.Numerics
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
-            return Number.FormatDecimal32(this, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatDecimalIeee754<Decimal32, int, uint>(this, format, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -231,7 +231,7 @@ namespace System.Numerics
         /// </summary>
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatDecimal32(this, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatDecimalIeee754<Decimal32, int, uint>(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -239,25 +239,21 @@ namespace System.Numerics
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return Number.FormatDecimal32(this, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatDecimalIeee754<Decimal32, int, uint>(this, format, NumberFormatInfo.GetInstance(provider));
         }
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.Precision => NumberDigitsPrecision;
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.MaxScale => 97;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.CountDigits(int number) => FormattingHelpers.CountDigits((uint)number);
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Power10(int exponent) => Int32Powers10[exponent];
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MaxSignificand => MaxSignificand;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MaxDecimalExponent => MaxDecimalExponent;
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MaxExponent => MaxExponent;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MinDecimalExponent => MinDecimalExponent;
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.MinExponent => MinExponent;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Precision => NumberDigitsPrecision;
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Precision => Precision;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.ExponentBias => Bias;
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.ExponentBias => ExponentBias;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NumberBitsEncoding => 32;
 
@@ -293,9 +289,25 @@ namespace System.Numerics
 
         static int IDecimalIeee754TryParseInfo<Decimal32, int>.DecimalNumberBufferLength => Number.Decimal32NumberBufferLength;
 
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, int, uint>.Precision => Precision;
+
         static bool IDecimalIeee754TryParseInfo<Decimal32, int>.TryNumberToDecimalIeee754(ref Number.NumberBuffer number, out int significand, out int exponent)
-            => Number.TryNumberToDecimalIeee754<Decimal32, int>(ref number, out significand, out exponent);
+            => Number.TryNumberToDecimalIeee754<Decimal32, int, uint>(ref number, out significand, out exponent);
 
         static Decimal32 IDecimalIeee754TryParseInfo<Decimal32, int>.Construct(int significand, int exponent) => new Decimal32(significand, exponent);
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, int, uint>.BufferLength => Number.Decimal32NumberBufferLength;
+
+        static unsafe byte* IDecimalIeee754ParseAndFormatInfo<Decimal32, int, uint>.ToDecChars(byte* p, int significand)
+        {
+            return Number.UInt32ToDecChars(p, (uint)significand, 0);
+        }
+
+        Number.DecimalIeee754<int> IDecimalIeee754ParseAndFormatInfo<Decimal32, int, uint>.Unpack()
+        {
+            return Number.UnpackDecimalIeee754<Decimal32, int, uint>(_value);
+        }
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, int, uint>.MaxScale => 97;
     }
 }

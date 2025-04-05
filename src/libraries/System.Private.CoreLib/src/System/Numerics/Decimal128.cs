@@ -15,7 +15,7 @@ namespace System.Numerics
           IComparable<Decimal128>,
           IEquatable<Decimal128>,
           ISpanParsable<Decimal128>,
-          IDecimalIeee754ParseAndFormatInfo<Decimal128>,
+          IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>,
           IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>,
           IDecimalIeee754TryParseInfo<Decimal128, Int128>
     {
@@ -27,10 +27,10 @@ namespace System.Numerics
         internal readonly ulong _upper;
 #endif
 
-        private const int MaxDecimalExponent = 6111;
-        private const int MinDecimalExponent = -6176;
-        private const int NumberDigitsPrecision = 34;
-        private const int Bias = 6176;
+        private const int MaxExponent = 6111;
+        private const int MinExponent = -6176;
+        private const int Precision = 34;
+        private const int ExponentBias = 6176;
         private const int NumberBitsExponent = 14;
         private static readonly UInt128 PositiveInfinityValue = new UInt128(upper: 0x7800_0000_0000_0000, lower: 0);
         private static readonly UInt128 NegativeInfinityValue = new UInt128(upper: 0xf800_0000_0000_0000, lower: 0);
@@ -163,20 +163,11 @@ namespace System.Numerics
         /// <inheritdoc cref="IComparable.CompareTo(object?)" />
         public int CompareTo(object? value)
         {
-            if (value == null)
+            if (value is not Decimal128 other)
             {
-                return 1;
+                return (value is null) ? 1 : throw new ArgumentException(SR.Arg_MustBeDecimal128);
             }
-
-            if (value is not Decimal128 i)
-            {
-                throw new ArgumentException(SR.Arg_MustBeDecimal128);
-            }
-
-            var current = new UInt128(_upper, _lower);
-            var other = new UInt128(i._upper, i._lower);
-
-            return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(current, other);
+            return CompareTo(other);
         }
 
         /// <inheritdoc cref="IComparable{T}.CompareTo(T)" />
@@ -216,7 +207,7 @@ namespace System.Numerics
         /// </summary>
         public override string ToString()
         {
-            return Number.FormatDecimal128(this, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatDecimalIeee754<Decimal128, Int128, UInt128>(this, null, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -224,7 +215,7 @@ namespace System.Numerics
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
-            return Number.FormatDecimal128(this, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatDecimalIeee754<Decimal128, Int128, UInt128>(this, format, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -232,7 +223,7 @@ namespace System.Numerics
         /// </summary>
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatDecimal128(this, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatDecimalIeee754<Decimal128, Int128, UInt128>(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -240,12 +231,8 @@ namespace System.Numerics
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return Number.FormatDecimal128(this, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatDecimalIeee754<Decimal128, Int128, UInt128>(this, format, NumberFormatInfo.GetInstance(provider));
         }
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal128>.Precision => NumberDigitsPrecision;
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal128>.MaxScale => 6145;
 
         static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.CountDigits(Int128 number) => FormattingHelpers.CountDigits((UInt128)number);
 
@@ -253,13 +240,13 @@ namespace System.Numerics
 
         static Int128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.MaxSignificand => new Int128(upper: 0x0001_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF); // 9_999_999_999_999_999_999_999_999_999_999_999;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.MaxDecimalExponent => MaxDecimalExponent;
+        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.MaxExponent => MaxExponent;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.MinDecimalExponent => MinDecimalExponent;
+        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.MinExponent => MinExponent;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.Precision => NumberDigitsPrecision;
+        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.Precision => Precision;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.ExponentBias => Bias;
+        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.ExponentBias => ExponentBias;
 
         static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.NumberBitsEncoding => 128;
 
@@ -333,10 +320,26 @@ namespace System.Numerics
             ];
 
         static bool IDecimalIeee754TryParseInfo<Decimal128, Int128>.TryNumberToDecimalIeee754(ref Number.NumberBuffer number, out Int128 significand, out int exponent)
-            => Number.TryNumberToDecimalIeee754<Decimal128, Int128>(ref number, out significand, out exponent);
+            => Number.TryNumberToDecimalIeee754<Decimal128, Int128, UInt128>(ref number, out significand, out exponent);
+
+        static int IDecimalIeee754TryParseInfo<Decimal128, Int128>.DecimalNumberBufferLength => Number.Decimal128NumberBufferLength;
 
         static Decimal128 IDecimalIeee754TryParseInfo<Decimal128, Int128>.Construct(Int128 significand, int exponent) => new Decimal128(significand, exponent);
 
-        static int IDecimalIeee754TryParseInfo<Decimal128, Int128>.DecimalNumberBufferLength => Number.Decimal128NumberBufferLength;
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>.MaxScale => 6145;
+
+        static unsafe byte* IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>.ToDecChars(byte* p, Int128 significand)
+        {
+            return Number.UInt128ToDecChars(p, (UInt128)significand, 0);
+        }
+
+        Number.DecimalIeee754<Int128> IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>.Unpack()
+        {
+            return Number.UnpackDecimalIeee754<Decimal128, Int128, UInt128>(new UInt128(_upper, _lower));
+        }
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>.Precision => Precision;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>.BufferLength => Number.Decimal128NumberBufferLength;
     }
 }

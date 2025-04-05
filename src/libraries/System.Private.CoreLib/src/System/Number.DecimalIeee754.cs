@@ -11,8 +11,8 @@ namespace System
         where TValue : IBinaryInteger<TValue>
     {
         static abstract TSignificand MaxSignificand { get; }
-        static abstract int MaxDecimalExponent { get; }
-        static abstract int MinDecimalExponent { get; }
+        static abstract int MaxExponent { get; }
+        static abstract int MinExponent { get; }
         static abstract int Precision { get; }
         static abstract int ExponentBias { get; }
         static abstract int CountDigits(TSignificand number);
@@ -49,16 +49,16 @@ namespace System
 
             TSignificand unsignedSignificand = TSignificand.Abs(significand);
 
-            if ((unsignedSignificand > TDecimal.MaxSignificand && exponent >= TDecimal.MaxDecimalExponent)
-                || (unsignedSignificand == TDecimal.MaxSignificand && exponent > TDecimal.MaxDecimalExponent))
+            if ((unsignedSignificand > TDecimal.MaxSignificand && exponent >= TDecimal.MaxExponent)
+                || (unsignedSignificand == TDecimal.MaxSignificand && exponent > TDecimal.MaxExponent))
             {
                 return TSignificand.IsPositive(significand) ? TDecimal.PositiveInfinityBits : TDecimal.NegativeInfinityBits;
             }
 
-            if (exponent < TDecimal.MinDecimalExponent)
+            if (exponent < TDecimal.MinExponent)
             {
                 TSignificand ten = TSignificand.CreateTruncating(10);
-                while (unsignedSignificand > TSignificand.Zero && exponent < TDecimal.MinDecimalExponent)
+                while (unsignedSignificand > TSignificand.Zero && exponent < TDecimal.MinExponent)
                 {
                     unsignedSignificand /= ten;
                     ++exponent;
@@ -73,7 +73,7 @@ namespace System
             {
                 int numberDigitsRemoving = TDecimal.CountDigits(unsignedSignificand) - TDecimal.Precision;
 
-                if (exponent + numberDigitsRemoving > TDecimal.MaxDecimalExponent)
+                if (exponent + numberDigitsRemoving > TDecimal.MaxExponent)
                 {
                     return TDecimal.PositiveInfinityBits;
                 }
@@ -84,7 +84,7 @@ namespace System
                 TSignificand midPoint = divisor >> 1;
                 bool needRounding = remainder > midPoint || (remainder == midPoint && (quotient & TSignificand.One) == TSignificand.One);
 
-                if (needRounding && quotient == TDecimal.MaxSignificand && exponent < TDecimal.MaxDecimalExponent)
+                if (needRounding && quotient == TDecimal.MaxSignificand && exponent < TDecimal.MaxExponent)
                 {
                     unsignedSignificand = TDecimal.Power10(TDecimal.Precision - 1);
                     exponent++;
@@ -98,9 +98,9 @@ namespace System
                     unsignedSignificand = quotient;
                 }
             }
-            else if (exponent > TDecimal.MaxDecimalExponent)
+            else if (exponent > TDecimal.MaxExponent)
             {
-                int numberZeroDigits = exponent - TDecimal.MaxDecimalExponent;
+                int numberZeroDigits = exponent - TDecimal.MaxExponent;
                 int numberSignificandDigits = TDecimal.CountDigits(unsignedSignificand);
 
                 if (numberSignificandDigits + numberZeroDigits > TDecimal.Precision)

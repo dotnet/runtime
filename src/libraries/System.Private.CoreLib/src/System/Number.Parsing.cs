@@ -99,11 +99,16 @@ namespace System
         static abstract int MaxPrecisionCustomFormat { get; }
     }
 
-    internal interface IDecimalIeee754ParseAndFormatInfo<TSelf>
-        where TSelf : unmanaged, IDecimalIeee754ParseAndFormatInfo<TSelf>
+    internal interface IDecimalIeee754ParseAndFormatInfo<TSelf, TSignificand, TValue>
+        where TSelf : unmanaged, IDecimalIeee754ParseAndFormatInfo<TSelf, TSignificand, TValue>
+        where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+        where TValue : IBinaryInteger<TValue>
     {
         static abstract int Precision { get; }
         static abstract int MaxScale { get; }
+        static abstract int BufferLength { get; }
+        static abstract unsafe byte* ToDecChars(byte* p, TSignificand significand);
+        Number.DecimalIeee754<TSignificand> Unpack();
     }
 
     internal interface IDecimalIeee754TryParseInfo<TSelf, TSignificand>
@@ -917,9 +922,10 @@ namespace System
             return true;
         }
 
-        internal static unsafe bool TryNumberToDecimalIeee754<TDecimal, TSignificand>(ref NumberBuffer number, out TSignificand significand, out int exponent)
-            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal>
+        internal static unsafe bool TryNumberToDecimalIeee754<TDecimal, TSignificand, TValue>(ref NumberBuffer number, out TSignificand significand, out int exponent)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TSignificand, TValue>
             where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+            where TValue : unmanaged, IBinaryInteger<TValue>
         {
             number.CheckConsistency();
 

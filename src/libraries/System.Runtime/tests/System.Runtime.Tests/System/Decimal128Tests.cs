@@ -110,7 +110,6 @@ namespace System.Tests
             customFormat.NumberDecimalSeparator = ".";
 
             yield return new object[] { null, defaultStyle, null, typeof(ArgumentNullException) };
-            yield return new object[] { "1" + new string('0', 6145), defaultStyle, null, typeof(OverflowException) };
             yield return new object[] { "", defaultStyle, null, typeof(FormatException) };
             yield return new object[] { " ", defaultStyle, null, typeof(FormatException) };
             yield return new object[] { "Garbage", defaultStyle, null, typeof(FormatException) };

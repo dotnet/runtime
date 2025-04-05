@@ -295,66 +295,16 @@ namespace System
                                         "80818283848586878889"u8 +
                                         "90919293949596979899"u8;
 
-        public static unsafe string FormatDecimal32(Decimal32 value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        public static unsafe string FormatDecimalIeee754<TDecimal, TSignificand, TValue>(TDecimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TSignificand, TValue>
+            where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+            where TValue : IBinaryInteger<TValue>
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
+            byte* pDigits = stackalloc byte[TDecimal.BufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, TDecimal.BufferLength);
 
-            byte* pDigits = stackalloc byte[Decimal32NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, Decimal32NumberBufferLength);
-
-            Decimal32ToNumber(value, ref number);
-
-            char* stackPtr = stackalloc char[CharStackBufferSize];
-            var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
-
-            if (fmt != 0)
-            {
-                NumberToString(ref vlb, ref number, fmt, digits, info);
-            }
-            else
-            {
-                NumberToStringFormat(ref vlb, ref number, format, info);
-            }
-
-            string result = vlb.AsSpan().ToString();
-            vlb.Dispose();
-            return result;
-        }
-
-        public static unsafe string FormatDecimal64(Decimal64 value, ReadOnlySpan<char> format, NumberFormatInfo info)
-        {
-            char fmt = ParseFormatSpecifier(format, out int digits);
-
-            byte* pDigits = stackalloc byte[Decimal64NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, Decimal64NumberBufferLength);
-
-            Decimal64ToNumber(value, ref number);
-
-            char* stackPtr = stackalloc char[CharStackBufferSize];
-            var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
-
-            if (fmt != 0)
-            {
-                NumberToString(ref vlb, ref number, fmt, digits, info);
-            }
-            else
-            {
-                NumberToStringFormat(ref vlb, ref number, format, info);
-            }
-
-            string result = vlb.AsSpan().ToString();
-            vlb.Dispose();
-            return result;
-        }
-
-        public static unsafe string FormatDecimal128(Decimal128 value, ReadOnlySpan<char> format, NumberFormatInfo info)
-        {
-            char fmt = ParseFormatSpecifier(format, out int digits);
-
-            byte* pDigits = stackalloc byte[Decimal128NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, Decimal128NumberBufferLength);
-
-            Decimal128ToNumber(value, ref number);
+            DecimalIeee754ToNumber<TDecimal, TSignificand, TValue>(value, ref number);
 
             char* stackPtr = stackalloc char[CharStackBufferSize];
             var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
@@ -426,15 +376,19 @@ namespace System
             vlb.Dispose();
             return success;
         }
-        internal static unsafe void Decimal32ToNumber(Decimal32 d, ref NumberBuffer number)
+
+        internal static unsafe void DecimalIeee754ToNumber<TDecimal, TSignificand, TValue>(TDecimal value, ref NumberBuffer number)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TSignificand, TValue>
+            where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+            where TValue : IBinaryInteger<TValue>
         {
             byte* buffer = number.DigitsPtr;
-            DecimalIeee754<int> decimal32 = UnpackDecimalIeee754<Decimal32, int, uint>(d._value);
-            number.IsNegative = decimal32.Signed;
+            DecimalIeee754<TSignificand> unpackDecimal = value.Unpack();
+            number.IsNegative = unpackDecimal.Signed;
 
-            byte* p = buffer + Decimal32Precision;
-            p = UInt32ToDecChars(p, (uint)decimal32.Significand, 0);
-            int numberDigitsSignificand = (int)((buffer + Decimal32Precision) - p);
+            byte* p = buffer + TDecimal.Precision;
+            p = TDecimal.ToDecChars(p, unpackDecimal.Significand);
+            int numberDigitsSignificand = (int)((buffer + TDecimal.Precision) - p);
 
             byte* dst = number.DigitsPtr;
             int i = numberDigitsSignificand;
@@ -443,97 +397,15 @@ namespace System
                 *dst++ = *p++;
             }
 
-            number.Scale = decimal32.Significand != 0 ? numberDigitsSignificand + decimal32.Exponent : 0;
+            number.Scale = TSignificand.IsZero(unpackDecimal.Significand) ? 0 : numberDigitsSignificand + unpackDecimal.Exponent;
 
-            if (decimal32.Exponent >= 0)
+            if (unpackDecimal.Exponent >= 0)
             {
-                number.DigitsCount = numberDigitsSignificand + decimal32.Exponent;
+                number.DigitsCount = numberDigitsSignificand + unpackDecimal.Exponent;
 
-                if (decimal32.Exponent > 0)
+                if (unpackDecimal.Exponent > 0)
                 {
-                    i = decimal32.Exponent;
-                    while (--i >= 0)
-                    {
-                        *dst++ = (byte)'0';
-                    }
-                }
-            }
-            else
-            {
-                number.DigitsCount = numberDigitsSignificand;
-            }
-
-            *dst = (byte)'\0';
-
-            number.CheckConsistency();
-        }
-        internal static unsafe void Decimal64ToNumber(Decimal64 d, ref NumberBuffer number)
-        {
-            byte* buffer = number.DigitsPtr;
-            DecimalIeee754<long> decimal64 = UnpackDecimalIeee754<Decimal64, long, ulong>(d._value);
-            number.IsNegative = decimal64.Signed;
-            byte* p = buffer + Decimal64Precision;
-
-            p = UInt64ToDecChars(p, (ulong)decimal64.Significand, 0);
-            int numberDigitsSignificand = (int)((buffer + Decimal64Precision) - p);
-
-            byte* dst = number.DigitsPtr;
-            int i = numberDigitsSignificand;
-            while (--i >= 0)
-            {
-                *dst++ = *p++;
-            }
-
-            number.Scale = decimal64.Significand != 0 ? numberDigitsSignificand + decimal64.Exponent : 0;
-
-            if (decimal64.Exponent >= 0)
-            {
-                number.DigitsCount = numberDigitsSignificand + decimal64.Exponent;
-
-                if (decimal64.Exponent > 0)
-                {
-                    i = decimal64.Exponent;
-                    while (--i >= 0)
-                    {
-                        *dst++ = (byte)'0';
-                    }
-                }
-            }
-            else
-            {
-                number.DigitsCount = numberDigitsSignificand;
-            }
-
-            *dst = (byte)'\0';
-
-            number.CheckConsistency();
-        }
-        internal static unsafe void Decimal128ToNumber(Decimal128 d, ref NumberBuffer number)
-        {
-            byte* buffer = number.DigitsPtr;
-            DecimalIeee754<Int128> decimal128 = UnpackDecimalIeee754<Decimal128, Int128, UInt128>(new UInt128(d._upper, d._lower));
-            number.IsNegative = decimal128.Signed;
-            byte* p = buffer + Decimal128Precision;
-
-            p = UInt128ToDecChars(p, (UInt128)decimal128.Significand, 0);
-            int numberDigitsSignificand = (int)((buffer + Decimal128Precision) - p);
-
-            byte* dst = number.DigitsPtr;
-            int i = numberDigitsSignificand;
-            while (--i >= 0)
-            {
-                *dst++ = *p++;
-            }
-
-            number.Scale = decimal128.Significand != 0 ? numberDigitsSignificand + decimal128.Exponent : 0;
-
-            if (decimal128.Exponent >= 0)
-            {
-                number.DigitsCount = numberDigitsSignificand + decimal128.Exponent;
-
-                if (decimal128.Exponent > 0)
-                {
-                    i = decimal128.Exponent;
+                    i = unpackDecimal.Exponent;
                     while (--i >= 0)
                     {
                         *dst++ = (byte)'0';
