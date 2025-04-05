@@ -161,6 +161,11 @@ if(FEATURE_OBJCMARSHAL)
   add_compile_definitions(FEATURE_OBJCMARSHAL)
 endif()
 
+if(FEATURE_JAVAMARSHAL)
+  add_compile_definitions(FEATURE_JAVAMARSHAL)
+  add_compile_definitions(FEATURE_GCBRIDGE)
+endif()
+
 add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>:FEATURE_PROFAPI_ATTACH_DETACH>)
 
 add_definitions(-DFEATURE_READYTORUN)
