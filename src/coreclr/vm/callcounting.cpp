@@ -222,7 +222,7 @@ CallCountingManager::CallCountingStubAllocator::~CallCountingStubAllocator()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    LoaderHeap *heap = m_heap;
+    InterleavedLoaderHeap *heap = m_heap;
     if (heap != nullptr)
     {
         delete m_heap;
@@ -252,14 +252,13 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     }
     CONTRACTL_END;
 
-    LoaderHeap *heap = m_heap;
+    InterleavedLoaderHeap *heap = m_heap;
     if (heap == nullptr)
     {
         heap = AllocateHeap();
     }
 
-    SIZE_T sizeInBytes = sizeof(CallCountingStub);
-    AllocMemHolder<void> allocationAddressHolder(heap->AllocAlignedMem(sizeInBytes, 1));
+    AllocMemHolder<void> allocationAddressHolder(heap->AllocStub());
     CallCountingStub *stub = (CallCountingStub*)(void*)allocationAddressHolder;
     allocationAddressHolder.SuppressRelease();
     stub->Initialize(targetForMethod, remainingCallCountCell);
@@ -343,7 +342,7 @@ void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T
 }
 
 
-NOINLINE LoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHeap()
+NOINLINE InterleavedLoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHeap()
 {
     CONTRACTL
     {
@@ -355,7 +354,7 @@ NOINLINE LoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHea
 
     _ASSERTE(m_heap == nullptr);
 
-    LoaderHeap *heap = new LoaderHeap(0, 0, &m_heapRangeList, UnlockedLoaderHeap::HeapKind::Interleaved, true /* fUnlocked */, CallCountingStub::GenerateCodePage, CallCountingStub::CodeSize);
+    InterleavedLoaderHeap *heap = new InterleavedLoaderHeap(&m_heapRangeList, true /* fUnlocked */, CallCountingStub::GenerateCodePage, CallCountingStub::CodeSize);
     m_heap = heap;
     return heap;
 }
