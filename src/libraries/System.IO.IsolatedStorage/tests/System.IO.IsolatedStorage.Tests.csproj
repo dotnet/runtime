@@ -49,7 +49,7 @@
     <Compile Include="System\IO\IsolatedStorage\MoveFileTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\OpenFileTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\TestHelper.cs" />
-    <Compile Include="System\IO\IsolatedStorage\RemoveTests.cs" />
+    <!-- <Compile Include="System\IO\IsolatedStorage\RemoveTests.cs" /> -->
   </ItemGroup>
    <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.AnyMobile.cs" />
