@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Globalization;
+using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
@@ -522,6 +523,337 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Fact]
+        public static void ImportFromPem_NullSource()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", static () => MLKem.ImportFromPem((string)null));
+        }
+
+        [Fact]
+        public static void ImportFromPem_PublicKey_Roundtrip()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] spki) in SubjectPublicKeyInfoTestData)
+            {
+                string pem = WritePem("PUBLIC KEY", spki);
+                AssertImportFromPem(importer =>
+                {
+                    using MLKem kem = importer(pem);
+                    byte[] exportedSpki = kem.ExportSubjectPublicKeyInfo();
+                    AssertExtensions.SequenceEqual(spki, exportedSpki);
+                });
+            }
+        }
+
+        [Fact]
+        public static void ImportFromPem_PublicKey_IgnoresNotUnderstoodPems()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] spki) in SubjectPublicKeyInfoTestData)
+            {
+                string pem = $"""
+                -----BEGIN POTATO-----
+                dmluY2U=
+                -----END POTATO-----
+                {WritePem("PUBLIC KEY", spki)}
+                """;
+
+                AssertImportFromPem(importer =>
+                {
+                    using MLKem kem = importer(pem);
+                    byte[] exportedSpki = kem.ExportSubjectPublicKeyInfo();
+                    AssertExtensions.SequenceEqual(spki, exportedSpki);
+                });
+            }
+        }
+
+        [Fact]
+        public static void ImportFromPem_PrivateKey_Seed_Roundtrip()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
+            {
+                string pem = WritePem("PRIVATE KEY", pkcs8);
+                AssertImportFromPem(importer =>
+                {
+                    using MLKem kem = importer(pem);
+                    byte[] exportedSeed = kem.ExportPrivateSeed();
+                    AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, exportedSeed);
+                });
+            }
+        }
+
+        [Fact]
+        public static void ImportFromPem_PrivateKey_ExpandedKey_Roundtrip()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyExpandedKeyTestData)
+            {
+                string pem = WritePem("PRIVATE KEY", pkcs8);
+                AssertImportFromPem(importer =>
+                {
+                    using MLKem kem = importer(pem);
+                    byte[] exportedDecapKey = kem.ExportDecapsulationKey();
+                    AssertExtensions.SequenceEqual(decapKey, exportedDecapKey);
+                });
+            }
+        }
+
+        [Fact]
+        public static void ImportFromPem_PrivateKey_Both_Roundtrip()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyBothTestData)
+            {
+                string pem = WritePem("PRIVATE KEY", pkcs8);
+                AssertImportFromPem(importer =>
+                {
+                    using MLKem kem = importer(pem);
+                    byte[] exportedSeed = kem.ExportPrivateSeed();
+                    AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, exportedSeed);
+                });
+            }
+        }
+
+        [Fact]
+        public static void ImportFromPem_AmbiguousImportWithPublicKey_Throws()
+        {
+            string pem = $"""
+            {WritePem("PUBLIC KEY", MLKemTestData.IetfMlKem512Spki)}
+            {WritePem("PUBLIC KEY", MLKemTestData.IetfMlKem768Spki)}
+            """;
+
+            AssertImportFromPem(importer =>
+            {
+                AssertExtensions.Throws<ArgumentException>("source", () => importer(pem));
+            });
+        }
+
+        [Fact]
+        public static void ImportFromPem_AmbiguousImportWithPrivateKey_Throws()
+        {
+            string pem = $"""
+            {WritePem("PUBLIC KEY", MLKemTestData.IetfMlKem512Spki)}
+            {WritePem("PRIVATE KEY", MLKemTestData.IetfMlKem512PrivateKeySeed)}
+            """;
+
+            AssertImportFromPem(importer =>
+            {
+                AssertExtensions.Throws<ArgumentException>("source", () => importer(pem));
+            });
+        }
+
+        [Fact]
+        public static void ImportFromPem_AmbiguousImportWithEncryptedPrivateKey_Throws()
+        {
+            string pem = $"""
+            {WritePem("PUBLIC KEY", MLKemTestData.IetfMlKem512Spki)}
+            {WritePem("ENCRYPTED PRIVATE KEY", MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed)}
+            """;
+
+            AssertImportFromPem(importer =>
+            {
+                AssertExtensions.Throws<ArgumentException>("source", () => importer(pem));
+            });
+        }
+
+        [Fact]
+        public static void ImportFromPem_EncryptedPrivateKey_Throws()
+        {
+            string pem = WritePem("ENCRYPTED PRIVATE KEY", MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed);
+            AssertImportFromPem(importer =>
+            {
+                AssertExtensions.Throws<ArgumentException>("source", () => importer(pem));
+            });
+        }
+
+        [Fact]
+        public static void ImportFromPem_NoUnderstoodPem_Throws()
+        {
+            string pem = """
+            -----BEGIN UNKNOWN-----
+            cGNq
+            -----END UNKNOWN-----
+            """;
+
+            AssertImportFromPem(importer =>
+            {
+                AssertExtensions.Throws<ArgumentException>("source", () => importer(pem));
+            });
+        }
+
+        [Fact]
+        public static void ImportFromPem_PrivateKey_IgnoresNotUnderstoodPems()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
+            {
+                string pem = $"""
+                -----BEGIN UNKNOWN-----
+                cGNq
+                -----END UNKNOWN-----
+                {WritePem("PRIVATE KEY", pkcs8)}
+                """;
+
+                AssertImportFromPem(importer =>
+                {
+                    using MLKem kem = importer(pem);
+                    byte[] exportedSeed = kem.ExportPrivateSeed();
+                    AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, exportedSeed);
+                });
+            }
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_NullSource()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source",
+                static () => MLKem.ImportFromEncryptedPem((string)null, "PLACEHOLDER"));
+
+            AssertExtensions.Throws<ArgumentNullException>("source",
+                static () => MLKem.ImportFromEncryptedPem((string)null, "PLACEHOLDER"u8.ToArray()));
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_NullPassword()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("password",
+                static () => MLKem.ImportFromEncryptedPem("the pem", (string)null));
+
+            AssertExtensions.Throws<ArgumentNullException>("passwordBytes",
+                static () => MLKem.ImportFromEncryptedPem("the pem", (byte[])null));
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_PrivateKey_Seed_Roundtrip()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8EncryptedPrivateKeySeedTestData)
+            {
+                string pem = WritePem("ENCRYPTED PRIVATE KEY", pkcs8);
+                AssertImportFromEncryptedPem(importer =>
+                {
+                    using MLKem kem = importer(pem, MLKemTestData.EncryptedPrivateKeyPassword);
+                    byte[] exportedSeed = kem.ExportPrivateSeed();
+                    AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, exportedSeed);
+                });
+            }
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_PrivateKey_ExpandedKey_Roundtrip()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyExpandedKeyTestData)
+            {
+                string pem = WritePem("ENCRYPTED PRIVATE KEY", pkcs8);
+                AssertImportFromEncryptedPem(importer =>
+                {
+                    using MLKem kem = importer(pem, MLKemTestData.EncryptedPrivateKeyPassword);
+                    byte[] exportedDecapKey = kem.ExportDecapsulationKey();
+                    AssertExtensions.SequenceEqual(decapKey, exportedDecapKey);
+                });
+            }
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_PrivateKey_Both_Roundtrip()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyBothTestData)
+            {
+                string pem = WritePem("ENCRYPTED PRIVATE KEY", pkcs8);
+                AssertImportFromEncryptedPem(importer =>
+                {
+                    using MLKem kem = importer(pem, MLKemTestData.EncryptedPrivateKeyPassword);
+                    byte[] exportedSeed = kem.ExportPrivateSeed();
+                    AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, exportedSeed);
+                });
+            }
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_PrivateKey_Ambiguous_Throws()
+        {
+            string pem = $"""
+            {WritePem("ENCRYPTED PRIVATE KEY", MLKemTestData.IetfMlKem512EncryptedPrivateKeyBoth)}
+            {WritePem("ENCRYPTED PRIVATE KEY", MLKemTestData.IetfMlKem768EncryptedPrivateKeyBoth)}
+            """;
+            AssertImportFromEncryptedPem(importer =>
+            {
+                AssertExtensions.Throws<ArgumentException>("source",
+                    () => importer(pem, MLKemTestData.EncryptedPrivateKeyPassword));
+            });
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_PrivateKey_DoesNotImportNonEncrypted()
+        {
+            string pem = WritePem("PRIVATE KEY", MLKemTestData.IetfMlKem512PrivateKeyBoth);
+            AssertImportFromEncryptedPem(importer =>
+            {
+                AssertExtensions.Throws<ArgumentException>("source",
+                    () => importer(pem, ""));
+            });
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_NoUnderstoodPem_Throws()
+        {
+            string pem = """
+            -----BEGIN UNKNOWN-----
+            cGNq
+            -----END UNKNOWN-----
+            """;
+            AssertImportFromEncryptedPem(importer =>
+            {
+                AssertExtensions.Throws<ArgumentException>("source",
+                    () => importer(pem, ""));
+            });
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_PrivateKey_IgnoresNotUnderstoodPems()
+        {
+            string pem = $"""
+            -----BEGIN UNKNOWN-----
+            cGNq
+            -----END UNKNOWN-----
+            {WritePem("ENCRYPTED PRIVATE KEY", MLKemTestData.IetfMlKem768EncryptedPrivateKeyBoth)}
+            """;
+            AssertImportFromEncryptedPem(importer =>
+            {
+                using MLKem kem = importer(pem, MLKemTestData.EncryptedPrivateKeyPassword);
+                byte[] exportedSeed = kem.ExportPrivateSeed();
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, exportedSeed);
+            });
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_PrivateKey_WrongPassword()
+        {
+            string pem = WritePem("ENCRYPTED PRIVATE KEY", MLKemTestData.IetfMlKem768EncryptedPrivateKeyBoth);
+            AssertImportFromEncryptedPem(importer =>
+            {
+                Assert.Throws<CryptographicException>(
+                    () => importer(pem, "WRONG"));
+            });
+        }
+
+        private static void AssertImportFromPem(Action<Func<string, MLKem>> callback)
+        {
+            callback(static (string pem) => MLKem.ImportFromPem(pem));
+            callback(static (string pem) => MLKem.ImportFromPem(pem.AsSpan()));
+        }
+
+        private static void AssertImportFromEncryptedPem(Action<Func<string, string, MLKem>> callback)
+        {
+            callback(static (string pem, string password) => MLKem.ImportFromEncryptedPem(pem, password));
+
+            callback(static (string pem, string password) => MLKem.ImportFromEncryptedPem(
+                pem.AsSpan(),
+                password.AsSpan()));
+
+            callback(static (string pem, string password) => MLKem.ImportFromEncryptedPem(
+                pem,
+                Encoding.UTF8.GetBytes(password)));
+
+            callback(static (string pem, string password) => MLKem.ImportFromEncryptedPem(
+                pem.AsSpan(),
+                new ReadOnlySpan<byte>(Encoding.UTF8.GetBytes(password))));
+        }
+
         public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Seed)> Pkcs8PrivateKeySeedTestData
         {
             get
@@ -640,6 +972,22 @@ namespace System.Security.Cryptography.Tests
                     MLKemTestData.IetfMlKem1024PrivateKeyDecapsulationKey
                 );
             }
+        }
+
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] spki)> SubjectPublicKeyInfoTestData
+        {
+            get
+            {
+                yield return (MLKemAlgorithm.MLKem512, MLKemTestData.IetfMlKem512Spki);
+                yield return (MLKemAlgorithm.MLKem768, MLKemTestData.IetfMlKem768Spki);
+                yield return (MLKemAlgorithm.MLKem1024, MLKemTestData.IetfMlKem1024Spki);
+            }
+        }
+
+        private static string WritePem(string label, byte[] contents)
+        {
+            string base64 = Convert.ToBase64String(contents, Base64FormattingOptions.InsertLineBreaks);
+            return $"-----BEGIN {label}-----\n{base64}\n-----END {label}-----";
         }
 
         private static byte[] Pkcs8Encode(

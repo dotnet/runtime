@@ -2453,6 +2453,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     {
         SetIP(pContext, (TADDR)pFrame->ip);
         SetSP(pContext, dac_cast<TADDR>(pFrame));
+        SetFP(pContext, (TADDR)pFrame->pStack);
     }
     else
     {

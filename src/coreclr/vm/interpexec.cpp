@@ -80,6 +80,18 @@ MAIN_LOOP:
                 LOCAL_VAR(ip[1], int64_t) = 0;
                 ip += 2;
                 break;
+            case INTOP_LDC_I8:
+                LOCAL_VAR(ip[1], int64_t) = (int64_t)ip[2] + ((int64_t)ip[3] << 32);
+                ip += 4;
+                break;
+            case INTOP_LDC_R4:
+                LOCAL_VAR(ip[1], int32_t) = ip[2];
+                ip += 3;
+                break;
+            case INTOP_LDC_R8:
+                LOCAL_VAR(ip[1], int64_t) = (int64_t)ip[2] + ((int64_t)ip[3] << 32);
+                ip += 4;
+                break;
             case INTOP_LDPTR:
                 LOCAL_VAR(ip[1], void*) = pMethod->pDataItems[ip[2]];
                 ip += 3;
