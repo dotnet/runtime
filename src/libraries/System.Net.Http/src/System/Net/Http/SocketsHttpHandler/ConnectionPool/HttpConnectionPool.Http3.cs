@@ -87,19 +87,18 @@ namespace System.Net.Http
                         ThrowGetVersionException(request, 3, reasonException);
                     }
 
-                    long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
-                    Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(authority);
+                    WaitForHttp3ConnectionActivity waitForConnectionActivity = new WaitForHttp3ConnectionActivity(Settings._metrics!, authority);
 
-                    if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out http3ConnectionWaiter))
+                    if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out http3ConnectionWaiter, out bool streamReserved))
                     {
+                        waitForConnectionActivity.Start();
                         try
                         {
                             connection = await http3ConnectionWaiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
-                            ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, ex);
-                            waitForConnectionActivity?.Stop();
+                            waitForConnectionActivity.Stop(request, this, ex);
                             throw;
                         }
                     }
@@ -111,7 +110,7 @@ namespace System.Net.Http
                         return null;
                     }
 
-                    HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, waitForConnectionActivity, cancellationToken).ConfigureAwait(false);
+                    HttpResponseMessage response = await connection.SendAsync(request, waitForConnectionActivity, streamReserved, cancellationToken).ConfigureAwait(false);
 
                     // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
                     // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
@@ -135,7 +134,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        private bool TryGetPooledHttp3Connection(HttpRequestMessage request, [NotNullWhen(true)] out Http3Connection? connection, [NotNullWhen(false)] out HttpConnectionWaiter<Http3Connection?>? waiter)
+        private bool TryGetPooledHttp3Connection(HttpRequestMessage request, [NotNullWhen(true)] out Http3Connection? connection, [NotNullWhen(false)] out HttpConnectionWaiter<Http3Connection?>? waiter, out bool streamReserved)
         {
             Debug.Assert(IsHttp3Supported());
 
@@ -161,6 +160,7 @@ namespace System.Net.Http
                         // There were no available connections. This request has been added to the request queue.
                         if (NetEventSource.Log.IsEnabled()) Trace($"No available HTTP/3 connections; request queued.");
                         connection = null;
+                        streamReserved = false;
                         return false;
                     }
                 }
@@ -173,9 +173,11 @@ namespace System.Net.Http
                     continue;
                 }
 
+                streamReserved = connection.TryReserveStream();
+
                 // Disable and remove the connection from the pool only if we can open another.
                 // If we have only single connection, use the underlying QuicConnection mechanism to wait for available streams.
-                if (!connection.TryReserveStream() && EnableMultipleHttp3Connections)
+                if (!streamReserved && EnableMultipleHttp3Connections)
                 {
                     if (NetEventSource.Log.IsEnabled()) connection.Trace("Found HTTP/3 connection in pool without available streams.");
 
