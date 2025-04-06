@@ -891,7 +891,7 @@ DelayLoad_Helper\suffix:
 
         CHECK_STACK_ALIGNMENT
 
-        add r0, sp, #40
+        add r0, sp, #32
         bl C_FUNC(OnHijackWorker)
 
         EPILOG_VPOP "{d0-d3}"
