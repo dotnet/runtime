@@ -1061,6 +1061,10 @@ CALL_INTERP_SLOT:
                 ip += 5;
                 goto CALL_INTERP_SLOT;
             }
+            case INTOP_ZEROBLK_IMM:
+                memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
+                ip += 3;
+                break;
             case INTOP_FAILFAST:
                 assert(0);
                 break;

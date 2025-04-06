@@ -1518,13 +1518,18 @@ CORINFO_METHOD_HANDLE InterpCompiler::ResolveMethodToken(uint32_t token)
 {
     CORINFO_RESOLVED_TOKEN resolvedToken;
 
-    resolvedToken.tokenScope = m_compScopeHnd;
-    resolvedToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
-    resolvedToken.token = token;
-    resolvedToken.tokenType = CORINFO_TOKENKIND_Method;
-    m_compHnd->resolveToken(&resolvedToken);
+    ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
 
     return resolvedToken.hMethod;
+}
+
+CORINFO_CLASS_HANDLE InterpCompiler::ResolveClassToken(uint32_t token)
+{
+    CORINFO_RESOLVED_TOKEN resolvedToken;
+
+    ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+    return resolvedToken.hClass;
 }
 
 void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall)
@@ -3080,6 +3085,30 @@ retry_emit:
                         volatile_ = true;
                         m_ip++;
                         break;
+                    case CEE_INITOBJ:
+                    {
+                        CHECK_STACK(1);
+                        CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                        if (m_compHnd->isValueClass(clsHnd))
+                        {
+                            m_pStackPointer--;
+                            AddIns(INTOP_ZEROBLK_IMM);
+                            m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                            m_pLastNewIns->data[0] = m_compHnd->getClassSize(clsHnd);
+                        }
+                        else
+                        {
+                            AddIns(INTOP_LDNULL);
+                            PushInterpType(InterpTypeO, NULL);
+                            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                            AddIns(INTOP_STIND_O);
+                            m_pStackPointer -= 2;
+                            m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+                        }
+                        m_ip += 5;
+                        break;
+                    }
                     default:
                         assert(0);
                         break;
