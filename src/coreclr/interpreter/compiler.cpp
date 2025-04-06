@@ -1627,7 +1627,7 @@ static int32_t GetStindForType(InterpType interpType)
         case InterpTypeI8: return INTOP_STIND_I8;
         case InterpTypeR4: return INTOP_STIND_R4;
         case InterpTypeR8: return INTOP_STIND_R8;
-        case InterpTypeO: return INTOP_STIND_I;
+        case InterpTypeO: return INTOP_STIND_O;
         case InterpTypeVT: return INTOP_STIND_VT;
         case InterpTypeByRef: return INTOP_STIND_I;
         default:
