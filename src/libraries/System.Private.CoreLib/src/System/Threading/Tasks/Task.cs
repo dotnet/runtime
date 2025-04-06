@@ -134,7 +134,7 @@ namespace System.Threading.Tasks
         [Flags]
         internal enum TaskStateFlags
         {
-            // State constants for m_stateFlags;
+            // State constants for m_stateFlags:
             // The bits of m_stateFlags are allocated as follows:
             //   0x7FFF0000 - Task state flags
             //   0x0000FF00 - internal TaskCreationOptions flags
