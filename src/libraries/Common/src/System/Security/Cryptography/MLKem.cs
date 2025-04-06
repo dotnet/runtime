@@ -1479,6 +1479,55 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Imports an ML-KEM private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when decrypting the key material.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="password" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The value does not represent an ML-KEM key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports ML-KEM.
+        /// </exception>
+        public static MLKem ImportEncryptedPkcs8PrivateKey(string password, ReadOnlySpan<byte> source)
+        {
+            ThrowIfNull(password);
+            ThrowIfTrailingData(source);
+            ThrowIfNotSupported();
+
+            return KeyFormatHelper.DecryptPkcs8(
+                password,
+                source,
+                ImportPkcs8PrivateKey,
+                out _);
+        }
+
+        /// <summary>
         ///  Imports an ML-KEM key from an RFC 7468 PEM-encoded string.
         /// </summary>
         /// <param name="source">
