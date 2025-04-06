@@ -1304,22 +1304,22 @@ namespace System.Security.Cryptography.Tests
             {
                 case TryExportPkcs8PasswordKind.StringPassword:
                     return kem.TryExportEncryptedPkcs8PrivateKey(
-                    MLKemTestData.EncryptedPrivateKeyPassword,
-                    s_aes128Pbe,
-                    destination,
-                    out bytesWritten);
+                        MLKemTestData.EncryptedPrivateKeyPassword,
+                        s_aes128Pbe,
+                        destination,
+                        out bytesWritten);
                 case TryExportPkcs8PasswordKind.SpanOfCharsPassword:
                     return kem.TryExportEncryptedPkcs8PrivateKey(
-                    MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
-                    s_aes128Pbe,
-                    destination,
-                    out bytesWritten);
+                        MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
+                        s_aes128Pbe,
+                        destination,
+                        out bytesWritten);
                 case TryExportPkcs8PasswordKind.SpanOfBytesPassword:
                     return kem.TryExportEncryptedPkcs8PrivateKey(
-                    MLKemTestData.EncryptedPrivateKeyPasswordBytes,
-                    s_aes128Pbe,
-                    destination,
-                    out bytesWritten);
+                        MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                        s_aes128Pbe,
+                        destination,
+                        out bytesWritten);
                 default:
                     throw new XunitException($"Unknown password kind '{kind}'.");
             }

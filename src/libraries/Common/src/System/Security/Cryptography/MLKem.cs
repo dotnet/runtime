@@ -761,7 +761,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
+        ///   Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
         /// </summary>
         /// <returns>
         ///   A byte array containing the X.509 SubjectPublicKeyInfo representation of the public-key portion of this key.
@@ -779,8 +779,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Exports the public-key portion of the current key in a PEM-encoded representation of
-        ///  the X.509 SubjectPublicKeyInfo format.
+        ///   Exports the public-key portion of the current key in a PEM-encoded representation of
+        ///   the X.509 SubjectPublicKeyInfo format.
         /// </summary>
         /// <returns>
         ///   A string containing the PEM-encoded representation of the X.509 SubjectPublicKeyInfo
@@ -857,11 +857,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Exports the current key in a PEM-encoded representation of the PKCS#8 PrivateKeyInfo format.
+        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 PrivateKeyInfo format.
         /// </summary>
         /// <returns>
-        ///   A string containing the PEM-encoded representation of the PKCS#8 PrivateKeyInfo
-        ///   representation of the public-key portion of this key.
+        ///   A string containing the PEM-encoded representation of the PKCS#8 PrivateKeyInfo.
         /// </returns>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -898,8 +897,8 @@ namespace System.Security.Cryptography
         protected abstract bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten);
 
         /// <summary>
-        ///  Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
-        ///  using a char-based password.
+        ///   Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
+        ///   using a char-based password.
         /// </summary>
         /// <param name="password">
         ///   The password to use when encrypting the key material.
@@ -951,8 +950,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
-        ///  using a char-based password.
+        ///   Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
+        ///   using a char-based password.
         /// </summary>
         /// <param name="password">
         ///   The password to use when encrypting the key material.
@@ -997,8 +996,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
-        ///  using a byte-based password.
+        ///   Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
+        ///   using a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
         ///   The password to use when encrypting the key material.
@@ -1050,7 +1049,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a byte-based password.
+        ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
         ///   The password to use when encrypting the key material.
@@ -1090,7 +1089,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
+        ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
         /// </summary>
         /// <param name="password">
         ///   The password to use when encrypting the key material.
@@ -1130,7 +1129,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
+        ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
         /// </summary>
         /// <param name="password">
         ///   The password to use when encrypting the key material.
@@ -1163,8 +1162,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
-        /// representation of this key, using a byte-based password.
+        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
+        ///   representation of this key, using a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
         ///   The bytes to use as a password when encrypting the key material.
@@ -1173,10 +1172,10 @@ namespace System.Security.Cryptography
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
         /// </param>
         /// <returns>
-        ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of the this key.
+        ///   A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -1206,8 +1205,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
-        /// representation of this key, using a char-based password.
+        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
+        ///   representation of this key, using a char-based password.
         /// </summary>
         /// <param name="password">
         ///   The password to use when encrypting the key material.
@@ -1216,7 +1215,7 @@ namespace System.Security.Cryptography
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
         /// </param>
         /// <returns>
-        ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of the this key.
+        ///   A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
@@ -1247,8 +1246,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
-        /// representation of this key, using a string password.
+        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
+        ///   representation of this key, using a string password.
         /// </summary>
         /// <param name="password">
         ///   The password to use when encrypting the key material.
@@ -1257,7 +1256,7 @@ namespace System.Security.Cryptography
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
         /// </param>
         /// <returns>
-        ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of the this key.
+        ///   A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///    <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
@@ -1279,10 +1278,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Imports an ML-KEM encapsulation key from an X.509 SubjectPublicKeyInfo structure.
+        ///   Imports an ML-KEM encapsulation key from an X.509 SubjectPublicKeyInfo structure.
         /// </summary>
         /// <param name="source">
-        ///  The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
+        ///   The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -1334,10 +1333,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Imports an ML-KEM private key from a PKCS#8 PrivateKeyInfo structure.
+        ///   Imports an ML-KEM private key from a PKCS#8 PrivateKeyInfo structure.
         /// </summary>
         /// <param name="source">
-        ///  The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-BER encoding.
+        ///   The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-BER encoding.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -1528,7 +1527,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Imports an ML-KEM key from an RFC 7468 PEM-encoded string.
+        ///   Imports an ML-KEM key from an RFC 7468 PEM-encoded string.
         /// </summary>
         /// <param name="source">
         ///   The text of the PEM key to import.
@@ -1728,7 +1727,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Releases all resources used by the <see cref="MLKem"/> class.
+        ///   Releases all resources used by the <see cref="MLKem"/> class.
         /// </summary>
         public void Dispose()
         {

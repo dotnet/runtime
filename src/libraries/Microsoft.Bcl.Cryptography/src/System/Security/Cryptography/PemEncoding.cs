@@ -339,7 +339,6 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_PemEncoding_InvalidLabel, nameof(label));
             }
 
-
             const string NewLine = "\n";
             const int BytesPerLine = 48;
             byte[] bytesBuffer = CryptoPool.Rent(BytesPerLine);
