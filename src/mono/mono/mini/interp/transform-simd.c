@@ -169,7 +169,7 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
-	SN_Shuffle,
+	// SN_Shuffle,
 	SN_Subtract,
 	SN_Truncate,
 	SN_WidenLower,
@@ -181,14 +181,14 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_op_BitwiseOr,
 	SN_op_Division,
 	SN_op_ExclusiveOr,
-	SN_op_GreaterThan,
-	SN_op_GreaterThanOrEqual,
+	//SN_op_GreaterThan,
+	//SN_op_GreaterThanOrEqual,
 	SN_op_LeftShift,
-	SN_op_LessThan,
-	SN_op_LessThanOrEqual,
+	//SN_op_LessThan,
+	//SN_op_LessThanOrEqual,
 	SN_op_Multiply,
 	SN_op_OnesComplement,
-	SN_op_RightShift,
+	//SN_op_RightShift,
 	SN_op_Subtraction,
 	SN_op_UnaryNegation,
 	SN_op_UnsignedRightShift,
@@ -311,14 +311,10 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_OR;
 			break;
 		case SN_op_Equality:
-			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (atype == MONO_TYPE_R4)
-				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_FLOAT_EQUALITY;
-			else if (atype == MONO_TYPE_R8)
-				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_R8_FLOAT_EQUALITY;
-			else
+			if (atype != MONO_TYPE_R4 && atype != MONO_TYPE_R8) {
+				*simd_opcode = MINT_SIMD_INTRINS_P_PP;
 				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_EQUALITY;
-			break;
+			}			break;
 		case SN_EqualsFloatingPoint:
 			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_R4)
@@ -472,9 +468,8 @@ is_element_type_primitive (MonoType *vector_type)
 static void
 emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMethodSignature *csignature, int vector_size, gboolean allow_void)
 {
-	guint16 param_count = csignature->param_count;
-	td->sp -= param_count;
-	for (int i = 0; i < param_count; i++)
+	td->sp -= csignature->param_count;
+	for (int i = 0; i < csignature->param_count; i++)
 		td->last_ins->sregs [i] = td->sp [i].var;
 
 	int ret_mt = mono_mint_type (csignature->ret);
