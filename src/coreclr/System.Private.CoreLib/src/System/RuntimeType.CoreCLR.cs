@@ -407,34 +407,34 @@ namespace System
                         switch (listType)
                         {
                             case MemberListType.CaseSensitive:
+                            {
+                                // Ensure we always return a list that has
+                                // been merged with the global list.
+                                T[]? cachedList = m_csMemberInfos[name!];
+                                if (cachedList == null)
                                 {
-                                    // Ensure we always return a list that has
-                                    // been merged with the global list.
-                                    T[]? cachedList = m_csMemberInfos[name!];
-                                    if (cachedList == null)
-                                    {
-                                        MergeWithGlobalList(list);
-                                        m_csMemberInfos[name!] = list;
-                                    }
-                                    else
-                                        list = cachedList;
+                                    MergeWithGlobalList(list);
+                                    m_csMemberInfos[name!] = list;
                                 }
-                                break;
+                                else
+                                    list = cachedList;
+                            }
+                            break;
 
                             case MemberListType.CaseInsensitive:
+                            {
+                                // Ensure we always return a list that has
+                                // been merged with the global list.
+                                T[]? cachedList = m_cisMemberInfos[name!];
+                                if (cachedList == null)
                                 {
-                                    // Ensure we always return a list that has
-                                    // been merged with the global list.
-                                    T[]? cachedList = m_cisMemberInfos[name!];
-                                    if (cachedList == null)
-                                    {
-                                        MergeWithGlobalList(list);
-                                        m_cisMemberInfos[name!] = list;
-                                    }
-                                    else
-                                        list = cachedList;
+                                    MergeWithGlobalList(list);
+                                    m_cisMemberInfos[name!] = list;
                                 }
-                                break;
+                                else
+                                    list = cachedList;
+                            }
+                            break;
 
                             case MemberListType.All:
                                 if (!m_cacheComplete)
@@ -552,12 +552,7 @@ namespace System
                                     // Grow the list by exactly one element in this case to avoid null entries at the end.
                                     //
 
-                                    // TODO: runtime-async we need to rationalize how async2 thunks work in reflection.
-                                    //       possibly they should not be exposed as they are runtime-provided implementation
-                                    //       details, that in theory may change.
-                                    //
-                                    //       For now I will disable this assert as we may get here with extra methods.
-                                    // Debug.Assert(false);
+                                    Debug.Assert(false);
 
                                     newSize = cachedMembers.Length + 1;
                                 }
@@ -609,9 +604,9 @@ namespace System
                             MethodAttributes methodAttributes = RuntimeMethodHandle.GetAttributes(methodHandle);
 
                             #region Continue if this is a constructor
-                            //Debug.Assert(
-                            //    (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.RTSpecialName) == 0 ||
-                            //    RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"));
+                            Debug.Assert(
+                                (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.RTSpecialName) == 0 ||
+                                RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"));
 
                             if ((methodAttributes & MethodAttributes.RTSpecialName) != 0)
                                 continue;
@@ -668,10 +663,10 @@ namespace System
                                 MethodAttributes methodAccess = methodAttributes & MethodAttributes.MemberAccessMask;
 
                                 #region Continue if this is a constructor
-                                //Debug.Assert(
-                                //    (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.RTSpecialName) == 0 ||
-                                //    RuntimeMethodHandle.GetName(methodHandle).Equals(".ctor") ||
-                                //    RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"));
+                                Debug.Assert(
+                                    (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.RTSpecialName) == 0 ||
+                                    RuntimeMethodHandle.GetName(methodHandle).Equals(".ctor") ||
+                                    RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"));
 
                                 if ((methodAttributes & MethodAttributes.RTSpecialName) != 0)
                                     continue;
@@ -769,9 +764,6 @@ namespace System
                         Debug.Assert(!methodHandle.IsNullHandle());
 
                         if ((methodAttributes & MethodAttributes.RTSpecialName) == 0)
-                            continue;
-
-                        if (RuntimeMethodHandle.GetName(methodHandle) is not ".ctor" and not ".cctor")
                             continue;
 
                         // Constructors should not be virtual or abstract
@@ -2379,7 +2371,7 @@ namespace System
 
         #endregion
 
-#endregion
+        #endregion
 
         #region Private Data Members
 
