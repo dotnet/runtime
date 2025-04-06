@@ -27,7 +27,7 @@ if is_cygwin_or_mingw; then
   # if bash shell running on Windows (not WSL),
   # pass control to powershell build script.
   scriptroot=$(cygpath -d "$scriptroot")
-  powershell -c "$scriptroot\\build.cmd" $@
+  "$scriptroot/build.cmd" $@
 else
   "$scriptroot/eng/build.sh" $@
 fi
