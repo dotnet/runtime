@@ -2686,6 +2686,29 @@ retry_emit:
                 m_pStackPointer--;
                 break;
             }
+            case CEE_DUP:
+            {
+                int32_t svar = m_pStackPointer[-1].var;
+                InterpType interpType = m_pVars[svar].interpType;
+                if (interpType == InterpTypeVT)
+                {
+                    int32_t size = m_pVars[svar].size;
+                    AddIns(INTOP_MOV_VT);
+                    m_pLastNewIns->SetSVar(svar);
+                    PushTypeVT(m_pVars[svar].clsHnd, size);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    m_pLastNewIns->data[0] = size;
+                }
+                else
+                {
+                    AddIns(InterpGetMovForType(interpType, false));
+                    m_pLastNewIns->SetSVar(svar);
+                    PushInterpType(interpType, m_pVars[svar].clsHnd);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                }
+                m_ip++;
+                break;
+            }
             case CEE_POP:
                 CHECK_STACK(1);
                 AddIns(INTOP_NOP);
