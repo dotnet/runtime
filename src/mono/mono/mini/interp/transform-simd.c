@@ -154,6 +154,7 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_Ceiling,
 	SN_Divide,
 	SN_Equals,
+	SN_ExtractMostSignificantBits,
 	SN_Floor,
 	SN_GreaterThan,
 	SN_GreaterThanOrEqual,
@@ -314,7 +315,8 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			if (atype != MONO_TYPE_R4 && atype != MONO_TYPE_R8) {
 				*simd_opcode = MINT_SIMD_INTRINS_P_PP;
 				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_EQUALITY;
-			}			break;
+			}
+			break;
 		case SN_EqualsFloatingPoint:
 			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_R4)
@@ -1163,9 +1165,12 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_op_GreaterThanOrEqual:
 				cmethod_name = "CompareGreaterThanOrEqual";
 				break;
-			//case SN_Equals:
-			//	cmethod_name = "CompareEqual";
-			//simd	break;
+			case SN_Equals:
+				cmethod_name = "CompareEqual";
+				break;
+			case SN_ExtractMostSignificantBits:
+				cmethod_name = "Bitmask";
+				break;
 			case SN_BitwiseAnd:
 			case SN_op_BitwiseAnd:
 				cmethod_name = "And";
