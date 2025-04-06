@@ -2567,6 +2567,22 @@ retry_emit:
                 EmitBinaryArithmeticOp(INTOP_MUL_I4);
                 m_ip++;
                 break;
+            case CEE_DIV:
+                EmitBinaryArithmeticOp(INTOP_DIV_I4);
+                m_ip++;
+                break;
+            case CEE_DIV_UN:
+                EmitBinaryArithmeticOp(INTOP_DIV_UN_I4);
+                m_ip++;
+                break;
+            case CEE_REM:
+                EmitBinaryArithmeticOp(INTOP_REM_I4);
+                m_ip++;
+                break;
+            case CEE_REM_UN:
+                EmitBinaryArithmeticOp(INTOP_REM_UN_I4);
+                m_ip++;
+                break;
             case CEE_AND:
                 EmitBinaryArithmeticOp(INTOP_AND_I4);
                 m_ip++;
