@@ -188,7 +188,7 @@ static guint16 packedsimd_alias_methods [] = {
 	//SN_op_LessThanOrEqual,
 	SN_op_Multiply,
 	SN_op_OnesComplement,
-	//SN_op_RightShift,
+	SN_op_RightShift,
 	SN_op_Subtraction,
 	SN_op_UnaryNegation,
 	SN_op_UnsignedRightShift,
@@ -1132,6 +1132,11 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		if (csignature->hasthis) {
 			return FALSE;
 		}
+		int scalar_arg = -1;
+		for (int i = 0; i < csignature->param_count; i++) {
+			if (csignature->params [i]->type != MONO_TYPE_GENERICINST)
+				scalar_arg = i;
+		}
 		cmethod_name = strip_explicit_isimd_prefix (cmethod_name);
 		id = lookup_intrins (packedsimd_alias_methods, sizeof (packedsimd_alias_methods), cmethod_name);
 		gboolean is_unsigned = (atype == MONO_TYPE_U1 || atype == MONO_TYPE_U2 || atype == MONO_TYPE_U4 || atype == MONO_TYPE_U8 || atype == MONO_TYPE_U);
@@ -1190,18 +1195,26 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				cmethod_name = "Add";
 				break;
 			case SN_op_Division:
+				if (scalar_arg != -1)
+					return FALSE;
 				cmethod_name = "Divide";
 				break;
 			case SN_op_ExclusiveOr:
 				cmethod_name = "Xor";
 				break;
 			case SN_op_LeftShift:
+				if (scalar_arg != 1)
+					return FALSE;
 				cmethod_name = "ShiftLeft";
 				break;
 			case SN_op_Multiply:
+				if (scalar_arg != -1)
+					return FALSE;
 				cmethod_name = "Multiply";
 				break;
 			case SN_op_RightShift:
+				if (scalar_arg != 1)
+					return FALSE;
 				cmethod_name = is_unsigned ? "ShiftRightLogical" : "ShiftRightArithmetic";
 				break;
 			case SN_op_Subtraction:
