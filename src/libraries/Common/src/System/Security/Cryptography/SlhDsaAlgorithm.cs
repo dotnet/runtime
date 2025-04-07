@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
     /// </summary>
     [DebuggerDisplay("{Name,nq}")]
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-    internal sealed class SlhDsaAlgorithm
+    public sealed class SlhDsaAlgorithm
     {
         /// <summary>
         ///   Gets the underlying string representation of the algorithm name.
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///  The size of the private seed in bytes for this algorithm.
         /// </value>
-        internal int PrivateSeedSizeInBytes { get; }
+        public int PrivateSeedSizeInBytes { get; }
 
         /// <summary>
         ///  Gets the Object Identifier (OID) for this algorithm.
@@ -131,7 +131,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHA2-192s algorithm.
         /// </value>
-        public static SlhDsaAlgorithm SlhDsaSha2_192s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHA2-192s", 24, 15616, Oids.SlhDsaSha2_192s);
+        public static SlhDsaAlgorithm SlhDsaSha2_192s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHA2-192s", 24, 16224, Oids.SlhDsaSha2_192s);
 
         /// <summary>
         ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-192s algorithm.
@@ -139,7 +139,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-192s algorithm.
         /// </value>
-        public static SlhDsaAlgorithm SlhDsaShake192s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-192s", 24, 15616, Oids.SlhDsaShake_192s);
+        public static SlhDsaAlgorithm SlhDsaShake192s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-192s", 24, 16224, Oids.SlhDsaShake_192s);
 
         /// <summary>
         ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-192f algorithm.

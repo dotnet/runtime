@@ -499,15 +499,15 @@ InteropMethodTableData *MethodTableBuilder::BuildInteropVTable(AllocMemTracker *
         PCCOR_SIGNATURE pSig;
         ULONG           cbSig;
 
-        printf("InteropMethodTable\n--------------\n");
-        printf("VTable\n------\n");
+        minipal_log_print_info("InteropMethodTable\n--------------\nVTable\n------\n");
 
+        StackSString message;
         for (DWORD i = 0; i < pInteropMT->cVTable; i++)
         {
             // Print the method name
             InteropMethodTableSlotData *pInteropMD = &pInteropMT->pVTable[i];
-            printf(pInteropMD->pMD->GetName());
-            printf(" ");
+            message.AppendUTF8(pInteropMD->pMD->GetName());
+            message.AppendUTF8(" ");
 
             // Print the sig
             if (FAILED(pInteropMD->pMD->GetMDImport()->GetSigOfMethodDef(pInteropMD->pMD->GetMemberDef(), &cbSig, &pSig)))
@@ -515,9 +515,13 @@ InteropMethodTableData *MethodTableBuilder::BuildInteropVTable(AllocMemTracker *
                 pSig = NULL;
                 cbSig = 0;
             }
+
             PrettyPrintSigInternalLegacy(pSig, cbSig, "", &qb, pInteropMD->pMD->GetMDImport());
-            printf((LPCUTF8) qb.Ptr());
-            printf("\n");
+            message.AppendUTF8((LPCUTF8) qb.Ptr());
+            message.AppendUTF8("\n");
+
+            minipal_log_print_info(message.GetUTF8());
+            message.Clear();
         }
     }
 #endif // _DEBUG
