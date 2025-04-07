@@ -151,6 +151,7 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_EE_THREAD_APARTMENT_NOT_SUPPORTED   "The system does not support the %1 thread apartment."
     IDS_EE_NDIRECT_UNSUPPORTED_SIG          "Method's type signature is not PInvoke compatible."
+    IDS_EE_NDIRECT_UNSUPPORTED_UNMANAGEDCALLERSONLY "Method '%1.%2' cannot be marked with both DllImportAttribute and UnmanagedCallersOnlyAttribute."
     IDS_EE_COM_UNSUPPORTED_SIG              "Method's type signature is not Interop compatible."
     IDS_EE_COM_UNSUPPORTED_TYPE             "The method returned a COM Variant type that is not Interop compatible."
     IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED    "Multiple unmanaged calling conventions are specified. Only a single calling convention is supported."

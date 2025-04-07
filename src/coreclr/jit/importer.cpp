@@ -12576,8 +12576,9 @@ void Compiler::impImport()
 //
 void Compiler::impFixPredLists()
 {
-    unsigned XTnum = 0;
-    bool     added = false;
+    unsigned   XTnum               = 0;
+    bool       added               = false;
+    const bool usingProfileWeights = fgIsUsingProfileWeights();
 
     for (EHblkDsc* HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
@@ -12586,6 +12587,7 @@ void Compiler::impFixPredLists()
             BasicBlock* const finallyBegBlock  = HBtab->ebdHndBeg;
             BasicBlock* const finallyLastBlock = HBtab->ebdHndLast;
             unsigned          predCount        = (unsigned)-1;
+            const weight_t    finallyWeight    = finallyBegBlock->bbWeight;
 
             for (BasicBlock* const finallyBlock : BasicBlockRangeList(finallyBegBlock, finallyLastBlock))
             {
@@ -12629,7 +12631,8 @@ void Compiler::impFixPredLists()
                     jumpEhf->bbeCount = predCount;
                     jumpEhf->bbeSuccs = new (this, CMK_FlowEdge) FlowEdge*[predCount];
 
-                    unsigned predNum = 0;
+                    unsigned predNum             = 0;
+                    weight_t remainingLikelihood = 1.0;
                     for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
                     {
                         // We only care about preds that are callfinallies.
@@ -12642,6 +12645,22 @@ void Compiler::impFixPredLists()
                         BasicBlock* const continuation = predBlock->Next();
                         FlowEdge* const   newEdge      = fgAddRefPred(continuation, finallyBlock);
                         newEdge->setLikelihood(1.0 / predCount);
+
+                        if (usingProfileWeights && (finallyWeight != BB_ZERO_WEIGHT))
+                        {
+                            // Derive edge likelihood from the entry block's weight relative to other entries.
+                            //
+                            const weight_t callFinallyWeight = predBlock->bbWeight;
+                            const weight_t likelihood        = min(callFinallyWeight / finallyWeight, 1.0);
+                            newEdge->setLikelihood(min(likelihood, remainingLikelihood));
+                            remainingLikelihood = max(BB_ZERO_WEIGHT, remainingLikelihood - likelihood);
+                        }
+                        else
+                        {
+                            // If we don't have profile data, evenly distribute the likelihoods.
+                            //
+                            newEdge->setLikelihood(1.0 / predCount);
+                        }
 
                         jumpEhf->bbeSuccs[predNum] = newEdge;
                         ++predNum;
@@ -12656,6 +12675,26 @@ void Compiler::impFixPredLists()
                 }
 
                 finallyBlock->SetEhfTargets(jumpEhf);
+            }
+
+            if (usingProfileWeights)
+            {
+                // Compute new flow into the finally region's continuation successors.
+                //
+                bool profileConsistent = true;
+                for (BasicBlock* const callFinally : finallyBegBlock->PredBlocks())
+                {
+                    BasicBlock* const callFinallyRet = callFinally->Next();
+                    callFinallyRet->setBBProfileWeight(callFinallyRet->computeIncomingWeight());
+                    profileConsistent &= fgProfileWeightsEqual(callFinally->bbWeight, callFinallyRet->bbWeight);
+                }
+
+                if (!profileConsistent)
+                {
+                    JITDUMP("Flow into finally handler EH%u does not match outgoing flow. Data %s inconsistent.\n",
+                            XTnum, fgPgoConsistent ? "is now" : "was already");
+                    fgPgoConsistent = false;
+                }
             }
         }
     }
