@@ -254,6 +254,11 @@ CDAC_TYPE_FIELD(Assembly, /*uint8*/, IsCollectible, cdac_data<Assembly>::IsColle
 #endif
 CDAC_TYPE_END(Assembly)
 
+CDAC_TYPE_BEGIN(AppDomain)
+CDAC_TYPE_INDETERMINATE(AppDomain)
+CDAC_TYPE_FIELD(AppDomain, /*pointer*/, RootAssembly, cdac_data<AppDomain>::RootAssembly)
+CDAC_TYPE_END(AppDomain)
+
 // RuntimeTypeSystem
 
 CDAC_TYPE_BEGIN(MethodTable)
