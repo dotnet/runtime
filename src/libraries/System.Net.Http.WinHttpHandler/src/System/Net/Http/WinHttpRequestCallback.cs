@@ -323,6 +323,10 @@ namespace System.Net.Http
                             (IntPtr)pConnectionInfo,
                             ref infoSize))
                         {
+                            // RemoteAddress is SOCKADDR_STORAGE structure, which is 128 bytes.
+                            // See: https://learn.microsoft.com/en-us/windows/win32/api/winhttp/ns-winhttp-winhttp_connection_info
+                            // SOCKADDR_STORAGE can hold either IPv4 or IPv6 address.
+                            // For offset numbers: https://learn.microsoft.com/en-us/windows/win32/winsock/sockaddr-2
                             ReadOnlySpan<byte> remoteAddressSpan = new ReadOnlySpan<byte>(connectionInfo.RemoteAddress, 128);
                             AddressFamily addressFamily = (AddressFamily)(remoteAddressSpan[0] + (remoteAddressSpan[1] << 8));
                             ipAddress = addressFamily switch
