@@ -21,6 +21,13 @@ namespace System.Net.Http
                 false);
         }
 
+        internal static class MetricsHandler
+        {
+            public static bool EnableMetrics { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
+                "System.Diagnostics.Metrics.Meter.IsSupported",
+                true);
+        }
+
         internal static class SocketsHttpHandler
         {
 #if !TARGET_BROWSER && !TARGET_WASI

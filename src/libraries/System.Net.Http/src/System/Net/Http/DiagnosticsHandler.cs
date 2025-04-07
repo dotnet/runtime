@@ -4,7 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,6 +23,16 @@ namespace System.Net.Http
         private readonly HttpMessageHandler _innerHandler;
         private readonly DistributedContextPropagator _propagator;
         private readonly HeaderDescriptor[]? _propagatorFields;
+
+        static DiagnosticsHandler()
+        {
+            if (IsEnabled())
+            {
+                EnableActivityTracker((EventSource?)null);
+            }
+            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "EnableActivityTracker")]
+            static extern void EnableActivityTracker(EventSource? instance);
+        }
 
         public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
         {
