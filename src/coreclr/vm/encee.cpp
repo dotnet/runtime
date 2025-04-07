@@ -129,7 +129,6 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
 
     // Debugging hook to dump out all edits to dmeta and dil files
     static BOOL dumpChanges = -1;
-
     if (dumpChanges == -1)
         dumpChanges = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EncDumpApplyChanges);
 
@@ -139,12 +138,12 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
         int ec;
         fn.Printf("ApplyChanges.%d.dmeta", m_applyChangesCount);
         FILE *fp;
-        ec = _wfopen_s(&fp, fn.GetUnicode(), W("wb"));
+        ec = fopen_s(&fp, fn.GetUTF8(), "wb");
         _ASSERTE(SUCCEEDED(ec));
         fwrite(pDeltaMD, 1, cbDeltaMD, fp);
         fclose(fp);
         fn.Printf("ApplyChanges.%d.dil", m_applyChangesCount);
-        ec = _wfopen_s(&fp, fn.GetUnicode(), W("wb"));
+        ec = fopen_s(&fp, fn.GetUTF8(), "wb");
         _ASSERTE(SUCCEEDED(ec));
         fwrite(pDeltaIL, 1, cbDeltaIL, fp);
         fclose(fp);
@@ -152,11 +151,6 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
 #endif
 
     HRESULT hr = S_OK;
-    HENUMInternal enumENC;
-
-    BYTE *pLocalILMemory = NULL;
-    IMDInternalImport *pMDImport = NULL;
-    IMDInternalImport *pNewMDImport = NULL;
 
     CONTRACT_VIOLATION(GCViolation);    // SafeComHolder goes to preemptive mode, which will trigger a GC
     SafeComHolder<IMDInternalImportENC> pIMDInternalImportENC;
@@ -180,36 +174,39 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     }
     EX_CATCH_HRESULT(hr);
 
-    IfFailGo(hr);
+    IfFailRet(hr);
 
     // Grab the current importer.
-    pMDImport = GetMDImport();
+    IMDInternalImport* pMDImport = GetMDImport();
 
     // Apply the EnC delta to this module's metadata.
-    IfFailGo(pMDImport->ApplyEditAndContinue(pDeltaMD, cbDeltaMD, &pNewMDImport));
+    IMDInternalImport* pNewMDImport = NULL;
+    IfFailRet(pMDImport->ApplyEditAndContinue(pDeltaMD, cbDeltaMD, &pNewMDImport));
 
     // The importer should not have changed!  We assert that, and back-stop in a retail build just to be sure.
     if (pNewMDImport != pMDImport)
     {
         _ASSERTE( !"ApplyEditAndContinue should not have needed to create a new metadata importer!" );
-        IfFailGo(CORDBG_E_ENC_INTERNAL_ERROR);
+        IfFailRet(CORDBG_E_ENC_INTERNAL_ERROR);
     }
 
     // get the delta interface
-    IfFailGo(pMDImport->QueryInterface(IID_IMDInternalImportENC, (void **)&pIMDInternalImportENC));
+    IfFailRet(pMDImport->QueryInterface(IID_IMDInternalImportENC, (void **)&pIMDInternalImportENC));
 
     // get an emitter interface
-    IfFailGo(GetMetaDataPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
+    IfFailRet(GetMetaDataPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
 
-    // Copy the deltaIL into our RVAable IL memory
-    pLocalILMemory = new BYTE[cbDeltaIL];
+    // Copy the delta IL into our RVA-able IL memory
+    BYTE* pLocalILMemory = (BYTE*)(void*)GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbDeltaIL));
     memcpy(pLocalILMemory, pDeltaIL, cbDeltaIL);
 
     // Enumerate all of the EnC delta tokens
-    HENUMInternal::ZeroEnum(&enumENC);
-    IfFailGo(pIMDInternalImportENC->EnumDeltaTokensInit(&enumENC));
+    MDEnumHolder enumENC{ pIMDInternalImportENC };
+    IfFailRet(pIMDInternalImportENC->EnumDeltaTokensInit(&enumENC));
 
     mdToken token;
+    MethodDesc* pMethod;
+    FieldDesc* pFieldDesc;
     while (pIMDInternalImportENC->EnumNext(&enumENC, &token))
     {
         STRESS_LOG1(LF_ENC, LL_INFO100, "EACM::AEAC: updated token 0x%08x\n", token);
@@ -223,28 +220,27 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
 
                 ULONG dwMethodRVA;
                 DWORD dwMethodFlags;
-                IfFailGo(pMDImport->GetMethodImplProps(token, &dwMethodRVA, &dwMethodFlags));
+                IfFailRet(pMDImport->GetMethodImplProps(token, &dwMethodRVA, &dwMethodFlags));
 
                 if (dwMethodRVA >= cbDeltaIL)
                 {
-                    LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Failure RVA of %d with cbDeltaIl %d\n", dwMethodRVA, cbDeltaIL));
-                    IfFailGo(E_INVALIDARG);
+                    LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Failure RVA of %u with cbDeltaIL %u\n", dwMethodRVA, cbDeltaIL));
+                    IfFailRet(E_INVALIDARG);
                 }
 
-                SetDynamicIL(token, (TADDR)(pLocalILMemory + dwMethodRVA));
+                SetDynamicIL(token, (TADDR)(&pLocalILMemory[dwMethodRVA]));
 
                 // use module to resolve to method
-                MethodDesc *pMethod;
                 pMethod = LookupMethodDef(token);
                 if (pMethod)
                 {
                     // Method exists already - update it
-                    IfFailGo(UpdateMethod(pMethod));
+                    IfFailRet(UpdateMethod(pMethod));
                 }
                 else
                 {
                     // This is a new method token - create a new method
-                    IfFailGo(AddMethod(token));
+                    IfFailRet(AddMethod(token));
                 }
 
                 break;
@@ -254,24 +250,45 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                 // FieldDef token - add a new field
                 LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found field 0x%08x\n", token));
 
-                if (LookupFieldDef(token))
+                DWORD dwFlags;
+                IfFailRet(pMDImport->GetFieldDefProps(token, &dwFlags));
+
+                if (IsFdHasFieldRVA(dwFlags))
+                {
+                    LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Detected a FieldRVA\n"));
+
+                    ULONG dwFieldRVA;
+                    IfFailRet(pMDImport->GetFieldRVA(token, &dwFieldRVA));
+
+                    if (dwFieldRVA >= cbDeltaIL)
+                    {
+                        LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Failure RVA of %u with cbDeltaIL %u\n", dwFieldRVA, cbDeltaIL));
+                        IfFailRet(E_INVALIDARG);
+                    }
+
+                    // The FieldRVA data is stored in the IL memory stream. This decision
+                    // was made to avoid creating another stream of data.
+                    SetDynamicRvaField(token, (TADDR)(&pLocalILMemory[dwFieldRVA]));
+                }
+
+                pFieldDesc = LookupFieldDef(token);
+                if (pFieldDesc)
                 {
                     // Field already exists - just ignore for now
                     continue;
                 }
+                else
+                {
+                    // Field is new - add it
+                    IfFailRet(AddField(token));
+                }
 
-                // Field is new - add it
-                IfFailGo(AddField(token));
                 break;
         }
     }
 
     // Update the AvailableClassHash for reflection, etc. ensure that the new TypeRefs, AssemblyRefs and MethodDefs can be stored.
     ApplyMetaData();
-
-ErrExit:
-    if (pIMDInternalImportENC)
-        pIMDInternalImportENC->EnumClose(&enumENC);
 
     return hr;
 }
@@ -463,7 +480,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
 
     if (FAILED(hr))
     {
-        LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::AF can't find parent token for field token 0x%08x\n", token));
+        LOG((LF_ENC, LL_INFO100, "**Error** EACM::AF can't find parent token for field token 0x%08x, hr: 0x%08x\n", token, hr));
         return E_FAIL;
     }
 
@@ -475,7 +492,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
     MethodTable * pParentType = LookupTypeDef(parentTypeDef).AsMethodTable();
     if (pParentType == NULL)
     {
-        LOG((LF_ENC, LL_INFO100, "EnCModule::AF class 0x%08x not loaded (field 0x%08x), our work is done\n", parentTypeDef, token));
+        LOG((LF_ENC, LL_INFO100, "EACM::AF class 0x%08x not loaded (field 0x%08x), our work is done\n", parentTypeDef, token));
         return S_OK;
     }
 
@@ -508,6 +525,33 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
 #endif
 
     return hr;
+}
+
+void EditAndContinueModule::SetDynamicRvaField(mdToken token, TADDR blobAddress)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    SetDynamicIL(token, blobAddress);
+}
+
+TADDR EditAndContinueModule::GetDynamicRvaField(mdToken token)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    return GetDynamicIL(token);
 }
 
 //---------------------------------------------------------------------------------------

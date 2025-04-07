@@ -243,12 +243,17 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 #ifdef DACCESS_COMPILE
         DacNotImpl();
 #else
+        if (IsRVA())
+        {
+            retVal = (void*)pModule->GetDynamicRvaField(pFD->GetMemberDef());
+        }
+        else
         {
             GCX_COOP();
             // This routine doesn't have a failure semantic - but Resolve*Field(...) does.
             // Something needs to be rethought here and I think it's E&C.
             CONTRACT_VIOLATION(ThrowsViolation|FaultViolation|GCViolation);   //B#25680 (Fix Enc violations)
-            retVal = (void *)(pModule->ResolveOrAllocateField(NULL, pFD));
+            retVal = (void*)(pModule->ResolveOrAllocateField(NULL, pFD));
         }
 #endif // !DACCESS_COMPILE
         return retVal;

@@ -229,6 +229,7 @@ public:
                             DWORD cbIL,
                             BYTE *pIL);
 
+private:
     // Called when a method has been modified (new IL)
     HRESULT UpdateMethod(MethodDesc *pMethod);
 
@@ -238,9 +239,18 @@ public:
     // Called when a new field has been added to the module's metadata
     HRESULT AddField(mdFieldDef token);
 
+    // Set the data for a FieldRVA added by EnC
+    void SetDynamicRvaField(mdToken token, TADDR blobAddress);
+
+public:
+    // Get the data for a FieldRVA added by EnC
+    TADDR GetDynamicRvaField(mdToken token);
+
+private:
     // JIT the new version of a function for EnC
     PCODE JitUpdatedFunction(MethodDesc *pMD, T_CONTEXT *pContext);
 
+public:
     // Remap execution to the latest version of an edited method
     HRESULT ResumeInUpdatedFunction(MethodDesc *pMD,
                                     void *oldDebuggerFuncHandle,
