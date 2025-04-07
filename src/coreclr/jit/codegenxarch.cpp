@@ -7375,8 +7375,10 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         //.LABEL
         //
         regNumber argReg  = treeNode->gtGetOp1()->GetRegNum();
-        regNumber tmpReg1 = internalRegisters.Extract(treeNode);
+        // Get the APXIncompatible register first
         regNumber tmpReg2 = internalRegisters.Extract(treeNode);
+        // tmpReg1 can be EGPR
+        regNumber tmpReg1 = internalRegisters.Extract(treeNode);
 
         inst_Mov(TYP_LONG, tmpReg1, argReg, /* canSkip */ false, EA_8BYTE);
         inst_RV_SH(INS_shr, EA_8BYTE, tmpReg1, 1);
