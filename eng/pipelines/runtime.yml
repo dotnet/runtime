@@ -818,15 +818,15 @@ extends:
       #
       # WebAssembly legs
       #
-      #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
-      #  parameters:
-      #    platforms:
-      #      - browser_wasm
-      #    alwaysRun: ${{ variables.isRollingBuild }}
-      #    extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      #    scenarios:
-      #      - WasmTestOnChrome
-      #      - WasmTestOnFirefox
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          scenarios:
+            - WasmTestOnChrome
+            - WasmTestOnFirefox
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
