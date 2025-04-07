@@ -35,6 +35,10 @@
 
 #include "argdestination.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 #define CHECK_APP_DOMAIN    0
 
 #ifdef DACCESS_COMPILE
@@ -2079,6 +2083,44 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress_Impl()
 }
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_INTERPRETER
+PTR_InterpMethodContextFrame InterpreterFrame::GetTopInterpMethodContextFrame()
+{
+    LIMITED_METHOD_CONTRACT;
+    PTR_InterpMethodContextFrame pFrame = m_pTopInterpMethodContextFrame;
+    _ASSERTE(pFrame != NULL);
+
+    // The pFrame points to the last known topmost interpreter frame for the related InterpExecMethod.
+    // For regular execution, it is always the current topmost one. However, in the case of a dump
+    // debugging or a native runtime debugging, it may be pointing to a higher or lower frame and
+    // we need to seek to the right one.
+    if (pFrame->ip != NULL)
+    {
+        // The frame is active, so it is either the topmost one or we need to seek towards the top
+        // of the stack.
+        while ((pFrame->pNext != NULL) && (pFrame->pNext->ip != NULL))
+        {
+            pFrame = pFrame->pNext;
+        }
+    }
+    else
+    {
+        // The frame is not active, which means it a frame that was used before, but the interpreter
+        // already returned from it and zeroed its ip. The frame is ready for reuse by another call.
+        // We need to seek for an active one towards the bottom of the stack.
+        // It can also represent a case when the interpreter hasn't started interpreting the method
+        // yet, but the frame was already created.
+        while (pFrame->pParent != NULL && pFrame->ip == NULL)
+        {
+            pFrame = pFrame->pParent;
+        }
+    }
+
+    return pFrame;
+}
+
+#endif // FEATURE_INTERPRETER
+
 #ifndef DACCESS_COMPILE
 //=================================================================================
 
@@ -2157,10 +2199,12 @@ static void DumpGCRefMap(const char *name, BYTE *address)
 {
     GCRefMapDecoder decoder(address);
 
-    printf("%s GC ref map: ", name);
+    StackSString buf;
+
+    buf.Printf("%s GC ref map: ", name);
 #if TARGET_X86
     uint32_t stackPop = decoder.ReadStackPop();
-    printf("POP(0x%x)", stackPop);
+    buf.AppendPrintf("POP(0x%x)", stackPop);
 #endif
 
     int previousToken = GCREFMAP_SKIP;
@@ -2172,7 +2216,7 @@ static void DumpGCRefMap(const char *name, BYTE *address)
         {
             if (previousToken != GCREFMAP_SKIP)
             {
-                printf(") ");
+                buf.AppendUTF8(") ");
             }
             switch (token)
             {
@@ -2180,23 +2224,23 @@ static void DumpGCRefMap(const char *name, BYTE *address)
                     break;
 
                 case GCREFMAP_REF:
-                    printf("R(");
+                    buf.AppendUTF8("R(");
                     break;
 
                 case GCREFMAP_INTERIOR:
-                    printf("I(");
+                    buf.AppendUTF8("I(");
                     break;
 
                 case GCREFMAP_METHOD_PARAM:
-                    printf("M(");
+                    buf.AppendUTF8("M(");
                     break;
 
                 case GCREFMAP_TYPE_PARAM:
-                    printf("T(");
+                    buf.AppendUTF8("T(");
                     break;
 
                 case GCREFMAP_VASIG_COOKIE:
-                    printf("V(");
+                    buf.AppendUTF8("V(");
                     break;
 
                 default:
@@ -2206,19 +2250,21 @@ static void DumpGCRefMap(const char *name, BYTE *address)
         }
         else if (token != GCREFMAP_SKIP)
         {
-            printf(" ");
+            buf.AppendUTF8(" ");
         }
         if (token != GCREFMAP_SKIP)
         {
-            printf("%02x", OffsetFromGCRefMapPos(pos));
+            buf.AppendPrintf("%02x", OffsetFromGCRefMapPos(pos));
         }
         previousToken = token;
     }
     if (previousToken != GCREFMAP_SKIP)
     {
-        printf(")");
+        buf.AppendUTF8(")");
     }
-    printf("\n");
+    buf.AppendUTF8("\n");
+
+    minipal_log_print_info(buf.GetUTF8());
 }
 #endif
 
@@ -2255,7 +2301,7 @@ bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell
     }
     if (invalidGCRefMap)
     {
-        printf("GC ref map mismatch detected for method: %s::%s\n", pMD->GetMethodTable()->GetDebugClassName(), pMD->GetName());
+        minipal_log_print_error("GC ref map mismatch detected for method: %s::%s\n", pMD->GetMethodTable()->GetDebugClassName(), pMD->GetName());
         DumpGCRefMap("  Runtime", (BYTE *)pBlob);
         DumpGCRefMap("Crossgen2", pGCRefMap);
         _ASSERTE(false);

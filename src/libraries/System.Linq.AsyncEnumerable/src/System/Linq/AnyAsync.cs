@@ -14,7 +14,7 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of source.</typeparam>
         /// <param name="source">The <see cref="IAsyncEnumerable{T}"/> to check for emptiness.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
-        /// <returns>true if the source sequence contains any elements; otherwise, false.</returns>
+        /// <returns><see langword="true"/> if the source sequence contains any elements; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         public static ValueTask<bool> AnyAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
@@ -28,15 +28,9 @@ namespace System.Linq
                 IAsyncEnumerable<TSource> source,
                 CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> enumerator = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    return await enumerator.MoveNextAsync().ConfigureAwait(false);
-                }
-                finally
-                {
-                    await enumerator.DisposeAsync().ConfigureAwait(false);
-                }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                return await e.MoveNextAsync();
             }
         }
 
@@ -46,8 +40,8 @@ namespace System.Linq
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>
-        /// true if the source sequence is not empty and at least one of its elements passes
-        /// the test in the specified predicate; otherwise, false.
+        /// <see langword="true"/> if the source sequence is not empty and at least one of its elements passes
+        /// the test in the specified predicate; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null"/>.</exception>
@@ -59,7 +53,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false), predicate);
+            return Impl(source.WithCancellation(cancellationToken), predicate);
 
             static async ValueTask<bool> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -83,8 +77,8 @@ namespace System.Linq
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>
-        /// true if the source sequence is not empty and at least one of its elements passes
-        /// the test in the specified predicate; otherwise, false.
+        /// <see langword="true"/> if the source sequence is not empty and at least one of its elements passes
+        /// the test in the specified predicate; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null"/>.</exception>
@@ -103,9 +97,9 @@ namespace System.Linq
                 Func<TSource, CancellationToken, ValueTask<bool>> predicate,
                 CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    if (await predicate(element, cancellationToken).ConfigureAwait(false))
+                    if (await predicate(element, cancellationToken))
                     {
                         return true;
                     }

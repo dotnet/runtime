@@ -82,7 +82,7 @@ internal readonly struct StackWalk_1 : IStackWalk
                 handle.FrameIter.Next();
                 break;
             case StackWalkState.SW_FRAME:
-                handle.FrameIter.TryUpdateContext(handle.Context);
+                handle.FrameIter.UpdateContextFromFrame(handle.Context);
                 if (!handle.FrameIter.IsInlineCallFrameWithActiveCall())
                 {
                     handle.FrameIter.Next();
@@ -156,6 +156,9 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
         return TargetPointer.Null;
     }
+
+    string IStackWalk.GetFrameName(TargetPointer frameIdentifier)
+        => FrameIterator.GetFrameName(_target, frameIdentifier);
 
     private bool IsManaged(TargetPointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
     {

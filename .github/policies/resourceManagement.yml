@@ -19,6 +19,12 @@ configuration:
       - isOpen
       - isNotLabeledWith:
           label: backlog-cleanup-candidate
+      - isNotLabeledWith:
+          label: area-codegen-coreclr
+      - isNotLabeledWith:
+          label: area-iltools-coreclr
+      - isNotLabeledWith:
+          label: area-tools-ilverification
       actions:
       - addReply:
           reply: >-

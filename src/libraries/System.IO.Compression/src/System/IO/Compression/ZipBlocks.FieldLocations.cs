@@ -3,7 +3,7 @@
 
 namespace System.IO.Compression
 {
-    internal partial struct ZipGenericExtraField
+    internal sealed partial class ZipGenericExtraField
     {
         internal static class FieldLocations
         {
@@ -13,7 +13,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal partial struct Zip64ExtraField
+    internal sealed partial class Zip64ExtraField
     {
         internal static class FieldLocations
         {
@@ -26,7 +26,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal partial struct Zip64EndOfCentralDirectoryLocator
+    internal sealed partial class Zip64EndOfCentralDirectoryLocator
     {
         private static class FieldLocations
         {
@@ -37,7 +37,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal partial struct Zip64EndOfCentralDirectoryRecord
+    internal sealed partial class Zip64EndOfCentralDirectoryRecord
     {
         private static class FieldLocations
         {
@@ -71,7 +71,7 @@ namespace System.IO.Compression
             public static readonly int DynamicData = ExtraFieldLength + FieldLengths.ExtraFieldLength;
         }
 
-        internal readonly partial struct ZipDataDescriptor
+        internal sealed partial class ZipDataDescriptor
         {
             internal static class FieldLocations
             {
@@ -82,7 +82,7 @@ namespace System.IO.Compression
             }
         }
 
-        internal readonly partial struct Zip64DataDescriptor
+        internal sealed partial class Zip64DataDescriptor
         {
             internal static class FieldLocations
             {
@@ -94,7 +94,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal partial struct ZipCentralDirectoryFileHeader
+    internal sealed partial class ZipCentralDirectoryFileHeader
     {
         internal static class FieldLocations
         {
@@ -119,7 +119,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal partial struct ZipEndOfCentralDirectoryBlock
+    internal sealed partial class ZipEndOfCentralDirectoryBlock
     {
         private static class FieldLocations
         {

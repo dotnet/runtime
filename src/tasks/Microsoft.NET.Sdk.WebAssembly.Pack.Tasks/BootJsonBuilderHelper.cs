@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Sdk.WebAssembly
@@ -25,6 +28,13 @@ namespace Microsoft.NET.Sdk.WebAssembly
             "System.Collections.Concurrent",
         ];
 
+        public static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions()
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            WriteIndented = true
+        };
+
         public bool IsCoreAssembly(string fileName)
         {
             var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
@@ -35,6 +45,18 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 return true;
 
             return false;
+        }
+
+        public void WriteConfigToFile(BootJsonData config, string outputPath, string? outputFileExtension = null)
+        {
+            var output = JsonSerializer.Serialize(config, JsonOptions);
+
+            outputFileExtension ??= Path.GetExtension(outputPath);
+            Log.LogMessage($"Write config in format '{outputFileExtension}'");
+            if (outputFileExtension == ".js")
+                output = $"export const config = /*json-start*/{output}/*json-end*/;";
+
+            File.WriteAllText(outputPath, output);
         }
 
         public void ComputeResourcesHash(BootJsonData bootConfig)

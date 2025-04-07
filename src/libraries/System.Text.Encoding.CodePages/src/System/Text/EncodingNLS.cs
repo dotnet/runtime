@@ -576,5 +576,50 @@ namespace System.Text
                 50225 => "iso-2022-kr",
                 _ => WebName,
             };
+
+        public override int WindowsCodePage
+        {
+            get
+            {
+                (ushort FamilyCodePage, byte _) item = EncodingTable.GetCodePageItem(CodePage);
+                return item.FamilyCodePage;
+            }
+        }
+
+        public override bool IsBrowserDisplay
+        {
+            get
+            {
+                (ushort _, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
+                return (item.CodePageFlags & EncodingTable.MIMECONTF_BROWSER) != 0;
+            }
+        }
+
+        public override bool IsBrowserSave
+        {
+            get
+            {
+                (ushort _, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
+                return (item.CodePageFlags & EncodingTable.MIMECONTF_SAVABLE_BROWSER) != 0;
+            }
+        }
+
+        public override bool IsMailNewsDisplay
+        {
+            get
+            {
+                (ushort _, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
+                return (item.CodePageFlags & EncodingTable.MIMECONTF_MAILNEWS) != 0;
+            }
+        }
+
+        public override bool IsMailNewsSave
+        {
+            get
+            {
+                (ushort _, byte codePageFlags) = EncodingTable.GetCodePageItem(CodePage);
+                return (codePageFlags & EncodingTable.MIMECONTF_SAVABLE_MAILNEWS) != 0;
+            }
+        }
     }
 }

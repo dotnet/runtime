@@ -238,6 +238,7 @@ FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
+    FCFuncElement("CatchAtSafePoint", ThreadNative::CatchAtSafePoint)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 
@@ -250,7 +251,7 @@ FCFuncStart(gArrayFuncs)
 FCFuncEnd()
 
 FCFuncStart(gBufferFuncs)
-    FCFuncElement("__BulkMoveWithWriteBarrier", Buffer::BulkMoveWithWriteBarrier)
+    FCFuncElement("BulkMoveWithWriteBarrierInternal", Buffer::BulkMoveWithWriteBarrier)
 FCFuncEnd()
 
 FCFuncStart(gGCFrameRegistration)
@@ -270,7 +271,7 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("GetGenerationSize", GCInterface::GetGenerationSize)
     FCFuncElement("GetGenerationInternal", GCInterface::GetGenerationInternal)
     FCFuncElement("GetMaxGeneration", GCInterface::GetMaxGeneration)
-    FCFuncElement("_SuppressFinalize", GCInterface::SuppressFinalize)
+    FCFuncElement("SuppressFinalizeInternal", GCInterface::SuppressFinalize)
 
     FCFuncElement("GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
     FCFuncElement("GetTotalAllocatedBytesApproximate", GCInterface::GetTotalAllocatedBytesApproximate)
@@ -313,11 +314,11 @@ FCFuncStart(gJitInfoFuncs)
 FCFuncEnd()
 
 FCFuncStart(gMonitorFuncs)
-    FCFuncElement("Enter", JIT_MonEnter)
-    FCFuncElement("ReliableEnter", JIT_MonReliableEnter)
-    FCFuncElement("ReliableEnterTimeout", JIT_MonTryEnter)
-    FCFuncElement("Exit", JIT_MonExit)
     FCFuncElement("IsEnteredNative", ObjectNative::IsLockHeld)
+
+    FCFuncElement("TryEnter_FastPath", ObjectNative::Monitor_TryEnter_FastPath)
+    FCFuncElement("TryEnter_FastPath_WithTimeout", ObjectNative::Monitor_TryEnter_FastPath_WithTimeout)
+    FCFuncElement("Exit_FastPath", ObjectNative::Monitor_Exit_FastPath)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeHelpers)

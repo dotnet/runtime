@@ -11,6 +11,18 @@
        {
          "PipelineId": 154,
          "PipelineName": "runtime-extra-platforms"
+       },
+       {
+         "PipelineId": 157,
+         "PipelineName": "runtime-llvm"
+       },
+       {
+         "PipelineId": 265,
+         "PipelineName": "runtime-nativeaot-outerloop"
+       },
+       {
+         "PipelineId": 108,
+         "PipelineName": "runtime-coreclr outerloop"
        }
     ]
 }

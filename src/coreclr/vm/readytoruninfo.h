@@ -372,4 +372,20 @@ public:
     static PCODE CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule);
 };
 
+struct DynamicHelperStubArgs
+{
+    TADDR Constant1;
+    TADDR Constant2;
+    TADDR Helper;
+};
+
+struct GenericDictionaryDynamicHelperStubData
+{
+    UINT32 SecondIndir;
+    UINT32 LastIndir;
+    UINT32 SizeOffset;
+    UINT32 SlotOffset;
+    GenericHandleArgs *HandleArgs;
+};
+
 #endif // _READYTORUNINFO_H_

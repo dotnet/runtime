@@ -315,16 +315,6 @@ private:
 typedef UINT32 GcSlotId;
 
 
-inline UINT32 GetNormCodeOffsetChunk(UINT32 normCodeOffset)
-{
-    return normCodeOffset / NUM_NORM_CODE_OFFSETS_PER_CHUNK;
-}
-
-inline UINT32 GetCodeOffsetChunk(UINT32 codeOffset)
-{
-    return (NORMALIZE_CODE_OFFSET(codeOffset)) / NUM_NORM_CODE_OFFSETS_PER_CHUNK;
-}
-
 enum GENERIC_CONTEXTPARAM_TYPE
 {
     GENERIC_CONTEXTPARAM_NONE = 0,
@@ -335,18 +325,8 @@ enum GENERIC_CONTEXTPARAM_TYPE
 
 extern void DECLSPEC_NORETURN ThrowOutOfMemory();
 
-class GcInfoEncoder
+namespace GcInfoEncoderExt
 {
-public:
-    typedef void (*NoMemoryFunction)(void);
-
-    GcInfoEncoder(
-            ICorJitInfo*                pCorJitInfo,
-            CORINFO_METHOD_INFO*        pMethodInfo,
-            IAllocator*                 pJitAllocator,
-            NoMemoryFunction            pNoMem = ::ThrowOutOfMemory
-            );
-
     struct LifetimeTransition
     {
         UINT32 CodeOffset;
@@ -354,7 +334,20 @@ public:
         BYTE BecomesLive;
         BYTE IsDeleted;
     };
+}
 
+template <typename GcInfoEncoding>
+class TGcInfoEncoder
+{
+public:
+    typedef void (*NoMemoryFunction)(void);
+
+    TGcInfoEncoder(
+            ICorJitInfo*                pCorJitInfo,
+            CORINFO_METHOD_INFO*        pMethodInfo,
+            IAllocator*                 pJitAllocator,
+            NoMemoryFunction            pNoMem = ::ThrowOutOfMemory
+            );
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     void DefineCallSites(UINT32* pCallSites, BYTE* pCallSiteSizes, UINT32 numCallSites);
@@ -488,7 +481,7 @@ private:
     BitStreamWriter     m_Info2;    // Used for chunk encodings
 
     GcInfoArrayList<InterruptibleRange, 8> m_InterruptibleRanges;
-    GcInfoArrayList<LifetimeTransition, 64> m_LifetimeTransitions;
+    GcInfoArrayList<GcInfoEncoderExt::LifetimeTransition, 64> m_LifetimeTransitions;
 
     bool   m_IsVarArg;
 #if defined(TARGET_AMD64)
@@ -542,19 +535,20 @@ private:
     void SizeofSlotStateVarLengthVector(const BitArray& vector, UINT32 baseSkip, UINT32 baseRun, UINT32 * pSizeofSimple, UINT32 * pSizeofRLE, UINT32 * pSizeofRLENeg);
     UINT32 WriteSlotStateVarLengthVector(BitStreamWriter &writer, const BitArray& vector, UINT32 baseSkip, UINT32 baseRun);
 
-#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    bool DoNotTrackInPartiallyInterruptible(GcSlotDesc &slot);
-#endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-
     // Assumes that "*ppTransitions" is has size "numTransitions", is sorted by CodeOffset then by SlotId,
     // and that "*ppEndTransitions" points one beyond the end of the array.  If "*ppTransitions" contains
     // any dead/live transitions pairs for the same CodeOffset and SlotID, removes those, by allocating a
     // new array, and copying the non-removed elements into it.  If it does this, sets "*ppTransitions" to
     // point to the new array, "*pNumTransitions" to its shorted length, and "*ppEndTransitions" to
     // point one beyond the used portion of this array.
-    void EliminateRedundantLiveDeadPairs(LifetimeTransition** ppTransitions,
+    void EliminateRedundantLiveDeadPairs(GcInfoEncoderExt::LifetimeTransition** ppTransitions,
                                          size_t* pNumTransitions,
-                                         LifetimeTransition** ppEndTransitions);
+                                         GcInfoEncoderExt::LifetimeTransition** ppEndTransitions);
+
+    static inline UINT32 GetNormCodeOffsetChunk(UINT32 normCodeOffset)
+    {
+        return normCodeOffset / GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK;
+    }
 
 #ifdef _DEBUG
     bool m_IsSlotTableFrozen;
@@ -564,5 +558,7 @@ private:
     GcInfoSize m_CurrentMethodSize;
 #endif
 };
+
+typedef TGcInfoEncoder<TargetGcInfoEncoding> GcInfoEncoder;
 
 #endif // !__GCINFOENCODER_H__

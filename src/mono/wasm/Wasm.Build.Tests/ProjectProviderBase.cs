@@ -315,7 +315,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         // filter files with a single fingerprint segment, e.g. "dotnet*.js" should not catch "dotnet.native.d1au9i.js" but should catch "dotnet.js"
         string pattern = $@"^{Regex.Escape(fileNameWithoutExtensionAndFingerprinting)}(\.[^.]+)?{Regex.Escape(fileExtension)}$";
-        var tmp = files.Where(f => Regex.IsMatch(Path.GetFileName(f), pattern)).ToArray();
+        var tmp = files.Where(f => Regex.IsMatch(Path.GetFileName(f), pattern)).Where(f => !f.Contains("dotnet.boot")).ToArray();
         return tmp;
     }
 
@@ -373,7 +373,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (IsFingerprintingEnabled)
         {
-            string bootJsonPath = Path.Combine(paths.BinFrameworkDir, "blazor.boot.json");
+            string bootJsonPath = Path.Combine(paths.BinFrameworkDir, "dotnet.boot.js");
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             var keysToUpdate = new List<string>();
             var updates = new List<(string oldKey, string newKey, (string fullPath, bool unchanged) value)>();
@@ -524,8 +524,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var knownSet = GetAllKnownDotnetFilesToFingerprintMap(options);
         foreach (string expectedFilename in expected)
         {
-            // FIXME: Find a systematic solution for skipping dotnet.js from boot json check
-            if (expectedFilename == "dotnet.js" || Path.GetExtension(expectedFilename) == ".map")
+            // FIXME: Find a systematic solution for skipping dotnet.js & dotnet.boot.js from boot json check
+            if (expectedFilename == "dotnet.js" || expectedFilename == "dotnet.boot.js" || Path.GetExtension(expectedFilename) == ".map")
                 continue;
 
             bool expectFingerprint = knownSet[expectedFilename];
@@ -568,17 +568,40 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return bootJson;
     }
 
-    public static BootJsonData ParseBootData(string bootJsonPath)
+    public static BootJsonData ParseBootData(string bootConfigPath)
     {
-        using FileStream stream = File.OpenRead(bootJsonPath);
-        stream.Position = 0;
-        var serializer = new DataContractJsonSerializer(
-            typeof(BootJsonData),
-            new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+        string startComment = "/*json-start*/";
+        string endComment = "/*json-end*/";
 
-        var config = (BootJsonData?)serializer.ReadObject(stream);
-        Assert.NotNull(config);
-        return config;
+        string moduleContent = File.ReadAllText(bootConfigPath);
+        int startCommentIndex = moduleContent.IndexOf(startComment);
+        int endCommentIndex = moduleContent.IndexOf(endComment);
+        if (startCommentIndex >= 0 && endCommentIndex >= 0)
+        {
+            // boot.js
+            int startJsonIndex = startCommentIndex + startComment.Length;
+            string jsonContent = moduleContent.Substring(startJsonIndex, endCommentIndex - startJsonIndex);
+            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
+            ms.Position = 0;
+            return LoadConfig(ms);
+        }
+        else
+        {
+            using FileStream stream = File.OpenRead(bootConfigPath);
+            stream.Position = 0;
+            return LoadConfig(stream);
+        }
+
+        static BootJsonData LoadConfig(Stream stream)
+        {
+            var serializer = new DataContractJsonSerializer(
+                typeof(BootJsonData),
+                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+
+            var config = (BootJsonData?)serializer.ReadObject(stream);
+            Assert.NotNull(config);
+            return config;
+        }
     }
 
     private void AssertFileNames(IEnumerable<string> expected, IEnumerable<string> actual)

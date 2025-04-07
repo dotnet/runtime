@@ -223,7 +223,6 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, Assembly, cdac_data<Module>::Assembly)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Base, cdac_data<Module>::Base)
 CDAC_TYPE_FIELD(Module, /*uint32*/, Flags, cdac_data<Module>::Flags)
 CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_data<Module>::LoaderAllocator)
-CDAC_TYPE_FIELD(Module, /*pointer*/, ThunkHeap, cdac_data<Module>::ThunkHeap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicMetadata, cdac_data<Module>::DynamicMetadata)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
 CDAC_TYPE_FIELD(Module, /*pointer*/, FileName, cdac_data<Module>::FileName)
@@ -493,9 +492,16 @@ CDAC_TYPE_END(PlatformMetadata)
 
 CDAC_TYPE_BEGIN(StubPrecodeData)
 CDAC_TYPE_INDETERMINATE(StubPrecodeData)
-CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, MethodDesc, offsetof(StubPrecodeData, MethodDesc))
+CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, SecretParam, offsetof(StubPrecodeData, SecretParam))
 CDAC_TYPE_FIELD(StubPrecodeData, /*uint8*/, Type, offsetof(StubPrecodeData, Type))
 CDAC_TYPE_END(StubPrecodeData)
+
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+CDAC_TYPE_BEGIN(ThisPtrRetBufPrecodeData)
+CDAC_TYPE_INDETERMINATE(ThisPtrRetBufPrecodeData)
+CDAC_TYPE_FIELD(ThisPtrRetBufPrecodeData, /*pointer*/, MethodDesc, offsetof(ThisPtrRetBufPrecodeData, MethodDesc))
+CDAC_TYPE_END(ThisPtrRetBufPrecodeData)
+#endif
 
 CDAC_TYPE_BEGIN(FixupPrecodeData)
 CDAC_TYPE_INDETERMINATE(FixupPrecodeData)
@@ -646,6 +652,108 @@ CDAC_TYPE_FIELD(SoftwareExceptionFrame, /*pointer*/, ReturnAddress, cdac_data<So
 CDAC_TYPE_END(SoftwareExceptionFrame)
 #endif // FEATURE_EH_FUNCLETS
 
+CDAC_TYPE_BEGIN(FramedMethodFrame)
+CDAC_TYPE_SIZE(sizeof(FramedMethodFrame))
+CDAC_TYPE_FIELD(FramedMethodFrame, /*pointer*/, TransitionBlockPtr, cdac_data<FramedMethodFrame>::TransitionBlockPtr)
+CDAC_TYPE_END(FramedMethodFrame)
+
+CDAC_TYPE_BEGIN(TransitionBlock)
+CDAC_TYPE_SIZE(sizeof(TransitionBlock))
+CDAC_TYPE_FIELD(TransitionBlock, /*pointer*/, ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
+CDAC_TYPE_FIELD(TransitionBlock, /*CalleeSavedRegisters*/, CalleeSavedRegisters, offsetof(TransitionBlock, m_calleeSavedRegisters))
+CDAC_TYPE_END(TransitionBlock)
+
+#ifdef DEBUGGING_SUPPORTED
+CDAC_TYPE_BEGIN(FuncEvalFrame)
+CDAC_TYPE_SIZE(sizeof(FuncEvalFrame))
+CDAC_TYPE_FIELD(FuncEvalFrame, /*pointer*/, DebuggerEvalPtr, cdac_data<FuncEvalFrame>::DebuggerEvalPtr)
+CDAC_TYPE_END(FuncEvalFrame)
+
+CDAC_TYPE_BEGIN(DebuggerEval)
+CDAC_TYPE_SIZE(sizeof(DebuggerEval))
+CDAC_TYPE_FIELD(DebuggerEval, /*T_CONTEXT*/, TargetContext, offsetof(DebuggerEval, m_context))
+CDAC_TYPE_FIELD(DebuggerEval, /*bool*/, EvalDuringException, offsetof(DebuggerEval, m_evalDuringException))
+CDAC_TYPE_END(DebuggerEval)
+#endif // DEBUGGING_SUPPORTED
+
+#ifdef FEATURE_HIJACK
+CDAC_TYPE_BEGIN(ResumableFrame)
+CDAC_TYPE_SIZE(sizeof(ResumableFrame))
+CDAC_TYPE_FIELD(ResumableFrame, /*pointer*/, TargetContextPtr, cdac_data<ResumableFrame>::TargetContextPtr)
+CDAC_TYPE_END(ResumableFrame)
+
+CDAC_TYPE_BEGIN(HijackFrame)
+CDAC_TYPE_SIZE(sizeof(HijackFrame))
+CDAC_TYPE_FIELD(HijackFrame, /*pointer*/, ReturnAddress, cdac_data<HijackFrame>::ReturnAddress)
+CDAC_TYPE_FIELD(HijackFrame, /*pointer*/, HijackArgsPtr, cdac_data<HijackFrame>::HijackArgsPtr)
+CDAC_TYPE_END(HijackFrame)
+
+// HijackArgs struct is different on each platform
+CDAC_TYPE_BEGIN(HijackArgs)
+CDAC_TYPE_SIZE(sizeof(HijackArgs))
+#if defined(TARGET_AMD64)
+
+CDAC_TYPE_FIELD(HijackArgs, /*CalleeSavedRegisters*/, CalleeSavedRegisters, offsetof(HijackArgs, Regs))
+#ifdef TARGET_WINDOWS
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Rsp, offsetof(HijackArgs, Rsp))
+#endif // TARGET_WINDOWS
+
+#elif defined(TARGET_ARM64)
+
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X0, offsetof(HijackArgs, X0))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X1, offsetof(HijackArgs, X1))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X19, offsetof(HijackArgs, X19))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X20, offsetof(HijackArgs, X20))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X21, offsetof(HijackArgs, X21))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X22, offsetof(HijackArgs, X22))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X23, offsetof(HijackArgs, X23))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X24, offsetof(HijackArgs, X24))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X25, offsetof(HijackArgs, X25))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X26, offsetof(HijackArgs, X26))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X27, offsetof(HijackArgs, X27))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X28, offsetof(HijackArgs, X28))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Fp, offsetof(HijackArgs, X29))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Lr, offsetof(HijackArgs, Lr))
+
+#endif // Platform switch
+CDAC_TYPE_END(HijackArgs)
+#endif // FEATURE_HIJACK
+
+CDAC_TYPE_BEGIN(FaultingExceptionFrame)
+CDAC_TYPE_SIZE(sizeof(FaultingExceptionFrame))
+#ifdef FEATURE_EH_FUNCLETS
+CDAC_TYPE_FIELD(FaultingExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<FaultingExceptionFrame>::TargetContext)
+#endif // FEATURE_EH_FUNCLETS
+CDAC_TYPE_END(FaultingExceptionFrame)
+
+// CalleeSavedRegisters struct is different on each platform
+CDAC_TYPE_BEGIN(CalleeSavedRegisters)
+CDAC_TYPE_SIZE(sizeof(CalleeSavedRegisters))
+#if defined(TARGET_AMD64)
+
+#define CALLEE_SAVED_REGISTER(regname) \
+    CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, regname, offsetof(CalleeSavedRegisters, regname))
+ENUM_CALLEE_SAVED_REGISTERS()
+#undef CALLEE_SAVED_REGISTER
+
+#elif defined(TARGET_ARM64)
+
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X19, offsetof(CalleeSavedRegisters, x19))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X20, offsetof(CalleeSavedRegisters, x20))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X21, offsetof(CalleeSavedRegisters, x21))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X22, offsetof(CalleeSavedRegisters, x22))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X23, offsetof(CalleeSavedRegisters, x23))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X24, offsetof(CalleeSavedRegisters, x24))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X25, offsetof(CalleeSavedRegisters, x25))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X26, offsetof(CalleeSavedRegisters, x26))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X27, offsetof(CalleeSavedRegisters, x27))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X28, offsetof(CalleeSavedRegisters, x28))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Fp, offsetof(CalleeSavedRegisters, x29))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Lr, offsetof(CalleeSavedRegisters, x30))
+
+#endif // Platform switch
+CDAC_TYPE_END(CalleeSavedRegisters)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -656,7 +764,7 @@ CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 
 // Add FrameIdentifier for all defined Frame types. Used to differentiate Frame objects.
 #define FRAME_TYPE_NAME(frameType) \
-    CDAC_GLOBAL_POINTER(frameType##Identifier, FrameIdentifier::frameType)
+    CDAC_GLOBAL(frameType##Identifier, nuint, (uint64_t)FrameIdentifier::frameType)
 
     #include "frames.h"
 #undef FRAME_TYPE_NAME

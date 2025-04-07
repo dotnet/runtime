@@ -9,7 +9,7 @@ using System.Formats.Nrbf.Utils;
 namespace System.Formats.Nrbf;
 
 /// <summary>
-/// Identifies a class by its name and library id.
+/// Identifies a class by its name and library ID.
 /// </summary>
 /// <remarks>
 /// ClassTypeInfo structures are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/844b24dd-9f82-426e-9b98-05334307a239">[MS-NRBF] 2.1.1.8</see>.
