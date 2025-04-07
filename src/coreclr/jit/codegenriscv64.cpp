@@ -4726,7 +4726,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     GenTree* op2 = treeNode->gtGetOp2IfPresent();
 
     emitAttr size = emitActualTypeSize(op1);
-    bool     is4  = (size == 4);
+    bool     is4  = (size == EA_4BYTE);
 
     instruction instr = INS_invalid;
     switch (treeNode->gtIntrinsicName)
