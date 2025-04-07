@@ -26,7 +26,7 @@ namespace System.Net.Http
 
         public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
         {
-            if (!IsGloballyEnabled()) throw new InvalidOperationException("Metrics are not enabled.");
+            if (!IsGloballyEnabled()) throw new InvalidOperationException("Diagnostics are not enabled.");
             Debug.Assert(innerHandler is not null && propagator is not null);
 
             _innerHandler = innerHandler;
