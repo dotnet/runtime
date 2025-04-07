@@ -111,7 +111,7 @@ namespace System.Net.Http
                 if (disposing)
                 {
                     GC.SuppressFinalize(this);
-                    _stream.Dispose();
+                    _stream.DisposeAsync().AsTask().GetAwaiter().GetResult();
                 }
             }
         }

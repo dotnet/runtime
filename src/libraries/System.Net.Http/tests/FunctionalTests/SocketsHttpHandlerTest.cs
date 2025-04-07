@@ -1428,6 +1428,105 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws<InvalidOperationException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(1));
             }
         }
+
+        [Fact]
+        public async Task ReadBodyCanceled_CallsDisposeAsyncOnConnectCallbackStream()
+        {
+            HalfDuplexStream? stream = null;
+
+            using var handler = new SocketsHttpHandler();
+            handler.ConnectCallback = async (context, cancellation) =>
+            {
+                Assert.Null(stream);
+
+                var serverToClientPipe = new IO.Pipelines.Pipe();
+                stream = new HalfDuplexStream(serverToClientPipe);
+
+                var hangingChunkedResponse = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n"u8;
+                var writeSpan = serverToClientPipe.Writer.GetSpan(hangingChunkedResponse.Length);
+                hangingChunkedResponse.CopyTo(writeSpan);
+                serverToClientPipe.Writer.Advance(hangingChunkedResponse.Length);
+                await serverToClientPipe.Writer.FlushAsync(cancellation);
+                return stream;
+            };
+            using HttpClient client = CreateHttpClient(handler);
+
+            using HttpRequestMessage request = CreateRequest(HttpMethod.Get, new Uri("http://example.com"), UseVersion, exactVersion: true);
+            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TestHelper.PassingTestTimeout);
+            response.EnsureSuccessStatusCode();
+
+            using var cts = new CancellationTokenSource();
+            var responseBodyReadTask = response.Content.ReadAsStringAsync(cts.Token);
+            cts.Cancel();
+
+            var tcException = await Assert.ThrowsAsync<TaskCanceledException>(() => responseBodyReadTask).WaitAsync(TestHelper.PassingTestTimeout);
+            var ioException = Assert.IsType<HttpIOException>(tcException.InnerException);
+            Assert.Equal(HttpRequestError.ResponseEnded, ioException.HttpRequestError);
+
+            Assert.NotNull(stream);
+            Assert.True(stream.DisposeCalled);
+            Assert.True(stream.DisposeAsyncCalled);
+        }
+
+        private class HalfDuplexStream(IO.Pipelines.Pipe responsePipe) : Stream
+        {
+            private readonly Stream _readStream = responsePipe.Reader.AsStream();
+
+            public bool DisposeCalled { get; private set; }
+            public bool DisposeAsyncCalled { get; private set; }
+
+            public override bool CanRead => true;
+            public override bool CanWrite => true;
+            public override bool CanSeek => false;
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+                => _readStream.ReadAsync(buffer, offset, count, cancellationToken);
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+                => _readStream.ReadAsync(buffer, cancellationToken);
+
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+                => Null.WriteAsync(buffer, offset, count, cancellationToken);
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+                => Null.WriteAsync(buffer, cancellationToken);
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+                => Null.FlushAsync(cancellationToken);
+
+            public override int Read(byte[] buffer, int offset, int count) => _readStream.Read(buffer, offset, count);
+            public override void Write(byte[] buffer, int offset, int count) => Null.Write(buffer, offset, count);
+            public override void Flush() => Null.Flush();
+
+            protected override void Dispose(bool disposing)
+            {
+                DisposeCalled = true;
+                responsePipe.Writer.Complete();
+            }
+
+            public override async ValueTask DisposeAsync()
+            {
+                DisposeAsyncCalled = true;
+                await base.DisposeAsync();
+            }
+
+            // Unsupported stuff
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position
+            {
+                get => throw new NotSupportedException();
+                set => throw new NotSupportedException();
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void SetLength(long value)
+            {
+                throw new NotSupportedException();
+            }
+        }
     }
 
     public abstract class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength : HttpClientHandler_MaxResponseHeadersLength_Test
