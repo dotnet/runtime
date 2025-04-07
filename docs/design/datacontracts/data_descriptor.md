@@ -215,7 +215,7 @@ The global values will be in an array, with each value described by a dictionary
 * optional `"value": <global_value>` where `<global_value>` is defined below
 
 
-Numeric constants must be within the range of the type of the global value.
+Numeric constants must be within the range of the type of the global value. If a constant is out of range, behavior is undefined.
 
 
 **Compact format**:
@@ -227,7 +227,7 @@ The global values will be in a dictionary, with each key being the name of a glo
 
 Where `<global_value>` is defined as below.
 
-Numeric constants must be within the range of the type of the global value.
+Numeric constants must be within the range of the type of the global value. If a constant is out of range, behavior is undefined.
 
 Note that a two element array is unambiguously "type and value", whereas a one-element array is
 unambiguously "indirect value".
