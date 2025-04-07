@@ -418,6 +418,8 @@ enum ConvToJitSigFlags : int
     CONV_TO_JITSIG_FLAGS_LOCALSIG   = 0x1,
 };
 
+AsyncMethodSignatureKind ClassifyAsyncMethodSignatureCore(SigPointer sig, Module* pModule, PCCOR_SIGNATURE initialSig, ULONG* offsetOfAsyncDetails, bool *isValueTask);
+
 //---------------------------------------------------------------------------------------
 //
 //@GENERICS:
@@ -432,8 +434,6 @@ enum ConvToJitSigFlags : int
 // localSig     - Is it a local variables declaration, or a method signature (with return type, etc).
 // contextType  - The type with any instantiaton information
 //
-AsyncMethodSignatureKind ClassifyAsyncMethodSignatureCore(SigPointer sig, Module* pModule, PCCOR_SIGNATURE initialSig, ULONG* offsetOfAsyncDetails, bool *isValueTask);
-
 static void ConvToJitSig(
     SigPointer            sig,
     CORINFO_MODULE_HANDLE scopeHnd,

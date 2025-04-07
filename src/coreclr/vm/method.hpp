@@ -59,7 +59,7 @@ enum class AsyncMethodKind
 {
     // Regular methods not returning tasks
     // These are "normal" methods that do not get other variants.
-    // Note: Generic T-returning methods are NotAsync, even if T could be a Task.
+    // NOTE: Generic T-returning methods are NotAsync, even if T could be a Task.
     NotAsync,
 
     // Regular methods that return Task/ValueTask
