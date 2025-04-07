@@ -143,7 +143,6 @@ private:
 
 #ifdef FEATURE_EH_FUNCLETS
     PTR_ExceptionTrackerBase m_pCurrentTracker;
-    ExceptionTracker        m_OOMTracker;
 public:
     PTR_ExceptionTrackerBase GetCurrentExceptionTracker()
     {

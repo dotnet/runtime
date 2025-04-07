@@ -69,7 +69,7 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 
 ## Supported full build settings
 - .NET Core latest on current OS (default) -> `$(NetCoreAppCurrent)-[RunningOS]`
-- .NET Framework latest -> `net48`
+- .NET Framework latest -> `net481`
 
 # Library project guidelines
 

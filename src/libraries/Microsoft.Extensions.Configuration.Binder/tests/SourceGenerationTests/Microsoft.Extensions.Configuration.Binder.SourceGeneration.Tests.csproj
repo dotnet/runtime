@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- Type not supported; property on type not supported -->
     <NoWarn>$(NoWarn);SYSLIB1100,SYSLIB1101</NoWarn>
@@ -67,4 +68,5 @@
       <CustomAdditionalCompileInputs Include="@(Analyzer)" />
     </ItemGroup>
   </Target>
+
 </Project>

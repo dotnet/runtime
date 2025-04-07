@@ -23,9 +23,9 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
         [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new HMAC? Create(string algorithmName) =>
-            CryptoConfigForwarder.CreateFromName<HMAC>(algorithmName);
+            CryptoConfig.CreateFromName<HMAC>(algorithmName);
 
         public string HashName
         {

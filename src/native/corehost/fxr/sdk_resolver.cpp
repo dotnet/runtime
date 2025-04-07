@@ -446,7 +446,7 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
             const auto& path = paths_array[i];
             if (!path.IsString())
             {
-                trace::warning(_X("Ignoring non-string 'sdk/paths[%d]' value in [%s]"), global_file_path.c_str());
+                trace::warning(_X("Ignoring non-string 'sdk/paths[%u]' value in [%s]"), i, global_file_path.c_str());
                 continue;
             }
 

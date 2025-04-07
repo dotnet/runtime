@@ -600,6 +600,9 @@ END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
 DEFINE_METHOD(MONITOR,              ENTER,                  Enter,                      SM_Obj_RetVoid)
+DEFINE_METHOD(MONITOR,              EXIT,                   Exit,                       SM_Obj_RetVoid)
+DEFINE_METHOD(MONITOR,              RELIABLEENTER,          Enter,                      SM_Obj_RefBool_RetVoid)
+DEFINE_METHOD(MONITOR,              EXIT_IF_TAKEN,          ExitIfLockTaken,            SM_Obj_RefBool_RetVoid)
 
 DEFINE_CLASS(THREAD_BLOCKING_INFO,  Threading,              ThreadBlockingInfo)
 DEFINE_FIELD(THREAD_BLOCKING_INFO,  OFFSET_OF_LOCK_OWNER_OS_THREAD_ID, s_monitorObjectOffsetOfLockOwnerOSThreadId)
@@ -835,6 +838,7 @@ DEFINE_METHOD(STRING,               CTORF_SBYTEPTR_START_LEN_ENCODING, Ctor,    
 DEFINE_METHOD(STRING,               INTERNAL_COPY,          InternalCopy,               SM_Str_IntPtr_Int_RetVoid)
 DEFINE_METHOD(STRING,               WCSLEN,                 wcslen,                     SM_PtrChar_RetInt)
 DEFINE_METHOD(STRING,               STRLEN,                 strlen,                     SM_PtrByte_RetInt)
+DEFINE_METHOD(STRING,               STRCNS,                 StrCns,                     SM_UInt_IntPtr_RetStr)
 DEFINE_PROPERTY(STRING,             LENGTH,                 Length,                     Int)
 
 DEFINE_CLASS(STRING_BUILDER,        Text,                   StringBuilder)

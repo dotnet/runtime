@@ -35,14 +35,14 @@ class AppDomain;
 //  on the stack.  The FEF is used for unwinding.  If not defined, the unwinding
 //  uses the exception context.
 #define USE_FEF // to mark where code needs to be changed to eliminate the FEF
-#if defined(TARGET_X86) && !defined(TARGET_UNIX)
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
  #undef USE_FEF // Turn off the FEF use on x86.
  #define ELIMINATE_FEF
 #else
  #if defined(ELIMINATE_FEF)
   #undef ELIMINATE_FEF
  #endif
-#endif // TARGET_X86 && !TARGET_UNIX
+#endif // TARGET_X86 && !FEATURE_EH_FUNCLETS
 
 #if defined(FEATURE_EH_FUNCLETS)
 #define RECORD_RESUMABLE_FRAME_SP
@@ -767,6 +767,9 @@ private:
     bool          m_fFuncletNotSeen;
     // Indicates that the stack walk has moved past a funclet
     bool          m_fFoundFirstFunclet;
+#ifdef FEATURE_INTERPRETER
+    bool          m_walkingInterpreterFrames;
+#endif // FEATURE_INTERPRETER
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     LPVOID m_pvResumableFrameTargetSP;
