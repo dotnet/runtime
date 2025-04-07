@@ -9,7 +9,7 @@ steps:
     parameters:
       DisplayNamePrefix: Send to Helix
       HelixProjectPath: src/installer/tests/helixpublish.proj
-      HelixProjectArguments: >
+      HelixProjectArguments: >-
         /p:Configuration=$(_BuildConfig)
         /p:TargetArchitecture=${{ parameters.archType }}
         /p:TargetOS=${{ parameters.osGroup }}
