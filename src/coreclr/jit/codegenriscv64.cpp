@@ -931,7 +931,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         {
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + uCnt);
 
-            uCnt += uLoopBytes;
+            uCnt += REGSIZE_BYTES;
             uLclBytes -= REGSIZE_BYTES;
         }
     }
