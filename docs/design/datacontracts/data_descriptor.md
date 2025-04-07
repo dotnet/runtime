@@ -238,8 +238,8 @@ unambiguously "indirect value".
 #### Specification Appendix
 
 ```
-<global_value> ::= <value> | <indirect_value>
-<indirect_value> ::= [ <number_value> ]
+<global_value> ::= <value> | <pointer_table_index>
+<pointer_table_index> ::= [ <number_value> ]
 <value> ::= <json_string> | <number_value>
 <number_value> ::=  <json_number> | <decimal_string> | <hex_string>
 
