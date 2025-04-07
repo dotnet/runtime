@@ -60,7 +60,7 @@ namespace System.IO
         /// <returns>An object that represents the directory that was created.</returns>
         /// <exception cref="ArgumentException"><paramref name="prefix" /> contains a directory separator.</exception>
         /// <exception cref="IOException">A new directory cannot be created.</exception>
-        public static unsafe DirectoryInfo CreateTempSubdirectory(string? prefix = null)
+        public static DirectoryInfo CreateTempSubdirectory(string? prefix = null)
         {
             EnsureNoDirectorySeparators(prefix);
 

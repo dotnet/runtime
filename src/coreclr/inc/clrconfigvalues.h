@@ -110,11 +110,6 @@
 // * W("Security_LegacyHMACMode") <---------------------- (No EXTERNAL prefix)
 
 ///
-/// AppDomain
-///
-CONFIG_DWORD_INFO(INTERNAL_EnableFullDebug, W("EnableFullDebug"), 0, "Heavy-weight checking for AD boundary violations (AD leaks)")
-
-///
 /// Jit Pitching
 ///
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchEnabled, W("JitPitchEnabled"), (DWORD)0, "Set it to 1 to enable Jit Pitching")
@@ -259,7 +254,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("le
 CONFIG_DWORD_INFO(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_LegacyExceptionHandling, W("LegacyExceptionHandling"), 0, "Enable legacy exception handling.");
+CONFIG_DWORD_INFO(INTERNAL_LogStackOverflowExit, W("LogStackOverflowExit"), 0, "Temporary flag to log stack overflow exit process")
 
 ///
 /// Garbage collector
@@ -324,6 +319,12 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitOs, W("AltJitOS"), "Sets target OS for 
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitExcludeAssemblies, W("AltJitExcludeAssemblies"), "Do not use AltJit on this semicolon-delimited list of assemblies.")
 #endif // defined(ALLOW_SXS_JIT)
 
+#ifdef FEATURE_INTERPRETER
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_InterpreterName, W("InterpreterName"), "Primary interpreter to use")
+CONFIG_STRING_INFO(INTERNAL_InterpreterPath, W("InterpreterPath"), "Full path to the interpreter to use")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_Interpreter, W("Interpreter"), "Enables Interpreter and selectively limits it to the specified methods.")
+#endif // FEATURE_INTERPRETER
+
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitHostMaxSlabCache, W("JitHostMaxSlabCache"), 0x1000000, "Sets jit host max slab cache size, 16MB default")
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitOptimizeType, W("JitOptimizeType"), 0 /* OPT_DEFAULT */, "")
@@ -361,34 +362,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_MultiCoreJitNoProfileGather, W("MultiCoreJitNo
 
 #endif
 
-#ifdef FEATURE_INTERPRETER
-///
-/// Interpreter
-///
-RETAIL_CONFIG_STRING_INFO(INTERNAL_Interpret, W("Interpret"), "Selectively uses the interpreter to execute the specified methods")
-RETAIL_CONFIG_STRING_INFO(INTERNAL_InterpretExclude, W("InterpretExclude"), "Excludes the specified methods from the set selected by 'Interpret'")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterMethHashMin, W("InterpreterMethHashMin"), 0, "Only interpret methods selected by 'Interpret' whose hash is at least this value. or after nth")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterMethHashMax, W("InterpreterMethHashMax"), UINT32_MAX, "If non-zero, only interpret methods selected by 'Interpret' whose hash is at most this value")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterStubMin, W("InterpreterStubMin"), 0, "Only interpret methods selected by 'Interpret' whose stub num is at least this value.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterStubMax, W("InterpreterStubMax"), UINT32_MAX, "If non-zero, only interpret methods selected by 'Interpret' whose stub number is at most this value.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterJITThreshold, W("InterpreterJITThreshold"), 10, "The number of times a method should be interpreted before being JITted")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterDoLoopMethods, W("InterpreterDoLoopMethods"), 0, "If set, don't check for loops, start by interpreting *all* methods")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterUseCaching, W("InterpreterUseCaching"), 1, "If non-zero, use the caching mechanism.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterLooseRules, W("InterpreterLooseRules"), 1, "If non-zero, allow ECMA spec violations required by managed C++.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterPrintPostMortem, W("InterpreterPrintPostMortem"), 0, "Prints summary information about the execution to the console")
-RETAIL_CONFIG_STRING_INFO(INTERNAL_InterpreterLogFile, W("InterpreterLogFile"), "If non-null, append interpreter logging to this file, else use stdout")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_DumpInterpreterStubs, W("DumpInterpreterStubs"), 0, "Prints all interpreter stubs that are created to the console")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterEntries, W("TraceInterpreterEntries"), 0, "Logs entries to interpreted methods to the console")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterIL, W("TraceInterpreterIL"), 0, "Logs individual instructions of interpreted methods to the console")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterOstack, W("TraceInterpreterOstack"), 0, "Logs operand stack after each IL instruction of interpreted methods to the console")
-CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterVerbose, W("TraceInterpreterVerbose"), 0, "Logs interpreter progress with detailed messages to the console")
-CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterJITTransition, W("TraceInterpreterJITTransition"), 0, "Logs when the interpreter determines a method should be JITted")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ForceInterpreter, W("ForceInterpreter"), 0, "If non-zero, force the interpreter to be used")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterHWIntrinsicsIsSupportedFalse, W("InterpreterHWIntrinsicsIsSupportedFalse"), 0, "If non-zero, force get_IsSupported to return false for hardware intrinsics") // for internal testing purposes
-#endif
-// The JIT queries this ConfigDWORD but it doesn't know if FEATURE_INTERPRETER is enabled
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"), 0, "Fallback to the interpreter when the JIT compiler fails")
-
 ///
 /// Loader heap
 ///
@@ -419,8 +392,6 @@ CONFIG_DWORD_INFO(INTERNAL_MD_ApplyDeltaBreak, W("MD_ApplyDeltaBreak"), 0, "ASSE
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_AssertOnBadImageFormat, W("AssertOnBadImageFormat"), 0, "ASSERT when invalid MD read")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_MD_DeltaCheck, W("MD_DeltaCheck"), 1, "Some checks of GUID when applying EnC (?)")
 CONFIG_DWORD_INFO(INTERNAL_MD_EncDelta, W("MD_EncDelta"), 0, "Forces EnC Delta format in MD (?)")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_MD_ForceNoColDesSharing, W("MD_ForceNoColDesSharing"), 0, "Don't know - the only usage I could find is #if 0 (?)")
-CONFIG_DWORD_INFO(INTERNAL_MD_KeepKnownCA, W("MD_KeepKnownCA"), 0, "Something with known CAs (?)")
 CONFIG_DWORD_INFO(INTERNAL_MD_MiniMDBreak, W("MD_MiniMDBreak"), 0, "ASSERT when creating CMiniMdRw class")
 CONFIG_DWORD_INFO(INTERNAL_MD_PreSaveBreak, W("MD_PreSaveBreak"), 0, "ASSERT when calling CMiniMdRw::PreSave")
 CONFIG_DWORD_INFO(INTERNAL_MD_RegMetaBreak, W("MD_RegMetaBreak"), 0, "ASSERT when creating RegMeta class")
@@ -477,13 +448,13 @@ CONFIG_DWORD_INFO(INTERNAL_TestOnlyEnableObjectAllocatedHook, W("TestOnlyEnableO
 CONFIG_DWORD_INFO(INTERNAL_TestOnlyEnableSlowELTHooks, W("TestOnlyEnableSlowELTHooks"), 0, "Test-only flag that forces CLR to initialize on startup as if slow-ELT were requested, to enable post-attach ELT functionality.")
 
 RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_ETW_ObjectAllocationEventsPerTypePerSec, W("ETW_ObjectAllocationEventsPerTypePerSec"), "Desired number of GCSampledObjectAllocation ETW events to be logged per type per second.  If 0, then the default built in to the implementation for the enabled event (e.g., High, Low), will be used.")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ProfAPI_ValidateNGENInstrumentation, W("ProfAPI_ValidateNGENInstrumentation"), 0, "This flag enables additional validations when using the IMetaDataEmit APIs for NGEN'ed images to ensure only supported edits are made.")
 
 #ifdef FEATURE_PERFMAP
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapEnabled, W("PerfMapEnabled"), 0, "This flag is used on Linux and macOS to enable writing /tmp/perf-$pid.map. It is disabled by default")
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_PerfMapJitDumpPath, W("PerfMapJitDumpPath"), "Specifies a path to write the perf jitdump file. Defaults to /tmp", CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapIgnoreSignal, W("PerfMapIgnoreSignal"), 0, "When perf map is enabled, this option will configure the specified signal to be accepted and ignored as a marker in the perf logs.  It is disabled by default")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapShowOptimizationTiers, W("PerfMapShowOptimizationTiers"), 1, "Shows optimization tiers in the perf map for methods, as part of the symbol name. Useful for seeing separate stack frames for different optimization tiers of each method.")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapStubGranularity, W("PerfMapStubGranularity"), 0, "Report stubs with varying amounts of granularity (low bit being zero indicates attempt to group all stubs of a type together) (second lowest bit being non-zero records stubs at individual allocation sites, which is more expensive, but also more accurate).")
 #endif
 
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_StartupDelayMS, W("StartupDelayMS"), "")
@@ -515,36 +486,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_Thread_DeadThreadGCTriggerPeriodMilliseconds, 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_UseAllCpuGroups, W("Thread_UseAllCpuGroups"), 0, "Specifies whether to query and use CPU group information for determining the processor count.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_AssignCpuGroups, W("Thread_AssignCpuGroups"), 1, "Specifies whether to automatically distribute threads created by the CLR across CPU Groups. Effective only when Thread_UseAllCpuGroups and GCCpuGroup are enabled.")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_ProcessorCount, W("PROCESSOR_COUNT"), 0, "Specifies the number of processors available for the process, which is returned by Environment.ProcessorCount", CLRConfig::LookupOptions::ParseIntegerAsBase10)
-
-///
-/// Threadpool
-///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMinWorkerThreads, W("ThreadPool_ForceMinWorkerThreads"), 0, "Overrides the MinThreads setting for the ThreadPool worker pool")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMaxWorkerThreads, W("ThreadPool_ForceMaxWorkerThreads"), 0, "Overrides the MaxThreads setting for the ThreadPool worker pool")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DisableStarvationDetection, W("ThreadPool_DisableStarvationDetection"), 0, "Disables the ThreadPool feature that forces new threads to be added when workitems run for too long")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DebugBreakOnWorkerStarvation, W("ThreadPool_DebugBreakOnWorkerStarvation"), 0, "Breaks into the debugger if the ThreadPool detects work queue starvation")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_EnableWorkerTracking, W("ThreadPool_EnableWorkerTracking"), 0, "Enables extra expensive tracking of how many workers threads are working simultaneously")
-#ifdef TARGET_ARM64
-// Spinning scheme is currently different on ARM64
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x32, "Maximum number of spins per processor a thread pool worker thread performs before waiting for work")
-#else // !TARGET_ARM64
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x46, "Maximum number of spins a thread pool worker thread performs before waiting for work")
-#endif // TARGET_ARM64
-
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_Disable,                             W("HillClimbing_Disable"),                            0, "Disables hill climbing for thread adjustments in the thread pool");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_WavePeriod,                          W("HillClimbing_WavePeriod"),                         4, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_TargetSignalToNoiseRatio,            W("HillClimbing_TargetSignalToNoiseRatio"),           300, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_ErrorSmoothingFactor,                W("HillClimbing_ErrorSmoothingFactor"),               1, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_WaveMagnitudeMultiplier,             W("HillClimbing_WaveMagnitudeMultiplier"),            100, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxWaveMagnitude,                    W("HillClimbing_MaxWaveMagnitude"),                   20, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_WaveHistorySize,                     W("HillClimbing_WaveHistorySize"),                    8, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_Bias,                                W("HillClimbing_Bias"),                               15, "The 'cost' of a thread.  0 means drive for increased throughput regardless of thread count; higher values bias more against higher thread counts.");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxChangePerSecond,                  W("HillClimbing_MaxChangePerSecond"),                 4, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxChangePerSample,                  W("HillClimbing_MaxChangePerSample"),                 20, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxSampleErrorPercent,               W("HillClimbing_MaxSampleErrorPercent"),              15, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_SampleIntervalLow,                   W("HillClimbing_SampleIntervalLow"),                  10, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_SampleIntervalHigh,                  W("HillClimbing_SampleIntervalHigh"),                 200, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                        W("HillClimbing_GainExponent"),                       200, "The exponent to apply to the gain, times 100.  100 means to use linear gain, higher values will enhance large moves and damp small ones.");
 
 ///
 /// Tiered Compilation
@@ -639,6 +580,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_VirtualCallStubLogging, W("VirtualCallStubLogg
 CONFIG_DWORD_INFO(INTERNAL_VirtualCallStubMissCount, W("VirtualCallStubMissCount"), 100, "Used only when STUB_LOGGING is defined, which by default is not.")
 CONFIG_DWORD_INFO(INTERNAL_VirtualCallStubResetCacheCounter, W("VirtualCallStubResetCacheCounter"), 0, "Used only when STUB_LOGGING is defined, which by default is not.")
 CONFIG_DWORD_INFO(INTERNAL_VirtualCallStubResetCacheIncr, W("VirtualCallStubResetCacheIncr"), 0, "Used only when STUB_LOGGING is defined, which by default is not.")
+CONFIG_DWORD_INFO(INTERNAL_UseCachedInterfaceDispatch, W("UseCachedInterfaceDispatch"), 0, "If cached interface dispatch is compiled in, use that instead of virtual stub dispatch")
 
 ///
 /// Watson
@@ -744,17 +686,19 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 #endif
 
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_MaxVectorTBitWidth,           W("MaxVectorTBitWidth"),        0, "The maximum decimal width, in bits, that Vector<T> is allowed to be. A value less than 128 is treated as the system default.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_PreferredVectorBitWidth,      W("PreferredVectorBitWidth"),   0, "The maximum decimal width, in bits, of fixed-width vectors that may be considered hardware accelerated. A value less than 128 is treated as the system default.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+#endif // defined(TARGET_AMD64) || defined(TARGET_X86)
 
 //
 // Hardware Intrinsic ISAs; keep in sync with jitconfigvalues.h
 //
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64)
 //TODO: should implement LoongArch64's features.
-//TODO-RISCV64-CQ: should implement RISCV64's features.
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         0, "Allows Base+ hardware intrinsics to be disabled")
 #else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         1, "Allows Base+ hardware intrinsics to be disabled")
-#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAES,                    W("EnableAES"),                 1, "Allows AES+ hardware intrinsics to be disabled")
@@ -771,7 +715,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F_VL,             W("EnableAVX512F
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512VBMI,             W("EnableAVX512VBMI"),          1, "Allows AVX512VBMI+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512VBMI_VL,          W("EnableAVX512VBMI_VL"),       1, "Allows AVX512VBMI_VL+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX10v1,                W("EnableAVX10v1"),             1, "Allows AVX10v1+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX10v2,                W("EnableAVX10v2"),             1, "Allows AVX10v2+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX10v2,                W("EnableAVX10v2"),             0, "Allows AVX10v2+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNI,                W("EnableAVXVNNI"),             1, "Allows AVXVNNI+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI1,                   W("EnableBMI1"),                1, "Allows BMI1+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI2,                   W("EnableBMI2"),                1, "Allows BMI2+ hardware intrinsics to be disabled")
@@ -790,6 +734,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE41,                  W("EnableSSE41")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE42,                  W("EnableSSE42"),               1, "Allows SSE4.2+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSSE3,                  W("EnableSSSE3"),               1, "Allows SSSE3+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableX86Serialize,           W("EnableX86Serialize"),        1, "Allows X86Serialize+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAPX,                    W("EnableAPX"),                 0, "Allows APX+ features to be disabled")
 #elif defined(TARGET_ARM64)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64AdvSimd,           W("EnableArm64AdvSimd"),        1, "Allows Arm64 AdvSimd+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Aes,               W("EnableArm64Aes"),            1, "Allows Arm64 Aes+ hardware intrinsics to be disabled")
@@ -803,6 +748,9 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha256,            W("EnableArm64Sh
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc,              W("EnableArm64Rcpc"),           1, "Allows Arm64 Rcpc+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc2,             W("EnableArm64Rcpc2"),          1, "Allows Arm64 Rcpc2+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve,               W("EnableArm64Sve"),            1, "Allows Arm64 SVE hardware intrinsics to be disabled")
+#elif defined(TARGET_RISCV64)
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zba,             W("EnableRiscV64Zba"),          1, "Allows RiscV64 Zba hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbb,             W("EnableRiscV64Zbb"),          1, "Allows RiscV64 Zbb hardware intrinsics to be disabled")
 #endif
 
 ///
@@ -821,28 +769,18 @@ CONFIG_DWORD_INFO(INTERNAL_ActivatePatchSkip, W("ActivatePatchSkip"), 0, "Allows
 CONFIG_DWORD_INFO(INTERNAL_AlwaysUseMetadataInterfaceMapLayout, W("AlwaysUseMetadataInterfaceMapLayout"), 0, "Used for debugging generic interface map layout.")
 CONFIG_DWORD_INFO(INTERNAL_AssertOnUnneededThis, W("AssertOnUnneededThis"), 0, "While the ConfigDWORD is unnecessary, the contained ASSERT should be kept. This may result in some work tracking down violating MethodDescCallSites.")
 CONFIG_DWORD_INFO(INTERNAL_AssertStacktrace, W("AssertStacktrace"), 1, "")
-CONFIG_DWORD_INFO(INTERNAL_CPUFamily, W("CPUFamily"), 0xFFFFFFFF, "")
-CONFIG_DWORD_INFO(INTERNAL_CPUFeatures, W("CPUFeatures"), 0xFFFFFFFF, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DisableConfigCache, W("DisableConfigCache"), 0, "Used to disable the \"probabilistic\" config cache, which walks through the appropriate config registry keys on init and probabilistically keeps track of which exist.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DisableStackwalkCache, W("DisableStackwalkCache"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DoubleArrayToLargeObjectHeap, W("DoubleArrayToLargeObjectHeap"), 0, "Controls double[] placement")
 CONFIG_STRING_INFO(INTERNAL_DumpOnClassLoad, W("DumpOnClassLoad"), "Dumps information about loaded class to log.")
 CONFIG_DWORD_INFO(INTERNAL_ExpandAllOnLoad, W("ExpandAllOnLoad"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_ForceRelocs, W("ForceRelocs"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_GenerateLongJumpDispatchStubRatio, W("GenerateLongJumpDispatchStubRatio"), 0, "Useful for testing VSD on AMD64")
-CONFIG_DWORD_INFO(INTERNAL_HostManagerConfig, W("HostManagerConfig"), (DWORD)-1, "")
 CONFIG_DWORD_INFO(INTERNAL_HostTestThreadAbort, W("HostTestThreadAbort"), 0, "")
 CONFIG_STRING_INFO(INTERNAL_InvokeHalt, W("InvokeHalt"), "Throws an assert when the given method is invoked through reflection.")
 CONFIG_DWORD_INFO(INTERNAL_MaxStubUnwindInfoSegmentSize, W("MaxStubUnwindInfoSegmentSize"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_MessageDebugOut, W("MessageDebugOut"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NativeImageRequire, W("NativeImageRequire"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_NestedEhOom, W("NestedEhOom"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NoProcedureSplitting, W("NoProcedureSplitting"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_PauseOnLoad, W("PauseOnLoad"), 0, "Stops in SystemDomain::init. I think it can be removed.")
 CONFIG_DWORD_INFO(INTERNAL_PerfAllocsSizeThreshold, W("PerfAllocsSizeThreshold"), 0x3FFFFFFF, "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")
 CONFIG_DWORD_INFO(INTERNAL_PerfNumAllocsThreshold, W("PerfNumAllocsThreshold"), 0x3FFFFFFF, "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")
 CONFIG_STRING_INFO(INTERNAL_PerfTypesToLog, W("PerfTypesToLog"), "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Prepopulate1, W("Prepopulate1"), 1, "")
 CONFIG_STRING_INFO(INTERNAL_PrestubGC, W("PrestubGC"), "")
 CONFIG_STRING_INFO(INTERNAL_PrestubHalt, W("PrestubHalt"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_RestrictedGCStressExe, W("RestrictedGCStressExe"), "")
@@ -860,7 +798,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ThreadGuardPages, W("ThreadGuardPages"), 0, ""
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TraceWrap, W("TraceWrap"), 0, "")
 #endif
 
-CONFIG_DWORD_INFO(INTERNAL_VerifierOff, W("VerifierOff"), 0, "")
 // **
 // PLEASE MOVE ANY CONFIG SWITCH YOU OWN OUT OF THIS SECTION INTO A CATEGORY ABOVE
 //

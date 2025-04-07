@@ -222,7 +222,9 @@ mono_wasm_load_runtime (int debug_level)
 	monovm_initialize (2, appctx_keys, appctx_values);
 
 #ifndef INVARIANT_TIMEZONE
-	mono_register_timezones_bundle ();
+	char* invariant_timezone = monoeg_g_getenv ("DOTNET_SYSTEM_TIMEZONE_INVARIANT");
+	if (strcmp(invariant_timezone, "true") != 0 && strcmp(invariant_timezone, "1") != 0)
+		mono_register_timezones_bundle ();
 #endif /* INVARIANT_TIMEZONE */
 
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
@@ -430,14 +432,14 @@ mono_wasm_profiler_init_aot (const char *desc)
 
 #endif
 
-#ifdef ENABLE_BROWSER_PROFILER
+#ifdef ENABLE_DEVTOOLS_PROFILER
 
-void mono_profiler_init_browser (const char *desc);
+void mono_profiler_init_browser_devtools (const char *desc);
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_profiler_init_browser (const char *desc)
+mono_wasm_profiler_init_browser_devtools (const char *desc)
 {
-	mono_profiler_init_browser (desc);
+	mono_profiler_init_browser_devtools (desc);
 }
 
 #endif
@@ -516,8 +518,8 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 }
 
 // JS is responsible for freeing this
-EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_full_name (MonoMethod *method) {
-	const char *res;
+EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_full_name (MonoMethod *method) {
+	char *res;
 	MONO_ENTER_GC_UNSAFE;
 	res = mono_method_get_full_name (method);
 	MONO_EXIT_GC_UNSAFE;
@@ -528,6 +530,21 @@ EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method)
 	const char *res;
 	MONO_ENTER_GC_UNSAFE;
 	res = mono_method_get_name (method);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
+}
+
+EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_name_ex (MonoMethod *method) {
+	char *res;
+	MONO_ENTER_GC_UNSAFE;
+	const char *method_name = mono_method_get_name (method);
+	// starts with .ctor or .cctor
+	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (res) < 7) {
+		res = (char *) malloc (128);
+		snprintf (res, 128,"%s.%s", mono_class_get_name (mono_method_get_class (method)), method_name);
+	} else {
+		res = strdup (method_name);
+	}
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }

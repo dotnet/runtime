@@ -6835,8 +6835,8 @@ HRESULT ProfToEEInterfaceImpl::SuspendRuntime()
         return CORPROF_E_SUSPENSION_IN_PROGRESS;
     }
 
-    g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
+    g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
     return S_OK;
 }
 
@@ -6874,8 +6874,8 @@ HRESULT ProfToEEInterfaceImpl::ResumeRuntime()
         return CORPROF_E_UNSUPPORTED_CALL_SEQUENCE;
     }
 
-    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
+    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     return S_OK;
 }
 
@@ -7667,8 +7667,8 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
         // SuspendEE() may race with other threads by design and this thread may block
         // arbitrarily long inside SuspendEE() for other threads to complete their own
         // suspensions.
-        g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
+        g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
         ownEESuspension = TRUE;
     }
 
@@ -7700,8 +7700,8 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
 
     if (ownEESuspension)
     {
-        ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
         g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
+        ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     }
 
     return hr;
@@ -8085,10 +8085,10 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     }
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && !pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
+    if (!pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
     {
         // Skip new exception handling helpers
-        InlinedCallFrame *pInlinedCallFrame = (InlinedCallFrame *)pCf->GetFrame();
+        InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pCf->GetFrame());
         PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
         TADDR datum = dac_cast<TADDR>(pMD);
         if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
@@ -8199,13 +8199,13 @@ static BOOL EnsureFrameInitialized(Frame * pFrame)
         return TRUE;
     }
 
-    HelperMethodFrame * pHMF = (HelperMethodFrame *) pFrame;
+    HelperMethodFrame * pHMF = dac_cast<PTR_HelperMethodFrame>(pFrame);
 
-    if (pHMF->InsureInit(
+    if (pHMF->EnsureInit(
         NULL                        // unwindState
         ) != NULL)
     {
-        // InsureInit() succeeded and found the return address
+        // EnsureInit() succeeded and found the return address
         return TRUE;
     }
 

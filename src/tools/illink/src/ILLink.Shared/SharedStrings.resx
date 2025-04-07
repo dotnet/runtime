@@ -1179,6 +1179,24 @@
   <data name="RequiresAssemblyFilesOnStaticConstructorTitle" xml:space="preserve">
     <value>The use of 'RequiresAssemblyFilesAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
   </data>
+  <data name="RequiresUnreferencedCodeOnEntryPointMessage" xml:space="preserve">
+    <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on application entry point '{0}'.</value>
+  </data>
+  <data name="RequiresUnreferencedCodeOnEntryPointTitle" xml:space="preserve">
+    <value>The use of 'RequiresUnreferencedCodeAttribute' on entry points is disallowed since the method will be called from outside the visible app.</value>
+  </data>
+  <data name="RequiresDynamicCodeOnEntryPointMessage" xml:space="preserve">
+    <value>'RequiresDynamicCodeAttribute' cannot be placed directly on application entry point '{0}'.</value>
+  </data>
+  <data name="RequiresDynamicCodeOnEntryPointTitle" xml:space="preserve">
+    <value>The use of 'RequiresDynamicCodeAttribute' on entry points is disallowed since the method will be called from outside the visible app.</value>
+  </data>
+  <data name="RequiresAssemblyFilesOnEntryPointMessage" xml:space="preserve">
+    <value>'RequiresAssemblyFilesAttribute' cannot be placed directly on application entry point '{0}'.</value>
+  </data>
+  <data name="RequiresAssemblyFilesOnEntryPointTitle" xml:space="preserve">
+    <value>The use of 'RequiresAssemblyFilesAttribute' on entry points is disallowed since the method will be called from outside the visible app.</value>
+  </data>
   <data name="UnrecognizedInternalAttributeMessage" xml:space="preserve">
     <value>The internal attribute name '{0}' being used in the xml is not supported by ILLink, check the spelling and the supported internal attributes.</value>
   </data>

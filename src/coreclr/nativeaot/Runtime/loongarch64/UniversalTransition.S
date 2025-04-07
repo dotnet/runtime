@@ -137,9 +137,6 @@
         ori  $a1, $t8, 0                                         // Second parameter to target function
         jirl  $ra, $t7, 0
 
-        // We cannot make the label public as that tricks DIA stackwalker into thinking
-        // it's the beginning of a method. For this reason we export an auxiliary variable
-        // holding the address instead.
     ALTERNATE_ENTRY ReturnFrom\FunctionName
 
         // Move the result (the target address) to t3 so it doesn't get overridden when we restore the

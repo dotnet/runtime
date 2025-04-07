@@ -322,6 +322,10 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     m_CurrentClause({}),
     m_pMDToReportFunctionLeave(NULL),
     m_lastReportedFunclet({0, 0, 0})
+#ifdef HOST_WINDOWS
+    , m_pLongJmpBuf(NULL),
+    m_longJmpReturnValue(0)
+#endif // HOST_WINDOWS
 {
     pThread->GetExceptionState()->m_pCurrentTracker = this;
     m_pInitialFrame = pThread->GetFrame();
@@ -376,6 +380,8 @@ void ExInfo::ReleaseResources()
 // static
 void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
 {
+    STRESS_LOG1(LF_EH, LL_INFO100, "Popping ExInfos below SP=%p\n", targetSp);
+
     ExInfo *pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 #if defined(DEBUGGING_SUPPORTED)
     DWORD_PTR dwInterceptStackFrame = 0;

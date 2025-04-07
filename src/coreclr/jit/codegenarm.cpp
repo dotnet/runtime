@@ -811,8 +811,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack =
-        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -2104,6 +2103,30 @@ regMaskTP CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskC
 }
 
 //-----------------------------------------------------------------------------------
+// genPrespilledUnmappedRegs: Get a mask of the registers that are prespilled
+// and also not mapped to any locals.
+//
+// Returns:
+//   Mask of those registers. These registers can be used safely in prolog as
+//   they won't be needed after prespilling.
+//
+regMaskTP CodeGen::genPrespilledUnmappedRegs()
+{
+    regMaskTP regs = regSet.rsMaskPreSpillRegs(false);
+
+    if (compiler->m_paramRegLocalMappings != nullptr)
+    {
+        for (int i = 0; i < compiler->m_paramRegLocalMappings->Height(); i++)
+        {
+            const ParameterRegisterLocalMapping& mapping = compiler->m_paramRegLocalMappings->BottomRef(i);
+            regs &= ~mapping.RegisterSegment->GetRegisterMask();
+        }
+    }
+
+    return regs;
+}
+
+//-----------------------------------------------------------------------------------
 // instGen_MemoryBarrier: Emit a MemoryBarrier instruction
 //
 // Arguments:
@@ -2302,7 +2325,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(block->HasFlag(BBF_FUNCLET_BEG));
+    assert(compiler->bbIsFuncletBeg(block));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 

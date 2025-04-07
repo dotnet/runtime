@@ -13,6 +13,12 @@
 #include "methodtable.h"
 #include "threads.h"
 
+#include "../debug/ee/debugger.h"
+
+#ifdef HAVE_GCCOVER
+#include "gccover.h"
+#endif // HAVE_GCCOVER
+
 // begin blob definition
 
 extern "C"

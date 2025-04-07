@@ -2815,5 +2815,22 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.True(result.Enabled);
             Assert.Equal(new [] { "new", "class", "rosebud"}, result.Keywords);
         }
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [Fact]
+        public void EnsureThrowingWithCollectionAndErrorOnUnknownConfigurationOption()
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = "not-an-array-of-string" }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+
+            configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = "" }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+
+            configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = null }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+        }
+
+        internal class TestSettings { public Dictionary<DayOfWeek, string[]> Values { get; init; } = []; }
+#endif
     }
 }

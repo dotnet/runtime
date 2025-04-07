@@ -464,7 +464,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     STDMETHOD(FindMethodDef)(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMethodDef *pmd) PURE;             // [OUT] matching memberdef
 
@@ -507,7 +507,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     __checkReturn
     STDMETHOD(GetNameAndSigOfMethodDef)(
         mdMethodDef      methoddef,         // [IN] given memberdef
-        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of CLR signature
+        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of signature
         ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName) PURE;
 
@@ -679,7 +679,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     __checkReturn
     STDMETHOD(GetNameAndSigOfMemberRef)(    // return name here
         mdMemberRef      memberref,         // given memberref
-        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of CLR signature
+        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of signature
         ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName) PURE;
 
@@ -838,7 +838,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     STDMETHOD(ConvertTextSigToComSig)(      // Return hresult.
         BOOL        fCreateTrIfNotFound,    // [IN] create typeref if not found
         LPCSTR      pSignature,             // [IN] class file format signature
-        CQuickBytes *pqbNewSig,             // [OUT] place holder for CLR signature
+        CQuickBytes *pqbNewSig,             // [OUT] place holder for signature
         ULONG       *pcbCount) PURE;        // [OUT] the result size of signature
 
     //*****************************************************************************
@@ -966,7 +966,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     STDMETHOD(FindMethodDefUsingCompare)(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         PSIGCOMPARE pSignatureCompare,      // [IN] Routine to compare signatures
         void*       pSignatureArgs,         // [IN] Additional info to supply the compare function

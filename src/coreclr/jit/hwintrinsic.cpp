@@ -807,8 +807,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 // VectorT256
     { NI_Illegal, NI_Illegal },                                 // VectorT512
     { NI_Illegal, NI_Illegal },                                 // APX
-    { NI_Illegal, NI_Illegal },                                 // AVX10v2
-    { NI_Illegal, NI_Illegal },                                 // AVX10v2_V512
+    { FIRST_NI_AVX10v2, LAST_NI_AVX10v2 },                      // AVX10v2
+    { FIRST_NI_AVX10v2_V512, LAST_NI_AVX10v2_V512 },            // AVX10v2_V512
     { FIRST_NI_GFNI, LAST_NI_GFNI },
     { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },
     { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },
@@ -2075,8 +2075,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_SSE41_ConvertToVector128Int64:
                     case NI_AVX2_BroadcastScalarToVector128:
                     case NI_AVX2_BroadcastScalarToVector256:
-                    case NI_AVX512F_BroadcastScalarToVector512:
-                    case NI_AVX512BW_BroadcastScalarToVector512:
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:

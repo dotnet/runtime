@@ -10,14 +10,12 @@ internal static class MethodDescFlags_1
     internal enum MethodDescFlags : ushort
     {
         ClassificationMask = 0x7,
-        #region Additional pointers
-        // The below flags each imply that there's an extra pointer-sized piece of data after the MethodDesc in the MethodDescChunk
+        #region Optional slots
+        // The below flags each imply that there's an extra pointer-size-aligned piece of data after the MethodDesc in the MethodDescChunk
         HasNonVtableSlot = 0x0008,
         HasMethodImpl = 0x0010,
         HasNativeCodeSlot = 0x0020,
-        // Mask for the above flags
-        MethodDescAdditionalPointersMask = 0x0038,
-        #endregion Additional pointers
+        #endregion Optional slots
     }
 
     [Flags]
@@ -35,5 +33,4 @@ internal static class MethodDescFlags_1
     {
         TemporaryEntryPointAssigned = 0x04,
     }
-
 }

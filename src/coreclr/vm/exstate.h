@@ -67,9 +67,6 @@ public:
     {
         STEC_All,
         STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow,
-#ifdef FEATURE_INTERPRETER
-        STEC_CurrentTrackerEqualNullOkForInterpreter,
-#endif // FEATURE_INTERPRETER
     } SetThrowableErrorChecking;
 #endif
 
@@ -146,7 +143,6 @@ private:
 
 #ifdef FEATURE_EH_FUNCLETS
     PTR_ExceptionTrackerBase m_pCurrentTracker;
-    ExceptionTracker        m_OOMTracker;
 public:
     PTR_ExceptionTrackerBase GetCurrentExceptionTracker()
     {

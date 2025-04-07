@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using FluentAssertions;
+using FluentAssertions.Execution;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System;
 
@@ -11,13 +12,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
     {
         public static CommandResultAssertions Should(this CommandResult commandResult)
         {
-            return new CommandResultAssertions(commandResult);
+            return new CommandResultAssertions(commandResult, AssertionChain.GetOrCreate());
         }
 
         public static CommandResult StdErrAfter(this CommandResult commandResult, string pattern)
         {
             int i = commandResult.StdErr.IndexOf(pattern);
-            i.Should().BeGreaterOrEqualTo(
+            i.Should().BeGreaterThanOrEqualTo(
                 0,
                 "Trying to filter StdErr after '{0}', but such string can't be found in the StdErr.{1}{2}",
                 pattern,

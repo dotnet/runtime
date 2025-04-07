@@ -138,7 +138,6 @@ class IncrementalSsaBuilder
     UseDefLocation FindOrCreateReachingDef(const UseDefLocation& use);
     bool           FindReachingDefInBlock(const UseDefLocation& use, BasicBlock* block, UseDefLocation* def);
     bool           FindReachingDefInSameStatement(const UseDefLocation& use, UseDefLocation* def);
-    Statement*     LatestStatement(Statement* stmt1, Statement* stmt2);
 public:
     IncrementalSsaBuilder(Compiler* comp, unsigned lclNum)
         : m_comp(comp)
@@ -151,5 +150,5 @@ public:
 
     void InsertDef(const UseDefLocation& def);
     bool FinalizeDefs();
-    bool InsertUse(const UseDefLocation& use);
+    void InsertUse(const UseDefLocation& use);
 };

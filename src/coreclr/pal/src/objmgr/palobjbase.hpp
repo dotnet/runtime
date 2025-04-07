@@ -112,7 +112,7 @@ namespace CorUnix
             ) = 0;
 
         virtual
-        bool
+        void
         ReleaseObjectDestructionLock(
             CPalThread *pthr,
             bool fDestructionPending

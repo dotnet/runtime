@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using static System.Text.Json.Utf8JsonWriter;
 
 namespace System.Text.Json
 {
@@ -311,6 +312,26 @@ namespace System.Text.Json
             throw GetInvalidOperationException(SR.CannotSkip);
         }
 
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_CannotMixEncodings(EnclosingContainerType previousEncoding, EnclosingContainerType currentEncoding)
+        {
+            throw GetInvalidOperationException(SR.Format(SR.CannotMixEncodings, GetEncodingName(previousEncoding), GetEncodingName(currentEncoding)));
+
+            static string GetEncodingName(EnclosingContainerType encoding)
+            {
+                switch (encoding)
+                {
+                    case EnclosingContainerType.Utf8StringSequence: return "UTF-8";
+                    case EnclosingContainerType.Utf16StringSequence: return "UTF-16";
+                    case EnclosingContainerType.Base64StringSequence: return "Base64";
+                    default:
+                        Debug.Fail("Unknown encoding.");
+                        return "Unknown";
+                };
+            }
+        }
+
         private static InvalidOperationException GetInvalidOperationException(string message, JsonTokenType tokenType)
         {
             return GetInvalidOperationException(SR.Format(SR.InvalidCast, tokenType, message));
@@ -616,6 +637,9 @@ namespace System.Text.Json
                 case ExceptionResource.CannotWriteValueAfterPrimitiveOrClose:
                     message = SR.Format(SR.CannotWriteValueAfterPrimitiveOrClose, tokenType);
                     break;
+                case ExceptionResource.CannotWriteWithinString:
+                    message = SR.CannotWriteWithinString;
+                    break;
                 default:
                     Debug.Fail($"The ExceptionResource enum value: {resource} is not part of the switch. Add the appropriate case and exception message.");
                     break;
@@ -782,6 +806,7 @@ namespace System.Text.Json
         ExpectedOneCompleteToken,
         NotEnoughData,
         InvalidLeadingZeroInNumber,
+        CannotWriteWithinString,
     }
 
     internal enum NumericType

@@ -59,9 +59,10 @@ CONFIG_INTEGER(JitBreakMorphTree, "JitBreakMorphTree", 0xffffffff)
 CONFIG_INTEGER(JitBreakOnBadCode, "JitBreakOnBadCode", 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, "JITBreakOnMinOpts", 0) // Halt if jit switches to MinOpts
 CONFIG_INTEGER(JitCloneLoops, "JitCloneLoops", 1)         // If 0, don't clone. Otherwise clone loops for optimizations.
+CONFIG_INTEGER(JitCloneLoopsWithEH, "JitCloneLoopsWithEH", 1) // If 0, don't clone loops containing EH regions
 CONFIG_INTEGER(JitCloneLoopsWithGdvTests, "JitCloneLoopsWithGdvTests", 1)     // If 0, don't clone loops based on
                                                                               // invariant type/method address tests
-RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, "JitCloneLoopsSizeLimit", 400) // limit cloning to loops with less
+RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, "JitCloneLoopsSizeLimit", 400) // limit cloning to loops with no more
                                                                               // than this many tree nodes
 CONFIG_INTEGER(JitDebugLogLoopCloning, "JitDebugLogLoopCloning", 0) // In debug builds log places where loop cloning
                                                                     // optimizations are performed on the fast path.
@@ -95,6 +96,8 @@ CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
                "JitUnrollLoopMaxIterationCount",
                DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT)
 
+CONFIG_INTEGER(JitUnrollLoopsWithEH, "JitUnrollLoopsWithEH", 0) // If 0, don't unroll loops containing EH regions
+
 CONFIG_INTEGER(JitDirectAlloc, "JitDirectAlloc", 0)
 CONFIG_INTEGER(JitDoubleAlign, "JitDoubleAlign", 1)
 CONFIG_INTEGER(JitEmitPrintRefRegs, "JitEmitPrintRefRegs", 0)
@@ -113,9 +116,13 @@ CONFIG_INTEGER(JitHashBreak, "JitHashBreak", -1)        // Same as JitBreak, but
 CONFIG_INTEGER(JitHashHalt, "JitHashHalt", -1)          // Same as JitHalt, but for a method hash
 CONFIG_INTEGER(JitInlineAdditionalMultiplier, "JitInlineAdditionalMultiplier", 0)
 CONFIG_INTEGER(JitInlinePrintStats, "JitInlinePrintStats", 0)
-CONFIG_INTEGER(JitInlineSize, "JITInlineSize", DEFAULT_MAX_INLINE_SIZE)
-CONFIG_INTEGER(JitInlineDepth, "JITInlineDepth", DEFAULT_MAX_INLINE_DEPTH)
-CONFIG_INTEGER(JitForceInlineDepth, "JITForceInlineDepth", DEFAULT_MAX_FORCE_INLINE_DEPTH)
+CONFIG_INTEGER(JitInlineSize, "JitInlineSize", DEFAULT_MAX_INLINE_SIZE)
+CONFIG_INTEGER(JitInlineDepth, "JitInlineDepth", DEFAULT_MAX_INLINE_DEPTH)
+RELEASE_CONFIG_INTEGER(JitInlineBudget, "JitInlineBudget", DEFAULT_INLINE_BUDGET)
+CONFIG_INTEGER(JitForceInlineDepth, "JitForceInlineDepth", DEFAULT_MAX_FORCE_INLINE_DEPTH)
+RELEASE_CONFIG_INTEGER(JitInlineMethodsWithEH, "JitInlineMethodsWithEH", 1)
+CONFIG_STRING(JitInlineMethodsWithEHRange, "JitInlineMethodsWithEHRange")
+
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
 
@@ -365,6 +372,12 @@ RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, "EnableMultiRegLocals", 1)
 // Disables inlining of all methods
 RELEASE_CONFIG_INTEGER(JitNoInline, "JitNoInline", 0)
 
+#if defined(DEBUG)
+CONFIG_INTEGER(JitStressRex2Encoding, "JitStressRex2Encoding", 0) // Enable rex2 encoding for compatible instructions.
+CONFIG_INTEGER(JitStressPromotedEvexEncoding, "JitStressPromotedEvexEncoding", 0) // Enable promoted EVEX encoding for
+                                                                                  // compatible instructions.
+#endif
+
 // clang-format off
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
@@ -372,18 +385,15 @@ RELEASE_CONFIG_INTEGER(JitNoInline, "JitNoInline", 0)
 CONFIG_INTEGER(JitStressEvexEncoding, "JitStressEvexEncoding", 0)
 #endif
 
-RELEASE_CONFIG_INTEGER(PreferredVectorBitWidth,     "PreferredVectorBitWidth",   0) // The preferred decimal width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
-
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
 //
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64)
 //TODO: should implement LoongArch64's features.
-//TODO-RISCV64-CQ: should implement RISCV64's features.
 RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",         0) // Allows Base+ hardware intrinsics to be disabled
 #else
 RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",         1) // Allows Base+ hardware intrinsics to be disabled
-#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 RELEASE_CONFIG_INTEGER(EnableAES,                   "EnableAES",                 1) // Allows AES+ hardware intrinsics to be disabled
@@ -417,6 +427,7 @@ RELEASE_CONFIG_INTEGER(EnableSSE3_4,                "EnableSSE3_4",             
 RELEASE_CONFIG_INTEGER(EnableSSE41,                 "EnableSSE41",               1) // Allows SSE4.1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSE42,                 "EnableSSE42",               1) // Allows SSE4.2+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSSE3,                 "EnableSSSE3",               1) // Allows SSSE3+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAPX,                   "EnableAPX",                 0) // Allows APX+ features to be disabled
 #elif defined(TARGET_ARM64)
 RELEASE_CONFIG_INTEGER(EnableArm64AdvSimd,          "EnableArm64AdvSimd",        1) // Allows Arm64 AdvSimd+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Aes,              "EnableArm64Aes",            1) // Allows Arm64 Aes+ hardware intrinsics to be disabled
@@ -428,10 +439,15 @@ RELEASE_CONFIG_INTEGER(EnableArm64Rdm,              "EnableArm64Rdm",           
 RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             "EnableArm64Sha1",           1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           "EnableArm64Sha256",         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sve,              "EnableArm64Sve",            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
+#elif defined(TARGET_RISCV64)
+RELEASE_CONFIG_INTEGER(EnableRiscV64Zba,            "EnableRiscV64Zba",          1) // Allows RiscV64 Zba hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",          1) // Allows RiscV64 Zbb hardware intrinsics to be disabled
 #endif
 
 RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",   1) // Allows embedded broadcasts to be disabled
 RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       "EnableEmbeddedMasking",     1) // Allows embedded masking to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxNDD,                "EnableApxNDD",              0) // Allows APX NDD feature to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxConditionalChaining, "EnableApxConditionalChaining",        0) // Allows APX conditional compare chaining
 
 // clang-format on
 
@@ -587,7 +603,7 @@ RELEASE_CONFIG_INTEGER(JitVNMapSelBudget, "JitVNMapSelBudget", DEFAULT_MAP_SELEC
 
 RELEASE_CONFIG_INTEGER(TailCallLoopOpt, "TailCallLoopOpt", 1) // Convert recursive tail calls to loops
 RELEASE_CONFIG_METHODSET(AltJit, "AltJit")         // Enables AltJit and selectively limits it to the specified methods.
-RELEASE_CONFIG_METHODSET(AltJitNgen, "AltJitNgen") // Enables AltJit for NGEN and selectively limits it
+RELEASE_CONFIG_METHODSET(AltJitNgen, "AltJitNgen") // Enables AltJit for AOT and selectively limits it
                                                    // to the specified methods.
 
 // Do not use AltJit on this semicolon-delimited list of assemblies.
@@ -660,11 +676,16 @@ CONFIG_STRING(JitObjectStackAllocationRange, "JitObjectStackAllocationRange")
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, "JitObjectStackAllocation", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationRefClass, "JitObjectStackAllocationRefClass", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationBoxedValueClass, "JitObjectStackAllocationBoxedValueClass", 1)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationConditionalEscape, "JitObjectStackAllocationConditionalEscape", 1)
+CONFIG_STRING(JitObjectStackAllocationConditionalEscapeRange, "JitObjectStackAllocationConditionalEscapeRange")
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationArray, "JitObjectStackAllocationArray", 1)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationSize, "JitObjectStackAllocationSize", 528)
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 
 CONFIG_INTEGER(JitEnableFinallyCloning, "JitEnableFinallyCloning", 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTry, "JitEnableRemoveEmptyTry", 1)
+CONFIG_INTEGER(JitEnableRemoveEmptyTryCatchOrTryFault, "JitEnableRemoveEmptyTryCatchOrTryFault", 1)
 
 // Overall master enable for Guarded Devirtualization.
 RELEASE_CONFIG_INTEGER(JitEnableGuardedDevirtualization, "JitEnableGuardedDevirtualization", 1)
@@ -781,9 +802,6 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, "JitEnablePhysicalPromotion",
 
 // Enable cross-block local assertion prop
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, "JitEnableCrossBlockLocalAssertionProp", 1)
-
-// Do greedy RPO-based layout in Compiler::fgReorderBlocks.
-RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, "JitDoReversePostOrderLayout", 1);
 
 // Enable strength reduction
 RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, "JitEnableStrengthReduction", 1)

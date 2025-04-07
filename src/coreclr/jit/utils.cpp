@@ -1518,7 +1518,7 @@ void HelperCallProperties::init()
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
         bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
         bool isNoEscape    = false; // true if none of the GC ref arguments can escape
-        bool isNoGC        = false; // true is the helper cannot trigger GC
+        bool isNoGC        = false; // true if the helper cannot trigger GC
 
         switch (helper)
         {
@@ -1669,6 +1669,13 @@ void HelperCallProperties::init()
                 isPure     = true;
                 break;
 
+            case CORINFO_HELP_MEMCPY:
+            case CORINFO_HELP_MEMZERO:
+            case CORINFO_HELP_MEMSET:
+            case CORINFO_HELP_NATIVE_MEMSET:
+                isNoEscape = true;
+                break;
+
             case CORINFO_HELP_LDELEMA_REF:
                 isPure = true;
                 break;
@@ -1817,7 +1824,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
-            case CORINFO_HELP_GETFIELDADDR:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
                 noThrow = true;

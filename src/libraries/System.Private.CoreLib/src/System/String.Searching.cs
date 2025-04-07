@@ -83,7 +83,7 @@ namespace System
             return SpanHelpers.IndexOfChar(ref _firstChar, value, Length);
         }
 
-        public unsafe int IndexOf(char value, int startIndex, int count)
+        public int IndexOf(char value, int startIndex, int count)
         {
             if ((uint)startIndex > (uint)Length)
             {
@@ -274,7 +274,7 @@ namespace System
             return LastIndexOf(value, startIndex, startIndex + 1);
         }
 
-        public unsafe int LastIndexOf(char value, int startIndex, int count)
+        public int LastIndexOf(char value, int startIndex, int count)
         {
             if (Length == 0)
             {
@@ -317,7 +317,7 @@ namespace System
             return LastIndexOfAny(anyOf, startIndex, startIndex + 1);
         }
 
-        public unsafe int LastIndexOfAny(char[] anyOf, int startIndex, int count)
+        public int LastIndexOfAny(char[] anyOf, int startIndex, int count)
         {
             if (anyOf is null)
             {

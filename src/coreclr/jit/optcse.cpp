@@ -1635,6 +1635,9 @@ CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler)
     madeChanges    = false;
     codeOptKind    = m_pCompiler->compCodeOpt();
     enableConstCSE = Compiler::optConstantCSEEnabled();
+#if defined(TARGET_AMD64)
+    cntCalleeTrashInt = pCompiler->get_CNT_CALLEE_TRASH_INT();
+#endif // TARGET_AMD64
 
 #ifdef DEBUG
     // Track the order of CSEs done (candidate number)
@@ -1825,7 +1828,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_ADD: // Check for ADDRMODE flag on these Binary Operators
         case GT_MUL:
         case GT_LSH:
-            if ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0)
+            if (tree->IsPartOfAddressMode())
             {
                 return false;
             }
@@ -1905,6 +1908,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_COLON:
         case GT_QMARK:
         case GT_NOP:
+        case GT_GCPOLL:
         case GT_RETURN:
             return false; // Currently the only special nodes that we hit
                           // that we know that we don't want to CSE
@@ -3930,7 +3934,7 @@ void CSE_Heuristic::Initialize()
 
         if (onStack)
         {
-            frameSize += m_pCompiler->lvaLclSize(lclNum);
+            frameSize += m_pCompiler->lvaLclStackHomeSize(lclNum);
         }
         else
         {
@@ -5114,10 +5118,7 @@ void CSE_HeuristicCommon::ReplaceCSENode(Statement* stmt, GenTree* exp, GenTree*
 //
 void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, const UseDefLocation& useDefLoc)
 {
-    if (!ssaBuilder.InsertUse(useDefLoc))
-    {
-        return;
-    }
+    ssaBuilder.InsertUse(useDefLoc);
 
     GenTreeLclVar* lcl = useDefLoc.Tree;
     assert(lcl->HasSsaName());

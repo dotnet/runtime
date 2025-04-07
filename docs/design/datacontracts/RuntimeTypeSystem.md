@@ -159,6 +159,8 @@ partial interface IRuntimeTypeSystem : IContract
     // Get an instruction pointer that can be called to cause the MethodDesc to be executed
     public virtual TargetCodePointer GetNativeCode(MethodDescHandle methodDesc);
 
+    // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
+    public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
 }
 ```
 
@@ -638,6 +640,7 @@ We depend on the following data descriptors:
 | `MethodDesc` | `Slot` | The method's slot |
 | `MethodDesc` | `Flags` | The method's flags |
 | `MethodDesc` | `Flags3AndTokenRemainder` | More flags for the method, and the low bits of the method's token's RID |
+| `MethodDesc` | `GCCoverageInfo` | The method's GCCover debug info, if supported |
 | `MethodDescCodeData` | `VersioningState` | The IL versioning state associated with a method descriptor
 | `MethodDescChunk` | `MethodTable` | The method table set of methods belongs to |
 | `MethodDescChunk` | `Next` | The next chunk of methods |
@@ -654,6 +657,7 @@ We depend on the following data descriptors:
 | `StoredSigMethodDesc` | `cSig` | Count of bytes in the metadata signature |
 | `StoredSigMethodDesc` | `ExtendedFlags` | Flags field for the `StoredSigMethodDesc` |
 | `DynamicMethodDesc` | `MethodName` | Pointer to Null-terminated UTF8 string describing the Method desc |
+| `GCCoverageInfo` | `SavedCode` | Pointer to the GCCover saved code copy, if supported |
 
 
 The contract depends on the following other contracts

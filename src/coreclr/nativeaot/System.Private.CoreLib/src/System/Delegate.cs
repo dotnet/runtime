@@ -313,7 +313,11 @@ namespace System
                 }
                 else
                 {
-                    functionPointer = ldftnResult;
+                    nint unboxedPointer = RuntimeAugments.GetCodeTarget(ldftnResult);
+                    if (unboxedPointer == ldftnResult)
+                        unboxedPointer = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(ldftnResult);
+
+                    functionPointer = unboxedPointer != 0 ? unboxedPointer : ldftnResult;
                 }
                 return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromStartAddress(functionPointer);
             }

@@ -135,11 +135,7 @@ void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowab
         // it is presumed that the handle to the SO exception is elsewhere.  (Current knowledge
         // as of 7/15/05 is that it is stored in Thread::m_LastThrownObjectHandle;
         //
-        if (stecFlags != STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow
-#ifdef FEATURE_INTERPRETER
-            && stecFlags != STEC_CurrentTrackerEqualNullOkForInterpreter
-#endif // FEATURE_INTERPRETER
-            )
+        if (stecFlags != STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow)
         {
             CONSISTENCY_CHECK(CheckPointer(m_pCurrentTracker));
         }

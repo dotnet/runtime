@@ -7687,7 +7687,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((BitConverter.SingleToInt32Bits(op1[i]) == 1 && BitConverter.SingleToInt32Bits(op2[i]) == 1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1) && (op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7697,59 +7697,59 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((BitConverter.DoubleToInt64Bits(op1[i]) == 1 && BitConverter.DoubleToInt64Bits(op2[i]) == 1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1) && (op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
 
         public static byte getMaskByte()
         {
-            return (byte)(TestLibrary.Generator.GetByte()%(byte)2);
+            return (byte)(TestLibrary.Generator.GetByte() % 2);
         }
 
         public static sbyte getMaskSByte()
         {
-            return (sbyte)(TestLibrary.Generator.GetSByte()%(sbyte)2);
+            return (sbyte)(TestLibrary.Generator.GetByte() % 2);
         }
 
         public static short getMaskInt16()
         {
-            return (short)(TestLibrary.Generator.GetInt16()%(short)2);
+            return (short)(TestLibrary.Generator.GetUInt16() % 2);
         }
 
         public static ushort getMaskUInt16()
         {
-            return (ushort)(TestLibrary.Generator.GetUInt16()%(ushort)2);
+            return (ushort)(TestLibrary.Generator.GetUInt16() % 2);
         }
 
         public static int getMaskInt32()
         {
-            return (int)(TestLibrary.Generator.GetInt32()%(int)2);
+            return (int)(TestLibrary.Generator.GetUInt32() % 2);
         }
 
         public static uint getMaskUInt32()
         {
-            return (uint)(TestLibrary.Generator.GetUInt32()%(uint)2);
+            return (uint)(TestLibrary.Generator.GetUInt32() % 2);
         }
 
         public static long getMaskInt64()
         {
-            return (long)(TestLibrary.Generator.GetInt64()%(long)2);
+            return (long)(TestLibrary.Generator.GetUInt64() % 2);
         }
 
         public static ulong getMaskUInt64()
         {
-            return (ulong)(TestLibrary.Generator.GetUInt64()%(ulong)2);
+            return (ulong)(TestLibrary.Generator.GetUInt64() % 2);
         }
 
         public static float getMaskSingle()
         {
-            return (float)(BitConverter.Int32BitsToSingle(TestLibrary.Generator.GetInt32()%(int)2));
+            return (float)(TestLibrary.Generator.GetUInt32() % 2);
         }
 
         public static double getMaskDouble()
         {
-            return (double)(BitConverter.Int64BitsToDouble(TestLibrary.Generator.GetInt64()%(long)2));
+            return (double)(TestLibrary.Generator.GetUInt64() % 2);
         }
 
         public static int MaskNumberOfElementsVector(int elems, SveMaskPattern pattern)

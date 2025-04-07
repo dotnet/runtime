@@ -159,14 +159,14 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.HasHostExecutable))]
-        [InlineData("STAMain.exe", "GetApartmentStateTest")]
-        [InlineData("STAMain.exe", "SetApartmentStateTest")]
-        [InlineData("STAMain.exe", "WaitAllNotSupportedOnSta_Test0")]
-        [InlineData("STAMain.exe", "WaitAllNotSupportedOnSta_Test1")]
-        [InlineData("MTAMain.exe", "GetApartmentStateTest")]
-        [InlineData("MTAMain.exe", "SetApartmentStateTest")]
-        [InlineData("DefaultApartmentStateMain.exe", "GetApartmentStateTest")]
-        [InlineData("DefaultApartmentStateMain.exe", "SetApartmentStateTest")]
+        [InlineData("STAMain.dll", "GetApartmentStateTest")]
+        [InlineData("STAMain.dll", "SetApartmentStateTest")]
+        [InlineData("STAMain.dll", "WaitAllNotSupportedOnSta_Test0")]
+        [InlineData("STAMain.dll", "WaitAllNotSupportedOnSta_Test1")]
+        [InlineData("MTAMain.dll", "GetApartmentStateTest")]
+        [InlineData("MTAMain.dll", "SetApartmentStateTest")]
+        [InlineData("DefaultApartmentStateMain.dll", "GetApartmentStateTest")]
+        [InlineData("DefaultApartmentStateMain.dll", "SetApartmentStateTest")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86722", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public static void ApartmentState_AttributePresent(string appName, string testName)

@@ -6,7 +6,7 @@ using System.Reflection.Metadata;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class EcmaMetadataFactory : IContractFactory<IEcmaMetadata>
+public sealed class EcmaMetadataFactory : IContractFactory<IEcmaMetadata>
 {
     IEcmaMetadata IContractFactory<IEcmaMetadata>.CreateContract(Target target, int version)
     {

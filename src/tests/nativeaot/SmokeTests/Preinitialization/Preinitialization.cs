@@ -56,10 +56,12 @@ internal class Program
         TestStaticInterfaceMethod.Run();
         TestConstrainedCall.Run();
         TestTypeHandles.Run();
+        TestPreinitDefinition.Run();
         TestIsValueType.Run();
         TestIndirectLoads.Run();
         TestInitBlock.Run();
         TestDataflow.Run();
+        TestConversions.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -1334,6 +1336,22 @@ class TestTypeHandles
     }
 }
 
+class TestPreinitDefinition
+{
+    class Gen<T>;
+
+    class PreinitHolder
+    {
+        public readonly static Type TheType = typeof(Gen<>);
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(PreinitHolder));
+        Assert.AreEqual("Gen`1", PreinitHolder.TheType.Name);
+    }
+}
+
 class TestIsValueType
 {
     class IsValueTypeTests
@@ -1429,6 +1447,234 @@ class TestDataflow
     }
 }
 
+class TestConversions
+{
+    private static int GetInt() => -42;
+    private static long GetLong() => -42;
+    private static float GetFloat() => -42;
+    private static double GetDouble() => -42;
+    private static nint GetNativeInt() => -42;
+
+    class IntConversions
+    {
+        internal static byte s_byte;
+        internal static sbyte s_sbyte;
+        internal static short s_short;
+        internal static ushort s_ushort;
+        internal static uint s_uint;
+        internal static long s_long;
+        internal static ulong s_ulong;
+        internal static float s_float;
+        internal static double s_double;
+        internal static nint s_nint;
+        internal static nuint s_nuint;
+
+        static IntConversions()
+        {
+            s_byte = unchecked((byte)GetInt());
+            s_sbyte = unchecked((sbyte)GetInt());
+            s_short = unchecked((short)GetInt());
+            s_ushort = unchecked((ushort)GetInt());
+            s_uint = unchecked((uint)GetInt());
+            s_long = unchecked((long)GetInt());
+            s_ulong = unchecked((ulong)GetInt());
+            s_float = unchecked((float)GetInt());
+            s_double = unchecked(GetInt());
+            s_nint = unchecked((nint)GetInt());
+            s_nuint = unchecked((nuint)GetInt());
+        }
+    }
+
+    class LongConversions
+    {
+        internal static byte s_byte;
+        internal static sbyte s_sbyte;
+        internal static short s_short;
+        internal static ushort s_ushort;
+        internal static int s_int;
+        internal static uint s_uint;
+        internal static ulong s_ulong;
+        internal static float s_float;
+        internal static double s_double;
+        internal static nint s_nint;
+        internal static nuint s_nuint;
+
+        static LongConversions()
+        {
+            s_byte = unchecked((byte)GetLong());
+            s_sbyte = unchecked((sbyte)GetLong());
+            s_short = unchecked((short)GetLong());
+            s_ushort = unchecked((ushort)GetLong());
+            s_int = unchecked((int)GetLong());
+            s_uint = unchecked((uint)GetLong());
+            s_ulong = unchecked((ulong)GetLong());
+            s_float = unchecked((float)GetLong());
+            s_double = unchecked((double)GetLong());
+            s_nint = unchecked((nint)GetLong());
+            s_nuint = unchecked((nuint)GetLong());
+        }
+    }
+
+    class FloatConversions
+    {
+        internal static byte s_byte;
+        internal static sbyte s_sbyte;
+        internal static short s_short;
+        internal static ushort s_ushort;
+        internal static int s_int;
+        internal static uint s_uint;
+        internal static long s_long;
+        internal static ulong s_ulong;
+        internal static double s_double;
+        internal static nint s_nint;
+        internal static nuint s_nuint;
+
+        static FloatConversions()
+        {
+            s_byte = unchecked((byte)GetFloat());
+            s_sbyte = unchecked((sbyte)GetFloat());
+            s_short = unchecked((short)GetFloat());
+            s_ushort = unchecked((ushort)GetFloat());
+            s_int = unchecked((int)GetFloat());
+            s_uint = unchecked((uint)GetFloat());
+            s_long = unchecked((long)GetFloat());
+            s_ulong = unchecked((ulong)GetFloat());
+            s_double = unchecked((double)GetFloat());
+            s_nint = unchecked((nint)GetFloat());
+            s_nuint = unchecked((nuint)GetFloat());
+        }
+    }
+
+    class DoubleConversions
+    {
+        internal static byte s_byte;
+        internal static sbyte s_sbyte;
+        internal static short s_short;
+        internal static ushort s_ushort;
+        internal static int s_int;
+        internal static uint s_uint;
+        internal static long s_long;
+        internal static ulong s_ulong;
+        internal static float s_float;
+        internal static nint s_nint;
+        internal static nuint s_nuint;
+
+        static DoubleConversions()
+        {
+            s_byte = unchecked((byte)GetDouble());
+            s_sbyte = unchecked((sbyte)GetDouble());
+            s_short = unchecked((short)GetDouble());
+            s_ushort = unchecked((ushort)GetDouble());
+            s_int = unchecked((int)GetDouble());
+            s_uint = unchecked((uint)GetDouble());
+            s_long = unchecked((long)GetDouble());
+            s_ulong = unchecked((ulong)GetDouble());
+            s_float = unchecked((float)GetDouble());
+            s_nint = unchecked((nint)GetDouble());
+            s_nuint = unchecked((nuint)GetDouble());
+        }
+    }
+
+    class NativeIntConversions
+    {
+        internal static byte s_byte;
+        internal static sbyte s_sbyte;
+        internal static short s_short;
+        internal static ushort s_ushort;
+        internal static int s_int;
+        internal static uint s_uint;
+        internal static long s_long;
+        internal static ulong s_ulong;
+        internal static float s_float;
+        internal static double s_double;
+        internal static nuint s_nuint;
+
+        static NativeIntConversions()
+        {
+            s_byte = unchecked((byte)GetNativeInt());
+            s_sbyte = unchecked((sbyte)GetNativeInt());
+            s_short = unchecked((short)GetNativeInt());
+            s_ushort = unchecked((ushort)GetNativeInt());
+            s_int = unchecked((int)GetNativeInt());
+            s_uint = unchecked((uint)GetNativeInt());
+            s_long = unchecked((long)GetNativeInt());
+            s_ulong = unchecked((ulong)GetNativeInt());
+            s_float = unchecked((float)GetNativeInt());
+            s_double = unchecked((double)GetNativeInt());
+            s_nuint = unchecked((nuint)GetNativeInt());
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(IntConversions));
+        Assert.AreEqual(unchecked((byte)GetInt()), IntConversions.s_byte);
+        Assert.AreEqual(unchecked((sbyte)GetInt()), IntConversions.s_sbyte);
+        Assert.AreEqual(unchecked((short)GetInt()), IntConversions.s_short);
+        Assert.AreEqual(unchecked((ushort)GetInt()), IntConversions.s_ushort);
+        Assert.AreEqual(unchecked((uint)GetInt()), IntConversions.s_uint);
+        Assert.AreEqual(unchecked((long)GetInt()), IntConversions.s_long);
+        Assert.AreEqual(unchecked((ulong)GetInt()), IntConversions.s_ulong);
+        Assert.AreEqual(unchecked((float)GetInt()), IntConversions.s_float);
+        Assert.AreEqual(unchecked((double)GetInt()), IntConversions.s_double);
+        Assert.AreEqual(unchecked((nint)GetInt()), IntConversions.s_nint);
+        Assert.AreEqual(unchecked((nuint)GetInt()), IntConversions.s_nuint);
+
+        Assert.IsPreinitialized(typeof(LongConversions));
+        Assert.AreEqual(unchecked((byte)GetLong()), LongConversions.s_byte);
+        Assert.AreEqual(unchecked((sbyte)GetLong()), LongConversions.s_sbyte);
+        Assert.AreEqual(unchecked((short)GetLong()), LongConversions.s_short);
+        Assert.AreEqual(unchecked((ushort)GetLong()), LongConversions.s_ushort);
+        Assert.AreEqual(unchecked((int)GetLong()), LongConversions.s_int);
+        Assert.AreEqual(unchecked((uint)GetLong()), LongConversions.s_uint);
+        Assert.AreEqual(unchecked((ulong)GetLong()), LongConversions.s_ulong);
+        Assert.AreEqual(unchecked((float)GetLong()), LongConversions.s_float);
+        Assert.AreEqual(unchecked((double)GetLong()), LongConversions.s_double);
+        Assert.AreEqual(unchecked((nint)GetLong()), LongConversions.s_nint);
+        Assert.AreEqual(unchecked((nuint)GetLong()), LongConversions.s_nuint);
+
+        Assert.IsPreinitialized(typeof(FloatConversions));
+        Assert.AreEqual(unchecked((byte)GetFloat()), FloatConversions.s_byte);
+        Assert.AreEqual(unchecked((sbyte)GetFloat()), FloatConversions.s_sbyte);
+        Assert.AreEqual(unchecked((short)GetFloat()), FloatConversions.s_short);
+        Assert.AreEqual(unchecked((ushort)GetFloat()), FloatConversions.s_ushort);
+        Assert.AreEqual(unchecked((int)GetFloat()), FloatConversions.s_int);
+        Assert.AreEqual(unchecked((uint)GetFloat()), FloatConversions.s_uint);
+        Assert.AreEqual(unchecked((long)GetFloat()), FloatConversions.s_long);
+        Assert.AreEqual(unchecked((ulong)GetFloat()), FloatConversions.s_ulong);
+        Assert.AreEqual(unchecked((double)GetFloat()), FloatConversions.s_double);
+        Assert.AreEqual(unchecked((nint)GetFloat()), FloatConversions.s_nint);
+        Assert.AreEqual(unchecked((nuint)GetFloat()), FloatConversions.s_nuint);
+
+        Assert.IsPreinitialized(typeof(DoubleConversions));
+        Assert.AreEqual(unchecked((byte)GetDouble()), DoubleConversions.s_byte);
+        Assert.AreEqual(unchecked((sbyte)GetDouble()), DoubleConversions.s_sbyte);
+        Assert.AreEqual(unchecked((short)GetDouble()), DoubleConversions.s_short);
+        Assert.AreEqual(unchecked((ushort)GetDouble()), DoubleConversions.s_ushort);
+        Assert.AreEqual(unchecked((int)GetDouble()), DoubleConversions.s_int);
+        Assert.AreEqual(unchecked((uint)GetDouble()), DoubleConversions.s_uint);
+        Assert.AreEqual(unchecked((long)GetDouble()), DoubleConversions.s_long);
+        Assert.AreEqual(unchecked((ulong)GetDouble()), DoubleConversions.s_ulong);
+        Assert.AreEqual(unchecked((float)GetDouble()), DoubleConversions.s_float);
+        Assert.AreEqual(unchecked((nint)GetDouble()), DoubleConversions.s_nint);
+        Assert.AreEqual(unchecked((nuint)GetDouble()), DoubleConversions.s_nuint);
+
+        Assert.IsPreinitialized(typeof(NativeIntConversions));
+        Assert.AreEqual(unchecked((byte)GetNativeInt()), NativeIntConversions.s_byte);
+        Assert.AreEqual(unchecked((sbyte)GetNativeInt()), NativeIntConversions.s_sbyte);
+        Assert.AreEqual(unchecked((short)GetNativeInt()), NativeIntConversions.s_short);
+        Assert.AreEqual(unchecked((ushort)GetNativeInt()), NativeIntConversions.s_ushort);
+        Assert.AreEqual(unchecked((int)GetNativeInt()), NativeIntConversions.s_int);
+        Assert.AreEqual(unchecked((uint)GetNativeInt()), NativeIntConversions.s_uint);
+        Assert.AreEqual(unchecked((long)GetNativeInt()), NativeIntConversions.s_long);
+        Assert.AreEqual(unchecked((ulong)GetNativeInt()), NativeIntConversions.s_ulong);
+        Assert.AreEqual(unchecked((float)GetNativeInt()), NativeIntConversions.s_float);
+        Assert.AreEqual(unchecked((double)GetNativeInt()), NativeIntConversions.s_double);
+        Assert.AreEqual(unchecked((nuint)GetNativeInt()), NativeIntConversions.s_nuint);
+    }
+}
+
+
 static class Assert
 {
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
@@ -1438,69 +1684,87 @@ static class Assert
         return type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Static, null, Type.EmptyTypes, null) != null;
     }
 
-    public static void IsPreinitialized(Type type)
+    public static void IsPreinitialized(Type type, [CallerLineNumber] int line = 0)
     {
         if (HasCctor(type))
-            throw new Exception();
+            throw new Exception($"{type} is not preinitialized. At line {line}.");
     }
 
-    public static void IsLazyInitialized(Type type)
+    public static void IsLazyInitialized(Type type, [CallerLineNumber] int line = 0)
     {
         if (!HasCctor(type))
-            throw new Exception();
+            throw new Exception($"{type} is not lazy initialized. At line {line}.");
     }
 
-    public static unsafe void AreEqual(void* v1, void* v2)
+    public static unsafe void AreEqual(void* v1, void* v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {(nint)v1}, but get {(nint)v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(bool v1, bool v2)
+    public static unsafe void AreEqual(bool v1, bool v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(int v1, int v2)
+    public static unsafe void AreEqual(int v1, int v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static void AreEqual(string v1, string v2)
+    public static void AreEqual(string v1, string v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(long v1, long v2)
+    public static unsafe void AreEqual(long v1, long v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(float v1, float v2)
+    public static unsafe void AreEqual(ulong v1, ulong v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(double v1, double v2)
+    public static unsafe void AreEqual(float v1, float v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static void True(bool v)
+    public static unsafe void AreEqual(double v1, double v2, [CallerLineNumber] int line = 0)
+    {
+        if (v1 != v2)
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
+    }
+
+    public static unsafe void AreEqual(nint v1, nint v2, [CallerLineNumber] int line = 0)
+    {
+        if (v1 != v2)
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
+    }
+
+    public static unsafe void AreEqual(nuint v1, nuint v2, [CallerLineNumber] int line = 0)
+    {
+        if (v1 != v2)
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
+    }
+
+    public static void True(bool v, [CallerLineNumber] int line = 0)
     {
         if (!v)
-            throw new Exception();
+            throw new Exception($"Expect True, but get {v}. At line {line}.");
     }
 
-    public static void AreSame<T>(T v1, T v2) where T : class
+    public static void AreSame<T>(T v1, T v2, [CallerLineNumber] int line = 0) where T : class
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"{v1} and {v2} is not the same. At line {line}.");
     }
 }

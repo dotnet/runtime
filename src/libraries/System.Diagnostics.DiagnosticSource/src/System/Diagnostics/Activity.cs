@@ -58,8 +58,8 @@ namespace System.Diagnostics
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
         private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
-        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
-        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
+        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
+        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
         private static readonly AsyncLocal<Activity?> s_current = new AsyncLocal<Activity?>();
@@ -1233,7 +1233,9 @@ namespace System.Diagnostics
                     activity._parentSpanId = parentContext.SpanId.ToString();
                 }
 
-                activity.ActivityTraceFlags = parentContext.TraceFlags;
+                // Note: Don't inherit Recorded from parent as it is set below
+                // based on sampling decision
+                activity.ActivityTraceFlags = parentContext.TraceFlags & ~ActivityTraceFlags.Recorded;
                 activity._parentTraceFlags = (byte)parentContext.TraceFlags;
                 activity.HasRemoteParent = parentContext.IsRemote;
             }
@@ -2004,7 +2006,7 @@ namespace System.Diagnostics
         /// Sets the bytes in 'outBytes' to be random values. outBytes.Length must be either 8 or 16 bytes.
         /// </summary>
         /// <param name="outBytes"></param>
-        internal static unsafe void SetToRandomBytes(Span<byte> outBytes)
+        internal static void SetToRandomBytes(Span<byte> outBytes)
         {
             Debug.Assert(outBytes.Length == 16 || outBytes.Length == 8);
             RandomNumberGenerator r = RandomNumberGenerator.Current;

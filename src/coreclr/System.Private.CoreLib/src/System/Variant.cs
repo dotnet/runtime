@@ -35,7 +35,7 @@ namespace System
             return pUnk == IntPtr.Zero ? null : Marshal.GetObjectForIUnknown(pUnk);
         }
 
-        private static unsafe object? ConvertWrappedObject(object? wrapped)
+        private static object? ConvertWrappedObject(object? wrapped)
         {
             // Historically, for UnknownWrapper and DispatchWrapper, the wrapped object is passed
             // into Variant.SetFieldsObject, and the result set in objRef field is used for

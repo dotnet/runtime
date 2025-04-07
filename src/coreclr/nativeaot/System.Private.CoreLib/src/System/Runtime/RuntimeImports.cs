@@ -33,7 +33,7 @@ namespace System.Runtime
 #if TARGET_UNIX
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCreateCrashDumpIfEnabled")]
-        internal static extern void RhCreateCrashDumpIfEnabled(IntPtr pExceptionRecord, IntPtr pContextRecord);
+        internal static extern void RhCreateCrashDumpIfEnabled(IntPtr pExceptionRecord);
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -93,9 +93,6 @@ namespace System.Runtime
         {
             RhWaitForPendingFinalizers(allowReentrantWait ? 1 : 0);
         }
-
-        [LibraryImport(RuntimeLibrary)]
-        internal static partial void RhInitializeFinalizerThread();
 
         // Get maximum GC generation number.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -379,10 +376,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_CheckArrayStore")]
         internal static extern void RhCheckArrayStore(object array, object? obj);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfAny")]
-        internal static extern unsafe object IsInstanceOf(MethodTable* pTargetType, object obj);
-
         //
         // calls to runtime for allocation
         // These calls are needed in types which cannot use "new" to allocate and need to do it manually
@@ -404,10 +397,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewString")]
         internal static extern unsafe string RhNewString(MethodTable* pEEType, int length);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhBox")]
-        internal static extern unsafe object RhBox(MethodTable* pEEType, ref byte data);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhUnbox")]
@@ -510,6 +499,10 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhUnregisterRefCountedHandleCallback")]
         internal static extern unsafe void RhUnregisterRefCountedHandleCallback(IntPtr pCalloutMethod, MethodTable* pTypeFilter);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetIUnknownAddRef")]
+        internal static extern IntPtr RhGetIUnknownAddRef();
 
 #if FEATURE_OBJCMARSHAL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

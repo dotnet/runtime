@@ -214,15 +214,66 @@ internal static class Utils
         return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
     }
 
+    private static bool ContentEqual(string filePathA, string filePathB)
+    {
+        const int bufferSize = 8192;
+        using FileStream streamA = new(filePathA, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: bufferSize, FileOptions.SequentialScan);
+        using FileStream streamB = new(filePathB, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: bufferSize, FileOptions.SequentialScan);
+
+        if (streamA.Length != streamB.Length)
+            return false;
+
+        byte[] bufferA = new byte[bufferSize];
+        byte[] bufferB = new byte[bufferSize];
+
+        int readA = 0;
+        int readB = 0;
+        int consumedA = 0;
+        int consumedB = 0;
+
+        /*
+            Read both streams in parallel into rolling buffers, comparing overlapping bytes.
+            Advance the consumed amount by the overlap. Refill a buffer when the previous read is exhausted.
+            This keeps the comparison position in sync, even if the read amounts differ.
+         */
+
+        while (true)
+        {
+            if (consumedA == readA)
+            {
+                readA = streamA.Read(bufferA, 0, bufferSize);
+                consumedA = 0;
+            }
+
+            if (consumedB == readB)
+            {
+                readB = streamB.Read(bufferB, 0, bufferSize);
+                consumedB = 0;
+            }
+
+            if (readA == 0 && readB == 0)
+                return true;
+
+            if (readA == 0 || readB == 0)
+                return false;
+
+            int overlap = Math.Min(readA - consumedA, readB - consumedB);
+            if (!bufferA.AsSpan(consumedA, overlap).SequenceEqual(bufferB.AsSpan(consumedB, overlap)))
+                return false;
+
+            consumedA += overlap;
+            consumedB += overlap;
+        }
+    }
+
+#pragma warning disable  IDE0060 // Remove unused parameter
     public static bool CopyIfDifferent(string src, string dst, bool useHash)
+#pragma warning restore  IDE0060 // Remove unused parameter
     {
         if (!File.Exists(src))
             throw new ArgumentException($"Cannot find {src} file to copy", nameof(src));
 
-        bool areDifferent = !File.Exists(dst) ||
-                                (useHash && ComputeHash(src) != ComputeHash(dst)) ||
-                                (File.ReadAllText(src) != File.ReadAllText(dst));
-
+        bool areDifferent = !File.Exists(dst) || !ContentEqual(src, dst);
         if (areDifferent)
             File.Copy(src, dst, true);
 
@@ -252,41 +303,24 @@ internal static class Utils
 
     private static byte[] ComputeHashFromStream(Stream stream, HashAlgorithmType algorithm)
     {
-        if (algorithm == HashAlgorithmType.SHA512)
+        using HashAlgorithm hash = algorithm switch
         {
-            using HashAlgorithm hashAlgorithm = SHA512.Create();
-            return hashAlgorithm.ComputeHash(stream);
-        }
-        else if (algorithm == HashAlgorithmType.SHA384)
-        {
-            using HashAlgorithm hashAlgorithm = SHA384.Create();
-            return hashAlgorithm.ComputeHash(stream);
-        }
-        else if (algorithm == HashAlgorithmType.SHA256)
-        {
-            using HashAlgorithm hashAlgorithm = SHA256.Create();
-            return hashAlgorithm.ComputeHash(stream);
-        }
-        else
-        {
-            throw new ArgumentException($"Unsupported hash algorithm: {algorithm}");
-        }
+            HashAlgorithmType.SHA512 => SHA512.Create(),
+            HashAlgorithmType.SHA384 => SHA384.Create(),
+            HashAlgorithmType.SHA256 => SHA256.Create(),
+            _ => throw new ArgumentException($"Unsupported hash algorithm: {algorithm}")
+        };
+        return hash.ComputeHash(stream);
     }
 
     private static string EncodeHash(byte[] data, HashEncodingType encoding)
     {
-        if (encoding == HashEncodingType.Base64)
+        return encoding switch
         {
-            return Convert.ToBase64String(data);
-        }
-        else if (encoding == HashEncodingType.Base64Safe)
-        {
-            return ToBase64SafeString(data);
-        }
-        else
-        {
-            throw new ArgumentException($"Unsupported hash encoding: {encoding}");
-        }
+            HashEncodingType.Base64 => Convert.ToBase64String(data),
+            HashEncodingType.Base64Safe => ToBase64SafeString(data),
+            _ => throw new ArgumentException($"Unsupported hash encoding: {encoding}")
+        };
     }
 
     public static string ComputeHash(string filepath)

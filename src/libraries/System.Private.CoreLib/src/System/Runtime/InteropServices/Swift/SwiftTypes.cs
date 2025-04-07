@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices.Swift
     /// </para>
     /// </remarks>
     [Intrinsic]
-    public readonly unsafe struct SwiftSelf<T> where T: unmanaged
+    public readonly struct SwiftSelf<T> where T: unmanaged
     {
         /// <summary>
         /// Creates a new instance of the SwiftSelf struct with the specified value.

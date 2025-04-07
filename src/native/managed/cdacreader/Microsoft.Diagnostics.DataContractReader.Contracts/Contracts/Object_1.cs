@@ -88,7 +88,7 @@ internal readonly struct Object_1 : IObject
         else
         {
             // Single-dimensional, zero-based - doesn't have bounds
-            boundsStart = address + (ulong)arrayTypeInfo.Fields[Data.Array.FieldNames.NumComponents].Offset;
+            boundsStart = address + (ulong)arrayTypeInfo.Fields[Constants.FieldNames.Array.NumComponents].Offset;
             lowerBounds = _target.ReadGlobalPointer(Constants.Globals.ArrayBoundsZero);
         }
 

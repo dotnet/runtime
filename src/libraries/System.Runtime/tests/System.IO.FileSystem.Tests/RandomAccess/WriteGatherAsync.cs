@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -13,6 +14,7 @@ using Xunit;
 namespace System.IO.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "async file IO is not supported on browser")]
+    [Collection(nameof(DisableParallelization))] // don't run in parallel, as some of these tests use a LOT of resources
     public class RandomAccess_WriteGatherAsync : RandomAccess_Base<ValueTask>
     {
         protected override ValueTask MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
@@ -151,21 +153,6 @@ namespace System.IO.Tests
             const int BufferSize = int.MaxValue / 1000;
             const long FileSize = (long)BufferCount * BufferSize;
             string filePath = GetTestFilePath();
-            ReadOnlyMemory<byte> writeBuffer = RandomNumberGenerator.GetBytes(BufferSize);
-            List<ReadOnlyMemory<byte>> writeBuffers = Enumerable.Repeat(writeBuffer, BufferCount).ToList();
-            List<Memory<byte>> readBuffers = new List<Memory<byte>>(BufferCount);
-
-            try
-            {
-                for (int i = 0; i < BufferCount; i++)
-                {
-                    readBuffers.Add(new byte[BufferSize]);
-                }
-            }
-            catch (OutOfMemoryException)
-            {
-                throw new SkipTestException("Not enough memory.");
-            }
 
             FileOptions options = asyncFile ? FileOptions.Asynchronous : FileOptions.None; // we need to test both code paths
             options |= FileOptions.DeleteOnClose;
@@ -180,29 +167,86 @@ namespace System.IO.Tests
                 throw new SkipTestException("Not enough disk space.");
             }
 
-            long fileOffset = 0, bytesRead = 0;
-            try
+            using (sfh)
+            {
+                ReadOnlyMemory<byte> writeBuffer = RandomNumberGenerator.GetBytes(BufferSize);
+                List<ReadOnlyMemory<byte>> writeBuffers = Enumerable.Repeat(writeBuffer, BufferCount).ToList();
+
+                List<NativeMemoryManager> memoryManagers = new List<NativeMemoryManager>(BufferCount);
+                List<Memory<byte>> readBuffers = new List<Memory<byte>>(BufferCount);
+
+                try
+                {
+                    try
+                    {
+                        for (int i = 0; i < BufferCount; i++)
+                        {
+                            // We are using native memory here to get OOM as soon as possible.
+                            NativeMemoryManager nativeMemoryManager = new(BufferSize);
+                            memoryManagers.Add(nativeMemoryManager);
+                            readBuffers.Add(nativeMemoryManager.Memory);
+                        }
+                    }
+                    catch (OutOfMemoryException)
+                    {
+                        throw new SkipTestException("Not enough memory.");
+                    }
+
+                    await Verify(asyncMethod, FileSize, sfh, writeBuffer, writeBuffers, readBuffers);
+                }
+                finally
+                {
+                    foreach (IDisposable memoryManager in memoryManagers)
+                    {
+                        memoryManager.Dispose();
+                    }
+                }
+            }
+
+            static async Task Verify(bool asyncMethod, long FileSize, SafeFileHandle sfh, ReadOnlyMemory<byte> writeBuffer, List<ReadOnlyMemory<byte>> writeBuffers, List<Memory<byte>> readBuffers)
             {
                 if (asyncMethod)
                 {
-                    await RandomAccess.WriteAsync(sfh, writeBuffers, fileOffset);
-                    bytesRead = await RandomAccess.ReadAsync(sfh, readBuffers, fileOffset);
+                    await RandomAccess.WriteAsync(sfh, writeBuffers, 0);
                 }
                 else
                 {
-                    RandomAccess.Write(sfh, writeBuffers, fileOffset);
-                    bytesRead = RandomAccess.Read(sfh, readBuffers, fileOffset);
+                    RandomAccess.Write(sfh, writeBuffers, 0);
                 }
-            }
-            finally
-            {
-                sfh.Dispose(); // delete the file ASAP to avoid running out of resources in CI
-            }
 
-            Assert.Equal(FileSize, bytesRead);
-            for (int i = 0; i < BufferCount; i++)
-            {
-                Assert.Equal(writeBuffer, readBuffers[i]);
+                Assert.Equal(FileSize, RandomAccess.GetLength(sfh));
+
+                long fileOffset = 0;
+                while (fileOffset < FileSize)
+                {
+                    long bytesRead = asyncMethod
+                        ? await RandomAccess.ReadAsync(sfh, readBuffers, fileOffset)
+                        : RandomAccess.Read(sfh, readBuffers, fileOffset);
+
+                    Assert.InRange(bytesRead, 0, FileSize);
+
+                    while (bytesRead > 0)
+                    {
+                        Memory<byte> readBuffer = readBuffers[0];
+                        if (bytesRead >= readBuffer.Length)
+                        {
+                            AssertExtensions.SequenceEqual(writeBuffer.Span, readBuffer.Span);
+
+                            bytesRead -= readBuffer.Length;
+                            fileOffset += readBuffer.Length;
+
+                            readBuffers.RemoveAt(0);
+                        }
+                        else
+                        {
+                            // A read has finished somewhere in the middle of one of the read buffers.
+                            // Example: buffer had 30 bytes and only 10 were read.
+                            // We don't read the missing part, but try to read the whole buffer again.
+                            // It's not optimal from performance perspective, but it keeps the test logic simple.
+                            break;
+                        }
+                    }
+                }
             }
         }
 

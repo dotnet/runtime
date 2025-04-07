@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices
         /// it is important for the caller to understand the COM object may have apartment affinity and therefore
         /// if the current thread is not in the correct apartment or the COM object is not a proxy this call may fail.
         /// </remarks>
-        public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
+        public static bool TryGetComInstance(object obj, out IntPtr unknown)
         {
             if (obj == null)
             {
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices
         /// <param name="unknown">An unmanaged wrapper</param>
         /// <param name="obj">A managed object</param>
         /// <returns>True if the wrapper was resolved to a managed object, otherwise false.</returns>
-        public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
+        public static bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
         {
             obj = null;
             if (unknown == IntPtr.Zero)

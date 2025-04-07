@@ -387,6 +387,10 @@ public class ObjectFileScraper
         state.ReadBytes(endMagic.AsSpan());
         if (!CheckEndMagic(endMagic))
         {
+            if (endMagic.All(b => b == 0))
+            {
+                throw new InvalidOperationException("expected endMagic, got all zeros. Did you add something to the data descriptor that can't be initialized at compile time?");
+            }
             throw new InvalidOperationException($"expected endMagic, got 0x{endMagic[0]:x} 0x{endMagic[1]:x} 0x{endMagic[2]:x} 0x{endMagic[3]:x}");
         }
         else

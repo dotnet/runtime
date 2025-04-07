@@ -51,7 +51,9 @@ public:
     PTR_ICodeManager GetCodeManager();
     MethodInfo *     GetMethodInfo();
     bool             IsActiveStackFrame();
+#ifdef TARGET_X86
     bool             GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocation, GCRefKind * pKind);
+#endif
     void             SetControlPC(PTR_VOID controlPC);
 
     static bool     IsValidReturnAddress(PTR_VOID pvAddress);
@@ -191,6 +193,19 @@ private:
         PTR_uintptr_t pR30;
         PTR_uintptr_t pR31;
         PTR_uintptr_t pFP;
+#elif defined(TARGET_RISCV64)
+        PTR_uintptr_t pS1;
+        PTR_uintptr_t pS2;
+        PTR_uintptr_t pS3;
+        PTR_uintptr_t pS4;
+        PTR_uintptr_t pS5;
+        PTR_uintptr_t pS6;
+        PTR_uintptr_t pS7;
+        PTR_uintptr_t pS8;
+        PTR_uintptr_t pS9;
+        PTR_uintptr_t pS10;
+        PTR_uintptr_t pS11;
+        PTR_uintptr_t pFP;
 #elif defined(UNIX_AMD64_ABI)
         PTR_uintptr_t pRbp;
         PTR_uintptr_t pRbx;
@@ -221,10 +236,12 @@ protected:
     PTR_ICodeManager    m_pCodeManager;
     MethodInfo          m_methodInfo;
     PTR_VOID            m_effectiveSafePointAddress;
+#ifdef TARGET_X86
     PTR_OBJECTREF       m_pHijackedReturnValue;
     GCRefKind           m_HijackedReturnValueKind;
-    PTR_uintptr_t      m_pConservativeStackRangeLowerBound;
-    PTR_uintptr_t      m_pConservativeStackRangeUpperBound;
+#endif
+    PTR_uintptr_t       m_pConservativeStackRangeLowerBound;
+    PTR_uintptr_t       m_pConservativeStackRangeUpperBound;
     uint32_t            m_dwFlags;
     PTR_ExInfo          m_pNextExInfo;
     PTR_VOID            m_pendingFuncletFramePointer;

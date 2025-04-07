@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net
 {
@@ -386,9 +387,44 @@ namespace System.Net
         private static IPAddress[] GetHostAddressesCore(string hostName, AddressFamily addressFamily, NameResolutionActivity? activityOrDefault = default) =>
             (IPAddress[])GetHostEntryOrAddressesCore(hostName, justAddresses: true, addressFamily, activityOrDefault);
 
+        private static bool ValidateAddressFamily(ref AddressFamily addressFamily, string hostName, bool justAddresses, [NotNullWhen(false)] out object? resultOnFailure)
+        {
+            if (!SocketProtocolSupportPal.OSSupportsIPv6)
+            {
+                if (addressFamily == AddressFamily.InterNetworkV6)
+                {
+                    // The caller requested IPv6, but the OS doesn't support it; return an empty result.
+                    IPAddress[] addresses = Array.Empty<IPAddress>();
+                    resultOnFailure = justAddresses ? (object)
+                        addresses :
+                        new IPHostEntry
+                        {
+                            AddressList = addresses,
+                            HostName = hostName,
+                            Aliases = Array.Empty<string>()
+                        };
+                    return false;
+                }
+                else if (addressFamily == AddressFamily.Unspecified)
+                {
+                    // Narrow the query to IPv4.
+                    addressFamily = AddressFamily.InterNetwork;
+                }
+            }
+
+            resultOnFailure = null;
+            return true;
+        }
+
         private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses, AddressFamily addressFamily, NameResolutionActivity? activityOrDefault = default)
         {
             ValidateHostName(hostName);
+
+            if (!ValidateAddressFamily(ref addressFamily, hostName, justAddresses, out object? resultOnFailure))
+            {
+                Debug.Assert(!activityOrDefault.HasValue);
+                return resultOnFailure;
+            }
 
             // NameResolutionActivity may have already been set if we're being called from RunAsync.
             NameResolutionActivity activity = activityOrDefault ?? NameResolutionTelemetry.Log.BeforeResolution(hostName);
@@ -463,6 +499,11 @@ namespace System.Net
 
             NameResolutionTelemetry.Log.AfterResolution(address, activity, answer: name);
 
+            if (!ValidateAddressFamily(ref addressFamily, name, justAddresses, out object? resultOnFailure))
+            {
+                return resultOnFailure;
+            }
+
             // Do the forward lookup to get the IPs for that host name
             activity = NameResolutionTelemetry.Log.BeforeResolution(name);
 
@@ -516,6 +557,13 @@ namespace System.Net
                 return justAddresses ? (Task)
                     Task.FromCanceled<IPAddress[]>(cancellationToken) :
                     Task.FromCanceled<IPHostEntry>(cancellationToken);
+            }
+
+            if (!ValidateAddressFamily(ref family, hostName, justAddresses, out object? resultOnFailure))
+            {
+                return justAddresses ? (Task)
+                    Task.FromResult((IPAddress[])resultOnFailure) :
+                    Task.FromResult((IPHostEntry)resultOnFailure);
             }
 
             object asyncState;

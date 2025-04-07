@@ -217,7 +217,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
             if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
             {
-                assert(isGeneralRegister(id->idReg1()));
                 assert(id->idAddr()->iiaAddr != nullptr);
             }
             else
@@ -940,6 +939,18 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg4()));
             break;
 
+        case IF_PC_1A: // PC_1A   ................ ...........ddddd      Rd
+            assert(id->idOpSize() == EA_8BYTE);
+            assert(isGeneralRegister(id->idReg1()));
+            break;
+
+        case IF_PC_2A: // PC_2A   X........X...... ......nnnnnddddd      Rd Rn
+            assert(id->idOpSize() == EA_8BYTE);
+            assert(isGeneralRegister(id->idReg1()));
+            assert(isIntegerRegister(id->idReg2())); // SP
+            break;
+
+        case IF_PC_0A: // PC_0A   ................ ................
         case IF_SN_0A: // SN_0A   ................ ................
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
         case IF_SI_0B: // SI_0B   ................ ....bbbb........               imm4 - barrier
@@ -1066,8 +1077,30 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
             assert(emitInsIsLoad(ins));
             return true;
 
+        case IF_PC_1A: // PC_1A   ................ ...........ddddd      Rd
+            return (ins == INS_autiza || ins == INS_paciza || ins == INS_xpacd || ins == INS_xpaci);
+
+        case IF_PC_2A: // PC_2A   X........X...... ......nnnnnddddd      Rd Rn
+            return (ins == INS_autia || ins == INS_pacia);
+
         case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             return ins == INS_mrs_tpid0;
+
+        // Below SVE instructions write to GPR and hence GC reg
+        case IF_SVE_CO_3A: // clasta, clastb
+        case IF_SVE_BM_1A: // decb, decd, dech, decw, incb, incd, inch, incw
+        case IF_SVE_BO_1A: // sqdecb, sqdecd, sqdech, sqdecw, sqincb, sqincd, sqinch, sqincw, uqdecb, uqdecd, uqdech,
+                           // uqdecw, uqincb, uqincd, uqinch, uqincw
+        case IF_SVE_CS_3A: // lasta, lastb
+        case IF_SVE_DK_3A: // cntp
+        case IF_SVE_DL_2A: // cntp
+        case IF_SVE_DM_2A: // decp, incp
+        case IF_SVE_DO_2A: // sqdecp, sqincp, uqdecp, uqincp
+        case IF_SVE_BB_2A: // addpl, addvl
+        case IF_SVE_BC_1A: // rdvl
+        case IF_SVE_BL_1A: // cntb, cntd, cnth, cntw
+        case IF_SVE_DS_2A: // ctermeq, ctermne
+            return true;
 
         default:
             return false;
@@ -3651,7 +3684,22 @@ void emitter::emitIns(instruction ins)
 
     if (ins != INS_BREAKPOINT)
     {
-        assert(fmt == IF_SN_0A);
+        switch (ins)
+        {
+            case INS_autia1716:
+            case INS_autiasp:
+            case INS_autiaz:
+            case INS_pacia1716:
+            case INS_paciasp:
+            case INS_paciaz:
+            case INS_xpaclri:
+                assert(fmt == IF_PC_0A);
+                break;
+
+            default:
+                assert(fmt == IF_SN_0A);
+                break;
+        }
     }
 
     id->idIns(ins);
@@ -3717,9 +3765,13 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
             break;
 
         case INS_dczva:
+        case INS_autiza:
+        case INS_paciza:
+        case INS_xpacd:
+        case INS_xpaci:
             assert(isGeneralRegister(reg));
             assert(attr == EA_8BYTE);
-            fmt = IF_SR_1A;
+            fmt = (ins == INS_dczva) ? IF_SR_1A : IF_PC_1A;
             break;
 
         case INS_mrs_tpid0:
@@ -4643,13 +4695,13 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_str:
         case INS_strb:
         case INS_strh:
-        case INS_cmn:
         case INS_tst:
             assert(insOptsNone(opt));
             emitIns_R_R_I(ins, attr, reg1, reg2, 0, INS_OPTS_NONE);
             return;
 
         case INS_cmp:
+        case INS_cmn:
             emitIns_R_R_I(ins, attr, reg1, reg2, 0, opt);
             return;
 
@@ -5042,6 +5094,18 @@ void emitter::emitIns_R_R(instruction     ins,
                 fmt = IF_DV_2L;
             }
             break;
+
+        case INS_autia:
+        case INS_pacia:
+        {
+            assert(insOptsNone(opt));
+            assert(isValidGeneralDatasize(size));
+            assert(isGeneralRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_PC_2A;
+            break;
+        }
 
         default:
             // fallback to emit SVE instructions.
@@ -5653,7 +5717,8 @@ void emitter::emitIns_R_R_I(instruction     ins,
         case INS_stlurb:
         case INS_stlurh:
         case INS_stlur:
-            fmt = IF_LS_2C;
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_LS_2C;
             break;
 
         case INS_ld2:
@@ -7962,7 +8027,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
                 // add rsvd, fp, #imm
-                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, encodingZRtoSP(reg2), imm);
                 // str p0, [rsvd, #0, mul vl]
                 emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
 
@@ -8235,7 +8300,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
                 // add rsvd, fp, #imm
-                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, encodingZRtoSP(reg2), imm);
                 // str p0, [rsvd, #0, mul vl]
                 emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
 
@@ -9173,11 +9238,14 @@ void emitter::emitIns_Call(EmitCallType          callType,
         if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_TLSGD_RELOC(retSize))
         {
             // For NativeAOT linux/arm64, we need to also record the relocation of methHnd.
-            // Since we do not have space to embed it in instrDesc, we store the register in
-            // reg1 and instead use the `iiaAdd` to store the method handle. Likewise, during
-            // emitOutputInstr, we retrieve the register from reg1 for this specific case.
+            // Since we do not have space to embed it in instrDesc, we use the `iiaAddr` to
+            // store the method handle.
+            // The target handle need to be always in R2 and hence the assert check.
+            // We cannot use reg1 and reg2 fields of instrDesc because they contain the gc
+            // registers (emitEncodeCallGCregs()) that are live across the call.
+
+            assert(ireg == REG_R2);
             id->idSetTlsGD();
-            id->idReg1(ireg);
             id->idAddr()->iiaAddr = (BYTE*)methHnd;
         }
         else
@@ -10979,12 +11047,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 emitRecordRelocation(odst, (CORINFO_METHOD_HANDLE)id->idAddr()->iiaAddr,
                                      IMAGE_REL_AARCH64_TLSDESC_CALL);
-                code |= insEncodeReg_Rn(id->idReg1()); // nnnnn
+                code |= insEncodeReg_Rn(REG_R2); // nnnnn
             }
             else
             {
                 code |= insEncodeReg_Rn(id->idReg3()); // nnnnn
             }
+
             dst += emitOutputCall(ig, dst, id, code);
             sz = id->idIsLargeCall() ? sizeof(instrDescCGCA) : sizeof(instrDesc);
             break;
@@ -11562,6 +11631,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DR_2H: // DR_2H   X........X...... ......nnnnnddddd      Rd Rn
+        case IF_PC_2A: // PC_2A   X........X...... ......nnnnnddddd      Rd Rn
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasizeBF(code, id->idOpSize()); // X........X
             code |= insEncodeReg_Rd(id->idReg1());             // ddddd
@@ -12090,6 +12160,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_PC_1A: // PC_1A   ................ ...........ddddd      Rd
+            assert(insOptsNone(id->idInsOpt()));
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeReg_Rd(id->idReg1()); // ddddd
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_PC_0A: // PC_0A   ................ ................
         case IF_SN_0A: // SN_0A   ................ ................
         {
             bool skipIns = false;
@@ -12211,7 +12289,7 @@ SKIP_GC_UPDATE:
         int      varNum = id->idAddr()->iiaLclVar.lvaVarNum();
         unsigned ofs    = AlignDown(id->idAddr()->iiaLclVar.lvaOffset(), TARGET_POINTER_SIZE);
         bool     FPbased;
-        int      adr = emitComp->lvaFrameAddress(varNum, &FPbased);
+        int      adr = emitComp->lvaFrameAddress(varNum, &FPbased, true);
         if (id->idGCref() != GCT_NONE)
         {
             emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
@@ -12252,15 +12330,11 @@ SKIP_GC_UPDATE:
 
                 // If there are 2 GC vars in this instrDesc, get the 2nd variable
                 // that should be tracked.
-                adr2     = emitComp->lvaFrameAddress(varNum2, &FPbased2);
+                adr2     = emitComp->lvaFrameAddress(varNum2, &FPbased2, FPbased);
                 ofs2Dist = EA_SIZE_IN_BYTES(size);
 #ifdef DEBUG
                 assert(FPbased == FPbased2);
-                if (FPbased)
-                {
-                    assert(id->idReg3() == REG_FP);
-                }
-                else
+                if (!FPbased)
                 {
                     assert(encodingZRtoSP(id->idReg3()) == REG_SP);
                 }
@@ -13304,7 +13378,15 @@ void emitter::emitDispInsHelp(
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
             // The size of a branch target is always EA_PTRSIZE
             assert(insOptsNone(id->idInsOpt()));
-            emitDispReg(id->idReg3(), EA_PTRSIZE, false);
+
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
+            {
+                emitDispReg(REG_R2, EA_PTRSIZE, false);
+            }
+            else
+            {
+                emitDispReg(id->idReg3(), EA_PTRSIZE, false);
+            }
             break;
 
         case IF_LS_1A: // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
@@ -14308,6 +14390,7 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg4(), size, false);
             break;
 
+        case IF_PC_0A: // PC_0A   ................ ................
         case IF_SN_0A: // SN_0A   ................ ................
             if (ins == INS_align)
             {
@@ -14321,6 +14404,15 @@ void emitter::emitDispInsHelp(
                 }
                 printf("]");
             }
+            break;
+
+        case IF_PC_1A: // PC_1A   ................ ...........ddddd      Rd
+            emitDispReg(id->idReg1(), size, false);
+            break;
+
+        case IF_PC_2A: // PC_2A   X........X...... ......nnnnnddddd      Rd Rn
+            emitDispReg(id->idReg1(), size, true);
+            emitDispReg(encodingZRtoSP(id->idReg2()), size, false);
             break;
 
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
@@ -15678,6 +15770,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
                 default:
                     unreached();
+            }
+            break;
+
+        case IF_PC_0A: // autia1716, autiasp, autiaz, pacia1716, paciasp, paciaz, xpaclri
+        case IF_PC_1A: // autiza, paciza, xpacd, xpaci
+        case IF_PC_2A: // autia, pacia
+            switch (ins)
+            {
+                case INS_xpacd:
+                case INS_xpaci:
+                case INS_xpaclri:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                default:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_5C;
             }
             break;
 

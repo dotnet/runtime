@@ -26,11 +26,7 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
 
         // get TLS global variable address
 
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_1
-#else
         INLINE_GETTHREAD  $a1
-#endif
 
         st.d  $a1, $a0, OFFSETOF__PInvokeTransitionFrame__m_pThread
         st.d  $a0, $a1, OFFSETOF__Thread__m_pTransitionFrame

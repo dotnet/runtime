@@ -416,6 +416,7 @@ namespace System.Diagnostics
         /// Searches for the specified tag and returns the zero-based index of the first occurrence within the entire <see cref="T:System.Diagnostics.TagList" />.
         /// </summary>
         /// <param name="item">The tag to locate in the <see cref="T:System.Diagnostics.TagList" />.</param>
+        /// <returns>The zero-based index of the first occurrence within the <see cref="T:System.Diagnostics.TagList" />, or -1 if there is no such tag.</returns>
         public readonly int IndexOf(KeyValuePair<string, object?> item)
         {
             if (_overflowTags is not null)

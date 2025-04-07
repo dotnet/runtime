@@ -1713,18 +1713,6 @@ void SString::Printf(const CHAR *format, ...)
     va_end(args);
 }
 
-#ifndef EBADF
-#define EBADF 9
-#endif
-
-#ifndef ENOMEM
-#define ENOMEM 12
-#endif
-
-#ifndef ERANGE
-#define ERANGE 34
-#endif
-
 #if defined(_MSC_VER)
 #undef va_copy
 #define va_copy(dest,src) (dest = src)

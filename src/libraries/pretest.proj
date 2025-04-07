@@ -1,15 +1,12 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <Import Project="BuildTask.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
     <!-- Create an intermediate runsettings file to enable VSTest discovery. -->
     <EnableRunSettingsSupport>true</EnableRunSettingsSupport>
     <CreateIntermediateRunSettingsFile>true</CreateIntermediateRunSettingsFile>
     <CreateVsCodeRunSettingsFile>true</CreateVsCodeRunSettingsFile>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <!--
@@ -26,13 +23,13 @@
     <ProjectReference Include="$(MonoProjectRoot)wasm\symbolicator\WasmSymbolicator.csproj" Condition="'$(TargetOS)' == 'browser'" />
 
     <!-- needed to test workloads for wasm -->
-    <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj"
+    <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.Mono.sfxproj"
                       Pack="true"
                       Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
-    <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj" />
+    <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj" />
     <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/bundle/Microsoft.NETCore.App.Bundle.bundleproj" />
   </ItemGroup>
 
@@ -139,7 +136,7 @@
   </Target>
 
   <!-- Generate the runtime pack's RuntimeList.xml -->
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)"/>
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)" Condition="'$(DotNetSharedFrameworkTaskFile)' != ''" />
   <Target Name="GenerateRuntimeListFile"
           DependsOnTargets="GetRuntimePackFiles"
           AfterTargets="BuildExternalsProject"
@@ -159,5 +156,4 @@
                              RootAttributes="@(FrameworkListRootAttribute)" />
   </Target>
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 </Project>

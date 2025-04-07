@@ -286,7 +286,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool ContentEquals(object o1, object o2);
+        private static extern bool ContentEquals(object o1, object o2);
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
@@ -414,7 +414,7 @@ namespace System.Runtime.CompilerServices
 
         // Returns pointer to the multi-dimensional array bounds.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref int GetMultiDimensionalArrayBounds(Array array)
+        internal static ref int GetMultiDimensionalArrayBounds(Array array)
         {
             Debug.Assert(GetMultiDimensionalArrayRank(array) > 0);
             // See comment on RawArrayData for details
@@ -553,7 +553,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="ArgumentNullException">The specified type handle is <c>null</c>.</exception>
         /// <exception cref="ArgumentException">The specified type cannot have a boxed instance of itself created.</exception>
         /// <exception cref="NotSupportedException">The passed in type is a by-ref-like type.</exception>
-        public static unsafe object? Box(ref byte target, RuntimeTypeHandle type)
+        public static object? Box(ref byte target, RuntimeTypeHandle type)
         {
             if (type.IsNullHandle())
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
@@ -574,7 +574,7 @@ namespace System.Runtime.CompilerServices
         /// <remarks>
         /// This API returns the same value as <see cref="Unsafe.SizeOf{T}"/> for the type that <paramref name="type"/> represents.
         /// </remarks>
-        public static unsafe int SizeOf(RuntimeTypeHandle type)
+        public static int SizeOf(RuntimeTypeHandle type)
         {
             if (type.IsNullHandle())
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
@@ -751,7 +751,9 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_ContainsGCPointers = 0x01000000;
         private const uint enum_flag_ContainsGenericVariables = 0x20000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
+#if FEATURE_TYPEEQUIVALENCE
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
+#endif // FEATURE_TYPEEQUIVALENCE
         private const uint enum_flag_HasFinalizer = 0x00100000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
@@ -930,6 +932,22 @@ namespace System.Runtime.CompilerServices
         }
     }
 
+    // Subset of src\vm\typedesc.h
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct TypeDesc
+    {
+        private uint _typeAndFlags;
+        private nint _exposedClassObject;
+
+        public RuntimeType? ExposedClassObject
+        {
+            get
+            {
+                return *(RuntimeType*)Unsafe.AsPointer(ref _exposedClassObject);
+            }
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe ref struct DynamicStaticsInfo
     {
@@ -949,11 +967,11 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        internal unsafe MethodTable* _methodTable;
+        internal MethodTable* _methodTable;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe ref struct GenericsStaticsInfo
+    internal ref struct GenericsStaticsInfo
     {
         // Pointer to field descs for statics
         internal IntPtr _pFieldDescs;
@@ -961,7 +979,7 @@ namespace System.Runtime.CompilerServices
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe ref struct ThreadStaticsInfo
+    internal ref struct ThreadStaticsInfo
     {
         internal int _nonGCTlsIndex;
         internal int _gcTlsIndex;
@@ -1088,6 +1106,18 @@ namespace System.Runtime.CompilerServices
             return (MethodTable*)m_asTAddr;
         }
 
+        /// <summary>
+        /// Gets the <see cref="TypeDesc"/> pointer wrapped by the current instance.
+        /// </summary>
+        /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="true"/>.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TypeDesc* AsTypeDesc()
+        {
+            Debug.Assert(IsTypeDesc);
+
+            return (TypeDesc*)((nint)m_asTAddr & ~2); // Drop the second lowest bit.
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TypeHandle TypeHandleOf<T>()
         {
@@ -1096,28 +1126,64 @@ namespace System.Runtime.CompilerServices
 
         public static bool AreSameType(TypeHandle left, TypeHandle right) => left.m_asTAddr == right.m_asTAddr;
 
+        public int GetCorElementType() => GetCorElementType(m_asTAddr);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CanCastTo(TypeHandle destTH)
         {
-            if (m_asTAddr == destTH.m_asTAddr)
-                return true;
+            return TryCanCastTo(this, destTH) switch
+            {
+                CastResult.CanCast => true,
+                CastResult.CannotCast => false,
 
-            if (!IsTypeDesc && destTH.IsTypeDesc)
-                return false;
-
-            CastResult result = CastCache.TryGet(CastHelpers.s_table!, (nuint)m_asTAddr, (nuint)destTH.m_asTAddr);
-
-            if (result != CastResult.MaybeCast)
-                return result == CastResult.CanCast;
-
-            return CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
+                // Regular casting does not allow T to be cast to Nullable<T>.
+                // See TypeHandle::CanCastTo()
+                _ => CanCastToWorker(this, destTH, nullableCast: false)
+            };
         }
 
-        public int GetCorElementType() => GetCorElementType(m_asTAddr);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool CanCastToForReflection(TypeHandle srcTH, TypeHandle destTH)
+        {
+            return TryCanCastTo(srcTH, destTH) switch
+            {
+                CastResult.CanCast => true,
+                CastResult.CannotCast => false,
+
+                 // Reflection allows T to be cast to Nullable<T>.
+                 // See ObjIsInstanceOfCore()
+                _ => CanCastToWorker(srcTH, destTH, nullableCast: true)
+            };
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static CastResult TryCanCastTo(TypeHandle srcTH, TypeHandle destTH)
+        {
+            // See TypeHandle::CanCastToCached() for duplicate quick checks.
+            if (srcTH.m_asTAddr == destTH.m_asTAddr)
+                return CastResult.CanCast;
+
+            if (!srcTH.IsTypeDesc && destTH.IsTypeDesc)
+                return CastResult.CannotCast;
+
+            return CastCache.TryGet(CastHelpers.s_table!, (nuint)srcTH.m_asTAddr, (nuint)destTH.m_asTAddr);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool CanCastToWorker(TypeHandle srcTH, TypeHandle destTH, bool nullableCast)
+        {
+            if (!srcTH.IsTypeDesc
+                && !destTH.IsTypeDesc
+                && CastHelpers.IsNullableForType(destTH.AsMethodTable(), srcTH.AsMethodTable()))
+            {
+                return nullableCast;
+            }
+
+            return CanCastTo_NoCacheLookup(srcTH.m_asTAddr, destTH.m_asTAddr) != Interop.BOOL.FALSE;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+        private static partial Interop.BOOL CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
 
         [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_GetCorElementType")]

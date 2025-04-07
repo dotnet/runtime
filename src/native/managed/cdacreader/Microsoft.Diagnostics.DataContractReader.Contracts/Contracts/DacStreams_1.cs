@@ -8,7 +8,7 @@ using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal class DacStreams_1 : IDacStreams
+internal sealed class DacStreams_1 : IDacStreams
 {
     private readonly Target _target;
 
@@ -29,7 +29,7 @@ internal class DacStreams_1 : IDacStreams
         _target = target;
     }
 
-    public virtual string? StringFromEEAddress(TargetPointer address)
+    public string? StringFromEEAddress(TargetPointer address)
     {
         // We use the data subsystem to handle caching results from processing this data
         var dictionary = _target.ProcessedData.GetOrAdd<DacStreams_1_Data>(0).EEObjectToString;
@@ -38,7 +38,7 @@ internal class DacStreams_1 : IDacStreams
         return result;
     }
 
-    internal class DacStreams_1_Data : IData<DacStreams_1_Data>
+    internal sealed class DacStreams_1_Data : IData<DacStreams_1_Data>
     {
         static DacStreams_1_Data IData<DacStreams_1_Data>.Create(Target target, TargetPointer address) => new DacStreams_1_Data(target);
 

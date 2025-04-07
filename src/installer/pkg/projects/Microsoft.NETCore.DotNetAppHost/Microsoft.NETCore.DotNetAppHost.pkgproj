@@ -11,7 +11,7 @@
     <NativeBinary Include="$(DotNetHostBinDir)/hostfxr.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/nethost.h" />
   </ItemGroup>
-  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TargetsLinuxBionic)' != 'true'">
     <NativeBinary Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">

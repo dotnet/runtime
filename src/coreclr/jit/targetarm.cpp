@@ -194,10 +194,9 @@ ABIPassingInformation Arm32Classifier::ClassifyFloat(Compiler* comp, var_types t
         // As soon as any float arg goes on stack no other float arg can go in a register.
         m_floatRegs = 0;
 
-        m_stackArgSize = roundUp(m_stackArgSize, genTypeSize(type));
-        ABIPassingInformation info =
-            ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
-                                                                                numElems * genTypeSize(type)));
+        m_stackArgSize                = roundUp(m_stackArgSize, genTypeSize(type));
+        ABIPassingSegment     segment = ABIPassingSegment::OnStack(m_stackArgSize, 0, numElems * genTypeSize(type));
+        ABIPassingInformation info    = ABIPassingInformation::FromSegmentByValue(comp, segment);
         m_stackArgSize += numElems * genTypeSize(type);
 
         return info;

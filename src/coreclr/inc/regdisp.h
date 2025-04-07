@@ -146,21 +146,12 @@ inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
-    return stackPointer < ((LPVOID)(display->SP));
-#else
     return (TADDR)stackPointer < display->PCTAddr;
-#endif
 }
 inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
-    _ASSERTE(GetRegdisplaySP(display) == GetSP(display->pCurrentContext));
-    return GetRegdisplaySP(display);
-#else
     return display->PCTAddr;
-#endif
 }
 
 #elif defined(TARGET_64BIT)
@@ -345,6 +336,25 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     return GetSP(display->pCallerContext);
 }
 
+#elif defined(TARGET_WASM)
+struct REGDISPLAY : public REGDISPLAY_BASE {
+    REGDISPLAY()
+    {
+        // Initialize
+        memset(this, 0, sizeof(REGDISPLAY));
+    }
+};
+
+inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
+{
+}
+
+// This function tells us if the given stack pointer is in one of the frames of the functions called by the given frame
+inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
+    _ASSERTE("IsInCalleesFrames is not implemented on wasm");
+    return FALSE;
+}
+
 #else // none of the above processors
 #error "RegDisplay functions are not implemented on this platform."
 #endif
@@ -421,7 +431,6 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     *(&pCtxPtrs->S6) = &pCtx->S6;
     *(&pCtxPtrs->S7) = &pCtx->S7;
     *(&pCtxPtrs->S8) = &pCtx->S8;
-    *(&pCtxPtrs->Tp) = &pCtx->Tp;
     *(&pCtxPtrs->Fp) = &pCtx->Fp;
     *(&pCtxPtrs->Ra) = &pCtx->Ra;
 #elif defined(TARGET_ARM) // TARGET_LOONGARCH64
@@ -513,6 +522,10 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
 
     // This will setup the PC and SP
     SyncRegDisplayToCurrentContext(pRD);
+
+#ifdef TARGET_X86
+    pRD->PCTAddr = (UINT_PTR)&(pctx->Eip);
+#endif
 
 #if !defined(DACCESS_COMPILE)
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)

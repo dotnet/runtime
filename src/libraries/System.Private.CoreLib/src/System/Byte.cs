@@ -1115,13 +1115,13 @@ namespace System
         //
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
-        static byte IShiftOperators<byte, int, byte>.operator <<(byte value, int shiftAmount) => (byte)(value << shiftAmount);
+        static byte IShiftOperators<byte, int, byte>.operator <<(byte value, int shiftAmount) => (byte)(value << (shiftAmount & 7));
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
-        static byte IShiftOperators<byte, int, byte>.operator >>(byte value, int shiftAmount) => (byte)(value >> shiftAmount);
+        static byte IShiftOperators<byte, int, byte>.operator >>(byte value, int shiftAmount) => (byte)(value >> (shiftAmount & 7));
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
-        static byte IShiftOperators<byte, int, byte>.operator >>>(byte value, int shiftAmount) => (byte)(value >>> shiftAmount);
+        static byte IShiftOperators<byte, int, byte>.operator >>>(byte value, int shiftAmount) => (byte)(value >>> (shiftAmount & 7));
 
         //
         // ISpanParsable

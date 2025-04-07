@@ -21,40 +21,26 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        public void ReferenceNewAssembly(BuildArgs buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
+        public async void ReferenceNewAssembly(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
-            buildArgs = buildArgs with { ProjectName = $"rebuild_tasks_{buildArgs.Config}" };
-            (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink, invariant: invariant, buildArgs, id);
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_tasks");     
+            BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, nativeRelink, invariant);
 
-            var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: false);
+            var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
             pathsDict.UpdateTo(unchanged: true, "corebindings.o");
             pathsDict.UpdateTo(unchanged: true, "driver.o");
-            if (!buildArgs.AOT) // relinking
+            if (!aot) // relinking
                 pathsDict.UpdateTo(unchanged: true, "driver-gen.c");
 
-            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var originalStat = StatFiles(pathsDict);
 
-            string programText =
-            @$"
-                using System;
-                using System.Text.Json;
-                public class Test
-                {{
-                    public static int Main()
-                    {{" +
-             @"          string json = ""{ \""name\"": \""value\"" }"";" +
-             @"          var jdoc = JsonDocument.Parse($""{json}"", new JsonDocumentOptions());" +
-            @$"          Console.WriteLine($""json: {{jdoc}}"");
-                        return 42;
-                    }}
-                }}";
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "NativeRebuildNewAssembly.cs"));
 
-            Rebuild(nativeRelink, invariant, buildArgs, id);
-            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            Rebuild(info, config, aot, nativeRelink, invariant, assertAppBundle: !aot);
+            var newStat = StatFilesAfterRebuild(pathsDict);
 
-            _provider.CompareStat(originalStat, newStat, pathsDict.Values);
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            CompareStat(originalStat, newStat, pathsDict);
+            await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42, TestScenario: "DotnetRun"));
         }
     }
 }

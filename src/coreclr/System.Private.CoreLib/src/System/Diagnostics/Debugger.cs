@@ -68,7 +68,7 @@ namespace System.Diagnostics
         // Constants representing the importance level of messages to be logged.
         //
         // An attached debugger can enable or disable which messages will
-        // actually be reported to the user through the COM+ debugger
+        // actually be reported to the user through the debugger
         // services API.  This info is communicated to the runtime so only
         // desired events are actually reported to the debugger.
         //
@@ -95,5 +95,11 @@ namespace System.Diagnostics
         // report the notification depending on its settings.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_CustomNotification")]
         private static partial void CustomNotification(ObjectHandleOnStack data);
+
+        // implementation of CORINFO_HELP_USER_BREAKPOINT
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static void UserBreakpoint() => Break();
     }
 }

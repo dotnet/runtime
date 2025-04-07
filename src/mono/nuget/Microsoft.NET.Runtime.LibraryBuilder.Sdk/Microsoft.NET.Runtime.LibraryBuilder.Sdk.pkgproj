@@ -17,6 +17,7 @@
     <PackageFile Include="$(RepoRoot)\src\mono\msbuild\common\LibraryBuilder.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\msbuild\common\LibraryBuilder.targets" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\msbuild\common\CommonMobileBuild.props" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)\src\mono\msbuild\common\MonoAOTCompiler.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\msbuild\common\RuntimeComponentManifest.targets" TargetPath="Sdk" />
   </ItemGroup>
 

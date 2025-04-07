@@ -143,7 +143,7 @@ namespace System.Text.Json.Nodes
                 {
                     node.WriteTo(writer);
                     writer.Flush();
-                    Utf8JsonReader reader = new(output.WrittenMemory.Span);
+                    Utf8JsonReader reader = new(output.WrittenSpan);
                     backingDocument = JsonDocument.ParseValue(ref reader);
                     return backingDocument.RootElement;
                 }

@@ -98,23 +98,17 @@
 //
 // Register state on exit:
 //  a2: thread pointer
-//  t3: transition frame flags for the return registers a0 and a1
 //
 .macro FixupHijackedCallstack
 
     // a2 <- GetThread()
-#ifdef FEATURE_EMULATED_TLS
-    GETTHREAD_ETLS_2
-#else
     INLINE_GETTHREAD  $a2
-#endif
 
     //
     // Fix the stack by restoring the original return address
     //
-    // Load m_pvHijackedReturnAddress and m_uHijackedReturnValueFlags
+    // Load m_pvHijackedReturnAddress
     ld.d  $ra, $a2, OFFSETOF__Thread__m_pvHijackedReturnAddress
-    ld.d  $t3, $a2, OFFSETOF__Thread__m_pvHijackedReturnAddress + 8
 
     //
     // Clear hijack state
@@ -122,9 +116,6 @@
     // Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
     st.d  $zero, $a2, OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation
     st.d  $zero, $a2, OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8
-    // Clear m_uHijackedReturnValueFlags
-    st.d  $zero, $a2, OFFSETOF__Thread__m_uHijackedReturnValueFlags
-
 .endm
 
 //
@@ -139,9 +130,8 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     jirl  $r0, $ra, 0
 
 LOCAL_LABEL(WaitForGC):
-    lu12i.w  $t7, ((DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5) >> 12) & 0xfffff
-    ori  $t7, $t7, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5) & 0xfff
-    or  $t3, $t3, $t7
+    lu12i.w  $t3, ((DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + PTFF_THREAD_HIJACK_HI) >> 12) & 0xfffff
+    ori  $t3, $t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + PTFF_THREAD_HIJACK_HI) & 0xfff
     b  C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack
 

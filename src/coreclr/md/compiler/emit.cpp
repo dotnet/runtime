@@ -28,7 +28,7 @@ STDMETHODIMP RegMeta::DefineMethod(           // S_OK or error.
     mdTypeDef   td,                     // Parent TypeDef
     LPCWSTR     szName,                 // Name of member
     DWORD       dwMethodFlags,          // Member attributes
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     ULONG       ulCodeRVA,
     DWORD       dwImplFlags,
@@ -447,7 +447,7 @@ ErrExit:
 STDMETHODIMP RegMeta::DefineMemberRef(        // S_OK or error
     mdToken     tkImport,               // [IN] ClassRef or ClassDef importing a member.
     LPCWSTR     szName,                 // [IN] member's name
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdMemberRef *pmr)                   // [OUT] memberref token
 {
@@ -2114,6 +2114,34 @@ ErrExit:
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineLocalVariable
+
+//*******************************************************************************
+// ComputeSha256PdbStreamChecksum
+//*******************************************************************************
+STDMETHODIMP RegMeta::ComputeSha256PdbStreamChecksum(
+        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
+        BYTE (&checksum)[32])
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return m_pStgdb->m_pPdbHeap->ComputeSha256Checksum(computeSha256, checksum);
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+}
+
+//*******************************************************************************
+// ChangePdbStreamGuid
+//*******************************************************************************
+STDMETHODIMP RegMeta::ChangePdbStreamGuid(
+        REFGUID newGuid)
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return m_pStgdb->m_pPdbHeap->SetDataGuid(newGuid);
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+}
+
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 //*****************************************************************************
@@ -2121,7 +2149,7 @@ ErrExit:
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineMethodSpec( // S_OK or error
     mdToken     tkImport,               // [IN] MethodDef or MemberRef
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdMethodSpec *pmi)                  // [OUT] method instantiation token
 {
@@ -2526,7 +2554,7 @@ HRESULT RegMeta::DefineField(           // S_OK or error.
     mdTypeDef   td,                     // Parent TypeDef
     LPCWSTR     szName,                 // Name of member
     DWORD       dwFieldFlags,           // Member attributes
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
     void const  *pValue,                // [IN] constant value

@@ -112,3 +112,4 @@
 /docs/area-owners.*                                 @jeffhandley
 /docs/issue*.md                                     @jeffhandley
 /.github/policies/                                  @jeffhandley @mkArtakMSFT
+/.github/workflows/                                 @jeffhandley @dotnet/runtime-infrastructure

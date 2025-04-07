@@ -10,9 +10,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger.KeepDebugMembers
 {
 	[SetupLinkerTrimMode ("link")]
-#if !NET
-	[SetupLinkerKeepDebugMembers ("true")]
-#endif
 	[SetupCompileBefore ("library.dll", new[] { "../Dependencies/DebuggerDisplayAttributeOnAssemblyUsingTargetTypeNameInOtherAssembly_Lib.cs" })]
 
 	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (DebuggerDisplayAttribute), ".ctor(System.String)")]

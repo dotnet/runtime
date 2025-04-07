@@ -14,7 +14,7 @@ namespace System
         internal const int TreatAsI2 = 0x0800;
         internal const int IsTight = 0x1000;
 
-        public static unsafe long StringToLong(ReadOnlySpan<char> s, int radix, int flags)
+        public static long StringToLong(ReadOnlySpan<char> s, int radix, int flags)
         {
             int pos = 0;
             return StringToLong(s, radix, flags, ref pos);

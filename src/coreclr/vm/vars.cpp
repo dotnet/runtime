@@ -99,7 +99,6 @@ MethodTable* g_pCastHelpers;
 GPTR_IMPL(MethodTable,      g_pEHClass);
 GPTR_IMPL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_IMPL(MethodTable,      g_pStackFrameIteratorClass);
-GVAL_IMPL(bool,             g_isNewExceptionHandlingEnabled);
 #endif
 
 GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
@@ -135,7 +134,7 @@ ETW::CEtwTracer * g_pEtwTracer = NULL;
 #endif // #ifndef DACCESS_COMPILE
 
 //
-// Support for the COM+ Debugger.
+// Support for the CLR Debugger.
 //
 GPTR_IMPL(DebugInterface,     g_pDebugInterface);
 // A managed debugger may set this flag to high from out of process.

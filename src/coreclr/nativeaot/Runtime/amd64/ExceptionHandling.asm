@@ -532,7 +532,7 @@ endif
         ;; It was the ThreadAbortException, so rethrow it
         mov     rcx, STATUS_REDHAWK_THREAD_ABORT
         mov     rdx, rax                                            ;; rdx <- continuation address as exception RIP
-        mov     rax, RhpThrowHwEx                                   ;; Throw the ThreadAbortException as a special kind of hardware exception
+        lea     rax, [RhpThrowHwEx]                                 ;; Throw the ThreadAbortException as a special kind of hardware exception
 
         ;; reset RSP and jump to RAX
    @@:  mov     rsp, r8                                             ;; reset the SP to resume SP value

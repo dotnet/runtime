@@ -5,7 +5,7 @@
 //
 
 //
-// COM+ IL assembler
+// CLR IL assembler
 //
 #include "ilasmpch.h"
 
@@ -14,6 +14,10 @@
 #define DECLARE_DATA
 
 #include "assembler.h"
+
+#if !defined(_WIN32) && !defined(__APPLE__)
+#include "sha256.h"
+#endif
 
 void indexKeywords(Indx* indx); // defined in asmparse.y
 
@@ -28,6 +32,7 @@ Assembler::Assembler()
 {
     m_pDisp = NULL;
     m_pEmitter = NULL;
+    m_pInternalEmitForDeterministicMvid = NULL;
     m_pImporter = NULL;
 
     char* pszFQN = new char[16];
@@ -107,6 +112,7 @@ Assembler::Assembler()
     m_fGeneratePDB = FALSE;
     m_fIsMscorlib = FALSE;
     m_fOptimize = FALSE;
+    m_fDeterministic = FALSE;
     m_tkSysObject = 0;
     m_tkSysString = 0;
     m_tkSysValue = 0;
@@ -208,6 +214,11 @@ Assembler::~Assembler()
         m_pEmitter->Release();
         m_pEmitter = NULL;
     }
+    if (m_pInternalEmitForDeterministicMvid != NULL)
+    {
+        m_pInternalEmitForDeterministicMvid->Release();
+        m_pInternalEmitForDeterministicMvid = NULL;
+    }
     if (m_pPortablePdbWriter != NULL)
     {
         delete m_pPortablePdbWriter;
@@ -233,12 +244,18 @@ BOOL Assembler::Init(BOOL generatePdb)
     }
 
     if (FAILED(CreateICeeFileGen(&m_pCeeFileGen))) return FALSE;
-
     if (FAILED(m_pCeeFileGen->CreateCeeFileEx(&m_pCeeFile,(ULONG)m_dwCeeFileFlags))) return FALSE;
-
     if (FAILED(m_pCeeFileGen->GetSectionCreate(m_pCeeFile, ".il", sdReadOnly, &m_pILSection))) return FALSE;
     if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".sdata", sdReadWrite, &m_pGlobalDataSection))) return FALSE;
     if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".tls", sdReadWrite, &m_pTLSSection))) return FALSE;
+
+#if !defined(_WIN32) && !defined(__APPLE__)
+    if (m_fDeterministic && !IsOpenSslAvailable())
+    {
+        fprintf(stderr, "OpenSSL is not available, but required for build determinism\n");
+        return FALSE;
+    }
+#endif
 
     m_fGeneratePDB = generatePdb;
 

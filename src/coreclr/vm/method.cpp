@@ -1022,7 +1022,7 @@ PCODE MethodDesc::GetNativeCode()
         PCODE pCode = *ppCode;
 
 #ifdef TARGET_ARM
-        if (pCode != NULL)
+        if (pCode != (PCODE)NULL)
             pCode |= THUMB_CODE;
 #endif
         return pCode;
@@ -2278,8 +2278,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
 
     switch(stubCodeBlockKind)
     {
-    case STUB_CODE_BLOCK_PRECODE:
-        return MethodDesc::GetMethodDescFromStubAddr(entryPoint);
     case STUB_CODE_BLOCK_FIXUPPRECODE:
         return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
     case STUB_CODE_BLOCK_STUBPRECODE:
@@ -2289,32 +2287,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
         return NULL;
     }
-}
-
-//*******************************************************************************
-// convert an entry point into a method desc
-MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
-{
-    CONTRACT(MethodDesc*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        POSTCONDITION(RETVAL->SanityCheck());
-    }
-    CONTRACT_END
-
-    MethodDesc* pMD = NonVirtualEntry2MethodDesc(entryPoint);
-    if (pMD != NULL)
-        RETURN(pMD);
-
-    pMD = VirtualCallStubManagerManager::Entry2MethodDesc(entryPoint, pMT);
-    if (pMD != NULL)
-        RETURN(pMD);
-
-    // We should never get here
-    _ASSERTE(!"Entry2MethodDesc failed");
-    RETURN (NULL);
 }
 
 //*******************************************************************************
@@ -2916,7 +2888,7 @@ bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()
     return
         g_pConfig->JitMinOpts() ||
         g_pConfig->GenDebuggableCode() ||
-        CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits());
+        GetModule()->AreJITOptimizationsDisabled();
 }
 
 #ifndef DACCESS_COMPILE
@@ -3135,10 +3107,10 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
     if (HasNativeCodeSlot())
     {
 #ifdef TARGET_ARM
-        _ASSERTE(IsThumbCode(addr) || (addr==NULL));
+        _ASSERTE(IsThumbCode(addr) || (addr == (PCODE)NULL));
         addr &= ~THUMB_CODE;
 
-        if (pExpected != NULL)
+        if (pExpected != (PCODE)NULL)
         {
             _ASSERTE(IsThumbCode(pExpected));
             pExpected &= ~THUMB_CODE;
@@ -3724,7 +3696,7 @@ PTR_LoaderAllocator MethodDesc::GetLoaderAllocator()
 }
 
 #if !defined(DACCESS_COMPILE)
-REFLECTMETHODREF MethodDesc::GetStubMethodInfo()
+REFLECTMETHODREF MethodDesc::AllocateStubMethodInfo()
 {
     CONTRACTL
     {

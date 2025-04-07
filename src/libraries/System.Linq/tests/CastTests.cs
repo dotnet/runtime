@@ -33,7 +33,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource()
         {
-            object[] source = { };
+            object[] source = [];
             Assert.Empty(source.Cast<int>());
         }
 
@@ -41,8 +41,8 @@ namespace System.Linq.Tests
         public void NullableIntFromAppropriateObjects()
         {
             int? i = 10;
-            object[] source = { -4, 1, 2, 3, 9, i };
-            int?[] expected = { -4, 1, 2, 3, 9, i };
+            object[] source = [-4, 1, 2, 3, 9, i];
+            int?[] expected = [-4, 1, 2, 3, 9, i];
 
             Assert.Equal(expected, source.Cast<int?>());
         }
@@ -51,8 +51,8 @@ namespace System.Linq.Tests
         public void NullableIntFromAppropriateObjectsRunOnce()
         {
             int? i = 10;
-            object[] source = { -4, 1, 2, 3, 9, i };
-            int?[] expected = { -4, 1, 2, 3, 9, i };
+            object[] source = [-4, 1, 2, 3, 9, i];
+            int?[] expected = [-4, 1, 2, 3, 9, i];
 
             Assert.Equal(expected, source.RunOnce().Cast<int?>());
         }
@@ -61,7 +61,7 @@ namespace System.Linq.Tests
         public void LongFromNullableIntInObjectsThrows()
         {
             int? i = 10;
-            object[] source = { -4, 1, 2, 3, 9, i };
+            object[] source = [-4, 1, 2, 3, 9, i];
 
             IEnumerable<long> cast = source.Cast<long>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -71,7 +71,7 @@ namespace System.Linq.Tests
         public void LongFromNullableIntInObjectsIncludingNullThrows()
         {
             int? i = 10;
-            object[] source = { -4, 1, 2, 3, 9, null, i };
+            object[] source = [-4, 1, 2, 3, 9, null, i];
 
             IEnumerable<long?> cast = source.Cast<long?>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -81,8 +81,8 @@ namespace System.Linq.Tests
         public void NullableIntFromAppropriateObjectsIncludingNull()
         {
             int? i = 10;
-            object[] source = { -4, 1, 2, 3, 9, null, i };
-            int?[] expected = { -4, 1, 2, 3, 9, null, i };
+            object[] source = [-4, 1, 2, 3, 9, null, i];
+            int?[] expected = [-4, 1, 2, 3, 9, null, i];
 
             Assert.Equal(expected, source.Cast<int?>());
         }
@@ -90,8 +90,8 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowOnUncastableItem()
         {
-            object[] source = { -4, 1, 2, 3, 9, "45" };
-            int[] expectedBeginning = { -4, 1, 2, 3, 9 };
+            object[] source = [-4, 1, 2, 3, 9, "45"];
+            int[] expectedBeginning = [-4, 1, 2, 3, 9];
 
             IEnumerable<int> cast = source.Cast<int>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -102,7 +102,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowCastingIntToDouble()
         {
-            int[] source = new int[] { -4, 1, 2, 9 };
+            int[] source = [-4, 1, 2, 9];
 
             IEnumerable<double> cast = source.Cast<double>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -111,7 +111,7 @@ namespace System.Linq.Tests
         private static void TestCastThrow<T>(object o)
         {
             byte? i = 10;
-            object[] source = { -1, 0, o, i };
+            object[] source = [-1, 0, o, i];
 
             IEnumerable<T> cast = source.Cast<T>();
 
@@ -128,8 +128,8 @@ namespace System.Linq.Tests
         [Fact]
         public void CastToString()
         {
-            object[] source = { "Test1", "4.5", null, "Test2" };
-            string[] expected = { "Test1", "4.5", null, "Test2" };
+            object[] source = ["Test1", "4.5", null, "Test2"];
+            string[] expected = ["Test1", "4.5", null, "Test2"];
 
             Assert.Equal(expected, source.Cast<string>());
         }
@@ -137,8 +137,8 @@ namespace System.Linq.Tests
         [Fact]
         public void CastToStringRunOnce()
         {
-            object[] source = { "Test1", "4.5", null, "Test2" };
-            string[] expected = { "Test1", "4.5", null, "Test2" };
+            object[] source = ["Test1", "4.5", null, "Test2"];
+            string[] expected = ["Test1", "4.5", null, "Test2"];
 
             Assert.Equal(expected, source.RunOnce().Cast<string>());
         }
@@ -152,7 +152,7 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstElementInvalidForCast()
         {
-            object[] source = { "Test", 3, 5, 10 };
+            object[] source = ["Test", 3, 5, 10];
 
             IEnumerable<int> cast = source.Cast<int>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -161,7 +161,7 @@ namespace System.Linq.Tests
         [Fact]
         public void LastElementInvalidForCast()
         {
-            object[] source = { -5, 9, 0, 5, 9, "Test" };
+            object[] source = [-5, 9, 0, 5, 9, "Test"];
 
             IEnumerable<int> cast = source.Cast<int>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -170,8 +170,8 @@ namespace System.Linq.Tests
         [Fact]
         public void NullableIntFromNullsAndInts()
         {
-            object[] source = { 3, null, 5, -4, 0, null, 9 };
-            int?[] expected = { 3, null, 5, -4, 0, null, 9 };
+            object[] source = [3, null, 5, -4, 0, null, 9];
+            int?[] expected = [3, null, 5, -4, 0, null, 9];
 
             Assert.Equal(expected, source.Cast<int?>());
         }
@@ -179,7 +179,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowCastingIntToLong()
         {
-            int[] source = new int[] { -4, 1, 2, 3, 9 };
+            int[] source = [-4, 1, 2, 3, 9];
 
             IEnumerable<long> cast = source.Cast<long>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -188,7 +188,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowCastingIntToNullableLong()
         {
-            int[] source = new int[] { -4, 1, 2, 3, 9 };
+            int[] source = [-4, 1, 2, 3, 9];
 
             IEnumerable<long?> cast = source.Cast<long?>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -197,7 +197,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowCastingNullableIntToLong()
         {
-            int?[] source = new int?[] { -4, 1, 2, 3, 9 };
+            int?[] source = [-4, 1, 2, 3, 9];
 
             IEnumerable<long> cast = source.Cast<long>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -206,7 +206,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowCastingNullableIntToNullableLong()
         {
-            int?[] source = new int?[] { -4, 1, 2, 3, 9, null };
+            int?[] source = [-4, 1, 2, 3, 9, null];
 
             IEnumerable<long?> cast = source.Cast<long?>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -215,7 +215,7 @@ namespace System.Linq.Tests
         [Fact]
         public void CastingNullToNonnullableIsNullReferenceException()
         {
-            int?[] source = new int?[] { -4, 1, null, 3 };
+            int?[] source = [-4, 1, null, 3];
             IEnumerable<int> cast = source.Cast<int>();
             Assert.Throws<NullReferenceException>(() => cast.ToList());
         }
@@ -264,71 +264,71 @@ namespace System.Linq.Tests
         [Fact]
         public void CastCountReturnsExpectedLength()
         {
-            object[] objects = new object[] { "hello", "world" };
+            object[] objects = ["hello", "world"];
             Assert.Equal(2, objects.Cast<string>().Count());
         }
 
         [Fact]
         public void CastFirstReturnsFirstElement()
         {
-            object[] objects = new object[] { "hello", "world" };
+            object[] objects = ["hello", "world"];
             Assert.Equal("hello", objects.Cast<string>().First());
         }
 
         [Fact]
         public void CastFirstOnEmptySequenceThrows()
         {
-            object[] objects = Array.Empty<object>();
+            object[] objects = [];
             Assert.Throws<InvalidOperationException>(() => objects.Cast<string>().First());
         }
 
         [Fact]
         public void CastLastReturnsLastElement()
         {
-            object[] objects = new object[] { "hello", "world" };
+            object[] objects = ["hello", "world"];
             Assert.Equal("world", objects.Cast<string>().Last());
         }
 
         [Fact]
         public void CastElementAtReturnsExpectedElement()
         {
-            object[] objects = new object[] { "hello", "world" };
+            object[] objects = ["hello", "world"];
             Assert.Equal("world", objects.Cast<string>().ElementAt(1));
         }
 
         [Fact]
         public void CastElementAtOutOfRangeThrows()
         {
-            object[] objects = new object[] { "hello", "world" };
+            object[] objects = ["hello", "world"];
             Assert.Throws<ArgumentOutOfRangeException>(() => objects.Cast<string>().ElementAt(2));
         }
 
         [Fact]
         public void CastLastOnEmptySequenceThrows()
         {
-            object[] objects = Array.Empty<object>();
+            object[] objects = [];
             Assert.Throws<InvalidOperationException>(() => objects.Cast<string>().Last());
         }
 
         [Fact]
         public void CastSelectProcessesEachElement()
         {
-            object[] objects = new object[] { "hello", "world!" };
-            Assert.Equal(new[] { 5, 6 }, objects.Cast<string>().Select(s => s.Length));
+            object[] objects = ["hello", "world!"];
+            Assert.Equal([5, 6], objects.Cast<string>().Select(s => s.Length));
         }
 
         [Fact]
         public void CastSkipSkipsElements()
         {
-            object[] objects = new object[] { "hello", "there", "world" };
-            Assert.Equal(new[] { "world" }, objects.Cast<string>().Skip(2));
+            object[] objects = ["hello", "there", "world"];
+            Assert.Equal(["world"], objects.Cast<string>().Skip(2));
         }
 
         [Fact]
         public void CastTakeTakesElements()
         {
-            object[] objects = new object[] { "hello", "there", "world" };
-            Assert.Equal(new[] { "hello", "there" }, objects.Cast<string>().Take(2));
+            object[] objects = ["hello", "there", "world"];
+            Assert.Equal(["hello", "there"], objects.Cast<string>().Take(2));
         }
     }
 }

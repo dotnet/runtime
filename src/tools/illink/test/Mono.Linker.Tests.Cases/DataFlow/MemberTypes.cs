@@ -17,7 +17,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// This is an easy way to suppress all trim related warnings in the Main method
 		// This test is about marking, not diagnostics and this Main will produce several warnings due to it accssing
 		// some problematic APIs (Delegate.Create for example) via reflection.
+		[UnconditionalSuppressMessage("Reflection", "IL2123", Justification = "The RUC suppresses warnings in an entrypoint, but we don't mind")]
 		[RequiresUnreferencedCode("test")]
+		[KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
 		[KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute))]
 		public static void Main ()
 		{

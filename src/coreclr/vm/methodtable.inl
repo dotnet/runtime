@@ -1230,7 +1230,7 @@ inline OBJECTREF MethodTable::AllocateNoChecks()
     }
     CONTRACTL_END;
 
-    // we know an instance of this class already exists in the same appdomain
+    // We know an instance of this class already exists
     // therefore, some checks become redundant.
     // this currently only happens for Delegate.Combine
 
@@ -1238,7 +1238,6 @@ inline OBJECTREF MethodTable::AllocateNoChecks()
 
     return AllocateObject(this);
 }
-
 
 #ifndef DACCESS_COMPILE
 //==========================================================================================

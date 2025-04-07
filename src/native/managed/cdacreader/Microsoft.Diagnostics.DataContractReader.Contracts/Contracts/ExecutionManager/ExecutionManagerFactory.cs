@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class ExecutionManagerFactory : IContractFactory<IExecutionManager>
+public sealed class ExecutionManagerFactory : IContractFactory<IExecutionManager>
 {
     IExecutionManager IContractFactory<IExecutionManager>.CreateContract(Target target, int version)
     {

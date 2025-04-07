@@ -10,12 +10,6 @@
 
   <PropertyGroup Condition="'$(AotOrSingleFile)' == 'true' and '$(UseNativeAotForComponents)' != 'true'">
     <PublishSingleFile>true</PublishSingleFile>
-    <PublishReadyToRun>true</PublishReadyToRun>
-    <!-- Disable crossgen on NetBSD, illumos, Solaris, and Haiku for now. This can be revisited when we have full support. -->
-    <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' Or '$(TargetOS)' == 'illumos' Or '$(TargetOS)' == 'solaris' Or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
-    <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
-    <PublishReadyToRun Condition="'$(TargetOS)' == 'freebsd' and '$(CrossBuild)' == 'true'">false</PublishReadyToRun>
-    <PublishReadyToRunComposite>$(PublishReadyToRun)</PublishReadyToRunComposite>
   </PropertyGroup>
 
   <!-- Allow overriding the LKG ILCompiler package with a specific version. -->

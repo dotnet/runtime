@@ -841,8 +841,9 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     }
 
     // if there is no FP used, we can ignore the FP kills
-    if (!compiler->compFloatingPointUsed)
+    if (!needToKillFloatRegs)
     {
+        assert(!compiler->compFloatingPointUsed || !enregisterLocalVars);
 #if defined(TARGET_XARCH)
 
 #ifdef TARGET_AMD64
@@ -863,7 +864,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #ifdef TARGET_ARM
     if (call->IsVirtualStub())
     {
-        killMask.AddGprRegs(compiler->virtualStubParamInfo->GetRegMask().GetIntRegSet());
+        killMask.AddGprRegs(compiler->virtualStubParamInfo->GetRegMask().GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
     }
 #else  // !TARGET_ARM
     // Verify that the special virtual stub call registers are in the kill mask.
@@ -879,7 +880,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     // so don't use the register post-call until it is consumed by SwiftError.
     if (call->HasSwiftErrorHandling())
     {
-        killMask.AddGprRegs(RBM_SWIFT_ERROR.GetIntRegSet());
+        killMask.AddGprRegs(RBM_SWIFT_ERROR.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
     }
 #endif // SWIFT_SUPPORT
 
@@ -915,7 +916,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
             if (isCopyBlk)
             {
                 // rep movs kills RCX, RDI and RSI
-                killMask.AddGprRegs(SRBM_RCX | SRBM_RDI | SRBM_RSI);
+                killMask.AddGprRegs(SRBM_RCX | SRBM_RDI | SRBM_RSI DEBUG_ARG(RBM_ALLINT));
             }
             else
             {
@@ -923,7 +924,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
                 // (Note that the Data() node, if not constant, will be assigned to
                 // RCX, but it's find that this kills it, as the value is not available
                 // after this node in any case.)
-                killMask.AddGprRegs(SRBM_RDI | SRBM_RCX);
+                killMask.AddGprRegs(SRBM_RDI | SRBM_RCX DEBUG_ARG(RBM_ALLINT));
             }
             break;
 #endif
@@ -2029,7 +2030,7 @@ void LinearScan::insertZeroInitRefPositions()
     while (iter.NextElem(&varIndex))
     {
         LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
-        if (!varDsc->lvIsParam && isCandidateVar(varDsc))
+        if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && isCandidateVar(varDsc))
         {
             JITDUMP("V%02u was live in to first block:", compiler->lvaTrackedIndexToLclNum(varIndex));
             Interval* interval = getIntervalForLocalVar(varIndex);
@@ -2066,7 +2067,7 @@ void LinearScan::insertZeroInitRefPositions()
         while (iter.NextElem(&varIndex))
         {
             LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
-            if (!varDsc->lvIsParam && isCandidateVar(varDsc))
+            if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && isCandidateVar(varDsc))
             {
                 JITDUMP("V%02u is a finally var:", compiler->lvaTrackedIndexToLclNum(varIndex));
                 Interval* interval = getIntervalForLocalVar(varIndex);
@@ -2090,110 +2091,6 @@ void LinearScan::insertZeroInitRefPositions()
                     }
                 }
             }
-        }
-    }
-}
-
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-//------------------------------------------------------------------------
-// UpdateRegStateForStructArg:
-//    Sets the register state for an argument of type STRUCT.
-//    This is shared between with AMD64's SystemV systems and LoongArch64-ABI.
-//
-// Arguments:
-//    argDsc - the LclVarDsc for the argument of interest
-//
-// Notes:
-//     See Compiler::raUpdateRegStateForArg(RegState *regState, LclVarDsc *argDsc) in regalloc.cpp
-//         for how state for argument is updated for unix non-structs and Windows AMD64 structs.
-//
-void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
-{
-    assert(varTypeIsStruct(argDsc));
-    RegState* intRegState   = &compiler->codeGen->intRegState;
-    RegState* floatRegState = &compiler->codeGen->floatRegState;
-
-    if ((argDsc->GetArgReg() != REG_STK) && (argDsc->GetArgReg() != REG_NA))
-    {
-        if ((genRegMask(argDsc->GetArgReg()) & RBM_ALLFLOAT) != RBM_NONE)
-        {
-            assert((genRegMask(argDsc->GetArgReg()) & RBM_FLTARG_REGS) != RBM_NONE);
-            floatRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetArgReg());
-        }
-        else
-        {
-            assert((genRegMask(argDsc->GetArgReg()) & fullIntArgRegMask(compiler->info.compCallConv)) != RBM_NONE);
-            intRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetArgReg());
-        }
-    }
-
-    if ((argDsc->GetOtherArgReg() != REG_STK) && (argDsc->GetOtherArgReg() != REG_NA))
-    {
-        if (genRegMask(argDsc->GetOtherArgReg()) & (RBM_ALLFLOAT))
-        {
-            assert(genRegMask(argDsc->GetOtherArgReg()) & (RBM_FLTARG_REGS));
-            floatRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetOtherArgReg());
-        }
-        else
-        {
-            assert((genRegMask(argDsc->GetOtherArgReg()) & fullIntArgRegMask(compiler->info.compCallConv)) != RBM_NONE);
-            intRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetOtherArgReg());
-        }
-    }
-}
-
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-//------------------------------------------------------------------------
-// updateRegStateForArg: Updates rsCalleeRegArgMaskLiveIn for the appropriate
-//    regState (either compiler->intRegState or compiler->floatRegState),
-//    with the lvArgReg on "argDsc"
-//
-// Arguments:
-//    argDsc - the argument for which the state is to be updated.
-//
-// Return Value: None
-//
-// Assumptions:
-//    The argument is live on entry to the function
-//    (or is untracked and therefore assumed live)
-//
-void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
-{
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For SystemV-AMD64 and LoongArch64 calls the argDsc
-    // can have 2 registers (for structs.). Handle them here.
-    if (varTypeIsStruct(argDsc))
-    {
-        UpdateRegStateForStructArg(argDsc);
-    }
-    else
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    {
-        RegState* intRegState   = &compiler->codeGen->intRegState;
-        RegState* floatRegState = &compiler->codeGen->floatRegState;
-        bool      isFloat       = emitter::isFloatReg(argDsc->GetArgReg());
-
-        if (argDsc->lvIsHfaRegArg())
-        {
-            isFloat = true;
-        }
-
-        if (isFloat)
-        {
-            JITDUMP("Float arg V%02u in reg %s\n", compiler->lvaGetLclNum(argDsc), getRegName(argDsc->GetArgReg()));
-            compiler->raUpdateRegStateForArg(floatRegState, argDsc);
-        }
-        else
-        {
-            JITDUMP("Int arg V%02u in reg %s\n", compiler->lvaGetLclNum(argDsc), getRegName(argDsc->GetArgReg()));
-#if FEATURE_MULTIREG_ARGS
-            if (argDsc->GetOtherArgReg() != REG_NA)
-            {
-                JITDUMP("(second half) in reg %s\n", getRegName(argDsc->GetOtherArgReg()));
-            }
-#endif // FEATURE_MULTIREG_ARGS
-            compiler->raUpdateRegStateForArg(intRegState, argDsc);
         }
     }
 }
@@ -2252,6 +2149,15 @@ void LinearScan::buildIntervals()
     // remove the frame pointer from the masks.
     setFrameType();
 
+    // Updating lowGprRegs with final value
+#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
+    lowGprRegs = (availableIntRegs & RBM_LOWINT.GetIntRegSet());
+#else
+    lowGprRegs = availableIntRegs;
+#endif // TARGET_AMD64
+#endif // TARGET_XARCH
+
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_PRE));
 
     // second part:
@@ -2279,36 +2185,62 @@ void LinearScan::buildIntervals()
     regsInUseThisLocation                   = RBM_NONE;
     regsInUseNextLocation                   = RBM_NONE;
 
-#ifdef SWIFT_SUPPORT
-    if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+    // Compute live incoming parameter registers. The liveness is based on the
+    // locals we are expecting to store the registers into in the prolog.
+    for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
-        for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
+        LclVarDsc*                   lcl     = compiler->lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+        for (const ABIPassingSegment& seg : abiInfo.Segments())
         {
-            LclVarDsc* argDsc = compiler->lvaGetDesc(lclNum);
-
-            if ((argDsc->lvRefCnt() == 0) && !compiler->opts.compDbgCode)
+            if (!seg.IsPassedInRegister())
             {
                 continue;
             }
 
-            const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
-            for (const ABIPassingSegment& seg : abiInfo.Segments())
+            const ParameterRegisterLocalMapping* mapping =
+                compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
+
+            bool isParameterLive = !lcl->lvTracked || compiler->compJmpOpUsed || (lcl->lvRefCnt() != 0);
+            bool isLive;
+            if (mapping != nullptr)
             {
-                if (seg.IsPassedInRegister())
+                LclVarDsc* mappedLcl = compiler->lvaGetDesc(mapping->LclNum);
+                bool isMappedLclLive = !mappedLcl->lvTracked || compiler->compJmpOpUsed || (mappedLcl->lvRefCnt() != 0);
+                if (mappedLcl->lvIsStructField)
                 {
-                    RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
-                    regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+                    // Struct fields are not saved into their parameter local
+                    isLive = isMappedLclLive;
                 }
+                else
+                {
+                    isLive = isParameterLive || isMappedLclLive;
+                }
+            }
+            else
+            {
+                isLive = isParameterLive;
+            }
+
+            JITDUMP("Arg V%02u is %s in reg %s\n", mapping != nullptr ? mapping->LclNum : lclNum,
+                    isLive ? "live" : "dead", getRegName(seg.GetRegister()));
+
+            if (isLive)
+            {
+                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
+                regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
             }
         }
     }
-#endif
 
+    // Now build initial definitions for all parameters, preferring their ABI
+    // register if passed in one.
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {
-        LclVarDsc* argDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+        unsigned   lclNum = compiler->lvaTrackedIndexToLclNum(varIndex);
+        LclVarDsc* lclDsc = compiler->lvaGetDesc(lclNum);
 
-        if (!argDsc->lvIsParam)
+        if (!isCandidateVar(lclDsc))
         {
             continue;
         }
@@ -2319,76 +2251,64 @@ void LinearScan::buildIntervals()
         // Use lvRefCnt instead of checking bbLiveIn because if it's volatile we
         // won't have done dataflow on it, but it needs to be marked as live-in so
         // it will get saved in the prolog.
-        if (!compiler->compJmpOpUsed && argDsc->lvRefCnt() == 0 && !compiler->opts.compDbgCode)
+        if (!compiler->compJmpOpUsed && (lclDsc->lvRefCnt() == 0) && !compiler->opts.compDbgCode)
         {
             continue;
         }
 
-        if (argDsc->lvIsRegArg)
+        regNumber paramReg = REG_NA;
+        if (lclDsc->lvIsParamRegTarget)
         {
-            updateRegStateForArg(argDsc);
+            // Prefer the first ABI register.
+            const ParameterRegisterLocalMapping* mapping =
+                compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
+            assert(mapping != nullptr);
+            paramReg = mapping->RegisterSegment->GetRegister();
         }
-
-        if (isCandidateVar(argDsc))
+        else if (lclDsc->lvIsParam)
         {
-            buildInitialParamDef(argDsc, argDsc->lvIsRegArg ? argDsc->GetArgReg() : REG_NA);
-        }
-        else if (argDsc->lvPromoted)
-        {
-            for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
-                 fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
+            if (compiler->opts.IsOSR())
             {
-                const LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldVarNum);
-                if (fieldVarDsc->lvLRACandidate)
+                // Fall through with no preferred register since parameter are
+                // not passed in registers for OSR
+            }
+            else if (lclDsc->lvIsStructField)
+            {
+                // All fields passed in registers should be assigned via the
+                // lvIsParamRegTarget mechanism, so this must be a stack
+                // argument.
+                assert(!compiler->lvaGetParameterABIInfo(lclDsc->lvParentLcl).HasAnyRegisterSegment());
+
+                // Fall through with paramReg == REG_NA
+            }
+            else
+            {
+                // Enregisterable parameter, may or may not be a stack arg.
+                // Prefer the first register if there is one.
+                const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+                for (const ABIPassingSegment& seg : abiInfo.Segments())
                 {
-                    assert(fieldVarDsc->lvTracked);
-                    buildInitialParamDef(fieldVarDsc, REG_NA);
+                    if (seg.IsPassedInRegister())
+                    {
+                        paramReg = seg.GetRegister();
+                        break;
+                    }
                 }
             }
         }
         else
         {
-            // We can overwrite the register (i.e. codegen saves it on entry)
-            assert(argDsc->lvRefCnt() == 0 || !argDsc->lvIsRegArg || argDsc->lvDoNotEnregister ||
-                   !argDsc->lvLRACandidate || (varTypeIsFloating(argDsc->TypeGet()) && compiler->opts.compDbgCode));
+            // Not a parameter or target of a parameter register
+            continue;
         }
-    }
 
-    // Now set up the reg state for the non-tracked args
-    // (We do this here because we want to generate the ParamDef RefPositions in tracked
-    // order, so that loop doesn't hit the non-tracked args)
-
-    for (unsigned argNum = 0; argNum < compiler->info.compArgsCount; argNum++)
-    {
-        LclVarDsc* argDsc = compiler->lvaGetDesc(argNum);
-
-        if (argDsc->lvPromoted)
-        {
-            for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
-                 fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
-            {
-                LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldVarNum);
-                noway_assert(fieldVarDsc->lvIsParam);
-                if (!fieldVarDsc->lvTracked && fieldVarDsc->lvIsRegArg)
-                {
-                    updateRegStateForArg(fieldVarDsc);
-                }
-            }
-        }
-        else
-        {
-            noway_assert(argDsc->lvIsParam);
-            if (!argDsc->lvTracked && argDsc->lvIsRegArg)
-            {
-                updateRegStateForArg(argDsc);
-            }
-        }
+        buildInitialParamDef(lclDsc, paramReg);
     }
 
     // If there is a secret stub param, it is also live in
     if (compiler->info.compPublishStubParam)
     {
-        intRegState->rsCalleeRegArgMaskLiveIn.AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet());
+        intRegState->rsCalleeRegArgMaskLiveIn.AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
 
         LclVarDsc* stubParamDsc = compiler->lvaGetDesc(compiler->lvaStubArgumentVar);
         if (isCandidateVar(stubParamDsc))
@@ -2407,7 +2327,6 @@ void LinearScan::buildIntervals()
     numPlacedArgLocals = 0;
     placedArgRegs      = RBM_NONE;
 
-    BasicBlock* predBlock = nullptr;
     BasicBlock* prevBlock = nullptr;
 
     // Initialize currentLiveVars to the empty set.  We will set it to the current
@@ -2420,19 +2339,19 @@ void LinearScan::buildIntervals()
         JITDUMP("\nNEW BLOCK " FMT_BB "\n", block->bbNum);
         compiler->compCurBB = block;
 
-        bool predBlockIsAllocated = false;
-        predBlock                 = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
-        if (predBlock != nullptr)
-        {
-            JITDUMP("\n\nSetting " FMT_BB " as the predecessor for determining incoming variable registers of " FMT_BB
-                    "\n",
-                    predBlock->bbNum, block->bbNum);
-            assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
-            blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
-        }
-
         if (localVarsEnregistered)
         {
+            needToKillFloatRegs                    = compiler->compFloatingPointUsed;
+            bool              predBlockIsAllocated = false;
+            BasicBlock* const predBlock = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
+            if (predBlock != nullptr)
+            {
+                JITDUMP("\n\nSetting " FMT_BB
+                        " as the predecessor for determining incoming variable registers of " FMT_BB "\n",
+                        predBlock->bbNum, block->bbNum);
+                assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
+                blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
+            }
             VarSetOps::AssignNoCopy(compiler, currentLiveVars,
                                     VarSetOps::Intersection(compiler, registerCandidateVars, block->bbLiveIn));
 
@@ -2492,6 +2411,11 @@ void LinearScan::buildIntervals()
                 }
             }
         }
+        else
+        {
+            // If state isn't live across blocks, set FP register kill switch per block.
+            needToKillFloatRegs = false;
+        }
 
         // Add a dummy RefPosition to mark the block boundary.
         // Note that we do this AFTER adding the exposed uses above, because the
@@ -2524,9 +2448,14 @@ void LinearScan::buildIntervals()
         // do that in the prolog. We handle registers in the prolog and the
         // stack args in the scratch BB that we have ensured exists. The
         // handling clobbers REG_SCRATCH, so kill it here.
-        if ((block == compiler->fgFirstBB) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        bool prologUsesScratchReg = compiler->lvaHasAnySwiftStackParamToReassemble();
+#ifdef TARGET_X86
+        // On x86, CodeGen::genFnProlog does a varargs preprocessing that uses
+        // the scratch register.
+        prologUsesScratchReg |= compiler->info.compIsVarArgs;
+#endif
+        if ((block == compiler->fgFirstBB) && prologUsesScratchReg)
         {
-            assert(compiler->fgFirstBBisScratch());
             addKillForRegs(genRegMask(REG_SCRATCH), currentLoc + 1);
             currentLoc += 2;
         }
@@ -2536,7 +2465,6 @@ void LinearScan::buildIntervals()
         // into the scratch register, so it will be killed here.
         if (compiler->compShouldPoisonFrame() && (block == compiler->fgFirstBB))
         {
-            assert(compiler->fgFirstBBisScratch());
             regMaskTP killed;
 #if defined(TARGET_XARCH)
             // Poisoning uses EAX for small vars and rep stosd that kills edi, ecx and eax for large vars.
@@ -2766,12 +2694,12 @@ void LinearScan::buildIntervals()
                     {
                         calleeSaveCount = CNT_CALLEE_ENREG;
                     }
-#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     else if (varTypeUsesMaskReg(interval->registerType))
                     {
                         calleeSaveCount = CNT_CALLEE_SAVED_MASK;
                     }
-#endif // (TARGET_XARCH || TARGET_ARM64) && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
                     else
                     {
                         assert(varTypeUsesFloatReg(interval->registerType));
@@ -3091,6 +3019,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
     if (!varTypeUsesIntReg(type))
     {
         compiler->compFloatingPointUsed = true;
+        needToKillFloatRegs             = true;
     }
 
     Interval* interval = newInterval(type);
@@ -3203,7 +3132,7 @@ int LinearScan::BuildCallArgUses(GenTreeCall* call)
             continue;
         }
 
-        assert(!arg.NewAbiInfo.HasAnyRegisterSegment());
+        assert(!arg.AbiInfo.HasAnyRegisterSegment());
         assert(argNode->OperIs(GT_PUTARG_STK));
     }
 
@@ -3909,21 +3838,50 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
 {
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2IfPresent();
-
 #ifdef TARGET_XARCH
     if (node->OperIsBinary() && isRMWRegOper(node))
     {
         assert(op2 != nullptr);
-        return BuildRMWUses(node, op1, op2, candidates);
+        if (candidates == RBM_NONE && varTypeUsesFloatReg(node) && (op1->isContainedIndir() || op2->isContainedIndir()))
+        {
+            if (op1->isContainedIndir())
+            {
+                return BuildRMWUses(node, op1, op2, lowGprRegs, candidates);
+            }
+            else
+            {
+                return BuildRMWUses(node, op1, op2, candidates, lowGprRegs);
+            }
+        }
+        return BuildRMWUses(node, op1, op2, candidates, candidates);
     }
 #endif // TARGET_XARCH
     int srcCount = 0;
     if (op1 != nullptr)
     {
-        srcCount += BuildOperandUses(op1, candidates);
+#ifdef TARGET_XARCH
+        // BSWAP creates movbe
+        if (op1->isContainedIndir() &&
+            ((varTypeUsesFloatReg(node) || node->OperGet() == GT_BSWAP || node->OperGet() == GT_BSWAP16)) &&
+            candidates == RBM_NONE)
+        {
+            srcCount += BuildOperandUses(op1, lowGprRegs);
+        }
+        else
+#endif
+        {
+            srcCount += BuildOperandUses(op1, candidates);
+        }
     }
     if (op2 != nullptr)
     {
+
+#ifdef TARGET_XARCH
+        if (op2->isContainedIndir() && varTypeUsesFloatReg(op1) && candidates == RBM_NONE)
+        {
+            candidates = lowGprRegs;
+        }
+#endif
         srcCount += BuildOperandUses(op2, candidates);
     }
     return srcCount;
@@ -3980,6 +3938,8 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     assert(varDsc->lvTracked);
     unsigned  varIndex       = varDsc->lvVarIndex;
     Interval* varDefInterval = getIntervalForLocalVar(varIndex);
+
+    GenTree* op1 = storeLoc->gtGetOp1();
     if (!storeLoc->IsLastUse(index))
     {
         VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);
@@ -4019,6 +3979,14 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
 #else
     defCandidates = allRegs(type);
 #endif // TARGET_X86
+
+#ifdef TARGET_AMD64
+    if (op1->isContained() && op1->OperIs(GT_BITCAST) && varTypeUsesIntReg(varDsc->GetRegisterType(storeLoc)))
+    {
+        defCandidates = lowGprRegs;
+    }
+
+#endif // TARGET_AMD64
 
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
     if (varDefInterval->isWriteThru)
@@ -4102,6 +4070,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
         }
         assert(isCandidateVar(fieldVarDsc));
         BuildStoreLocDef(storeLoc, fieldVarDsc, singleUseRef, i);
+
         if (isMultiRegSrc && (i < (dstCount - 1)))
         {
             currentLoc += 2;
@@ -4182,9 +4151,20 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
-        GenTree*     bitCastSrc   = op1->gtGetOp1();
-        RegisterType registerType = regType(bitCastSrc->TypeGet());
-        singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
+        GenTree*         bitCastSrc   = op1->gtGetOp1();
+        RegisterType     registerType = regType(bitCastSrc->TypeGet());
+        SingleTypeRegSet candidates   = RBM_NONE;
+#ifdef TARGET_AMD64
+        if (registerType == IntRegisterType)
+        {
+            candidates = lowGprRegs;
+        }
+        else
+#endif // TARGET_AMD64
+        {
+            candidates = allRegs(registerType);
+        }
+        singleUseRef = BuildUse(bitCastSrc, candidates);
 
         Interval* srcInterval = singleUseRef->getInterval();
         assert(regType(srcInterval->registerType) == registerType);
@@ -4266,7 +4246,16 @@ int LinearScan::BuildSimple(GenTree* tree)
     }
     if (tree->IsValue())
     {
-        BuildDef(tree);
+#ifdef TARGET_AMD64
+        if ((tree->OperGet() == GT_BSWAP || tree->OperGet() == GT_BSWAP16) && varTypeUsesIntReg(tree))
+        {
+            BuildDef(tree, lowGprRegs);
+        }
+        else
+#endif // TARGET_AMD64
+        {
+            BuildDef(tree);
+        }
     }
     return srcCount;
 }
@@ -4415,6 +4404,32 @@ int LinearScan::BuildReturn(GenTree* tree)
                 return 1;
             }
         }
+        else if (!tree->TypeIs(TYP_VOID) && op1->OperIsFieldList())
+        {
+            const ReturnTypeDesc& retDesc = compiler->compRetTypeDesc;
+
+            unsigned regIndex = 0;
+            for (const GenTreeFieldList::Use& use : op1->AsFieldList()->Uses())
+            {
+                GenTree*  tree   = use.GetNode();
+                regNumber retReg = retDesc.GetABIReturnReg(regIndex, compiler->info.compCallConv);
+                BuildUse(tree, genSingleTypeRegMask(retReg));
+
+                regIndex++;
+            }
+
+            return regIndex;
+        }
+        else
+        {
+            // In other cases we require the incoming operand to be in the
+            // right register(s) when we build the use(s), and thus we do not
+            // need to model that as a kill. However, in this case we have a
+            // contained operand. Codegen will move it to the right return
+            // registers; thus they will be killed.
+            regMaskTP killedRegs = compiler->compRetTypeDesc.GetABIReturnRegs(compiler->info.compCallConv);
+            buildKillPositionsForNode(tree, currentLoc + 1, killedRegs);
+        }
 
     // No kills or defs.
     return 0;
@@ -4504,7 +4519,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     SingleTypeRegSet argMask = genSingleTypeRegMask(argReg);
     RefPosition*     use     = BuildUse(op1, argMask);
 
-    // Record that this register is occupied by a register now.
+    // Record that this register is occupied by an argument now.
     placedArgRegs.AddRegNumInMask(argReg);
 
     if (supportsSpecialPutArg() && isCandidateLocalRef(op1) && ((op1->gtFlags & GTF_VAR_DEATH) == 0))
@@ -4588,7 +4603,9 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 //
 int LinearScan::BuildCmp(GenTree* tree)
 {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_BT, GT_CCMP));
+#elif defined(TARGET_X86)
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_BT));
 #elif defined(TARGET_ARM64)
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_JTEST, GT_CCMP));
@@ -4673,6 +4690,19 @@ int LinearScan::BuildCmpOperands(GenTree* tree)
         }
     }
 #endif // TARGET_X86
+
+#ifdef TARGET_AMD64
+    if (op2->isContainedIndir() && varTypeUsesFloatReg(op1) && op2Candidates == RBM_NONE)
+    {
+        // We only use RSI and RDI for EnC code, so we don't want to favor callee-save regs.
+        op2Candidates = lowGprRegs;
+    }
+    if (op1->isContainedIndir() && varTypeUsesFloatReg(op2) && op1Candidates == RBM_NONE)
+    {
+        // We only use RSI and RDI for EnC code, so we don't want to favor callee-save regs.
+        op1Candidates = lowGprRegs;
+    }
+#endif // TARGET_AMD64
 
     int srcCount = BuildOperandUses(op1, op1Candidates);
     srcCount += BuildOperandUses(op2, op2Candidates);

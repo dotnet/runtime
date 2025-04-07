@@ -60,10 +60,6 @@
 #include "dynamicinterfacecastable.h"
 #include "frozenobjectheap.h"
 
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif // FEATURE_INTERPRETER
-
 #ifndef DACCESS_COMPILE
 
 // Typedef for string comparison functions.
@@ -361,9 +357,25 @@ BOOL MethodTable::ValidateWithPossibleAV()
     // for that. We need to do more sanity checking to
     // make sure that our pointer here is in fact a valid object.
     PTR_EEClass pEEClass = this->GetClassWithPossibleAV();
-    return ((pEEClass && (this == pEEClass->GetMethodTableWithPossibleAV())) ||
-        ((HasInstantiation() || IsArray()) &&
-        (pEEClass && (pEEClass->GetMethodTableWithPossibleAV()->GetClassWithPossibleAV() == pEEClass))));
+    if (pEEClass == NULL)
+    {
+        return FALSE;
+    }
+
+    PTR_MethodTable pEEClassFromMethodTable = pEEClass->GetMethodTableWithPossibleAV();
+    if (pEEClassFromMethodTable == NULL)
+    {
+        return FALSE;
+    }
+
+    // non-generic check
+    if (this == pEEClassFromMethodTable)
+    {
+        return TRUE;
+    }
+
+    // generic instantiation check
+    return (HasInstantiation() || IsArray()) && (pEEClassFromMethodTable->GetClassWithPossibleAV() == pEEClass);
 }
 
 
@@ -517,7 +529,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         RETURN(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
 
-    // Handle pure COM+ types.
+    // Handle pure CLR types.
     RETURN (pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
 }
 
@@ -3940,18 +3952,17 @@ void MethodTable::CheckRunClassInitAsIfConstructingThrowing()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
+        PRECONDITION(HasPreciseInitCctors());
     }
     CONTRACTL_END;
-    if (HasPreciseInitCctors())
-    {
-        MethodTable *pMTCur = this;
-        while (pMTCur != NULL)
-        {
-            if (!pMTCur->GetClass()->IsBeforeFieldInit())
-                pMTCur->CheckRunClassInitThrowing();
 
-            pMTCur = pMTCur->GetParentMethodTable();
-        }
+    MethodTable *pMTCur = this;
+    while (pMTCur != NULL)
+    {
+        if (!pMTCur->GetClass()->IsBeforeFieldInit())
+            pMTCur->CheckRunClassInitThrowing();
+
+        pMTCur = pMTCur->GetParentMethodTable();
     }
 }
 
@@ -4317,7 +4328,10 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         ClassLoader::ValidateMethodsWithCovariantReturnTypes(this);
     }
 
-    if ((level == CLASS_LOADED) && CORDisableJITOptimizations(this->GetModule()->GetDebuggerInfoBits()) && !HasInstantiation())
+    if ((level == CLASS_LOADED) && 
+        this->GetModule()->AreJITOptimizationsDisabled() &&
+        !HasInstantiation() &&
+        !GetModule()->GetAssembly()->IsLoading()) // Do not do this during the vtable fixup stage of C++/CLI assembly loading. See https://github.com/dotnet/runtime/issues/110365
     {
         if (g_fEEStarted)
         {
@@ -6182,19 +6196,6 @@ MethodDesc* MethodTable::GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculati
     {
         goto lExit;
     }
-
-#ifdef FEATURE_INTERPRETER
-    // I don't really know why this helps.  Figure it out.
-#ifndef DACCESS_COMPILE
-    // If we didn't find it above, try as an Interpretation stub...
-    pMethodDesc = Interpreter::InterpretationStubToMethodInfo(addr);
-
-    if (NULL != pMethodDesc)
-    {
-        goto lExit;
-    }
-#endif
-#endif // FEATURE_INTERPRETER
 
     // Is it an FCALL?
     pMethodDesc = ECall::MapTargetBackToMethod(addr);

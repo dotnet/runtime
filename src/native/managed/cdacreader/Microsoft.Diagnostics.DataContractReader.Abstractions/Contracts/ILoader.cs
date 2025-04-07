@@ -6,24 +6,24 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly struct ModuleHandle
+public readonly struct ModuleHandle
 {
-    internal ModuleHandle(TargetPointer address)
+    public ModuleHandle(TargetPointer address)
     {
         Address = address;
     }
 
-    internal TargetPointer Address { get; }
+    public TargetPointer Address { get; }
 }
 
 [Flags]
-internal enum ModuleFlags
+public enum ModuleFlags
 {
     EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
     ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
 }
 
-internal record struct ModuleLookupTables(
+public record struct ModuleLookupTables(
     TargetPointer FieldDefToDesc,
     TargetPointer ManifestModuleReferences,
     TargetPointer MemberRefToDesc,
@@ -32,27 +32,26 @@ internal record struct ModuleLookupTables(
     TargetPointer TypeRefToMethodTable,
     TargetPointer MethodDefToILCodeVersioningState);
 
-internal interface ILoader : IContract
+public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
 
-    public virtual ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
+    ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
 
-    public virtual TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual string GetPath(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
+    ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
+    string GetPath(ModuleHandle handle) => throw new NotImplementedException();
+    string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
 
-    public virtual TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual TargetPointer GetThunkHeap(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
+    ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
 
-    public virtual TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
-    public virtual bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
+    bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
 }
 
-internal readonly struct Loader : ILoader
+public readonly struct Loader : ILoader
 {
     // Everything throws NotImplementedException
 }

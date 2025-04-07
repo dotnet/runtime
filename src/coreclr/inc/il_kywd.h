@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 //
-// COM+ IL keywords, symbols and values
+// CLR IL keywords, symbols and values
 //
 // This is the master table used in ILASM (asmparse.y)
 // and ILDASM (dis.cpp)

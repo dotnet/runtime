@@ -66,6 +66,17 @@ namespace System.Collections.Generic
             new ReadOnlyCollection<T>(list);
 
         /// <summary>
+        /// Returns a read-only <see cref="ReadOnlySet{T}"/> wrapper
+        /// for the specified set.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the set.</typeparam>
+        /// <param name="set">The set to wrap.</param>
+        /// <returns>An object that acts as a read-only wrapper around the current <see cref="ISet{T}"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="set"/> is null.</exception>
+        public static ReadOnlySet<T> AsReadOnly<T>(this ISet<T> set) =>
+            new ReadOnlySet<T>(set);
+
+        /// <summary>
         /// Returns a read-only <see cref="ReadOnlyDictionary{TKey, TValue}"/> wrapper
         /// for the current dictionary.
         /// </summary>

@@ -28,7 +28,7 @@ namespace System.Formats.Cbor
         public static double HalfToDouble(ushort value)
             => (double)HalfToFloat(value);
 
-        public static unsafe float HalfToFloat(ushort value)
+        public static float HalfToFloat(ushort value)
         {
             const ushort ExponentMask = 0x7C00;
             const ushort ExponentShift = 10;

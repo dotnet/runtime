@@ -420,7 +420,7 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
     PCODE pEntryPoint = (PCODE)NULL;
 
 #ifdef _DEBUG
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 #endif
 
     CONTRACTL
@@ -441,10 +441,6 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 #endif // HOST_64BIT
 
     pEntryPoint = orefThis->GetMethodPtrAux();
-
-#ifdef _DEBUG
-    END_PRESERVE_LAST_ERROR;
-#endif
 
     return (PVOID)pEntryPoint;
 }
@@ -485,7 +481,7 @@ extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT 
 #ifdef PROFILING_SUPPORTED
 extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD)
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     QCALL_CONTRACT;
 
@@ -495,14 +491,12 @@ extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDes
 
     END_QCALL;
 
-    END_PRESERVE_LAST_ERROR;
-
     return pTargetMD;
 }
 
 extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* pTargetMD)
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     QCALL_CONTRACT;
 
@@ -511,8 +505,6 @@ extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* 
     ProfilerUnmanagedToManagedTransitionMD(pTargetMD, COR_PRF_TRANSITION_RETURN);
 
     END_QCALL;
-
-    END_PRESERVE_LAST_ERROR;
 }
 #endif // PROFILING_SUPPORTED
 

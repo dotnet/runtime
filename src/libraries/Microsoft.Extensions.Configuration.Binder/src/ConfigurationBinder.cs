@@ -465,9 +465,23 @@ namespace Microsoft.Extensions.Configuration
             }
             else
             {
-                if (isParentCollection && bindingPoint.Value is null && string.IsNullOrEmpty(configValue))
+                // Reaching this point indicates that the configuration section is a leaf node with a string value.
+                // Typically, configValue will be an empty string if the value in the configuration is empty or null.
+                // While configValue could be any other string, we already know it cannot be converted to the required type, as TryConvertValue has already failed.
+
+                if (!string.IsNullOrEmpty(configValue))
                 {
-                    // If we don't have an instance, try to create one
+                    // If we have a value, but no children, we can't bind it to anything
+                    // We already tried calling TryConvertValue and couldn't convert the configuration value to the required type.
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        Debug.Assert(section is not null);
+                        throw new InvalidOperationException(SR.Format(SR.Error_FailedBinding, section.Path, type));
+                    }
+                }
+                else if (isParentCollection && bindingPoint.Value is null)
+                {
+                    // Try to create the default instance of the type
                     bindingPoint.TrySetValue(CreateInstance(type, config, options, out _));
                 }
             }
@@ -498,8 +512,6 @@ namespace Microsoft.Extensions.Configuration
             BinderOptions options,
             out ParameterInfo[]? constructorParameters)
         {
-            Debug.Assert(!type.IsArray);
-
             constructorParameters = null;
 
             if (type.IsInterface || type.IsAbstract)

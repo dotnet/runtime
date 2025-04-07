@@ -784,7 +784,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         [Fact]
         public void SendAsync_AutomaticProxySupportAndUseWinInetSettings_ExpectedWinHttpSessionProxySettings()
         {
-            TestControl.WinHttpAutomaticProxySupport = true;
             var handler = new WinHttpHandler();
 
             SendRequestHelper.Send(
@@ -795,120 +794,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 });
 
             Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, APICallHistory.SessionProxySettings.AccessType);
-        }
-
-        [Fact]
-        public void SendAsync_NoAutomaticProxySupportAndUseWinInetSettingsWithAutoDetectSetting_ExpectedWinHttpProxySettings()
-        {
-            TestControl.WinHttpAutomaticProxySupport = false;
-            FakeRegistry.WinInetProxySettings.AutoDetect = true;
-            var handler = new WinHttpHandler();
-
-            SendRequestHelper.Send(
-                handler,
-                delegate
-                {
-                    handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
-                });
-
-            Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY, APICallHistory.SessionProxySettings.AccessType);
-            Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY, APICallHistory.RequestProxySettings.AccessType);
-        }
-
-        [Fact]
-        public void SendAsync_NoAutomaticProxySupportAndUseWinInetSettingsWithEmptySettings_ExpectedWinHttpProxySettings()
-        {
-            TestControl.WinHttpAutomaticProxySupport = false;
-            var handler = new WinHttpHandler();
-
-            SendRequestHelper.Send(
-                handler,
-                delegate
-                {
-                    handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
-                });
-
-            Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY, APICallHistory.SessionProxySettings.AccessType);
-            Assert.False(APICallHistory.RequestProxySettings.AccessType.HasValue);
-        }
-
-        [Fact]
-        public void SendAsync_NoAutomaticProxySupportAndUseWinInetSettingsWithManualSettingsOnly_ExpectedWinHttpProxySettings()
-        {
-            TestControl.WinHttpAutomaticProxySupport = false;
-            FakeRegistry.WinInetProxySettings.Proxy = FakeProxy;
-            var handler = new WinHttpHandler();
-
-            SendRequestHelper.Send(
-                handler,
-                delegate
-                {
-                    handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
-                });
-
-            Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY, APICallHistory.SessionProxySettings.AccessType);
-            Assert.False(APICallHistory.RequestProxySettings.AccessType.HasValue);
-        }
-
-        [Fact]
-        public void SendAsync_NoAutomaticProxySupportAndUseWinInetSettingsWithMissingRegistrySettings_ExpectedWinHttpProxySettings()
-        {
-            TestControl.WinHttpAutomaticProxySupport = false;
-            FakeRegistry.WinInetProxySettings.RegistryKeyMissing = true;
-            var handler = new WinHttpHandler();
-
-            SendRequestHelper.Send(
-                handler,
-                delegate
-                {
-                    handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
-                });
-
-            Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY, APICallHistory.SessionProxySettings.AccessType);
-            Assert.False(APICallHistory.RequestProxySettings.AccessType.HasValue);
-        }
-
-        [Fact]
-        public void SendAsync_NoAutomaticProxySupportAndUseWinInetSettingsWithAutoDetectButPACFileNotDetectedOnNetwork_ExpectedWinHttpProxySettings()
-        {
-            TestControl.WinHttpAutomaticProxySupport = false;
-            TestControl.PACFileNotDetectedOnNetwork = true;
-            FakeRegistry.WinInetProxySettings.AutoDetect = true;
-            var handler = new WinHttpHandler();
-
-            SendRequestHelper.Send(
-                handler,
-                delegate
-                {
-                    handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
-                });
-
-            Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY, APICallHistory.SessionProxySettings.AccessType);
-            Assert.Null(APICallHistory.RequestProxySettings.AccessType);
-        }
-
-        [Fact]
-        public void SendAsync_NoAutomaticProxySupportAndUseWinInetSettingsWithAutoDetectSettingAndManualSettingButPACFileNotFoundOnNetwork_ExpectedWinHttpProxySettings()
-        {
-            const string manualProxy = FakeProxy;
-            TestControl.WinHttpAutomaticProxySupport = false;
-            FakeRegistry.WinInetProxySettings.AutoDetect = true;
-            FakeRegistry.WinInetProxySettings.Proxy = manualProxy;
-            TestControl.PACFileNotDetectedOnNetwork = true;
-            var handler = new WinHttpHandler();
-
-            SendRequestHelper.Send(
-                handler,
-                delegate
-                {
-                    handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
-                });
-
-            // Both AutoDetect and manual proxy are specified.  If AutoDetect fails to find
-            // the PAC file on the network, then we should fall back to manual setting.
-            Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY, APICallHistory.SessionProxySettings.AccessType);
-            Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY, APICallHistory.RequestProxySettings.AccessType);
-            Assert.Equal(manualProxy, APICallHistory.RequestProxySettings.Proxy);
         }
 
         [Fact]
@@ -961,7 +846,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         [Fact]
         public void SendAsync_AutomaticProxySupportAndUseDefaultWebProxy_ExpectedWinHttpSessionProxySettings()
         {
-            TestControl.WinHttpAutomaticProxySupport = true;
             var handler = new WinHttpHandler();
 
             SendRequestHelper.Send(

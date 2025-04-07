@@ -36,6 +36,14 @@ bool interceptor_ICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
     return temp;
 }
 
+bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+{
+    mc->cr->AddCall("notifyInstructionSetUsage");
+    bool result = original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
+    mc->recNotifyInstructionSetUsage(instructionSet, supported, result);
+    return result;
+}
+
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 uint32_t interceptor_ICJI::getMethodAttribs(CORINFO_METHOD_HANDLE ftn /* IN */)
 {
@@ -2022,11 +2030,6 @@ uint32_t interceptor_ICJI::getExpectedTargetArchitecture()
     DWORD result = original_ICorJitInfo->getExpectedTargetArchitecture();
     mc->recGetExpectedTargetArchitecture(result);
     return result;
-}
-
-bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
-{
-    return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)

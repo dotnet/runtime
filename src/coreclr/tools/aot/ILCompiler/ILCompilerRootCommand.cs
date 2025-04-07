@@ -75,6 +75,8 @@ namespace ILCompiler
             new("--map") { Description = "Generate a map file" };
         public CliOption<string> MstatFileName { get; } =
             new("--mstat") { Description = "Generate an mstat file" };
+        public CliOption<string> SourceLinkFileName { get; } =
+            new("--sourcelink") { Description = "Generate a SourceLink file" };
         public CliOption<string> MetadataLogFileName { get; } =
             new("--metadatalog") { Description = "Generate a metadata log file" };
         public CliOption<bool> CompleteTypesMetadata { get; } =
@@ -209,6 +211,7 @@ namespace ILCompiler
             Options.Add(SubstitutionFilePaths);
             Options.Add(MapFileName);
             Options.Add(MstatFileName);
+            Options.Add(SourceLinkFileName);
             Options.Add(MetadataLogFileName);
             Options.Add(CompleteTypesMetadata);
             Options.Add(ReflectionData);
@@ -292,7 +295,7 @@ namespace ILCompiler
 #pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args, result,
                             inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite" },
-                            outputOptions : new[] { "-o", "--out", "--exportsfile", "--dgmllog", "--scandgmllog", "--mstat" });
+                            outputOptions : new[] { "-o", "--out", "--exportsfile", "--dgmllog", "--scandgmllog", "--mstat", "--sourcelink" });
 #pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 

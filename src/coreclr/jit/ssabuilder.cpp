@@ -15,7 +15,7 @@ PhaseStatus Compiler::fgSsaBuild()
     // If this is not the first invocation, reset data structures for SSA.
     if (fgSsaPassesCompleted > 0)
     {
-        fgResetForSsa();
+        fgResetForSsa(/* deepClean */ true);
     }
 
     SsaBuilder builder(this);
@@ -29,21 +29,36 @@ PhaseStatus Compiler::fgSsaBuild()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-void Compiler::fgResetForSsa()
+//------------------------------------------------------------------------
+// fgResetForSsa: remove SSA artifacts
+//
+// Arguments:
+//   deepClean - if true, remove all SSA artifacts
+//               if false, just remove PHIs
+//
+// Notes:
+//   deepCleaning is needed in order to rebuild SSA.
+//
+void Compiler::fgResetForSsa(bool deepClean)
 {
-    for (unsigned i = 0; i < lvaCount; ++i)
-    {
-        lvaTable[i].lvPerSsaData.Reset();
-    }
-    lvMemoryPerSsaData.Reset();
-    for (MemoryKind memoryKind : allMemoryKinds())
-    {
-        m_memorySsaMap[memoryKind] = nullptr;
-    }
+    JITDUMP("Removing %s\n", deepClean ? "all SSA artifacts" : "PHI functions");
 
-    if (m_outlinedCompositeSsaNums != nullptr)
+    if (deepClean)
     {
-        m_outlinedCompositeSsaNums->Reset();
+        for (unsigned i = 0; i < lvaCount; ++i)
+        {
+            lvaTable[i].lvPerSsaData.Reset();
+        }
+        lvMemoryPerSsaData.Reset();
+        for (MemoryKind memoryKind : allMemoryKinds())
+        {
+            m_memorySsaMap[memoryKind] = nullptr;
+        }
+
+        if (m_outlinedCompositeSsaNums != nullptr)
+        {
+            m_outlinedCompositeSsaNums->Reset();
+        }
     }
 
     for (BasicBlock* const blk : Blocks())
@@ -63,13 +78,16 @@ void Compiler::fgResetForSsa()
             }
         }
 
-        for (Statement* const stmt : blk->Statements())
+        if (deepClean)
         {
-            for (GenTree* const tree : stmt->TreeList())
+            for (Statement* const stmt : blk->Statements())
             {
-                if (tree->IsAnyLocal())
+                for (GenTree* const tree : stmt->TreeList())
                 {
-                    tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+                    if (tree->IsAnyLocal())
+                    {
+                        tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+                    }
                 }
             }
         }
@@ -639,7 +657,14 @@ void SsaBuilder::AddDefToEHSuccessorPhis(BasicBlock* block, unsigned lclNum, uns
                 break;
             }
         }
-        assert(phiFound);
+
+#ifdef DEBUG
+        // If 'succ' is the handler of an unreachable try it is possible for
+        // 'block' to dominate it, in which case we will not find any phi.
+        // Tolerate this case.
+        EHblkDsc* ehDsc = m_pCompiler->ehGetBlockHndDsc(succ);
+        assert(phiFound || ((ehDsc != nullptr) && !m_pCompiler->m_dfsTree->Contains(ehDsc->ebdTryBeg)));
+#endif
 
         return BasicBlockVisit::Continue;
     });
@@ -1530,7 +1555,7 @@ bool IncrementalSsaBuilder::FindReachingDefInBlock(const UseDefLocation& use, Ba
         }
 
         if ((candidate.Block == use.Block) && (use.Stmt != nullptr) &&
-            (LatestStatement(use.Stmt, candidate.Stmt) != use.Stmt))
+            (m_comp->gtLatestStatement(use.Stmt, candidate.Stmt) != use.Stmt))
         {
             // Def is after use
             continue;
@@ -1540,7 +1565,8 @@ bool IncrementalSsaBuilder::FindReachingDefInBlock(const UseDefLocation& use, Ba
         {
             latestTree = nullptr;
         }
-        else if ((latestDefStmt == nullptr) || (LatestStatement(candidate.Stmt, latestDefStmt) == candidate.Stmt))
+        else if ((latestDefStmt == nullptr) ||
+                 (m_comp->gtLatestStatement(candidate.Stmt, latestDefStmt) == candidate.Stmt))
         {
             latestDefStmt = candidate.Stmt;
             latestTree    = candidate.Tree;
@@ -1592,44 +1618,6 @@ bool IncrementalSsaBuilder::FindReachingDefInSameStatement(const UseDefLocation&
     }
 
     return false;
-}
-
-//------------------------------------------------------------------------
-// LatestStatement: Given two statements in the same block, find the latest one
-// of them.
-//
-// Parameters:
-//   stmt1 - The first statement
-//   stmt2 - The second statement
-//
-// Returns:
-//   Latest of the two statements.
-//
-Statement* IncrementalSsaBuilder::LatestStatement(Statement* stmt1, Statement* stmt2)
-{
-    if (stmt1 == stmt2)
-    {
-        return stmt1;
-    }
-
-    Statement* cursor1 = stmt1->GetNextStmt();
-    Statement* cursor2 = stmt2->GetNextStmt();
-
-    while (true)
-    {
-        if ((cursor1 == stmt2) || (cursor2 == nullptr))
-        {
-            return stmt2;
-        }
-
-        if ((cursor2 == stmt1) || (cursor1 == nullptr))
-        {
-            return stmt1;
-        }
-
-        cursor1 = cursor1->GetNextStmt();
-        cursor2 = cursor2->GetNextStmt();
-    }
 }
 
 //------------------------------------------------------------------------
@@ -1737,12 +1725,10 @@ bool IncrementalSsaBuilder::FinalizeDefs()
     for (int i = 0; i < m_defs.Height(); i++)
     {
         UseDefLocation& def = m_defs.BottomRef(i);
-        if (!m_comp->m_dfsTree->Contains(def.Block))
+        if (m_comp->m_dfsTree->Contains(def.Block))
         {
-            continue;
+            BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);
         }
-
-        BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);
 
         unsigned ssaNum = dsc->lvPerSsaData.AllocSsaNum(m_comp->getAllocator(CMK_SSA), def.Block, def.Tree);
         def.Tree->SetSsaNum(ssaNum);
@@ -1763,17 +1749,13 @@ bool IncrementalSsaBuilder::FinalizeDefs()
 // Parameters:
 //   use - Location of the use
 //
-// Returns:
-//   True if the use was in a reachable block and thus has a reaching def;
-//   otherwise false.
-//
 // Remarks:
 //   All uses are required to never read an uninitialized value of the local.
 //   That is, this function requires that all paths through the function go
 //   through one of the defs in "defs" before any use in "uses" for uses that
 //   are statically reachable.
 //
-bool IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
+void IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
 {
     assert(m_finalizedDefs);
 
@@ -1788,11 +1770,14 @@ bool IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
     {
         if (!m_comp->m_dfsTree->Contains(use.Block))
         {
-            JITDUMP("  Use is in unreachable block " FMT_BB "\n", use.Block->bbNum);
-            return false;
+            reachingDef = m_defs.Bottom(0);
+            JITDUMP("  Use is in unreachable block " FMT_BB ", using first def [%06u] in " FMT_BB "\n",
+                    use.Block->bbNum, Compiler::dspTreeID(reachingDef.Tree), reachingDef.Block->bbNum);
         }
-
-        reachingDef = FindOrCreateReachingDef(use);
+        else
+        {
+            reachingDef = FindOrCreateReachingDef(use);
+        }
     }
 
     JITDUMP("  Reaching def is [%06u] d:%d\n", Compiler::dspTreeID(reachingDef.Tree), reachingDef.Tree->GetSsaNum());
@@ -1802,5 +1787,4 @@ bool IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
 
     LclVarDsc* dsc = m_comp->lvaGetDesc(m_lclNum);
     dsc->GetPerSsaData(reachingDef.Tree->GetSsaNum())->AddUse(use.Block);
-    return true;
 }

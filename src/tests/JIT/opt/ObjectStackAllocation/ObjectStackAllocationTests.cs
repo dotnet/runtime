@@ -156,6 +156,12 @@ namespace ObjectStackAllocation
             // Stack allocation of boxed structs is now enabled
             CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
 
+            // Fixed-sized stack array cases
+            CallTestAndVerifyAllocation(AllocateArrayWithNonGCElements, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayWithGCElements, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayT<int>, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayT<string>, 84, expectedAllocationKind);
+
             // The remaining tests currently never allocate on the stack
             if (expectedAllocationKind == AllocationKind.Stack) {
                 expectedAllocationKind = AllocationKind.Heap;
@@ -167,6 +173,21 @@ namespace ObjectStackAllocation
             // This test calls CORINFO_HELP_CHKCASTCLASS_SPECIAL
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCast, 7, expectedAllocationKind);
 
+            CallTestAndVerifyAllocation(AllocateArrayWithNonGCElementsEscape, 42, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayWithGCElementsEscape, 42, expectedAllocationKind);
+
+            // This test calls CORINFO_HELP_OVERFLOW
+            CallTestAndVerifyAllocation(AllocateArrayWithNonGCElementsOutOfRangeLeft, 0, expectedAllocationKind, true);
+
+            // This test calls CORINFO_HELP_OVERFLOW
+            CallTestAndVerifyAllocation(AllocateArrayWithNonGCElementsOutOfRangeRight, 0, expectedAllocationKind, true);
+
+            // This test calls CORINFO_HELP_ARTHEMIC_OVERFLOW
+            CallTestAndVerifyAllocation(AllocateNegativeLengthArrayWithNonGCElements, 0, expectedAllocationKind, true);
+
+            // This test calls CORINFO_HELP_ARTHEMIC_OVERFLOW
+            CallTestAndVerifyAllocation(AllocateLongLengthArrayWithNonGCElements, 0, expectedAllocationKind, true);
+
             return methodResult;
         }
 
@@ -175,27 +196,38 @@ namespace ObjectStackAllocation
             return Environment.GetEnvironmentVariable("DOTNET_GCStress") != null;
         }
 
-        static void CallTestAndVerifyAllocation(Test test, int expectedResult, AllocationKind expectedAllocationsKind)
+        static void CallTestAndVerifyAllocation(Test test, int expectedResult, AllocationKind expectedAllocationsKind, bool throws = false)
         {
-            long allocatedBytesBefore = GC.GetAllocatedBytesForCurrentThread();
-            int testResult = test();
-            long allocatedBytesAfter = GC.GetAllocatedBytesForCurrentThread();
             string methodName = test.Method.Name;
+            try
+            {
+                long allocatedBytesBefore = GC.GetAllocatedBytesForCurrentThread();
+                int testResult = test();
+                long allocatedBytesAfter = GC.GetAllocatedBytesForCurrentThread();
 
-            if (testResult != expectedResult) {
-                Console.WriteLine($"FAILURE ({methodName}): expected {expectedResult}, got {testResult}");
-                methodResult = -1;
+                if (testResult != expectedResult) {
+                    Console.WriteLine($"FAILURE ({methodName}): expected {expectedResult}, got {testResult}");
+                    methodResult = -1;
+                }
+                else if ((expectedAllocationsKind == AllocationKind.Stack) && (allocatedBytesBefore != allocatedBytesAfter)) {
+                    Console.WriteLine($"FAILURE ({methodName}): unexpected allocation of {allocatedBytesAfter - allocatedBytesBefore} bytes");
+                    methodResult = -1;
+                }
+                else if ((expectedAllocationsKind == AllocationKind.Heap) && (allocatedBytesBefore == allocatedBytesAfter)) {
+                    Console.WriteLine($"FAILURE ({methodName}): unexpected stack allocation");
+                    methodResult = -1;
+                }
+                else {
+                    Console.WriteLine($"SUCCESS ({methodName})");
+                }
             }
-            else if ((expectedAllocationsKind == AllocationKind.Stack) && (allocatedBytesBefore != allocatedBytesAfter)) {
-                Console.WriteLine($"FAILURE ({methodName}): unexpected allocation of {allocatedBytesAfter - allocatedBytesBefore} bytes");
-                methodResult = -1;
-            }
-            else if ((expectedAllocationsKind == AllocationKind.Heap) && (allocatedBytesBefore == allocatedBytesAfter)) {
-                Console.WriteLine($"FAILURE ({methodName}): unexpected stack allocation");
-                methodResult = -1;
-            }
-            else {
-                Console.WriteLine($"SUCCESS ({methodName})");
+            catch {
+                if (throws) {
+                    Console.WriteLine($"SUCCESS ({methodName})");
+                }
+                else {
+                    throw;
+                }
             }
         }
 
@@ -337,6 +369,102 @@ namespace ObjectStackAllocation
             ClassWithGCFieldAndInt c = new ClassWithGCFieldAndInt(f1, null);
             GC.Collect();
             return c.i;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithNonGCElements()
+        {
+            int[] array = new int[42];
+            array[24] = 42;
+            GC.Collect();
+            return array[24] + array.Length;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithGCElements()
+        {
+            string[] array = new string[42];
+            array[24] = "42";
+            GC.Collect();
+            return array[24].Length * 21 + array.Length;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayT<T>()
+        {
+            T[] array = new T[42];
+            T t = array[24];
+            GC.Collect();
+
+            // Todo -- validate array type (currently causes escape for shared)
+            // Todo -- store to array (currently causes escape for shared)
+
+            Consume(t);
+            return array.Length + 42;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithNonGCElementsEscape()
+        {
+            int[] array = new int[42];
+            Use(ref array[24]);
+            GC.Collect();
+            return array[24];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithGCElementsEscape()
+        {
+            string[] array = new string[42];
+            Use(ref array[24]);
+            GC.Collect();
+            return array[24].Length * 21;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithNonGCElementsOutOfRangeRight()
+        {
+            int[] array = new int[42];
+            array[43] = 42;
+            GC.Collect();
+            return 1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithNonGCElementsOutOfRangeLeft()
+        {
+            int[] array = new int[42];
+            array[-1] = 42;
+            GC.Collect();
+            return 1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateNegativeLengthArrayWithNonGCElements()
+        {
+            int[] array = new int["".Length - 2];
+            GC.Collect();
+            return 1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateLongLengthArrayWithNonGCElements()
+        {
+            int[] array = new int[long.MaxValue];
+            GC.Collect();
+            return 1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Use(ref int v)
+        {
+            v = 42;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Use(ref string s)
+        {
+            s = "42";
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

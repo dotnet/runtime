@@ -481,7 +481,8 @@ namespace ILVerify
         private static int Main(string[] args) =>
             new CliConfiguration(new ILVerifyRootCommand().UseVersion())
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                EnableDefaultExceptionHandler = false,
             }.Invoke(args);
     }
 }

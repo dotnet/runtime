@@ -794,7 +794,7 @@ __checkReturn
 HRESULT MDInternalRO::FindMethodDef(    // S_OK or error.
     mdTypeDef   classdef,               // The owning class of the member.
     LPCSTR      szName,                 // Name of the member in utf8.
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdMethodDef *pmethoddef)            // Put MemberDef token here.
 {
@@ -815,7 +815,7 @@ __checkReturn
 HRESULT MDInternalRO::FindMethodDefUsingCompare(    // S_OK or error.
     mdTypeDef   classdef,               // The owning class of the member.
     LPCSTR      szName,                 // Name of the member in utf8.
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     PSIGCOMPARE SigCompare,            // [IN] Signature comparison routine
     void*       pSigArgs,               // [IN] Additional arguments passed to signature compare
@@ -1050,7 +1050,7 @@ __checkReturn
 HRESULT
 MDInternalRO::GetNameAndSigOfMethodDef(
     mdMethodDef      methoddef,         // [IN] given memberdef
-    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of signature
     ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
     LPCSTR          *pszMethodName)
 {
@@ -1812,7 +1812,7 @@ __checkReturn
 HRESULT
 MDInternalRO::GetNameAndSigOfMemberRef( // meberref's name
     mdMemberRef      memberref,         // given a memberref
-    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of signature
     ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
     LPCSTR          *pszMemberRefName)
 {
@@ -3065,7 +3065,7 @@ __checkReturn
 HRESULT MDInternalRO::ConvertTextSigToComSig(// Return hresult.
     BOOL        fCreateTrIfNotFound,    // create typeref if not found or not
     LPCSTR      pSignature,             // class file format signature
-    CQuickBytes *pqbNewSig,             // [OUT] place holder for COM+ signature
+    CQuickBytes *pqbNewSig,             // [OUT] place holder for signature
     ULONG       *pcbCount)              // [OUT] the result size of signature
 {
     return E_NOTIMPL;

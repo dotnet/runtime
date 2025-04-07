@@ -107,11 +107,11 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 
 		class Complex
 		{
-			[Kept]
+			[Kept (By = Tool.Trimmer)]
 			public struct S<T> { }
-			[Kept]
+			[Kept (By = Tool.Trimmer)]
 			public class A { }
-			[Kept]
+			[Kept (By = Tool.Trimmer)]
 			public class G<T, U> { }
 
 			[Kept]

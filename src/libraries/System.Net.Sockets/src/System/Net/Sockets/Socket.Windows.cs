@@ -21,6 +21,7 @@ namespace System.Net.Sockets
 
 #pragma warning disable CA1822
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
+        internal bool CanProceedWithMultiConnect => true;
 #pragma warning restore CA1822
 
         private sealed class CachedSerializedEndPoint

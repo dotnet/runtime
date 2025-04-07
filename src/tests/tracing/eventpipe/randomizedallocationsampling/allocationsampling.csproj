@@ -12,11 +12,6 @@
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
 
-  <!-- Test coverage for EventPipe CFG library, eventpipe-enabled.GuardCF.lib -->
-  <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsWindows)' == 'true'">
-    <ControlFlowGuard>guard</ControlFlowGuard>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="../common/eventpipe_common.csproj" />

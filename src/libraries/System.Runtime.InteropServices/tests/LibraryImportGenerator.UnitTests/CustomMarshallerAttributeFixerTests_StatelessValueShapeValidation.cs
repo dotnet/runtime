@@ -363,7 +363,6 @@ namespace LibraryImportGenerator.UnitTests
                 static class MarshallerType
                 {
                     public static nint ConvertToUnmanaged(ManagedType m, Span<byte> b) => default;
-
                     public static int BufferSize
                     {
                         get

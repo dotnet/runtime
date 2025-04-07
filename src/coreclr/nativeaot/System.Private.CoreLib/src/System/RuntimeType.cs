@@ -630,7 +630,7 @@ namespace System
                 return false;
             if (pEEType->IsNullable)
                 pEEType = pEEType->NullableType;
-            return RuntimeImports.IsInstanceOf(pEEType, o) != null;
+            return TypeCast.IsInstanceOfAny(pEEType, o) != null;
         }
 
         //
