@@ -106,13 +106,11 @@ namespace System
         private readonly int _pauseTimePercentage;
         private readonly byte _compacted;
         private readonly byte _concurrent;
-
         private readonly GCGenerationInfo _generationInfo0;
         private readonly GCGenerationInfo _generationInfo1;
         private readonly GCGenerationInfo _generationInfo2;
         private readonly GCGenerationInfo _generationInfo3;
         private readonly GCGenerationInfo _generationInfo4;
-
         private readonly TimeSpan _pauseDuration0;
         private readonly TimeSpan _pauseDuration1;
 
