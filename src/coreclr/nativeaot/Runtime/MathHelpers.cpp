@@ -98,31 +98,37 @@ FCIMPLEND
 
 #endif
 
+#ifndef HOST_64BIT
+FCIMPL2(int32_t, DivInt32Internal, int32_t i, int32_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i / j;
+}
+FCIMPLEND
+
+FCIMPL2(uint32_t, DivUInt32Internal, uint32_t i, uint32_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i / j;
+}
+FCIMPLEND
+
+FCIMPL2(int32_t, ModInt32Internal, int32_t i, int32_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i % j;
+}
+FCIMPLEND
+
+FCIMPL2(uint32_t, ModUInt32Internal, uint32_t i, uint32_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i % j;
+}
+FCIMPLEND
+#endif
+
 #ifdef HOST_ARM
-EXTERN_C int32_t F_CALL_CONV DivInt32Internal(int32_t i, int32_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i / j;
-}
-
-EXTERN_C uint32_t F_CALL_CONV DivUInt32Internal(uint32_t i, uint32_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i / j;
-}
-
-EXTERN_C int32_t F_CALL_CONV ModInt32Internal(int32_t i, int32_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i % j;
-}
-
-EXTERN_C uint32_t F_CALL_CONV ModUInt32Internal(uint32_t i, uint32_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i % j;
-}
-
 EXTERN_C int64_t F_CALL_CONV RhpLMul(int64_t i, int64_t j)
 {
     return i * j;
