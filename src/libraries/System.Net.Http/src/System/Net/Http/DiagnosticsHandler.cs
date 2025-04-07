@@ -90,7 +90,7 @@ namespace System.Net.Http
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "EnableActivityTracker")]
-        static extern void EnableActivityTracker(EventSource? instance);
+        private static extern void EnableActivityTracker(EventSource? instance);
 
         private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
