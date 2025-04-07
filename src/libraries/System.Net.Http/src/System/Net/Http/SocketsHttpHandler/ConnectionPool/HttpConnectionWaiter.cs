@@ -19,7 +19,7 @@ namespace System.Net.Http
 
         public ValueTask<T> WaitForConnectionAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
         {
-            return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled || Activity.Current?.Source == DiagnosticsHandler.s_activitySource
+            return HttpTelemetry.Log.IsEnabled() || (MetricsHandler.IsGloballyEnabled() && pool.Settings._metrics!.RequestsQueueDuration.Enabled) || Activity.Current?.Source == DiagnosticsHandler.s_activitySource
                 ? WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken)
                 : WaitWithCancellationAsync(async, requestCancellationToken);
         }
@@ -42,14 +42,19 @@ namespace System.Net.Http
             }
             finally
             {
-                TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
-                int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
-
-                pool.Settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor);
-
-                if (HttpTelemetry.Log.IsEnabled())
+                if (HttpTelemetry.Log.IsEnabled() || MetricsHandler.IsGloballyEnabled())
                 {
-                    HttpTelemetry.Log.RequestLeftQueue(versionMajor, duration);
+                    TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
+                    int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
+                    if (MetricsHandler.IsGloballyEnabled())
+                    {
+                        pool.Settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor);
+                    }
+
+                    if (HttpTelemetry.Log.IsEnabled())
+                    {
+                        HttpTelemetry.Log.RequestLeftQueue(versionMajor, duration);
+                    }
                 }
             }
         }
