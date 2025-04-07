@@ -339,8 +339,10 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         public unsafe struct WINHTTP_CONNECTION_INFO
         {
-            public uint cbSize;
-            public uint __alignment;
+            // This field is actually 4 bytes, but we use nuint to avoid alignment issues for x64.
+            // If we want to read this field in the future, we need to change type and make sure
+            // alignment is correct for necessary archs.
+            public nuint cbSize;
             public fixed byte LocalAddress[128];
             public fixed byte RemoteAddress[128];
         }
