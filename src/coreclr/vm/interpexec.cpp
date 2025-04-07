@@ -571,6 +571,108 @@ MAIN_LOOP:
                 ip += 4;
                 break;
 
+            case INTOP_DIV_I4:
+            {
+                int32_t i1 = LOCAL_VAR(ip[2], int32_t);
+                int32_t i2 = LOCAL_VAR(ip[3], int32_t);
+                if (i2 == 0)
+                    assert(0); // Interpreter-TODO: DivideByZeroException
+                if (i2 == -1 && i1 == INT32_MIN)
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], int32_t) = i1 / i2;
+                ip += 4;
+                break;
+            }
+            case INTOP_DIV_I8:
+            {
+                int64_t l1 = LOCAL_VAR(ip[2], int64_t);
+                int64_t l2 = LOCAL_VAR(ip[3], int64_t);
+                if (l2 == 0)
+                    assert(0); // Interpreter-TODO: DivideByZeroException
+                if (l2 == -1 && l1 == INT64_MIN)
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], int64_t) = l1 / l2;
+                ip += 4;
+                break;
+            }
+            case INTOP_DIV_R4:
+                LOCAL_VAR(ip[1], float) = LOCAL_VAR(ip[2], float) / LOCAL_VAR(ip[3], float);
+                ip += 4;
+                break;
+            case INTOP_DIV_R8:
+                LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) / LOCAL_VAR(ip[3], double);
+                ip += 4;
+                break;
+            case INTOP_DIV_UN_I4:
+            {
+                uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
+                if (i2 == 0)
+                    assert(0); // Interpreter-TODO: DivideByZeroException
+                LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) / i2;
+                ip += 4;
+                break;
+            }
+            case INTOP_DIV_UN_I8:
+            {
+                uint64_t l2 = LOCAL_VAR(ip[3], uint64_t);
+                if (l2 == 0)
+                    assert(0); // Interpreter-TODO: DivideByZeroException
+                LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) / l2;
+                ip += 4;
+                break;
+            }
+
+            case INTOP_REM_I4:
+            {
+                int32_t i1 = LOCAL_VAR(ip[2], int32_t);
+                int32_t i2 = LOCAL_VAR(ip[3], int32_t);
+                if (i2 == 0)
+                    assert(0); // Interpreter-TODO: DivideByZeroException
+                if (i2 == -1 && i1 == INT32_MIN)
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], int32_t) = i1 % i2;
+                ip += 4;
+                break;
+            }
+            case INTOP_REM_I8:
+            {
+                int64_t l1 = LOCAL_VAR(ip[2], int64_t);
+                int64_t l2 = LOCAL_VAR(ip[3], int64_t);
+                if (l2 == 0)
+                    assert(0); // Interpreter-TODO: DivideByZeroException
+                if (l2 == -1 && l1 == INT64_MIN)
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], int64_t) = l1 % l2;
+                ip += 4;
+                break;
+            }
+            case INTOP_REM_R4:
+                LOCAL_VAR(ip[1], float) = fmodf(LOCAL_VAR(ip[2], float), LOCAL_VAR(ip[3], float));
+                ip += 4;
+                break;
+            case INTOP_REM_R8:
+                LOCAL_VAR(ip[1], double) = fmod(LOCAL_VAR(ip[2], double), LOCAL_VAR(ip[3], double));
+                ip += 4;
+                break;
+            case INTOP_REM_UN_I4:
+            {
+                uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
+                if (i2 == 0)
+                    assert(0); // Interpreter-TODO: DivideByZeroException
+                LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) % i2;
+                ip += 4;
+                break;
+            }
+            case INTOP_REM_UN_I8:
+            {
+                uint64_t l2 = LOCAL_VAR(ip[3], uint64_t);
+                if (l2 == 0)
+                    assert(0); // Interpreter-TODO: DivideByZeroException
+                LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) % l2;
+                ip += 4;
+                break;
+            }
+
             case INTOP_SHL_I4:
                 LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) << LOCAL_VAR(ip[3], int32_t);
                 ip += 4;
@@ -764,10 +866,6 @@ MAIN_LOOP:
             case INTOP_LDIND_R8:
                 LDIND(double, double);
                 break;
-            case INTOP_LDIND_O:
-                LDIND(OBJECTREF, OBJECTREF);
-                break;
-
             case INTOP_LDIND_VT:
             {
                 char *src = LOCAL_VAR(ip[2], char*);
@@ -959,6 +1057,10 @@ CALL_INTERP_SLOT:
                 ip += 5;
                 goto CALL_INTERP_SLOT;
             }
+            case INTOP_ZEROBLK_IMM:
+                memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
+                ip += 3;
+                break;
             case INTOP_FAILFAST:
                 assert(0);
                 break;
