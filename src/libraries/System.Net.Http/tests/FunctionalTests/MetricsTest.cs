@@ -381,7 +381,7 @@ namespace System.Net.Http.Functional.Tests
             using InstrumentRecorder<long> openConnectionsRecorder = SetupInstrumentRecorder<long>(InstrumentNames.OpenConnections);
 
             Uri uri = UseVersion == HttpVersion.Version11
-                ? Test.Common.Configuration.Http.RemoteSecureHttp11Server.EchoUri
+                ? Test.Common.Configuration.Http.RemoteHttp11Server.EchoUri
                 : Test.Common.Configuration.Http.RemoteHttp2Server.EchoUri;
             IPAddress[] addresses = await Dns.GetHostAddressesAsync(uri.Host);
             addresses = addresses.Union(addresses.Select(a => a.MapToIPv6())).ToArray();
@@ -1259,7 +1259,7 @@ namespace System.Net.Http.Functional.Tests
                     });
 
                 }, options: new GenericLoopbackOptions() { UseSsl = true });
-            }, options: new GenericLoopbackOptions() { UseSsl = false });
+            }, options: new GenericLoopbackOptions() { UseSsl = false});
         }
 
         [Fact]
