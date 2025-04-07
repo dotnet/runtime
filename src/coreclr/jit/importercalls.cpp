@@ -8037,26 +8037,31 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Tan:
         case NI_System_Math_Tanh:
         case NI_System_Math_Truncate:
-        case NI_PRIMITIVE_LeadingZeroCount:
-        case NI_PRIMITIVE_TrailingZeroCount:
-        case NI_PRIMITIVE_PopCount:
         {
-            assert(((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END)) ||
-                   (intrinsicName == NI_PRIMITIVE_LeadingZeroCount) ||
-                   (intrinsicName == NI_PRIMITIVE_TrailingZeroCount) || (intrinsicName == NI_PRIMITIVE_PopCount));
+            assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END));
             return true;
         }
 
         default:
         {
+            assert((intrinsicName < NI_SYSTEM_MATH_START) || (intrinsicName > NI_SYSTEM_MATH_END));
             return false;
         }
     }
 }
 
-bool Compiler::IsMathIntrinsic(GenTree* tree)
+bool Compiler::IsBitCountingIntrinsic(NamedIntrinsic intrinsicName)
 {
-    return (tree->OperGet() == GT_INTRINSIC) && IsMathIntrinsic(tree->AsIntrinsic()->gtIntrinsicName);
+    switch (intrinsicName)
+    {
+        case NI_PRIMITIVE_LeadingZeroCount:
+        case NI_PRIMITIVE_TrailingZeroCount:
+        case NI_PRIMITIVE_PopCount:
+            return true;
+
+        default:
+            return false;
+    }
 }
 
 //------------------------------------------------------------------------
