@@ -649,8 +649,7 @@ int LinearScan::BuildNode(GenTree* tree)
             //     length into a register to widen it to `native int`
             //   - if the index is `int` (or smaller) then we need to widen
             //     it to `long` to perform the address calculation
-            // TODO-Xarch-apx: Revisit. This internally created instructions that require extended EVEX.
-            internalDef = buildInternalIntRegisterDefForNode(tree, BuildApxIncompatibleGPRMask(tree, RBM_NONE, true));
+            internalDef = buildInternalIntRegisterDefForNode(tree);
 #else  // !TARGET_64BIT
             assert(!varTypeIsLong(tree->AsIndexAddr()->Index()->TypeGet()));
             switch (tree->AsIndexAddr()->gtElemSize)
@@ -666,25 +665,7 @@ int LinearScan::BuildNode(GenTree* tree)
                     break;
             }
 #endif // !TARGET_64BIT
-       // TODO-Xarch-apx: Might have to mask away eGPR if imul is likely to be created.
-       // see
-       // https://github.com/dotnet/runtime/blob/31733b9a35185785427bac69ef80a4eb56b727c2/src/coreclr/jit/codegenxarch.cpp#L1303
-            SingleTypeRegSet ApxAwareMask = RBM_NONE;
-#ifdef TARGET_64BIT
-            switch (tree->AsIndexAddr()->gtElemSize)
-            {
-                case 1:
-                case 2:
-                case 4:
-                case 8:
-                    break;
-
-                default:
-                    ApxAwareMask = BuildApxIncompatibleGPRMask(tree, ApxAwareMask, true);
-                    break;
-            }
-#endif
-            srcCount = BuildBinaryUses(tree->AsOp(), ApxAwareMask);
+            srcCount = BuildBinaryUses(tree->AsOp());
             if (internalDef != nullptr)
             {
                 buildInternalRegisterUses();
@@ -3246,7 +3227,7 @@ int LinearScan::BuildMul(GenTree* tree)
     }
 
     // ToDo-APX : imul currently doesn't have rex2 support. So, cannot  use R16-R31.
-    int srcCount = BuildBinaryUses(tree->AsOp(), BuildApxIncompatibleGPRMask(tree->AsOp(), RBM_NONE, true));
+    int srcCount = BuildBinaryUses(tree->AsOp());
     int dstCount = 1;
     SingleTypeRegSet dstCandidates = RBM_NONE;
 
@@ -3292,11 +3273,6 @@ int LinearScan::BuildMul(GenTree* tree)
         dstCount      = 2;
     }
 #endif
-    else
-    {
-        // ToDo-APX : imul currently doesn't have rex2 support. So, cannot  use R16-R31.
-        dstCandidates = BuildApxIncompatibleGPRMask(tree, dstCandidates, true);
-    }
     GenTree* containedMemOp = nullptr;
     if (op1->isContained() && !op1->IsCnsIntOrI())
     {
