@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
+using System.Net.Http.Metrics;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Runtime.ExceptionServices;
