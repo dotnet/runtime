@@ -24,19 +24,6 @@ namespace System.Net.Http
         private readonly DistributedContextPropagator _propagator;
         private readonly HeaderDescriptor[]? _propagatorFields;
 
-        static DiagnosticsHandler()
-        {
-            if (!IsGloballyEnabled() || !IsEnabled())
-            {
-                return;
-            }
-
-            EnableActivityTracker((EventSource?)null);
-
-            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "EnableActivityTracker")]
-            static extern void EnableActivityTracker(EventSource? instance);
-        }
-
         public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
         {
             if (!IsGloballyEnabled()) throw new InvalidOperationException("Metrics are not enabled.");
@@ -102,15 +89,19 @@ namespace System.Net.Http
             }
         }
 
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "EnableActivityTracker")]
+        static extern void EnableActivityTracker(EventSource? instance);
+
         private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (!IsGloballyEnabled()) throw new InvalidOperationException("Metrics are not enabled.");
-
             // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
             // It will check if propagation is on (because parent Activity exists or there is a listener) or off (forcibly disabled)
             // This code won't be called unless consumer unsubscribes from DiagnosticListener right after the check.
             // So some requests happening right after subscription starts might not be instrumented. Similarly,
             // when consumer unsubscribes, extra requests might be instrumented
+            if (!IsGloballyEnabled()) throw new InvalidOperationException("Metrics are not enabled.");
+
+            EnableActivityTracker((EventSource?)null);
 
             // Since we are reusing the request message instance on redirects, clear any existing headers
             // Do so before writing DiagnosticListener events as instrumentations use those to inject headers
