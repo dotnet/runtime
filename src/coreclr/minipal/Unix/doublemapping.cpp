@@ -255,13 +255,17 @@ bool VMToOSInterface::ReleaseRWMapping(void* pStart, size_t size)
 }
 
 #ifndef TARGET_APPLE
+#define MAX_TEMPLATE_THUNK_TYPES 8 // Maximum number of times the CreateTemplate api can be called
 struct TemplateThunkMappingData
 {
     int fdImage;
     off_t offsetInFileOfStartOfSection;
     void* addrOfStartOfSection; // Always NULL if the template mapping data could not be initialized
     void* addrOfEndOfSection;
+    bool imageTemplates;
+    off_t nonImageTemplateCurrent;
 };
+
 struct InitializeTemplateThunkLocals
 {
     void* pTemplate;
@@ -298,7 +302,12 @@ static int InitializeTemplateThunkMappingDataPhdrCallback(struct dl_phdr_info *i
 
             // At this point, we have found the template section. Attempt to open the file, and record the various offsets for future use
 
-            // TODO! To handle single-file scenarios, we need to capture the argv[0] parameter to the process and if info->dlpi_name == "", then use that instead
+            if (strlen(info->dlpi_name) == 0)
+            {
+                // This image cannot be directly referenced without capturing the argv[0] parameter
+                return -1;
+            }
+
             int fdImage = open(info->dlpi_name, O_RDONLY);
             if (fdImage == -1)
             {
@@ -309,6 +318,7 @@ static int InitializeTemplateThunkMappingDataPhdrCallback(struct dl_phdr_info *i
             locals->data.offsetInFileOfStartOfSection = info->dlpi_phdr[j].p_offset;
             locals->data.addrOfStartOfSection = info->dlpi_phdr[j].p_vaddr;
             locals->data.addrOfEndOfSection = info->dlpi_phdr[j].p_vaddr + sizeOfSectionWhichCanBeMapped;
+            locals->data.imageTemplates = true;
             return 1; // We have found the result. Abort further processing.
         }
     }
@@ -325,11 +335,57 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
     locals.data.offsetInFileOfStartOfSection = 0;
     locals.data.addrOfStartOfSection = NULL;
     locals.data.addrOfEndOfSection = NULL;
+    locals.data.imageTemplates = false;
+    locals.data.nonImageTemplateCurrent = 0;
 
     if (dladdr(pTemplate, &locals.info) != 0)
     {
         dl_iterate_phdr(InitializeTemplateThunkMappingDataPhdrCallback, &locals);
     }
+
+    if (locals.data->addrOfStartOfSection == NULL)
+    {
+        // This is the detail of thunk data which indicates if we were able to compute the template mapping data from the image.
+
+#ifdef TARGET_FREEBSD
+        int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
+#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+        int fd = memfd_create("doublemapper-template", MFD_CLOEXEC);
+#else
+        int fd = -1;
+    
+#ifndef TARGET_ANDROID
+        // Bionic doesn't have shm_{open,unlink}
+        // POSIX fallback
+        if (fd == -1)
+        {
+            char name[24];
+            sprintf(name, "/shm-dotnet-template-%d", getpid());
+            name[sizeof(name) - 1] = '\0';
+            shm_unlink(name);
+            fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
+            shm_unlink(name);
+        }
+#endif // !TARGET_ANDROID
+#endif
+        if (fd != -1)
+        {
+            off_t maxFileSize = MAX_TEMPLATE_THUNK_TYPES * 0x10000;
+            if (ftruncate(fd, maxFileSize) == -1) // Reserve a decent size chunk of logical memory for these things.
+            {
+                close(fd);
+            }
+            else
+            {
+                locals.data.fdImage = fd;
+                locals->data.offsetInFileOfStartOfSection = 0;
+                locals->data.addrOfStartOfSection = (void*)0x10000;
+                locals->data.addrOfEndOfSection = ((uint8_t*)locals->data.addrOfStartOfSection) + maxFileSize;
+                locals->data.imageTemplates = false;
+            }
+        }
+    }
+
 
     TemplateThunkMappingData *pAllocatedData = (TemplateThunkMappingData*)malloc(sizeof(TemplateThunkMappingData));
     *pAllocatedData = locals.data;
@@ -352,6 +408,51 @@ bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
     return false;
 #else
     return true;
+#endif
+}
+
+void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
+{
+#ifdef TARGET_APPLE
+    return pImageTemplate;
+#elif defined(TARGET_X86)
+    return NULL; // X86 doesn't support high performance relative addressing, which makes the template system not work
+#else
+    if (pImageTemplate == NULL)
+        return NULL;
+
+    TemplateThunkMappingData* pThunkData = __atomic_load_n(&s_pThunkData, __ATOMIC_ACQUIRE);
+    if (s_pThunkData == NULL)
+    {
+        pThunkData = InitializeTemplateThunkMappingData(pImageTemplate);
+    }
+
+    // Unable to create template mapping region
+    if (pThunkData->addrOfStartOfSection == NULL)
+    {
+        return NULL;
+    }
+
+    if (!pThunkData->imageTemplates)
+    {
+        // Need to allocate a memory mapped region to fill in the data
+        off_t locationInFileToStoreGeneratedCode = __atomic_fetch_add((off_t*)&pThunkData->nonImageTemplateCurrent, (off_t)templateSize, __ATOMIC_SEQ_CST);
+        void* mappedMemory = mmap(NULL, templateSize, PROT_READ | PROT_WRITE, MAP_SHARED, pThunkData->fdImage, locationInFileToStoreGeneratedCode);
+        if (mappedMemory != MAP_FAILED)
+        {
+            codePageGenerator(mappedMemory, mappedMemory, templateSize);
+            munmap(mappedMemory);
+            return ((uint8_t*)pThunkData->addrOfStartOfSection) + locationInFileToStoreGeneratedCode;
+        }
+        else
+        {
+            return NULL;
+        }
+    }
+    else
+    {
+        return pImageTemplate;
+    }
 #endif
 }
 

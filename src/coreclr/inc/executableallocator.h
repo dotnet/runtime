@@ -265,6 +265,18 @@ public:
 
     // Unmap the RW mapping at the specified address
     void UnmapRW(void* pRW);
+
+    // Allocate thunks from a template. pTemplate is the return value from CreateTemplate
+    void* AllocateThunksFromTemplate(void *pTemplate, size_t templateSize);
+
+    // Free a set of thunks allocated from templates. pThunks must have been returned from AllocateThunksFromTemplate
+    void FreeThunksFromTemplate(void *pThunks, size_t templateSize);
+
+    // Create a template
+    // If templateInImage is not null, it will attempt to use it as the template, otherwise it will create an temporary in memory file to serve as the template
+    // Some OS/Architectures may/may not be able to work with this, so this api is permitted to return NULL, and callers should have an alternate approach using
+    // the codePageGenerator directly.
+    void* CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size));
 };
 
 #define ExecutableWriterHolder ExecutableWriterHolderNoLog
