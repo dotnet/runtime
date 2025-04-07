@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { IDiagConnection, DiagConnectionBase, diagnostic_server_loop, schedule_diagnostic_server_loop } from "./common";
+import { mono_log_warn } from "./logging";
 
 export function createDiagConnectionWs (socket_handle:number, url:string):IDiagConnection {
     return new DiagConnectionWS(socket_handle, url);
@@ -33,6 +34,7 @@ class DiagConnectionWS extends DiagConnectionBase implements IDiagConnection {
         }, { once: true });
         ws.addEventListener("message", onMessage);
         ws.addEventListener("error", () => {
+            mono_log_warn("Diagnostic server WebSocket connection was closed unexpectedly.");
             ws.removeEventListener("message", onMessage);
         }, { once: true });
     }
