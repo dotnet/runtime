@@ -26,17 +26,20 @@ namespace System.Net.Http
 
         static DiagnosticsHandler()
         {
-            if (IsEnabled())
+            if (!IsGloballyEnabled() || !IsEnabled())
             {
-                EnableActivityTracker((EventSource?)null);
+                return;
             }
+
+            EnableActivityTracker((EventSource?)null);
+
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "EnableActivityTracker")]
             static extern void EnableActivityTracker(EventSource? instance);
         }
 
         public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
         {
-            Debug.Assert(IsGloballyEnabled());
+            if (!IsGloballyEnabled()) throw new InvalidOperationException("Metrics are not enabled.");
             Debug.Assert(innerHandler is not null && propagator is not null);
 
             _innerHandler = innerHandler;
@@ -101,6 +104,8 @@ namespace System.Net.Http
 
         private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            if (!IsGloballyEnabled()) throw new InvalidOperationException("Metrics are not enabled.");
+
             // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
             // It will check if propagation is on (because parent Activity exists or there is a listener) or off (forcibly disabled)
             // This code won't be called unless consumer unsubscribes from DiagnosticListener right after the check.
