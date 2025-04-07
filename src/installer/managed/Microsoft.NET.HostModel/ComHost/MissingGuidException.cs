@@ -19,9 +19,8 @@ namespace Microsoft.NET.HostModel.ComHost
 #else
             if (typeName is null)
             {
-
                 throw new ArgumentNullException(nameof(typeName));
-        }
+            }
 #endif
             TypeName = typeName;
         }
