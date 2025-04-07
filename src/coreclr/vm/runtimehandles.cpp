@@ -191,6 +191,9 @@ FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassB
 
     MethodTable* pMT = typeHandle.AsMethodTable();
     MethodDesc* pMethod = MethodTable::IntroducedMethodIterator::GetFirst(pMT);
+    while (pMethod && pMethod->IsAsync2VariantMethod())
+        pMethod = MethodTable::IntroducedMethodIterator::GetNext(pMethod);
+
     return pMethod;
 }
 FCIMPLEND
@@ -205,6 +208,8 @@ FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod
     CONTRACTL_END;
 
     MethodDesc *pMethod = MethodTable::IntroducedMethodIterator::GetNext(*ppMethod);
+    while (pMethod && pMethod->IsAsync2VariantMethod())
+        pMethod = MethodTable::IntroducedMethodIterator::GetNext(pMethod);
 
     *ppMethod = pMethod;
 }
