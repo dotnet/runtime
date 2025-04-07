@@ -372,12 +372,10 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
 }
 
 
-// Allocates memory for a single stub
-//
-// FREEING THIS BLOCK: Underneath, the actual block allocated may
-// be larger and start at an address prior to the one you got back.
-// It is this adjusted size and pointer that you pass to BackoutMem.
-// The required adjustment is passed back thru the pdwExtra pointer.
+// Allocates memory for a single stub which is a pair of memory addresses
+// The first address is the pointer at the stub code, and the second
+// address is the data for the stub. These are separated by GetStubCodePageSize()
+// bytes.
 //
 // Here is how to properly backout the memory:
 //

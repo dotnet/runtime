@@ -456,10 +456,10 @@ private:
 };
 
 //===============================================================================
-// This is the base class for LoaderHeap It's used as a simple
-// allocator that's semantically (but not perfwise!) equivalent to a blackbox
-// alloc/free heap. The ability to free is via a "backout" mechanism that is
-// not considered to have good performance.
+// This is the base class for InterleavedLoaderHeap It's used as a simple
+// allocator for stubs in a scheme where each stub is a small fixed size, and is paired
+// with memory which is GetOSStubPageSize() bytes away. In addition there is an
+// ability to free is via a "backout" mechanism that is not considered to have good performance.
 //
 //===============================================================================
 class UnlockedInterleavedLoaderHeap : public UnlockedLoaderHeapBase
@@ -536,21 +536,17 @@ protected:
     BOOL UnlockedReservePages(size_t dwCommitBlockSize);
 
 protected:
-    // Allocates memory aligned on power-of-2 boundary.
+    // Allocates memory for a single stub which is a pair of memory addresses
+    // The first address is the pointer at the stub code, and the second
+    // address is the data for the stub. These are separated by GetStubCodePageSize()
+    // bytes.
     //
     // The return value is a pointer that's guaranteed to be aligned.
     //
-    // FREEING THIS BLOCK: Underneath, the actual block allocated may
-    // be larger and start at an address prior to the one you got back.
-    // It is this adjusted size and pointer that you pass to BackoutMem.
-    // The required adjustment is passed back thru the pdwExtra pointer.
-    //
     // Here is how to properly backout the memory:
     //
-    //   size_t dwExtra;
-    //   void *pMem = UnlockedAllocAlignedMem(dwRequestedSize, alignment, &dwExtra);
-    //   _ASSERTE( 0 == (pMem & (alignment - 1)) );
-    //   UnlockedBackoutMem( ((BYTE*)pMem) - dExtra, dwRequestedSize + dwExtra );
+    //   void *pMem = UnlockedAllocStub(d);
+    //   UnlockedBackoutStub(pMem);
     //
     // If you use the AllocMemHolder or AllocMemTracker, all this is taken care of
     // behind the scenes.

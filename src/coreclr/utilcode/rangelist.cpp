@@ -151,7 +151,7 @@ void RangeList::RemoveRangesWorker(void *id)
         {
             if (r->id == (TADDR)id)
             {
-                r->id = NULL;
+                r->id = (TADDR)NULL;
             }
 
             r++;
