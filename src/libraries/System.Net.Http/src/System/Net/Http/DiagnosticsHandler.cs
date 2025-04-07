@@ -99,8 +99,7 @@ namespace System.Net.Http
             // This code won't be called unless consumer unsubscribes from DiagnosticListener right after the check.
             // So some requests happening right after subscription starts might not be instrumented. Similarly,
             // when consumer unsubscribes, extra requests might be instrumented
-            if (!IsGloballyEnabled()) throw new InvalidOperationException("Metrics are not enabled.");
-
+            if (!IsGloballyEnabled()) throw new InvalidOperationException("Diagnostics are not enabled.");
             EnableActivityTracker((EventSource?)null);
 
             // Since we are reusing the request message instance on redirects, clear any existing headers
