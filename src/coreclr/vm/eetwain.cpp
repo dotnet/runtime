@@ -21,6 +21,8 @@
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
 
+#include "exinfo.h"
+
 #ifdef TARGET_X86
 
 // NOTE: enabling compiler optimizations, even for debug builds.
@@ -36,6 +38,8 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
 #endif // TARGET_X86
 
 #include "argdestination.h"
+
+#include "exceptionhandling.h"
 
 #ifndef DACCESS_COMPILE
 #ifndef FEATURE_EH_FUNCLETS
@@ -2124,7 +2128,167 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 
     return;
 }
+#else // !FEATURE_EH_FUNCLETS
+
+#ifndef TARGET_WASM
+
+#ifdef USE_FUNCLET_CALL_HELPER
+// This is an assembly helper that enables us to call into EH funclets.
+EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
+
+// This is an assembly helper that enables us to call into EH filter funclets.
+EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR CallerSP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
+
+typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
+
+static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
+{
+#ifdef TARGET_ARM
+    return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
+#else
+    return (UINT_PTR)pfnHandler;
+#endif
+}
+
+static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextRecord)
+{
+#if defined(TARGET_ARM)
+    return (UINT_PTR*)&(pContextRecord->R4);
+#elif defined(TARGET_ARM64)
+    return (UINT_PTR*)&(pContextRecord->X19);
+#elif defined(TARGET_LOONGARCH64)
+    return (UINT_PTR*)&(pContextRecord->S0);
+#elif defined(TARGET_X86)
+    return (UINT_PTR*)&(pContextRecord->Edi);
+#elif defined(TARGET_RISCV64)
+    return (UINT_PTR*)&(pContextRecord->Fp);
+#else
+    PORTABILITY_ASSERT("GetFirstNonVolatileRegisterAddress");
+    return NULL;
+#endif
+}
+
+static inline TADDR GetFrameRestoreBase(PCONTEXT pContextRecord)
+{
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    return GetSP(pContextRecord);
+#elif defined(TARGET_X86)
+    return pContextRecord->Ebp;
+#else
+    PORTABILITY_ASSERT("GetFrameRestoreBase");
+    return NULL;
+#endif
+}
+
+#endif // USE_FUNCLET_CALL_HELPER
+
+typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
+static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
+{
+#ifdef HOST_AMD64
+    _ASSERTE(exInfo->m_frameIter.m_crawl.GetRegisterSet() == pvRegDisplay);
+    if (exInfo->m_frameIter.m_crawl.GetCodeInfo()->HasFrameRegister())
+    {
+        ULONG frameOffset = exInfo->m_frameIter.m_crawl.GetCodeInfo()->GetFrameOffsetFromUnwindInfo();
+        return pvRegDisplay->pCurrentContext->Rbp - 16 * frameOffset;
+    }
+    else
+    {
+        return pvRegDisplay->SP;
+    }
+#elif defined(HOST_ARM64)
+    return pvRegDisplay->SP;
+#elif defined(HOST_ARM)
+    return pvRegDisplay->SP;
+#elif defined(HOST_X86)
+    return pvRegDisplay->SP;
+#elif defined(HOST_RISCV64)
+    return pvRegDisplay->SP;
+#elif defined(HOST_LOONGARCH64)
+    return pvRegDisplay->SP;
+#endif
+}
+
+#endif // TARGET_WASM
+
+// Call catch, finally or filter funclet.
+// Return value:
+// * Catch funclet: address to resume at after the catch returns
+// * Finally funclet: unused
+// * Filter funclet: result of the filter funclet (EXCEPTION_CONTINUE_SEARCH (0) or EXCEPTION_EXECUTE_HANDLER (1))
+#ifndef USE_FUNCLET_CALL_HELPER
+// NOTE: This function must be prevented from calling the actual funclet via a tail call to ensure
+// that the m_csfEHClause is really set to what is a SP of the caller frame of the funclet. The
+// StackFrameIterator relies on this.
+#ifdef _MSC_VER
+#pragma optimize("", off)
+#elif defined(__clang__)
+[[clang::disable_tail_calls]]
+#else
+[[gnu::optimize("O0")]]
+#endif
+#endif // USE_FUNCLET_CALL_HELPER
+DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
+{
+    DWORD_PTR dwResult = 0;
+#ifdef TARGET_WASM
+    _ASSERTE(!"CallFunclet for WASM not implemented yet");
+#else
+    HandlerFn* pfnHandler = (HandlerFn*)pHandler;
+
+#ifdef USE_FUNCLET_CALL_HELPER
+    // Since the actual caller of the funclet is the assembly helper, pass the reference
+    // to the CallerStackFrame instance so that it can be updated.
+    UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
+
+    if (isFilterFunclet)
+    {
+        // For invoking IL filter funclet, we pass the CallerSP to the funclet using which
+        // it will retrieve the framepointer for accessing the locals in the parent
+        // method.
+        dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
+#ifdef USE_CURRENT_CONTEXT_IN_FILTER
+                                       GetFrameRestoreBase(pRD->pCurrentContext),
+#else
+                                       GetFrameRestoreBase(pRD->pCallerContext),
+#endif
+                                       CastHandlerFn(pfnHandler),
+                                       pFuncletCallerSP);
+    }
+    else
+    {
+        dwResult = CallEHFunclet(OBJECTREFToObject(throwable),
+                                 CastHandlerFn(pfnHandler),
+                                 GetFirstNonVolatileRegisterAddress(pRD->pCurrentContext),
+                                 pFuncletCallerSP);
+    }
+#else
+    pExInfo->m_csfEHClause = CallerStackFrame((UINT_PTR)GetCurrentSP());
+
+    UINT_PTR establisherFrame = GetEstablisherFrame(pRD, pExInfo);
+    dwResult = pfnHandler(establisherFrame, OBJECTREFToObject(throwable));
+#endif
+
+#endif // TARGET_WASM
+    return dwResult;
+}
+#ifndef USE_FUNCLET_CALL_HELPER
+#ifdef _MSC_VER
+#pragma optimize("", on)
+#endif
+#endif // USE_FUNCLET_CALL_HELPER
+
+#ifdef FEATURE_INTERPRETER
+DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
+{
+    // Interpreter-TODO: implement calling the funclet in the intepreted code
+    _ASSERTE(FALSE);
+    return 0;
+}
+#endif // FEATURE_INTERPRETER
+
 #endif // !FEATURE_EH_FUNCLETS
+
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
