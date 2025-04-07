@@ -1293,7 +1293,7 @@ extends:
                   artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release$(archiveExtension)
                   unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
                   displayName: 'unified artifacts'
-            timeoutInMinutes: 120
+            timeoutInMinutes: 150
             postBuildSteps:
               - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
                 parameters:
@@ -1328,7 +1328,7 @@ extends:
                   artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)$(archiveExtension)
                   unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
                   displayName: 'unified artifacts'
-            timeoutInMinutes: 120
+            timeoutInMinutes: 150
             postBuildSteps:
               - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
                 parameters:
