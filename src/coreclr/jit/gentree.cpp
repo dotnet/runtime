@@ -22443,6 +22443,8 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
             else
             {
                 assert(simdSize > 16);
+
+                intrinsic = NI_Vector_op_Equality;
                 GenTree* cmpResult =
                     gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize ARM64_ARG(false));
 
@@ -22478,6 +22480,8 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
             // We want to generate a comparison along the lines of
             // GT_XX(op1, op2).As<T, TInteger>() == Vector128<TInteger>.AllBitsSet
 
+            // TODO-VL: Such checks might not work for DOTNET_MinVectorForSve, where we
+            // set DOTNET_MinVectorForSve=16 for testing purposes.
             if (simdSize == 8)
             {
                 intrinsic = NI_Vector64_op_Equality;
@@ -22488,6 +22492,8 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
             }
             if (simdSize > 16)
             {
+                intrinsic = NI_Vector_op_Equality;
+
                 GenTree* cmpResult =
                     gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize ARM64_ARG(false));
 
