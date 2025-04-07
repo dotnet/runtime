@@ -182,6 +182,9 @@ private:
     // Return true if double mapping is enabled.
     static bool IsDoubleMappingEnabled();
 
+    // Release memory allocated via DoubleMapping for either templates or normal double mapped data
+    void Release(void* pRX, bool releaseTemplate);
+
     // Initialize the allocator instance
     bool Initialize();
 

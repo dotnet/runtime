@@ -75,6 +75,30 @@ public:
     // Return:
     //  true if it succeeded, false if it failed
     static bool ReleaseRWMapping(void* pStart, size_t size);
+
+    // Indicate if the AllocateThunksFromTemplate function respects the pStart address on this platform
+    // Return:
+    //  true if the parameter is respected, false if not
+    static bool AllocateThunksFromTemplateRespectsStartAddress();
+
+    // Allocate thunks from template
+    // Parameters:
+    //  pTemplate    - Address of start of templates for coreclr (All addresses passed to the api in a process must be from the same module)
+    //  templateSize - Size of the templates block in the image
+    //  pStart       - Where to allocate (Specify NULL if no particular address is required). If non-null, this must be an address returned by ReserveDoubleMappedMemory
+    //
+    // Return:
+    //  NULL if the allocation fails
+    //  Non-NULL, a pointer to the allocated region.
+    static void* AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart);
+
+    // Free thunks allocated from template
+    // Parameters:
+    //  pThunks      - Address previously returned by AllocateThunksFromTemplate
+    //  templateSize - Size of the templates block in the image
+    // Return:
+    //  true if it succeeded, false if it failed
+    static bool FreeThunksFromTemplate(void* thunks, size_t templateSize);
 };
 
 #if defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
