@@ -180,11 +180,7 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_op_BitwiseOr,
 	SN_op_Division,
 	SN_op_ExclusiveOr,
-	SN_op_GreaterThan,
-	SN_op_GreaterThanOrEqual,
 	SN_op_LeftShift,
-	SN_op_LessThan,
-	SN_op_LessThanOrEqual,
 	SN_op_Multiply,
 	SN_op_OnesComplement,
 	SN_op_RightShift,
@@ -1141,19 +1137,15 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		// fall back to the regular intrinsics, then to managed looking for an implementation.
 		switch (id) {
 			case SN_LessThan:
-			case SN_op_LessThan:
 				cmethod_name = "CompareLessThan";
 				break;
 			case SN_LessThanOrEqual:
-			case SN_op_LessThanOrEqual:
 				cmethod_name = "CompareLessThanOrEqual";
 				break;
 			case SN_GreaterThan:
-			case SN_op_GreaterThan:
 				cmethod_name = "CompareGreaterThan";
 				break;
 			case SN_GreaterThanOrEqual:
-			case SN_op_GreaterThanOrEqual:
 				cmethod_name = "CompareGreaterThanOrEqual";
 				break;
 			case SN_Equals:
