@@ -3,6 +3,9 @@
     <type fullname="System.Net.Http.DiagnosticsHandler">
       <method signature="System.Boolean IsGloballyEnabled()" body="stub" value="false" feature="System.Net.Http.EnableActivityPropagation" featurevalue="false" />
     </type>
+    <type fullname="System.Net.Http.MetricsHandler">
+      <method signature="System.Boolean IsGloballyEnabled()" body="stub" value="false" feature="System.Diagnostics.Metrics.Meter.IsSupported" featurevalue="false" />
+    </type>
   </assembly>
   <assembly fullname="System.Net.Http" feature="System.Net.Http.WebAssemblyEnableStreamingResponse" featurevalue="false">
     <type fullname="System.Net.Http.BrowserHttpController">
