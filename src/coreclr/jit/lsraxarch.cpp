@@ -2990,13 +2990,16 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 
     const var_types srcType  = src->TypeGet();
     const var_types castType = cast->gtCastType;
+    bool useEvex             = compiler->canUseEvexEncoding();
 
-    if (cast->IsUnsigned() && varTypeIsLong(srcType) && varTypeIsFloating(castType) && !compiler->canUseEvexEncoding())
+    if (cast->IsUnsigned() && varTypeIsLong(srcType) && varTypeIsFloating(castType) && !useEvex)
     {
         // We need two extra temp regs for LONG->DOUBLE cast
         // if we don't have EVEX unsigned conversions available.
+        // We need to reserve one APXIncompatible register for 
+        // cvtt* instruction. Second temp can use EGPR.
         buildInternalIntRegisterDefForNode(cast, BuildApxIncompatibleGPRMask(cast, availableIntRegs, true));
-        buildInternalIntRegisterDefForNode(cast, BuildApxIncompatibleGPRMask(cast, availableIntRegs, true));
+        buildInternalIntRegisterDefForNode(cast);
     }
 
     SingleTypeRegSet candidates = RBM_NONE;
@@ -3015,30 +3018,11 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     {
         // Here we don't need internal register to be different from targetReg,
         // rather require it to be different from operand's reg.
-        // movsxd
-        candidates = BuildApxIncompatibleGPRMask(cast, candidates, true);
-        buildInternalIntRegisterDefForNode(cast, candidates);
+        buildInternalIntRegisterDefForNode(cast);
     }
-    // ToDo-APX: movsxd doesn't have REX2 support in .NET
-    const unsigned srcSize  = genTypeSize(srcType);
-    const unsigned castSize = genTypeSize(castType);
 
-    if (varTypeUsesIntReg(srcType) && !varTypeIsUnsigned(srcType) && !varTypeIsUnsigned(castType))
-    {
-        if ((castSize > 4) && (castSize < srcSize))
-        {
-            // case 1 : movsdx : CHECK_INT_RANGE
-            candidates = BuildApxIncompatibleGPRMask(cast, candidates, true);
-        }
-
-        if (castSize > srcSize)
-        {
-            // case 2 : movsdx : SIGN_EXTEND_INT or LOAD_SIGN_EXTEND_INT
-            candidates = BuildApxIncompatibleGPRMask(cast, candidates, true);
-        }
-    }
     // skipping eGPR use for cvt*
-    if ((varTypeUsesIntReg(src) || src->isContainedIndir()) && varTypeUsesFloatReg(cast))
+    if ((varTypeUsesIntReg(src) || src->isContainedIndir()) && varTypeUsesFloatReg(cast) && !useEvex)
     {
         candidates = BuildApxIncompatibleGPRMask(cast, candidates, true);
     }
@@ -3047,8 +3031,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     buildInternalRegisterUses();
 #ifdef TARGET_AMD64
     candidates = RBM_NONE;
-    if ((varTypeIsFloating(srcType) && !varTypeIsFloating(castType)) ||
-        (varTypeUsesIntReg(castType) && cast->GetRegNum() == REG_NA))
+    if (varTypeIsFloating(srcType) && !varTypeIsFloating(castType) && !useEvex)
     {
         candidates = BuildApxIncompatibleGPRMask(cast, candidates, true);
     }
