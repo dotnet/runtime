@@ -879,7 +879,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     }
 
     unsigned uRegSlots = uLclBytes / REGSIZE_BYTES;
-    ssize_t uCnt       = 0;
+    ssize_t  uCnt      = 0;
 
     if (uRegSlots >= 12)
     {
@@ -896,7 +896,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         // if there is an odd number of slots, the last one will be handled later
 
         ssize_t uLoopBytes = (uRegSlots & ~3) * REGSIZE_BYTES;
-    
+
         GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rEndAddr, rAddr, uLoopBytes);
 
         if (uLoopBytes > 0)
@@ -911,7 +911,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rEndAddr, -uLoopBytes);
 
-            uCnt      += uLoopBytes;
+            uCnt += uLoopBytes;
             uLclBytes -= uLoopBytes;
         }
 
@@ -922,7 +922,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + uCnt);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + uCnt + REGSIZE_BYTES);
 
-            uCnt      += uLoopBytes; // += 2 * REGSIZE_BYTES
+            uCnt += uLoopBytes; // += 2 * REGSIZE_BYTES
             uLclBytes -= uLoopBytes;
         }
 
@@ -931,7 +931,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         {
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + uCnt);
 
-            uCnt      += uLoopBytes;
+            uCnt += uLoopBytes;
             uLclBytes -= REGSIZE_BYTES;
         }
     }
