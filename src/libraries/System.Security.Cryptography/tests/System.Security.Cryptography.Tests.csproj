@@ -156,6 +156,8 @@
              Link="CommonTest\System\Security\Cryptography\MLKemAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemBaseTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemBaseTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemContractTests.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemTestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemImplementationTests.cs"

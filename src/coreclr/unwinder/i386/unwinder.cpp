@@ -52,7 +52,7 @@ BOOL OOPStackUnwinderX86::Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTE
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    pContextRecord->Esp = rd.SP - codeInfo.GetCodeManager()->GetStackParameterSize(&codeInfo);
+    pContextRecord->Esp = rd.SP;
     pContextRecord->Eip = rd.ControlPC;
 
     return TRUE;

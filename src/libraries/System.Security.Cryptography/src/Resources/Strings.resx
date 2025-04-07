@@ -510,6 +510,9 @@
   <data name="Cryptography_KemInvalidAlgorithmHandle" xml:space="preserve">
     <value>The specified EVP_PKEY handle is not a known ML-KEM algorithm.</value>
   </data>
+  <data name="Cryptography_KemPkcs8KeyMismatch" xml:space="preserve">
+    <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
+  </data>
   <data name="Cryptography_KeyBlobParsingError" xml:space="preserve">
     <value>Key Blob not in expected format.</value>
   </data>

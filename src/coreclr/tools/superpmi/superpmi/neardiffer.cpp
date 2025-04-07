@@ -149,6 +149,16 @@ bool NearDiffer::InitAsmDiff()
             {
                 coreDisTargetArchitecture = Target_Arm64;
             }
+            else if (0 == _stricmp(TargetArchitecture, "loongarch64"))
+            {
+                coreDisTargetArchitecture = Target_LoongArch64;
+            }
+#if 0 // TODO-RISCV64: enable this when coredistools is updated with one that supports RISC-V
+            else if (0 == _stricmp(TargetArchitecture, "riscv64"))
+            {
+                coreDisTargetArchitecture = Target_RiscV64;
+            }
+#endif // 0
             else
             {
                 LogError("Illegal target architecture '%s'", TargetArchitecture);

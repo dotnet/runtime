@@ -3994,7 +3994,7 @@ HANDLE OpenWin32EventOrThrow(
 // Returns true if the specified IL offset has a special meaning (eg. prolog, etc.)
 bool DbgIsSpecialILOffset(DWORD offset);
 
-#if defined(TARGET_WINDOWS)
+#if defined(TARGET_WINDOWS) && !defined(TARGET_X86)
 void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
 #endif
 

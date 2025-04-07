@@ -349,7 +349,7 @@ DWORD GetRuntimeId();
 // One-time initialization. Called during Dll initialization.
 //---------------------------------------------------------------------------
 void InitThreadManager();
-
+void InitThreadManagerPerfMapData();
 
 // When we want to take control of a thread at a safe point, the thread will
 // eventually come back to us in one of the following trip functions:
@@ -655,7 +655,7 @@ public:
                                                       // effort.
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-        // unused                       = 0x02000000,
+        TSNC_UnhandledException2ndPass  = 0x02000000, // The unhandled exception propagation is in the 2nd pass
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.

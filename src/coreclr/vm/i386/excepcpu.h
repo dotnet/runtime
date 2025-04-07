@@ -20,9 +20,7 @@
 
 #define STATUS_CLR_GCCOVER_CODE         STATUS_PRIVILEGED_INSTRUCTION
 
-#ifndef FEATURE_EH_FUNCLETS
-class Thread;
-
+#ifdef TARGET_WINDOWS
 #define INSTALL_SEH_RECORD(record)                                        \
     {                                                                     \
        (record)->Next = (PEXCEPTION_REGISTRATION_RECORD)__readfsdword(0); \
@@ -33,6 +31,10 @@ class Thread;
     {                                                                     \
         __writefsdword(0, (DWORD) ((record)->Next));                      \
     }
+#endif // TARGET_WINDOWS
+
+#ifndef FEATURE_EH_FUNCLETS
+class Thread;
 
 #define INSTALL_EXCEPTION_HANDLING_RECORD(record)               \
     {                                                           \

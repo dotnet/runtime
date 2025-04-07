@@ -678,6 +678,16 @@ namespace System
             return exception;
         }
 
+        public static void FalseExpression(bool expr, [CallerArgumentExpression(nameof(expr))] string exprString = null)
+        {
+            Assert.False(expr, $"Expected \"false\" from the expression: \"{exprString}\".");
+        }
+
+        public static void TrueExpression(bool expr, [CallerArgumentExpression(nameof(expr))] string exprString = null)
+        {
+            Assert.True(expr, $"Expected \"true\" from the expression: \"{exprString}\".");
+        }
+
         private class ItemCount
         {
             public int Original { get; set; }

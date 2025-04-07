@@ -11582,19 +11582,8 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
                         // Set up the VM side of intercepting.
                         //
                         StackFrame sfInterceptFramePointer;
-                        if (g_isNewExceptionHandlingEnabled)
-                        {
-                            sfInterceptFramePointer = StackFrame::FromRegDisplay(&(csi.m_activeFrame.registers));
-                        }
-                        else
-                        {
-#if defined (TARGET_ARM )|| defined (TARGET_ARM64 )
-                            // ARM requires the caller stack pointer, not the current stack pointer
-                            sfInterceptFramePointer = CallerStackFrame::FromRegDisplay(&(csi.m_activeFrame.registers));
-#else
-                            sfInterceptFramePointer = StackFrame::FromRegDisplay(&(csi.m_activeFrame.registers));
-#endif
-                        }
+                        sfInterceptFramePointer = StackFrame::FromRegDisplay(&(csi.m_activeFrame.registers));
+
                         if (pExState->GetDebuggerState()->SetDebuggerInterceptInfo(csi.m_activeFrame.pIJM,
                                                               pThread,
                                                               csi.m_activeFrame.MethodToken,

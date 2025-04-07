@@ -5591,6 +5591,154 @@ void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& ac
     }
 }
 
+//------------------------------------------------------------------------
+// optCreateJumpTableImpliedAssertions: Create assertions for the switch statement
+//     for each of its jump targets.
+//
+// Arguments:
+//     switchBb - The switch statement block.
+//
+// Returns:
+//     true if any modifications were made, false otherwise.
+//
+bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
+{
+    assert(!optLocalAssertionProp);
+    assert(switchBb->KindIs(BBJ_SWITCH));
+    assert(switchBb->lastStmt() != nullptr);
+    bool modified = false;
+
+    GenTree* switchTree = switchBb->lastStmt()->GetRootNode()->gtEffectiveVal();
+    assert(switchTree->OperIs(GT_SWITCH));
+
+    // bbsCount is uint32_t, but it's unlikely to be more than INT32_MAX.
+    noway_assert(switchBb->GetSwitchTargets()->bbsCount <= INT32_MAX);
+
+    ValueNum opVN = optConservativeNormalVN(switchTree->gtGetOp1());
+    if (opVN == ValueNumStore::NoVN)
+    {
+        return modified;
+    }
+
+    if (vnStore->TypeOfVN(opVN) != TYP_INT)
+    {
+        // Should probably be an assert instead - GT_SWITCH is expected to be TYP_INT.
+        return modified;
+    }
+
+    // Typically, the switch value is ADD(X, -cns), so we actually want to create the assertions for X
+    int offset = 0;
+    vnStore->PeelOffsetsI32(&opVN, &offset);
+
+    int        jumpCount  = static_cast<int>(switchBb->GetSwitchTargets()->bbsCount);
+    FlowEdge** jumpTable  = switchBb->GetSwitchTargets()->bbsDstTab;
+    bool       hasDefault = switchBb->GetSwitchTargets()->bbsHasDefault;
+
+    for (int jmpTargetIdx = 0; jmpTargetIdx < jumpCount; jmpTargetIdx++)
+    {
+        // The value for each target is jmpTargetIdx - offset.
+        if (CheckedOps::SubOverflows(jmpTargetIdx, offset, false))
+        {
+            continue;
+        }
+        int value = jmpTargetIdx - offset;
+
+        // We can only make "X == caseValue" assertions for blocks with a single edge from the switch.
+        BasicBlock* target = jumpTable[jmpTargetIdx]->getDestinationBlock();
+        if (target->GetUniquePred(this) != switchBb)
+        {
+            // Target block is potentially reachable from multiple blocks (outside the switch).
+            continue;
+        }
+
+        if (fgGetPredForBlock(target, switchBb)->getDupCount() > 1)
+        {
+            // We have just one predecessor (BBJ_SWITCH), but there may be multiple edges (cases) per target.
+            continue;
+        }
+
+        // Make sure we don't have any PHI nodes in the target block.
+#if DEBUG
+        for (Statement* stmt : target->Statements())
+        {
+            assert(!stmt->IsPhiDefnStmt());
+        }
+#endif
+
+        AssertionInfo newAssertIdx = NO_ASSERTION_INDEX;
+
+        // Is this target a default case?
+        if (hasDefault && (jmpTargetIdx == jumpCount - 1))
+        {
+            // For default case we can create "X >= maxValue" assertion. Example:
+            //
+            //   void Test(ReadOnlySpan<byte> name)
+            //   {
+            //       switch (name.Length)
+            //       {
+            //           case 0: ...
+            //           case 1: ...
+            //           ...
+            //           case 7: ...
+            //           default: %name.Length is >= 8 here%
+            //       }
+            //
+            if (value > 0)
+            {
+                AssertionDsc dsc   = {};
+                dsc.assertionKind  = OAK_NOT_EQUAL;
+                dsc.op2.kind       = O2K_CONST_INT;
+                dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
+                dsc.op2.u1.iconVal = 0;
+                dsc.op2.SetIconFlag(GTF_EMPTY);
+                if (vnStore->IsVNCheckedBound(opVN))
+                {
+                    // Create "arrBnd >= value" assertion
+                    dsc.op1.kind = O1K_CONSTANT_LOOP_BND;
+                    dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
+                }
+                else
+                {
+                    // Create "X u>= value" assertion
+                    dsc.op1.kind = O1K_CONSTANT_LOOP_BND_UN;
+                    dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
+                }
+                newAssertIdx = optAddAssertion(&dsc);
+            }
+            else
+            {
+                continue;
+            }
+        }
+        else
+        {
+            // Create "VN == value" assertion.
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = OAK_EQUAL;
+            dsc.op1.lclNum     = BAD_VAR_NUM; // O1K_LCLVAR relies only on op1.vn in Global Assertion Prop
+            dsc.op1.vn         = opVN;
+            dsc.op1.kind       = O1K_LCLVAR;
+            dsc.op2.vn         = vnStore->VNForIntCon(value);
+            dsc.op2.u1.iconVal = value;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+            newAssertIdx = optAddAssertion(&dsc);
+        }
+
+        if (newAssertIdx.HasAssertion())
+        {
+            // TODO-Cleanup: We shouldn't attach assertions to nodes in Global Assertion Prop.
+            // It limits the ability to create multiple assertions for the same node.
+            GenTree* tree = gtNewNothingNode();
+            fgInsertStmtAtBeg(target, fgNewStmtFromTree(tree));
+            modified = true;
+            tree->SetAssertionInfo(newAssertIdx);
+        }
+    }
+
+    return modified;
+}
+
 /*****************************************************************************
  *
  *   Given a set of active assertions this method computes the set
@@ -6403,10 +6551,10 @@ PhaseStatus Compiler::optAssertionPropMain()
     INDEBUG(const unsigned baseTreeID = compGenTreeID);
 
     // First discover all assertions and record them in the table.
+    ArrayStack<BasicBlock*> switchBlocks(getAllocator(CMK_AssertionProp));
     for (BasicBlock* const block : Blocks())
     {
-        compCurBB = block;
-
+        compCurBB           = block;
         fgRemoveRestOfBlock = false;
 
         Statement* stmt = block->firstStmt();
@@ -6451,6 +6599,16 @@ PhaseStatus Compiler::optAssertionPropMain()
             // Advance the iterator
             stmt = stmt->GetNextStmt();
         }
+
+        if (block->KindIs(BBJ_SWITCH))
+        {
+            switchBlocks.Push(block);
+        }
+    }
+
+    for (int i = 0; i < switchBlocks.Height(); i++)
+    {
+        madeChanges |= optCreateJumpTableImpliedAssertions(switchBlocks.Bottom(i));
     }
 
     if (optAssertionCount == 0)
