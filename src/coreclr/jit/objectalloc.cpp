@@ -2070,6 +2070,8 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
                 {
                     parent->ChangeType(newType);
                     ++parentIndex;
+                    // We are no longer referring to the original local
+                    isStruct = false;
                     keepChecking = true;
                 }
                 break;
