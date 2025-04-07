@@ -9357,9 +9357,15 @@ public:
 #elif defined(TARGET_ARM64)
         if (FP_REGSIZE_BYTES < Compiler::compVectorTLength)
         {
-            return (size >= Compiler::compVectorTLength) ? Compiler::compVectorTLength : 0;
+            if (size >= Compiler::compVectorTLength)
+            {
+                return Compiler::compVectorTLength;
+            }
         }
-        assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
+        else
+        {
+            assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
+        }
         return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else
         assert(!"roundDownSIMDSize() unimplemented on target arch");
@@ -9526,7 +9532,12 @@ public:
 #if defined(FEATURE_SIMD)
         if (canUseSimd)
         {
-            maxRegSize = getPreferredVectorByteLength();
+#if defined(TARGET_ARM64)
+            // For now, just use SIMD register size for unroll threshold
+            // decisions
+            //maxRegSize = getPreferredVectorByteLength();
+            maxRegSize = FP_REGSIZE_BYTES;
+#endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
             assert(maxRegSize <= ZMM_REGSIZE_BYTES);
