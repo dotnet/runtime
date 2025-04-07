@@ -6,7 +6,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 
 #if NATIVEAOT
-using System.Runtime.InteropServices;
 using System.Runtime;
 #endif
 
