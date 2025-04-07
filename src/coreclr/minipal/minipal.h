@@ -76,6 +76,17 @@ public:
     //  true if it succeeded, false if it failed
     static bool ReleaseRWMapping(void* pStart, size_t size);
 
+    // Create a template for use by AllocateThunksFromTemplate
+    // Parameters:
+    //  pImageTemplate    - Address of start of template in the image for coreclr. (All addresses passed to the api in a process must be from the same module, if any call uses a pImageTemplate, all calls MUST)
+    //  templateSize      - Size of the template
+    //  codePageGenerator - If the system is unable to use pImageTemplate, use this parameter to generate the code page instead
+    //
+    // Return:
+    //  NULL if creating the template fails
+    //  Non-NULL, a pointer to the template
+    void* CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
+
     // Indicate if the AllocateThunksFromTemplate function respects the pStart address on this platform
     // Return:
     //  true if the parameter is respected, false if not
@@ -83,7 +94,7 @@ public:
 
     // Allocate thunks from template
     // Parameters:
-    //  pTemplate    - Address of start of templates for coreclr (All addresses passed to the api in a process must be from the same module)
+    //  pTemplate    - Value returned from CreateTemplate
     //  templateSize - Size of the templates block in the image
     //  pStart       - Where to allocate (Specify NULL if no particular address is required). If non-null, this must be an address returned by ReserveDoubleMappedMemory
     //

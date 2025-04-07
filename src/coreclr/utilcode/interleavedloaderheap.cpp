@@ -84,7 +84,14 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
 
         if (fReleaseMemory)
         {
-            ExecutableAllocator::Instance()->Release(pVirtualAddress);
+            if (m_pConfig->Template != NULL)
+            {
+                ExecutableAllocator::Instance()->FreeThunksFromTemplate(pVirtualAddress, GetStubCodePageSize());
+            }
+            else
+            {
+                ExecutableAllocator::Instance()->Release(pVirtualAddress);
+            }
         }
 
         delete pSearch;
@@ -106,6 +113,7 @@ size_t UnlockedInterleavedLoaderHeap::GetBytesAvailReservedRegion()
 
 BOOL UnlockedInterleavedLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
 {
+    _ASSERTE(m_pConfig->Template == NULL); // This path should only be used for LoaderHeaps which use the standard ExecutableAllocator functions
     // Commit first set of pages, since it will contain the LoaderHeapBlock
     {
         void *pTemp = ExecutableAllocator::Instance()->Commit(pData, dwSizeToCommitPart, IsExecutable());
@@ -142,13 +150,14 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     }
     CONTRACTL_END;
 
+    _ASSERTE(m_pConfig->Template == NULL); // This path should only be used for LoaderHeaps which use the standard ExecutableAllocator functions
+
     size_t dwSizeToReserve;
 
     // Round to page size again
     dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
 
     ReservedMemoryHolder pData = NULL;
-    BOOL fReleaseMemory = TRUE;
 
     // Figure out how much to reserve
     dwSizeToReserve = dwSizeToCommit;
@@ -177,11 +186,6 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     // could be to leak the users memory and reserve+commit a new block, Another option would be to fail the alloc mem
     // and notify the user to provide more reserved mem.
     _ASSERTE((dwSizeToCommit <= dwSizeToReserve) && "Loaderheap tried to commit more memory than reserved by user");
-
-    if (!fReleaseMemory)
-    {
-        pData.SuppressRelease();
-    }
 
     size_t dwSizeToCommitPart = dwSizeToCommit;
 
@@ -219,7 +223,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
     pNewBlock->pVirtualAddress  = pData;
     pNewBlock->pNext            = m_pFirstBlock;
-    pNewBlock->m_fReleaseMemory = fReleaseMemory;
+    pNewBlock->m_fReleaseMemory = TRUE;
 
     // Add to the linked list
     m_pFirstBlock = pNewBlock;
@@ -232,6 +236,14 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     return TRUE;
 }
+
+void ReleaseAllocatedThunks(BYTE* thunks)
+{
+    ExecutableAllocator::Instance()->FreeThunksFromTemplate(thunks, GetStubCodePageSize());
+}
+
+using ThunkMemoryHolder = SpecializedWrapper<BYTE, ReleaseAllocatedThunks>;
+
 
 // Get some more committed pages - either commit some more in the current reserved region, or, if it
 // has run out, reserve another set of pages.
@@ -247,6 +259,57 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END;
+
+    if (m_pConfig->Template != NULL)
+    {
+        ThunkMemoryHolder newAllocatedThunks = (BYTE*)ExecutableAllocator::Instance()->AllocateThunksFromTemplate(m_pConfig->Template, GetStubCodePageSize());
+        if (newAllocatedThunks == NULL)
+        {
+            return FALSE;
+        }
+
+        NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
+        if (pNewBlock == NULL)
+        {
+            return FALSE;
+        }
+
+        size_t dwSizeToReserve = GetStubCodePageSize() * 2;
+    
+        // Record reserved range in range list, if one is specified
+        // Do this AFTER the commit - otherwise we'll have bogus ranges included.
+        if (m_pRangeList != NULL)
+        {
+            if (!m_pRangeList->AddRange((const BYTE *) newAllocatedThunks,
+                                        ((const BYTE *) newAllocatedThunks) + dwSizeToReserve,
+                                        (void *) this))
+            {
+                return FALSE;
+            }
+        }
+    
+        m_dwTotalAlloc += dwSizeToCommit;
+    
+        pNewBlock.SuppressRelease();
+        newAllocatedThunks.SuppressRelease();
+    
+        pNewBlock->dwVirtualSize    = dwSizeToReserve;
+        pNewBlock->pVirtualAddress  = newAllocatedThunks;
+        pNewBlock->pNext            = m_pFirstBlock;
+        pNewBlock->m_fReleaseMemory = TRUE;
+    
+        // Add to the linked list
+        m_pFirstBlock = pNewBlock;
+    
+        m_pAllocPtr = (BYTE*)newAllocatedThunks;
+        m_pPtrToEndOfCommittedRegion = m_pAllocPtr + GetStubCodePageSize();
+        m_pEndReservedRegion = m_pAllocPtr + dwSizeToReserve; // For consistency with the non-template path m_pEndReservedRegion is after the end of the data area
+        m_dwTotalAlloc += GetStubCodePageSize();
+
+        return TRUE;
+    }
+
+    // From here, all work is only for the dynamically allocated InterleavedLoaderHeap path
 
     // If we have memory we can use, what are you doing here!
     _ASSERTE(dwMinSize > (SIZE_T)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr));
@@ -485,5 +548,11 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
 
     return pResult;
 }
+
+void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size))
+{
+    
+}
+
 #endif // #ifndef DACCESS_COMPILE
 

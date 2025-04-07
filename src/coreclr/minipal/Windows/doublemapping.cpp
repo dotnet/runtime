@@ -211,6 +211,11 @@ bool VMToOSInterface::ReleaseRWMapping(void* pStart, size_t size)
     return UnmapViewOfFile(pStart);
 }
 
+void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
+{
+    return NULL;
+}
+
 bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
 {
     return false;
