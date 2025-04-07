@@ -154,7 +154,6 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_Ceiling,
 	SN_Divide,
 	SN_Equals,
-	SN_ExtractMostSignificantBits,
 	SN_Floor,
 	SN_GreaterThan,
 	SN_GreaterThanOrEqual,
@@ -170,7 +169,6 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
-	SN_Shuffle,
 	SN_Subtract,
 	SN_Truncate,
 	SN_WidenLower,
@@ -1168,9 +1166,6 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Equals:
 				cmethod_name = "CompareEqual";
 				break;
-			case SN_ExtractMostSignificantBits:
-				cmethod_name = "Bitmask";
-				break;
 			case SN_BitwiseAnd:
 			case SN_op_BitwiseAnd:
 				cmethod_name = "And";
@@ -1186,9 +1181,6 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Load:
 			case SN_LoadUnsafe:
 				cmethod_name = "LoadVector128";
-				break;
-			case SN_Shuffle:
-				cmethod_name = "Swizzle";
 				break;
 			case SN_WidenLower:
 				cmethod_name = is_unsigned ? "ZeroExtendWideningLower" : "SignExtendWideningLower";
