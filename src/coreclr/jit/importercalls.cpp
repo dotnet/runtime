@@ -5802,6 +5802,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
+
             break;
         }
 
@@ -7998,7 +7999,6 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
 {
     switch (intrinsicName)
     {
-
         case NI_System_Math_Abs:
         case NI_System_Math_Acos:
         case NI_System_Math_Acosh:
