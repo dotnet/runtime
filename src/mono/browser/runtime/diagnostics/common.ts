@@ -11,26 +11,26 @@ import { mono_log_info } from "./logging";
 let lastScheduledTimeoutId: any = undefined;
 
 // run another cycle of the event loop, which is EP threads on MT runtime
-export function diagnostic_server_loop () {
+export function diagnosticServerEventLoop () {
     lastScheduledTimeoutId = undefined;
     if (loaderHelpers.is_runtime_running()) {
         try {
             runtimeHelpers.mono_background_exec();// give GC chance to run
             runtimeHelpers.mono_wasm_ds_exec();
-            schedule_diagnostic_server_loop(100);
+            scheduleDiagnosticServerEventLoop(100);
         } catch (ex) {
             loaderHelpers.mono_exit(1, ex);
         }
     }
 }
 
-export function schedule_diagnostic_server_loop (delay = 0):void {
+export function scheduleDiagnosticServerEventLoop (delay = 0):void {
     if (!lastScheduledTimeoutId || delay === 0) {
-        lastScheduledTimeoutId = Module.safeSetTimeout(diagnostic_server_loop, delay);
+        lastScheduledTimeoutId = Module.safeSetTimeout(diagnosticServerEventLoop, delay);
     }
 }
 
-export class DiagConnectionBase {
+export class DiagnosticConnectionBase {
     protected messagesToSend: Uint8Array[] = [];
     protected messagesReceived: Uint8Array[] = [];
     constructor (public client_socket:number) {
@@ -61,7 +61,7 @@ export class DiagConnectionBase {
     }
 }
 
-export interface IDiagConnection {
+export interface IDiagnosticConnection {
     send (message: Uint8Array):number ;
     poll ():number ;
     recv (buffer:VoidPtr, bytes_to_read:number):number ;
@@ -71,23 +71,23 @@ export interface IDiagConnection {
 // [hi,lo]
 export type SessionId=[number, number];
 
-export interface IDiagSession {
+export interface IDiagnosticSession {
     session_id:SessionId;
     store(message: Uint8Array): number;
     sendCommand(message:Uint8Array):void;
 }
 
-export interface IDiagClient {
+export interface IDiagnosticClient {
     skipDownload?:boolean;
     onClosePromise:PromiseController<Uint8Array[]>;
     commandOnAdvertise():Uint8Array;
-    onSessionStart?(session:IDiagSession):void;
-    onData?(session:IDiagSession, message:Uint8Array):void;
+    onSessionStart?(session:IDiagnosticSession):void;
+    onData?(session:IDiagnosticSession, message:Uint8Array):void;
     onClose?(messages:Uint8Array[]):void;
-    onError?(session:IDiagSession, message:Uint8Array):void;
+    onError?(session:IDiagnosticSession, message:Uint8Array):void;
 }
 
-export type fnClientProvider = (scenarioName:string) => IDiagClient;
+export type fnClientProvider = (scenarioName:string) => IDiagnosticClient;
 
 export function downloadBlob (messages:Uint8Array[]) {
     const blob = new Blob(messages, { type: "application/octet-stream" });

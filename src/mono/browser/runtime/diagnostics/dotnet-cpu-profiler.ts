@@ -5,8 +5,8 @@ import type { DiagnosticCommandOptions } from "../types";
 
 import { commandStopTracing, commandSampleProfiler } from "./client-commands";
 import { loaderHelpers, Module, runtimeHelpers } from "./globals";
-import { serverSession, setup_js_client } from "./diag-js";
-import { IDiagSession } from "./common";
+import { serverSession, setupJsClient } from "./diagnostics-js";
+import { IDiagnosticSession } from "./common";
 
 export function collectCpuSamples (options?:DiagnosticCommandOptions):Promise<Uint8Array[]> {
     if (!options) options = {};
@@ -18,14 +18,14 @@ export function collectCpuSamples (options?:DiagnosticCommandOptions):Promise<Ui
     }
 
     const onClosePromise = loaderHelpers.createPromiseController<Uint8Array[]>();
-    function onSessionStart (session: IDiagSession): void {
+    function onSessionStart (session: IDiagnosticSession): void {
         // stop tracing after period of monitoring
         Module.safeSetTimeout(() => {
             session.sendCommand(commandStopTracing(session.session_id));
         }, 1000 * (options?.durationSeconds ?? 60));
     }
 
-    setup_js_client({
+    setupJsClient({
         onClosePromise:onClosePromise.promise_control,
         skipDownload:options.skipDownload,
         commandOnAdvertise: () => commandSampleProfiler(options.extraProviders || []),

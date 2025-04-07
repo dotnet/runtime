@@ -4,9 +4,9 @@
 import type { DiagnosticCommandOptions } from "../types";
 
 import { commandStopTracing, commandGcHeapDump, } from "./client-commands";
-import { IDiagSession } from "./common";
+import { IDiagnosticSession } from "./common";
 import { loaderHelpers, Module } from "./globals";
-import { serverSession, setup_js_client } from "./diag-js";
+import { serverSession, setupJsClient } from "./diagnostics-js";
 
 export function collectGcDump (options?:DiagnosticCommandOptions):Promise<Uint8Array[]> {
     if (!options) options = {};
@@ -17,7 +17,7 @@ export function collectGcDump (options?:DiagnosticCommandOptions):Promise<Uint8A
     const onClosePromise = loaderHelpers.createPromiseController<Uint8Array[]>();
     let stopDelayedAfterLastMessage = 0;
     let stopSent = false;
-    function onData (session: IDiagSession, message: Uint8Array): void {
+    function onData (session: IDiagnosticSession, message: Uint8Array): void {
         session.store(message);
         if (!stopSent) {
             // stop 500ms after last GC message on this session, there will be more messages after that
@@ -31,7 +31,7 @@ export function collectGcDump (options?:DiagnosticCommandOptions):Promise<Uint8A
         }
     }
 
-    setup_js_client({
+    setupJsClient({
         onClosePromise: onClosePromise.promise_control,
         skipDownload: options.skipDownload,
         commandOnAdvertise: () => commandGcHeapDump(options.extraProviders || []),

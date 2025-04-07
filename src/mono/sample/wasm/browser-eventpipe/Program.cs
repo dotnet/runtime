@@ -37,13 +37,6 @@ namespace Sample
     {
         public static int Main(string[] args)
         {
-            // ActivityTracker.Instance.Enable(); via reflection
-            var type = typeof(EventSource).Assembly.GetType("System.Diagnostics.Tracing.ActivityTracker");
-            var prop = type.GetProperty("Instance", BindingFlags.Static | BindingFlags.Public);
-            var m = type.GetMethod("Enable");
-            var instance = prop.GetValue(null);
-            m.Invoke(instance, null);
-
             DisplayMeaning(42);
 
             WasmHelloEventSource.Instance.NewCallsCounter();

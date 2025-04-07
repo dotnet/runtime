@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { advert1, CommandSetId, dotnet_IPC_V1, ServerCommandId } from "./client-commands";
-import { DiagConnectionBase, downloadBlob, fnClientProvider, IDiagClient, IDiagConnection, IDiagSession, schedule_diagnostic_server_loop, SessionId } from "./common";
+import { DiagnosticConnectionBase, downloadBlob, fnClientProvider, IDiagnosticClient, IDiagnosticConnection, IDiagnosticSession, scheduleDiagnosticServerEventLoop, SessionId } from "./common";
 import { PromiseAndController } from "../types/internal";
 import { loaderHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
@@ -17,11 +17,11 @@ import { collectGcDump } from "./dotnet-gcdump";
 // .withEnvironmentVariable("DOTNET_DiagnosticPorts", "download:gcdump")
 // or implement function globalThis.dotnetDiagnosticClient with IDiagClient interface
 
-let nextJsClient:PromiseAndController<IDiagClient>;
+let nextJsClient:PromiseAndController<IDiagnosticClient>;
 let fromScenarioNameOnce = false;
 
 // Only the last which sent advert is receiving commands for all sessions
-export let serverSession:DiagSession|undefined = undefined;
+export let serverSession:DiagnosticSession|undefined = undefined;
 
 // singleton wrapping the protocol with the diagnostic server in the Mono VM
 // there could be multiple connection at the same time.
@@ -36,9 +36,9 @@ export let serverSession:DiagSession|undefined = undefined;
 //                     2<- DC1: command to stop tracing session
 // DS:close          ->1
 
-class DiagSession extends DiagConnectionBase implements IDiagConnection, IDiagSession {
+class DiagnosticSession extends DiagnosticConnectionBase implements IDiagnosticConnection, IDiagnosticSession {
     public session_id: SessionId = undefined as any;
-    public diagClient?: IDiagClient;
+    public diagClient?: IDiagnosticClient;
     public stopDelayedAfterLastMessage:number|undefined = undefined;
     public resumedRuntime = false;
 
@@ -54,20 +54,20 @@ class DiagSession extends DiagConnectionBase implements IDiagConnection, IDiagSe
         serverSession.respond(message);
     }
 
-    async connect_new_client () {
+    async connectNewClient () {
         this.diagClient = await nextJsClient.promise;
-        cleanup_client();
+        cleanupClient();
         const firstCommand = this.diagClient.commandOnAdvertise();
         this.respond(firstCommand);
     }
 
     // this is message from the diagnostic server, which is Mono VM in this browser
     send (message:Uint8Array):number {
-        schedule_diagnostic_server_loop();
+        scheduleDiagnosticServerEventLoop();
         if (advert1.every((v, i) => v === message[i])) {
             // eslint-disable-next-line @typescript-eslint/no-this-alias
             serverSession = this;
-            this.connect_new_client();
+            this.connectNewClient();
         } else if (dotnet_IPC_V1.every((v, i) => v === message[i]) && message[16] == CommandSetId.Server) {
             if (message[17] == ServerCommandId.OK) {
                 if (message.byteLength === 28) {
@@ -101,7 +101,7 @@ class DiagSession extends DiagConnectionBase implements IDiagConnection, IDiagSe
     // this is message to the diagnostic server, which is Mono VM in this browser
     respond (message:Uint8Array) : void {
         this.messagesReceived.push(message);
-        schedule_diagnostic_server_loop();
+        scheduleDiagnosticServerEventLoop();
     }
 
     close (): number {
@@ -119,15 +119,15 @@ class DiagSession extends DiagConnectionBase implements IDiagConnection, IDiagSe
     }
 }
 
-export function cleanup_client () {
-    nextJsClient = loaderHelpers.createPromiseController<IDiagClient>();
+export function cleanupClient () {
+    nextJsClient = loaderHelpers.createPromiseController<IDiagnosticClient>();
 }
 
-export function setup_js_client (client:IDiagClient) {
+export function setupJsClient (client:IDiagnosticClient) {
     nextJsClient.promise_control.resolve(client);
 }
 
-export function createDiagConnectionJs (socket_handle:number, scenarioName:string):DiagSession {
+export function createDiagConnectionJs (socket_handle:number, scenarioName:string):DiagnosticSession {
     if (!fromScenarioNameOnce) {
         fromScenarioNameOnce = true;
         if (scenarioName.startsWith("js://gcdump")) {
@@ -144,5 +144,5 @@ export function createDiagConnectionJs (socket_handle:number, scenarioName:strin
             nextJsClient.promise_control.resolve(dotnetDiagnosticClient(scenarioName));
         }
     }
-    return new DiagSession(socket_handle);
+    return new DiagnosticSession(socket_handle);
 }

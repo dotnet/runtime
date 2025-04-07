@@ -5,16 +5,16 @@ import type { GlobalObjects } from "../types/internal";
 import type { CharPtr, VoidPtr } from "../types/emscripten";
 
 import { Module, runtimeHelpers } from "./globals";
-import { cleanup_client as cleanup_js_client, createDiagConnectionJs, serverSession } from "./diag-js";
-import { IDiagConnection } from "./common";
-import { createDiagConnectionWs } from "./diag-ws";
+import { cleanupClient as cleanup_js_client, createDiagConnectionJs, serverSession } from "./diagnostics-js";
+import { IDiagnosticConnection } from "./common";
+import { createDiagConnectionWs } from "./diagnostics-ws";
 import { diagnosticHelpers, setRuntimeGlobalsImpl } from "./globals";
 import { collectCpuSamples } from "./dotnet-cpu-profiler";
 import { collectPerfCounters } from "./dotnet-counters";
 import { collectGcDump } from "./dotnet-gcdump";
 import { advert1Full } from "./client-commands";
 
-let socket_handles:Map<number, IDiagConnection> = undefined as any;
+let socket_handles:Map<number, IDiagnosticConnection> = undefined as any;
 let next_socket_handle = 1;
 let url_override:string | undefined = undefined;
 
@@ -23,7 +23,7 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects): void {
 
     diagnosticHelpers.ds_rt_websocket_create = (urlPtr :CharPtr):number => {
         if (!socket_handles) {
-            socket_handles = new Map<number, IDiagConnection>();
+            socket_handles = new Map<number, IDiagnosticConnection>();
         }
         const url = url_override ?? runtimeHelpers.utf8ToString(urlPtr);
         const socket_handle = next_socket_handle++;
