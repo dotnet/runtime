@@ -314,6 +314,16 @@ namespace System.Security.Cryptography.X509Certificates
             return MLKem.ImportSubjectPublicKeyInfo(ExportSubjectPublicKeyInfo());
         }
 
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [UnsupportedOSPlatform("browser")]
+        public MLDsa? GetMLDsaPublicKey()
+        {
+            if (MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(_oid.Value) is null)
+                return null;
+
+            return MLDsa.ImportSubjectPublicKeyInfo(ExportSubjectPublicKeyInfo());
+        }
+
         internal AsnWriter EncodeSubjectPublicKeyInfo()
         {
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn

@@ -17,6 +17,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private SafeX509Handle _cert;
         private SafeEvpPKeyHandle? _privateKey;
+        private MLDsa? _mldsaPrivateKey;
         private X500DistinguishedName? _subjectName;
         private X500DistinguishedName? _issuerName;
         private string? _subject;
@@ -249,7 +250,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public bool HasPrivateKey
         {
-            get { return _privateKey != null; }
+            get { return _privateKey != null || _mldsaPrivateKey != null; }
         }
 
         public IntPtr Handle
@@ -608,6 +609,16 @@ namespace System.Security.Cryptography.X509Certificates
             return new ECDiffieHellmanOpenSsl(_privateKey);
         }
 
+        public MLDsa? GetMLDsaPrivateKey()
+        {
+            if (_mldsaPrivateKey is null)
+            {
+                return null;
+            }
+
+            return DuplicatePrivateKey(_mldsaPrivateKey);
+        }
+
         private OpenSslX509CertificateReader CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             // This could be X509Duplicate for a full clone, but since OpenSSL certificates
@@ -674,6 +685,37 @@ namespace System.Security.Cryptography.X509Certificates
                 typedKey.ImportParameters(ecParameters);
 
                 return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLDsa privateKey)
+        {
+            SafeX509Handle certHandle = Interop.Crypto.X509UpRef(_cert);
+            OpenSslX509CertificateReader duplicate = new OpenSslX509CertificateReader(certHandle);
+            duplicate._mldsaPrivateKey = DuplicatePrivateKey(privateKey);
+
+            return duplicate;
+        }
+
+        private static MLDsa DuplicatePrivateKey(MLDsa key)
+        {
+            MLDsaAlgorithm alg = key.Algorithm;
+            byte[] rented = CryptoPool.Rent(alg.SecretKeySizeInBytes);
+            int written = 0;
+
+            try
+            {
+                written = key.ExportMLDsaPrivateSeed(rented);
+                return MLDsa.ImportMLDsaPrivateSeed(alg, new ReadOnlySpan<byte>(rented, 0, written));
+            }
+            catch (CryptographicException)
+            {
+                written = key.ExportMLDsaSecretKey(rented);
+                return MLDsa.ImportMLDsaSecretKey(alg, new ReadOnlySpan<byte>(rented, 0, written));
+            }
+            finally
+            {
+                CryptoPool.Return(rented, written);
             }
         }
 

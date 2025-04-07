@@ -92,7 +92,8 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <para>- or -</para>
         ///   <para>
         ///     <paramref name="hashAlgorithm" /> has the empty string as the value of
-        ///     <see cref="HashAlgorithmName.Name"/>.
+        ///     <see cref="HashAlgorithmName.Name"/> and <paramref name="issuerCertificate"/>
+        ///     uses a public key algorithm that requires a hash to be specified.
         ///   </para>
         ///   <para>- or -</para>
         ///   <para>
@@ -140,7 +141,8 @@ namespace System.Security.Cryptography.X509Certificates
             if (nextUpdate <= thisUpdate)
                 throw new ArgumentException(SR.Cryptography_CRLBuilder_DatesReversed);
 
-            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            if (HashAlgorithmRequired(issuerCertificate))
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             // Check the Basic Constraints and Key Usage extensions to help identify inappropriate certificates.
             // Note that this is not a security check. The system library backing X509Chain will use these same criteria
@@ -173,7 +175,7 @@ namespace System.Security.Cryptography.X509Certificates
                     nameof(issuerCertificate));
             }
 
-            AsymmetricAlgorithm? key = null;
+            IDisposable? key = null;
             string keyAlgorithm = issuerCertificate.GetKeyAlgorithm();
             X509SignatureGenerator generator;
 
@@ -195,6 +197,13 @@ namespace System.Security.Cryptography.X509Certificates
                         ECDsa? ecdsa = issuerCertificate.GetECDsaPrivateKey();
                         key = ecdsa;
                         generator = X509SignatureGenerator.CreateForECDsa(ecdsa!);
+                        break;
+                    case Oids.MLDsa44:
+                    case Oids.MLDsa65:
+                    case Oids.MLDsa87:
+                        MLDsa? mldsa = issuerCertificate.GetMLDsaPrivateKey();
+                        key = mldsa;
+                        generator = X509SignatureGenerator.CreateForMLDsa(mldsa!);
                         break;
                     default:
                         throw new ArgumentException(
@@ -280,7 +289,8 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <para>- or -</para>
         ///   <para>
         ///     <paramref name="hashAlgorithm" /> has the empty string as the value of
-        ///     <see cref="HashAlgorithmName.Name"/>.
+        ///     <see cref="HashAlgorithmName.Name"/> and <paramref name="generator"/>
+        ///     uses a public key algorithm that requires a hash to be specified.
         ///   </para>
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -324,7 +334,9 @@ namespace System.Security.Cryptography.X509Certificates
             if (nextUpdate <= thisUpdate)
                 throw new ArgumentException(SR.Cryptography_CRLBuilder_DatesReversed);
 
-            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            if (HashAlgorithmRequired(generator.PublicKey.Oid.Value))
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
             ArgumentNullException.ThrowIfNull(authorityKeyIdentifier);
 
             byte[] signatureAlgId = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
@@ -436,6 +448,38 @@ namespace System.Security.Cryptography.X509Certificates
 
             byte[] crl = writer.Encode();
             return crl;
+        }
+
+        private static bool HashAlgorithmRequired(X509Certificate2 certificate) =>
+            HashAlgorithmRequired(certificate.GetKeyAlgorithm());
+
+        internal static bool HashAlgorithmRequired(string? keyAlgorithm)
+        {
+            // This list could either be written as "ML-DSA and friends return false",
+            // or "RSA and friends return true".
+            //
+            // The consequences of returning true is that the hashAlgorithm parameter
+            // gets pre-validated to not be null or empty, which means false positives
+            // impact new ML-DSA-like algorithms.
+            //
+            // The consequences of returning false is that the hashAlgorithm parameter
+            // is not pre-validated.  That just means that in a false negative the user
+            // gets probably the same exception, but from a different callstack.
+            //
+            // False positives or negatives are not possible with the simple Build that takes
+            // only an X509Certificate2, as we control the destiny there entirely, it's only
+            // for the power user scenario of the X509SignatureGenerator that this is a concern.
+            //
+            // Since the false-positive is worse than the false-negative, the list is written
+            // as explicit-true, implicit-false.
+            return keyAlgorithm switch
+            {
+                Oids.Rsa or
+                Oids.RsaPss or
+                Oids.EcPublicKey or
+                Oids.Dsa => true,
+                _ => false,
+            };
         }
     }
 }

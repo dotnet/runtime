@@ -116,14 +116,16 @@ namespace Internal.Cryptography
         internal static CryptographicException CreateAlgorithmUnknownException(AsnWriter encodedId)
         {
 #if NET10_0_OR_GREATER
-            return encodedId.Encode(static encoded =>
-                new CryptographicException(
-                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, Convert.ToHexString(encoded))));
+            return encodedId.Encode(static encoded => CreateAlgorithmUnknownException(Convert.ToHexString(encoded)));
 #else
-            return new CryptographicException(
-                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier,
-                HexConverter.ToString(encodedId.Encode(), HexConverter.Casing.Upper)));
+            return CreateAlgorithmUnknownException(HexConverter.ToString(encodedId.Encode(), HexConverter.Casing.Upper));
 #endif
+        }
+
+        internal static CryptographicException CreateAlgorithmUnknownException(string algorithmId)
+        {
+            throw new CryptographicException(
+                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, algorithmId));
         }
     }
 }
