@@ -878,8 +878,9 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         uLclBytes -= 4;
     }
 
-    unsigned uRegSlots = uLclBytes / REGSIZE_BYTES;
-    ssize_t  uCnt      = 0;
+    unsigned uRegSlots  = uLclBytes / REGSIZE_BYTES;
+    ssize_t  uCnt       = 0;
+    ssize_t  uLoopBytes = 0;
 
     if (uRegSlots >= 12)
     {
@@ -895,7 +896,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         // we make sure that the loop will have an even number of slots,
         // if there is an odd number of slots, the last one will be handled later
 
-        ssize_t uLoopBytes = (uRegSlots & ~3) * REGSIZE_BYTES;
+        uLoopBytes = (uRegSlots & ~3) * REGSIZE_BYTES;
 
         GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rEndAddr, rAddr, uLoopBytes);
 
@@ -909,28 +910,14 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES);
             GetEmitter()->emitIns_R_R_I(INS_blt, EA_PTRSIZE, rAddr, rEndAddr, -5 << 2);
 
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rEndAddr, -uLoopBytes);
-
-            uCnt += uLoopBytes;
+            uCnt = -REGSIZE_BYTES;
             uLclBytes -= uLoopBytes;
         }
 
-        uLoopBytes = (uRegSlots & ~1) * REGSIZE_BYTES - uLoopBytes;
-
-        if (uLoopBytes > 0)
+        // handle remainder from uLoopBytes mod 4; r = {0,1,2,3}
+        while (uLclBytes >= REGSIZE_BYTES)
         {
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + uCnt);
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + uCnt + REGSIZE_BYTES);
-
-            uCnt += uLoopBytes; // += 2 * REGSIZE_BYTES
-            uLclBytes -= uLoopBytes;
-        }
-
-        // check and zero the last register-sized stack slot (odd number)
-        if (uLclBytes >= REGSIZE_BYTES)
-        {
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + uCnt);
-
             uCnt += REGSIZE_BYTES;
             uLclBytes -= REGSIZE_BYTES;
         }
