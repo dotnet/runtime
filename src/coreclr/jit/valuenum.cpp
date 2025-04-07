@@ -14160,8 +14160,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 vnpExc = fgValueNumberDivisionExceptions(GT_DIV, call->gtArgs.GetUserArgByIndex(0)->GetNode(),
                                                          call->gtArgs.GetUserArgByIndex(1)->GetNode());
                 break;
-            case CORINFO_HELP_LMOD:
             case CORINFO_HELP_MOD:
+            case CORINFO_HELP_LMOD:
                 vnpExc = fgValueNumberDivisionExceptions(GT_MOD, call->gtArgs.GetUserArgByIndex(0)->GetNode(),
                                                          call->gtArgs.GetUserArgByIndex(1)->GetNode());
                 break;
