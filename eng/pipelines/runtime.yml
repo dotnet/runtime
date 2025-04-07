@@ -1295,10 +1295,7 @@ extends:
                   displayName: 'unified artifacts'
             timeoutInMinutes: 150
             postBuildSteps:
-              - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
-                parameters:
-                  name: $(osGroup)$(osSubgroup)_$(archType)
-              - template: /eng/pipelines/installer/steps/helix.yml
+              - template: /eng/pipelines/installer/helix.yml
                 parameters:
                   creator: dotnet-bot
             condition:
@@ -1330,10 +1327,7 @@ extends:
                   displayName: 'unified artifacts'
             timeoutInMinutes: 150
             postBuildSteps:
-              - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
-                parameters:
-                  name: $(osGroup)$(osSubgroup)_$(archType)
-              - template: /eng/pipelines/installer/steps/helix.yml
+              - template: /eng/pipelines/installer/helix.yml
                 parameters:
                   creator: dotnet-bot
             condition:
