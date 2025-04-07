@@ -29,6 +29,8 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
     public abstract class MLKem : IDisposable
     {
+        private static readonly string[] s_knownOids = [Oids.MlKem512, Oids.MlKem768, Oids.MlKem1024];
+
         private bool _disposed;
 
         /// <summary>
@@ -777,6 +779,115 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Attempts to export the current key in the PKCS#8 PrivateKeyInfo format
+        ///   into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the PKCS#8 PrivateKeyInfo value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            ThrowIfDisposed();
+
+            // An ML-KEM-512 "seed" export with no attributes is 86 bytes. A buffer smaller than that cannot hold a
+            // PKCS#8 encoded key. If we happen to get a buffer smaller than that, it won't export.
+            const int MinimumPossiblePkcs8MLKemKey = 86;
+
+            if (destination.Length < MinimumPossiblePkcs8MLKemKey)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            return TryExportPkcs8PrivateKeyCore(destination, out bytesWritten);
+        }
+
+        /// <summary>
+        ///   Export the current key in the PKCS#8 PrivateKeyInfo format.
+        /// </summary>
+        /// <returns>
+        ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of the this key.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public byte[] ExportPkcs8PrivateKey()
+        {
+            ThrowIfDisposed();
+
+            // A PKCS#8 ML-KEM-1024 ExpandedKey has an ASN.1 overhead of 28 bytes, assuming no attributes.
+            // Make it an even 32 and that should give a good starting point for a buffer size.
+            // Decapsulation keys are always larger than the seed, so if we end up with a seed export it should
+            // fit in the initial buffer.
+            int size = Algorithm.DecapsulationKeySizeInBytes + 32;
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(size); // Released to callers, do not use CryptoPool.
+            int written;
+
+            while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
+            {
+                ClearAndReturnToPool(buffer, written);
+                size = checked(size * 2);
+                buffer = ArrayPool<byte>.Shared.Rent(size);
+            }
+
+            if (written > buffer.Length)
+            {
+                // We got a nonsense value written back. Clear the buffer, but don't put it back in the pool.
+                CryptographicOperations.ZeroMemory(buffer);
+                throw new CryptographicException();
+            }
+
+            byte[] result = buffer.AsSpan(0, written).ToArray();
+            ClearAndReturnToPool(buffer, written);
+            return result;
+
+            static void ClearAndReturnToPool(byte[] buffer, int clearSize)
+            {
+                CryptographicOperations.ZeroMemory(buffer.AsSpan(0, clearSize));
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, attempts to export the current key in the PKCS#8 PrivateKeyInfo format
+        ///   into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the PKCS#8 PrivateKeyInfo value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        protected abstract bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten);
+
+        /// <summary>
         ///  Imports an ML-KEM encapsulation key from an X.509 SubjectPublicKeyInfo structure.
         /// </summary>
         /// <param name="source">
@@ -814,20 +925,7 @@ namespace System.Security.Cryptography
                     {
                         AsnValueReader reader = new(source, AsnEncodingRules.DER);
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-                        MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(spki.Algorithm.Algorithm) ??
-                            throw new CryptographicException(
-                                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier,
-                                spki.Algorithm.Algorithm));
-
-                        // draft-ietf-lamps-kyber-certificates-07:
-                        // The parameters field of the AlgorithmIdentifier for the ML-KEM public key MUST be absent.
-                        if (spki.Algorithm.Parameters.HasValue)
-                        {
-                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                            spki.Algorithm.Encode(writer);
-                            throw Helpers.CreateAlgorithmUnknownException(writer);
-                        }
-
+                        MLKemAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
                         return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, spki.SubjectPublicKey.Span);
                     }
                 }
@@ -842,6 +940,351 @@ namespace System.Security.Cryptography
         {
             ThrowIfNull(source);
             return ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(source));
+        }
+
+        /// <summary>
+        ///  Imports an ML-KEM private key from a PKCS#8 PrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="source">
+        ///  The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 PrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The PrivateKeyInfo value does not represent an ML-KEM key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="source" /> contains trailing data after the ASN.1 structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports ML-KEM.
+        /// </exception>
+        public static MLKem ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
+        {
+            ThrowIfTrailingData(source);
+            ThrowIfNotSupported();
+
+            KeyFormatHelper.ReadPkcs8(s_knownOids, source, MLKemKeyReader, out int read, out MLKem kem);
+            Debug.Assert(read == source.Length);
+            return kem;
+        }
+
+        /// <inheritdoc cref="ImportPkcs8PrivateKey(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />
+        /// </exception>
+        public static MLKem ImportPkcs8PrivateKey(byte[] source)
+        {
+            ThrowIfNull(source);
+            return ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(source));
+        }
+
+        /// <summary>
+        ///   Imports an ML-KEM private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="passwordBytes">
+        ///   The bytes to use as a password when decrypting the key material.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The EncryptedPrivateKeyInfo indicates the Key Derivation Function (KDF) to apply is the legacy PKCS#12 KDF,
+        ///     which requires <see cref="char"/>-based passwords.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The value does not represent an ML-KEM key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports ML-KEM.
+        /// </exception>
+        public static MLKem ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
+        {
+            ThrowIfTrailingData(source);
+            ThrowIfNotSupported();
+
+            return KeyFormatHelper.DecryptPkcs8(
+                passwordBytes,
+                source,
+                ImportPkcs8PrivateKey,
+                out _);
+        }
+
+        /// <summary>
+        ///   Imports an ML-KEM private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when decrypting the key material.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The value does not represent an ML-KEM key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports ML-KEM.
+        /// </exception>
+        public static MLKem ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
+        {
+            ThrowIfTrailingData(source);
+            ThrowIfNotSupported();
+
+            return KeyFormatHelper.DecryptPkcs8(
+                password,
+                source,
+                ImportPkcs8PrivateKey,
+                out _);
+        }
+
+        /// <summary>
+        ///  Imports an ML-KEM key from an RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The text of the PEM key to import.
+        /// </param>
+        /// <returns>
+        ///   The imported ML-KEM key.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains multiple PEM-encoded ML-KEM keys.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains no PEM-encoded ML-KEM keys.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///   are found, an exception is raised to prevent importing a key when the key is ambiguous.
+        ///   </para>
+        ///   <para>
+        ///   This method supports the following PEM labels:
+        ///   <list type="bullet">
+        ///     <item><description>PUBLIC KEY</description></item>
+        ///     <item><description>PRIVATE KEY</description></item>
+        ///   </list>
+        ///   </para>
+        /// </remarks>
+        public static MLKem ImportFromPem(ReadOnlySpan<char> source)
+        {
+            ThrowIfNotSupported();
+
+            return PemKeyHelpers.ImportFactoryPem<MLKem>(source, label =>
+                label switch
+                {
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    _ => null,
+                });
+        }
+
+        /// <inheritdoc cref="ImportFromPem(ReadOnlySpan{char})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />
+        /// </exception>
+        public static MLKem ImportFromPem(string source)
+        {
+            ThrowIfNull(source);
+            return ImportFromPem(source.AsSpan());
+        }
+
+        /// <summary>
+        ///   Imports an ML-KEM key from an encrypted RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The PEM text of the encrypted key to import.</param>
+        /// <param name="password">
+        ///   The password to use for decrypting the key material.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        /// <para>
+        ///   <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
+        ///   <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
+        /// </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///   The password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   indicate the key is for an algorithm other than the algorithm
+        ///   represented by this instance.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   represent the key in a format that is not supported.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     An error occurred while importing the key.
+        ///   </para>
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     When the base-64 decoded contents of <paramref name="source" /> indicate an algorithm that uses PBKDF1
+        ///     (Password-Based Key Derivation Function 1) or PBKDF2 (Password-Based Key Derivation Function 2),
+        ///     the password is converted to bytes via the UTF-8 encoding.
+        ///   </para>
+        ///   <para>
+        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///     are found, an exception is thrown to prevent importing a key when
+        ///     the key is ambiguous.
+        ///   </para>
+        ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
+        /// </remarks>
+        public static MLKem ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<char> password)
+        {
+            return PemKeyHelpers.ImportEncryptedFactoryPem<MLKem, char>(
+                source,
+                password,
+                ImportEncryptedPkcs8PrivateKey);
+        }
+
+        /// <summary>
+        ///   Imports an ML-KEM key from an encrypted RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The PEM text of the encrypted key to import.</param>
+        /// <param name="passwordBytes">
+        ///   The password to use for decrypting the key material.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        /// <para>
+        ///   <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
+        ///   <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
+        /// </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///   The password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   indicate the key is for an algorithm other than the algorithm
+        ///   represented by this instance.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///   represent the key in a format that is not supported.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     An error occurred while importing the key.
+        ///   </para>
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///     are found, an exception is thrown to prevent importing a key when
+        ///     the key is ambiguous.
+        ///   </para>
+        ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
+        /// </remarks>
+        public static MLKem ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<byte> passwordBytes)
+        {
+            return PemKeyHelpers.ImportEncryptedFactoryPem<MLKem, byte>(
+                source,
+                passwordBytes,
+                ImportEncryptedPkcs8PrivateKey);
+        }
+
+        /// <inheritdoc cref="ImportFromEncryptedPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> or <paramref name="password" /> is <see langword="null" />
+        /// </exception>
+        public static MLKem ImportFromEncryptedPem(string source, string password)
+        {
+            ThrowIfNull(source);
+            ThrowIfNull(password);
+
+            return ImportFromEncryptedPem(source.AsSpan(), password.AsSpan());
+        }
+
+        /// <inheritdoc cref="ImportFromEncryptedPem(ReadOnlySpan{char}, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> or <paramref name="passwordBytes" /> is <see langword="null" />
+        /// </exception>
+        public static MLKem ImportFromEncryptedPem(string source, byte[] passwordBytes)
+        {
+            ThrowIfNull(source);
+            ThrowIfNull(passwordBytes);
+
+            return ImportFromEncryptedPem(source.AsSpan(), new ReadOnlySpan<byte>(passwordBytes));
         }
 
         /// <summary>
@@ -908,6 +1351,91 @@ namespace System.Security.Cryptography
             if (!IsSupported)
             {
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
+            }
+        }
+
+        private static MLKemAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
+        {
+            MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(identifier.Algorithm) ??
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, identifier.Algorithm));
+
+            if (identifier.Parameters.HasValue)
+            {
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                identifier.Encode(writer);
+                throw Helpers.CreateAlgorithmUnknownException(writer);
+            }
+
+            return algorithm;
+        }
+
+        private static void MLKemKeyReader(
+            ReadOnlyMemory<byte> privateKeyContents,
+            in AlgorithmIdentifierAsn algorithmIdentifier,
+            out MLKem kem)
+        {
+            MLKemAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
+            MLKemPrivateKeyAsn kemKey = MLKemPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER);
+
+            try
+            {
+                if (kemKey.Seed is ReadOnlyMemory<byte> seed)
+                {
+                    kem = ImportPrivateSeed(algorithm, seed.Span);
+                }
+                else if (kemKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
+                {
+                    kem = ImportDecapsulationKey(algorithm, expandedKey.Span);
+                }
+                else if (kemKey.Both is MLKemPrivateKeyBothAsn both)
+                {
+                    MLKem key = ImportPrivateSeed(algorithm, both.Seed.Span);
+                    int decapsulationKeySize = key.Algorithm.DecapsulationKeySizeInBytes;
+                    byte[] rent = CryptoPool.Rent(decapsulationKeySize);
+                    Span<byte> buffer = rent.AsSpan(0, decapsulationKeySize);
+
+                    try
+                    {
+                        key.ExportDecapsulationKey(buffer);
+
+                        if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
+                        {
+                            kem = key;
+                        }
+                        else
+                        {
+                            throw new CryptographicException(SR.Cryptography_KemPkcs8KeyMismatch);
+                        }
+                    }
+                    catch
+                    {
+                        key.Dispose();
+                        throw;
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(rent, decapsulationKeySize);
+                    }
+                }
+                else
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+            }
+            catch (ArgumentException ae)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
+            }
+        }
+
+        private static void ThrowIfTrailingData(ReadOnlySpan<byte> data)
+        {
+            AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out int bytesRead);
+
+            if (bytesRead != data.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
         }
 

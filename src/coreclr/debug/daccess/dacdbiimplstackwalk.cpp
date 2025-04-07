@@ -19,6 +19,10 @@
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 typedef IDacDbiInterface::StackWalkHandle StackWalkHandle;
 
 
@@ -262,7 +266,7 @@ BOOL DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle)
                 continue;
             }
 #ifdef FEATURE_EH_FUNCLETS
-            else if (g_isNewExceptionHandlingEnabled && pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
+            else if (pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
             {
                 // Skip the new exception handling managed code, the debugger clients are not supposed to see them
                 MethodDesc *pMD = pIter->m_crawl.GetFunction();
@@ -462,7 +466,7 @@ ULONG32 DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread)
     while (pFrame != FRAME_TOP)
     {
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled && InlinedCallFrame::FrameHasActiveCall(pFrame))
+        if (InlinedCallFrame::FrameHasActiveCall(pFrame))
         {
             // Skip new exception handling helpers
             InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
@@ -515,7 +519,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
     while (pFrame != FRAME_TOP)
     {
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled && InlinedCallFrame::FrameHasActiveCall(pFrame))
+        if (InlinedCallFrame::FrameHasActiveCall(pFrame))
         {
             // Skip new exception handling helpers
             InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
