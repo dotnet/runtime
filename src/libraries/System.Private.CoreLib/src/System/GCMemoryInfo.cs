@@ -71,18 +71,14 @@ namespace System
         internal byte _compacted;
         internal byte _concurrent;
 
-        private GCGenerationInfo _generationInfo0;
-        private GCGenerationInfo _generationInfo1;
-        private GCGenerationInfo _generationInfo2;
-        private GCGenerationInfo _generationInfo3;
-        private GCGenerationInfo _generationInfo4;
+        internal GCGenerationInfo _generationInfo0;
+        internal GCGenerationInfo _generationInfo1;
+        internal GCGenerationInfo _generationInfo2;
+        internal GCGenerationInfo _generationInfo3;
+        internal GCGenerationInfo _generationInfo4;
 
-        internal ReadOnlySpan<GCGenerationInfo> GenerationInfoAsSpan => MemoryMarshal.CreateReadOnlySpan(ref _generationInfo0, 5);
-
-        private TimeSpan _pauseDuration0;
-        private TimeSpan _pauseDuration1;
-
-        internal ReadOnlySpan<TimeSpan> PauseDurationsAsSpan => MemoryMarshal.CreateReadOnlySpan(ref _pauseDuration0, 2);
+        internal TimeSpan _pauseDuration0;
+        internal TimeSpan _pauseDuration1;
     }
 
     /// <summary>Provides a set of APIs that can be used to retrieve garbage collection information.</summary>
@@ -96,22 +92,64 @@ namespace System
     /// </remarks>
     public readonly struct GCMemoryInfo
     {
-        private readonly GCMemoryInfoData _data;
+        private readonly long _highMemoryLoadThresholdBytes;
+        private readonly long _totalAvailableMemoryBytes;
+        private readonly long _memoryLoadBytes;
+        private readonly long _heapSizeBytes;
+        private readonly long _fragmentedBytes;
+        private readonly long _totalCommittedBytes;
+        private readonly long _promotedBytes;
+        private readonly long _pinnedObjectsCount;
+        private readonly long _finalizationPendingCount;
+        private readonly long _index;
+        private readonly int _generation;
+        private readonly int _pauseTimePercentage;
+        private readonly byte _compacted;
+        private readonly byte _concurrent;
+
+        private readonly GCGenerationInfo _generationInfo0;
+        private readonly GCGenerationInfo _generationInfo1;
+        private readonly GCGenerationInfo _generationInfo2;
+        private readonly GCGenerationInfo _generationInfo3;
+        private readonly GCGenerationInfo _generationInfo4;
+
+        private readonly TimeSpan _pauseDuration0;
+        private readonly TimeSpan _pauseDuration1;
 
         internal GCMemoryInfo(GCMemoryInfoData data)
         {
-            _data = data;
+            _highMemoryLoadThresholdBytes = data._highMemoryLoadThresholdBytes;
+            _totalAvailableMemoryBytes = data._totalAvailableMemoryBytes;
+            _memoryLoadBytes = data._memoryLoadBytes;
+            _heapSizeBytes = data._heapSizeBytes;
+            _fragmentedBytes = data._fragmentedBytes;
+            _totalCommittedBytes = data._totalCommittedBytes;
+            _promotedBytes = data._promotedBytes;
+            _pinnedObjectsCount = data._pinnedObjectsCount;
+            _finalizationPendingCount = data._finalizationPendingCount;
+            _index = data._index;
+            _generation = data._generation;
+            _pauseTimePercentage = data._pauseTimePercentage;
+            _compacted = data._compacted;
+            _concurrent = data._concurrent;
+            _generationInfo0 = data._generationInfo0;
+            _generationInfo1 = data._generationInfo1;
+            _generationInfo2 = data._generationInfo2;
+            _generationInfo3 = data._generationInfo3;
+            _generationInfo4 = data._generationInfo4;
+            _pauseDuration0 = data._pauseDuration0;
+            _pauseDuration1 = data._pauseDuration1;
         }
 
         /// <summary>
         /// High memory load threshold when this GC occurred
         /// </summary>
-        public long HighMemoryLoadThresholdBytes => _data._highMemoryLoadThresholdBytes;
+        public long HighMemoryLoadThresholdBytes => _highMemoryLoadThresholdBytes;
 
         /// <summary>
         /// Memory load when this GC occurred
         /// </summary>
-        public long MemoryLoadBytes => _data._memoryLoadBytes;
+        public long MemoryLoadBytes => _memoryLoadBytes;
 
         /// <summary>
         /// Total available memory for the GC to use when this GC occurred.
@@ -121,12 +159,12 @@ namespace System
         /// If the program is run in a container, this will be an implementation-defined fraction of the container's size.
         /// Else, this is the physical memory on the machine that was available for the GC to use when this GC occurred.
         /// </summary>
-        public long TotalAvailableMemoryBytes => _data._totalAvailableMemoryBytes;
+        public long TotalAvailableMemoryBytes => _totalAvailableMemoryBytes;
 
         /// <summary>
         /// The total heap size when this GC occurred
         /// </summary>
-        public long HeapSizeBytes => _data._heapSizeBytes;
+        public long HeapSizeBytes => _heapSizeBytes;
 
         /// <summary>
         /// The total fragmentation when this GC occurred
@@ -140,64 +178,64 @@ namespace System
         /// The memory between OBJ_A and OBJ_D marked `F` is considered part of the FragmentedBytes, and will be used to allocate new objects. The memory after OBJ_D will not be
         /// considered part of the FragmentedBytes, and will also be used to allocate new objects
         /// </summary>
-        public long FragmentedBytes => _data._fragmentedBytes;
+        public long FragmentedBytes => _fragmentedBytes;
 
         /// <summary>
         /// The index of this GC. GC indices start with 1 and get increased at the beginning of a GC.
         /// Since the info is updated at the end of a GC, this means you can get the info for a BGC
         /// with a smaller index than a foreground GC finished earlier.
         /// </summary>
-        public long Index => _data._index;
+        public long Index => _index;
 
         /// <summary>
         /// The generation this GC collected. Collecting a generation means all its younger generation(s)
         /// are also collected.
         /// </summary>
-        public int Generation => _data._generation;
+        public int Generation => _generation;
 
         /// <summary>
         /// Is this a compacting GC or not.
         /// </summary>
-        public bool Compacted => _data._compacted != 0;
+        public bool Compacted => _compacted != 0;
 
         /// <summary>
         /// Is this a concurrent GC (BGC) or not.
         /// </summary>
-        public bool Concurrent => _data._concurrent != 0;
+        public bool Concurrent => _concurrent != 0;
 
         /// <summary>
         /// Total committed bytes of the managed heap.
         /// </summary>
-        public long TotalCommittedBytes => _data._totalCommittedBytes;
+        public long TotalCommittedBytes => _totalCommittedBytes;
 
         /// <summary>
         /// Promoted bytes for this GC.
         /// </summary>
-        public long PromotedBytes => _data._promotedBytes;
+        public long PromotedBytes => _promotedBytes;
 
         /// <summary>
         /// Number of pinned objects this GC observed.
         /// </summary>
-        public long PinnedObjectsCount => _data._pinnedObjectsCount;
+        public long PinnedObjectsCount => _pinnedObjectsCount;
 
         /// <summary>
         /// Number of objects ready for finalization this GC observed.
         /// </summary>
-        public long FinalizationPendingCount => _data._finalizationPendingCount;
+        public long FinalizationPendingCount => _finalizationPendingCount;
 
         /// <summary>
         /// Pause durations. For blocking GCs there's only 1 pause; for BGC there are 2.
         /// </summary>
-        public ReadOnlySpan<TimeSpan> PauseDurations => _data.PauseDurationsAsSpan;
+        public ReadOnlySpan<TimeSpan> PauseDurations => MemoryMarshal.CreateReadOnlySpan(in _pauseDuration0, 2);
 
         /// <summary>
         /// This is the % pause time in GC so far. If it's 1.2%, this number is 1.2.
         /// </summary>
-        public double PauseTimePercentage => (double)_data._pauseTimePercentage / 100.0;
+        public double PauseTimePercentage => (double)_pauseTimePercentage / 100.0;
 
         /// <summary>
         /// Generation info for all generations.
         /// </summary>
-        public ReadOnlySpan<GCGenerationInfo> GenerationInfo => _data.GenerationInfoAsSpan;
+        public ReadOnlySpan<GCGenerationInfo> GenerationInfo => MemoryMarshal.CreateReadOnlySpan(in _generationInfo0, 5);
     }
 }

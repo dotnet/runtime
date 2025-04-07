@@ -62,6 +62,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetMemoryInfo(GCMemoryInfoData data, int kind);
 
+        // Used to avoid allocating in GetGCMemoryInfo after the first call.
+        [ThreadStatic]
+        private static GCMemoryInfoData? t_gCMemoryInfoData;
+
         /// <summary>Gets garbage collection memory information.</summary>
         /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
         public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfo(GCKind.Any);
@@ -80,7 +84,7 @@ namespace System
                                           GCKind.Background));
             }
 
-            var data = new GCMemoryInfoData();
+            var data = t_gCMemoryInfoData ??= new GCMemoryInfoData();
             GetMemoryInfo(data, (int)kind);
             return new GCMemoryInfo(data);
         }
