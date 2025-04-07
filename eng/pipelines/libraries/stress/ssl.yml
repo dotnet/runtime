@@ -8,12 +8,11 @@ pr:
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST
   displayName: SslStress nightly run
+  always: true
   branches:
     include:
     - main
-    - release/6.0
-    - release/7.0
-    - release/8.0
+    - release/*-staging
 
 variables:
   - template: ../variables.yml

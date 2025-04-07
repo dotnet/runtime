@@ -21,7 +21,7 @@ namespace System.Net.Test.Common
 
             // This server doesn't use HTTP/2 server push (push promise) feature. Some HttpClient implementations
             // don't support servers that use push right now.
-            public static string Http2NoPushHost => GetValue("DOTNET_TEST_HTTP2NOPUSHHOST", "www.microsoft.com");
+            public static string Http2NoPushHost => GetValue("DOTNET_TEST_HTTP2NOPUSHHOST", "httpbin.org");
 
             // Domain server environment.
             public static string DomainJoinedHttpHost => GetValue("DOTNET_TEST_DOMAINJOINED_HTTPHOST");
@@ -58,12 +58,7 @@ namespace System.Net.Test.Common
             public static readonly Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
             public static readonly Uri SecureRemoteEchoServer = new Uri("https://" + SecureHost + "/" + EchoHandler);
             public static readonly Uri Http2RemoteEchoServer = new Uri("https://" + Http2Host + "/" + EchoHandler);
-            public static Uri[] EchoServerList => [
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                // RemoteEchoServer,
-                SecureRemoteEchoServer,
-                Http2RemoteEchoServer
-            ];
+            public static readonly Uri[] EchoServerList = new Uri[] { RemoteEchoServer, SecureRemoteEchoServer, Http2RemoteEchoServer };
 
             public static readonly Uri RemoteVerifyUploadServer = new Uri("http://" + Host + "/" + VerifyUploadHandler);
             public static readonly Uri SecureRemoteVerifyUploadServer = new Uri("https://" + SecureHost + "/" + VerifyUploadHandler);
@@ -78,36 +73,18 @@ namespace System.Net.Test.Common
             public static Uri RemoteLoopServer => new Uri("ws://" + RemoteLoopHost + "/" + RemoteLoopHandler);
 
             public static readonly object[][] EchoServers = EchoServerList.Select(x => new object[] { x }).ToArray();
-            public static readonly object[][] VerifyUploadServers = {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                // new object[] { RemoteVerifyUploadServer },
-                new object[] { SecureRemoteVerifyUploadServer },
-                new object[] { Http2RemoteVerifyUploadServer }
-            };
-
-            public static readonly object[][] CompressedServers = {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                // new object[] { RemoteDeflateServer },
-                new object[] { RemoteGZipServer },
-                new object[] { Http2RemoteDeflateServer },
-                new object[] { Http2RemoteGZipServer }
-            };
+            public static readonly object[][] VerifyUploadServers = { new object[] { RemoteVerifyUploadServer }, new object[] { SecureRemoteVerifyUploadServer }, new object[] { Http2RemoteVerifyUploadServer } };
+            public static readonly object[][] CompressedServers = { new object[] { RemoteDeflateServer }, new object[] { RemoteGZipServer }, new object[] { Http2RemoteDeflateServer }, new object[] { Http2RemoteGZipServer } };
 
             public static readonly object[][] Http2Servers = { new object[] { new Uri("https://" + Http2Host) } };
             public static readonly object[][] Http2NoPushServers = { new object[] { new Uri("https://" + Http2NoPushHost) } };
+            public static readonly object[][] Http2NoPushGetUris = { new object[] { new Uri("https://" + Http2NoPushHost + "/get") } };
 
             public static readonly RemoteServer RemoteHttp11Server = new RemoteServer(new Uri("http://" + Host + "/"), HttpVersion.Version11);
             public static readonly RemoteServer RemoteSecureHttp11Server = new RemoteServer(new Uri("https://" + SecureHost + "/"), HttpVersion.Version11);
             public static readonly RemoteServer RemoteHttp2Server = new RemoteServer(new Uri("https://" + Http2Host + "/"), new Version(2, 0));
 
-            public static IEnumerable<RemoteServer> RemoteServers =>
-                new RemoteServer[]
-                {
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                    // RemoteHttp11Server,
-                    RemoteSecureHttp11Server,
-                    RemoteHttp2Server
-                };
+            public static readonly IEnumerable<RemoteServer> RemoteServers = new RemoteServer[] { RemoteHttp11Server, RemoteSecureHttp11Server, RemoteHttp2Server };
 
             public static readonly IEnumerable<object[]> RemoteServersMemberData = RemoteServers.Select(s => new object[] { s });
 

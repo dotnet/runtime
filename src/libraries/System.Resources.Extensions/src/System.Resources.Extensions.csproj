@@ -7,7 +7,6 @@
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <IsPackable>true</IsPackable>
     <SuggestedBindingRedirectsPackageFile>$(BaseIntermediateOutputPath)SuggestedBindingRedirects.targets</SuggestedBindingRedirectsPackageFile>
-    <BeforePack>$(BeforePack);GeneratePackageTargetsFile</BeforePack>
     <PackageDescription>Provides classes which read and write resources in a format that supports non-primitive objects.
 
 Commonly Used Types:
@@ -41,7 +40,7 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" 
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs"
              Link="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
              Link="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
@@ -51,10 +50,11 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
-  <Target Name="GeneratePackageTargetsFile" 
+  <Target Name="GeneratePackageTargetsFile"
           Inputs="$(MSBuildAllProjects)"
           Outputs="$(SuggestedBindingRedirectsPackageFile)"
-          Condition="'$(NetFrameworkMinimum)' != ''">
+          AfterTargets="CoreCompile"
+          Condition="'$(TargetFramework)' == '$(NetFrameworkMinimum)'">
     <PropertyGroup>
       <SuggestedBindingRedirectsPackageFileContent><![CDATA[<Project>
   <!-- ResolveAssemblyReferences will never see the assembly reference embedded in the resources type,
@@ -71,9 +71,11 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
                       Lines="$(SuggestedBindingRedirectsPackageFileContent)"
                       Overwrite="true" />
 
-    <ItemGroup>
-      <Content Include="$(SuggestedBindingRedirectsPackageFile)"
-               PackagePath="buildTransitive\$(NetFrameworkMinimum)\$(PackageId).targets" />
-    </ItemGroup>
   </Target>
+
+  <ItemGroup Condition="'$(NetFrameworkMinimum)' != ''">
+    <None Include="$(SuggestedBindingRedirectsPackageFile)" Pack="true"
+          PackagePath="buildTransitive\$(NetFrameworkMinimum)\$(PackageId).targets" />
+  </ItemGroup>
+
 </Project>
