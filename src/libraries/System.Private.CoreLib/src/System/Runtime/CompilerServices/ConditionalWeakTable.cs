@@ -369,8 +369,8 @@ namespace System.Runtime.CompilerServices
 
         IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<TKey, TValue>>)this).GetEnumerator();
 
-        /// <summary>Provides an enumerator for the table.</summary>
-        private sealed class Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
+        /// <summary>The core implementation for the enumerators for the table.</summary>
+        private struct EnumeratorCore : IDisposable
         {
             // The enumerator would ideally hold a reference to the Container and the end index within that
             // container.  However, the safety of the CWT depends on the only reference to the Container being
@@ -393,7 +393,7 @@ namespace System.Runtime.CompilerServices
             private int _currentIndex;                          // the current index into the container
             private KeyValuePair<TKey, TValue> _current;        // the current entry set by MoveNext and returned from Current
 
-            public Enumerator(ConditionalWeakTable<TKey, TValue> table)
+            public EnumeratorCore(ConditionalWeakTable<TKey, TValue> table)
             {
                 Debug.Assert(table != null, "Must provide a valid table");
                 Debug.Assert(Monitor.IsEntered(table._lock), "Must hold the _lock lock to construct the enumerator");
@@ -408,11 +408,6 @@ namespace System.Runtime.CompilerServices
                 // Store the max index to be enumerated.
                 _maxIndexInclusive = table._container.FirstFreeEntry - 1;
                 _currentIndex = -1;
-            }
-
-            ~Enumerator()
-            {
-                Dispose();
             }
 
             public void Dispose()
@@ -485,6 +480,56 @@ namespace System.Runtime.CompilerServices
                     return _current;
                 }
             }
+        }
+
+        /// <summary>Provides an enumerator for the table.</summary>
+        private sealed class Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
+        {
+            private EnumeratorCore _enumeratorCore;
+
+            public Enumerator(ConditionalWeakTable<TKey, TValue> table) => _enumeratorCore = new(table);
+
+            ~Enumerator()
+            {
+                Dispose();
+            }
+
+            public void Dispose() => _enumeratorCore.Dispose();
+
+            public bool MoveNext() => _enumeratorCore.MoveNext();
+
+            public KeyValuePair<TKey, TValue> Current => _enumeratorCore.Current;
+
+            object? IEnumerator.Current => Current;
+
+            public void Reset() { }
+        }
+
+        /// <summary>Gets an enumerable used to enumerate the values on the stack without allocation.</summary>
+        // This API is unsafe to use if the user neglects to call Dispose, which is why
+        // we can only use this internally where we can enforce proper foreach usage.
+        // It's also unsafe to use in async functions, even with proper foreach, because there's
+        // a chance that the async will never continue, in which case we need to rely on the finalizer in the regular enumerator.
+        internal RefEnumerable EnumerateOnStack() => new RefEnumerable(this);
+
+        /// <summary>Provides an enumerable used to enumerate the values on the stack without allocation.</summary>
+        internal readonly ref struct RefEnumerable(ConditionalWeakTable<TKey, TValue> table)
+        {
+            public RefEnumerator GetEnumerator() => new(table);
+        }
+
+        /// <summary>Provides an enumerator for the table that can be used on the stack without allocation.</summary>
+        internal ref struct RefEnumerator : IEnumerator<KeyValuePair<TKey, TValue>>
+        {
+            private EnumeratorCore _enumeratorCore;
+
+            public RefEnumerator(ConditionalWeakTable<TKey, TValue> table) => _enumeratorCore = new(table);
+
+            public void Dispose() => _enumeratorCore.Dispose();
+
+            public bool MoveNext() => _enumeratorCore.MoveNext();
+
+            public KeyValuePair<TKey, TValue> Current => _enumeratorCore.Current;
 
             object? IEnumerator.Current => Current;
 
