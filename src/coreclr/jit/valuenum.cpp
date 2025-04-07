@@ -9466,9 +9466,9 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
     else
     {
         assert((typ == TYP_DOUBLE) || (typ == TYP_FLOAT) ||
-               ((typ == TYP_INT) &&
-                ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round) ||
-                 (gtMathFN == NI_PRIMITIVE_LeadingZeroCount) || (gtMathFN == NI_PRIMITIVE_TrailingZeroCount) ||
+               ((typ == TYP_INT) && ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round))) ||
+               (((typ == TYP_INT) || (typ == TYP_LONG)) &&
+                ((gtMathFN == NI_PRIMITIVE_LeadingZeroCount) || (gtMathFN == NI_PRIMITIVE_TrailingZeroCount) ||
                  (gtMathFN == NI_PRIMITIVE_PopCount))));
 
         VNFunc vnf = VNF_Boundary;
