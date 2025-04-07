@@ -61,24 +61,37 @@ class DiagnosticSession extends DiagnosticConnectionBase implements IDiagnosticC
         this.respond(firstCommand);
     }
 
+    is_advert_message (message:Uint8Array):boolean {
+        return advert1.every((v, i) => v === message[i]);
+    }
+
+    is_response_message (message:Uint8Array):boolean {
+        return dotnet_IPC_V1.every((v, i) => v === message[i]) && message[16] == CommandSetId.Server;
+    }
+
+    is_response_ok_with_session (message:Uint8Array):boolean {
+        return message.byteLength === 28 && message[17] == ServerCommandId.OK;
+    }
+
+    parse_session_id (message:Uint8Array):SessionId {
+        const view = message.subarray(20, 28);
+        const sessionIDLo = view[0] | (view[1] << 8) | (view[2] << 16) | (view[3] << 24);
+        const sessionIDHi = view[4] | (view[5] << 8) | (view[6] << 16) | (view[7] << 24);
+        return [sessionIDHi, sessionIDLo] as SessionId;
+    }
+
     // this is message from the diagnostic server, which is Mono VM in this browser
     send (message:Uint8Array):number {
         scheduleDiagnosticServerEventLoop();
-        if (advert1.every((v, i) => v === message[i])) {
+        if (this.is_advert_message(message)) {
             // eslint-disable-next-line @typescript-eslint/no-this-alias
             serverSession = this;
             this.connectNewClient();
-        } else if (dotnet_IPC_V1.every((v, i) => v === message[i]) && message[16] == CommandSetId.Server) {
-            if (message[17] == ServerCommandId.OK) {
-                if (message.byteLength === 28) {
-                    const view = message.subarray(20, 28);
-                    const sessionIDLo = view[0] | (view[1] << 8) | (view[2] << 16) | (view[3] << 24);
-                    const sessionIDHi = view[4] | (view[5] << 8) | (view[6] << 16) | (view[7] << 24);
-                    const sessionId = [sessionIDHi, sessionIDLo] as SessionId;
-                    this.session_id = sessionId;
-                    if (this.diagClient?.onSessionStart) {
-                        this.diagClient.onSessionStart(this);
-                    }
+        } else if (this.is_response_message(message)) {
+            if (this.is_response_ok_with_session(message)) {
+                this.session_id = this.parse_session_id(message);
+                if (this.diagClient?.onSessionStart) {
+                    this.diagClient.onSessionStart(this);
                 }
             } else {
                 if (this.diagClient?.onError) {

@@ -34,6 +34,12 @@ import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
 import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
 
+const pid = (globalThis.performance?.timeOrigin ?? Date.now()) | 0;
+
+export function mono_wasm_process_current_pid ():number {
+    return pid;
+}
+
 export async function configureRuntimeStartup (module: DotnetModuleInternal): Promise<void> {
     if (!module.out) {
         // eslint-disable-next-line no-console

@@ -4,15 +4,32 @@
 import type { DiagnosticCommandProviderV2 } from "../types";
 
 import { SessionId } from "./common";
+import { runtimeHelpers } from "./globals";
 
-export const advert1 = [65, 68, 86, 82, 95];
-// TODO make GUID and process id dynamic
-export const advert1Full = [65, 68, 86, 82, 95, 86, 49, 0, 66, 108, 106, 181, 91, 0, 142, 79, 182, 145, 225, 120, 77, 12, 131, 229, 42, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+// ADVR_V1\0
+export const advert1 = [65, 68, 86, 82, 95, 86, 49, 0,];
+// DOTNET_IPC_V1\0
 export const dotnet_IPC_V1 = [68, 79, 84, 78, 69, 84, 95, 73, 80, 67, 95, 86, 49, 0];
-
 
 // this file contains the IPC commands that are sent by client (like dotnet-trace) to the diagnostic server (like Mono VM in the browser)
 // just formatting bytes, no sessions management here
+
+
+export function advertise () {
+    // xxxxxxxx-xxxx-4xxx-xxxx-xxxxxxxxxxxx
+    const uuid = new Uint8Array(16);
+    crypto.getRandomValues(uuid);
+    uuid[7] = (uuid[7] & 0xf) | 0x40;// version 4
+
+    const pid = runtimeHelpers.mono_wasm_process_current_pid();
+
+    return Uint8Array.from([
+        ...advert1,
+        ...uuid,
+        ...serializeUint64([0, pid]),
+        0, 0// future
+    ]);
+}
 
 export function commandStopTracing (sessionID:SessionId) {
     return Uint8Array.from([

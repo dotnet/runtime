@@ -12,7 +12,7 @@ import { diagnosticHelpers, setRuntimeGlobalsImpl } from "./globals";
 import { collectCpuSamples } from "./dotnet-cpu-profiler";
 import { collectPerfCounters } from "./dotnet-counters";
 import { collectGcDump } from "./dotnet-gcdump";
-import { advert1Full } from "./client-commands";
+import { advertise } from "./client-commands";
 
 let socket_handles:Map<number, IDiagnosticConnection> = undefined as any;
 let next_socket_handle = 1;
@@ -89,5 +89,5 @@ function connectDSRouter (url: string): void {
 
     const wrapper = createDiagConnectionWs(serverSession.client_socket, url);
     socket_handles.set(serverSession.client_socket, wrapper);
-    wrapper.send(new Uint8Array(advert1Full));
+    wrapper.send(advertise());
 }
