@@ -1616,7 +1616,15 @@ private:
     TieredCompilationManager m_tieredCompilationManager;
 
 #endif
+
+    friend struct cdac_data<AppDomain>;
 };  // class AppDomain
+
+template<>
+struct cdac_data<AppDomain>
+{
+    static constexpr size_t RootAssembly = offsetof(AppDomain, m_pRootAssembly);
+};
 
 typedef DPTR(class SystemDomain) PTR_SystemDomain;
 

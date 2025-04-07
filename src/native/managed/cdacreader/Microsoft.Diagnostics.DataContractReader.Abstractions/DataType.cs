@@ -30,6 +30,7 @@ public enum DataType
     RuntimeThreadLocals,
     Module,
     ModuleLookupMap,
+    AppDomain,
     Assembly,
     MethodTable,
     EEClass,

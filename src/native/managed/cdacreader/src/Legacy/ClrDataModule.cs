@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -164,7 +165,42 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
     }
 
     int IXCLRDataModule.GetFlags(uint* flags)
-        => _legacyModule is not null ? _legacyModule.GetFlags(flags) : HResults.E_NOTIMPL;
+    {
+        *flags = 0;
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(_address);
+
+            ModuleFlags moduleFlags = contract.GetFlags(handle);
+            if ((moduleFlags & ModuleFlags.EditAndContinue) != 0)
+            {
+                *flags |= 0x1; // CLRDATA_MODULE_IS_DYNAMIC
+            }
+
+            if (contract.GetAssembly(handle) == contract.GetRootAssembly())
+            {
+
+                *flags |= 0x4; // CLRDATA_MODULE_FLAGS_ROOT_ASSEMBLY
+            }
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            uint flagsLocal;
+            int hrLocal = _legacyModule.GetFlags(&flagsLocal);
+            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK}, DAC: {hrLocal}");
+            Debug.Assert(flagsLocal == *flags, $"cDAC: {*flags}, DAC: {flagsLocal}");
+        }
+#endif
+
+        return HResults.S_OK;
+    }
 
     int IXCLRDataModule.IsSameObject(IXCLRDataModule* mod)
         => _legacyModule is not null ? _legacyModule.IsSameObject(mod) : HResults.E_NOTIMPL;
