@@ -248,7 +248,7 @@ namespace System
 
         public static GCMemoryInfo GetGCMemoryInfo()
         {
-            var data = new GCMemoryInfoData();
+            GCMemoryInfoData data = default;
 
             _GetGCMemoryInfo(out data._highMemoryLoadThresholdBytes,
                              out data._memoryLoadBytes,

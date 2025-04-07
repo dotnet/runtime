@@ -60,7 +60,7 @@ namespace System
     public static partial class GC
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void GetMemoryInfo(GCMemoryInfo* data, int kind);
+        private static extern unsafe void GetMemoryInfo(GCMemoryInfoData* data, int kind);
 
         /// <summary>Gets garbage collection memory information.</summary>
         /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
@@ -80,9 +80,9 @@ namespace System
                                           GCKind.Background));
             }
 
-            GCMemoryInfo data = default;
+            GCMemoryInfoData data = default;
             GetMemoryInfo(&data, (int)kind);
-            return data;
+            return new GCMemoryInfo(data);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_StartNoGCRegion")]

@@ -241,7 +241,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetMemoryInfo")]
-        internal static extern void RhGetMemoryInfo(ref byte info, GCKind kind);
+        internal static extern unsafe void RhGetMemoryInfo(GCMemoryInfoData* data, GCKind kind);
 
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhAllocateNewArray(MethodTable* pArrayEEType, uint numElements, uint flags, void* pResult);
