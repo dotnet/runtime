@@ -3476,6 +3476,12 @@ namespace ILCompiler
                     return false;
                 }
 
+                if (value is ByRefValueBase
+                    && (field.FieldType.IsWellKnownType(WellKnownType.IntPtr) || field.FieldType.IsWellKnownType(WellKnownType.UIntPtr)))
+                {
+                    return false;
+                }
+
                 if (value is not ValueTypeValue vtValue)
                 {
                     ThrowHelper.ThrowInvalidProgramException();
