@@ -209,14 +209,14 @@ namespace System.Buffers
             {
                 if (!log.IsEnabled())
                 {
-                    foreach (KeyValuePair<SharedArrayPoolThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
+                    foreach (KeyValuePair<SharedArrayPoolThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets.EnumerateOnStack())
                     {
                         Array.Clear(tlsBuckets.Key);
                     }
                 }
                 else
                 {
-                    foreach (KeyValuePair<SharedArrayPoolThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
+                    foreach (KeyValuePair<SharedArrayPoolThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets.EnumerateOnStack())
                     {
                         SharedArrayPoolThreadLocalArray[] buckets = tlsBuckets.Key;
                         for (int i = 0; i < buckets.Length; i++)
@@ -241,7 +241,7 @@ namespace System.Buffers
                     _ => 30_000,
                 };
 
-                foreach (KeyValuePair<SharedArrayPoolThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
+                foreach (KeyValuePair<SharedArrayPoolThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets.EnumerateOnStack())
                 {
                     SharedArrayPoolThreadLocalArray[] buckets = tlsBuckets.Key;
                     for (int i = 0; i < buckets.Length; i++)
