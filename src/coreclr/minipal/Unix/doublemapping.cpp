@@ -253,3 +253,199 @@ bool VMToOSInterface::ReleaseRWMapping(void* pStart, size_t size)
 {
     return munmap(pStart, size) != -1;
 }
+
+#ifndef TARGET_APPLE
+struct TemplateThunkMappingData
+{
+    int fdImage;
+    off_t offsetInFileOfStartOfSection;
+    void* addrOfStartOfSection; // Always NULL if the template mapping data could not be initialized
+    void* addrOfEndOfSection;
+};
+struct InitializeTemplateThunkLocals
+{
+    void* pTemplate;
+    Dl_info info;
+    TemplateThunkMappingData data;
+};
+
+static TemplateThunkMappingData *s_pThunkData = NULL;
+
+static int InitializeTemplateThunkMappingDataPhdrCallback(struct dl_phdr_info *info, size_t size, void *dataPtr)
+{
+    InitializeTemplateThunkLocals *locals = (InitializeTemplateThunkLocals*)dataPtr;
+
+    if (info->dlpi_addr == locals->info.dli_fbase)
+    {
+        for (size_t j = 0; j < info->dlpi_phnum; j++)
+        {
+            if (locals.pTemplate < info->dlpi_phdr[j].p_vaddr)
+            {
+                // Address is before the virtual address of this section begins
+                continue;
+            }
+
+            // Since this is all in support of mapping code from the file, we need to ensure that the region we find
+            // is actually present in the file.
+            Elf32_Word sizeOfSectionWhichCanBeMapped = min(info->dlpi_phdr[j].p_filesz, info->dlpi_phdr[j].p_memsz;
+
+            Elf32_Addr endAddressAllowedForTemplate = info->dlpi_phdr[j].p_vaddr + sizeOfSectionWhichCanBeMapped);
+            if (locals.pTemplate >= endAddressAllowedForTemplate)
+            {
+                // Template is after the virtual address of this section ends (or the mappable region of the file)
+                continue;
+            }
+
+            // At this point, we have found the template section. Attempt to open the file, and record the various offsets for future use
+
+            // TODO! To handle single-file scenarios, we need to capture the argv[0] parameter to the process and if info->dlpi_name == "", then use that instead
+            int fdImage = open(info->dlpi_name, O_RDONLY);
+            if (fdImage == -1)
+            {
+                return -1; // Opening the image didn't work
+            }
+            
+            locals->data.fdImage = fdImage;
+            locals->data.offsetInFileOfStartOfSection = info->dlpi_phdr[j].p_offset;
+            locals->data.addrOfStartOfSection = info->dlpi_phdr[j].p_vaddr;
+            locals->data.addrOfEndOfSection = info->dlpi_phdr[j].p_vaddr + sizeOfSectionWhichCanBeMapped;
+            return 1; // We have found the result. Abort further processing.
+        }
+    }
+
+    // This isn't the interesting .so
+    return 0;
+}
+
+TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
+{
+    InitializeTemplateThunkLocals locals;
+    locals.pTemplate = pTemplate;
+    locals.data.fdImage = 0;
+    locals.data.offsetInFileOfStartOfSection = 0;
+    locals.data.addrOfStartOfSection = NULL;
+    locals.data.addrOfEndOfSection = NULL;
+
+    if (dladdr(pTemplate, &locals.info) != 0)
+    {
+        dl_iterate_phdr(InitializeTemplateThunkMappingDataPhdrCallback, &locals);
+    }
+
+    TemplateThunkMappingData *pAllocatedData = (TemplateThunkMappingData*)malloc(sizeof(TemplateThunkMappingData));
+    *pAllocatedData = locals.data;
+    TemplateThunkMappingData *pExpectedNull = NULL; 
+    if (__atomic_compare_exchange_n (&s_pThunkData, &pExpectedNull, pAllocatedData, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED))
+    {
+        return pAllocatedData;
+    }
+    else
+    {
+        free(pAllocatedData);
+        return __atomic_load_n(&s_pThunkData, __ATOMIC_ACQUIRE);
+    }
+}
+#endif
+
+bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
+{
+#ifdef TARGET_APPLE
+    return false;
+#else
+    return true;
+#endif
+}
+
+void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStartSpecification)
+{
+#ifdef TARGET_APPLE
+    vm_address_t addr, taddr;
+    vm_prot_t prot, max_prot;
+    kern_return_t ret;
+
+    // Allocate two contiguous ranges of memory: the first range will contain the trampolines
+    // and the second range will contain their data.
+    do
+    {
+        ret = vm_allocate(mach_task_self(), &addr, templateSize * 2, VM_FLAGS_ANYWHERE);
+    } while (ret == KERN_ABORTED);
+
+    if (ret != KERN_SUCCESS)
+    {
+        return NULL;
+    }
+
+    do
+    {
+        ret = vm_remap(
+            mach_task_self(), &addr, templateSize, 0, VM_FLAGS_FIXED | VM_FLAGS_OVERWRITE,
+            mach_task_self(), (vm_address_t)pTemplate, FALSE, &prot, &max_prot, VM_INHERIT_SHARE);
+    } while (ret == KERN_ABORTED);
+
+    if (ret != KERN_SUCCESS)
+    {
+        do
+        {
+            ret = vm_deallocate(mach_task_self(), addr, templateSize * 2);
+        } while (ret == KERN_ABORTED);
+
+        return NULL;
+    }
+    return (void*)addr;
+#else
+    TemplateThunkMappingData* pThunkData = __atomic_load_n(&s_pThunkData, __ATOMIC_ACQUIRE);
+    if (s_pThunkData == NULL)
+    {
+        pThunkData = InitializeTemplateThunkMappingData(pTemplate);
+    }
+
+    if (pThunkData->addrOfStartOfSection == NULL)
+    {
+        // This is the detail of thunk data which indicates if we were able to compute the template mapping data
+        return NULL;
+    }
+
+    if (pTemplate < pThunkData->addrOfStartOfSection)
+    {
+        return NULL;
+    }
+
+    uint8_t* endOfTemplate = ((uint8_t*)pTemplate + templateSize);
+    if (endOfTemplate > addrOfEndOfSection)
+        return NULL;
+
+    size_t sectionOffset = fileOffset = (uint8_t*)pTemplate - (uint8_t*)pThunkData->addrOfStartOfSection;
+    off_t fileOffset = pThunkData->offsetInFileOfStartOfSection + sectionOffset;
+
+    void *pStart = mmap(pStartHint, templateSize * 2, PROT_READ | PROT_WRITE, MAP_PRIVATE | (pStartSpecification != NULL ? MAP_FIXED : 0), 0, 0);
+    if (pStart == MAP_FAILED)
+    {
+        return NULL;
+    }
+
+    void *pStartCode = mmap(pStart, templateSize, PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_FIXED, pThunkData->fdImage, fileOffset);
+    if (pStart != pStartCode)
+    {
+        munmap(pStart, templateSize * 2);
+        return NULL;
+    }
+
+    return pStart;
+#endif
+}
+
+bool VMToOSInterface::FreeThunksFromTemplate(void* thunks, size_t templateSize)
+{
+#ifdef TARGET_APPLE
+    kern_return_t ret;
+
+    do
+    {
+        ret = vm_deallocate(mach_task_self(), (vm_address_t)thunks, templateSize * 2);
+    } while (ret == KERN_ABORTED);
+
+    return ret == KERN_SUCCESS ? true : false;
+#else
+    munmap(thunks, templateSize * 2);
+    return true;
+#endif
+}

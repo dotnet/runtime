@@ -210,3 +210,18 @@ bool VMToOSInterface::ReleaseRWMapping(void* pStart, size_t size)
 {
     return UnmapViewOfFile(pStart);
 }
+
+bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
+{
+    return false;
+}
+
+void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart)
+{
+    return NULL;
+}
+
+bool VMToOSInterface::FreeThunksFromTemplate(void* thunks, size_t templateSize)
+{
+    return false;
+}
