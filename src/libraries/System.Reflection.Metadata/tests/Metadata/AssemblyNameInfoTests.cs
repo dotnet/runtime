@@ -105,6 +105,17 @@ namespace System.Reflection.Metadata.Tests.Metadata
             Assert.Throws<ArgumentException>(() => AssemblyNameInfo.Parse("".AsSpan()));
         }
 
+        [Fact]
+        public void CultureNameGetLoweredByToAssemblyName()
+        {
+            AssemblyNameInfo assemblyNameInfo = AssemblyNameInfo.Parse("test,culture=aA".AsSpan());
+            Assert.Equal("aA", assemblyNameInfo.CultureName);
+            // When converting to AssemblyName, the culture name is lower-cased
+            // by the CultureInfo ctor that calls CultureData.GetCultureData
+            // which lowers the name for caching and normalization purposes.
+            Assert.Equal("aa", assemblyNameInfo.ToAssemblyName().CultureName);
+        }
+
         static void Roundtrip(AssemblyName source)
         {
             AssemblyNameInfo parsed = AssemblyNameInfo.Parse(source.FullName.AsSpan());

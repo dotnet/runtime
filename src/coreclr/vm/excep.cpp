@@ -10571,9 +10571,6 @@ StackWalkAction TAResetStateCallback(CrawlFrame* pCf, void* data)
 // Note: This function should be invoked ONLY during unwind.
 #ifndef FEATURE_EH_FUNCLETS
 void ResetThreadAbortState(PTR_Thread pThread, void *pEstablisherFrame)
-#else
-void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCurrentStackFrame)
-#endif
 {
     CONTRACTL
     {
@@ -10581,77 +10578,19 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pThread != NULL);
-#ifndef FEATURE_EH_FUNCLETS
         PRECONDITION(pEstablisherFrame != NULL);
-#else
-        PRECONDITION(pCf != NULL);
-        PRECONDITION(!sfCurrentStackFrame.IsNull());
-#endif
     }
     CONTRACTL_END;
 
     if (pThread->IsAbortRequested())
     {
-#ifndef FEATURE_EH_FUNCLETS
         if (GetNextCOMPlusSEHRecord(static_cast<EXCEPTION_REGISTRATION_RECORD *>(pEstablisherFrame)) == EXCEPTION_CHAIN_END)
         {
             _ASSERTE(!"Topmost handler and abort requested.");
         }
-#else // !FEATURE_EH_FUNCLETS
-        // Get the active exception tracker
-        PTR_ExceptionTracker pCurEHTracker = (PTR_ExceptionTracker)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-        _ASSERTE(pCurEHTracker != NULL);
-
-        // We will check if thread abort state needs to be reset only for the case of exception caught in
-        // native code. This will happen when:
-        //
-        // 1) an unwind is triggered and
-        // 2) current frame is the topmost frame we saw in the first pass and
-        // 3) a thread abort is requested and
-        // 4) we dont have address of the exception handler to be invoked.
-        //
-        // (1), (2) and (4) above are checked for in ExceptionTracker::ProcessOSExceptionNotification from where we call this
-        // function.
-
-        // Current frame should be the topmost frame we saw in the first pass
-        _ASSERTE(pCurEHTracker->GetTopmostStackFrameFromFirstPass() == sfCurrentStackFrame);
-
-        // If the exception has been caught in native code, then alongwith not having address of the handler to be
-        // invoked, we also wont have the IL clause for the catch block and resume stack frame will be NULL as well.
-        _ASSERTE((pCurEHTracker->GetCatchToCallPC() == 0) &&
-            (pCurEHTracker->GetCatchHandlerExceptionClauseToken() == NULL) &&
-                 (pCurEHTracker->GetResumeStackFrame().IsNull()));
-
-        // Walk the frame chain to see if there is any more managed code on the stack. If not, then this is the last managed frame
-        // on the stack and we can reset the thread abort state.
-        //
-        // Get the frame from which to start the stack walk from
-        Frame*  pFrame = pCurEHTracker->GetLimitFrame();
-
-        // At this point, we are at the topmost frame we saw during the first pass
-        // before the unwind began. Walk the stack using the specified crawlframe and the topmost
-        // explicit frame to determine if we have more managed code up the stack. If none is found,
-        // we can reset the thread abort state.
-
-        // Setup the data structure to be passed to the callback
-        TAResetStateCallbackData dataCallback;
-        dataCallback.fDoWeHaveMoreManagedCodeOnStack = FALSE;
-
-        // At this point, the StackFrame in CrawlFrame should represent the current frame we have been called for.
-        // _ASSERTE(sfCurrentStackFrame == StackFrame::FromRegDisplay(pCf->GetRegisterSet()));
-
-        // Reference to the StackFrame beyond which we are looking for managed code.
-        dataCallback.sfSeedCrawlFrame = sfCurrentStackFrame;
-
-        pThread->StackWalkFramesEx(pCf->GetRegisterSet(), TAResetStateCallback, &dataCallback, QUICKUNWIND, pFrame);
-
-        if (!dataCallback.fDoWeHaveMoreManagedCodeOnStack)
-        {
-            _ASSERTE(!"There is no more managed code on the stack, and thread abort is requested.");
-        }
-#endif // !FEATURE_EH_FUNCLETS
     }
 }
+#endif // !FEATURE_EH_FUNCLETS
 #endif // !DACCESS_COMPILE
 
 
