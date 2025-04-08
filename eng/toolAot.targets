@@ -20,7 +20,7 @@
     -->
     <RuntimeIdentifier Condition="'$(BaseOS)' != ''">$(BaseOS)</RuntimeIdentifier>
   </PropertyGroup>
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(PublishAot)' == 'true' and '$(UseNativeAotForComponents)' == 'true' and '$(UseBootstrap)' == 'true'" />
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(PublishAot)' == 'true' and '$(UseBootstrapLayout)' == 'true'" />
   <PropertyGroup>
     <RuntimeIdentifier>$(_TrueTargetRid)</RuntimeIdentifier>
   </PropertyGroup>

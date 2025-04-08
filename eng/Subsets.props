@@ -55,7 +55,8 @@
     <_SdkToolsSupportedArch Condition="'$(TargetArchitecture)' != 'armel'">true</_SdkToolsSupportedArch>
     <SdkToolsSupported Condition="'$(_SdkToolsSupportedOS)' == 'true' and '$(_SdkToolsSupportedArch)' == 'true'">true</SdkToolsSupported>
 
-    <_IsCommunityCrossArchitecture Condition="'$(CrossBuild)' == 'true' and ('$(TargetArchitecture)' == 'loongarch64' or '$(TargetArchitecture)' == 'riscv64')">true</_IsCommunityCrossArchitecture>
+    <!-- Delete `_IsCommunityCrossArchitecture` once https://github.com/dotnet/runtime/issues/104661 is fixed. -->
+    <_IsCommunityCrossArchitecture Condition="'$(CrossBuild)' == 'true' and '$(TargetArchitecture)' == 'loongarch64'">true</_IsCommunityCrossArchitecture>
     <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and '$(TargetOS)' == '$(HostOS)' and '$(TargetsLinuxBionic)' != 'true' and '$(_IsCommunityCrossArchitecture)' != 'true'">true</UseNativeAotForComponents>
   </PropertyGroup>
 

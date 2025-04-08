@@ -63,14 +63,14 @@
     <BootstrapHostDir>$(ArtifactsDir)bootstrap/host</BootstrapHostDir>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseLocalAppHostPack)' == 'true'">
-    <AppHostSourcePath>$([MSBuild]::NormalizePath('$(DotNetHostBinDir)', 'apphost$(ExeSuffix)'))</AppHostSourcePath>
-    <SingleFileHostSourcePath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'corehost', 'singlefilehost$(ExeSuffix)'))</SingleFileHostSourcePath>
+  <PropertyGroup>
+    <LocalAppHostPath>$([MSBuild]::NormalizePath('$(DotNetHostBinDir)', 'apphost$(ExeSuffix)'))</LocalAppHostPath>
+    <LocalSingleFileHostPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'corehost', 'singlefilehost$(ExeSuffix)'))</LocalSingleFileHostPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseLocalAppHostPack)' == 'true' and '$(UseBootstrapLayout)' == 'true'">
-    <AppHostSourcePath>$(BootstrapHostDir)/apphost$(ExeSuffix)</AppHostSourcePath>
-    <SingleFileHostSourcePath>$(BootstrapHostDir)/singlefilehost$(ExeSuffix)</SingleFileHostSourcePath>
+  <PropertyGroup Condition="'$(UseBootstrapLayout)' == 'true'">
+    <LocalAppHostPath>$(BootstrapHostDir)/apphost$(ExeSuffix)</LocalAppHostPath>
+    <LocalSingleFileHostPath>$(BootstrapHostDir)/singlefilehost$(ExeSuffix)</LocalSingleFileHostPath>
   </PropertyGroup>
 
   <Target Name="ResolveRuntimeFilesFromLocalBuild">
