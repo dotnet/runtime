@@ -2818,16 +2818,16 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/LocallocLarge_d/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests_2/LocallocLarge_d/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/LocallocLarge_do/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests_2/LocallocLarge_do/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/LocallocLarge_ro/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests_2/LocallocLarge_ro/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/LocallocLarge_r/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests_2/LocallocLarge_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/*">

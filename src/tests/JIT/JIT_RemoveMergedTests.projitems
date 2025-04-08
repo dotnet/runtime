@@ -1,6 +1,7 @@
 <Project>
   <ItemGroup>
-    <MergedWrapperProjectReference Remove="CodeGenBringUpTests/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="CodeGenBringUpTests_1/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="CodeGenBringUpTests_2/**/*.??proj" />
     <MergedWrapperProjectReference Remove="Directed/**/*.??proj" />
     <MergedWrapperProjectReference Remove="Generics/**/*.??proj" />
     <MergedWrapperProjectReference Remove="HardwareIntrinsics/**/*.??proj" />
