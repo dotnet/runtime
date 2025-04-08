@@ -11685,6 +11685,21 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
     return (WORD)-1;
 }
 
+#ifdef TARGET_ARM64
+extern "C" uint64_t GetSveLengthFromOS();
+#endif
+
+uint32_t CEEJitInfo::getTargetVectorLength()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef TARGET_ARM64
+    return GetSveLengthFromOS();
+#else
+    UNREACHABLE();      // only called on Arm64
+#endif
+}
+
 uint32_t CEEJitInfo::getExpectedTargetArchitecture()
 {
     LIMITED_METHOD_CONTRACT;
@@ -14360,6 +14375,17 @@ uint32_t CEEInfo::getExpectedTargetArchitecture()
     LIMITED_METHOD_CONTRACT;
 
     return IMAGE_FILE_MACHINE_NATIVE;
+}
+
+uint32_t CEEInfo::getTargetVectorLength()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef TARGET_ARM64
+    return GetSveLengthFromOS();
+#else
+    UNREACHABLE();      // only called on Arm64
+#endif
 }
 
 void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,

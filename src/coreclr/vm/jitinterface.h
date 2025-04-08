@@ -634,7 +634,7 @@ public:
             int32_t                  addlDelta) override final;
 
     uint16_t getRelocTypeHint(void * target) override final;
-
+    uint32_t getTargetVectorLength() override final;
     uint32_t getExpectedTargetArchitecture() override final;
 
     void ResetForJitRetry()

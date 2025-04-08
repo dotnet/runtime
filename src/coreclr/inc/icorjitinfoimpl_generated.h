@@ -742,6 +742,8 @@ uint16_t getRelocTypeHint(
 
 uint32_t getExpectedTargetArchitecture() override;
 
+uint32_t getTargetVectorLength() override;
+
 uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;

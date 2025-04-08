@@ -2019,6 +2019,14 @@ uint16_t interceptor_ICJI::getRelocTypeHint(void* target)
     return result;
 }
 
+uint32_t interceptor_ICJI::getTargetVectorLength()
+{
+    mc->cr->AddCall("getTargetVectorLength");
+    DWORD result = original_ICorJitInfo->getTargetVectorLength();
+    mc->recGetTargetVectorLength(result);
+    return result;
+}
+
 // For what machine does the VM expect the JIT to generate code? The VM
 // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
 // is cross-compiling (such as the case for crossgen2), it will return a

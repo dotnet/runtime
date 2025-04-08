@@ -6523,6 +6523,29 @@ WORD MethodContext::repGetRelocTypeHint(void* target)
     return retVal;
 }
 
+void MethodContext::recGetTargetVectorLength(DWORD result)
+{
+    if (GetTargetVectorLength == nullptr)
+        GetTargetVectorLength = new LightWeightMap<DWORD, DWORD>();
+
+    DWORD key = 0; // There is only ever a single entry to this map
+    GetTargetVectorLength->Add(key, result);
+    DEBUG_REC(dmpGetTargetVectorLength(key, result));
+}
+void MethodContext::dmpGetTargetVectorLength(DWORD key, DWORD result)
+{
+    printf("GetTargetVectorLength key %u, res %u", key, result);
+}
+DWORD MethodContext::repGetTargetVectorLength()
+{
+    DWORD key = 0;
+
+    DWORD value = LookupByKeyOrMiss(GetTargetVectorLength, key, ": key %08X", key);
+
+    DEBUG_REP(dmpGetTargetVectorLength(key, value));
+    return value;
+}
+
 void MethodContext::recGetExpectedTargetArchitecture(DWORD result)
 {
     if (GetExpectedTargetArchitecture == nullptr)

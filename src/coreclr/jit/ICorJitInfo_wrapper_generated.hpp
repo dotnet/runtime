@@ -1736,6 +1736,14 @@ uint32_t WrapICorJitInfo::getExpectedTargetArchitecture()
     return temp;
 }
 
+uint32_t WrapICorJitInfo::getTargetVectorLength()
+{
+    API_ENTER(getTargetVectorLength);
+    uint32_t temp = wrapHnd->getTargetVectorLength();
+    API_LEAVE(getTargetVectorLength);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes)

@@ -124,6 +124,7 @@ LWM(GetReadyToRunHelper, GetReadyToRunHelper_TOKENin, GetReadyToRunHelper_TOKENo
 LWM(GetReadyToRunDelegateCtorHelper, GetReadyToRunDelegateCtorHelper_TOKENIn, Agnostic_CORINFO_LOOKUP)
 LWM(GetRelocTypeHint, DWORDLONG, DWORD)
 LWM(GetExpectedTargetArchitecture, DWORD, DWORD)
+LWM(GetTargetVectorLength, DWORD, DWORD)
 LWM(GetSharedCCtorHelper, DWORDLONG, DWORD)
 LWM(GetStringConfigValue, DWORD, DWORD)
 LWM(GetSystemVAmd64PassStructInRegisterDescriptor, DWORDLONG, Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor)

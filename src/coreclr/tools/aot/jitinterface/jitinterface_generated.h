@@ -186,6 +186,7 @@ struct JitInterfaceCallbacks
     void (* recordRelocation)(void * thisHandle, CorInfoExceptionClass** ppException, void* location, void* locationRW, void* target, uint16_t fRelocType, int32_t addlDelta);
     uint16_t (* getRelocTypeHint)(void * thisHandle, CorInfoExceptionClass** ppException, void* target);
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
+    uint32_t (* getTargetVectorLength)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
     CORINFO_METHOD_HANDLE (* getSpecialCopyHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE type);
 
@@ -1911,6 +1912,14 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     uint32_t temp = _callbacks->getExpectedTargetArchitecture(_thisHandle, &pException);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual uint32_t getTargetVectorLength()
+{
+    CorInfoExceptionClass* pException = nullptr;
+    uint32_t temp = _callbacks->getTargetVectorLength(_thisHandle, &pException);
     if (pException != nullptr) throw pException;
     return temp;
 }

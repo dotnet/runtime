@@ -4124,6 +4124,14 @@ namespace Internal.JitInterface
             }
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        private uint getTargetVectorLength()
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // Temporary. Can use Sve.GetActiveElementCount or equivalent
+            return 0;
+        }
+
         private uint getExpectedTargetArchitecture()
         {
             TargetArchitecture arch = _compilation.TypeSystemContext.Target.Architecture;

@@ -438,6 +438,8 @@ public:
     //
     virtual uint32_t getExpectedTargetArchitecture() = 0;
 
+    virtual uint32_t getTargetVectorLength() = 0;
+
     // Fetches extended flags for a particular compilation instance. Returns
     // the number of bytes written to the provided buffer.
     virtual uint32_t getJitFlags(
