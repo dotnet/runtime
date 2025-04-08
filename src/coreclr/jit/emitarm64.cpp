@@ -8051,17 +8051,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
                 // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
-                // If the imm values < 12 bits, we can use a single "add rsvd, reg2, #imm".
-                // Otherwise, use "mov rsvd, #imm", followed up "add rsvd, reg2, rsvd".
-
-                if (imm < 4096)
-                {
-                    emitIns_R_R_I(INS_add, EA_PTRSIZE, rsvdReg, reg2, imm);
-                }
-                else
-                {
-                    codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
-                }
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
                 reg2 = rsvdReg;
                 imm  = 0;
             }
@@ -8334,17 +8324,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
                 // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
-                // If the imm values < 12 bits, we can use a single "add rsvd, reg2, #imm".
-                // Otherwise, use "mov rsvd, #imm", followed up "add rsvd, reg2, rsvd".
-
-                if (imm < 4096)
-                {
-                    emitIns_R_R_I(INS_add, EA_PTRSIZE, rsvdReg, reg2, imm);
-                }
-                else
-                {
-                    codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
-                }
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
                 reg2 = rsvdReg;
                 imm  = 0;
             }

@@ -2253,8 +2253,18 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
                                                insFlags flags DEBUGARG(size_t targetHandle)
                                                    DEBUGARG(GenTreeFlags gtFlags))
 {
-    instGen_Set_Reg_To_Imm(size, dstReg, imm);
-    GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+    // If the imm values < 12 bits, we can use a single "add rsvd, reg2, #imm".
+    // Otherwise, use "mov rsvd, #imm", followed up "add rsvd, reg2, rsvd".
+
+    if (imm < 4096)
+    {
+        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, dstReg, baseReg, imm);
+    }
+    else
+    {
+        instGen_Set_Reg_To_Imm(size, dstReg, imm);
+        GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+    }
 }
 
 //  move an immediate value into an integer register
