@@ -14,6 +14,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+#include "emit.h"
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -508,6 +509,11 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
     }
 
     if (!tree->OperIs(GT_ADD))
+    {
+        return false;
+    }
+
+    if ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF))
     {
         return false;
     }
