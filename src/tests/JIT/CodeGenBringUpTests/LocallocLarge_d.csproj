@@ -8,6 +8,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="LocallocLarge.cs" />
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

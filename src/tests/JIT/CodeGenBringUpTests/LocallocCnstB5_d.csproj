@@ -9,6 +9,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="LocallocCnstB5.cs" />
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>
