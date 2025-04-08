@@ -6,7 +6,7 @@
 // Seed: 6164687101299398040-vectort,vector64,vector128,armadvsimd,armadvsimdarm64,armaes,armarmbase,armarmbasearm64,armcrc32,armcrc32arm64,armdp,armrdm,armrdmarm64,armsha1,armsha256,armsve
 // Reduced from 35.7 KiB to 0.7 KiB in 00:00:46
 // Hits JIT assert in Release:
-// Assertion failed 'node->IsUnusedValue() && "found an unmarked unused value"' in 'Program:Test(Fuzzlyn.ExecutionServer.IRuntime)' during 'Lowering nodeinfo' (IL size 95; hash 0xade6b36b; FullOpts)
+// Assertion failed 'node->IsUnusedValue() && "found an unmarked unused value"' in 'Runtime_113338:Test(Fuzzlyn.ExecutionServer.IRuntime)' during 'Lowering nodeinfo' (IL size 95; hash 0xade6b36b; FullOpts)
 // 
 //     File: D:\a\_work\1\s\src\coreclr\jit\lir.cpp Line: 1706
 // 
@@ -16,7 +16,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using Xunit;
 
-public class Program
+public class Runtime_113338
 {
     public static uint s_1;
 
