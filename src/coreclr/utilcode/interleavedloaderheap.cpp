@@ -33,10 +33,13 @@ namespace
 
 UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
                                        RangeList *pRangeList,
-                                       void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size),
-                                       DWORD dwGranularity) :
+                                       const InterleavedLoaderHeapConfig *pConfig) :
     UnlockedLoaderHeapBase(LoaderHeapImplementationKind::Interleaved),
-    m_pFreeListHead(NULL)
+    m_pEndReservedRegion(NULL),
+    m_dwGranularity(pConfig->StubSize),
+    m_pRangeList(pRangeList),
+    m_pFreeListHead(NULL),
+    m_pConfig(pConfig)
 {
     CONTRACTL
     {
@@ -46,15 +49,7 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
     }
     CONTRACTL_END;
 
-    m_pEndReservedRegion         = NULL;
-
-    m_pRangeList                 = pRangeList;
-
     _ASSERTE((GetStubCodePageSize() % GetOsPageSize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
-    m_dwGranularity = dwGranularity;
-
-    _ASSERTE(codePageGenerator != NULL);
-    m_codePageGenerator = codePageGenerator;
 }
 
 // ~LoaderHeap is not synchronised (obviously)
@@ -129,7 +124,7 @@ BOOL UnlockedInterleavedLoaderHeap::CommitPages(void* pData, size_t dwSizeToComm
     }
 
     ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, dwSizeToCommitPart, ExecutableAllocator::DoNotAddToCache);
-    m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData, dwSizeToCommitPart);
+    m_pConfig->CodePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData, dwSizeToCommitPart);
     FlushInstructionCache(GetCurrentProcess(), pData, dwSizeToCommitPart);
 
     return TRUE;
@@ -283,7 +278,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
             }
         }
     
-        m_dwTotalAlloc += dwSizeToCommit;
+        m_dwTotalAlloc += dwSizeToReserve;
     
         pNewBlock.SuppressRelease();
         newAllocatedThunks.SuppressRelease();
@@ -546,7 +541,9 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
 
 void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size))
 {
-    
+    pConfig->StubSize = stubSize;
+    pConfig->Template = ExecutableAllocator::Instance()->CreateTemplate(templateInImage, GetStubCodePageSize(), codePageGenerator);
+    pConfig->CodePageGenerator = codePageGenerator;
 }
 
 #endif // #ifndef DACCESS_COMPILE

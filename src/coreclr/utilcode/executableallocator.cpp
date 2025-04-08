@@ -555,7 +555,7 @@ void ExecutableAllocator::ReleaseWorker(void* pRX, bool releaseTemplate)
 
             if (releaseTemplate)
             {
-                if (!VMToOSInterface::FreeThunksFromTemplate(pThunks, pBlock->size / 2))
+                if (!VMToOSInterface::FreeThunksFromTemplate(pRX, pBlock->size / 2))
                 {
                     g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the template mapped memory failed"));
                 }
@@ -991,16 +991,23 @@ void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t te
             return NULL;
         }
         
-        void *pTemplateAddressAllocated = VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, pTemplateAddress);
+        void* result = VMToOSInterface::ReserveDoubleMappedMemory(m_doubleMemoryMapperHandle, block->offset, templateSize * 2, 0, 0);
 
-        if (pTemplateAddressAllocated != NULL)
+        if (result != NULL)
         {
-            block->baseRX = pTemplateAddressAllocated;
+            block->baseRX = result;
             AddRXBlock(block);
         }
         else
         {
             BackoutBlock(block, isFreeBlock);
+        }
+
+        void *pTemplateAddressAllocated = VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, block->baseRX);
+
+        if (pTemplateAddressAllocated == NULL)
+        {
+            ReleaseWorker(block->baseRX, false);
         }
 
         return pTemplateAddressAllocated;
@@ -1022,4 +1029,9 @@ void ExecutableAllocator::FreeThunksFromTemplate(void *pThunks, size_t templateS
     {
         VMToOSInterface::FreeThunksFromTemplate(pThunks, templateSize);
     }
+}
+
+void* ExecutableAllocator::CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size))
+{
+    return VMToOSInterface::CreateTemplate(templateInImage, templateSize, codePageGenerator);
 }

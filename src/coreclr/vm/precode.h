@@ -868,4 +868,9 @@ public:
 };
 #endif //DACCESS_COMPILE
 
+extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
+#ifdef HAS_FIXUP_PRECODE
+extern InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
+#endif
+
 #endif // __PRECODE_H__
