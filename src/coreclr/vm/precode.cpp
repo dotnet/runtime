@@ -15,6 +15,11 @@
 #include "perfmap.h"
 #endif
 
+InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
+#ifdef HAS_FIXUP_PRECODE
+InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
+#endif
+
 //==========================================================================================
 // class Precode
 //==========================================================================================
@@ -495,6 +500,12 @@ void (*StubPrecode::StubPrecodeCode)();
 void (*StubPrecode::StubPrecodeCode_End)();
 #endif
 
+#ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
+extern "C" void StubPrecodeCodeTemplate();
+#else
+#define StubPrecodeCodeTemplate NULL
+#endif
+
 void StubPrecode::StaticInitialize()
 {
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
@@ -524,6 +535,7 @@ void StubPrecode::StaticInitialize()
     _ASSERTE((*((BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) == StubPrecode::Type);
 #endif
 
+    InitializeLoaderHeapConfig(&s_stubPrecodeHeapConfig, StubPrecode::CodeSize, (void*)StubPrecodeCodeTemplate, StubPrecode::GenerateCodePage);
 }
 
 void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
@@ -626,6 +638,12 @@ void (*FixupPrecode::FixupPrecodeCode)();
 void (*FixupPrecode::FixupPrecodeCode_End)();
 #endif
 
+#ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
+extern "C" void FixupPrecodeCodeTemplate();
+#else
+#define FixupPrecodeCodeTemplate NULL
+#endif
+
 void FixupPrecode::StaticInitialize()
 {
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
@@ -655,6 +673,8 @@ void FixupPrecode::StaticInitialize()
 #else
     _ASSERTE(*((BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode) + OFFSETOF_PRECODE_TYPE) == FixupPrecode::Type);
 #endif
+
+    InitializeLoaderHeapConfig(&s_fixupStubPrecodeHeapConfig, FixupPrecode::CodeSize, (void*)FixupPrecodeCodeTemplate, FixupPrecode::GenerateCodePage);
 }
 
 void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)

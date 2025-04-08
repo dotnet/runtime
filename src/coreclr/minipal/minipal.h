@@ -85,7 +85,7 @@ public:
     // Return:
     //  NULL if creating the template fails
     //  Non-NULL, a pointer to the template
-    void* CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
+    static void* CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size));
 
     // Indicate if the AllocateThunksFromTemplate function respects the pStart address on this platform
     // Return:

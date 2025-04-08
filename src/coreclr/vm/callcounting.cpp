@@ -293,6 +293,14 @@ void (*CallCountingStub::CallCountingStubCode)();
 
 #ifndef DACCESS_COMPILE
 
+static InterleavedLoaderHeapConfig s_callCountingHeapConfig;
+
+#ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
+extern "C" void CallCountingStubCodeTemplate();
+#else
+#define CallCountingStubCodeTemplate NULL
+#endif
+
 void CallCountingStub::StaticInitialize()
 {
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
@@ -313,6 +321,8 @@ void CallCountingStub::StaticInitialize()
 #else
     _ASSERTE((SIZE_T)((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode) <= CallCountingStub::CodeSize);
 #endif
+
+    InitializeLoaderHeapConfig(&s_callCountingHeapConfig, CallCountingStub::CodeSize, (void*)CallCountingStubCodeTemplate, CallCountingStub::GenerateCodePage);
 }
 
 #endif // DACCESS_COMPILE
@@ -354,7 +364,7 @@ NOINLINE InterleavedLoaderHeap *CallCountingManager::CallCountingStubAllocator::
 
     _ASSERTE(m_heap == nullptr);
 
-    InterleavedLoaderHeap *heap = new InterleavedLoaderHeap(&m_heapRangeList, true /* fUnlocked */, CallCountingStub::GenerateCodePage, CallCountingStub::CodeSize);
+    InterleavedLoaderHeap *heap = new InterleavedLoaderHeap(&m_heapRangeList, true /* fUnlocked */, &s_callCountingHeapConfig);
     m_heap = heap;
     return heap;
 }
@@ -475,6 +485,7 @@ CallCountingManager::~CallCountingManager()
 }
 
 #ifndef DACCESS_COMPILE
+
 void CallCountingManager::StaticInitialize()
 {
     WRAPPER_NO_CONTRACT;

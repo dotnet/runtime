@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -24,6 +25,11 @@
 #endif // TARGET_LINUX && !MFD_CLOEXEC
 #include "minipal.h"
 #include "minipal/cpufeatures.h"
+
+#ifndef TARGET_APPLE
+#include <link.h>
+#include <dlfcn.h>
+#endif // TARGET_APPLE
 
 #ifdef TARGET_APPLE
 
@@ -275,15 +281,21 @@ struct InitializeTemplateThunkLocals
 
 static TemplateThunkMappingData *s_pThunkData = NULL;
 
+static Elf32_Word Elf32_WordMin(Elf32_Word left, Elf32_Word  right)
+{
+    return left < right ? left : right;
+}
+
 static int InitializeTemplateThunkMappingDataPhdrCallback(struct dl_phdr_info *info, size_t size, void *dataPtr)
 {
     InitializeTemplateThunkLocals *locals = (InitializeTemplateThunkLocals*)dataPtr;
 
-    if (info->dlpi_addr == locals->info.dli_fbase)
+    if ((void*)info->dlpi_addr == locals->info.dli_fbase)
     {
         for (size_t j = 0; j < info->dlpi_phnum; j++)
         {
-            if (locals.pTemplate < info->dlpi_phdr[j].p_vaddr)
+            uint8_t* baseSectionAddr = (uint8_t*)locals->info.dli_fbase + info->dlpi_phdr[j].p_vaddr;
+            if (locals->pTemplate < baseSectionAddr)
             {
                 // Address is before the virtual address of this section begins
                 continue;
@@ -291,10 +303,10 @@ static int InitializeTemplateThunkMappingDataPhdrCallback(struct dl_phdr_info *i
 
             // Since this is all in support of mapping code from the file, we need to ensure that the region we find
             // is actually present in the file.
-            Elf32_Word sizeOfSectionWhichCanBeMapped = min(info->dlpi_phdr[j].p_filesz, info->dlpi_phdr[j].p_memsz;
+            Elf32_Word sizeOfSectionWhichCanBeMapped = Elf32_WordMin(info->dlpi_phdr[j].p_filesz, info->dlpi_phdr[j].p_memsz);
 
-            Elf32_Addr endAddressAllowedForTemplate = info->dlpi_phdr[j].p_vaddr + sizeOfSectionWhichCanBeMapped);
-            if (locals.pTemplate >= endAddressAllowedForTemplate)
+            uint8_t* endAddressAllowedForTemplate = baseSectionAddr + sizeOfSectionWhichCanBeMapped;
+            if (locals->pTemplate >= endAddressAllowedForTemplate)
             {
                 // Template is after the virtual address of this section ends (or the mappable region of the file)
                 continue;
@@ -316,8 +328,8 @@ static int InitializeTemplateThunkMappingDataPhdrCallback(struct dl_phdr_info *i
             
             locals->data.fdImage = fdImage;
             locals->data.offsetInFileOfStartOfSection = info->dlpi_phdr[j].p_offset;
-            locals->data.addrOfStartOfSection = info->dlpi_phdr[j].p_vaddr;
-            locals->data.addrOfEndOfSection = info->dlpi_phdr[j].p_vaddr + sizeOfSectionWhichCanBeMapped;
+            locals->data.addrOfStartOfSection = baseSectionAddr;
+            locals->data.addrOfEndOfSection = baseSectionAddr + sizeOfSectionWhichCanBeMapped;
             locals->data.imageTemplates = true;
             return 1; // We have found the result. Abort further processing.
         }
@@ -343,7 +355,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
         dl_iterate_phdr(InitializeTemplateThunkMappingDataPhdrCallback, &locals);
     }
 
-    if (locals.data->addrOfStartOfSection == NULL)
+    if (locals.data.addrOfStartOfSection == NULL)
     {
         // This is the detail of thunk data which indicates if we were able to compute the template mapping data from the image.
 
@@ -378,10 +390,10 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
             else
             {
                 locals.data.fdImage = fd;
-                locals->data.offsetInFileOfStartOfSection = 0;
-                locals->data.addrOfStartOfSection = (void*)0x10000;
-                locals->data.addrOfEndOfSection = ((uint8_t*)locals->data.addrOfStartOfSection) + maxFileSize;
-                locals->data.imageTemplates = false;
+                locals.data.offsetInFileOfStartOfSection = 0;
+                locals.data.addrOfStartOfSection = (void*)0x10000;
+                locals.data.addrOfEndOfSection = ((uint8_t*)locals.data.addrOfStartOfSection) + maxFileSize;
+                locals.data.imageTemplates = false;
             }
         }
     }
@@ -440,8 +452,8 @@ void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize,
         void* mappedMemory = mmap(NULL, templateSize, PROT_READ | PROT_WRITE, MAP_SHARED, pThunkData->fdImage, locationInFileToStoreGeneratedCode);
         if (mappedMemory != MAP_FAILED)
         {
-            codePageGenerator(mappedMemory, mappedMemory, templateSize);
-            munmap(mappedMemory);
+            codePageGenerator((uint8_t*)mappedMemory, (uint8_t*)mappedMemory, templateSize);
+            munmap(mappedMemory, templateSize);
             return ((uint8_t*)pThunkData->addrOfStartOfSection) + locationInFileToStoreGeneratedCode;
         }
         else
@@ -511,13 +523,13 @@ void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templa
     }
 
     uint8_t* endOfTemplate = ((uint8_t*)pTemplate + templateSize);
-    if (endOfTemplate > addrOfEndOfSection)
+    if (endOfTemplate > pThunkData->addrOfEndOfSection)
         return NULL;
 
-    size_t sectionOffset = fileOffset = (uint8_t*)pTemplate - (uint8_t*)pThunkData->addrOfStartOfSection;
+    size_t sectionOffset = (uint8_t*)pTemplate - (uint8_t*)pThunkData->addrOfStartOfSection;
     off_t fileOffset = pThunkData->offsetInFileOfStartOfSection + sectionOffset;
 
-    void *pStart = mmap(pStartHint, templateSize * 2, PROT_READ | PROT_WRITE, MAP_PRIVATE | (pStartSpecification != NULL ? MAP_FIXED : 0), 0, 0);
+    void *pStart = mmap(pStartSpecification, templateSize * 2, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | (pStartSpecification != NULL ? MAP_FIXED : 0), -1, 0);
     if (pStart == MAP_FAILED)
     {
         return NULL;

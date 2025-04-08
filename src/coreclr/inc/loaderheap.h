@@ -501,13 +501,13 @@ private:
 
     InterleavedStubFreeListNode  *m_pFreeListHead;
 
-    InterleavedLoaderHeapConfig *m_pConfig;
+    const InterleavedLoaderHeapConfig *m_pConfig;
 
 #ifndef DACCESS_COMPILE
 protected:
     UnlockedInterleavedLoaderHeap(
         RangeList *pRangeList,
-        InterleavedLoaderHeapConfig *pConfig);
+        const InterleavedLoaderHeapConfig *pConfig);
 
     virtual ~UnlockedInterleavedLoaderHeap();
 #endif
@@ -1045,7 +1045,7 @@ private:
 public:
     InterleavedLoaderHeap(RangeList *pRangeList,
                BOOL fUnlocked,
-               InterleavedLoaderHeapConfig *pConfig,
+               const InterleavedLoaderHeapConfig *pConfig
                )
       : UnlockedInterleavedLoaderHeap(
                            pRangeList,
