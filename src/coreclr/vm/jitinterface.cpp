@@ -14710,7 +14710,7 @@ EECodeInfo::EECodeInfo()
 #endif
 
 #ifdef TARGET_X86
-    m_hdrInfoSize = 0;
+    m_hdrInfoTable = NULL;
 #endif
 }
 
@@ -14734,7 +14734,7 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     m_codeAddress = codeAddress;
 
 #ifdef TARGET_X86
-    m_hdrInfoSize = 0;
+    m_hdrInfoTable = NULL;
 #endif
 
     RangeSection * pRS = ExecutionManager::FindCodeRange(codeAddress, scanFlag);
@@ -14883,16 +14883,18 @@ BOOL EECodeInfo::HasFrameRegister()
 
 #if defined(TARGET_X86)
 
-DWORD EECodeInfo::DecodeGCHdrInfo(hdrInfo ** infoPtr)
+PTR_CBYTE EECodeInfo::DecodeGCHdrInfo(hdrInfo ** infoPtr)
 {
-    if (m_hdrInfoSize == 0)
+    if (m_hdrInfoTable == NULL)
     {
-        m_hdrInfoSize = (DWORD)::DecodeGCHdrInfo(GetGCInfoToken(), m_relOffset, &m_hdrInfoBody);
-        _ASSERTE(m_hdrInfoSize != 0);
+        GCInfoToken gcInfoToken = GetGCInfoToken();
+        DWORD hdrInfoSize = (DWORD)::DecodeGCHdrInfo(gcInfoToken, m_relOffset, &m_hdrInfoBody);
+        _ASSERTE(hdrInfoSize != 0);
+        m_hdrInfoTable = (PTR_CBYTE)gcInfoToken.Info + hdrInfoSize;
     }
 
     *infoPtr = &m_hdrInfoBody;
-    return m_hdrInfoSize;
+    return m_hdrInfoTable;
 }
 
 #endif // TARGET_X86

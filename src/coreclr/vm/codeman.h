@@ -2906,7 +2906,7 @@ public:
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
 
-    DWORD       DecodeGCHdrInfo(hdrInfo   ** infoPtr);
+    PTR_CBYTE   DecodeGCHdrInfo(hdrInfo   ** infoPtr);
 #endif // TARGET_X86
 
 #if defined(TARGET_WASM)
@@ -2932,7 +2932,7 @@ private:
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef TARGET_X86
-    DWORD               m_hdrInfoSize;
+    PTR_CBYTE           m_hdrInfoTable;
     hdrInfo             m_hdrInfoBody;
 #endif
 

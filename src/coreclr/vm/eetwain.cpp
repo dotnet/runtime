@@ -69,7 +69,7 @@ void EECodeManager::FixContext( ContextType     ctxType,
 
     /* Extract the necessary information from the info block header */
     hdrInfo *hdrInfoBody;
-    DWORD hdrInfoSize = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
+    pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
 #ifdef  _DEBUG
     if (trFixContext) {
@@ -1039,14 +1039,10 @@ size_t EECodeManager::GetResumeSp( PCONTEXT  pContext )
 
     PTR_CBYTE methodStart = PTR_CBYTE(codeInfo.GetSavedMethodCode());
 
-    GCInfoToken gcInfoToken = codeInfo.GetGCInfoToken();
-    PTR_VOID    methodInfoPtr = gcInfoToken.Info;
     DWORD       curOffs = codeInfo.GetRelOffset();
 
-    hdrInfo *hdrInfoBody;
-    DWORD hdrInfoSize = codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
-
-    PTR_CBYTE table = dac_cast<PTR_CBYTE>(methodInfoPtr) + hdrInfoSize;
+    hdrInfo    *hdrInfoBody;
+    PTR_CBYTE   table = codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
 
     _ASSERTE(hdrInfoBody->epilogOffs == hdrInfo::NOT_IN_EPILOG && hdrInfoBody->prologOffs == hdrInfo::NOT_IN_PROLOG);
 
@@ -1099,14 +1095,8 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
     PCODE       breakPC = pRD->ControlPC;
     _ASSERTE(PCODEToPINSTR(breakPC) == pCodeInfo->GetCodeAddress());
 
-    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    PTR_VOID    methodInfoPtr = gcInfoToken.Info;
     hdrInfo    *hdrInfoBody;
-    DWORD       hdrInfoSize;
-
-    hdrInfoSize = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
-
-    PTR_CBYTE table = dac_cast<PTR_CBYTE>(methodInfoPtr) + hdrInfoSize;
+    PTR_CBYTE   table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
     hdrInfoBody->isSpeculativeStackWalk = ((flags & SpeculativeStackwalk) != 0);
 
@@ -1480,17 +1470,16 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     } CONTRACTL_END;
 
 #ifndef USE_GC_INFO_DECODER
-    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     unsigned    relOffset = pCodeInfo->GetRelOffset();
 
-    PTR_CBYTE   table = PTR_CBYTE(gcInfoToken.Info);
+    PTR_CBYTE   table;
     hdrInfo    *hdrInfoBody;
     unsigned    stackDepth;
     TADDR       taArgBase;
 
     /* Extract the necessary information from the info block header */
 
-    table += pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
+    table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
     // We do not have accurate information in the prolog or the epilog
     if (hdrInfoBody->prologOffs != hdrInfo::NOT_IN_PROLOG ||
@@ -1614,13 +1603,10 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
 
 #ifndef USE_GC_INFO_DECODER
     /* Extract the necessary information from the info block header */
-    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    PTR_VOID    methodInfoPtr = pCodeInfo->GetGCInfo();
     unsigned    relOffset = pCodeInfo->GetRelOffset();
 
     hdrInfo    *hdrInfoBody;
-    PTR_CBYTE   table = PTR_CBYTE(gcInfoToken.Info);
-    table += pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
+    PTR_CBYTE   table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
     if (!hdrInfoBody->genericsContext ||
         hdrInfoBody->prologOffs != hdrInfo::NOT_IN_PROLOG ||
@@ -1674,14 +1660,11 @@ PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
     LIMITED_METHOD_DAC_CONTRACT;
 
 #ifndef USE_GC_INFO_DECODER
-    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    PTR_VOID    methodInfoPtr = pCodeInfo->GetGCInfo();
     unsigned    relOffset = pCodeInfo->GetRelOffset();
 
     /* Extract the necessary information from the info block header */
     hdrInfo    *hdrInfoBody;
-    PTR_CBYTE   table = PTR_CBYTE(gcInfoToken.Info);
-    table += pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
+    PTR_CBYTE   table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
     if (!hdrInfoBody->genericsContext ||
         hdrInfoBody->prologOffs != hdrInfo::NOT_IN_PROLOG ||
@@ -1784,7 +1767,6 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    GCInfoToken    gcInfoToken = pCodeInfo->GetGCInfoToken();
     unsigned       relOffset = pCodeInfo->GetRelOffset();
 
 #ifdef FEATURE_EH_FUNCLETS
@@ -1805,7 +1787,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
 #ifndef USE_GC_INFO_DECODER
     /* Extract the necessary information from the info block header */
     hdrInfo *hdrInfoBody;
-    DWORD hdrInfoSize = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
+    PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
     if (hdrInfoBody->prologOffs != hdrInfo::NOT_IN_PROLOG ||
         hdrInfoBody->epilogOffs != hdrInfo::NOT_IN_EPILOG ||
@@ -1822,13 +1804,13 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     }
     else
     {
-        PTR_CBYTE table = PTR_CBYTE(gcInfoToken.Info) + hdrInfoSize;
         unsigned argSize = GetPushedArgSize(hdrInfoBody, table, relOffset);
 
         return PVOID(SIZE_T(pContext->SP + argSize + hdrInfoBody->gsCookieOffset));
     }
 
 #else // !USE_GC_INFO_DECODER
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
             DECODE_GS_COOKIE
@@ -2269,13 +2251,10 @@ TADDR EECodeManager::GetAmbientSP(PREGDISPLAY     pContext,
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    PTR_CBYTE table = PTR_CBYTE(gcInfoToken.Info);
-
     /* Extract the necessary information from the info block header */
 
     hdrInfo *hdrInfoBody;
-    table += pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
+    PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     if (trFixContext)
@@ -2360,9 +2339,6 @@ ULONG32 EECodeManager::GetStackParameterSize(EECodeInfo * pCodeInfo)
         return 0;
     }
 #endif // FEATURE_EH_FUNCLETS
-
-    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    unsigned    dwOffset = pCodeInfo->GetRelOffset();
 
     hdrInfo * hdrInfoBody;
     pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);

@@ -432,15 +432,14 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
     else
     {
 #ifdef TARGET_X86
-        GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
         hdrInfo *hdrInfoBody;
-        DWORD hdrInfoSize = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
+        PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
         ::UnwindStackFrameX86(pRD,
                             PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
                             pCodeInfo->GetRelOffset(),
                             hdrInfoBody,
-                            dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
+                            table,
                             PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)),
                             pCodeInfo->IsFunclet(),
                             true);
@@ -504,15 +503,14 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     rd.pCurrentContext = pContext;
     rd.pCurrentContextPointers = pContextPointers != NULL ? pContextPointers : &rd.ctxPtrsOne;
 
-    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     hdrInfo *hdrInfoBody;
-    DWORD hdrInfoSize = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
+    PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
     ::UnwindStackFrameX86(&rd,
                           PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
                           pCodeInfo->GetRelOffset(),
                           hdrInfoBody,
-                          dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
+                          table,
                           PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)),
                           pCodeInfo->IsFunclet(),
                           true);
