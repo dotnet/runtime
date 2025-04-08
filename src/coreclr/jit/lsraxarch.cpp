@@ -275,14 +275,14 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_JMPTABLE:
             srcCount = 0;
             assert(dstCount == 1);
-            BuildDef(tree, BuildApxIncompatibleGPRMask(tree));
+            BuildDef(tree);
             break;
 
         case GT_SWITCH_TABLE:
         {
             assert(dstCount == 0);
-            buildInternalIntRegisterDefForNode(tree, BuildApxIncompatibleGPRMask(tree));
-            srcCount = BuildBinaryUses(tree->AsOp(), BuildApxIncompatibleGPRMask(tree->AsOp()));
+            buildInternalIntRegisterDefForNode(tree);
+            srcCount = BuildBinaryUses(tree->AsOp());
             buildInternalRegisterUses();
             assert(srcCount == 2);
         }
@@ -307,9 +307,8 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RETURNTRAP:
         {
             // This just turns into a compare of its child with an int + a conditional call.
-            RefPosition* internalDef =
-                buildInternalIntRegisterDefForNode(tree, BuildApxIncompatibleGPRMask(tree, RBM_NONE, true));
-            srcCount = BuildOperandUses(tree->gtGetOp1());
+            RefPosition* internalDef = buildInternalIntRegisterDefForNode(tree);
+            srcCount                 = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildKills(tree, killMask);
@@ -450,10 +449,8 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CKFINITE:
         {
             assert(dstCount == 1);
-            // TODO-Xarch-apx: Revisit. This internally creates a float -> int which is a movd
-            RefPosition* internalDef =
-                buildInternalIntRegisterDefForNode(tree, BuildApxIncompatibleGPRMask(tree, RBM_NONE, true));
-            srcCount = BuildOperandUses(tree->gtGetOp1());
+            RefPosition* internalDef = buildInternalIntRegisterDefForNode(tree);
+            srcCount                 = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
             BuildDef(tree);
         }
