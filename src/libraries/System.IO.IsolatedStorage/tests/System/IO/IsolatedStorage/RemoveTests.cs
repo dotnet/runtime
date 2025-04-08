@@ -7,7 +7,8 @@ namespace System.IO.IsolatedStorage
 {
     public class RemoveTests : IsoStorageTest
     {
-        [Fact]
+        [ConditionalFact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114403", typeof(PlatformDetection), nameof(PlatformDetection.IsMacCatalyst))]
         public void RemoveUserStoreForApplication()
         {
             TestHelper.WipeStores();
@@ -22,7 +23,8 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Fact]
+        [ConditionalFact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114403", typeof(PlatformDetection), nameof(PlatformDetection.IsMacCatalyst))]
         public void RemoveUserStoreForAssembly()
         {
             TestHelper.WipeStores();
@@ -37,7 +39,8 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Fact]
+        [ConditionalFact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114403", typeof(PlatformDetection), nameof(PlatformDetection.IsMacCatalyst))]
         public void RemoveUserStoreForDomain()
         {
             TestHelper.WipeStores();
@@ -54,7 +57,9 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Theory, MemberData(nameof(ValidStores))]
+        [ConditionalTheory]
+        [MemberData(nameof(ValidStores))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114403", typeof(PlatformDetection), nameof(PlatformDetection.IsMacCatalyst))]
         public void RemoveStoreWithContent(PresetScopes scope)
         {
             TestHelper.WipeStores();
