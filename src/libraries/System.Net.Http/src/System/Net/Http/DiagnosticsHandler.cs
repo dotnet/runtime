@@ -26,7 +26,7 @@ namespace System.Net.Http
 
         public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
         {
-            if (!IsGloballyEnabled()) throw new InvalidOperationException("Diagnostics are not enabled.");
+            Debug.Assert(IsGloballyEnabled);
             Debug.Assert(innerHandler is not null && propagator is not null);
 
             _innerHandler = innerHandler;
@@ -73,7 +73,8 @@ namespace System.Net.Http
             return activity;
         }
 
-        internal static bool IsGloballyEnabled() => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
+        [FeatureSwitchDefinition("System.Net.Http.EnableActivityPropagation")]
+        internal static bool IsGloballyEnabled => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
 
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
