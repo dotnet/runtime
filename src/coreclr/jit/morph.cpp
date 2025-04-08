@@ -3187,6 +3187,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
 
     // First element's offset
     GenTree* elemOffset = gtNewIconNode(elemOffs, TYP_I_IMPL);
+#if 0
     if (groupArrayRefWithElemOffset)
     {
         GenTree* basePlusOffset = gtNewOperNode(GT_ADD, arrPtrType, arrRef, elemOffset);
@@ -3197,6 +3198,9 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         addr = gtNewOperNode(GT_ADD, TYP_I_IMPL, addr, elemOffset);
         addr = gtNewOperNode(GT_ADD, arrPtrType, arrRef, addr);
     }
+#endif
+    addr = gtNewOperNode(GT_ADD, arrPtrType, arrRef, addr);
+    addr = gtNewOperNode(GT_ADD, arrPtrType, addr, elemOffset);
 
     // TODO-Throughput: bash the INDEX_ADDR to ARR_ADDR here instead of creating a new node.
     addr = new (this, GT_ARR_ADDR) GenTreeArrAddr(addr, elemTyp, elemStructType, elemOffs);
