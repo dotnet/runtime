@@ -348,7 +348,11 @@ namespace System.Net.Http
 
                     if (ipAddress is not null &&
                         state.Handler.GetCertificateFromCache(new CachedCertificateKey(ipAddress, state.RequestMessage), out byte[]? rawCertData) &&
+#if NETFRAMEWORK
                         rawCertData.AsSpan().SequenceEqual(serverCertificate.RawData))
+#else
+                        rawCertData.AsSpan().SequenceEqual(serverCertificate.RawDataMemory.Span))
+#endif
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"Skipping certificate validation. ipAddress: {ipAddress}, Thumbprint: {serverCertificate.Thumbprint}");
                         serverCertificate.Dispose();
