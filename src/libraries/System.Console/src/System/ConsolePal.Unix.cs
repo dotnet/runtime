@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -45,18 +46,27 @@ namespace System
 
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
-                                         useReadLine: !Console.IsInputRedirected);
+            SafeFileHandle stdin = Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO));
+            return Console.IsInputRedirected ?
+                new AnonymousPipeClientStream(PipeDirection.In, ToSafePipeHandle(stdin)) :
+                new UnixConsoleStream(stdin, FileAccess.Read, useReadLine: true);
         }
 
-        public static Stream OpenStandardOutput()
-        {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDOUT_FILENO)), FileAccess.Write);
-        }
+        public static Stream OpenStandardOutput() =>
+            new AnonymousPipeClientStream(
+                PipeDirection.Out,
+                ToSafePipeHandle(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDOUT_FILENO))));
 
-        public static Stream OpenStandardError()
+        public static Stream OpenStandardError() =>
+            new AnonymousPipeClientStream(
+                PipeDirection.Out,
+                ToSafePipeHandle(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO))));
+
+        private static SafePipeHandle ToSafePipeHandle(SafeFileHandle handle)
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)), FileAccess.Write);
+            SafePipeHandle newHandle = new(handle.DangerousGetHandle(), ownsHandle: true);
+            handle.SetHandleAsInvalid();
+            return newHandle;
         }
 
         public static Encoding InputEncoding
