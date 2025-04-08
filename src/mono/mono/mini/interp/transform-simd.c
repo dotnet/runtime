@@ -1169,6 +1169,8 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				cmethod_name = "LoadVector128";
 				break;
 			case SN_Round:
+				if (csignature->param_count != 1)
+					return FALSE;
 				cmethod_name = "RoundToNearest";
 				break;
 			case SN_WidenLower:
