@@ -763,11 +763,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
                 pNestedExInfo = new (nothrow) ExInfo();     // Very rare failure here; need robust allocator.
                 if (pNestedExInfo == NULL)
                 {   // if we can't allocate memory, we can't correctly continue.
-                    #if defined(_DEBUG)
-                    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NestedEhOom))
-                        _ASSERTE(!"OOM in callback from unmanaged filter.");
-                    #endif // _DEBUG
-
                     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_OUTOFMEMORY);
                 }
 
