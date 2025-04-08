@@ -3002,24 +3002,6 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
     END_QCALL;
 }
 
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-size_t GetSSPForFrameOnCurrentStack(TADDR ip)
-{
-    size_t *targetSSP = (size_t *)_rdsspq();
-    // The SSP we search is pointing to the return address of the frame represented
-    // by the passed in IP. So we search for the instruction pointer from
-    // the context and return one slot up from there.
-    if (targetSSP != NULL)
-    {
-        while (*targetSSP++ != ip)
-        {
-        }
-    }
-
-    return (size_t)targetSSP;
-}
-#endif // HOST_AMD64 && HOST_WINDOWS
-
 #ifdef HOST_WINDOWS
 VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int retVal)
 {
@@ -3073,15 +3055,23 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     UINT_PTR callerTargetSp = 0;
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     size_t targetSSP = exInfo->m_frameIter.m_crawl.GetRegisterSet()->SSP;
-    _ASSERTE(targetSSP == 0 || (*(size_t*)(targetSSP-8) == exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC));
+    // Verify the SSP points to the slot that matches the ControlPC of the frame containing the catch funclet.
+    // But don't check in case the target is in the interpreter loop, because the ControlPC doesn't match the shadow stack entry
+    // in that case. The shadow stack contains the return address of the DispatchManagedException call, but the ControlPC is the
+    // value captured to the exception context before the DispatchManagedException call.
+    _ASSERTE(targetSSP == 0 ||
+        exInfo->m_frameIter.m_crawl.GetCodeManager() == ExecutionManager::GetInterpreterCodeManager() ||
+        (*(size_t*)(targetSSP-8) == exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC));
 #else
     size_t targetSSP = 0;
 #endif
 
+    ICodeManager* pCodeManager = exInfo->m_frameIter.m_crawl.GetCodeManager();
+
     if (pHandlerIP != NULL)
     {
 #ifdef _DEBUG
-        exInfo->m_frameIter.m_crawl.GetCodeManager()->EnsureCallerContextIsValid(pvRegDisplay);
+        pCodeManager->EnsureCallerContextIsValid(pvRegDisplay);
         _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == GetSP(pvRegDisplay->pCallerContext));
 #endif
         OBJECTREF throwable = exceptionObj.Get();
@@ -3096,7 +3086,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 
         EH_LOG((LL_INFO100, "Calling catch funclet at %p\n", pHandlerIP));
 
-        dwResumePC = exInfo->m_frameIter.m_crawl.GetCodeManager()->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
+        dwResumePC = pCodeManager->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
 
         FixContext(pvRegDisplay->pCurrentContext);
 
@@ -3176,9 +3166,28 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
             SetIP(pThread->m_OSContext, (PCODE)dwResumePC);
             uAbortAddr = (UINT_PTR)COMPlusCheckForAbort(dwResumePC);
         }
+
+        if (!uAbortAddr)
+        {
+            STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
+        }
+
+        // Prepare the context for the resume after catch. For the interpreter case,
+        // the context IP and SP contain to the interpreter PC and SP and we need
+        // to set them back to the InterpExecMethod frame in which we are resuming
+        // the execution.
+        pCodeManager->PrepareForResumeAfterCatch(pvRegDisplay->pCurrentContext);
+
         if (uAbortAddr)
         {
             STRESS_LOG2(LF_EH, LL_INFO10, "Thread abort in progress, resuming under control: IP=%p, SP=%p\n", dwResumePC, GetSP(pvRegDisplay->pCurrentContext));
+
+            // For non-interpreter case, the following line is a no-op. For the interpreter,
+            // it sets the dwResumePC to an IP of native code in the InterpExecMethod frame.
+            dwResumePC = GetIP(pvRegDisplay->pCurrentContext);
+
+            // The dwResumePC is passed to the THROW_CONTROL_FOR_THREAD_FUNCTION ASM helper so that
+            // it can establish it as its return address and native stack unwinding can work properly.
 #ifdef TARGET_AMD64
 #ifdef TARGET_UNIX
             pvRegDisplay->pCurrentContext->Rdi = dwResumePC;
@@ -3195,10 +3204,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 
             SetIP(pvRegDisplay->pCurrentContext, uAbortAddr);
         }
-        else
-        {
-            STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
-        }
+
         ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
     }
     else
@@ -3848,9 +3854,9 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
         // the catch handler.
         // For hardware exceptions and thread abort exceptions propagated from ThrowControlForThread,
         // the SSP is already known. For other cases, find it by scanning the shadow stack.
-        if ((pExInfo->m_passNumber == 2) && (pThis->m_crawl.GetRegisterSet()->SSP == 0))
+        if ((pExInfo->m_passNumber == 2) && (pThis->m_crawl.GetRegisterSet()->SSP == 0) && pThis->m_crawl.GetCodeInfo()->GetCodeManager() != ExecutionManager::GetInterpreterCodeManager())
         {
-            pThis->m_crawl.GetRegisterSet()->SSP = GetSSPForFrameOnCurrentStack(controlPC);
+            pThis->m_crawl.GetCodeInfo()->GetCodeManager()->UpdateSSP(pThis->m_crawl.GetRegisterSet());
         }
 #endif
 
@@ -3928,6 +3934,19 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
     {
         EH_LOG((LL_INFO100, "SfiNext (pass=%d): failed to get next frame", pTopExInfo->m_passNumber));
         goto Exit;
+    }
+
+    if ((pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME) && (GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext) == 0))
+    {
+        // The callerIP is 0 when we are going to unwind from the first interpreted frame belonging to an InterpreterFrame.
+        // That means it is at a transition where non-interpreted code called interpreted one.
+        // Move the stack frame iterator to the InterpreterFrame and extract the IP of the real caller of the interpreted code.
+        retVal = pThis->Next();
+        _ASSERTE(retVal != SWA_FAILED);
+        _ASSERTE(pThis->m_crawl.GetFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+        // Move to the caller of the interpreted code
+        retVal = pThis->Next();
+        _ASSERTE(retVal != SWA_FAILED);
     }
 
     // Check for reverse pinvoke or CallDescrWorkerInternal.

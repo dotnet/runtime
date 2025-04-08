@@ -35,6 +35,10 @@ static void InterpBreakpoint()
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext)
 {
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    pInterpreterFrame->SetInterpExecMethodSSP((TADDR)_rdsspq());
+#endif // HOST_AMD64 && HOST_WINDOWS
+
     const int32_t *ip;
     int8_t *stack;
 
@@ -1173,6 +1177,51 @@ CALL_TARGET_IP:
                     GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, 0x00000002);
                 }
                 ip++;
+            case INTOP_THROW:
+            {
+                CONTEXT exceptionContext;
+                ClrCaptureContext(&exceptionContext);
+
+                TADDR resumeSP;
+                TADDR resumeIP;
+                pInterpreterFrame->GetAndClearResumeContext(&resumeSP, &resumeIP);
+
+                // If the resumeSP is not 0, it means that exception handling restored CPU context after the ClrCaptureContext
+                // in order to resume execution after catch funclet returned. In this case, we need to restore the interpreter context.
+                // If it is 0 though, it means that we are throwing the exception here.
+                if (resumeSP == 0)
+                {
+                    OBJECTREF throwable;
+                    if (LOCAL_VAR(ip[1], OBJECTREF) == nullptr)
+                    {
+                        EEException ex(kNullReferenceException);
+                        throwable = ex.CreateThrowable();
+                    }
+                    else
+                    {
+                        throwable = LOCAL_VAR(ip[1], OBJECTREF);
+                    }
+                    DispatchManagedException(throwable, &exceptionContext);
+                    UNREACHABLE();
+                }
+                else
+                {
+                    InterpMethodContextFrame* pResumeFrame = (InterpMethodContextFrame*)resumeSP;
+                    // Unwind the interpreter stack upto the resume frame
+                    while (pFrame != pResumeFrame)
+                    {
+                        pFrame->ip = 0;
+                        pFrame = pFrame->pParent;
+                    }
+
+                    // Set the current interpreter context to the resume one and continue execution from there
+                    ip = (int32_t*)resumeIP;
+
+                    stack = pFrame->pStack;
+                    pMethod = *(InterpMethod**)pFrame->startIp;
+                    pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
+                }
+
                 break;
             }
             case INTOP_FAILFAST:

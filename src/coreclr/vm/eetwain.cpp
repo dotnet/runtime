@@ -2075,6 +2075,24 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     return dwResult;
 }
 
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+void EECodeManager::UpdateSSP(PREGDISPLAY pRD)
+{
+    size_t *targetSSP = (size_t *)_rdsspq();
+    // The SSP we search is pointing to the return address of the frame represented
+    // by the pRD->ControlPC. So we search for the instruction pointer from
+    // the context and return one slot up from there.
+    if (targetSSP != NULL)
+    {
+        while (*targetSSP++ != pRD->ControlPC)
+        {
+        }
+    }
+
+    pRD->SSP = (size_t)targetSSP;
+}
+#endif // HOST_AMD64 && HOST_WINDOWS
+
 #ifdef FEATURE_INTERPRETER
 DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
 {
@@ -2082,6 +2100,21 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
     _ASSERTE(FALSE);
     return 0;
 }
+
+void InterpreterCodeManager::PrepareForResumeAfterCatch(CONTEXT *pContext)
+{
+    Thread *pThread = GetThread();
+    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
+    pInterpreterFrame->SetResumeContext(GetSP(pContext), GetIP(pContext));
+    pInterpreterFrame->RestoreInterpExecMethodContext(pContext);
+}
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+void InterpreterCodeManager::UpdateSSP(PREGDISPLAY pRD)
+{
+    InterpreterFrame* pFrame = (InterpreterFrame*)GetFirstArgReg(pRD->pCurrentContext);
+    pRD->SSP = pFrame->GetInterpExecMethodSSP();
+}
+#endif // HOST_AMD64 && HOST_WINDOWS
 #endif // FEATURE_INTERPRETER
 
 #endif // !FEATURE_EH_FUNCLETS
@@ -2241,7 +2274,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
         SetIP(pContext, 0);
         SetSP(pContext, sp);
     }
-    pContext->ContextFlags = CONTEXT_CONTROL;
+    pContext->ContextFlags = CONTEXT_FULL;
 }
 
 bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
@@ -2286,9 +2319,13 @@ void InterpreterCodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECod
     if( !pRD->IsCallerContextValid )
     {
         // We need to make a copy here (instead of switching the pointers), in order to preserve the current context
+        *(pRD->pCallerContext) = *(pRD->pCurrentContext);
         TADDR sp = (TADDR)GetRegdisplaySP(pRD);
         VirtualUnwindInterpreterCallFrame(sp, pRD->pCallerContext);
-        memset(pRD->pCallerContextPointers, 0, sizeof(KNONVOLATILE_CONTEXT_POINTERS));
+        // Preserve the context pointers, besides the SP, IP, FP and the first argument register, all the registers are
+        // kept untouched and keep the state it the InterpExecMethod. We use the context pointers to update the registers
+        // before resuming after a catch using the original context.
+        memcpy(pRD->pCallerContextPointers, pRD->pCurrentContextPointers, sizeof(KNONVOLATILE_CONTEXT_POINTERS));
 
         pRD->IsCallerContextValid = TRUE;
     }

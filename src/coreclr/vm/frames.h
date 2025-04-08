@@ -2888,7 +2888,10 @@ public:
 #ifndef DACCESS_COMPILE
     InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
         : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
-        m_pTopInterpMethodContextFrame(pContextFrame)
+        m_pTopInterpMethodContextFrame(pContextFrame),
+        m_resumeIP(0),
+        m_resumeSP(0),
+        m_SSP(0)
     {
         WRAPPER_NO_CONTRACT;
         Push();
@@ -2900,13 +2903,76 @@ public:
     }
 
 #endif // DACCESS_COMPILE
+
+    void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
+
     PTR_InterpMethodContextFrame GetTopInterpMethodContextFrame();
+
+    void SetContextToInterpMethodContextFrame(T_CONTEXT * pContext);
+
+    // Restore the context to the native context of the InterpExecMethod
+    void RestoreInterpExecMethodContext(T_CONTEXT * pContext)
+    {
+        LIMITED_METHOD_CONTRACT;
+        SetSP(pContext, m_interpExecMethodSP);
+        SetIP(pContext, m_interpExecMethodIP);
+        SetFP(pContext, m_interpExecMethodFP);
+        SetFirstArgReg(pContext, m_interpExecMethodFirstArgReg);
+    }
+
+    void SetResumeContext(TADDR resumeSP, TADDR resumeIP)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_resumeSP = resumeSP;
+        m_resumeIP = resumeIP;
+    }
+
+    void GetAndClearResumeContext(TADDR * pResumeSP, TADDR * pResumeIP)
+    {
+        LIMITED_METHOD_CONTRACT;
+        *pResumeSP = m_resumeSP;
+        *pResumeIP = m_resumeIP;
+        m_resumeSP = 0;
+        m_resumeIP = 0;
+    }
+
+    TADDR GetInterpExecMethodIP()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_interpExecMethodIP;
+    }
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    void SetInterpExecMethodSSP(TADDR ssp)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_SSP = ssp;
+    }
+
+    TADDR GetInterpExecMethodSSP()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_SSP;
+    }
+#endif // HOST_AMD64 && HOST_WINDOWS
 
 private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to
     // this InterpreterFrame.
     PTR_InterpMethodContextFrame m_pTopInterpMethodContextFrame;
-    
+    // Saved IP, SP and FP of the context of the InterpExecMethod. These registers are reused for interpreter frames,
+    // but we need the original values for resuming after catch into interpreter frames.
+    TADDR m_interpExecMethodIP;
+    TADDR m_interpExecMethodSP;
+    TADDR m_interpExecMethodFP;
+    TADDR m_interpExecMethodFirstArgReg;
+    // Interpreter IP and SP for resuming after catch into interpreter frames.
+    TADDR m_resumeIP;
+    TADDR m_resumeSP;
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
+    TADDR m_SSP;
+#endif // HOST_AMD64 && HOST_WINDOWS
 };
 
 #endif // FEATURE_INTERPRETER
