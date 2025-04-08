@@ -99,6 +99,8 @@
       <InnerBuildArgs Condition="'$(DefaultArtifactVisibility)' != ''">$(InnerBuildArgs) /p:DefaultArtifactVisibility=$(DefaultArtifactVisibility)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetEsrpToolPath)' != ''">$(InnerBuildArgs) /p:DotNetEsrpToolPath=$(DotNetEsrpToolPath)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildTests)' != ''">$(InnerBuildArgs) /p:DotNetBuildTests=$(DotNetBuildTests)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(PublishingVersion)' != ''">$(InnerBuildArgs) /p:PublishingVersion=$(PublishingVersion)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(RepositoryUrl)' != ''">$(InnerBuildArgs) /p:RepositoryUrl=$(RepositoryUrl)</InnerBuildArgs>
 
       <!-- Pass locations for assets, packages and symbols -->
       <InnerBuildArgs Condition="'$(SourceBuiltAssetsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetsDir=$(SourceBuiltAssetsDir)</InnerBuildArgs>

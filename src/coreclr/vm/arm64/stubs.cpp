@@ -14,6 +14,9 @@
 #include "jitinterface.h"
 #include "ecall.h"
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
@@ -536,31 +539,6 @@ void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
-
-#ifndef DACCESS_COMPILE
-void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    int n = 0;
-    //Initially
-    //x0 -This ptr
-    //x1 -ReturnBuffer
-    m_rgCode[n++] = 0x91000010; // mov x16, x0
-    m_rgCode[n++] = 0x91000020; // mov x0, x1
-    m_rgCode[n++] = 0x91000201; // mov x1, x16
-    m_rgCode[n++] = 0x58000070; // ldr x16, [pc, #12]
-    _ASSERTE((UINT32*)&m_pTarget == &m_rgCode[n + 2]);
-    m_rgCode[n++] = 0xd61f0200; // br  x16
-    n++;                        // empty 4 bytes for data alignment below
-    _ASSERTE(n == ARRAY_SIZE(m_rgCode));
-
-
-    m_pTarget = GetPreStubEntryPoint();
-    m_pMethodDesc = (TADDR)pMD;
-}
-
-#endif // !DACCESS_COMPILE
 
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pCalleeSaved)
 {
@@ -1468,10 +1446,11 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 //
 // Allocation of dynamic helpers
 //
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+#define BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
     BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
@@ -1479,6 +1458,15 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     BYTE * pStart = startWriterHolder.GetRW(); \
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
+
+#ifdef FEATURE_PERFMAP
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+    BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
+    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
+#else
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
+#endif
+
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \
@@ -1939,6 +1927,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         END_DYNAMIC_HELPER_EMIT();
     }
 }
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif // FEATURE_READYTORUN
 
 

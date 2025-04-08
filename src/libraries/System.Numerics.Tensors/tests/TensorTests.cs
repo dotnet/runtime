@@ -1136,6 +1136,46 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0f, Tensor.StdDev(upperLeft));
         }
 
+        [Fact]
+        public static void TensorSumTests()
+        {
+            float[] values = new float[] { 1, 2, 3, 4, 5, 6 };
+            Tensor<float> t0 = Tensor.Create<float>(new float[] { 1, 2, 3, 4, 5, 6 }, [2, 3]);
+            float sum = Tensor.Sum<float>(t0);
+            Assert.Equal(21, sum);
+
+            // Slice first row of 2 x 2 for sum
+            Tensor<float> t1 = t0.Slice(new NRange(new NIndex(0), new NIndex(1)), new NRange(new NIndex(0), new NIndex(0, true)));
+            sum = Tensor.Sum<float>(t1);
+            Assert.Equal(6, sum);
+
+            // Slice second row of 2 x 2 for sum.
+            t1 = t0.Slice(new NRange(new NIndex(1), new NIndex(2)), new NRange(new NIndex(0), new NIndex(0, true)));
+            sum = Tensor.Sum<float>(t1);
+            Assert.Equal(15, sum);
+
+            // Slice first column of 2 x 2 for sum.
+            t1 = t0.Slice(new NRange(new NIndex(0), new NIndex(2)), new NRange(new NIndex(0), new NIndex(1)));
+            sum = Tensor.Sum<float>(t1);
+            Assert.Equal(5, sum);
+
+            // Slice second column of 2 x 2 for sum.
+            t1 = t0.Slice(new NRange(new NIndex(0), new NIndex(2)), new NRange(new NIndex(1), new NIndex(2)));
+            sum = Tensor.Sum<float>(t1);
+            Assert.Equal(7, sum);
+
+            // Slice Third column of 2 x 2 for sum.
+            t1 = t0.Slice(new NRange(new NIndex(0), new NIndex(2)), new NRange(new NIndex(2), new NIndex(3)));
+            sum = Tensor.Sum<float>(t1);
+            Assert.Equal(9, sum);
+
+            Assert.Throws<IndexOutOfRangeException>(()=> new Tensor<float>(new float[] { 1, 2, 3, 4, 5, 6 }, [2, 3], -1));
+            Assert.Throws<IndexOutOfRangeException>(()=> new Tensor<float>(new float[] { 1, 2, 3, 4, 5, 6 }, [2, 3], 100));
+            Assert.Throws<IndexOutOfRangeException>(()=> new Tensor<float>(new float[] { 1, 2, 3, 4, 5, 6 }, [2, 3], int.MinValue));
+            Assert.Throws<IndexOutOfRangeException>(()=> new Tensor<float>(new float[] { 1, 2, 3, 4, 5, 6 }, [2, 3], int.MaxValue));
+            Assert.Throws<ArgumentException>(()=> new Tensor<float>(new float[] { 1, 2, 3, 4, 5, 6 }, [2, 3], 2));
+        }
+
         public static float StdDev(float[] values)
         {
             float mean = Mean(values);
@@ -2649,7 +2689,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void TensorObjectFillTests()
         {
-            ITensor tensor = (ITensor)new Tensor<int>(new int[4], new nint[] { 2, 2 });
+            ITensor tensor = (ITensor)new Tensor<int>(new int[4], new nint[] { 2, 2 }, 0);
             tensor.Fill(5);
 
             Assert.Equal(5, tensor[0, 0]);
@@ -2670,7 +2710,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void TensorObjectIndexerTests()
         {
-            ITensor tensor = new Tensor<int>(new int[] { 1, 2, 3, 4 }, new nint[] { 2, 2 });
+            ITensor tensor = new Tensor<int>(new int[] { 1, 2, 3, 4 }, new nint[] { 2, 2 }, 0);
 
             Assert.Equal(1, tensor[new nint[] { 0, 0 }]);
             Assert.Equal(2, tensor[new nint[] { 0, 1 }]);
@@ -2701,7 +2741,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void TensorGetPinnedHandleTests()
         {
-            Tensor<int> tensor = new Tensor<int>(new int[] { 1, 2, 3, 4 }, new nint[] { 2, 2 });
+            Tensor<int> tensor = new Tensor<int>(new int[] { 1, 2, 3, 4 }, new nint[] { 2, 2 }, 0);
 
             using MemoryHandle handle = tensor.GetPinnedHandle();
             unsafe

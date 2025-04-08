@@ -2267,6 +2267,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52852", TestPlatforms.MacCatalyst)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/53095", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29383", TestPlatforms.OSX)]
         public void LongProcessNamesAreSupported()
         {
             string sleepPath;

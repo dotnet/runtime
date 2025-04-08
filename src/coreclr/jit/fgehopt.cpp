@@ -1644,27 +1644,28 @@ PhaseStatus Compiler::fgCloneFinally()
 
             for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
             {
-                if (block->hasProfileWeight())
-                {
-                    weight_t const blockWeight = block->bbWeight;
-                    block->setBBProfileWeight(blockWeight * originalScale);
-                    JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
+                weight_t const blockWeight = block->bbWeight;
+                block->setBBProfileWeight(blockWeight * originalScale);
+                JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
 
-                    BasicBlock* const clonedBlock = blockMap[block];
-                    clonedBlock->setBBProfileWeight(blockWeight * clonedScale);
-                    JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", clonedBlock->bbNum, clonedBlock->bbWeight);
-                }
+                BasicBlock* const clonedBlock = blockMap[block];
+                clonedBlock->setBBProfileWeight(blockWeight * clonedScale);
+                JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", clonedBlock->bbNum, clonedBlock->bbWeight);
+            }
+
+            if (!retargetedAllCalls)
+            {
+                JITDUMP(
+                    "Reduced flow out of EH%u needs to be propagated to continuation block(s). Data %s inconsistent.\n",
+                    XTnum, fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
             }
         }
 
         // Update flow into normalCallFinallyReturn
         if (normalCallFinallyReturn->hasProfileWeight())
         {
-            normalCallFinallyReturn->bbWeight = BB_ZERO_WEIGHT;
-            for (FlowEdge* const predEdge : normalCallFinallyReturn->PredEdges())
-            {
-                normalCallFinallyReturn->increaseBBProfileWeight(predEdge->getLikelyWeight());
-            }
+            normalCallFinallyReturn->setBBProfileWeight(normalCallFinallyReturn->computeIncomingWeight());
         }
 
         // Done!
@@ -2185,33 +2186,13 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     //
     if (block->hasProfileWeight())
     {
-        // Add weight to the canonical call finally pair.
+        // Add weight to the canonical call-finally.
         //
-        weight_t const canonicalWeight =
-            canonicalCallFinally->hasProfileWeight() ? canonicalCallFinally->bbWeight : BB_ZERO_WEIGHT;
-        weight_t const newCanonicalWeight = block->bbWeight + canonicalWeight;
+        canonicalCallFinally->increaseBBProfileWeight(block->bbWeight);
 
-        canonicalCallFinally->setBBProfileWeight(newCanonicalWeight);
-
-        BasicBlock* const canonicalLeaveBlock = canonicalCallFinally->Next();
-
-        weight_t const canonicalLeaveWeight =
-            canonicalLeaveBlock->hasProfileWeight() ? canonicalLeaveBlock->bbWeight : BB_ZERO_WEIGHT;
-        weight_t const newLeaveWeight = block->bbWeight + canonicalLeaveWeight;
-
-        canonicalLeaveBlock->setBBProfileWeight(newLeaveWeight);
-
-        // Remove weight from the old call finally pair.
+        // Remove weight from the old call-finally.
         //
-        if (callFinally->hasProfileWeight())
-        {
-            callFinally->decreaseBBProfileWeight(block->bbWeight);
-        }
-
-        if (leaveBlock->hasProfileWeight())
-        {
-            leaveBlock->decreaseBBProfileWeight(block->bbWeight);
-        }
+        callFinally->decreaseBBProfileWeight(block->bbWeight);
     }
 
     return true;
@@ -2680,8 +2661,8 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 if (bbIsTryBeg(block))
                 {
                     assert(added);
-                    JITDUMP("==> found try entry for EH#%02u nested in handler at " FMT_BB "\n", block->bbNum,
-                            block->getTryIndex());
+                    JITDUMP("==> found try entry for EH#%02u nested in handler at " FMT_BB "\n", block->getTryIndex(),
+                            block->bbNum);
                     regionsToProcess.Push(block->getTryIndex());
                 }
             }
@@ -2759,6 +2740,12 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     {
         JITDUMP("Cloned EH clauses will go before enclosing try region EH#%02u\n", enclosingTryIndex);
         assert(insertBeforeIndex == enclosingTryIndex);
+    }
+
+    if (insertBeforeIndex != compHndBBtabCount)
+    {
+        JITDUMP("Existing EH region(s) EH#%02u...EH#%02u will become EH#%02u...EH#%02u\n", insertBeforeIndex,
+                compHndBBtabCount - 1, insertBeforeIndex + regionCount, compHndBBtabCount + regionCount - 1);
     }
 
     // Once we call fgTryAddEHTableEntries with deferCloning = false,
@@ -2860,7 +2847,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         //
         if (ebd->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            if (XTnum < clonedOutermostRegionIndex)
+            if (ebd->ebdEnclosingTryIndex < clonedOutermostRegionIndex)
             {
                 ebd->ebdEnclosingTryIndex += (unsigned short)indexShift;
             }
@@ -2873,7 +2860,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
 
         if (ebd->ebdEnclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            if (XTnum < clonedOutermostRegionIndex)
+            if (ebd->ebdEnclosingHndIndex < clonedOutermostRegionIndex)
             {
                 ebd->ebdEnclosingHndIndex += (unsigned short)indexShift;
             }

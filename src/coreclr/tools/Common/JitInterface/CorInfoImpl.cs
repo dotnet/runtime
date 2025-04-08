@@ -4203,9 +4203,8 @@ namespace Internal.JitInterface
             flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
 
             // Set the rest of the flags that don't make sense to expose publicly.
-            flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
+            flags.Set(CorJitFlag.CORJIT_FLAG_AOT);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
-            flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
 
             TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
@@ -4216,9 +4215,6 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X86:
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
                     Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
-
-                    if ((_compilation.InstructionSetSupport.Flags & InstructionSetSupportFlags.Vector512Throttling) != 0)
-                        flags.Set(CorJitFlag.CORJIT_FLAG_VECTOR512_THROTTLING);
                     break;
 
                 case TargetArchitecture.ARM64:

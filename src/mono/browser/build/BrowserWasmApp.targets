@@ -5,7 +5,6 @@
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
     <!-- we are not triggering WasmPerfTracing in Debug automatically, because it would trigger re-link, making dev-loop slow -->
     <WasmPerfTracing Condition="'$(WasmPerfTracing)' == ''">false</WasmPerfTracing>
-    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == '' and '$(WasmPerfTracing)' == 'true'">true</FeaturePerfTracing>
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
@@ -59,7 +58,17 @@
     <_WasmDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">-msimd128</_WasmDefaultFlags>
 
     <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.native.wasm</_WasmOutputFileName>
+
+    <WasmEnableStreamingResponse Condition="'$(WasmEnableStreamingResponse)' == ''">true</WasmEnableStreamingResponse>
   </PropertyGroup>
+
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Net.Http.WasmEnableStreamingResponse"
+                                        Condition="'$(WasmEnableStreamingResponse)' != ''"
+                                        Value="$(WasmEnableStreamingResponse)"
+                                        Trim="true" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Allow running/debugging from VS -->
@@ -118,6 +127,8 @@
     <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->'%(Filename)')."/>
     <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !$([System.IO.Path]::GetFileName('$(WasmIcuDataFileName)').StartsWith('icudt'))" Text="Custom ICU file name in path %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) must start with 'icudt'."/>
     <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerfTracing)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerfTracing)=$(WasmPerfTracing)"/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerfInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerfInstrumentation)=$(WasmPerfInstrumentation)"/>
+    <Error Condition="'$(WasmPerfInstrumentation)' != '' and '$(WasmPerfTracing)' == ''" Text="%24(WasmPerfInstrumentation)=$(WasmPerfInstrumentation) is only supported together with %24(WasmPerfTracing)=true"/>
   </Target>
 
   <Target Name="_WasmGenerateAppBundle"
@@ -130,6 +141,9 @@
       <_WasmPThreadPoolInitialSize Condition="'$(_WasmPThreadPoolInitialSize)' == ''">-1</_WasmPThreadPoolInitialSize>
       <_WasmPThreadPoolUnusedSize Condition="'$(_WasmPThreadPoolUnusedSize)' == ''">-1</_WasmPThreadPoolUnusedSize>
       <_WasmIsPublishing Condition="'$(_WasmIsPublishing)' == '' and '$(_IsPublishing)' != ''">$(_IsPublishing)</_WasmIsPublishing>
+      
+      <_WasmAppBuilderBootConfigFileName>$(WasmBootConfigFileName)</_WasmAppBuilderBootConfigFileName>
+      <_WasmAppBuilderBootConfigFileName Condition="'$(_WasmAppBuilderBootConfigFileName)' == ''">dotnet.boot.js</_WasmAppBuilderBootConfigFileName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -141,6 +155,7 @@
     <RemoveDir Directories="$(WasmAppDir)" />
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
+      ConfigFileName="$(_WasmAppBuilderBootConfigFileName)"
       Assemblies="@(_WasmAssembliesInternal)"
       MainAssemblyName="$(WasmMainAssemblyFileName)"
       HostConfigs="@(HostConfig)"
@@ -154,6 +169,7 @@
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       ExtraConfig="@(WasmExtraConfig)"
       EnvVariables="@(WasmEnvironmentVariable)"
+      Profilers="$(_WasmProfilers)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
       IsPublish="$(_WasmIsPublishing)"
@@ -293,6 +309,12 @@
       <WasmClang>$(EmscriptenUpstreamEmscriptenPath)emcc</WasmClang>
     </PropertyGroup>
 
+    <ItemGroup >
+      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-aot.a" Condition="$(_WasmProfilers.Contains('aot'))" />
+      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-browser.a" Condition="$(_WasmProfilers.Contains('browser'))" />
+      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-log.a" Condition="$(_WasmProfilers.Contains('log'))" />
+    </ItemGroup>
+
     <ItemGroup>
       <_WasmLinkDependencies Remove="@(_WasmLinkDependencies)" />
 
@@ -319,7 +341,7 @@
       <_EmccCFlags Include="-DINVARIANT_TIMEZONE=1"            Condition="'$(InvariantTimezone)' == 'true'" />
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />
-      <_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />
+      <_EmccCFlags Include="-DENABLE_DEVTOOLS_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />
       <_EmccCFlags Include="-DENABLE_LOG_PROFILER=1"           Condition="$(WasmProfilers.Contains('log'))" />
       <_EmccCFlags Include="-DENABLE_JS_INTEROP_BY_VALUE=1"    Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
 
@@ -377,7 +399,7 @@
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <EmscriptenEnvVars Include="ENABLE_AOT_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('aot'))))" />
-      <EmscriptenEnvVars Include="ENABLE_BROWSER_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('browser'))))" />
+      <EmscriptenEnvVars Include="ENABLE_DEVTOOLS_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('browser'))))" />
       <EmscriptenEnvVars Include="ENABLE_LOG_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('log'))))" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=0" Condition="'$(RunAOTCompilation)' != 'true'" />

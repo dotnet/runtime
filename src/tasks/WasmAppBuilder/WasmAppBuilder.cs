@@ -35,13 +35,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public bool IsAot { get; set; }
     public bool IsMultiThreaded { get; set; }
 
-    private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        WriteIndented = true
-    };
-
+    [Required]
+    public string ConfigFileName { get; set; } = default!;
 
     // <summary>
     // Extra json elements to add to _framework/blazor.boot.json
@@ -61,6 +56,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     /// Environment variables to set in the boot.json file.
     /// </summary>
     public ITaskItem[]? EnvVariables { get; set; }
+
+    /// <summary>
+    /// List of profilers to use.
+    /// </summary>
+    public string[]? Profilers { get; set; }
 
     protected override bool ValidateArguments()
     {
@@ -413,6 +413,14 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
         }
 
+        Profilers ??= Array.Empty<string>();
+        var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
+        if (browserProfiler != null)
+        {
+            bootConfig.environmentVariables ??= new();
+            bootConfig.environmentVariables["DOTNET_WasmPerfInstrumentation"] = browserProfiler.Substring("browser:".Length);
+        }
+
         foreach (ITaskItem env in EnvVariables ?? Enumerable.Empty<ITaskItem>())
         {
             bootConfig.environmentVariables ??= new();
@@ -428,17 +436,14 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             };
         }
 
-        using TempFileName tmpMonoConfigPath = new();
-        using (var sw = File.CreateText(tmpMonoConfigPath.Path))
+        using TempFileName tmpConfigPath = new();
         {
             helper.ComputeResourcesHash(bootConfig);
-
-            var json = JsonSerializer.Serialize(bootConfig, s_jsonOptions);
-            sw.Write(json);
+            helper.WriteConfigToFile(bootConfig, tmpConfigPath.Path, Path.GetExtension(ConfigFileName));
         }
 
-        string monoConfigPath = Path.Combine(runtimeAssetsPath, "blazor.boot.json"); // TODO: Unify with Wasm SDK
-        Utils.CopyIfDifferent(tmpMonoConfigPath.Path, monoConfigPath, useHash: false);
+        string monoConfigPath = Path.Combine(runtimeAssetsPath, ConfigFileName);
+        Utils.CopyIfDifferent(tmpConfigPath.Path, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
         foreach (ITaskItem item in ExtraFilesToDeploy!)

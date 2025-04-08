@@ -58,9 +58,19 @@ internal unsafe static partial class MockMemorySpace
             if (fragment.Data is null || fragment.Data.Length == 0)
                 throw new InvalidOperationException($"Fragment '{fragment.Name}' data is empty");
             if (!FragmentFits(fragment))
-                throw new InvalidOperationException($"Fragment '{fragment.Name}' does not fit in the address space");
+                throw new InvalidOperationException($"Fragment '{fragment.Name}' does not fit in the address space. Overlaps with existing fragments.\n{GetHeapFragmentsDescription()}");
             _heapFragments.Add(fragment);
             return this;
+        }
+
+        private string GetHeapFragmentsDescription()
+        {
+            StringBuilder builder = new();
+            foreach (var fragment in _heapFragments)
+            {
+                builder.AppendLine($"Fragment '{fragment.Name}' at 0x{fragment.Address:x} with length {fragment.Data.Length}");
+            }
+            return builder.ToString();
         }
 
         public Builder AddHeapFragments(IEnumerable<HeapFragment> fragments)

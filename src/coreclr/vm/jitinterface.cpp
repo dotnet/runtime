@@ -7891,6 +7891,13 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
     }
 
 #ifdef PROFILING_SUPPORTED
+    if (pOrigCallerModule->IsInliningDisabledByProfiler())
+    {
+        result = INLINE_FAIL;
+        szFailReason = "Inlining is disabled in the compiled method's module by a profiler";
+        goto exit;
+    }
+
     if (CORProfilerPresent())
     {
         // #rejit
@@ -7902,15 +7909,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         {
             result = INLINE_FAIL;
             szFailReason = "ReJIT request disabled inlining from caller";
-            goto exit;
-        }
-
-        // If the profiler has set a mask preventing inlining, always return
-        // false to the jit.
-        if (CORProfilerDisableInlining())
-        {
-            result = INLINE_FAIL;
-            szFailReason = "Profiler disabled inlining globally";
             goto exit;
         }
 
@@ -9569,7 +9567,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 
     case ELEMENT_TYPE_PTR:
         // Load the type eagerly under debugger to make the eval work
-        if (CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
+        if (pModule->AreJITOptimizationsDisabled())
         {
             // NOTE: in some IJW cases, when the type pointed at is unmanaged,
             // the GetTypeHandle may fail, because there is no TypeDef for such type.
@@ -10682,8 +10680,8 @@ bool CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
 
 /*********************************************************************/
 
-void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
-                               void **            ppIndirection)  /* OUT */
+void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
+                                   void **            ppIndirection)  /* OUT */
 {
     CONTRACTL {
         THROWS;
@@ -10808,7 +10806,7 @@ exit: ;
     return result;
 }
 
-PCODE CEEJitInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
+PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
 {
     CONTRACTL {
         THROWS;
@@ -10896,17 +10894,23 @@ void CEEJitInfo::GetProfilingHandle(bool                      *pbHookFunction,
     *pbIndirectedHandles = false;
 }
 
+template<class TCodeHeader>
+void CEECodeGenInfo::SetRealCodeHeader()
+{
+    if (m_pRealCodeHeader != NULL)
+    {
+        // Restore the read only version of the real code header
+        ((TCodeHeader*)m_CodeHeaderRW)->SetRealCodeHeader(m_pRealCodeHeader);
+        m_pRealCodeHeader = NULL;
+    }
+}
+
 /*********************************************************************/
 void CEEJitInfo::WriteCodeBytes()
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_pRealCodeHeader != NULL)
-    {
-        // Restore the read only version of the real code header
-        m_CodeHeaderRW->SetRealCodeHeader(m_pRealCodeHeader);
-        m_pRealCodeHeader = NULL;
-    }
+    SetRealCodeHeader<CodeHeader>();
 
     if (m_CodeHeaderRW != m_CodeHeader)
     {
@@ -10916,7 +10920,7 @@ void CEEJitInfo::WriteCodeBytes()
 }
 
 /*********************************************************************/
-void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
+void CEEJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
 {
     CONTRACTL {
         NOTHROW;
@@ -10927,13 +10931,28 @@ void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
     // the code bytes to the target memory location.
     WriteCodeBytes();
 
-    CodeHeader* pCodeHeader = m_CodeHeader;
+    CodeHeader* pCodeHeader = (CodeHeader*)m_CodeHeader;
     if (pCodeHeader)
         jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
 }
 
+template<class TCodeHeader>
+void CEECodeGenInfo::NibbleMapSet()
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    TCodeHeader* pCodeHeader = (TCodeHeader*)m_CodeHeader;
+
+    // m_codeWriteBufferSize is the size of the code region + code header. The nibble map should only use
+    // the code region, therefore we subtract the size of the CodeHeader.
+    m_jitManager->NibbleMapSet(m_pCodeHeap, pCodeHeader->GetCodeStartAddress(), m_codeWriteBufferSize - sizeof(TCodeHeader));
+}
+
 /*********************************************************************/
-void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
+void CEEJitInfo::WriteCode(EECodeGenManager * jitMgr)
 {
     CONTRACTL {
         THROWS;
@@ -10941,24 +10960,19 @@ void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
     } CONTRACTL_END;
 
     WriteCodeBytes();
-
     // Now that the code header was written to the final location, publish the code via the nibble map
-    // m_codeWriteBufferSize is the size of the code region + code header. The nibble map should only use
-    // the code region, therefore we subtract the size of the CodeHeader.
-    jitMgr->NibbleMapSet(m_pCodeHeap, m_CodeHeader->GetCodeStartAddress(), m_codeWriteBufferSize - sizeof(CodeHeader));
+    NibbleMapSet<CodeHeader>();
 
 #if defined(TARGET_AMD64)
     // Publish the new unwind information in a way that the ETW stack crawler can find
     _ASSERTE(m_usedUnwindInfos == m_totalUnwindInfos);
-    UnwindInfoTable::PublishUnwindInfoForMethod(m_moduleBase, m_CodeHeader->GetUnwindInfo(0), m_totalUnwindInfos);
+    UnwindInfoTable::PublishUnwindInfoForMethod(m_moduleBase, ((CodeHeader*)m_CodeHeader)->GetUnwindInfo(0), m_totalUnwindInfos);
 #endif // defined(TARGET_AMD64)
-
 }
-
 
 /*********************************************************************/
 // Route jit information to the Jit Debug store.
-void CEEJitInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, uint32_t cMap,
+void CEECodeGenInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, uint32_t cMap,
                                ICorDebugInfo::OffsetMapping *pMap)
 {
     CONTRACTL {
@@ -10977,7 +10991,7 @@ void CEEJitInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, uint32_t cMap,
     EE_TO_JIT_TRANSITION();
 }
 
-void CEEJitInfo::setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo *vars)
+void CEECodeGenInfo::setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo *vars)
 {
     CONTRACTL {
         THROWS;
@@ -10995,7 +11009,7 @@ void CEEJitInfo::setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInf
     EE_TO_JIT_TRANSITION();
 }
 
-void CEEJitInfo::reportRichMappings(
+void CEECodeGenInfo::reportRichMappings(
         ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
         uint32_t                          numInlineTreeNodes,
         ICorDebugInfo::RichOffsetMapping* mappings,
@@ -11009,7 +11023,7 @@ void CEEJitInfo::reportRichMappings(
 
     JIT_TO_EE_TRANSITION();
 
-    if (m_jitManager->IsStoringRichDebugInfo())
+    if (((EECodeGenManager*)m_jitManager)->IsStoringRichDebugInfo())
     {
         m_inlineTreeNodes = inlineTreeNodes;
         m_numInlineTreeNodes = numInlineTreeNodes;
@@ -11025,7 +11039,7 @@ void CEEJitInfo::reportRichMappings(
     EE_TO_JIT_TRANSITION();
 }
 
-void CEEJitInfo::reportMetadata(
+void CEECodeGenInfo::reportMetadata(
         const char* key,
         const void* value,
         size_t length)
@@ -11085,7 +11099,82 @@ PatchpointInfo* CEEJitInfo::getOSRInfo(unsigned* ilOffset)
     return result;
 }
 
-void CEEJitInfo::CompressDebugInfo()
+void CEEJitInfo::SetDebugInfo(PTR_BYTE pDebugInfo)
+{
+    ((CodeHeader*)m_CodeHeaderRW)->SetDebugInfo(pDebugInfo);
+}
+
+#ifdef FEATURE_INTERPRETER
+
+void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
+{
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(pArgs->coldCodeSize == 0);
+    _ASSERTE(pArgs->roDataSize == 0);
+
+    ULONG codeSize      = pArgs->hotCodeSize;
+    void **codeBlock    = &pArgs->hotCodeBlock;
+    void **codeBlockRW  = &pArgs->hotCodeBlockRW;
+    S_SIZE_T totalSize = S_SIZE_T(codeSize);
+
+    _ASSERTE(m_CodeHeader == 0 &&
+            // The jit-compiler sometimes tries to compile a method a second time
+            // if it failed the first time. In such a situation, m_CodeHeader may
+            // have already been assigned. Its OK to ignore this assert in such a
+            // situation - we will leak some memory, but that is acceptable
+            // since this should happen very rarely.
+            "Note that this may fire if the JITCompiler tries to recompile a method");
+    if( totalSize.IsOverflow() )
+    {
+        COMPlusThrowHR(CORJIT_OUTOFMEM);
+    }
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, MethodJitMemoryAllocatedForCode))
+    {
+        ULONGLONG ullMethodIdentifier = 0;
+        ULONGLONG ullModuleID = 0;
+        if (m_pMethodBeingCompiled)
+        {
+            Module* pModule = m_pMethodBeingCompiled->GetModule();
+            ullModuleID = (ULONGLONG)(TADDR)pModule;
+            ullMethodIdentifier = (ULONGLONG)m_pMethodBeingCompiled;
+        }
+        FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
+            pArgs->hotCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
+    }
+
+    m_jitManager->allocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
+                                                 , &m_pRealCodeHeader
+#ifdef FEATURE_EH_FUNCLETS
+                                                 , 0
+#endif
+                                                  );
+
+    BYTE* current = (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress();
+
+    // Interpreter doesn't use executable memory, so the writeable pointer to the header is the same as the read only one
+    _ASSERTE(m_CodeHeaderRW == m_CodeHeader);
+
+    *codeBlock = current;
+    *codeBlockRW = current;
+
+    current += codeSize;
+
+    pArgs->coldCodeBlock = NULL;
+    pArgs->coldCodeBlockRW = NULL;
+    pArgs->roDataBlock = NULL;
+    pArgs->roDataBlockRW = NULL;
+
+    _ASSERTE((SIZE_T)(current - (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress()) <= totalSize.Value());
+
+#ifdef _DEBUG
+    m_codeSize = codeSize;
+#endif  // _DEBUG
+
+    EE_TO_JIT_TRANSITION();
+}
+
+void * CInterpreterJitInfo::allocGCInfo (size_t size)
 {
     CONTRACTL {
         THROWS;
@@ -11093,11 +11182,107 @@ void CEEJitInfo::CompressDebugInfo()
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    PatchpointInfo* patchpointInfo = m_pPatchpointInfoFromJit;
-#else
-    PatchpointInfo* patchpointInfo = NULL;
-#endif
+    BYTE * block = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(m_CodeHeaderRW != 0);
+    _ASSERTE(((InterpreterCodeHeader*)m_CodeHeaderRW)->GetGCInfo() == 0);
+
+#ifdef HOST_64BIT
+    if (size & 0xFFFFFFFF80000000LL)
+    {
+        COMPlusThrowHR(CORJIT_OUTOFMEM);
+    }
+#endif // HOST_64BIT
+
+    block = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
+    _ASSERTE(block);      // allocFromJitMetaHeap throws if there's not enough memory
+
+    ((InterpreterCodeHeader*)m_CodeHeaderRW)->SetGCInfo(block);
+
+    EE_TO_JIT_TRANSITION();
+
+    return block;
+}
+
+void CInterpreterJitInfo::setEHcount (
+        unsigned      cEH)
+{
+    WRAPPER_NO_CONTRACT;
+
+    setEHcountWorker<InterpreterCodeHeader>(cEH);
+}
+
+void CInterpreterJitInfo::setEHinfo (
+        unsigned      EHnumber,
+        const CORINFO_EH_CLAUSE* clause)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    // <REVISIT_TODO> Fix make the Code Manager EH clauses EH_INFO+</REVISIT_TODO>
+    EE_ILEXCEPTION *pEHInfo = ((InterpreterCodeHeader*)m_CodeHeaderRW)->GetEHInfo();
+    setEHinfoWorker(pEHInfo, EHnumber, clause);
+
+    EE_TO_JIT_TRANSITION();
+}
+
+void CInterpreterJitInfo::WriteCodeBytes()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    SetRealCodeHeader<InterpreterCodeHeader>();
+}
+
+void CInterpreterJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    // The RemoveJitData call below requires the m_CodeHeader to be valid, so we need to write
+    // the code bytes to the target memory location.
+    WriteCodeBytes();
+
+    InterpreterCodeHeader* pCodeHeader = (InterpreterCodeHeader*)m_CodeHeader;
+    if (pCodeHeader)
+        jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
+}
+
+void CInterpreterJitInfo::WriteCode(EECodeGenManager * jitMgr)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    WriteCodeBytes();
+    // Now that the code header was written to the final location, publish the code via the nibble map
+    NibbleMapSet<InterpreterCodeHeader>();
+}
+
+void CInterpreterJitInfo::SetDebugInfo(PTR_BYTE pDebugInfo)
+{
+    ((InterpreterCodeHeader*)m_CodeHeaderRW)->SetDebugInfo(pDebugInfo);
+}
+#endif // FEATURE_INTERPRETER
+
+void CEECodeGenInfo::CompressDebugInfo()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    PatchpointInfo* patchpointInfo = GetPatchpointInfo();
 
     // Don't track JIT info for DynamicMethods.
     if (m_pMethodBeingCompiled->IsDynamicMethod() && !g_pConfig->GetTrackDynamicMethodDebugInfo())
@@ -11129,7 +11314,7 @@ void CEEJitInfo::CompressDebugInfo()
             writeFlagByte,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
-        m_CodeHeaderRW->SetDebugInfo(pDebugInfo);
+        SetDebugInfo(pDebugInfo);
     }
     EX_CATCH
     {
@@ -11285,7 +11470,9 @@ void CEEJitInfo::allocUnwindInfo (
         _ASSERTE(m_usedUnwindInfos > 0);
     }
 
-    PT_RUNTIME_FUNCTION pRuntimeFunction = m_CodeHeaderRW->GetUnwindInfo(m_usedUnwindInfos);
+    CodeHeader *pCodeHeaderRW = (CodeHeader *)m_CodeHeaderRW;
+
+    PT_RUNTIME_FUNCTION pRuntimeFunction = pCodeHeaderRW->GetUnwindInfo(m_usedUnwindInfos);
 
     m_usedUnwindInfos++;
 
@@ -11355,7 +11542,7 @@ void CEEJitInfo::allocUnwindInfo (
 
         for (ULONG iUnwindInfo = 0; iUnwindInfo < m_usedUnwindInfos - 1; iUnwindInfo++)
         {
-            PT_RUNTIME_FUNCTION pOtherFunction = m_CodeHeaderRW->GetUnwindInfo(iUnwindInfo);
+            PT_RUNTIME_FUNCTION pOtherFunction = pCodeHeaderRW->GetUnwindInfo(iUnwindInfo);
             _ASSERTE((   RUNTIME_FUNCTION__BeginAddress(pOtherFunction) >= RUNTIME_FUNCTION__EndAddress(pRuntimeFunction, baseAddress + writeableOffset)
                      || RUNTIME_FUNCTION__EndAddress(pOtherFunction, baseAddress + writeableOffset) <= RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction)));
         }
@@ -11711,12 +11898,21 @@ void CEEInfo::JitProcessShutdownWork()
         jitMgr->m_alternateJit->ProcessShutdownWork(this);
     }
 #endif // ALLOW_SXS_JIT
+
+#ifdef FEATURE_INTERPRETER
+    InterpreterJitManager* interpreterMgr = ExecutionManager::GetInterpreterJitManager();
+
+    if (interpreterMgr->m_interpreter != NULL)
+    {
+        interpreterMgr->m_interpreter->ProcessShutdownWork(this);
+    }
+#endif // FEATURE_INTERPRETER
 }
 
 /*********************************************************************/
-InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd,
-                                                  mdToken metaTok,
-                                                  void **ppValue)
+InfoAccessType CEECodeGenInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd,
+                                                      mdToken metaTok,
+                                                      void **ppValue)
 {
     CONTRACTL {
         THROWS;
@@ -11738,7 +11934,7 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
     {
         // If ConstructStringLiteral returns a pinned reference we can return it by value (IAT_VALUE)
         void* ppPinnedString = nullptr;
-        void** ptr = (void**)ConstructStringLiteral(scopeHnd, metaTok, &ppPinnedString);
+        STRINGREF* ptr = ConstructStringLiteral(scopeHnd, metaTok, &ppPinnedString);
 
         if (ppPinnedString != nullptr)
         {
@@ -11757,7 +11953,7 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
 }
 
 /*********************************************************************/
-InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
+InfoAccessType CEECodeGenInfo::emptyStringLiteral(void ** ppValue)
 {
     CONTRACTL {
         THROWS;
@@ -11987,8 +12183,8 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
 }
 
 /*********************************************************************/
-CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
-                                                            bool* pIsSpeculative)
+CORINFO_CLASS_HANDLE CEECodeGenInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
+                                                                bool* pIsSpeculative)
 {
     CONTRACTL {
         THROWS;
@@ -12077,8 +12273,8 @@ static void *GetClassSync(MethodTable *pMT)
 }
 
 /*********************************************************************/
-void* CEEJitInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
-                                void **ppIndirection)
+void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
+                                    void **ppIndirection)
 {
     CONTRACTL {
         THROWS;
@@ -12249,7 +12445,6 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             codeAlignment = 16;
         }
         totalSize.AlignUp(codeAlignment);
-
         if (roDataAlignment > codeAlignment) {
             // Add padding to align read-only data.
             totalSize += (roDataAlignment - codeAlignment);
@@ -12291,18 +12486,18 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             pArgs->hotCodeSize + pArgs->coldCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
-                          , &m_pRealCodeHeader
+    m_jitManager->allocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
+                                      , &m_pRealCodeHeader
 #ifdef FEATURE_EH_FUNCLETS
-                          , m_totalUnwindInfos
+                                      , m_totalUnwindInfos
 #endif
-                          );
+                                       );
 
 #ifdef FEATURE_EH_FUNCLETS
     m_moduleBase = m_pCodeHeap->GetModuleBase();
 #endif
 
-    BYTE* current = (BYTE *)m_CodeHeader->GetCodeStartAddress();
+    BYTE* current = (BYTE *)((CodeHeader*)m_CodeHeader)->GetCodeStartAddress();
     size_t writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
 
     *codeBlock = current;
@@ -12329,7 +12524,7 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     current += m_totalUnwindSize;
 #endif
 
-    _ASSERTE((SIZE_T)(current - (BYTE *)m_CodeHeader->GetCodeStartAddress()) <= totalSize.Value());
+    _ASSERTE((SIZE_T)(current - (BYTE *)((CodeHeader*)m_CodeHeader)->GetCodeStartAddress()) <= totalSize.Value());
 
 #ifdef _DEBUG
     m_codeSize = codeSize;
@@ -12347,12 +12542,12 @@ void * CEEJitInfo::allocGCInfo (size_t size)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void * block = NULL;
+    BYTE * block = NULL;
 
     JIT_TO_EE_TRANSITION();
 
     _ASSERTE(m_CodeHeaderRW != 0);
-    _ASSERTE(m_CodeHeaderRW->GetGCInfo() == 0);
+    _ASSERTE(((CodeHeader*)m_CodeHeaderRW)->GetGCInfo() == 0);
 
 #ifdef HOST_64BIT
     if (size & 0xFFFFFFFF80000000LL)
@@ -12361,22 +12556,18 @@ void * CEEJitInfo::allocGCInfo (size_t size)
     }
 #endif // HOST_64BIT
 
-    block = m_jitManager->allocGCInfo(m_CodeHeaderRW,(DWORD)size, &m_GCinfo_len);
-    if (!block)
-    {
-        COMPlusThrowHR(CORJIT_OUTOFMEM);
-    }
+    block = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
+    _ASSERTE(block);      // allocFromJitMetaHeap throws if there's not enough memory
 
-    _ASSERTE(m_CodeHeaderRW->GetGCInfo() != 0 && block == m_CodeHeaderRW->GetGCInfo());
+    ((CodeHeader*)m_CodeHeaderRW)->SetGCInfo(block);
 
     EE_TO_JIT_TRANSITION();
 
     return block;
 }
 
-/*********************************************************************/
-void CEEJitInfo::setEHcount (
-        unsigned      cEH)
+template<typename TCodeHeader>
+void CEECodeGenInfo::setEHcountWorker(unsigned cEH)
 {
     CONTRACTL {
         THROWS;
@@ -12388,19 +12579,38 @@ void CEEJitInfo::setEHcount (
 
     _ASSERTE(cEH != 0);
     _ASSERTE(m_CodeHeaderRW != 0);
-    _ASSERTE(m_CodeHeaderRW->GetEHInfo() == 0);
 
-    EE_ILEXCEPTION* ret;
-    ret = m_jitManager->allocEHInfo(m_CodeHeaderRW,cEH, &m_EHinfo_len);
-    _ASSERTE(ret);      // allocEHInfo throws if there's not enough memory
+    TCodeHeader *pCodeHeaderRW = ((TCodeHeader*)m_CodeHeaderRW);
 
-    _ASSERTE(m_CodeHeaderRW->GetEHInfo() != 0 && m_CodeHeaderRW->GetEHInfo()->EHCount() == cEH);
+    _ASSERTE(pCodeHeaderRW->GetEHInfo() == 0);
+
+    DWORD temp =  EE_ILEXCEPTION::Size(cEH);
+    DWORD blockSize = 0;
+    if (!ClrSafeInt<DWORD>::addition(temp, sizeof(size_t), blockSize))
+        COMPlusThrowOM();
+
+    BYTE *pEHInfo = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled, blockSize, &m_EHinfo_len);
+    _ASSERTE(pEHInfo);      // allocFromJitMetaHeap throws if there's not enough memory
+    _ASSERTE(m_EHinfo_len != 0);
+
+    pCodeHeaderRW->SetEHInfo((EE_ILEXCEPTION*)(pEHInfo + sizeof(size_t)));
+    pCodeHeaderRW->GetEHInfo()->Init(cEH);
+    *((size_t *)pEHInfo) = cEH;
 
     EE_TO_JIT_TRANSITION();
 }
 
 /*********************************************************************/
-void CEEJitInfo::setEHinfo (
+void CEEJitInfo::setEHcount (
+        unsigned      cEH)
+{
+    WRAPPER_NO_CONTRACT;
+
+    setEHcountWorker<CodeHeader>(cEH);
+}
+
+void CEECodeGenInfo::setEHinfoWorker(
+        EE_ILEXCEPTION *pEHInfo,
         unsigned      EHnumber,
         const CORINFO_EH_CLAUSE* clause)
 {
@@ -12410,12 +12620,9 @@ void CEEJitInfo::setEHinfo (
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    JIT_TO_EE_TRANSITION();
+    _ASSERTE(pEHInfo != 0 && EHnumber < pEHInfo->EHCount());
 
-    // <REVISIT_TODO> Fix make the Code Manager EH clauses EH_INFO+</REVISIT_TODO>
-    _ASSERTE(m_CodeHeaderRW->GetEHInfo() != 0 && EHnumber < m_CodeHeaderRW->GetEHInfo()->EHCount());
-
-    EE_ILEXCEPTION_CLAUSE* pEHClause = m_CodeHeaderRW->GetEHInfo()->EHClause(EHnumber);
+    EE_ILEXCEPTION_CLAUSE* pEHClause = pEHInfo->EHClause(EHnumber);
 
     pEHClause->TryStartPC     = clause->TryOffset;
     pEHClause->TryEndPC       = clause->TryLength;
@@ -12443,13 +12650,30 @@ void CEEJitInfo::setEHinfo (
         SetHasCachedTypeHandle(pEHClause);
         LOG((LF_EH, LL_INFO1000000, "  CachedTypeHandle: 0x%08x  ->  %p\n",        clause->ClassToken,    pEHClause->TypeHandle));
     }
+}
+
+void CEEJitInfo::setEHinfo (
+        unsigned      EHnumber,
+        const CORINFO_EH_CLAUSE* clause)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    // <REVISIT_TODO> Fix make the Code Manager EH clauses EH_INFO+</REVISIT_TODO>
+    EE_ILEXCEPTION *pEHInfo = ((CodeHeader*)m_CodeHeaderRW)->GetEHInfo();
+    setEHinfoWorker(pEHInfo, EHnumber, clause);
 
     EE_TO_JIT_TRANSITION();
 }
 
 /*********************************************************************/
 // get individual exception handler
-void CEEJitInfo::getEHinfo(
+void CEECodeGenInfo::getEHinfo(
                               CORINFO_METHOD_HANDLE  ftn,      /* IN  */
                               unsigned               EHnumber, /* IN  */
                               CORINFO_EH_CLAUSE*     clause)   /* OUT */
@@ -12466,24 +12690,26 @@ void CEEJitInfo::getEHinfo(
     {
         GetMethod(ftn)->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
     }
+    else if (ftn == CORINFO_METHOD_HANDLE(m_pMethodBeingCompiled))
+    {
+        getEHinfoHelper(ftn, EHnumber, clause, m_ILHeader);
+    }
     else
     {
-        _ASSERTE(ftn == CORINFO_METHOD_HANDLE(m_pMethodBeingCompiled));  // For now only support if the method being jitted
-        getEHinfoHelper(ftn, EHnumber, clause, m_ILHeader);
+        MethodDesc* method = GetMethod(ftn);
+        COR_ILMETHOD_DECODER header(method->GetILHeader(), method->GetMDImport(), NULL);
+        getEHinfoHelper(ftn, EHnumber, clause, &header);
     }
 
     EE_TO_JIT_TRANSITION();
 }
 
-//
-// Helper function because can't have dtors in BEGIN_SO_TOLERANT_CODE.
-//
-CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
-                                 CEEInfo *comp,
-                                 struct CORINFO_METHOD_INFO *info,
-                                 CORJIT_FLAGS jitFlags,
-                                 BYTE **nativeEntry,
-                                 uint32_t *nativeSizeOfCode)
+CorJitResult invokeCompileMethodHelper(EECodeGenManager *jitMgr,
+                                       CEECodeGenInfo *comp,
+                                       struct CORINFO_METHOD_INFO *info,
+                                       CORJIT_FLAGS jitFlags,
+                                       BYTE **nativeEntry,
+                                       uint32_t *nativeSizeOfCode)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -12491,36 +12717,48 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
     CorJitResult ret = CORJIT_SKIPPED;   // Note that CORJIT_SKIPPED is an error exit status code
 
+    comp->setJitFlags(jitFlags);
+
 #if defined(ALLOW_SXS_JIT)
-    if (FAILED(ret) && jitMgr->m_alternateJit)
+    ICorJitCompiler *jitCompiler = jitMgr->GetAltCompiler();
+    if (jitCompiler != NULL)
     {
         CORJIT_FLAGS altJitFlags = jitFlags;
         altJitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
         comp->setJitFlags(altJitFlags);
-        ret = jitMgr->m_alternateJit->compileMethod( comp,
-                                                     info,
-                                                     CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
-                                                     nativeEntry,
-                                                     nativeSizeOfCode);
 
-        // If we failed to jit, then fall back to the primary Jit.
+        ret = jitCompiler->compileMethod(comp,
+                                         info,
+                                         CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
+                                         nativeEntry,
+                                         nativeSizeOfCode);
+
         if (FAILED(ret))
         {
-            ((CEEJitInfo*)comp)->BackoutJitData(jitMgr);
-            ((CEEJitInfo*)comp)->ResetForJitRetry();
+            comp->BackoutJitData(jitMgr);
+            comp->ResetForJitRetry();
             ret = CORJIT_SKIPPED;
         }
     }
 #endif // defined(ALLOW_SXS_JIT)
+
     comp->setJitFlags(jitFlags);
 
+    // CORJIT_SKIPPED also evaluates as "FAILED"
     if (FAILED(ret))
     {
-        ret = jitMgr->m_jit->compileMethod( comp,
-                                            info,
-                                            CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
-                                            nativeEntry,
-                                            nativeSizeOfCode);
+        jitCompiler = jitMgr->GetCompiler();
+        ret = jitCompiler->compileMethod(comp,
+                                         info,
+                                         CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
+                                         nativeEntry,
+                                         nativeSizeOfCode);
+        if (FAILED(ret))
+        {
+            comp->BackoutJitData(jitMgr);
+            comp->ResetForJitRetry();
+            ret = CORJIT_SKIPPED;
+        }
     }
 
     // Cleanup any internal data structures allocated
@@ -12528,31 +12766,19 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     // If the JIT fails we keep the IL around and will
     // try reJIT the same IL.  VSW 525059
     //
-    if (SUCCEEDED(ret) && !((CEEJitInfo*)comp)->JitAgain())
+    if (SUCCEEDED(ret) && !comp->JitAgain())
     {
-        ((CEEJitInfo*)comp)->CompressDebugInfo();
-
+        comp->CompressDebugInfo();
         comp->MethodCompileComplete(info->ftn);
     }
-
-
-#if defined(FEATURE_GDBJIT)
-    bool isJittedEntry = SUCCEEDED(ret) && *nativeEntry != NULL;
-
-    if (isJittedEntry)
-    {
-        CodeHeader* pCH = ((CodeHeader*)((PCODE)*nativeEntry & ~1)) - 1;
-        pCH->SetCalledMethods((PTR_VOID)comp->GetCalledMethods());
-    }
-#endif
 
     return ret;
 }
 
 
 /*********************************************************************/
-CorJitResult invokeCompileMethod(EEJitManager *jitMgr,
-                                 CEEInfo *comp,
+CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
+                                 CEECodeGenInfo *comp,
                                  struct CORINFO_METHOD_INFO *info,
                                  CORJIT_FLAGS jitFlags,
                                  BYTE **nativeEntry,
@@ -12670,7 +12896,7 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
 #endif // DEBUGGING_SUPPORTED
 
-    if (CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
+    if (pModule->AreJITOptimizationsDisabled())
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
     }
@@ -12816,6 +13042,168 @@ BOOL g_fAllowRel32 = TRUE;
 #endif
 
 
+PCODE UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *pJitInfo, CORJIT_FLAGS* pJitFlags, CORINFO_METHOD_INFO methodInfo,
+                              MethodInfoHelperContext *pCxt, NativeCodeVersion nativeCodeVersion, ULONG* pSizeOfCode)
+{
+    STANDARD_VM_CONTRACT;
+    if (pCxt->HasTransientMethodDetails())
+        pJitInfo->AddTransientMethodDetails(pCxt->CreateTransientMethodDetails());
+
+    MethodDesc * pMethodForSecurity = pJitInfo->GetMethodForSecurity(methodInfo.ftn);
+    MethodDesc * ftn = nativeCodeVersion.GetMethodDesc();
+
+#ifdef _DEBUG
+    LPCUTF8 cls  = ftn->GetMethodTable()->GetDebugClassName();
+    LPCUTF8 name = ftn->GetName();
+#endif
+
+    //Since the check could trigger a demand, we have to do this every time.
+    //This is actually an overly complicated way to make sure that a method can access all its arguments
+    //and its return type.
+    AccessCheckOptions::AccessCheckType accessCheckType = AccessCheckOptions::kNormalAccessibilityChecks;
+    TypeHandle ownerTypeForSecurity = TypeHandle(pMethodForSecurity->GetMethodTable());
+    BOOL doAccessCheck = TRUE;
+    if (pMethodForSecurity->IsDynamicMethod())
+    {
+        doAccessCheck = ModifyCheckForDynamicMethod(pMethodForSecurity->AsDynamicMethodDesc()->GetResolver(),
+                                                    &ownerTypeForSecurity,
+                                                    &accessCheckType);
+    }
+    if (doAccessCheck)
+    {
+        AccessCheckOptions accessCheckOptions(accessCheckType,
+                                            NULL,
+                                            TRUE /*Throw on error*/,
+                                            pMethodForSecurity);
+
+        AccessCheckContext accessContext(pMethodForSecurity, ownerTypeForSecurity.GetMethodTable());
+
+        // We now do an access check from pMethodForSecurity to pMethodForSecurity, its sole purpose is to
+        // verify that pMethodForSecurity/ownerTypeForSecurity has access to all its parameters.
+
+        // ownerTypeForSecurity.GetMethodTable() can be null if the pMethodForSecurity is a DynamicMethod
+        // associated with a TypeDesc (Array, Ptr, Ref, or FnPtr). That doesn't make any sense, but we will
+        // just do an access check from a NULL context which means only public types are accessible.
+        if (!ClassLoader::CanAccess(&accessContext,
+                                    ownerTypeForSecurity.GetMethodTable(),
+                                    ownerTypeForSecurity.GetAssembly(),
+                                    pMethodForSecurity->GetAttrs(),
+                                    pMethodForSecurity,
+                                    NULL,
+                                    accessCheckOptions))
+        {
+            EX_THROW(EEMethodException, (pMethodForSecurity));
+        }
+    }
+
+    CorJitResult res = CORJIT_SKIPPED;
+    PBYTE nativeEntry = NULL;
+    uint32_t sizeOfCode = 0;
+
+    {
+        GCX_COOP();
+
+        /* There is a double indirection to call compileMethod  - can we
+        improve this with the new structure? */
+
+#ifdef PERF_TRACK_METHOD_JITTIMES
+        //Because we're not calling QPC enough.  I'm not going to track times if we're just importing.
+        LARGE_INTEGER methodJitTimeStart = {0};
+        QueryPerformanceCounter (&methodJitTimeStart);
+
+#endif
+        LOG((LF_CORDB, LL_EVERYTHING, "Calling invokeCompileMethod...\n"));
+
+        res = invokeCompileMethod(pJitMgr,
+                                  pJitInfo,
+                                  &methodInfo,
+                                  *pJitFlags,
+                                  &nativeEntry,
+                                  &sizeOfCode);
+
+#if FEATURE_PERFMAP
+        // Save the code size so that it can be reported to the perfmap.
+        if (pSizeOfCode != NULL)
+        {
+            *pSizeOfCode = sizeOfCode;
+        }
+#endif
+
+#ifdef PERF_TRACK_METHOD_JITTIMES
+        //store the time in the string buffer.  Module name and token are unique enough.  Also, do not
+        //capture importing time, just actual compilation time.
+        {
+            LARGE_INTEGER methodJitTimeStop;
+            QueryPerformanceCounter(&methodJitTimeStop);
+
+            SString moduleName;
+            ftn->GetModule()->GetDomainAssembly()->GetPEAssembly()->GetPathOrCodeBase(moduleName);
+
+            SString codeBase;
+            codeBase.AppendPrintf("%s,0x%x,%d,%d\n",
+                            moduleName.GetUTF8(), //module name
+                            ftn->GetMemberDef(), //method token
+                            (unsigned)(methodJitTimeStop.QuadPart - methodJitTimeStart.QuadPart), //cycle count
+                            methodInfo.ILCodeSize //il size
+                            );
+            OutputDebugStringUtf8(codeBase.GetUTF8());
+        }
+#endif // PERF_TRACK_METHOD_JITTIMES
+
+    }
+
+    LOG((LF_JIT, LL_INFO10000, "Done Jitting method %s::%s  %s }\n",cls,name, ftn->m_pszDebugMethodSignature));
+
+    if (res == CORJIT_SKIPPED)
+    {
+        // We are done
+        return 0;
+    }
+
+    if (SUCCEEDED(res))
+    {
+        pJitInfo->WriteCode(pJitMgr);
+#if defined(DEBUGGING_SUPPORTED)
+        //
+        // Notify the debugger that we have successfully jitted the function
+        //
+        if (g_pDebugInterface)
+        {
+            g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
+        }
+#endif // DEBUGGING_SUPPORTED
+    }
+    else
+    {
+        pJitInfo->BackoutJitData(pJitMgr);
+        ThrowExceptionForJit(res);
+    }
+
+    if (!nativeEntry)
+        COMPlusThrow(kInvalidProgramException);
+
+    LOG((LF_JIT, LL_INFO10000,
+        "Jitted Entry at" FMT_ADDR "method %s::%s %s\n", DBG_ADDR(nativeEntry),
+        ftn->m_pszDebugClassName, ftn->m_pszDebugMethodName, ftn->m_pszDebugMethodSignature));
+
+#ifdef _DEBUG
+    LPCUTF8 pszDebugClassName = ftn->m_pszDebugClassName;
+    LPCUTF8 pszDebugMethodName = ftn->m_pszDebugMethodName;
+    LPCUTF8 pszDebugMethodSignature = ftn->m_pszDebugMethodSignature;
+#elif 0
+    LPCUTF8 pszNamespace;
+    LPCUTF8 pszDebugClassName = ftn->GetMethodTable()->GetFullyQualifiedNameInfo(&pszNamespace);
+    LPCUTF8 pszDebugMethodName = ftn->GetName();
+    LPCUTF8 pszDebugMethodSignature = "";
+#endif
+
+    // For dynamic method, the code memory may be reused, thus we are passing in the hasCodeExecutedBefore set to true
+    ClrFlushInstructionCache(nativeEntry, sizeOfCode, /* hasCodeExecutedBefore */ true);
+
+    // We are done
+    return (PCODE)nativeEntry;
+}
+
 // ********************************************************************
 //                  README!!
 // ********************************************************************
@@ -12848,6 +13236,18 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     COOPERATIVE_TRANSITION_BEGIN();
 
     timer.Start();
+
+#ifdef FEATURE_INTERPRETER
+    InterpreterJitManager *interpreterMgr = ExecutionManager::GetInterpreterJitManager();
+
+    LPWSTR interpreterConfig;
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
+
+    if ((interpreterConfig != NULL) && !interpreterMgr->LoadInterpreter())
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load interpreter"));
+    }
+#endif // FEATURE_INTERPRETER
 
     EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
     if (!jitMgr->LoadJIT())
@@ -12908,233 +13308,99 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
 
+#ifdef FEATURE_INTERPRETER
+    bool useInterpreter = interpreterMgr->IsInterpreterLoaded();
+
+    if (useInterpreter)
+    {
+        CInterpreterJitInfo interpreterJitInfo(ftn, ILHeader, interpreterMgr, !pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
+        ret = UnsafeJitFunctionWorker(interpreterMgr, &interpreterJitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
+    }
+#endif // FEATURE_INTERPRETER
+
+    if (!ret)
+    {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-    BOOL fForceJumpStubOverflow = FALSE;
+        BOOL fForceJumpStubOverflow = FALSE;
 
 #ifdef _DEBUG
-    // Always exercise the overflow codepath with force relocs
-    if (PEDecoder::GetForceRelocs())
-        fForceJumpStubOverflow = TRUE;
+        // Always exercise the overflow codepath with force relocs
+        if (PEDecoder::GetForceRelocs())
+            fForceJumpStubOverflow = TRUE;
 #endif
 
 #if defined(TARGET_AMD64)
-    BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow) && g_pConfig->JitEnableOptionalRelocs();
+        BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow) && g_pConfig->JitEnableOptionalRelocs();
 #endif
 
-    size_t reserveForJumpStubs = 0;
+        size_t reserveForJumpStubs = 0;
 
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
-    while (true)
-    {
-        CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
+        while (true)
+        {
+            CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 #if defined(TARGET_AMD64)
-        if (fForceJumpStubOverflow)
-            jitInfo.SetJumpStubOverflow(fAllowRel32);
-        jitInfo.SetAllowRel32(fAllowRel32);
+            if (fForceJumpStubOverflow)
+                jitInfo.SetJumpStubOverflow(fAllowRel32);
+            jitInfo.SetAllowRel32(fAllowRel32);
 #else
-        if (fForceJumpStubOverflow)
-            jitInfo.SetJumpStubOverflow(fForceJumpStubOverflow);
+            if (fForceJumpStubOverflow)
+                jitInfo.SetJumpStubOverflow(fForceJumpStubOverflow);
 #endif
-        jitInfo.SetReserveForJumpStubs(reserveForJumpStubs);
+            jitInfo.SetReserveForJumpStubs(reserveForJumpStubs);
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-        // If this is an OSR jit request, grab the OSR info so we can pass it to the jit
-        if (pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR))
-        {
-            unsigned ilOffset = 0;
-            PatchpointInfo* patchpointInfo = nativeCodeVersion.GetOSRInfo(&ilOffset);
-            jitInfo.SetOSRInfo(patchpointInfo, ilOffset);
-        }
+            // If this is an OSR jit request, grab the OSR info so we can pass it to the jit
+            if (pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR))
+            {
+                unsigned ilOffset = 0;
+                PatchpointInfo* patchpointInfo = nativeCodeVersion.GetOSRInfo(&ilOffset);
+                jitInfo.SetOSRInfo(patchpointInfo, ilOffset);
+            }
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
-        if (cxt.HasTransientMethodDetails())
-            jitInfo.AddTransientMethodDetails(cxt.CreateTransientMethodDetails());
-
-        MethodDesc * pMethodForSecurity = jitInfo.GetMethodForSecurity(methodInfo.ftn);
-
-        //Since the check could trigger a demand, we have to do this every time.
-        //This is actually an overly complicated way to make sure that a method can access all its arguments
-        //and its return type.
-        AccessCheckOptions::AccessCheckType accessCheckType = AccessCheckOptions::kNormalAccessibilityChecks;
-        TypeHandle ownerTypeForSecurity = TypeHandle(pMethodForSecurity->GetMethodTable());
-        BOOL doAccessCheck = TRUE;
-        if (pMethodForSecurity->IsDynamicMethod())
-        {
-            doAccessCheck = ModifyCheckForDynamicMethod(pMethodForSecurity->AsDynamicMethodDesc()->GetResolver(),
-                                                        &ownerTypeForSecurity,
-                                                        &accessCheckType);
-        }
-        if (doAccessCheck)
-        {
-            AccessCheckOptions accessCheckOptions(accessCheckType,
-                                                  NULL,
-                                                  TRUE /*Throw on error*/,
-                                                  pMethodForSecurity);
-
-            AccessCheckContext accessContext(pMethodForSecurity, ownerTypeForSecurity.GetMethodTable());
-
-            // We now do an access check from pMethodForSecurity to pMethodForSecurity, its sole purpose is to
-            // verify that pMethodForSecurity/ownerTypeForSecurity has access to all its parameters.
-
-            // ownerTypeForSecurity.GetMethodTable() can be null if the pMethodForSecurity is a DynamicMethod
-            // associated with a TypeDesc (Array, Ptr, Ref, or FnPtr). That doesn't make any sense, but we will
-            // just do an access check from a NULL context which means only public types are accessible.
-            if (!ClassLoader::CanAccess(&accessContext,
-                                        ownerTypeForSecurity.GetMethodTable(),
-                                        ownerTypeForSecurity.GetAssembly(),
-                                        pMethodForSecurity->GetAttrs(),
-                                        pMethodForSecurity,
-                                        NULL,
-                                        accessCheckOptions))
-            {
-                EX_THROW(EEMethodException, (pMethodForSecurity));
-            }
-        }
-
-        CorJitResult res;
-        PBYTE nativeEntry;
-        uint32_t sizeOfCode;
-
-        {
-            GCX_COOP();
-
-            /* There is a double indirection to call compileMethod  - can we
-               improve this with the new structure? */
-
-#ifdef PERF_TRACK_METHOD_JITTIMES
-            //Because we're not calling QPC enough.  I'm not going to track times if we're just importing.
-            LARGE_INTEGER methodJitTimeStart = {0};
-            QueryPerformanceCounter (&methodJitTimeStart);
-
-#endif
-            LOG((LF_CORDB, LL_EVERYTHING, "Calling invokeCompileMethod...\n"));
-
-            res = invokeCompileMethod(jitMgr,
-                                      &jitInfo,
-                                      &methodInfo,
-                                      *pJitFlags,
-                                      &nativeEntry,
-                                      &sizeOfCode);
-
-            LOG((LF_CORDB, LL_EVERYTHING, "Got through invokeCompileMethod\n"));
-
-#if FEATURE_PERFMAP
-            // Save the code size so that it can be reported to the perfmap.
-            if (pSizeOfCode != NULL)
-            {
-                *pSizeOfCode = sizeOfCode;
-            }
-#endif
-
-#ifdef PERF_TRACK_METHOD_JITTIMES
-            //store the time in the string buffer.  Module name and token are unique enough.  Also, do not
-            //capture importing time, just actual compilation time.
-            {
-                LARGE_INTEGER methodJitTimeStop;
-                QueryPerformanceCounter(&methodJitTimeStop);
-
-                SString moduleName;
-                ftn->GetModule()->GetDomainAssembly()->GetPEAssembly()->GetPathOrCodeBase(moduleName);
-
-                SString codeBase;
-                codeBase.AppendPrintf("%s,0x%x,%d,%d\n",
-                                 moduleName.GetUTF8(), //module name
-                                 ftn->GetMemberDef(), //method token
-                                 (unsigned)(methodJitTimeStop.QuadPart - methodJitTimeStart.QuadPart), //cycle count
-                                 methodInfo.ILCodeSize //il size
-                                );
-                OutputDebugStringUtf8(codeBase.GetUTF8());
-            }
-#endif // PERF_TRACK_METHOD_JITTIMES
-
-        }
-
-        LOG((LF_JIT, LL_INFO10000, "Done Jitting method %s::%s  %s }\n",cls,name, ftn->m_pszDebugMethodSignature));
-
-        if (SUCCEEDED(res))
-        {
-            jitInfo.WriteCode(jitMgr);
-#if defined(DEBUGGING_SUPPORTED)
-            //
-            // Notify the debugger that we have successfully jitted the function
-            //
-            if (g_pDebugInterface)
-            {
-                if (!jitInfo.JitAgain())
-                {
-                    g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
-                }
-            }
-#endif // DEBUGGING_SUPPORTED
-        }
-        else
-        {
-            jitInfo.BackoutJitData(jitMgr);
-            ThrowExceptionForJit(res);
-        }
-
-        if (!nativeEntry)
-            COMPlusThrow(kInvalidProgramException);
+            ret = UnsafeJitFunctionWorker(jitMgr, &jitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
+            if (!ret)
+                COMPlusThrow(kInvalidProgramException);
 
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-        if (jitInfo.IsJumpStubOverflow())
-        {
-            // Backout and try again with fAllowRel32 == FALSE.
-            jitInfo.BackoutJitData(jitMgr);
+            if (jitInfo.IsJumpStubOverflow())
+            {
+                // Backout and try again with fAllowRel32 == FALSE.
+                jitInfo.BackoutJitData(jitMgr);
 
 #ifdef TARGET_AMD64
-            // Disallow rel32 relocs in future.
-            g_fAllowRel32 = FALSE;
+                // Disallow rel32 relocs in future.
+                g_fAllowRel32 = FALSE;
 
-            fAllowRel32 = FALSE;
+                fAllowRel32 = FALSE;
 #endif // TARGET_AMD64
 #ifdef TARGET_ARM64
-            fForceJumpStubOverflow = FALSE;
+                fForceJumpStubOverflow = FALSE;
 #endif // TARGET_ARM64
 
-            reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
+                reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
 
-            // Get any transient method details and take ownership
-            // from the JITInfo instance. We are going to be recreating
-            // a new JITInfo and will reuse these details there.
-            TransientMethodDetails details = jitInfo.RemoveTransientMethodDetails(ftn);
-            cxt.TakeOwnership(std::move(details));
-            continue;
-        }
+                // Get any transient method details and take ownership
+                // from the JITInfo instance. We are going to be recreating
+                // a new JITInfo and will reuse these details there.
+                TransientMethodDetails details = jitInfo.RemoveTransientMethodDetails(ftn);
+                cxt.TakeOwnership(std::move(details));
+                continue;
+            }
 #endif // (TARGET_AMD64 || TARGET_ARM64)
 
-        LOG((LF_JIT, LL_INFO10000,
-            "Jitted Entry at" FMT_ADDR "method %s::%s %s\n", DBG_ADDR(nativeEntry),
-             ftn->m_pszDebugClassName, ftn->m_pszDebugMethodName, ftn->m_pszDebugMethodSignature));
-
-#ifdef _DEBUG
-        LPCUTF8 pszDebugClassName = ftn->m_pszDebugClassName;
-        LPCUTF8 pszDebugMethodName = ftn->m_pszDebugMethodName;
-        LPCUTF8 pszDebugMethodSignature = ftn->m_pszDebugMethodSignature;
-#elif 0
-        LPCUTF8 pszNamespace;
-        LPCUTF8 pszDebugClassName = ftn->GetMethodTable()->GetFullyQualifiedNameInfo(&pszNamespace);
-        LPCUTF8 pszDebugMethodName = ftn->GetName();
-        LPCUTF8 pszDebugMethodSignature = "";
-#endif
-
-        //DbgPrintf("Jitted Entry at" FMT_ADDR "method %s::%s %s size %08x\n", DBG_ADDR(nativeEntry),
-        //          pszDebugClassName, pszDebugMethodName, pszDebugMethodSignature, sizeOfCode);
-
-        // For dynamic method, the code memory may be reused, thus we are passing in the hasCodeExecutedBefore set to true
-        ClrFlushInstructionCache(nativeEntry, sizeOfCode, /* hasCodeExecutedBefore */ true);
-        ret = (PCODE)nativeEntry;
-
 #ifdef TARGET_ARM
-        ret |= THUMB_CODE;
+            ret |= THUMB_CODE;
 #endif
 
-        // We are done
-        break;
+            // We are done
+            break;
+        }
     }
 
 #ifdef _DEBUG
@@ -13144,7 +13410,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         fHeartbeat = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitHeartbeat);
 
     if (fHeartbeat)
-        printf(".");
+        minipal_log_print_info(".");
 #endif // _DEBUG
 
     timer.Stop();
@@ -13250,7 +13516,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             result = FALSE;
 
             DefineFullyQualifiedNameForClass();
-            printf("Type %s: expected size 0x%08x, actual size 0x%08x\n",
+            minipal_log_print_error("Type %s: expected size 0x%08x, actual size 0x%08x\n",
                 GetFullyQualifiedNameForClass(pMT), dwExpectedSize, dwActualSize);
         }
         else
@@ -13273,7 +13539,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 result = FALSE;
 
                 DefineFullyQualifiedNameForClass();
-                printf("Type %s: expected HFA type %08x, actual %08x\n",
+                minipal_log_print_error("Type %s: expected HFA type %08x, actual %08x\n",
                     GetFullyQualifiedNameForClass(pMT), dwExpectedHFAType, dwActualHFAType);
             }
             else
@@ -13291,7 +13557,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 result = FALSE;
 
                 DefineFullyQualifiedNameForClass();
-                printf("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n",
+                minipal_log_print_error("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n",
                     GetFullyQualifiedNameForClass(pMT));
             }
             else
@@ -13320,7 +13586,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 result = FALSE;
 
                 DefineFullyQualifiedNameForClass();
-                printf("Type %s: expected alignment 0x%08x, actual 0x%08x\n",
+                minipal_log_print_error("Type %s: expected alignment 0x%08x, actual 0x%08x\n",
                     GetFullyQualifiedNameForClass(pMT), dwExpectedAlignment, dwActualAlignment);
             }
             else
@@ -13342,7 +13608,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                     result = FALSE;
 
                     DefineFullyQualifiedNameForClass();
-                    printf("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n",
+                    minipal_log_print_error("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n",
                         GetFullyQualifiedNameForClass(pMT));
                 }
                 else
@@ -13367,7 +13633,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                     result = FALSE;
 
                     DefineFullyQualifiedNameForClass();
-                    printf("Type %s: GC refmap content doesn't match\n",
+                    minipal_log_print_error("Type %s: GC refmap content doesn't match\n",
                         GetFullyQualifiedNameForClass(pMT));
                 }
                 else
@@ -13671,7 +13937,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             CorInfoHelpFunc corInfoHelpFunc = MapReadyToRunHelper((ReadyToRunHelper)helperNum);
             if (corInfoHelpFunc != CORINFO_HELP_UNDEF)
             {
-                result = (size_t)CEEJitInfo::getHelperFtnStatic(corInfoHelpFunc);
+                result = (size_t)CEECodeGenInfo::getHelperFtnStatic(corInfoHelpFunc);
             }
             else
             {
