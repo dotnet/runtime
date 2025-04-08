@@ -8,6 +8,8 @@ using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
+#pragma warning disable CA1510, CA1513
+
 // The type being internal is making unused parameter warnings fire for
 // not-implemented methods. Suppress those warnings.
 #pragma warning disable IDE0060
@@ -24,7 +26,7 @@ namespace System.Security.Cryptography
     ///   cryptographic libraries.
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-    internal abstract partial class MLDsa : IDisposable
+    public abstract partial class MLDsa : IDisposable
 #if DESIGNTIMEINTERFACES
 #pragma warning disable SA1001
         , IImportExportShape<MLDsa>
@@ -32,17 +34,12 @@ namespace System.Security.Cryptography
 #endif
     {
         private const int MaxContextLength = 255;
-        private const int PrivateSeedSizeInBytes = 32;
 
-        private readonly ParameterSetInfo _parameterSetInfo;
+        /// <summary>
+        ///  Gets the specific ML-DSA algorithm for this key.
+        /// </summary>
+        public MLDsaAlgorithm Algorithm { get; }
         private bool _disposed;
-
-        private MLDsa(ParameterSetInfo parameterSetInfo)
-        {
-            Debug.Assert(parameterSetInfo is not null);
-
-            _parameterSetInfo = parameterSetInfo;
-        }
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="MLDsa" /> class.
@@ -51,13 +48,21 @@ namespace System.Security.Cryptography
         ///   The specific ML-DSA algorithm for this key.
         /// </param>
         protected MLDsa(MLDsaAlgorithm algorithm)
-            : this(ParameterSetInfo.GetParameterSetInfo(algorithm))
         {
+            if (algorithm is null)
+            {
+                throw new ArgumentNullException(nameof(algorithm));
+            }
+
+            Algorithm = algorithm;
         }
 
         protected void ThrowIfDisposed()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(typeof(MLDsa).FullName);
+            }
         }
 
         /// <summary>
@@ -69,82 +74,16 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get; } = MLDsaImplementation.SupportsAny();
 
         /// <summary>
-        ///   Gets the size of the signature for the specified algorithm.
-        /// </summary>
-        /// <param name="algorithm">
-        ///   The specific ML-DSA algorithm to query.
-        /// </param>
-        /// <returns>
-        ///   The size, in bytes, of the signature for the specified algorithm.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="algorithm"/> is not a valid ML-DSA algorithm identifier.
-        /// </exception>
-        public static int GetSignatureSizeInBytes(MLDsaAlgorithm algorithm) =>
-            ParameterSetInfo.GetParameterSetInfo(algorithm).SignatureSizeInBytes;
-
-        /// <summary>
-        ///   Gets the size of the ML-DSA secret key for the specified algorithm.
-        /// </summary>
-        /// <param name="algorithm">
-        ///   The specific ML-DSA algorithm to query.
-        /// </param>
-        /// <returns>
-        ///   The size, in bytes, of the ML-DSA secret key for the specified algorithm.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="algorithm"/> is not a valid ML-DSA algorithm identifier.
-        /// </exception>
-        public static int GetSecretKeySizeInBytes(MLDsaAlgorithm algorithm) =>
-            ParameterSetInfo.GetParameterSetInfo(algorithm).SecretKeySizeInBytes;
-
-        /// <summary>
-        ///   Gets the size of the ML-DSA public key for the specified algorithm.
-        /// </summary>
-        /// <param name="algorithm">
-        ///   The specific ML-DSA algorithm to query.
-        /// </param>
-        /// <returns>
-        ///   The size, in bytes, of the ML-DSA public key for the specified algorithm.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <paramref name="algorithm"/> is not a valid ML-DSA algorithm identifier.
-        /// </exception>
-        public static int GetPublicKeySizeInBytes(MLDsaAlgorithm algorithm) =>
-            ParameterSetInfo.GetParameterSetInfo(algorithm).PublicKeySizeInBytes;
-
-        /// <summary>
-        ///   Gets the size, in bytes, of the signature for the current instance.
-        /// </summary>
-        /// <value>
-        ///   The size, in bytes, of the signature for the current instance.
-        /// </value>
-        public int SignatureSizeInBytes => _parameterSetInfo.SignatureSizeInBytes;
-
-        /// <summary>
-        ///   Gets the size, in bytes, of the ML-DSA secret key for the current instance.
-        /// </summary>
-        /// <value>
-        ///   The size, in bytes, of the ML-DSA secret key for the current instance.
-        /// </value>
-        public int SecretKeySizeInBytes => _parameterSetInfo.SecretKeySizeInBytes;
-
-        /// <summary>
-        ///   Gets the size, in bytes, of the ML-DSA public key for the current instance.
-        /// </summary>
-        /// <value>
-        ///   The size, in bytes, of the ML-DSA public key for the current instance.
-        /// </value>
-        public int PublicKeySizeInBytes => _parameterSetInfo.PublicKeySizeInBytes;
-
-        /// <summary>
         ///  Releases all resources used by the <see cref="MLDsa"/> class.
         /// </summary>
         public void Dispose()
         {
-            Dispose(true);
-            _disposed = true;
-            GC.SuppressFinalize(this);
+            if (!_disposed)
+            {
+                Dispose(true);
+                _disposed = true;
+                GC.SuppressFinalize(this);
+            }
         }
 
         /// <summary>
@@ -180,8 +119,6 @@ namespace System.Security.Cryptography
         /// </exception>
         public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
-            ThrowIfDisposed();
-
             if (context.Length > MaxContextLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -190,13 +127,14 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            if (destination.Length < SignatureSizeInBytes)
+            if (destination.Length < Algorithm.SignatureSizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
-            SignDataCore(data, context, destination.Slice(0, SignatureSizeInBytes));
-            return SignatureSizeInBytes;
+            ThrowIfDisposed();
+            SignDataCore(data, context, destination.Slice(0, Algorithm.SignatureSizeInBytes));
+            return Algorithm.SignatureSizeInBytes;
         }
 
         // TODO: SignPreHash
@@ -231,8 +169,6 @@ namespace System.Security.Cryptography
         /// </exception>
         public bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> context = default)
         {
-            ThrowIfDisposed();
-
             if (context.Length > MaxContextLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -241,7 +177,9 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            if (signature.Length != SignatureSizeInBytes)
+            ThrowIfDisposed();
+
+            if (signature.Length != Algorithm.SignatureSizeInBytes)
             {
                 return false;
             }
@@ -686,15 +624,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public int ExportMLDsaPublicKey(Span<byte> destination)
         {
-            ThrowIfDisposed();
-
-            if (destination.Length < PublicKeySizeInBytes)
+            if (destination.Length < Algorithm.PublicKeySizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
-            ExportMLDsaPublicKeyCore(destination.Slice(0, PublicKeySizeInBytes));
-            return PublicKeySizeInBytes;
+            ThrowIfDisposed();
+            ExportMLDsaPublicKeyCore(destination.Slice(0, Algorithm.PublicKeySizeInBytes));
+            return Algorithm.PublicKeySizeInBytes;
         }
 
         /// <summary>
@@ -714,15 +651,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public int ExportMLDsaSecretKey(Span<byte> destination)
         {
-            ThrowIfDisposed();
-
-            if (destination.Length < SecretKeySizeInBytes)
+            if (destination.Length < Algorithm.SecretKeySizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
-            ExportMLDsaSecretKeyCore(destination.Slice(0, SecretKeySizeInBytes));
-            return SecretKeySizeInBytes;
+            ThrowIfDisposed();
+            ExportMLDsaSecretKeyCore(destination.Slice(0, Algorithm.SecretKeySizeInBytes));
+            return Algorithm.SecretKeySizeInBytes;
         }
 
         /// <summary>
@@ -742,54 +678,44 @@ namespace System.Security.Cryptography
         /// </exception>
         public int ExportMLDsaPrivateSeed(Span<byte> destination)
         {
-            ThrowIfDisposed();
-
-            if (destination.Length < PrivateSeedSizeInBytes)
+            if (destination.Length < Algorithm.PrivateSeedSizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
-            ExportMLDsaPrivateSeedCore(destination.Slice(0, PrivateSeedSizeInBytes));
-            return PrivateSeedSizeInBytes;
+            ThrowIfDisposed();
+            ExportMLDsaPrivateSeedCore(destination.Slice(0, Algorithm.PrivateSeedSizeInBytes));
+            return Algorithm.PrivateSeedSizeInBytes;
         }
 
         /// <summary>
-        ///   Generates a new ML-DSA-44 key.
+        ///   Generates a new ML-DSA key.
         /// </summary>
+        /// <param name="algorithm">
+        ///   An algorithm identifying what kind of ML-DSA key to generate.
+        /// </param>
         /// <returns>
         ///   The generated key.
         /// </returns>
-        public static MLDsa GenerateMLDsa44Key()
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm" /> is <see langword="null" />
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occured generating the ML-DSA key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-DSA. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports ML-DSA.
+        /// </exception>
+        public static MLDsa GenerateKey(MLDsaAlgorithm algorithm)
         {
+            if (algorithm is null)
+            {
+                throw new ArgumentNullException(nameof(algorithm));
+            }
+
             ThrowIfNotSupported();
-
-            return MLDsaImplementation.GenerateKey(MLDsaAlgorithm.MLDsa44);
-        }
-
-        /// <summary>
-        ///   Generates a new ML-DSA-65 key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static MLDsa GenerateMLDsa65Key()
-        {
-            ThrowIfNotSupported();
-
-            return MLDsaImplementation.GenerateKey(MLDsaAlgorithm.MLDsa65);
-        }
-
-        /// <summary>
-        ///   Generates a new ML-DSA-87 key.
-        /// </summary>
-        /// <returns>
-        ///   The generated key.
-        /// </returns>
-        public static MLDsa GenerateMLDsa87Key()
-        {
-            ThrowIfNotSupported();
-
-            return MLDsaImplementation.GenerateKey(MLDsaAlgorithm.MLDsa87);
+            return MLDsaImplementation.GenerateKeyImpl(algorithm);
         }
 
         /// <summary>
@@ -827,7 +753,7 @@ namespace System.Security.Cryptography
                         AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
 
-                        ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfoFromOid(spki.Algorithm.Algorithm);
+                        MLDsaAlgorithm algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(spki.Algorithm.Algorithm);
 
                         if (spki.Algorithm.Parameters.HasValue)
                         {
@@ -836,7 +762,7 @@ namespace System.Security.Cryptography
                             throw Helpers.CreateAlgorithmUnknownException(writer);
                         }
 
-                        return MLDsaImplementation.ImportPublicKey(info, spki.SubjectPublicKey.Span);
+                        return MLDsaImplementation.ImportPublicKey(algorithm, spki.SubjectPublicKey.Span);
                     }
                 }
             }
@@ -877,7 +803,7 @@ namespace System.Security.Cryptography
                         AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
                         PrivateKeyInfoAsn.Decode(ref reader, manager.Memory, out PrivateKeyInfoAsn pki);
 
-                        ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfoFromOid(pki.PrivateKeyAlgorithm.Algorithm);
+                        MLDsaAlgorithm algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(pki.PrivateKeyAlgorithm.Algorithm);
 
                         if (pki.PrivateKeyAlgorithm.Parameters.HasValue)
                         {
@@ -886,7 +812,7 @@ namespace System.Security.Cryptography
                             throw Helpers.CreateAlgorithmUnknownException(writer);
                         }
 
-                        return MLDsaImplementation.ImportPkcs8PrivateKeyValue(info, pki.PrivateKey.Span);
+                        return MLDsaImplementation.ImportPkcs8PrivateKeyValue(algorithm, pki.PrivateKey.Span);
                     }
                 }
             }
@@ -1096,17 +1022,18 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
-            ArgumentNullException.ThrowIfNull(algorithm);
-
-            ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfo(algorithm);
-
-            if (source.Length != info.PublicKeySizeInBytes)
+            if (algorithm is null)
             {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+                throw new ArgumentNullException(nameof(algorithm));
             }
 
-            return MLDsaImplementation.ImportPublicKey(info, source);
+            if (source.Length != algorithm.PublicKeySizeInBytes)
+            {
+                throw new ArgumentException(SR.Cryptography_KeyWrongSizeForAlgorithm, nameof(source));
+            }
+
+            ThrowIfNotSupported();
+            return MLDsaImplementation.ImportPublicKey(algorithm, source);
         }
 
         /// <summary>
@@ -1136,17 +1063,18 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
-            ArgumentNullException.ThrowIfNull(algorithm);
-
-            ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfo(algorithm);
-
-            if (source.Length != info.SecretKeySizeInBytes)
+            if (algorithm is null)
             {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+                throw new ArgumentNullException(nameof(algorithm));
             }
 
-            return MLDsaImplementation.ImportSecretKey(info, source);
+            if (source.Length != algorithm.SecretKeySizeInBytes)
+            {
+                throw new ArgumentException(SR.Cryptography_KeyWrongSizeForAlgorithm, nameof(source));
+            }
+
+            ThrowIfNotSupported();
+            return MLDsaImplementation.ImportSecretKey(algorithm, source);
         }
 
         /// <summary>
@@ -1176,16 +1104,18 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
-
-            ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfo(algorithm);
-
-            if (source.Length != PrivateSeedSizeInBytes)
+            if (algorithm is null)
             {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+                throw new ArgumentNullException(nameof(algorithm));
             }
 
-            return MLDsaImplementation.ImportSeed(info, source);
+            if (source.Length != algorithm.PrivateSeedSizeInBytes)
+            {
+                throw new ArgumentException(SR.Cryptography_KeyWrongSizeForAlgorithm, nameof(source));
+            }
+
+            ThrowIfNotSupported();
+            return MLDsaImplementation.ImportSeed(algorithm, source);
         }
 
         /// <summary>
@@ -1266,11 +1196,11 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            byte[] rented = CryptoPool.Rent(_parameterSetInfo.PublicKeySizeInBytes);
+            byte[] rented = CryptoPool.Rent(Algorithm.PublicKeySizeInBytes);
 
             try
             {
-                Span<byte> keySpan = rented.AsSpan(0, _parameterSetInfo.PublicKeySizeInBytes);
+                Span<byte> keySpan = rented.AsSpan(0, Algorithm.PublicKeySizeInBytes);
                 ExportMLDsaPublicKey(keySpan);
 
                 AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
@@ -1279,7 +1209,7 @@ namespace System.Security.Cryptography
                 {
                     using (writer.PushSequence())
                     {
-                        writer.WriteObjectIdentifier(_parameterSetInfo.Oid);
+                        writer.WriteObjectIdentifier(Algorithm.Oid);
                     }
 
                     writer.WriteBitString(keySpan);
@@ -1299,7 +1229,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             // TODO: Determine a more appropriate maximum size once the format is actually known.
-            int size = _parameterSetInfo.SecretKeySizeInBytes * 2;
+            int size = Algorithm.SecretKeySizeInBytes * 2;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully
             // hold on to it without being malicious.
             byte[] rented = CryptoPool.Rent(size);
@@ -1331,7 +1261,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             // TODO: Determine a more appropriate maximum size once the format is actually known.
-            int initialSize = _parameterSetInfo.SecretKeySizeInBytes * 2;
+            int initialSize = Algorithm.SecretKeySizeInBytes * 2;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully
             // hold on to it without being malicious.
             byte[] rented = CryptoPool.Rent(initialSize);
@@ -1362,76 +1292,6 @@ namespace System.Security.Cryptography
             if (!IsSupported)
             {
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
-            }
-        }
-
-        [DoesNotReturn]
-        private static ParameterSetInfo ThrowAlgorithmUnknown(string algorithmId)
-        {
-            throw new CryptographicException(
-                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, algorithmId));
-        }
-
-        internal sealed class ParameterSetInfo
-        {
-            // TODO: If MLDsaAlgorithm is a class, this class can be merged into it.
-            // TODO: Some of the information maybe then becomes public on MLDsaAlgorithm, rather than MLDsa?
-
-            internal int SecretKeySizeInBytes { get; }
-            internal int PublicKeySizeInBytes { get; }
-            internal int SignatureSizeInBytes { get; }
-            internal MLDsaAlgorithm Algorithm { get; }
-            internal string Oid { get; }
-
-            private ParameterSetInfo(
-                int secretKeySizeInBytes,
-                int publicKeySizeInBytes,
-                int signatureSizeInBytes,
-                MLDsaAlgorithm algorithm,
-                string oid)
-            {
-                SecretKeySizeInBytes = secretKeySizeInBytes;
-                PublicKeySizeInBytes = publicKeySizeInBytes;
-                SignatureSizeInBytes = signatureSizeInBytes;
-                Algorithm = algorithm;
-                Oid = oid;
-            }
-
-            // ML-DSA parameter sets, and the sizes associated with them,
-            // are defined in FIPS 204, section 4 "Parameter Sets".
-            // particularly Table 2 "Sizes (in bytes) of keys and signatures of ML-DSA"
-
-            internal static readonly ParameterSetInfo MLDsa44 =
-                new ParameterSetInfo(2560, 1312, 2420, MLDsaAlgorithm.MLDsa44, Oids.MLDsa44);
-
-            internal static readonly ParameterSetInfo MLDsa65 =
-                new ParameterSetInfo(4032, 1952, 3309, MLDsaAlgorithm.MLDsa65, Oids.MLDsa65);
-
-            internal static readonly ParameterSetInfo MLDsa87 =
-                new ParameterSetInfo(4896, 2592, 4627, MLDsaAlgorithm.MLDsa87, Oids.MLDsa87);
-
-            internal static ParameterSetInfo GetParameterSetInfo(MLDsaAlgorithm algorithm)
-            {
-                ArgumentNullException.ThrowIfNull(algorithm);
-
-                return algorithm.Name switch
-                {
-                    "ML-DSA-44" => MLDsa44,
-                    "ML-DSA-65" => MLDsa65,
-                    "ML-DSA-87" => MLDsa87,
-                    _ => ThrowAlgorithmUnknown(algorithm.Name),
-                };
-            }
-
-            internal static ParameterSetInfo GetParameterSetInfoFromOid(string oid)
-            {
-                return oid switch
-                {
-                    Oids.MLDsa44 => MLDsa44,
-                    Oids.MLDsa65 => MLDsa65,
-                    Oids.MLDsa87 => MLDsa87,
-                    _ => ThrowAlgorithmUnknown(oid),
-                };
             }
         }
     }

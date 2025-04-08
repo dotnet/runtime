@@ -1510,7 +1510,12 @@ HCIMPLEND
 
 /*************************************************************/
 
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
+EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
+#else
 HCIMPL1(void, IL_Throw,  Object* obj)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -1522,46 +1527,48 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
+
+    Thread *pThread = GetThread();
+    
+    SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
+    RtlCaptureContext(exceptionFrame.GetContext());
+#endif
+    exceptionFrame.InitAndLink(pThread);
+
+    FC_CAN_TRIGGER_GC();
+
+    if (oref == 0)
+        DispatchManagedException(kNullReferenceException);
+    else
+    if (!IsException(oref->GetMethodTable()))
     {
-        Thread *pThread = GetThread();
+        GCPROTECT_BEGIN(oref);
 
-        SoftwareExceptionFrame exceptionFrame;
-        RtlCaptureContext(exceptionFrame.GetContext());
-        exceptionFrame.InitAndLink(pThread);
+        WrapNonCompliantException(&oref);
 
-        FC_CAN_TRIGGER_GC();
-
-        if (oref == 0)
-            DispatchManagedException(kNullReferenceException);
-        else
-        if (!IsException(oref->GetMethodTable()))
-        {
-            GCPROTECT_BEGIN(oref);
-
-            WrapNonCompliantException(&oref);
-
-            GCPROTECT_END();
-        }
-        else
-        {   // We know that the object derives from System.Exception
-
-            // If the flag indicating ForeignExceptionRaise has been set,
-            // then do not clear the "_stackTrace" field of the exception object.
-            if (pThread->GetExceptionState()->IsRaisingForeignException())
-            {
-                ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
-            }
-            else
-            {
-                ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
-            }
-        }
-
-        DispatchManagedException(oref, exceptionFrame.GetContext());
-        FC_CAN_TRIGGER_GC_END();
-        UNREACHABLE();
+        GCPROTECT_END();
     }
+    else
+    {   // We know that the object derives from System.Exception
+
+        // If the flag indicating ForeignExceptionRaise has been set,
+        // then do not clear the "_stackTrace" field of the exception object.
+        if (pThread->GetExceptionState()->IsRaisingForeignException())
+        {
+            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
+        }
+        else
+        {
+            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
+        }
+    }
+
+    DispatchManagedException(oref, exceptionFrame.GetContext());
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
 #endif // FEATURE_EH_FUNCLETS
 
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
@@ -1605,43 +1612,49 @@ HCIMPLEND
 
 /*************************************************************/
 
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+EXTERN_C FCDECL0(void, IL_Rethrow);
+EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
+#else
 HCIMPL0(void, IL_Rethrow)
+#endif
 {
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        Thread *pThread = GetThread();
+    Thread *pThread = GetThread();
 
-        SoftwareExceptionFrame exceptionFrame;
-        RtlCaptureContext(exceptionFrame.GetContext());
-        exceptionFrame.InitAndLink(pThread);
+    SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
+    RtlCaptureContext(exceptionFrame.GetContext());
+#endif
+    exceptionFrame.InitAndLink(pThread);
 
-        ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+    ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-        ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, exceptionFrame.GetContext(), ExKind::None);
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, exceptionFrame.GetContext(), ExKind::None);
 
-        FC_CAN_TRIGGER_GC();
+    FC_CAN_TRIGGER_GC();
 
-        GCPROTECT_BEGIN(exInfo.m_exception);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
+    GCPROTECT_BEGIN(exInfo.m_exception);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
 
-        args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
 
-        pThread->IncPreventAbort();
+    pThread->IncPreventAbort();
 
-        //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
-        CALL_MANAGED_METHOD_NORET(args)
-        GCPROTECT_END();
+    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+    CALL_MANAGED_METHOD_NORET(args)
+    GCPROTECT_END();
 
-        FC_CAN_TRIGGER_GC_END();
-        UNREACHABLE();
-    }
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
 #endif
 
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
@@ -1839,7 +1852,7 @@ extern "C" VOID JIT_PInvokeEndRarePath();
 
 void JIT_PInvokeEndRarePath()
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread *thread = GetThread();
 
@@ -1864,8 +1877,6 @@ void JIT_PInvokeEndRarePath()
     }
 
     thread->m_pFrame->Pop(thread);
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 /*************************************************************/
@@ -1903,7 +1914,7 @@ void JIT_RareDisableHelper()
     // in the first phase.
     //      </TODO>
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread *thread = GetThread();
     // We execute RareDisablePreemptiveGC manually before checking any abort conditions
@@ -1925,8 +1936,6 @@ void JIT_RareDisableHelper()
         END_QCALL;
         thread->DisablePreemptiveGC();
     }
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
@@ -1983,7 +1992,7 @@ HCIMPL0(void, JIT_DebugLogLoopCloning)
      } CONTRACTL_END;
 
 #ifdef _DEBUG
-     printf(">> Logging loop cloning optimization\n");
+     minipal_log_print_info(">> Logging loop cloning optimization\n");
 #endif
 }
 HCIMPLEND
@@ -2354,7 +2363,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
 extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransitionBlock)
 {
-    // BEGIN_PRESERVE_LAST_ERROR;
+    // Manually preserve the last error as we may not return normally from this method.
     DWORD dwLastError = ::GetLastError();
 
     // This method may not return normally
@@ -2519,7 +2528,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
 #endif
 
         // Restore last error (since call below does not return)
-        // END_PRESERVE_LAST_ERROR;
         ::SetLastError(dwLastError);
 
         // Transition!
@@ -2527,8 +2535,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
     }
 
  DONE:
-
-    // END_PRESERVE_LAST_ERROR;
     ::SetLastError(dwLastError);
 }
 
@@ -3115,10 +3121,15 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
         JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk  : (UMEntryThunk*)NULL);
     }
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else    
+    frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
+    INSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -3148,10 +3159,15 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
         JIT_ReversePInvokeEnterRare(frame, _ReturnAddress());
     }
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else    
+    frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
+    INSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -3166,8 +3182,12 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
     // to make this exit faster.
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else
+    UNINSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 
 #ifdef PROFILING_SUPPORTED
@@ -3189,8 +3209,12 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     // to make this exit faster.
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else
+    UNINSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 }
 HCIMPLEND_RAW

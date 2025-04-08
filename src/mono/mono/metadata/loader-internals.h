@@ -175,7 +175,8 @@ struct _MonoMemoryManager {
 	MonoAssemblyLoadContext **alcs;
 
 	// Generic-specific caches
-	dn_simdhash_ght_t *ginst_cache, *gmethod_cache, *gsignature_cache;
+	GHashTable *ginst_cache;
+	dn_simdhash_ght_t *gmethod_cache, *gsignature_cache;
 	MonoConcurrentHashTable *gclass_cache;
 
 	/* mirror caches of ones already on MonoImage. These ones contain generics */

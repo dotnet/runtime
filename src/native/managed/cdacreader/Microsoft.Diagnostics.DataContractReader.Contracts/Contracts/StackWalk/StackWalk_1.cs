@@ -157,6 +157,9 @@ internal readonly struct StackWalk_1 : IStackWalk
         return TargetPointer.Null;
     }
 
+    string IStackWalk.GetFrameName(TargetPointer frameIdentifier)
+        => FrameIterator.GetFrameName(_target, frameIdentifier);
+
     private bool IsManaged(TargetPointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
     {
         IExecutionManager eman = _target.Contracts.ExecutionManager;

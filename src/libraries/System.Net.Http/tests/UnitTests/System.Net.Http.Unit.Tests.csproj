@@ -340,6 +340,8 @@
              Link="ProductionCode\System\Net\Http\HttpNoProxy.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs"
              Link="ProductionCode\System\Net\Http\HttpWindowsProxy.cs" />
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\WinInetProxyHelper.cs"
+             Link="ProductionCode\System\Net\Http\WinInetProxyHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs"
              Link="ProductionCode\System\Net\Http\IMultiWebProxy.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\MultiProxy.cs"
@@ -362,8 +364,6 @@
              Link="ProductionCode\Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.winhttp_types.cs"
              Link="ProductionCode\Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\WinInetProxyHelper.cs"
-             Link="Common\System\Net\Http\WinInetProxyHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs"
              Link="Common\System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs"

@@ -1034,6 +1034,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Swift\SwiftTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\TypeIdentifierAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\TypeMapAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\TypeMapAssociationAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\TypeMapAssemblyTargetAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\TypeMapping.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\TypeMapLazyDictionary.cs" Condition="'$(FeatureNativeAot)' != 'true' and '$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnknownWrapper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedCallConvAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs" />
