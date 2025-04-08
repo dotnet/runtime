@@ -633,6 +633,7 @@ export type DiagnosticCommandOptions = {
     durationSeconds?:number,
     intervalSeconds?:number,
     skipDownload?:boolean,
+    circularBufferMB?:number,
     extraProviders?:DiagnosticCommandProviderV2[],
 }
 

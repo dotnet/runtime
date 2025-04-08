@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { DiagnosticCommandProviderV2 } from "../types";
+import type { DiagnosticCommandOptions } from "../types";
 
 import { SessionId } from "./common";
 import { runtimeHelpers } from "./globals";
@@ -18,7 +18,7 @@ export const dotnet_IPC_V1 = [68, 79, 84, 78, 69, 84, 95, 73, 80, 67, 95, 86, 49
 export function advertise () {
     // xxxxxxxx-xxxx-4xxx-xxxx-xxxxxxxxxxxx
     const uuid = new Uint8Array(16);
-    crypto.getRandomValues(uuid);
+    globalThis.crypto.getRandomValues(uuid);
     uuid[7] = (uuid[7] & 0xf) | 0x40;// version 4
 
     const pid = runtimeHelpers.mono_wasm_process_current_pid();
@@ -50,10 +50,9 @@ export function commandProcessInfo3 () {
     ]);
 }
 
-
-export function commandGcHeapDump (extraProviders:DiagnosticCommandProviderV2[]) {
+export function commandGcHeapDump (options:DiagnosticCommandOptions) {
     return commandCollectTracing2({
-        circularBufferMB: 256,
+        circularBufferMB:options.circularBufferMB || 256,
         format: 1,
         requestRundown: true,
         providers: [
@@ -70,14 +69,20 @@ export function commandGcHeapDump (extraProviders:DiagnosticCommandProviderV2[])
                 provider_name: "Microsoft-Windows-DotNETRuntime",
                 arguments: null
             },
-            ...extraProviders,
+            ...options.extraProviders || [],
         ]
     });
 }
 
-export function commandCounters (intervalSec:number, extraProviders:DiagnosticCommandProviderV2[]) {
+function uuidv4 () {
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+        (+c ^ globalThis.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16)
+    );
+}
+
+export function commandCounters (options:DiagnosticCommandOptions) {
     return commandCollectTracing2({
-        circularBufferMB: 256,
+        circularBufferMB:options.circularBufferMB || 256,
         format: 1,
         requestRundown: false,
         providers: [
@@ -85,16 +90,16 @@ export function commandCounters (intervalSec:number, extraProviders:DiagnosticCo
                 keywords: [0, Keywords.GCHandle],
                 logLevel: 4,
                 provider_name: "System.Diagnostics.Metrics",
-                arguments: `SessionId=SHARED;Metrics=System.Runtime;RefreshInterval=${intervalSec};MaxTimeSeries=1000;MaxHistograms=10;ClientId=c98f989b-369c-41af-bc8e-7ab261fba16c`
+                arguments: `SessionId=SHARED;Metrics=System.Runtime;RefreshInterval=${options.intervalSeconds || 1};MaxTimeSeries=1000;MaxHistograms=10;ClientId=${uuidv4()};`,
             },
-            ...extraProviders,
+            ...options.extraProviders || [],
         ]
     });
 }
 
-export function commandSampleProfiler (extraProviders:DiagnosticCommandProviderV2[]) {
+export function commandSampleProfiler (options:DiagnosticCommandOptions) {
     return commandCollectTracing2({
-        circularBufferMB: 256,
+        circularBufferMB:options.circularBufferMB || 256,
         format: 1,
         requestRundown: true,
         providers: [
@@ -107,7 +112,7 @@ export function commandSampleProfiler (extraProviders:DiagnosticCommandProviderV
                 provider_name: "Microsoft-DotNETCore-SampleProfiler",
                 arguments: null
             },
-            ...extraProviders,
+            ...options.extraProviders || [],
         ]
     });
 }

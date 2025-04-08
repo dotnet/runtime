@@ -34,7 +34,7 @@ export function collectGcDump (options?:DiagnosticCommandOptions):Promise<Uint8A
     setupJsClient({
         onClosePromise: onClosePromise.promise_control,
         skipDownload: options.skipDownload,
-        commandOnAdvertise: () => commandGcHeapDump(options.extraProviders || []),
+        commandOnAdvertise: () => commandGcHeapDump(options),
         onData,
     });
     return onClosePromise.promise;

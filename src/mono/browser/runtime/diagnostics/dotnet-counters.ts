@@ -25,7 +25,7 @@ export function collectPerfCounters (options?:DiagnosticCommandOptions):Promise<
     setupJsClient({
         onClosePromise:onClosePromise.promise_control,
         skipDownload:options.skipDownload,
-        commandOnAdvertise:() => commandCounters(options.intervalSeconds || 1, options.extraProviders || []),
+        commandOnAdvertise:() => commandCounters(options),
         onSessionStart,
     });
     return onClosePromise.promise;

@@ -28,7 +28,7 @@ export function collectCpuSamples (options?:DiagnosticCommandOptions):Promise<Ui
     setupJsClient({
         onClosePromise:onClosePromise.promise_control,
         skipDownload:options.skipDownload,
-        commandOnAdvertise: () => commandSampleProfiler(options.extraProviders || []),
+        commandOnAdvertise: () => commandSampleProfiler(options),
         onSessionStart,
     });
     return onClosePromise.promise;
