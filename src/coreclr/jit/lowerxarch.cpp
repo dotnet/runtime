@@ -1126,7 +1126,7 @@ void Lowering::LowerCast(GenTree* tree)
 
                     maxFloatingValue = comp->gtClone(maxFloatingValue);
 
-                    if ((dstType == TYP_UINT))
+                    if (dstType == TYP_UINT)
                     {
                         // We can keep the conversion results in SIMD registers to make selection of the
                         // correct result simpler.
