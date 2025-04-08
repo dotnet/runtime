@@ -1713,8 +1713,20 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 GenTree* const addr = parent->AsIndir()->Addr();
                 if (tree == addr)
                 {
+                    // Address tree doesn't escape.
+                    //
                     JITDUMP("... store address\n");
                     canLclVarEscapeViaParentStack = false;
+
+                    if (isLocalAddr && !addr->OperIs(GT_FIELD_ADDR))
+                    {
+                        // We are indirectly storing to a tracked local.
+                        // For now, assume we don't know what value is stored.
+                        //
+                        JITDUMP("... store &local\n");
+                        AddConnGraphEdge(lclNum, m_unknownSourceLocalNum);
+                    }
+
                     break;
                 }
 
@@ -2046,6 +2058,13 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
                         // to this field/indirection since the address is not pointing to the heap.
                         // It's either null or points to inside a stack-allocated object.
                         parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                    }
+
+                    // If we have an indirect store to a retyped local, retype the store.
+                    //
+                    if (tree->OperIs(GT_LCL_ADDR) && (parent->TypeGet() != newType))
+                    {
+                        parent->ChangeType(newType);
                     }
                 }
                 else
