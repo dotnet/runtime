@@ -23,6 +23,9 @@ public class Runtime_113338
     [Fact]
     public static void Test()
     {
+        if (!Sve.IsSupported)
+            return;
+
         var vr7 = Sve.CreateTrueMaskInt32();
         var vr8 = Vector.Create<int>(0);
         var vr9 = Sve.CreateFalseMaskInt32();
