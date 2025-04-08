@@ -4585,6 +4585,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForShxadd(treeNode->AsOp());
             break;
 
+        case GT_ADD_UW:
+            genCodeForAddUw(treeNode->AsOp());
+            break;
+
         default:
         {
 #ifdef DEBUG
@@ -6735,7 +6739,21 @@ void CodeGen::genCodeForShxadd(GenTreeOp* tree)
 
     genConsumeOperands(tree);
 
-    GetEmitter()->emitIns_R_R_R(ins, EA_PTRSIZE, tree->GetRegNum(), tree->gtOp1->GetRegNum(), tree->gtOp2->GetRegNum());
+    emitAttr attr = emitActualTypeSize(tree);
+
+    GetEmitter()->emitIns_R_R_R(ins, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(), tree->gtOp2->GetRegNum());
+
+    genProduceReg(tree);
+}
+
+void CodeGen::genCodeForAddUw(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+
+    emitAttr attr = emitActualTypeSize(tree);
+
+    GetEmitter()->emitIns_R_R_R(INS_add_uw, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(),
+                                tree->gtOp2->GetRegNum());
 
     genProduceReg(tree);
 }

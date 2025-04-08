@@ -4139,8 +4139,19 @@ void emitter::emitDispInsName(
                         case 0x6: // SH3ADD.UW
                             printf("sh3add.uw      %s, %s, %s\n", rd, rs1, rs2);
                             return;
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
                     return;
+                case 0b0000100:
+                    switch (opcode3)
+                    {
+                        case 0x0: // ADD.UW
+                            printf("add.uw         %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
                 default:
                     return emitDispIllegalInstruction(code);
             }

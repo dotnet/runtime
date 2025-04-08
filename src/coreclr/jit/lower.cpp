@@ -7204,6 +7204,10 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         {
             return next;
         }
+        else if (TryLowerZextAddToAddUw(node, &next))
+        {
+            return next;
+        }
     }
 #endif
 

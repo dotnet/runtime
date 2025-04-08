@@ -867,6 +867,7 @@ protected:
 
 #if defined(TARGET_RISCV64)
     void        genCodeForShxadd(GenTreeOp* tree);
+    void        genCodeForAddUw(GenTreeOp* tree);
     instruction genGetInsForShxadd(GenTreeOp* tree);
     instruction getShxaddVariant(int scale, bool useUnsignedVariant);
 #endif
