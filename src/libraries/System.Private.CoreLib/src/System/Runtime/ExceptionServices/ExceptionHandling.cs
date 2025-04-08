@@ -19,6 +19,16 @@ namespace System.Runtime.ExceptionServices
         /// </summary>
         /// <exception cref="ArgumentNullException">If handler is null</exception>
         /// <exception cref="InvalidOperationException">If a handler is already set</exception>
+        /// <remarks>
+        /// The handler will be called when an unhandled exception occurs.
+        /// The handler should return true if the exception was handled, or false if it was not.
+        /// If the handler returns false, the exception will continue to propagate as unhandled.
+        ///
+        /// The intent of this handler is to allow the user to handle unhandled exceptions
+        /// gracefully when the runtime is being used in certain scenarios. Scenarios such
+        /// as REPLs or game scripting that host plug-ins are not able to handle unhandled
+        /// exceptions thrown by those plug-ins.
+        /// </remarks>
         public static void SetUnhandledExceptionHandler(Func<Exception, bool> handler)
         {
             ArgumentNullException.ThrowIfNull(handler);
@@ -30,7 +40,7 @@ namespace System.Runtime.ExceptionServices
         }
 
         /// <summary>
-        /// Raises the runtime's UnhandledException event.
+        /// Raises the <see cref="AppDomain.UnhandledException"/> event.
         /// </summary>
         /// <param name="exception">Exception to pass to event handlers.</param>
         /// <remarks>
@@ -39,7 +49,7 @@ namespace System.Runtime.ExceptionServices
         ///
         /// It will not raise the the handler registered with <see cref="SetUnhandledExceptionHandler"/>.
         /// </remarks>
-        public static void RaiseUnhandledExceptionEvent(Exception exception)
+        public static void RaiseAppDomainUnhandledExceptionEvent(object exception)
         {
             ArgumentNullException.ThrowIfNull(exception);
 
