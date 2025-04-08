@@ -208,6 +208,10 @@ namespace System
                 (current, other) = (other, current);
             }
 
+            // This method is needed to correctly compare decimals that represent the same numeric value
+            // but have different exponent/significand pairs. For example, 10e2 and 1e3 have different exponents,
+            // but represent the same number (1000). This function normalizes exponents and compares them accordingly,
+            // without considering sign.
             return InternalUnsignedCompare(current, other);
 
             static int InternalUnsignedCompare(DecimalIeee754<TSignificand> current, DecimalIeee754<TSignificand> other)
