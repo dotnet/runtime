@@ -13933,7 +13933,7 @@ namespace System.Runtime.CompilerServices
         public static ref T Add<T>(ref T source, nuint elementOffset) where T : allows ref struct { throw null; }
         public static bool AreSame<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void* AsPointer<T>(ref T value) where T : allows ref struct { throw null; }
+        public unsafe static void* AsPointer<T>(ref readonly T value) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe static ref T AsRef<T>(void* source) where T : allows ref struct { throw null; }
         public static ref T AsRef<T>(scoped ref readonly T source) where T : allows ref struct { throw null; }
