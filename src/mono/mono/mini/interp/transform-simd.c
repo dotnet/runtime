@@ -299,17 +299,14 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_OR;
 			break;
 		case SN_op_Equality:
-			if (atype != MONO_TYPE_R4 && atype != MONO_TYPE_R8) {
-				*simd_opcode = MINT_SIMD_INTRINS_P_PP;
-				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_EQUALITY;
-			}
-			break;
 		case SN_EqualsFloatingPoint:
 			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_R4)
 				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_FLOAT_EQUALITY;
 			else if (atype == MONO_TYPE_R8)
 				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_R8_FLOAT_EQUALITY;
+			else
+				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_EQUALITY;
 			break;
 		case SN_op_ExclusiveOr:
 			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
