@@ -288,6 +288,7 @@ private:
 
     void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
     CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
+    CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
 
     void* AllocMethodData(size_t numBytes);
     // FIXME Mempool allocation currently leaks. We need to add an allocator and then
