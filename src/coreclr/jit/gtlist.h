@@ -223,11 +223,6 @@ GTNODE(XOR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(BFIZ             , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
 #endif
 
-#ifdef TARGET_RISCV64
-GTNODE(SHXADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Represents sh1add, sh2add, and sh3add instructions.
-GTNODE(SHXADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Represents sh1add.uw, sh2add.uw, and sh3add.uw instructions.
-#endif
-
 //-----------------------------------------------------------------------------
 //  LIR specific compare and conditional branch/set nodes:
 //-----------------------------------------------------------------------------
@@ -275,6 +270,25 @@ GTNODE(SELECT_INVCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(SELECT_NEG       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Variant of SELECT_NEG that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
+#endif
+
+//-----------------------------------------------------------------------------
+//  LIR specific arithmetic nodes:
+//-----------------------------------------------------------------------------
+
+#ifdef TARGET_RISCV64
+// Maps to riscv64 sh1add instruction. Computes result = op2 + (op1 << 1).
+GTNODE(SH1ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh1add.uw instruction. Computes result = op2 + zext(op1[31..0] << 1).
+GTNODE(SH1ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh2add instruction. Computes result = op2 + (op1 << 2).
+GTNODE(SH2ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh2add.uw instruction. Computes result = op2 + zext(op1[31..0] << 2).
+GTNODE(SH2ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh3add instruction. Computes result = op2 + (op1 << 3).
+GTNODE(SH3ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh3add.uw instruction. Computes result = op2 + zext(op1[31..0] << 3).
+GTNODE(SH3ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------

@@ -4576,9 +4576,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; these nodes are simply markers for debug info.
             break;
 
-        case GT_SHXADD:
-        case GT_SHXADD_UW:
-            genShxaddInstruction(treeNode->AsShxadd());
+        case GT_SH1ADD:
+        case GT_SH1ADD_UW:
+        case GT_SH2ADD:
+        case GT_SH2ADD_UW:
+        case GT_SH3ADD:
+        case GT_SH3ADD_UW:
+            genCodeForShxadd(treeNode->AsOp());
             break;
 
         default:
@@ -6725,18 +6729,36 @@ instruction CodeGen::getShxaddVariant(int scale, bool useUnsignedVariant)
     return INS_none;
 }
 
-void CodeGen::genShxaddInstruction(GenTreeShxadd* shxadd)
+void CodeGen::genCodeForShxadd(GenTreeOp* tree)
 {
-    instruction shxaddIns = getShxaddVariant(shxadd->shammt, shxadd->IsUnsignedVariant());
+    instruction ins = genGetInsForShxadd(tree);
 
-    assert(shxaddIns != INS_none);
+    genConsumeOperands(tree);
 
-    genConsumeOperands(shxadd);
+    GetEmitter()->emitIns_R_R_R(ins, EA_PTRSIZE, tree->GetRegNum(), tree->gtOp1->GetRegNum(), tree->gtOp2->GetRegNum());
 
-    GetEmitter()->emitIns_R_R_R(shxaddIns, EA_PTRSIZE, shxadd->GetRegNum(), shxadd->Index()->GetRegNum(),
-                                shxadd->Base()->GetRegNum());
+    genProduceReg(tree);
+}
 
-    genProduceReg(shxadd);
+instruction CodeGen::genGetInsForShxadd(GenTreeOp* tree)
+{
+    switch (tree->gtOper)
+    {
+        case GT_SH1ADD:
+            return INS_sh1add;
+        case GT_SH2ADD:
+            return INS_sh2add;
+        case GT_SH3ADD:
+            return INS_sh3add;
+        case GT_SH1ADD_UW:
+            return INS_sh1add_uw;
+        case GT_SH2ADD_UW:
+            return INS_sh2add_uw;
+        case GT_SH3ADD_UW:
+            return INS_sh3add_uw;
+        default:
+            unreached();
+    }
 }
 
 //------------------------------------------------------------------------

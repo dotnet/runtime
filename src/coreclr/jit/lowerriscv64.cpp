@@ -566,9 +566,6 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
         return false;
     }
 
-    DWORD shammt;
-    BitScanForward(&shammt, scale);
-
     JITDUMP("Removing unused node:\n  ");
     DISPNODE(shift->gtGetOp2());
     BlockRange().Remove(shift->gtGetOp2());
@@ -579,23 +576,38 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
     BlockRange().Remove(shift);
     DEBUG_DESTROY_NODE(shift);
 
-    tree->gtOp1 = base;
-    tree->gtOp2 = index;
-    tree->ChangeOper(GT_SHXADD);
-    tree->AsShxadd()->shammt = shammt;
+    tree->gtOp1 = index;
+    tree->gtOp2 = base;
+
+    DWORD shammt;
+    BitScanForward(&shammt, scale);
+    switch (shammt)
+    {
+        case 1:
+            tree->ChangeOper(GT_SH1ADD);
+            break;
+        case 2:
+            tree->ChangeOper(GT_SH2ADD);
+            break;
+        case 3:
+            tree->ChangeOper(GT_SH3ADD);
+            break;
+        default:
+            unreached();
+    }
 
     JITDUMP("Base:\n  ");
-    DISPNODE(tree->AsShxadd()->Base());
+    DISPNODE(tree->gtOp2);
     JITDUMP("Index:\n  ");
-    DISPNODE(tree->AsShxadd()->Index());
+    DISPNODE(tree->gtOp1);
 
     JITDUMP("New SHXADD node:\n  ");
     DISPNODE(tree);
     JITDUMP("\n");
 
-    if (tree->gtOp2->OperIs(GT_CAST))
+    if (tree->gtOp1->OperIs(GT_CAST))
     {
-        GenTreeCast* const cast         = tree->gtOp2->AsCast();
+        GenTreeCast* const cast         = tree->gtOp1->AsCast();
         GenTree* const     src          = cast->CastOp();
         const var_types    srcType      = genActualType(src);
         const bool         srcUnsigned  = cast->IsUnsigned();
@@ -614,13 +626,27 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
             BlockRange().Remove(cast);
             DEBUG_DESTROY_NODE(cast);
 
-            tree->gtOp2 = src;
-            tree->ChangeOper(GT_SHXADD_UW);
+            tree->gtOp1 = src;
+
+            switch (tree->gtOper)
+            {
+                case GT_SH1ADD:
+                    tree->ChangeOper(GT_SH1ADD_UW);
+                    break;
+                case GT_SH2ADD:
+                    tree->ChangeOper(GT_SH2ADD_UW);
+                    break;
+                case GT_SH3ADD:
+                    tree->ChangeOper(GT_SH3ADD_UW);
+                    break;
+                default:
+                    unreached();
+            }
 
             JITDUMP("Index:\n  ");
-            DISPNODE(tree->AsShxadd()->Index());
+            DISPNODE(tree->gtOp1);
 
-            JITDUMP("Transformed SHXADD node to SHXADD_UW node:\n  ");
+            JITDUMP("Transformed SH(X)ADD node to SH(X)ADD_UW node:\n  ");
             DISPNODE(tree);
             JITDUMP("\n");
         }

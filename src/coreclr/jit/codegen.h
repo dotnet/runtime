@@ -866,7 +866,8 @@ protected:
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_RISCV64)
-    void        genShxaddInstruction(GenTreeShxadd* shxadd);
+    void        genCodeForShxadd(GenTreeOp* tree);
+    instruction genGetInsForShxadd(GenTreeOp* tree);
     instruction getShxaddVariant(int scale, bool useUnsignedVariant);
 #endif
 

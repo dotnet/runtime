@@ -298,9 +298,6 @@ void GenTree::InitNodeSize()
 #ifdef TARGET_ARM64
     static_assert_no_msg(sizeof(GenTreeCCMP)         <= TREE_NODE_SZ_SMALL);
 #endif
-#ifdef TARGET_RISCV64
-    static_assert_no_msg(sizeof(GenTreeShxadd)       <= TREE_NODE_SZ_SMALL);
-#endif
     static_assert_no_msg(sizeof(GenTreeConditional)  <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeCast)         <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeBox)          <= TREE_NODE_SZ_LARGE); // *** large node
@@ -12832,13 +12829,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
                    InsCflagsToString(tree->AsCCMP()->gtFlagsVal));
         }
 #endif
-#ifdef TARGET_RISCV64
-        else if (tree->OperIs(GT_SHXADD, GT_SHXADD_UW))
-        {
-            printf(" shammt=%d", tree->AsShxadd()->shammt);
-        }
-#endif
-
         gtDispCommonEndLine(tree);
 
         if (!topOnly)
