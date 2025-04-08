@@ -299,21 +299,14 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // This goes through helper and hence src needs to be converted to double.
             && tree->gtOverflow()
 #elif defined(TARGET_AMD64)
-            // Amd64: src = float, dst = uint64 or overflow conversion.
-            // src needs to be converted to double except for the following cases
-            //       dstType = int/uint/ulong for AVX512F
-            //       dstType = int for SSE41
-            // For pre-SSE41, the all src is converted to TYP_DOUBLE
-            // and goes through helpers.
-            &&
-            (tree->gtOverflow() || (dstType == TYP_LONG && !compOpportunisticallyDependsOn(InstructionSet_AVX10v2)) ||
-             !(canUseEvexEncoding() || (dstType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_SSE41))))
+            // Amd64: src = float, dst = overflow conversion or SSE2 is not enabled
+            && (tree->gtOverflow() || !IsBaselineSimdIsaSupported())
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
 #else
-            // x86: src = float, dst = uint32/int64/uint64 or overflow conversion.
-            && (tree->gtOverflow() || varTypeIsIntegral(dstType))
+            // x86: src = float, dst = int64/uint64 or overflow conversion or SSE2 is not enabled
+            && (tree->gtOverflow() || varTypeIsLong(dstType) || !IsBaselineSimdIsaSupported())
 #endif
         )
         {
@@ -339,25 +332,12 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                 return nullptr;
 #else
-#if defined(TARGET_AMD64)
-                // Following nodes are handled when lowering the nodes
-                //     float  -> ulong/uint/int/long for AVX10.2
-                //     double -> ulong/uint/int/long for AVX10.2
-                //     float  -> ulong/uint/int for AVX512F
-                //     double -> ulong/uint/long/int for AVX512F
-                //     float  -> int for SSE41
-                //     double -> int/uint/long for SSE41
-                // For all other conversions, we use helper functions.
-                if (canUseEvexEncoding() ||
-                    ((dstType != TYP_ULONG) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+#if defined(TARGET_XARCH)
+                if (IsBaselineSimdIsaSupported() && (!varTypeIsLong(dstType) || TargetArchitecture::Is64Bit))
                 {
-                    if (tree->CastOp() != oper)
-                    {
-                        tree->CastOp() = oper;
-                    }
                     return nullptr;
                 }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
                 switch (dstType)
                 {
                     case TYP_INT:
