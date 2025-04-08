@@ -5722,24 +5722,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             // TODO-Cleanup: We shouldn't attach assertions to nodes in Global Assertion Prop.
             // It limits the ability to create multiple assertions for the same node.
             GenTree* tree = gtNewNothingNode();
-
-            // Skip all PHI def statements
-            Statement* curStmt = target->firstStmt();
-            while ((curStmt != nullptr) && curStmt->IsPhiDefnStmt())
-            {
-                curStmt = curStmt->GetNextStmt();
-            }
-
-            if (curStmt == nullptr)
-            {
-                // The block is either empty or contains only PHI stmt(s).
-                fgInsertStmtAtEnd(target, fgNewStmtFromTree(tree));
-            }
-            else
-            {
-                // Insert the NOP before the first non-PHI stmt.
-                fgInsertStmtBefore(target, curStmt, fgNewStmtFromTree(tree));
-            }
+            fgInsertStmtAtBeg(target, fgNewStmtFromTree(tree));
 
             modified = true;
             tree->SetAssertionInfo(newAssertIdx);
