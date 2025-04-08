@@ -992,6 +992,8 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 		arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
 	} else if (arg1->type == MONO_TYPE_PTR) {
 		arg_type = m_type_data_get_type_unchecked (arg1);
+	} else if (MONO_TYPE_IS_VECTOR_PRIMITIVE(arg1))
+		arg_type = arg1;
 	} else {
 		// g_printf ("%s arg1 type was not pointer or simd type: %s\n", name, m_class_get_name (vector_klass));
 		return FALSE;
