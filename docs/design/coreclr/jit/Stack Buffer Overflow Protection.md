@@ -1,6 +1,6 @@
-# .NET Stack Security
+# Stack Buffer Overflow Protection
 
-This document describes mechanisms in the .NET code generator to ensure stack security at runtime.
+This document describes mechanisms in the .NET code generator to guard against stack buffer overflows at runtime.
 
 ## Background
 
@@ -10,8 +10,11 @@ facilities to allow for interop with native code, as well as some constructs tha
 Use of these potentially "unsafe" constructs can threaten the integrity of the .NET runtime stack, enabling modification
 of key information on a stack frame, like the values of code and data addresses.
 
-The .NET code generator includes stack frame protection (aka Guard Stack or "GS") so that the integrity of the stack
+The .NET code generator includes stack buffer overflow protection (aka Guard Stack or "GS") so that the integrity of the stack
 can be checked at key points during program execution&mdash;walking the stack for EH or GC, or returning from methods.
+
+Stack buffer overflow protection is one part of a more comprehensive set of
+[.NET runtime security mitigations](https://github.com/dotnet/designs/blob/main/accepted/2021/runtime-security-mitigations.md).
 
 ## How GS Works
 
@@ -26,7 +29,7 @@ Vulnerable data on the stack frame generally includes addresses of code and data
 
 GS protects this data in two ways:
 * When possible, vulnerable data is moved lower on the stack frame, below unsafe buffers.
-* For data that cannot be relocated (like the return address), a "stack cookie" is allocated between
+* For data that cannot be relocated (like the return address), a "stack cookie" (aka "stack canary") is allocated between
 the unsafe buffers and the un-relocatable vulnerable data. This cookie value varies from run to run and its value
 is verified before method exit and on stack walks done by the runtime for EH and GC.
 
@@ -51,8 +54,8 @@ so any caller frames would be above and any callee frames below)
 Vulnerable memory arguments are relocated to a shadow copy region below the unsafe fixed buffers. Within the fixed-sized
 buffer region, buffers are ordered so that buffers containing pointers are at lower addresses than buffers without pointers.
 
-The integrity of key data like the return address is protected by the stack cookie, and access to this data is guarded
-by a cookie verification check.
+A buffer overrun that can corrupt vulnerable data will likely also corrupt the stack cookie. The cookie value is verified
+before the method returns (and also when the runtime triggers stack walks).
 
 In addition, the return address may also be protected by hardware mechanisms like
 [Control-flow Enforcement Technology (CET)](https://github.com/dotnet/runtime/blob/main/docs/design/features/cet-feature.md),
