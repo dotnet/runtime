@@ -7,6 +7,9 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
 
+// PQC types are used throughout, but only when the caller requests them.
+#pragma warning disable SYSLIB5006
+
 namespace System.Security.Cryptography.X509Certificates.Tests.Common
 {
     // This class represents only a portion of what is required to be a proper Certificate Authority.
@@ -1028,14 +1031,17 @@ SingleResponse ::= SEQUENCE {
             };
         }
 
-        internal void Diag()
+        internal static X509Certificate2 CloneWithPrivateKey(X509Certificate2 cert, object key)
         {
-            Console.WriteLine(_cert.ExportCertificatePem());
-
-            using (ECDsa ecdsa = _cert.GetECDsaPrivateKey())
+            return key switch
             {
-                Console.WriteLine(ecdsa.ExportPkcs8PrivateKeyPem());
-            }
+                RSA rsa => cert.CopyWithPrivateKey(rsa),
+                ECDsa ecdsa => cert.CopyWithPrivateKey(ecdsa),
+                MLDsa mldsa => cert.CopyWithPrivateKey(mldsa),
+                DSA dsa => cert.CopyWithPrivateKey(dsa),
+                _ => throw new InvalidOperationException(
+                    $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
+            };
         }
 
         internal sealed class KeyFactory
@@ -1127,7 +1133,7 @@ SingleResponse ::= SEQUENCE {
 
             internal X509Certificate2 OntoCertificate(X509Certificate2 cert)
             {
-                return CertificateCreation.CertificateRequestChainTests.CloneWithPrivateKey(cert, _key);
+                return CloneWithPrivateKey(cert, _key);
             }
 
             internal byte[] Sign(byte[] data)
