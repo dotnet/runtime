@@ -307,6 +307,10 @@ virtual void            LeaveCatch(GCInfoToken gcInfoToken,
                                    PCONTEXT pCtx)=0;
 #else // FEATURE_EH_FUNCLETS
 virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter) = 0;
+virtual void PrepareForResumeAfterCatch(CONTEXT *pContext) = 0;
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+virtual void UpdateSSP(PREGDISPLAY pRD) = 0;
+#endif // HOST_AMD64 && HOST_WINDOWS
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_REMAP_FUNCTION
@@ -553,6 +557,14 @@ virtual void LeaveCatch(GCInfoToken gcInfoToken,
                          PCONTEXT pCtx);
 #else // FEATURE_EH_FUNCLETS
 virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
+virtual void PrepareForResumeAfterCatch(CONTEXT *pContext)
+{
+    // Nothing to do for non-interpreter code manager.
+}
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+virtual void UpdateSSP(PREGDISPLAY pRD);
+#endif // HOST_AMD64 && HOST_WINDOWS
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_REMAP_FUNCTION
@@ -762,6 +774,10 @@ virtual void LeaveCatch(GCInfoToken gcInfoToken,
 }
 #else // FEATURE_EH_FUNCLETS
 virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
+virtual void PrepareForResumeAfterCatch(CONTEXT *pContext);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+virtual void UpdateSSP(PREGDISPLAY pRD);
+#endif // HOST_AMD64 && HOST_WINDOWS
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_REMAP_FUNCTION
