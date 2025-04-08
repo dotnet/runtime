@@ -45,6 +45,12 @@ namespace System
             Assert.Equal(expectedMessage, Assert.Throws<T>(action).Message);
         }
 
+        public static void ThrowsContains<T>(string paramName, Action action, string expectedMessageContent)
+            where T : ArgumentException
+        {
+            Assert.Contains(expectedMessageContent, Assert.Throws<T>(paramName, action).Message);
+        }
+
         public static void ThrowsContains<T>(Action action, string expectedMessageContent)
             where T : Exception
         {
