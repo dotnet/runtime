@@ -62,6 +62,7 @@ internal class Program
         TestInitBlock.Run();
         TestDataflow.Run();
         TestConversions.Run();
+        TestVTables.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -1674,6 +1675,82 @@ class TestConversions
     }
 }
 
+class TestVTables
+{
+    public static unsafe class IUnknownImpl
+    {
+        [FixedAddressValueType]
+        public static readonly IUnknownVftbl Vtbl;
+
+        static IUnknownImpl()
+        {
+            ComWrappers.GetIUnknownImpl(
+                fpQueryInterface: out *(nint*)&((IInspectableVftbl*)Unsafe.AsPointer(ref Vtbl))->QueryInterface,
+                fpAddRef: out *(nint*)&((IInspectableVftbl*)Unsafe.AsPointer(ref Vtbl))->AddRef,
+                fpRelease: out *(nint*)&((IInspectableVftbl*)Unsafe.AsPointer(ref Vtbl))->Release);
+        }
+    }
+
+    public static unsafe class IInspectableImpl
+    {
+        [FixedAddressValueType]
+        public static readonly IInspectableVftbl Vtbl;
+
+        static IInspectableImpl()
+        {
+            *(IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl) = IUnknownImpl.Vtbl;
+
+            Vtbl.GetIids = &GetIids;
+            Vtbl.GetRuntimeClassName = &GetRuntimeClassName;
+            Vtbl.GetTrustLevel = &GetTrustLevel;
+        }
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        public static int GetIids(void* thisPtr, uint* iidCount, Guid** iids) => 0;
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        private static int GetRuntimeClassName(void* thisPtr, nint* className) => 0;
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        public static int GetTrustLevel(void* thisPtr, int* trustLevel) => 0;
+    }
+
+    public unsafe struct IUnknownVftbl
+    {
+        public delegate* unmanaged[MemberFunction]<void*, Guid*, void**, int> QueryInterface;
+        public delegate* unmanaged[MemberFunction]<void*, uint> AddRef;
+        public delegate* unmanaged[MemberFunction]<void*, uint> Release;
+    }
+
+    public unsafe struct IInspectableVftbl
+    {
+        public delegate* unmanaged[MemberFunction]<void*, Guid*, void**, int> QueryInterface;
+        public delegate* unmanaged[MemberFunction]<void*, uint> AddRef;
+        public delegate* unmanaged[MemberFunction]<void*, uint> Release;
+        public delegate* unmanaged[MemberFunction]<void*, uint*, Guid**, int> GetIids;
+        public delegate* unmanaged[MemberFunction]<void*, nint*, int> GetRuntimeClassName;
+        public delegate* unmanaged[MemberFunction]<void*, int*, int> GetTrustLevel;
+    }
+
+    public static unsafe void Run()
+    {
+        Assert.IsPreinitialized(typeof(IUnknownImpl));
+        ComWrappers.GetIUnknownImpl(
+                fpQueryInterface: out nint qi,
+                fpAddRef: out nint addref,
+                fpRelease: out nint release);
+        Assert.AreEqual((nuint)qi, (nuint)IUnknownImpl.Vtbl.QueryInterface);
+        Assert.AreEqual((nuint)addref, (nuint)IUnknownImpl.Vtbl.AddRef);
+        Assert.AreEqual((nuint)release, (nuint)IUnknownImpl.Vtbl.Release);
+
+        Assert.IsPreinitialized(typeof(IInspectableImpl));
+        Assert.AreEqual((nuint)qi, (nuint)IInspectableImpl.Vtbl.QueryInterface);
+        Assert.AreEqual((nuint)addref, (nuint)IInspectableImpl.Vtbl.AddRef);
+        Assert.AreEqual((nuint)release, (nuint)IInspectableImpl.Vtbl.Release);
+        Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, uint*, Guid**, int>)&IInspectableImpl.GetIids, (nuint)IInspectableImpl.Vtbl.GetIids);
+        Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, int*, int>)&IInspectableImpl.GetTrustLevel, (nuint)IInspectableImpl.Vtbl.GetTrustLevel);
+    }
+}
 
 static class Assert
 {

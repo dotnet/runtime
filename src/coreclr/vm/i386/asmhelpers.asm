@@ -27,10 +27,19 @@ endif
 ifdef FEATURE_HIJACK
 EXTERN _OnHijackWorker@4:PROC
 endif ;FEATURE_HIJACK
+ifdef FEATURE_EH_FUNCLETS
+EXTERN _ProcessCLRException:PROC
+EXTERN _UMEntryPrestubUnwindFrameChainHandler:PROC
+EXTERN _CallDescrWorkerUnwindFrameChainHandler:PROC
+ifdef FEATURE_COMINTEROP
+EXTERN _ReverseComUnwindFrameChainHandler:PROC
+endif ; FEATURE_COMINTEROP
+else
 EXTERN _COMPlusFrameHandler:PROC
 ifdef FEATURE_COMINTEROP
 EXTERN _COMPlusFrameHandlerRevCom:PROC
 endif ; FEATURE_COMINTEROP
+endif ; FEATURE_EH_FUNCLETS
 EXTERN __alloca_probe:PROC
 EXTERN _NDirectImportWorker@4:PROC
 
@@ -71,6 +80,11 @@ EXTERN g_chained_lookup_miss_counter:DWORD
 EXTERN g_dispatch_cache_chain_success_counter:DWORD
 endif
 
+ifdef FEATURE_EH_FUNCLETS
+EXTERN @IL_Throw_x86@8:PROC
+EXTERN @IL_Rethrow_x86@4:PROC
+endif ; FEATURE_EH_FUNCLETS
+
 UNREFERENCED macro arg
     local unref
     unref equ size arg
@@ -85,6 +99,7 @@ FASTCALL_ENDFUNC macro
 FuncNameReal endp
 endm
 
+ifndef FEATURE_EH_FUNCLETS
 ifdef FEATURE_COMINTEROP
 ifdef _DEBUG
     CPFH_STACK_SIZE     equ SIZEOF_FrameHandlerExRecord + STACK_OVERWRITE_BARRIER_SIZE*4
@@ -128,6 +143,38 @@ endif
 
 endm  ; POP_CPFH_FOR_COM
 endif ; FEATURE_COMINTEROP
+
+PUSH_CLR_EXCEPTION_HANDLER macro handlerName
+endm
+POP_CLR_EXCEPTION_HANDLER macro
+endm
+
+else ; FEATURE_EH_FUNCLETS
+
+CPFH_STACK_SIZE     equ 8
+
+PUSH_CLR_EXCEPTION_HANDLER macro handlerName
+    ; setup frame exception handler
+    push        handlerName
+    push        fs:[0]
+    mov         fs:[0], esp
+endm
+
+POP_CLR_EXCEPTION_HANDLER macro
+    ; remove frame exception handler
+    pop         fs:[0]
+    add         esp, 4
+endm
+
+PUSH_CPFH_FOR_COM macro trashReg, pFrameBaseReg, pFrameOffset
+    PUSH_CLR_EXCEPTION_HANDLER _ProcessCLRException
+endm
+
+POP_CPFH_FOR_COM macro trashReg
+    POP_CLR_EXCEPTION_HANDLER
+endm
+
+endif ; FEATURE_EH_FUNCLETS
 
 ;
 ; FramedMethodFrame prolog
@@ -243,19 +290,29 @@ _RestoreFPUContext@4 ENDP
 ; Note that these directives must be in a file that defines symbols that will be used during linking,
 ; otherwise it's possible that the resulting .obj will completely be ignored by the linker and these
 ; directives will have no effect.
+ifndef FEATURE_EH_FUNCLETS
 COMPlusFrameHandler proto c
 .safeseh COMPlusFrameHandler
-
 COMPlusNestedExceptionHandler proto c
 .safeseh COMPlusNestedExceptionHandler
-
 FastNExportExceptHandler proto c
 .safeseh FastNExportExceptHandler
-
 ifdef FEATURE_COMINTEROP
 COMPlusFrameHandlerRevCom proto c
 .safeseh COMPlusFrameHandlerRevCom
 endif
+else ; FEATURE_EH_FUNCLETS
+ProcessCLRException proto c
+.safeseh ProcessCLRException
+UMEntryPrestubUnwindFrameChainHandler proto c
+.safeseh UMEntryPrestubUnwindFrameChainHandler
+CallDescrWorkerUnwindFrameChainHandler proto c
+.safeseh CallDescrWorkerUnwindFrameChainHandler
+ifdef FEATURE_COMINTEROP
+ReverseComUnwindFrameChainHandler proto c
+.safeseh ReverseComUnwindFrameChainHandler
+endif ; FEATURE_COMINTEROP
+endif ; FEATURE_EH_FUNCLETS
 
 ifdef HAS_ADDRESS_SANITIZER
 EXTERN ___asan_handle_no_return:PROC
@@ -277,6 +334,7 @@ CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, ca
         RET
 CallRtlUnwind ENDP
 
+ifndef FEATURE_EH_FUNCLETS
 _ResumeAtJitEHHelper@4 PROC public
         ; Call ___asan_handle_no_return here as we are not going to return.
 ifdef HAS_ADDRESS_SANITIZER
@@ -398,6 +456,7 @@ endif
         pop     ebp ; don't use 'leave' here, as ebp as been trashed
         retn    8
 _CallJitEHFinallyHelper@8 ENDP
+endif
 
 ;------------------------------------------------------------------------------
 ; This helper routine enregisters the appropriate arguments and makes the
@@ -408,6 +467,11 @@ CallDescrWorkerInternal PROC stdcall public USES EBX,
                          pParams: DWORD
 
         mov     ebx, pParams
+
+        ; We are about to run managed code so we need to put an exception
+        ; handler on the SEH stack; Note that ThePreStub and CallCatchFunclet
+        ; may replace where the handler points to!
+        PUSH_CLR_EXCEPTION_HANDLER _ProcessCLRException
 
         mov     ecx, [ebx+CallDescrData__numStackSlots]
         mov     eax, [ebx+CallDescrData__pSrc]            ; copy the stack
@@ -434,6 +498,8 @@ donestack:
         mov     ecx, dword ptr [eax+4]
 
         call    [ebx+CallDescrData__pTarget]
+
+CallDescrWorkerInternalReturnAddress:
 ifdef _DEBUG
         nop     ; This is a tag that we use in an assert.  Fcalls expect to
                 ; be called from Jitted code or from certain blessed call sites like
@@ -457,7 +523,8 @@ ReturnsInt:
         mov     [ebx+CallDescrData__returnValue+4], edx
 
 Epilog:
-       RET
+        POP_CLR_EXCEPTION_HANDLER
+        ret
 
 ReturnsFloat:
         fstp    dword ptr [ebx+CallDescrData__returnValue]    ; Spill the Float return value
@@ -466,6 +533,10 @@ ReturnsFloat:
 ReturnsDouble:
         fstp    qword ptr [ebx+CallDescrData__returnValue]    ; Spill the Double return value
         jmp     Epilog
+
+public _CallDescrWorkerInternalReturnAddressOffset
+_CallDescrWorkerInternalReturnAddressOffset:
+        dd      CallDescrWorkerInternalReturnAddress - CallDescrWorkerInternal
 
 CallDescrWorkerInternal endp
 
@@ -1134,7 +1205,29 @@ _ThePreStub@0 proc public
 
     push        esi
 
+ifdef FEATURE_EH_FUNCLETS
+    cmp         [esi + 24], CallDescrWorkerInternalReturnAddress
+    jne         NoSEHReplace
+
+    ; If we were called from CallDescrWorkerInternal then swap the last
+    ; SEH registration for _CallDescrWorkerUnwindFrameChainHandler to ensure
+    ; that class loading exceptions are propagated through unmanaged code
+    ; before being forwarded to the managed one.
+    mov         edi, fs:[0]
+    ; mov         esi, [edi]
+    ; mov         fs:[0], esi
+    mov         [edi + 4], _CallDescrWorkerUnwindFrameChainHandler
     call        _PreStubWorker@8
+    mov         [edi + 4], _ProcessCLRException
+    ; mov         fs:[0], edi
+    jmp         AfterPreStubWorker
+
+NoSEHReplace:
+endif ; FEATURE_EH_FUNCLETS
+
+    call        _PreStubWorker@8
+
+AfterPreStubWorker:
 
     ; eax now contains replacement stub. PreStubWorker will never return
     ; NULL (it throws an exception if stub creation fails.)
@@ -1167,8 +1260,12 @@ _TheUMEntryPrestub@0 proc public
     push        ecx
     push        edx
 
+    PUSH_CLR_EXCEPTION_HANDLER _UMEntryPrestubUnwindFrameChainHandler
+
     push    eax     ; UMEntryThunkData*
     call    _TheUMEntryPrestubWorker@4
+
+    POP_CLR_EXCEPTION_HANDLER
 
     ; pop argument registers
     pop         edx
@@ -1236,8 +1333,14 @@ _GenericComCallStub@0 proc public
     push        eax         ; UnmanagedToManagedFrame::m_pvDatum = ComCallMethodDesc*
     sub         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
 
-    push        esp
+    mov         esi, esp
+
+    PUSH_CLR_EXCEPTION_HANDLER _ReverseComUnwindFrameChainHandler
+
+    push        esi
     call        _COMToCLRWorker@4
+
+    POP_CLR_EXCEPTION_HANDLER
 
     add         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
 
@@ -1248,6 +1351,7 @@ _GenericComCallStub@0 proc public
     pop         edi
     pop         esi
     pop         ebx
+
     pop         ebp
 
     sub         ecx, COMMETHOD_PREPAD_ASM
