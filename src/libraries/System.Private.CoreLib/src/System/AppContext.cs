@@ -100,6 +100,7 @@ namespace System
                     }
                 }
             }
+
             return registeredHandlers;
         }
 
