@@ -385,42 +385,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector128<T> other) && Equals(other);
 
-        // Account for floating-point equality around NaN
-        // This is in a separate method so it can be optimized by the mono interpreter/jiterpreter
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool EqualsFloatingPoint(Vector128<T> lhs, Vector128<T> rhs)
-        {
-            Vector128<T> result = Vector128.Equals(lhs, rhs) | ~(Vector128.Equals(lhs, lhs) | Vector128.Equals(rhs, rhs));
-            return result.AsInt32() == Vector128<int>.AllBitsSet;
-        }
-
         /// <summary>Determines whether the specified <see cref="Vector128{T}" /> is equal to the current instance.</summary>
         /// <param name="other">The <see cref="Vector128{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(Vector128<T> other)
-        {
-            // This function needs to account for floating-point equality around NaN
-            // and so must behave equivalently to the underlying float/double.Equals
-
-            if (Vector128.IsHardwareAccelerated)
-            {
-                if ((typeof(T) == typeof(double)) || (typeof(T) == typeof(float)))
-                {
-                    return EqualsFloatingPoint(this, other);
-                }
-                else
-                {
-                    return this == other;
-                }
-            }
-            else
-            {
-                return _lower.Equals(other._lower)
-                    && _upper.Equals(other._upper);
-            }
-        }
+        public bool Equals(Vector128<T> other) => this == other;
 
         /// <summary>Gets the hash code for the instance.</summary>
         /// <returns>The hash code for the instance.</returns>

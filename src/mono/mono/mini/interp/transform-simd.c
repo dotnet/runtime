@@ -97,7 +97,6 @@ static guint16 sri_vector128_methods [] = {
 };
 
 static guint16 sri_vector128_t_methods [] = {
-	SN_EqualsFloatingPoint,
 	SN_get_AllBitsSet,
 	SN_get_Count,
 	SN_get_One,
@@ -299,7 +298,6 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_OR;
 			break;
 		case SN_op_Equality:
-		case SN_EqualsFloatingPoint:
 			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_R4)
 				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_FLOAT_EQUALITY;
